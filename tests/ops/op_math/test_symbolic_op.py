@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import copy
 import pytest
 
 import pennylane as qml
@@ -34,6 +35,22 @@ def test_intialization(self):
     assert op.id == "something"
     assert op.queue_idx is None
     assert op.name == "Symbolic"
+
+
+def test_copy():
+    """Test that a copy of the operator can have its parameters updated independently
+    of the original operator."""
+    param1 = 1.234
+    base = TempOperator(param1, "a")
+    op = SymbolicOp(base)
+
+    copied_op = copy(op)
+
+    assert copied_op.__class__ is op.__class__
+    assert copied_op.data == [param1]
+
+    copied_op.data = [6.54]
+    assert op.data == [param1]
 
 
 class TestProperties:
