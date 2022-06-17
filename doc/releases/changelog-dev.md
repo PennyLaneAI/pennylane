@@ -46,15 +46,6 @@
 * Added new device abstract base class `QutritDevice` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
 * Added operation `qml.QutritUnitary` for applying user-specified unitaries to `QutritDevice`.
 
-  ```pycon
-  >>> dev = qml.device("default.qutrit", wires=1)
-  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-  >>> with qml.tape.QuantumTape() as tape:
-  ...     qml.QutritUnitary(U, wires=0)
-  ...     qml.probs(wires=0)
-  >>> print(QutritDevice.execute(tape))
-  [0.5 0.5 0. ]
-  ```
 
 <h3>Improvements</h3>
 
