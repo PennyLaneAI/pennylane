@@ -358,7 +358,7 @@ def hermite_moment(alpha, beta, t, order, r):
     >>> hermite_moment(alpha, beta, t, order, r)
     array([1.0157925])
     """
-    p = jnp.array(alpha + beta)
+    p = alpha + beta
 
     if t > order or (order == 0 and t != 0):
         return 0.0

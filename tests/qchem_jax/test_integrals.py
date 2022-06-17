@@ -25,6 +25,9 @@ from pennylane import qchem_jax as qchem
 
 import jax
 from jax import numpy as jnp
+from jax import config
+
+config.update("jax_enable_x64", True)  # Need this for better precision
 
 
 @pytest.mark.parametrize(
@@ -202,3 +205,74 @@ def test_overlap_integral(symbols, geometry, alphas, coeffs, rs, o_ref):
     overlap_integral_jitted = jax.jit(qchem.overlap_integral, static_argnums=(3, 4))
     o_jitted = overlap_integral_jitted(alphas, coeffs, rs, basis_a, basis_b)
     assert np.allclose(o_jitted, o_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alphas", "coeffs"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),  # Assume non differentiable
+            np.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            np.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+        ),
+    ],
+)
+def test_gradient_overlap(symbols, geometry, alphas, coeffs):
+    r"""Test that the overlap gradient computed with respect to the basis parameters is
+    correct."""
+    mol = Molecule(symbols, geometry, alpha=alphas, coeff=coeffs)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    rs = jnp.zeros(alphas.shape)  # We keep the signature of the overlap integrals the same
+
+    g_alpha = jax.grad(qchem.overlap_integral, argnums=0)(alphas, coeffs, rs, basis_a, basis_b)
+    g_coeff = jax.grad(qchem.overlap_integral, argnums=1)(alphas, coeffs, rs, basis_a, basis_b)
+
+    # compute overlap gradients with respect to alpha and coeff using finite diff
+    delta = 0.00001  # If delta is too small this will not work
+    g_ref_alpha = np.zeros(6).reshape(alphas.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeffs.shape)
+
+    for i in range(len(alphas)):
+        for j in range(len(alphas[0])):
+
+            alpha_minus = alphas.copy()
+            alpha_plus = alphas.copy()
+
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+
+            o_minus = qchem.overlap_integral(alpha_minus, coeffs, rs, basis_a, basis_b)
+            o_plus = qchem.overlap_integral(alpha_plus, coeffs, rs, basis_a, basis_b)
+
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = coeffs.copy()
+            coeff_plus = coeffs.copy()
+
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+
+            o_minus = qchem.overlap_integral(alphas, coeff_minus, rs, basis_a, basis_b)
+            o_plus = qchem.overlap_integral(alphas, coeff_plus, rs, basis_a, basis_b)
+
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+    # JIT computation
+    overlap_integral_jitted = jax.jit(qchem.overlap_integral, static_argnums=(3, 4))
+
+    g_alpha_jitted = jax.grad(overlap_integral_jitted, argnums=0)(
+        alphas, coeffs, rs, basis_a, basis_b
+    )
+    g_coeff_jitted = jax.grad(overlap_integral_jitted, argnums=1)(
+        alphas, coeffs, rs, basis_a, basis_b
+    )
+
+    assert np.allclose(g_alpha_jitted, g_ref_alpha)
+    assert np.allclose(g_coeff_jitted, g_ref_coeff)
