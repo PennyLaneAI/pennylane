@@ -31,6 +31,8 @@ class SymbolicOp(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
+    _name = "Symbolic"
+
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
         # this method needs to be overwritten becuase the base must be copied too.

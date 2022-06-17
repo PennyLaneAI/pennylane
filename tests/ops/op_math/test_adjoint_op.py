@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
-from email.mime import base
 import pytest
 
 import pennylane as qml
