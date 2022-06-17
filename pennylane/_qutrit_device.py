@@ -250,7 +250,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
         samples = self._samples[sample_slice, device_wires]
 
-        # convert samples from a list of 0, 1 integers, to base 10 representation
+        # convert samples from a list of 0, 1, 2 integers, to base 10 representation
         powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_three
 
