@@ -790,17 +790,17 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     return a
 
 
-def attraction_integral(r, basis_a, basis_b):
-    r"""Return a function that computes the nuclear attraction integral for two contracted Gaussian
-    functions.
+def attraction_integral(alphas, coeffs, rs, coor, basis_a, basis_b):
+    r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
 
     Args:
+        args (array[float]): initial values of the differentiable parameters
         r (array[float]): position vector of nucleus
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
-        function: function that computes the electron-nuclear attraction integral
+        array[float]: the electron-nuclear attraction integral
 
     **Example**
 
@@ -815,42 +815,24 @@ def attraction_integral(r, basis_a, basis_b):
     >>> attraction_integral(geometry[0], basis_a, basis_b)(*args)
     0.801208332328965
     """
+    alpha, ca, ra = alphas[0], coeffs[0], rs[0]
+    beta, cb, rb = alphas[1], coeffs[1], rs[1]
 
-    def _attraction_integral(*args):
-        r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
+    ca = ca * primitive_norm(basis_a.l, alpha)
+    cb = cb * primitive_norm(basis_b.l, beta)
 
-        Args:
-            args (array[float]): initial values of the differentiable parameters
+    na = contracted_norm(basis_a.l, alpha, ca)
+    nb = contracted_norm(basis_b.l, beta, cb)
 
-        Returns:
-            array[float]: the electron-nuclear attraction integral
-        """
-        coor = r
-        args_a = [arg[0] for arg in args]
-        args_b = [arg[1] for arg in args]
-
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
-
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
-
-        v = (
-            na
-            * nb
-            * (
-                (ca * cb[:, jnp.newaxis])
-                * nuclear_attraction(
-                    basis_a.l, basis_b.l, ra, rb, alpha, beta[:, jnp.newaxis], coor
-                )
-            ).sum()
-        )
-        return v
-
-    return _attraction_integral
+    v = (
+        na
+        * nb
+        * (
+            (ca * cb[:, jnp.newaxis])
+            * nuclear_attraction(basis_a.l, basis_b.l, ra, rb, alpha, beta[:, jnp.newaxis], coor)
+        ).sum()
+    )
+    return v
 
 
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
@@ -926,17 +908,18 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     return g
 
 
-def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
-    r"""Return a function that computes the electron-electron repulsion integral for four contracted
-    Gaussian functions.
+def repulsion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_c, basis_d):
+    r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
 
     Args:
+        args (array[float]): initial values of the differentiable parameters
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         basis_c (~qchem.basis_set.BasisFunction): third basis function
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
+
     Returns:
-        function: function that computes the electron repulsion integral
+        array[float]: the electron repulsion integral between four contracted Gaussian functions
 
     **Example**
 
@@ -953,64 +936,47 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
     >>> repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
     0.45590152106593573
     """
+    alpha, ca, ra = alphas[0], coeffs[0], rs[0]
+    beta, cb, rb = alphas[1], coeffs[1], rs[1]
+    gamma, cc, rc = alphas[2], coeffs[2], rs[2]
+    delta, cd, rd = alphas[3], coeffs[3], rs[3]
 
-    def _repulsion_integral(*args):
-        r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
+    ca = ca * primitive_norm(basis_a.l, alpha)
+    cb = cb * primitive_norm(basis_b.l, beta)
+    cc = cc * primitive_norm(basis_c.l, gamma)
+    cd = cd * primitive_norm(basis_d.l, delta)
 
-        Args:
-            args (array[float]): initial values of the differentiable parameters
+    n1 = contracted_norm(basis_a.l, alpha, ca)
+    n2 = contracted_norm(basis_b.l, beta, cb)
+    n3 = contracted_norm(basis_c.l, gamma, cc)
+    n4 = contracted_norm(basis_d.l, delta, cd)
 
-        Returns:
-            array[float]: the electron repulsion integral between four contracted Gaussian functions
-        """
-        args_a = [arg[0] for arg in args]
-        args_b = [arg[1] for arg in args]
-        args_c = [arg[2] for arg in args]
-        args_d = [arg[3] for arg in args]
-
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
-        gamma, cc, rc = _generate_params(basis_c.params, args_c)
-        delta, cd, rd = _generate_params(basis_d.params, args_d)
-
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-        cc = cc * primitive_norm(basis_c.l, gamma)
-        cd = cd * primitive_norm(basis_d.l, delta)
-
-        n1 = contracted_norm(basis_a.l, alpha, ca)
-        n2 = contracted_norm(basis_b.l, beta, cb)
-        n3 = contracted_norm(basis_c.l, gamma, cc)
-        n4 = contracted_norm(basis_d.l, delta, cd)
-
-        e = (
-            n1
-            * n2
-            * n3
-            * n4
-            * (
-                (
-                    ca
-                    * cb[:, jnp.newaxis]
-                    * cc[:, jnp.newaxis, jnp.newaxis]
-                    * cd[:, jnp.newaxis, jnp.newaxis, jnp.newaxis]
-                )
-                * electron_repulsion(
-                    basis_a.l,
-                    basis_b.l,
-                    basis_c.l,
-                    basis_d.l,
-                    ra,
-                    rb,
-                    rc,
-                    rd,
-                    alpha,
-                    beta[:, jnp.newaxis],
-                    gamma[:, jnp.newaxis, jnp.newaxis],
-                    delta[:, jnp.newaxis, jnp.newaxis, jnp.newaxis],
-                )
-            ).sum()
-        )
-        return e
-
-    return _repulsion_integral
+    e = (
+        n1
+        * n2
+        * n3
+        * n4
+        * (
+            (
+                ca
+                * cb[:, jnp.newaxis]
+                * cc[:, jnp.newaxis, jnp.newaxis]
+                * cd[:, jnp.newaxis, jnp.newaxis, jnp.newaxis]
+            )
+            * electron_repulsion(
+                basis_a.l,
+                basis_b.l,
+                basis_c.l,
+                basis_d.l,
+                ra,
+                rb,
+                rc,
+                rd,
+                alpha,
+                beta[:, jnp.newaxis],
+                gamma[:, jnp.newaxis, jnp.newaxis],
+                delta[:, jnp.newaxis, jnp.newaxis, jnp.newaxis],
+            )
+        ).sum()
+    )
+    return e

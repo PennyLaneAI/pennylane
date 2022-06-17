@@ -691,3 +691,375 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
 
     assert np.allclose(g_alpha_jitted, g_ref_alpha)
     assert np.allclose(g_coeff_jitted, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "a_ref"),
+    [
+        # trivial case: integral should be zero since atoms are located very far apart
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]]),
+            jnp.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            jnp.array([0.0]),
+        ),
+        # nuclear attraction integral obtained from pyscf using mol.intor('int1e_nuc')
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            jnp.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            np.array([0.80120855]),
+        ),
+    ],
+)
+def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
+    r"""Test that attraction_integral function returns a correct value for the kinetic
+    integral."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = mol.alpha
+    coeffs = mol.coeff
+    rs = mol.r
+
+    coor = geometry[0]
+
+    a = qchem.attraction_integral(alphas, coeffs, rs, coor, basis_a, basis_b)
+    assert np.allclose(a, a_ref)
+
+    # JIT
+    jitted_attraction_integral = jax.jit(qchem.attraction_integral, static_argnums=(4, 5))
+    a_jitted = jitted_attraction_integral(alphas, coeffs, rs, coor, basis_a, basis_b)
+    assert np.allclose(a_jitted, a_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff"),
+    [
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            jnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            ),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+        ),
+    ],
+)
+def test_gradient_attraction(symbols, geometry, alpha, coeff):
+    r"""Test that the attraction gradient computed with respect to the basis parameters is
+    correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = alpha
+    coeffs = coeff
+    rs = mol.r
+
+    r_nuc = geometry[0]
+
+    g_alpha = jax.grad(qchem.attraction_integral, argnums=0)(
+        alphas, coeffs, rs, r_nuc, basis_a, basis_b
+    )
+    g_coeff = jax.grad(qchem.attraction_integral, argnums=1)(
+        alphas, coeffs, rs, r_nuc, basis_a, basis_b
+    )
+
+    # compute attraction gradients with respect to alpha and coeff using finite diff
+    delta = 0.00001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = np.array(alpha.copy())
+            alpha_plus = np.array(alpha.copy())
+
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+
+            o_minus = qchem.attraction_integral(
+                alpha_minus,
+                coeff,
+                rs,
+                r_nuc,
+                basis_a,
+                basis_b,
+            )
+            o_plus = qchem.attraction_integral(
+                alpha_plus,
+                coeff,
+                rs,
+                r_nuc,
+                basis_a,
+                basis_b,
+            )
+
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = np.array(coeff.copy())
+            coeff_plus = np.array(coeff.copy())
+
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+
+            o_minus = qchem.attraction_integral(
+                alpha,
+                coeff_minus,
+                rs,
+                r_nuc,
+                basis_a,
+                basis_b,
+            )
+            o_plus = qchem.attraction_integral(
+                alpha,
+                coeff_plus,
+                rs,
+                r_nuc,
+                basis_a,
+                basis_b,
+            )
+
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+    # JIT
+    attraction_integral_jitted = jax.jit(qchem.attraction_integral, static_argnums=(4, 5))
+
+    g_alpha_jitted = jax.grad(attraction_integral_jitted, argnums=0)(
+        alphas,
+        coeffs,
+        rs,
+        r_nuc,
+        basis_a,
+        basis_b,
+    )
+    g_coeff_jitted = jax.grad(attraction_integral_jitted, argnums=1)(
+        alphas,
+        coeffs,
+        rs,
+        r_nuc,
+        basis_a,
+        basis_b,
+    )
+
+    assert np.allclose(g_alpha_jitted, g_ref_alpha)
+    assert np.allclose(g_coeff_jitted, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "e_ref"),
+    [
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]]),
+            jnp.array(
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ]
+            ),
+            jnp.array(
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ]
+            ),
+            jnp.array([0.0]),
+        ),
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            jnp.array(
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ]
+            ),
+            jnp.array(
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ]
+            ),
+            jnp.array([0.45590169]),
+        ),
+    ],
+)
+def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
+    r"""Test that repulsion_integral function returns a correct value for the repulsion
+    integral."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = alpha
+    coeffs = coeff
+
+    # We repeat the basis
+    rs = jnp.array([mol.r, mol.r]).reshape((alphas.shape[0], -1))
+
+    # Here alphas, coeffs should have shape (4, N) for all four basis
+    a = qchem.repulsion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b)
+
+    assert np.allclose(a, e_ref)
+
+    # JIT
+    jitted_repuslion_integral = jax.jit(qchem.repulsion_integral, static_argnums=(3, 4, 5, 6))
+    a_jitted = jitted_repuslion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b)
+    assert np.allclose(a_jitted, e_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff"),
+    [
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            jnp.array(
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ]
+            ),
+            jnp.array(
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ]
+            ),
+        ),
+    ],
+)
+def test_gradient_repulsion(symbols, geometry, alpha, coeff):
+    r"""Test that the repulsion gradient computed with respect to the basis parameters is
+    correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = alpha
+    coeffs = coeff
+
+    # We repeat the basis
+    rs = jnp.array([mol.r, mol.r]).reshape((alphas.shape[0], -1))
+
+    g_alpha = jax.grad(qchem.repulsion_integral, argnums=0)(
+        alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b
+    )
+    g_coeff = jax.grad(qchem.repulsion_integral, argnums=1)(
+        alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b
+    )
+
+    # compute repulsion gradients with respect to alpha and coeff using finite diff
+    delta = 0.00001
+    g_ref_alpha = np.zeros(12).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(12).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = np.array(alpha.copy())
+            alpha_plus = np.array(alpha.copy())
+
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+
+            o_minus = qchem.repulsion_integral(
+                alpha_minus,
+                coeff,
+                rs,
+                basis_a,
+                basis_b,
+                basis_a,
+                basis_b,
+            )
+            o_plus = qchem.repulsion_integral(
+                alpha_plus,
+                coeff,
+                rs,
+                basis_a,
+                basis_b,
+                basis_a,
+                basis_b,
+            )
+
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = np.array(coeff.copy())
+            coeff_plus = np.array(coeff.copy())
+
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+
+            o_minus = qchem.repulsion_integral(
+                alpha,
+                coeff_minus,
+                rs,
+                basis_a,
+                basis_b,
+                basis_a,
+                basis_b,
+            )
+            o_plus = qchem.repulsion_integral(
+                alpha,
+                coeff_plus,
+                rs,
+                basis_a,
+                basis_b,
+                basis_a,
+                basis_b,
+            )
+
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+    # JIT
+    repulsion_integral_jitted = jax.jit(qchem.repulsion_integral, static_argnums=(3, 4, 5, 6))
+
+    g_alpha_jitted = jax.grad(repulsion_integral_jitted, argnums=0)(
+        alphas,
+        coeffs,
+        rs,
+        basis_a,
+        basis_b,
+        basis_a,
+        basis_b,
+    )
+    g_coeff_jitted = jax.grad(repulsion_integral_jitted, argnums=1)(
+        alphas,
+        coeffs,
+        rs,
+        basis_a,
+        basis_b,
+        basis_a,
+        basis_b,
+    )
+
+    assert np.allclose(g_alpha_jitted, g_ref_alpha)
+    assert np.allclose(g_coeff_jitted, g_ref_coeff)
