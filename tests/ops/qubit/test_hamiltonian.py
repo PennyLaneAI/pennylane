@@ -266,6 +266,12 @@ add_hamiltonians = [
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
+    # Case where the 1st hamiltonian doesn't contain all wires
+    (
+        qml.Hamiltonian([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
+        qml.Hamiltonian([6.78], [qml.PauliZ(2)]),
+        qml.Hamiltonian([1.23, -3.45, 6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+    ),
 ]
 
 add_zero_hamiltonians = [
@@ -360,6 +366,12 @@ sub_hamiltonians = [
             (0.5, 1.2, -1.5, -0.3),
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
+    ),
+    # Case where the 1st hamiltonian doesn't contain all wires
+    (
+        qml.Hamiltonian([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
+        qml.Hamiltonian([6.78], [qml.PauliZ(2)]),
+        qml.Hamiltonian([1.23, -3.45, -6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
     ),
 ]
 
@@ -673,11 +685,18 @@ class TestHamiltonian:
         assert H.__str__() == string
 
     @patch("builtins.print")
-    def test_hamiltonian_ipython_display(self, mock_print):
+    def test_small_hamiltonian_ipython_display(self, mock_print):
         """Test that the ipython_dipslay method prints __str__."""
         H = 1.0 * qml.PauliX(0)
         H._ipython_display_()
         mock_print.assert_called_with(str(H))
+
+    @patch("builtins.print")
+    def test_big_hamiltonian_ipython_display(self, mock_print):
+        """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
+        H = qml.Hamiltonian([1] * 16, [qml.PauliX(i) for i in range(16)])
+        H._ipython_display_()
+        mock_print.assert_called_with(repr(H))
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_repr))
     def test_hamiltonian_repr(self, terms, string):
@@ -801,6 +820,7 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added inline correctly"""
         H1 += H2
         assert H.compare(H1)
+        assert H.wires == H1.wires
 
     @pytest.mark.parametrize(("H1", "H2"), iadd_zero_hamiltonians)
     def test_hamiltonian_iadd_zero(self, H1, H2):
@@ -823,6 +843,7 @@ class TestHamiltonian:
         """Tests that Hamiltonians are subtracted inline correctly"""
         H1 -= H2
         assert H.compare(H1)
+        assert H.wires == H1.wires
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""

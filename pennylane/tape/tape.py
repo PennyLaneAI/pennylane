@@ -1159,7 +1159,7 @@ class QuantumTape(AnnotatedQueue):
             for observable in self._measurements:
                 # Note: if one of the sample measurements contains outputs that
                 # are real, then the entire result will be real
-                if observable.numeric_type == float:
+                if observable.numeric_type is float:
                     return observable.numeric_type
 
             return int
@@ -1293,7 +1293,7 @@ class QuantumTape(AnnotatedQueue):
         .. seealso:: :attr:`~.Operator.batch_size` for details.
 
         Returns:
-            int: The batch size of the quantum tape.
+            int or None: The batch size of the quantum tape if present, else ``None``.
         """
         return self._batch_size
 
