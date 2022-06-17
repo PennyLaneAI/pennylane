@@ -181,7 +181,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Returns:
             array[int]: the sampled basis states
         """
-        # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1, 2), repeat=num_wires)
         return np.fromiter(itertools.chain(*basis_states_generator), dtype=dtype).reshape(
             -1, num_wires
@@ -293,7 +292,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
         samples = self._samples[sample_slice, device_wires]
 
-        # convert samples from a list of 0, 1 integers, to base 10 representation
+        # convert samples from a list of 0, 1, 2 integers, to base 10 representation
         powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_three
 
@@ -304,7 +303,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             indices = indices.reshape((bins, -1))
             prob = np.zeros([3 ** len(device_wires), bins], dtype=np.float64)
 
-            # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size

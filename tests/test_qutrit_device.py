@@ -579,7 +579,7 @@ class TestStatesToTernary:
 
     @pytest.mark.parametrize("samples, ternary_states", test_ternary_conversion_data)
     def test_correct_conversion(self, mock_qutrit_device, samples, ternary_states, tol):
-        """Tests that the states_to_binary method converts samples to binary correctly"""
+        """Tests that the states_to_binary method converts samples to ternary correctly"""
         dev = mock_qutrit_device()
         dev.shots = 5
         wires = ternary_states.shape[1]
@@ -736,7 +736,7 @@ class TestExecution:
     """Tests for the execute method"""
 
     def test_device_executions(self, mock_qutrit_device_extract_stats):
-        """Test the number of times a qubit device is executed over a QNode's
+        """Test the number of times a qutrit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
         dev_1 = mock_qutrit_device_extract_stats(wires=2)
@@ -754,7 +754,7 @@ class TestExecution:
             node_1(np.eye(3), np.eye(3), np.eye(9))
         assert dev_1.num_executions == num_evals_1
 
-        # test a second instance of a default qubit device
+        # test a second instance of a qutrit device
         dev_2 = mock_qutrit_device_extract_stats(wires=2)
 
         def circuit_2(U1, U2):
@@ -769,7 +769,7 @@ class TestExecution:
             node_2(np.eye(3), np.eye(3))
         assert dev_2.num_executions == num_evals_2
 
-        # test a new circuit on an existing instance of a qubit device
+        # test a new circuit on an existing instance of a qutrit device
         def circuit_3(U1, U2):
             qml.QutritUnitary(U1, wires=[0])
             qml.QutritUnitary(U2, wires=[0, 1])

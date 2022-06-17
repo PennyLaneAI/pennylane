@@ -21,27 +21,28 @@ from pennylane.devices import DefaultQubit
 
 
 def reduced_dm(qnode, wires):
-    """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
+    """Compute the reduced density matrix from a :class:`~.QNode` returning
+    :func:`~.state`.
 
-     Args:
-         qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
-         wires (Sequence(int)): List of wires in the considered subsystem.
+    Args:
+        qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
 
-     Returns:
-         func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-            return the density matrix.
+    Returns:
+        func: Function which wraps the QNode and accepts the same arguments. When called, this function will
+        return the density matrix.
 
-     **Example**
+    **Example**
 
-     .. code-block:: python
+    .. code-block:: python
 
-         import numpy as np
+        import numpy as np
 
-         dev = qml.device("default.qubit", wires=2)
-         @qml.qnode(dev)
-         def circuit(x):
-           qml.IsingXX(x, wires=[0,1])
-           return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit(x):
+          qml.IsingXX(x, wires=[0,1])
+          return qml.state()
 
     >>> reduced_dm(circuit, wires=[0])(np.pi/2)
      [[0.5+0.j 0.+0.j]
@@ -332,7 +333,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        H = qml.Hamiltonian(coeffs = [0.5, 0.5], ops = [qml.PauliZ(0), qml.PauliZ(1)])
+        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.PauliZ(0), qml.PauliZ(1)])
 
         @qml.qnode(dev)
         def circ(params):
@@ -478,13 +479,15 @@ def quantum_fisher(qnode, *args, **kwargs):
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
     >>> grad = qml.grad(circ)(params)
-    [ 0.59422561, -0.02615095, -0.05146226]
-
+    >>> grad
+    array([ 0.59422561, -0.02615095, -0.05146226])
     >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
-    np.diag([1., 1., 0.77517241])
-
-    >>> q_nat_grad = qfim @ grad
-    [ 0.59422561 -0.02615095 -0.03989212]
+    >>> qfim
+    tensor([[1.        , 0.        , 0.        ],
+            [0.        , 1.        , 0.        ],
+            [0.        , 0.        , 0.77517241]], requires_grad=True)
+    >>> qfim @ grad
+    tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
 
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
