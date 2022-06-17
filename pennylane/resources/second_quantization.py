@@ -51,9 +51,8 @@ def _qrom_cost(constants):
         \rceil + d \left ( k + e \right ),
 
     where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM implementation
-    and the expansion factor :math:`k = 2^n` is an integer power of two, :math:`k = 2^n`,
-    that minimizes the cost. This function computes the optimum :math:`k` and the minimum cost for
-    a QROM specification.
+    and the expansion factor :math:`k = 2^n` minimizes the cost. This function computes the optimum
+    :math:`k` and the minimum cost for a QROM specification.
 
     To obtain the optimum values of :math:`k`, we first assume that the cost function is continues
     and use differentiation to obtain the value of :math:`k` that minimizes the cost. This value of
@@ -90,7 +89,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
 
     Args:
-        n (int): number of molecular orbitals
+        n (int): number of molecular spin-orbitals
         rank_r (int): rank of the first factorization step
         rank_m (int): average rank of the second factorization step
         br (int): number of bits for ancilla qubit rotation
@@ -141,7 +140,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     algorithm.
 
     Args:
-        n (int): number of molecular orbitals
+        n (int): number of molecular spin-orbitals
         norm (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
         rank_r (int): the rank of the first factorization step
@@ -179,7 +178,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
 
     Args:
-        n (int): number of molecular orbitals
+        n (int): number of molecular spin-orbitals
         norm (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
         rank_r (int): the rank of the first factorization step

@@ -21,7 +21,7 @@ import pennylane as qml
 
 @pytest.mark.parametrize(
     ("norm", "error", "cost_ref"),
-    [
+    [  # cost_ref is computed manually
         (72.49779513025341, 0.001, 113880),
     ],
 )
