@@ -25,10 +25,10 @@ requirements = [
     "autograd",
     "toml",
     "appdirs",
-    "semantic_version==2.6",
+    "semantic-version",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.23",
+    "pennylane-lightning>=0.23.0.dev0",
 ]
 
 info = {
