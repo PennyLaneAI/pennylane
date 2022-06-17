@@ -261,7 +261,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             indices = indices.reshape((bins, -1))
             prob = np.zeros([3 ** len(device_wires), bins], dtype=np.float64)
 
-            # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size
