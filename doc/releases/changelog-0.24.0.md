@@ -41,9 +41,9 @@
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.IsingXX(x, wires=[0,1])
-    ...     return qml.mutual_info(wires=[0], wires1=[1])
+    ...     return qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
     >>> circuit(np.pi/2)
-    tensor(1.38629436, requires_grad=True)
+    2.0
     ```
 
   New differentiable transforms are also available in the `qml.qinfo` module:
@@ -395,7 +395,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
   ```
 
   ```pycon
-  >>> batched_partial_circuit = qml.batch_partial(circuit, x=np.array(np.pi / 2))
+  >>> batched_partial_circuit = qml.batch_partial(circuit, x=np.array(np.pi / 4))
   >>> y = np.array([0.2, 0.3, 0.4])
   >>> batched_partial_circuit(y=y)
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
@@ -465,7 +465,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
   ```
 
   ```pycon
-  >>> qml.gradients.param_shift_hessian(qnode, argnum=argnum)
+  >>> qml.gradients.param_shift_hessian(circuit, argnum=argnum)(x)
   tensor([[-0.09928388,  0.        ,  0.        ],
           [ 0.        , -0.27633945,  0.        ],
           [ 0.        ,  0.        , -0.09928388]], requires_grad=True)
