@@ -738,7 +738,7 @@ class TestExecution:
     """Tests for the execute method"""
 
     def test_device_executions(self, mock_qutrit_device_extract_stats):
-        """Test the number of times a qubit device is executed over a QNode's
+        """Test the number of times a qutrit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
         dev_1 = mock_qutrit_device_extract_stats(wires=2)
