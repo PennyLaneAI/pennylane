@@ -44,8 +44,9 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added new device abstract base class `QutritDevice` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 * Added operation `qml.QutritUnitary` for applying user-specified unitaries to `QutritDevice`.
-
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
 <h3>Improvements</h3>
 
