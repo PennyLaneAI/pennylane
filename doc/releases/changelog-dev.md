@@ -20,6 +20,7 @@
   [(#2710)](https://github.com/PennyLaneAI/pennylane/pull/2710)
   [(#2712)](https://github.com/PennyLaneAI/pennylane/pull/2712)
 
+
   This includes two new QNode measurements,
 
   - The Von Neumann entropy via `qml.vn_entropy`:
@@ -671,7 +672,6 @@
   
 * `Hamiltonian.wires` is now properly updated after in place operations.
   [(#2738)](https://github.com/PennyLaneAI/pennylane/pull/2738)
-
 
 <h3>Documentation</h3>
 
