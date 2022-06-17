@@ -601,15 +601,16 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     return -0.5 * (t1 + t2 + t3)
 
 
-def kinetic_integral(basis_a, basis_b):
-    r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
+def kinetic_integral(alphas, coeffs, rs, basis_a=None, basis_b=None):
+    r"""Compute the kinetic integral for two contracted Gaussian functions.
 
     Args:
+        args (array[float]): initial values of the differentiable parameters
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
-        function: function that computes the kinetic integral
+        array[float]: the kinetic integral between two contracted Gaussian orbitals
 
     **Example**
 
@@ -620,39 +621,25 @@ def kinetic_integral(basis_a, basis_b):
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
     >>> kinetic_integral(mol.basis_set[0], mol.basis_set[1])(*args)
-    0.38325367405312843
+        0.38325367405312843
     """
+    alpha, ca, ra = alphas[0], coeffs[0], rs[0]
+    beta, cb, rb = alphas[1], coeffs[1], rs[1]
 
-    def _kinetic_integral(*args):
-        r"""Compute the kinetic integral for two contracted Gaussian functions.
+    ca = ca * primitive_norm(basis_a.l, alpha)
+    cb = cb * primitive_norm(basis_b.l, beta)
 
-        Args:
-            args (array[float]): initial values of the differentiable parameters
+    na = contracted_norm(basis_a.l, alpha, ca)
+    nb = contracted_norm(basis_b.l, beta, cb)
 
-        Returns:
-            array[float]: the kinetic integral between two contracted Gaussian orbitals
-        """
-        args_a = [arg[0] for arg in args]
-        args_b = [arg[1] for arg in args]
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
-
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
-
-        return (
-            na
-            * nb
-            * (
-                (ca[:, jnp.newaxis] * cb)
-                * gaussian_kinetic(basis_a.l, basis_b.l, ra, rb, alpha[:, jnp.newaxis], beta)
-            ).sum()
-        )
-
-    return _kinetic_integral
+    return (
+        na
+        * nb
+        * (
+            (ca[:, jnp.newaxis] * cb)
+            * gaussian_kinetic(basis_a.l, basis_b.l, ra, rb, alpha[:, jnp.newaxis], beta)
+        ).sum()
+    )
 
 
 def _boys(n, t):

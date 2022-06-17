@@ -475,3 +475,219 @@ def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
 
     assert np.allclose(g_alpha_jitted, g_ref_alpha)
     assert np.allclose(g_coeff_jitted, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("i", "j", "ri", "rj", "alpha", "beta", "d"),
+    [
+        # _diff2 must return 0.0 for two Gaussians centered far apart at 0.0 and 20.0
+        (
+            0,
+            1,
+            jnp.array([0.0]),
+            jnp.array([20.0]),
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            jnp.array([0.0]),
+        ),
+        # computed manually
+        (
+            0,
+            0,
+            jnp.array([0.0]),
+            jnp.array([1.0]),
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            jnp.array([1.01479665]),
+        ),
+    ],
+)
+def test_diff2(i, j, ri, rj, alpha, beta, d):
+    r"""Test that _diff2 function returns a correct value."""
+    assert jnp.allclose(qchem.integrals._diff2(i, j, ri, rj, alpha, beta), d)
+
+    # JIT
+    jitted_diff_2 = jax.jit(qchem.integrals._diff2, static_argnums=(0, 1))
+    assert jnp.allclose(jitted_diff_2(i, j, ri, rj, alpha, beta), d)
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "t"),
+    [
+        # gaussian_kinetic must return 0.0 for two Gaussians centered far apart
+        (
+            (0, 0, 0),
+            (0, 0, 0),
+            jnp.array([0.0, 0.0, 0.0]),
+            jnp.array([20.0, 0.0, 0.0]),
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            jnp.array([0.0]),
+        ),
+    ],
+)
+def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
+    r"""Test that gaussian_kinetic function returns a correct value."""
+    assert np.allclose(qchem.gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
+
+    # JIT
+    jitted_gaussian_kinetic = jax.jit(qchem.gaussian_kinetic, static_argnums=(0, 1))
+    assert np.allclose(jitted_gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "t_ref"),
+    [
+        # kinetic_integral must return 0.0 for two Gaussians centered far apart
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]]),
+            jnp.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            jnp.array([0.0]),
+        ),
+        # kinetic integral obtained from pyscf using mol.intor('int1e_kin')
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            jnp.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            jnp.array([0.38325384]),
+        ),
+    ],
+)
+def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
+    r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = alpha
+    coeffs = coeff
+    rs = mol.r
+
+    t = qchem.kinetic_integral(alphas, coeffs, rs, basis_a, basis_b)
+    assert np.allclose(t, t_ref)
+
+    # JIT
+    jitted_kinetic_integral = jax.jit(qchem.kinetic_integral, static_argnums=(3, 4))
+    t_jitted = jitted_kinetic_integral(alphas, coeffs, rs, basis_a, basis_b)
+    assert np.allclose(t_jitted, t_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff"),
+    [
+        (
+            ["H", "H"],
+            jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            jnp.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+        ),
+    ],
+)
+def test_gradient_kinetic(symbols, geometry, alpha, coeff):
+    r"""Test that the kinetic gradient computed with respect to the basis parameters is
+    correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = mol.alpha
+    coeffs = mol.coeff
+    rs = mol.r
+
+    g_alpha = jax.grad(qchem.kinetic_integral, argnums=0)(
+        alphas,
+        coeffs,
+        rs,
+        basis_a,
+        basis_b,
+    )
+    g_coeff = jax.grad(qchem.kinetic_integral, argnums=1)(
+        alphas,
+        coeffs,
+        rs,
+        basis_a,
+        basis_b,
+    )
+
+    # compute kinetic gradients with respect to alpha and coeff using finite diff
+    delta = 0.00001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = np.array(alpha.copy())
+            alpha_plus = np.array(alpha.copy())
+
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+
+            o_minus = qchem.kinetic_integral(
+                alpha_minus,
+                coeff,
+                rs,
+                basis_a,
+                basis_b,
+            )
+            o_plus = qchem.kinetic_integral(
+                alpha_plus,
+                coeff,
+                rs,
+                basis_a,
+                basis_b,
+            )
+
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = np.array(coeff.copy())
+            coeff_plus = np.array(coeff.copy())
+
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+
+            o_minus = qchem.kinetic_integral(
+                alpha,
+                coeff_minus,
+                rs,
+                basis_a,
+                basis_b,
+            )
+            o_plus = qchem.kinetic_integral(
+                alpha,
+                coeff_plus,
+                rs,
+                basis_a,
+                basis_b,
+            )
+
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+    # JIT
+    kinetic_integral_jitted = jax.jit(qchem.kinetic_integral, static_argnums=(3, 4, 5, 6))
+
+    g_alpha_jitted = jax.grad(kinetic_integral_jitted, argnums=0)(
+        alphas,
+        coeffs,
+        rs,
+        basis_a,
+        basis_b,
+    )
+    g_coeff_jitted = jax.grad(kinetic_integral_jitted, argnums=1)(
+        alphas,
+        coeffs,
+        rs,
+        basis_a,
+        basis_b,
+    )
+
+    assert np.allclose(g_alpha_jitted, g_ref_alpha)
+    assert np.allclose(g_coeff_jitted, g_ref_coeff)
