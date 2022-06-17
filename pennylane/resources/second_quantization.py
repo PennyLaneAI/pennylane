@@ -36,6 +36,12 @@ def estimation_cost(norm, error):
     >>> print(cost)
     113880
     """
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if norm <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
     return int(np.ceil(np.pi * norm / (2 * error)))
 
 
@@ -91,7 +97,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     Args:
         n (int): number of molecular spin-orbitals
         rank_r (int): rank of the first factorization step
-        rank_m (int): average rank of the second factorization step
+        rank_m (float): average rank of the second factorization step
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
@@ -110,6 +116,24 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> unitary_cost(n, norm, error, rank_r, rank_m, br, alpha, beta)
     2007
     """
+    if n <= 0 or not isinstance(n, int) or n % 2 != 0:
+        raise ValueError("The number of spin-orbitals must be a positive even integer.")
+
+    if rank_r <= 0 or not isinstance(rank_r, int):
+        raise ValueError("The rank of the first factorization step must be a positive integer.")
+
+    if rank_m <= 0:
+        raise ValueError("The rank of the second factorization step must be a positive number.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    if alpha <= 0 or not isinstance(alpha, int):
+        raise ValueError("alpha must be a positive integer.")
+
+    if beta <= 0 or not isinstance(beta, int):
+        raise ValueError("beta must be a positive integer.")
+
     eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
     eta = int(np.max([n for n in eta if n % 1 == 0]))
 
@@ -165,6 +189,30 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> gate_cost(n, norm, error, rank_r, rank_m, br, alpha, beta)
     167048631
     """
+    if n <= 0 or not isinstance(n, int) or n % 2 != 0:
+        raise ValueError("The number of spin-orbitals must be a positive even integer.")
+
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if norm <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
+    if rank_r <= 0 or not isinstance(rank_r, int):
+        raise ValueError("The rank of the first factorization step must be a positive integer.")
+
+    if rank_m <= 0:
+        raise ValueError("The rank of the second factorization step must be a positive number.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    if alpha <= 0 or not isinstance(alpha, int):
+        raise ValueError("alpha must be a positive integer.")
+
+    if beta <= 0 or not isinstance(beta, int):
+        raise ValueError("beta must be a positive integer.")
+
     e_cost = estimation_cost(norm, error)
     u_cost = unitary_cost(n, rank_r, rank_m, br, alpha, beta)
 
@@ -203,6 +251,30 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> qubit_cost(n, norm, error, rank_r, rank_m, br, alpha, beta)
     292
     """
+    if n <= 0 or not isinstance(n, int) or n % 2 != 0:
+        raise ValueError("The number of spin-orbitals must be a positive even integer.")
+
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if norm <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
+    if rank_r <= 0 or not isinstance(rank_r, int):
+        raise ValueError("The rank of the first factorization step must be a positive integer.")
+
+    if rank_m <= 0:
+        raise ValueError("The rank of the second factorization step must be a positive number.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    if alpha <= 0 or not isinstance(alpha, int):
+        raise ValueError("alpha must be a positive integer.")
+
+    if beta <= 0 or not isinstance(beta, int):
+        raise ValueError("beta must be a positive integer.")
+
     nxi = np.ceil(np.log2(rank_m))
     nlxi = np.ceil(np.log2(rank_r * rank_m + n / 2))
     nl = np.ceil(np.log2(rank_r + 1))
