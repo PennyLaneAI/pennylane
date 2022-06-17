@@ -17,9 +17,9 @@ This module contains functions that act on operators and tapes.
 .. autosummary::
     :toctree: api
 
-    ~eigvals
-    ~generator
-    ~matrix
+    ~pennylane.eigvals
+    ~pennylane.generator
+    ~pennylane.matrix
 
 """
 from .eigvals import eigvals
