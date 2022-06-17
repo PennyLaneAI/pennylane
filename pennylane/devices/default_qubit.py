@@ -490,13 +490,14 @@ class DefaultQubit(QubitDevice):
         # to a component that can be re-used by devices as needed.
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
-
+            print("Im a hamiltonain")
             backprop_mode = (
                 not isinstance(self.state, np.ndarray)
                 or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
             ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
+                print("I'm in backprop mode")
                 # We must compute the expectation value assuming that the Hamiltonian
                 # coefficients *and* the quantum states are tensor objects.
 

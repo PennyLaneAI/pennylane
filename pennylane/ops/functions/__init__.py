@@ -14,6 +14,8 @@
 """
 This module contains functions that act on operators and tapes.
 
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
