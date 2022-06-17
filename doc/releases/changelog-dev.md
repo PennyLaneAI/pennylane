@@ -51,7 +51,7 @@
   >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
   >>> with qml.tape.QuantumTape() as tape:
   ...     qml.QutritUnitary(U, wires=0)
-  ...     return qml.probs(wires=0)
+  ...     qml.probs(wires=0)
   >>> print(QutritDevice.execute(tape))
   [0.5 0.5 0. ]
   ```
