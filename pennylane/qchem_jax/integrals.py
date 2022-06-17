@@ -17,12 +17,11 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 
-# from scipy.special import factorial2 as fac2
 
-import jax
 from jax import numpy as jnp
 from jax import scipy as jsp
-from functools import partial
+
+import numpy as np
 
 
 def fac2(n):
@@ -264,7 +263,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
-def overlap_integral(alphas, coeffs, rs, basis_a, basis_b):
+def overlap_integral(alphas, coeffs, rs, basis_a=None, basis_b=None):
     r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
     Args:
@@ -307,7 +306,7 @@ def overlap_integral(alphas, coeffs, rs, basis_a, basis_b):
     )
 
 
-def hermite_moment(alpha, beta, t, order, r):
+def hermite_moment(alpha, beta, t=None, order=None, r=None):
     r"""Compute the Hermite moment integral recursively.
 
     The Hermite moment integral in one dimension is defined as
@@ -424,8 +423,8 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
     return s
 
 
-def moment_integral(basis_a, basis_b, order, idx):
-    r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
+def moment_integral(alphas, coeffs, rs, basis_a=None, basis_b=None, order=None, idx=None):
+    r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
 
     The multipole moment integral for two primitive Gaussian functions is computed as
 
@@ -445,13 +444,18 @@ def moment_integral(basis_a, basis_b, order, idx):
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
 
     Args:
+        alphas (array[float]): Values of the exponent of the primitive Gaussian function
+                               for each atom.
+        coeffs (array[float]): Values of the coefficients of the contracted Gaussian
+                               function for each atom.
+        rs (array[float]): Values of the position vectors of the first Gaussian functions.
         basis_a (~qchem.basis_set.BasisFunction): left basis function
         basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
     Returns:
-        function: function that computes the multipole moment integral
+        array[float]: the multipole moment integral between two contracted Gaussian orbitals
 
     **Example**
 
@@ -463,51 +467,36 @@ def moment_integral(basis_a, basis_b, order, idx):
     >>> moment_integral(mol.basis_set[0], mol.basis_set[1], order, idx)(*args)
     3.12846324e-01
     """
+    la = basis_a.l
+    lb = basis_b.l
 
-    def _moment_integral(*args):
-        r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
+    alpha, ca, ra = alphas[0], coeffs[0], rs[0]
+    beta, cb, rb = alphas[1], coeffs[1], rs[1]
 
-        Args:
-            args (array[float]): initial values of the differentiable parameters
+    ca = ca * primitive_norm(basis_a.l, alpha)
+    cb = cb * primitive_norm(basis_b.l, beta)
 
-        Returns:
-            array[float]: the multipole moment integral between two contracted Gaussian orbitals
-        """
-        args_a = [arg[0] for arg in args]
-        args_b = [arg[1] for arg in args]
+    na = contracted_norm(basis_a.l, alpha, ca)
+    nb = contracted_norm(basis_b.l, beta, cb)
 
-        la = basis_a.l
-        lb = basis_b.l
+    p = alpha[:, jnp.newaxis] + beta
+    q = jnp.sqrt(jnp.pi / p)
+    r = (
+        alpha[:, jnp.newaxis] * ra[:, jnp.newaxis, jnp.newaxis]
+        + beta * rb[:, jnp.newaxis, jnp.newaxis]
+    ) / p
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
+    i, j, k = np.roll(np.array([0, 2, 1]), idx)  # i, j, k should not be traced
 
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
+    s = (
+        gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, jnp.newaxis], beta, order, r[i])
+        * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, jnp.newaxis], beta, 0)
+        * q
+        * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, jnp.newaxis], beta, 0)
+        * q
+    )
 
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
-
-        p = alpha[:, jnp.newaxis] + beta
-        q = jnp.sqrt(jnp.pi / p)
-        r = (
-            alpha[:, jnp.newaxis] * ra[:, jnp.newaxis, jnp.newaxis]
-            + beta * rb[:, jnp.newaxis, jnp.newaxis]
-        ) / p
-
-        i, j, k = jnp.roll(jnp.array([0, 2, 1]), idx)
-
-        s = (
-            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, jnp.newaxis], beta, order, r[i])
-            * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, jnp.newaxis], beta, 0)
-            * q
-            * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, jnp.newaxis], beta, 0)
-            * q
-        )
-
-        return (na * nb * (ca[:, jnp.newaxis] * cb) * s).sum()
-
-    return _moment_integral
+    return (na * nb * (ca[:, jnp.newaxis] * cb) * s).sum()
 
 
 def _diff2(i, j, ri, rj, alpha, beta):

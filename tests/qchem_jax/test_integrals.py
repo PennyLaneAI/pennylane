@@ -226,7 +226,7 @@ def test_gradient_overlap(symbols, geometry, alphas, coeffs):
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
 
-    rs = jnp.zeros(alphas.shape)  # We keep the signature of the overlap integrals the same
+    rs = jnp.array(mol.r)  # We keep the signature of the overlap integrals the same
 
     g_alpha = jax.grad(qchem.overlap_integral, argnums=0)(alphas, coeffs, rs, basis_a, basis_b)
     g_coeff = jax.grad(qchem.overlap_integral, argnums=1)(alphas, coeffs, rs, basis_a, basis_b)
@@ -264,7 +264,7 @@ def test_gradient_overlap(symbols, geometry, alphas, coeffs):
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
 
-    # JIT computation
+    # JIT
     overlap_integral_jitted = jax.jit(qchem.overlap_integral, static_argnums=(3, 4))
 
     g_alpha_jitted = jax.grad(overlap_integral_jitted, argnums=0)(
@@ -272,6 +272,205 @@ def test_gradient_overlap(symbols, geometry, alphas, coeffs):
     )
     g_coeff_jitted = jax.grad(overlap_integral_jitted, argnums=1)(
         alphas, coeffs, rs, basis_a, basis_b
+    )
+
+    assert np.allclose(g_alpha_jitted, g_ref_alpha)
+    assert np.allclose(g_coeff_jitted, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("alpha", "beta", "t", "e", "rc", "ref"),
+    [
+        (  # trivial case, ref = 0.0 for t > e
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            2,
+            1,
+            jnp.array([1.5]),
+            jnp.array([0.0]),
+        ),
+        (  # trivial case, ref = 0.0 for e == 0 and t != 0
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            -1,
+            0,
+            jnp.array([1.5]),
+            jnp.array([0.0]),
+        ),
+        (  # trivial case, ref = jnp.sqrt(jnp.pi / (alpha + beta))
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            0,
+            0,
+            jnp.array([1.5]),
+            jnp.array([0.677195]),
+        ),
+        (  # manually computed, ref = 1.0157925
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            0,
+            1,
+            jnp.array([1.5]),
+            jnp.array([1.0157925]),
+        ),
+    ],
+)
+def test_hermite_moment(alpha, beta, t, e, rc, ref):
+    r"""Test that hermite_moment function returns correct values."""
+    assert np.allclose(qchem.hermite_moment(alpha, beta, t, e, rc), ref)
+
+    # JIT
+    jitted_hermite_moment = jax.jit(qchem.hermite_moment, static_argnums=(2, 3))
+    assert np.allclose(jitted_hermite_moment(alpha, beta, t, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "e", "rc", "ref"),
+    [
+        (  # manually computed, ref = 1.0157925
+            0,
+            0,
+            jnp.array([2.0]),
+            jnp.array([2.0]),
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            1,
+            jnp.array([1.5]),
+            jnp.array([1.0157925]),
+        ),
+    ],
+)
+def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
+    r"""Test that gaussian_moment function returns correct values."""
+    assert jnp.allclose(qchem.gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
+
+    # JIT
+    jitted_gaussian_moment = jax.jit(qchem.gaussian_moment, static_argnums=(0, 1, 6))
+    assert np.allclose(jitted_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "e", "idx", "ref"),
+    [
+        (
+            ["H", "Li"],
+            jnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]]),
+            1,
+            0,  # 'x' component
+            3.12846324e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
+        (
+            ["H", "Li"],
+            jnp.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]]),
+            1,
+            0,  # 'x' component
+            4.82090830e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
+        (
+            ["N", "N"],
+            jnp.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]]),
+            1,
+            2,  # 'z' component
+            -4.70075530e-02,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
+    ],
+)
+def test_moment_integral(symbols, geometry, e, idx, ref):
+    r"""Test that moment_integral function returns a correct value for the moment integral."""
+    mol = Molecule(symbols, geometry)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = jnp.array(mol.alpha)  # We keep the signature for inputs the same - pairs of parameters
+    coeffs = jnp.array(mol.coeff)
+    rs = jnp.array(mol.r)
+
+    s = qchem.moment_integral(alphas, coeffs, rs, basis_a, basis_b, e, idx)
+
+    assert np.allclose(s, ref)
+
+    # JIT
+    jitted_moment_integral = jax.jit(qchem.moment_integral, static_argnums=(3, 4, 5, 6))
+    s_jitted = jitted_moment_integral(alphas, coeffs, rs, basis_a, basis_b, e, idx)
+    assert np.allclose(s_jitted, ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "e", "idx"),
+    [
+        (
+            ["H", "H"],
+            jnp.array([[0.1, 0.2, 0.3], [2.0, 0.1, 0.2]]),
+            jnp.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            ),
+            jnp.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            1,
+            0,
+        ),
+    ],
+)
+def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
+    r"""Test that the moment gradient computed with respect to the basis parameters is
+    correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    alphas = mol.alpha
+    coeffs = mol.coeff
+    rs = mol.r
+
+    g_alpha = jax.grad(qchem.moment_integral, argnums=0)(
+        alphas, coeffs, rs, basis_a, basis_b, e, idx
+    )
+    g_coeff = jax.grad(qchem.moment_integral, argnums=1)(
+        alphas, coeffs, rs, basis_a, basis_b, e, idx
+    )
+
+    # compute moment gradients with respect to alpha and coeff using finite diff
+    delta = 0.00001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = np.array(alpha.copy())
+            alpha_plus = np.array(alpha.copy())
+
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+
+            o_minus = qchem.moment_integral(alpha_minus, coeff, rs, basis_a, basis_b, e, idx)
+            o_plus = qchem.moment_integral(alpha_plus, coeff, rs, basis_a, basis_b, e, idx)
+
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = np.array(coeff.copy())
+            coeff_plus = np.array(coeff.copy())
+
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+
+            o_minus = qchem.moment_integral(alpha, coeff_minus, rs, basis_a, basis_b, e, idx)
+            o_plus = qchem.moment_integral(alpha, coeff_plus, rs, basis_a, basis_b, e, idx)
+
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+    # JIT
+    moment_integral_jitted = jax.jit(qchem.moment_integral, static_argnums=(3, 4, 5, 6))
+
+    g_alpha_jitted = jax.grad(moment_integral_jitted, argnums=0)(
+        alphas, coeffs, rs, basis_a, basis_b, e, idx
+    )
+    g_coeff_jitted = jax.grad(moment_integral_jitted, argnums=1)(
+        alphas, coeffs, rs, basis_a, basis_b, e, idx
     )
 
     assert np.allclose(g_alpha_jitted, g_ref_alpha)
