@@ -179,7 +179,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Returns:
             array[int]: the sampled basis states
         """
-        # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1, 2), repeat=num_wires)
         return np.fromiter(itertools.chain(*basis_states_generator), dtype=dtype).reshape(
             -1, num_wires
