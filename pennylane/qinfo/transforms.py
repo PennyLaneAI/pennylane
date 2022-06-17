@@ -167,12 +167,12 @@ def mutual_info(qnode, wires0, wires1, base=None):
     >>> x = np.array(0.4, requires_grad=True)
     >>> mutual_info_circuit(x)
     0.3325090393262875
-    >>> qml.grad(mutual_info_circuit)(0.4)
+    >>> qml.grad(mutual_info_circuit)(np.array(0.4, requires_grad=True))
     1.2430067731198946
 
     .. seealso::
 
-        :func:`~.qinfo.vn_entropy_transform`
+        :func:`~.qinfo.vn_entropy`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -568,7 +568,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     **Example**
 
     First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
-    and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
+    and another circuit with a single parameter. The output of the :func:`~.qinfo.fidelity` transform then requires
     two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g.
     ``all_args0 = (0.1, 0.3)`` and ``all_args1 = (0.2)`` in the following case:
 
@@ -615,7 +615,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
     0.9900332889206207
 
-    The ``qml.qinfo.fidelity`` transform is also differentiable and the gradient can be obtained in the different frameworks
+    The :func:`~.qinfo.fidelity` transform is also differentiable and the gradient can be obtained in the different frameworks
     with backpropagation, the following example uses ``jax`` and ``backprop``.
 
     .. code-block:: python
@@ -678,8 +678,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         the args and kwargs to each :class:`.QNode`.
 
         Args:
-            all_args0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
-            all_args1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
 
         Returns:
             float: Fidelity between two quantum states
