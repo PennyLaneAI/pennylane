@@ -870,7 +870,7 @@ def vn_entropy(wires, log_base=None):
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit(x):
+        def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=[0])
 
