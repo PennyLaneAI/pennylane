@@ -118,23 +118,6 @@ def contracted_norm(l, alpha, a):
     return n
 
 
-def _generate_params(params, args):
-    """Generate basis set parameters. The default values are used for the non-differentiable
-    parameters and the user-defined values are used for the differentiable ones.
-
-    Args:
-        params (list(array[float])): default values of the basis set parameters
-        args (list(array[float])): initial values of the differentiable basis set parameters
-
-    Returns:
-        list(array[float]): basis set parameters
-    """
-    basis_params = []
-    for p in params:
-        basis_params.append(p)
-    return basis_params
-
-
 def expansion(la, lb, ra, rb, alpha, beta, t):
     r"""Compute Hermite Gaussian expansion coefficients recursively for two Gaussian functions.
 
