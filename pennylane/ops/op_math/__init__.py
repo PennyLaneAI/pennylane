@@ -20,8 +20,8 @@ Constructor Functions
 .. autosummary::
     :toctree: api
 
-    ~pennylane.adjoint
-    ~pennylane.ctrl
+    ~adjoint
+    ~ctrl
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
