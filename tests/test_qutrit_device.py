@@ -581,7 +581,7 @@ class TestStatesToTernary:
 
     @pytest.mark.parametrize("samples, ternary_states", test_ternary_conversion_data)
     def test_correct_conversion(self, mock_qutrit_device, samples, ternary_states, tol):
-        """Tests that the states_to_binary method converts samples to binary correctly"""
+        """Tests that the states_to_binary method converts samples to ternary correctly"""
         dev = mock_qutrit_device()
         dev.shots = 5
         wires = ternary_states.shape[1]
