@@ -365,7 +365,8 @@
   array([1.-0.j, 0.-1.j])
   ```
 
-* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power:
+* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power. 
+When `decomposition()` is called, a list of new operators equal to this one raised to the given power is given:
   [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
 
   ```pycon
