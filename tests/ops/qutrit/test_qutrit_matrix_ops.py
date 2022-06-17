@@ -44,6 +44,8 @@ U_tswap = np.array(
     dtype=np.complex128,
 )
 
+# TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
+
 
 class TestQutritUnitary:
     """Tests for the QutritUnitary class."""

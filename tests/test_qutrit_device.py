@@ -382,6 +382,9 @@ class TestExtractStatistics:
 class TestSample:
     """Test the sample method"""
 
+    # TODO: Add tests for sampling with observables that have eigenvalues to sample from once
+    # such observables are added for qutrits.
+
     def test_sample_with_no_observable_and_no_wires(
         self, mock_qutrit_device_with_original_statistics, tol
     ):
@@ -505,24 +508,19 @@ class TestStatesToTernary:
     def test_correct_conversion_two_states(self, mock_qutrit_device):
         """Tests that the sample_basis_states method converts samples to binary correctly"""
         wires = 4
-        shots = 10
-
-        number_of_states = 3**wires
-        basis_states = np.arange(number_of_states)
-        samples = np.random.choice(basis_states, shots)
+        samples = [10, 31, 80, 65, 44, 2]
 
         dev = mock_qutrit_device()
         res = dev.states_to_ternary(samples, wires)
 
-        expected = []
-
-        for s in samples:
-            num = []
-            for _ in range(wires):
-                num.append(s % 3)
-                s = s // 3
-
-            expected.append(num[::-1])
+        expected = [
+            [0, 1, 0, 1],
+            [1, 0, 1, 1],
+            [2, 2, 2, 2],
+            [2, 1, 0, 2],
+            [1, 1, 2, 2],
+            [0, 0, 0, 2],
+        ]
 
         assert np.array_equal(res, np.array(expected))
 
@@ -997,7 +995,12 @@ class TestShotList:
 
 
 class TestUnimplemented:
-    """Tests for class methods that aren't implemented"""
+    """Tests for class methods that aren't implemented
+
+    These tests are for reaching 100% coverage of :class:`pennylane.QutritDevice`, as the
+    methods/properties being tested here have been overriden from :class:`pennylane.QubitDevice`
+    to avoid unexpected behaviour, but do not yet have working implementations.
+    """
 
     def test_adjoint_jacobian(self, mock_qutrit_device):
         """Test that adjoint_jacobian is unimplemented"""
@@ -1020,3 +1023,17 @@ class TestUnimplemented:
 
         with pytest.raises(NotImplementedError):
             dev.state()
+
+    def test_vn_entropy(self, mock_qutrit_device):
+        """Test that vn_entropy is unimplemented"""
+        dev = mock_qutrit_device()
+
+        with pytest.raises(NotImplementedError):
+            dev.vn_entropy(wires=0, log_base=3)
+
+    def test_mutual_info(self, mock_qutrit_device):
+        """Test that mutual_info is unimplemented"""
+        dev = mock_qutrit_device()
+
+        with pytest.raises(NotImplementedError):
+            dev.mutual_info(0, 1, log_base=3)

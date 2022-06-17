@@ -88,6 +88,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         return capabilities
 
     # Added here for tests to pass (See tests.test_qutrit_device.ExtractStatistics.test_results_no_state())
+    # The test deleted the state property of QutritDevice to test if the appropriate error is raised by
+    # `QutritDevice.statistics()` when requesting the state as a return type, but was failing as the test wouldn't
+    # actually delete the state attribute, as it was only explicitly defined in `QubitDevice`.
     @property
     def state(self):
         """Returns the state vector of the circuit prior to measurement.
@@ -133,14 +136,13 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
 
+            # This block covers the case when VnEntropy or MutualInfo are the return type for now
+            # Once VnEntropy and MutualInfo support is added for QutritDevice, condition blocks for
+            # them will be added separately.
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
-
-            # TODO: Add support for MutualInfo and VnEntropy return types. Currently, qml.math is hard coded
-            # to calculate these quantities for qubit states, so it needs to be updated before these return types
-            # can be supported for qutrits.
 
         return results
 
@@ -221,8 +223,48 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             plugin documentation for more details.
         """
         # TODO: Add density matrix support. Currently, qml.math is hard-coded to work only with qubit states,
-        # so it needs to be updated to be able to handle calculations for qutrits before this method can be
-        # implemented.
+        # (see `qml.math.reduced_dm()`) so it needs to be updated to be able to handle calculations for qutrits
+        # before this method can be implemented.
+        raise NotImplementedError
+
+    def vn_entropy(self, wires, log_base):
+        r"""Returns the Von Neumann entropy prior to measurement.
+
+        .. math::
+            S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+        Args:
+            wires (Wires): Wires of the considered subsystem.
+            log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+
+        Returns:
+            float: returns the Von Neumann entropy
+        """
+        # TODO: Add support for VnEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
+        # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
+        # For now, if a user tries to request this return type, an error will be raised.
+        raise NotImplementedError
+
+    def mutual_info(self, wires0, wires1, log_base):
+        r"""Returns the mutual information prior to measurement:
+
+        .. math::
+
+            I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+        where :math:`S` is the von Neumann entropy.
+
+        Args:
+            wires0 (Wires): wires of the first subsystem
+            wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm
+
+        Returns:
+            float: the mutual information
+        """
+        # TODO: Add support for MutualInfo return type. Currently, qml.math is hard coded to calculate this for qubit
+        # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
+        # For now, if a user tries to request this return type, an error will be raised.
         raise NotImplementedError
 
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
