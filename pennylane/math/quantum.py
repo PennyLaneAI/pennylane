@@ -563,15 +563,18 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     **Examples**
 
     The mutual information between subsystems for a state vector can be returned as follows:
+
     >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
     1.3862943611198906
 
     It is also possible to change the log basis.
+
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
     2.0
 
     Similarly the quantum state can be provided as a density matrix:
+
     >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
     >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
@@ -658,18 +661,21 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     **Example**
 
     Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
+
     >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
     >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
     >>> qml.math.fidelity(state0, state1)
     0.9905158135644924
 
     Alternatively one can give a state vector and a density matrix as arguments, e.g.:
+
     >>> state0 = [0, 1]
     >>> state1 = [[0, 0], [0, 1]]
     >>> qml.math.fidelity(state0, state1)
     1.0
 
     It also works with two density matrices, e.g.:
+
     >>> state0 = [[1, 0], [0, 0]]
     >>> state1 = [[0, 0], [0, 1]]
     >>> qml.math.fidelity(state0, state1)

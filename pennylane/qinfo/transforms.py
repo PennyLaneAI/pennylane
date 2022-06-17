@@ -570,7 +570,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
     and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
     two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g.
-    `all_args0 = (0.1, 0.3)` and `all_args1 = (0.2)` in the following case:
+    ``all_args0 = (0.1, 0.3)`` and ``all_args1 = (0.2)`` in the following case:
 
     .. code-block:: python
 
@@ -615,8 +615,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
     0.9900332889206207
 
-    The `qml.qinfo.fidelity` transform is also differentiable and the gradient can be obtained in the different frameworks
-    with backpropagation, the following example uses `jax` and `backprop`.
+    The ``qml.qinfo.fidelity`` transform is also differentiable and the gradient can be obtained in the different frameworks
+    with backpropagation, the following example uses ``jax`` and ``backprop``.
 
     .. code-block:: python
 
@@ -635,7 +635,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
     -0.14776011
 
-    There is also the possibility to pass a single dictionnary at the end of the tuple for fixing args,
+    There is also the possibility to pass a single dictionary at the end of the tuple for fixing args,
     you can follow this example:
 
     .. code-block:: python
