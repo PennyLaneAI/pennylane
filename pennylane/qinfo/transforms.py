@@ -615,7 +615,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
     0.9900332889206207
 
-    The :func:`~.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
+    The :func:`~.qinfo.fidelity` transform is also differentiable and the gradient can be obtained in the different frameworks
     with backpropagation, the following example uses ``jax`` and ``backprop``.
 
     .. code-block:: python
