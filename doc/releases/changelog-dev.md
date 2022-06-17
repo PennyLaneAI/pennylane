@@ -65,11 +65,11 @@
   {'00': 495, '11': 505}
   ```
   
-  And with operators:
+  And when sampling the eigenstates of an observable
   
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-
+  >>>
   >>> @qml.qnode(dev)
   >>> def circuit():
   ...   qml.Hadamard(wires=0)
