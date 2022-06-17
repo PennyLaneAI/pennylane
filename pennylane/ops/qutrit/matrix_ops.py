@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the discrete-variable quantum operations that
-accept a hermitian or an unitary matrix as a parameter.
+This submodule contains the qutrit quantum operations that
+accept a unitary matrix as a parameter.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import warnings
