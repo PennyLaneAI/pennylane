@@ -49,11 +49,11 @@
   creation of a new measurement type `Counts` in `measurements.py`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
 
-  It can be used with states:
+  It can be used when obtaining raw samples in the computational basis:
   
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-
+  >>>
   >>> @qml.qnode(dev)
   >>> def circuit():
   ...     qml.Hadamard(wires=0)
