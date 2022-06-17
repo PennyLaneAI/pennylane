@@ -20,10 +20,9 @@
   [(#2710)](https://github.com/PennyLaneAI/pennylane/pull/2710)
   [(#2712)](https://github.com/PennyLaneAI/pennylane/pull/2712)
 
+  This includes two new QNode measurements:
 
-  This includes two new QNode measurements,
-
-  - The Von Neumann entropy via `qml.vn_entropy`:
+  - The [Von Neumann entropy](https://en.wikipedia.org/wiki/Von_Neumann_entropy) via `qml.vn_entropy`:
   
     ```pycon
     >>> dev = qml.device("default.qubit", wires=2)
@@ -35,7 +34,7 @@
     1.0
     ```
 
-  - Mutual information via `qml.mutual_info`:
+  - The [mutual information](https://en.wikipedia.org/wiki/Quantum_mutual_information) via `qml.mutual_info`:
   
     ```pycon
     >>> dev = qml.device("default.qubit", wires=2)
@@ -47,9 +46,9 @@
     tensor(1.38629436, requires_grad=True)
     ```
 
-  As well as new transforms available in the `qml.qinfo` module,
+  New differentiable transforms are also available in the `qml.qinfo` module:
 
-  - Classical and quantum fisher information transforms:
+  - The classical and quantum [Fisher information](https://en.wikipedia.org/wiki/Fisher_information) via `qml.qinfo.classical_fisher`, `qml.qinfo.quantum_fisher`, respectively:
   
     ```python3
     dev = qml.device("default.qubit", wires=3)
@@ -67,7 +66,7 @@
     qfim = qml.qinfo.quantum_fisher(circ)(params)
     ```
 
-    These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction  --- producing what is known as the *natural* gradient (see our natural gradient descent [demo](https://pennylane.ai/qml/demos/tutorial_quantum_natural_gradient.html)). For example:
+    These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction  --- producing what is known as the [*natural* gradient](https://pennylane.ai/qml/demos/tutorial_quantum_natural_gradient.html). For example:
 
     ```pycon
     >>> grad = qml.grad(circ)(params)
@@ -77,7 +76,7 @@
     [ 0.59422561 -0.02615095 -0.03989212]
     ```
 
-  - Fidelity between two arbitrary states:
+  - The fidelity between two arbitrary states via `qml.qinfo.fidelity`:
 
     ```python
     dev = qml.device('default.qubit', wires=1)
@@ -93,6 +92,7 @@
         qml.RY(y, wires=0)
         return qml.state()
     ```
+
     ```pycon
     >>> x = np.array([0.1, 0.3], requires_grad=True)
     >>> y = np.array(0.2, requires_grad=True) 
@@ -102,6 +102,22 @@
     >>> df = qml.grad(fid_func)
     >>> df(x, y)
     (array([-0.04768725, -0.29183666]), array(-0.09489803))
+    ```
+
+  - [Reduced density matrices](https://en.wikipedia.org/wiki/Quantum_entanglement#Reduced_density_matrices) of arbitrary states via `qml.qinfo.reduced_dm`:
+
+    ```python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.IsingXX(x, wires=[0,1])
+        return qml.state()
+    ```
+
+    ```pycon
+    >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
+    [[0.5+0.j 0.+0.j]
+      [0.+0.j 0.5+0.j]]
     ```
 
   - Similar transforms, `qml.qinfo.vn_entropy` and `qml.qinfo.mutual_info` exist
@@ -141,7 +157,7 @@
 <h4>Faster mixed-state training with backpropagation 📉</h4>
 
 * The `default.mixed` device now supports differentiation via backpropagation with the Autograd,
-  TensorFlow, and PyTorch (CPU) interfaces, leading to singificantly more performant optimization
+  TensorFlow, and PyTorch (CPU) interfaces, leading to significantly more performant optimization
   and training.
   [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
   [(#2670)](https://github.com/PennyLaneAI/pennylane/pull/2670)
@@ -171,7 +187,8 @@
 <h4>Support for quantum parameter broadcasting 📡</h4>
 
 * Quantum operators, functions, and tapes now support broadcasting across
-  parameter dimensions.
+  parameter dimensions, making it more convenient for developers to execute their PennyLane
+  programs with multiple sets of parameters.
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
 
@@ -533,11 +550,11 @@
   For example, `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to
   `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (as `4==0b100`).
 
-* Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement
+* Introduced a new `is_hermitian` property to `Operator`s to determine if an operator can be used in a measurement
   process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 
-* Added separate requirements_dev.txt for separation of concerns for code development and just
+* Added separate `requirements_dev.txt` for separation of concerns for code development and just
   using PennyLane.
   [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
 
@@ -707,7 +724,7 @@
 * Testing documentation has been improved.
   [(#2536)](https://github.com/PennyLaneAI/pennylane/pull/2536)
   
-* Documentation for pre-commit has been added.
+* Documentation for the `pre-commit` package has been added.
   [(#2567)](https://github.com/PennyLaneAI/pennylane/pull/2567)
   
 * Documentation for draw control wires change has been updated.
@@ -717,7 +734,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
-Albert Mitjans Coma, Amintor Dusko, Trent Fridey, Christian Gogolin, Qi Hu, Katharine Hyatt, Josh Izaac, Soran Jahangiri, 
-Edward Jiang, Korbinian Kottmann, Ankit Khandelwal, Christina Lee, Chae-Yeun Park, Mason Moreland, Romain Moyard, 
-Maria Schuld, Jay Soni, Antal Száva, tal66, David Wierichs, WingCode
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
+Albert Mitjans Coma, Isaac De Vlugt, Amintor Dusko, Trent Fridey, Christian Gogolin, Qi Hu, Katharine Hyatt, Josh Izaac, Soran Jahangiri, 
+Edward Jiang, Korbinian Kottmann, Ankit Khandelwal, Christina Lee, Lee James O'Riordan, Chae-Yeun Park, Mason Moreland, Romain Moyard, 
+Maria Schuld, Shuli Shu, Jay Soni, Antal Száva, tal66, Trevor Vincent, David Wierichs, WingCode
