@@ -315,7 +315,7 @@
 
 <h4>New operations & transforms 🤖</h4>  
   
-* The `IsingXY` gate is now available (see [1912.04424](https://arxiv.org/abs/1912.04424)). 
+* The `qml.IsingXY` gate is now available (see [1912.04424](https://arxiv.org/abs/1912.04424)). 
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
 * The `qml.ECR` (echoed cross-resonance) operation is now available (see
@@ -426,7 +426,7 @@
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
   The `argnum` keyword argument for `qml.gradients.param_shift_hessian`
-  is now allowed to be a twodimensional Boolean `array_like`.
+  is now allowed to be a two-dimensional Boolean `array_like`.
   Only the indicated entries of the Hessian will then be computed.
 
   A particularly useful example is the computation of the diagonal
@@ -481,13 +481,13 @@
   Hamiltonian.
   [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
 
-* Sparse Hamiltonians' representation has changed from COOrdinate (COO) to Compressed Sparse Row
+* Sparse Hamiltonians' representation has changed from Coordinate (COO) to Compressed Sparse Row
   (CSR) format.
   [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
   The CSR representation is more performant for arithmetic operations and matrix-vector products.
   This change decreases the `expval()` calculation time for `qml.SparseHamiltonian`, specially for
-  large workflows. In addition, the CRS format consumes less memory for `qml.SparseHamiltonian`
+  large workflows. In addition, the CSR format consumes less memory for `qml.SparseHamiltonian`
   storage.
 
 * IPython now displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This
@@ -704,13 +704,13 @@
 * The quantum chemistry quickstart documentation has been improved.
   [(#2500)](https://github.com/PennyLaneAI/pennylane/pull/2500)
   
-* Improved testing documentation.
+* Testing documentation has been improved.
   [(#2536)](https://github.com/PennyLaneAI/pennylane/pull/2536)
   
-* Added documentation for pre-commit.
+* Documentation for pre-commit has been added.
   [(#2567)](https://github.com/PennyLaneAI/pennylane/pull/2567)
   
-* Updated documentation for draw control wires change.
+* Documentation for draw control wires change has been updated.
   [(#2682)](https://github.com/PennyLaneAI/pennylane/pull/2682)
   
 <h3>Contributors</h3>
