@@ -48,7 +48,7 @@ def norm(one, two, eigvals):
 
         T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
 
-    Note that the two-electron integral tensor must be arranged in the chemist notation.
+    Note that the two-electron integral tensor must be arranged in chemist notation.
 
     Args:
         one (array[array[float]]): one-electron integrals

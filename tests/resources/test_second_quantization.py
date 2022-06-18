@@ -25,7 +25,7 @@ from pennylane import numpy as np
     [
         (
             np.array([[-1.25330961e00, 4.01900735e-14], [4.01900735e-14, -4.75069041e-01]]),
-            # two-electron integral is arranged in the chemist notation [11|22]
+            # two-electron integral is arranged in chemist notation
             np.array(
                 [
                     [
