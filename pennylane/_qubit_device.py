@@ -584,7 +584,7 @@ class QubitDevice(Device):
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return QubitDevice.states_to_binary(samples, self.num_wires)
+        return self.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state

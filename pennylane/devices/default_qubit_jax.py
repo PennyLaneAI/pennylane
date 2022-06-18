@@ -251,22 +251,18 @@ class DefaultQubitJax(DefaultQubit):
         shape = (dim + 1,) if batch_size is None else (batch_size, dim + 1)
         prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
         if batch_size is None:
-            basis_states, counts = qml.math.unique(
-                indices, return_counts=True, size=dim, fill_value=-1
-            )
+            basis_states, counts = jnp.unique(indices, return_counts=True, size=dim, fill_value=-1)
             for state, count in zip(basis_states, counts):
                 prob = prob.at[state].set(count / len(indices))
             # resize prob which discards the 'filled values'
-            # prob = jnp.resize(prob, dim)
             return prob[:-1]
 
         for i, idx in enumerate(indices):
-            basis_states, counts = qml.math.unique(idx, return_counts=True, size=dim, fill_value=-1)
+            basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
             for state, count in zip(basis_states, counts):
                 prob = prob.at[i, state].set(count / len(idx))
 
         # resize prob which discards the 'filled values'
-        # prob = jnp.resize(prob, (batch_size, dim))
         return prob[:, :-1]
 
     @staticmethod
@@ -283,14 +279,11 @@ class DefaultQubitJax(DefaultQubit):
             # count the basis state occurrences, and construct the probability vector for each bin
             for b, idx in enumerate(indices):
                 idx = qml.math.convert_like(idx, indices)
-                basis_states, counts = qml.math.unique(
-                    idx, return_counts=True, size=dim, fill_value=-1
-                )
+                basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
                 for state, count in zip(basis_states, counts):
                     prob = prob.at[state, b].set(count / bin_size)
 
             # resize prob which discards the 'filled values'
-            # prob = jnp.resize(prob, (dim, num_bins))
             return prob[:-1]
 
         indices = indices.reshape((batch_size, num_bins, bin_size))
@@ -299,11 +292,8 @@ class DefaultQubitJax(DefaultQubit):
         for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
             for b, idx in enumerate(_indices):  # Then iterate over bins dimension
                 idx = qml.math.convert_like(idx, indices)
-                basis_states, counts = qml.math.unique(
-                    idx, return_counts=True, size=dim, fill_value=-1
-                )
+                basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
                 for state, count in zip(basis_states, counts):
                     prob = prob.at[i, state, b].set(count / bin_size)
         # resize prob which discards the 'filled values'
-        # prob = jnp.resize(prob, (batch_size, dim, num_bins))
         return prob[:, :-1]
