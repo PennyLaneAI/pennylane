@@ -31,7 +31,7 @@ from .gradient_transform import (
     choose_grad_methods,
     gradient_analysis,
 )
-from .general_shift_rules import generate_shifted_tapes_old as generate_shifted_tapes
+from .general_shift_rules import generate_shifted_tapes
 
 
 @functools.lru_cache(maxsize=None)

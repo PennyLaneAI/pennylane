@@ -145,7 +145,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
+def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -165,6 +165,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
+        broadcast (bool): TODO
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -180,8 +181,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
     unshifted_coeffs = []
 
     fns = []
-
-    unpack_output_like_tape = False
 
     for idx, _ in enumerate(tape.trainable_params):
 
@@ -238,75 +237,56 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
-        #print(op_shifts, multipliers)
-        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
+        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
 
         gradient_tapes.extend(g_tapes)
-        #print(g_tapes)
-        #print([t.measurements for t in g_tapes])
-        #assert len(g_tapes)==1
         shapes.append(len(g_tapes))
         batch_sizes.append(g_tapes[0].batch_size)
-        if len(gradient_tapes) == 1 and batch_sizes[-1] is not None and batch_sizes[-1] > 1:
-            unpack_output_like_tape = True
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
-        #print(tape._qfunc_output)
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             results = [qml.math.squeeze(res) for res in results]
-        print(results)
 
         grads = []
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
-        #print(shapes)
+        print(results)
         for i, (s, f, batch_size) in enumerate(zip(shapes, fns, batch_sizes)):
 
             if s == 0:
                 # parameter has zero gradient
-                print(unpack_output_like_tape)
-                #print(results[0])
-                if tape._qfunc_output is not None:
-                    output_like_tape = tape._qfunc_output
-                else:
-                    output_like_tape = results[0][..., 0] if unpack_output_like_tape else results[0][0]
-                print(output_like_tape)
-                g = qml.math.zeros_like(output_like_tape)
-                #print(f"zeroed grad: {g}")
-                grads.append(g)
+                grads.append(None)
                 continue
 
-            res = results[start]
+            res = results[start] if broadcast else results[start: start + s]
             start = start + s
 
             if f is not None:
                 res = f(res)
 
             # compute the linear combination of results and coefficients
-            # For batch_size==1 we have to undo squeezing of the broadcasting dimension
-            #if batch_size == 1:
-                #res = [res]
-            #print(res)
-            print(res)
-            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[1], [0]])
-            #assert qml.math.shape(g)[0] == 1
+            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[int(broadcast)], [0]])
 
             if unshifted_coeffs:
                 # add on the unshifted term
                 g = g + unshifted_coeffs[i] * r0
 
             grads.append(g)
+            # This clause will be hit at least once, providing a representative for
+            # a 0 gradient to emulate it.
+            zero_rep = qml.math.zeros_like(g)
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same
         # size, resulting in a ragged array.
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
-        print(f"grads: {grads}")
         for i, g in enumerate(grads):
+            if g is None:
+                grads[i] = zero_rep
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
                 if qml.math.ndim(g) > 0:
                     grads[i] = qml.math.hstack(g)
@@ -316,7 +296,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
     return gradient_tapes, processing_fn
 
 
-def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
+def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
     variance value.
@@ -361,7 +341,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         )
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0)
+    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0, broadcast)
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
@@ -402,7 +382,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
         pdA2_tapes, pdA2_fn = expval_param_shift(
-            expval_sq_tape, argnum, shifts, gradient_recipes, f0
+            expval_sq_tape, argnum, shifts, gradient_recipes, f0, broadcast
         )
         gradient_tapes.extend(pdA2_tapes)
 
@@ -461,7 +441,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
 
 @gradient_transform
 def param_shift(
-    tape, argnum=None, shifts=None, gradient_recipes=None, fallback_fn=finite_diff, f0=None
+    tape, argnum=None, shifts=None, gradient_recipes=None, fallback_fn=finite_diff, f0=None, broadcast=False,
 ):
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
@@ -688,9 +668,9 @@ def param_shift(
         gradient_recipes = [None] * len(argnum)
 
     if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
-        g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0)
+        g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
     else:
-        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0)
+        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
 
     gradient_tapes.extend(g_tapes)
 
