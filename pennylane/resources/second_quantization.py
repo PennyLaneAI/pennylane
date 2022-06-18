@@ -46,7 +46,8 @@ def estimation_cost(norm, error):
 
 
 def _qrom_cost(constants):
-    r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM.
+    r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM for
+    the double factorization method.
 
     The complexity of a QROM computation in the most general form is given by
     [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_]
@@ -69,7 +70,7 @@ def _qrom_cost(constants):
     :math:`k`.
 
     Args:
-        constants (tuple[float]): constants determining a QROM
+        constants (tuple[float]): constants specifying a QROM
 
     Returns:
         tuple(int, int): the cost and the expansion factor for the QROM
@@ -89,21 +90,22 @@ def _qrom_cost(constants):
 
 
 def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
-    r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
+    r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator for
+    the double factorization algorithm.
 
     The expression for computing the cost is taken from
     [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
 
     Args:
         n (int): number of molecular spin-orbitals
-        rank_r (int): rank of the first factorization step
-        rank_m (float): average rank of the second factorization step
+        rank_r (int): rank of the first factorization of the two-electron integral tensor
+        rank_m (float): average rank of the second factorization of the two-electron integral tensor
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
 
     Returns:
-        int: the number of Toffoli gates to implement the qubitization unitary
+        int: number of Toffoli gates to implement the qubitization unitary
 
     **Example**
 
@@ -113,7 +115,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> br = 7
     >>> alpha = 10
     >>> beta = 20
-    >>> unitary_cost(n, norm, error, rank_r, rank_m, br, alpha, beta)
+    >>> unitary_cost(n, rank_r, rank_m, br, alpha, beta)
     2007
     """
     if n <= 0 or not isinstance(n, int) or n % 2 != 0:
@@ -167,8 +169,8 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
         n (int): number of molecular spin-orbitals
         norm (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
-        rank_r (int): the rank of the first factorization step
-        rank_m (int): the average rank of the second factorization step
+        rank_r (int): rank of the first factorization of the two-electron integral tensor
+        rank_m (float): average rank of the second factorization of the two-electron integral tensor
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
@@ -229,14 +231,14 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
         n (int): number of molecular spin-orbitals
         norm (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
-        rank_r (int): the rank of the first factorization step
-        rank_m (int): the average rank of the second factorization step
+        rank_r (int): rank of the first factorization of the two-electron integral tensor
+        rank_m (float): average rank of the second factorization of the two-electron integral tensor
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
 
     Returns:
-        int: the number of ancilla qubits for the double factorization method
+        int: number of ancilla qubits for the double factorization method
 
     **Example**
 
