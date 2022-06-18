@@ -18,7 +18,7 @@ This module contains the functions needed for resource estimation with double fa
 from pennylane import numpy as np
 
 
-def norm_df(one, two, eigvals):
+def norm(one, two, eigvals):
     r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals and
     eigenvalues of the factorized two-electron integral tensor.
 

@@ -47,6 +47,6 @@ from pennylane import numpy as np
 )
 def test_df_norm(one, two, eigvals, lamb_ref):
     r"""Test that the norm function returns the correct 1-norm."""
-    lamb = qml.resources.norm_df(one, two, eigvals)
+    lamb = qml.resources.norm(one, two, eigvals)
 
     assert np.allclose(lamb, lamb_ref)
