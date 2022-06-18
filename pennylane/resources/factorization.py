@@ -18,25 +18,25 @@ from pennylane import numpy as np
 
 
 def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
-    r"""Return the double-factorized form of a two-electron tensor.
+    r"""Return the double-factorized form of a two-electron integral tensor.
 
     The two-electron tensor :math:`V`, in
     `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_, is first
     factorized in terms of symmetric matrices :math:`L^{(r)}` such that
     :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
     threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized and its eigenvalues (and
-    corresponding eigenvectors) are truncated with the same threshold error.
+    corresponding eigenvectors) are truncated at a threshold error.
 
     Args:
-        two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
+        two (array[array[float]]): two-electron integral tensor in the molecular orbital basis
             arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
-        symmetric matrices (factors) approximating the two-electron tensor, truncated eigenvalues of
-        the generated factors, and truncated eigenvectors of the generated factors
+        symmetric matrices (factors) approximating the two-electron integral tensor, truncated
+        eigenvalues of the generated factors, and truncated eigenvectors of the generated factors
 
     **Example**
 
@@ -105,17 +105,17 @@ def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
 
 
         This notation allows a low-rank factorization of the two-electron integral. The objective of
-        the factorization is to find a set of symmetric matrices, :math:`L`, such that
+        the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`, such that
 
         .. math::
 
                V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-        with the rank :math:`R \leq n^2`. The matrices :math:`L` are diagonalized and for each
-        matrix the eigenvalues that are smaller than a given threshold (and their corresponding
-        eigenvectors) are discarded.
+        with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals. The
+        matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
+        smaller than a given threshold (and their corresponding eigenvectors) are discarded.
 
-        The algorithm has the following steps
+        The factorization algorithm has the following steps
         [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
 
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
@@ -124,12 +124,13 @@ def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
           corresponding eigenvalues larger than a threshold.
 
-        - Multiply the eigenvectors by the square root of the eigenvalues to obtain matrices :math:`L`.
+        - Multiply the eigenvectors by the square root of the eigenvalues to obtain
+          matrices :math:`L^{(r)}`.
 
         - Reshape the selected eigenvectors to :math:`n \times n` matrices.
 
-        - Diagonalize the :math:`n \times n` matrices and keep those matrices such that the norm of
-          their eigenvalues is larger than a threshold.
+        - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
+          their corresponding eigenvectors) that are larger than a threshold.
     """
     shape = two.shape
 

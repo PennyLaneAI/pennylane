@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for two-electron tensor factorization.
+Unit tests for functions needed for two-electron integral tensor factorization.
 """
 
 import pytest
@@ -29,7 +29,7 @@ from pennylane import numpy as np
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
-        # two = np.swapaxes(two, 1, 3) # convert to the chemist notation
+        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         (
             np.array(
                 [
@@ -97,7 +97,7 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
-        # two = np.swapaxes(two, 1, 3) # convert to the chemist notation
+        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
         np.array(
             [
                 [
@@ -113,7 +113,7 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     ],
 )
 def test_factorize_reproduce(two_tensor):
-    r"""Test that factors returned by the factorize function reproduce the two-electron integral."""
+    r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
     factors, _, _ = qml.resources.factorize(two_tensor, 1e-5, 1e-5)
     two_computed = np.zeros(two_tensor.shape)
     for mat in factors:
@@ -136,7 +136,7 @@ def test_factorize_reproduce(two_tensor):
     ],
 )
 def test_shape_error(two_tensor):
-    r"""Test that the factorize function raises an error when the two-electron repulsion tensor does
+    r"""Test that the factorize function raises an error when the two-electron integral tensor does
     not have the correct shape."""
     with pytest.raises(ValueError, match="The two-electron repulsion tensor must have"):
         qml.resources.factorize(two_tensor, 1e-5, 1e-5)
