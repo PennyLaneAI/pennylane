@@ -15,48 +15,71 @@
 This module contains the functions needed for resource estimation with double factorization method.
 """
 from pennylane import numpy as np
-from pennylane.operation import Operation
+from pennylane.operation import Operation, AnyWires
+from .factorization import factorize
 
 
 class SQ(Operation):
     """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
-    for quantum algorithms in second quantization based on the double factorization approach.
+    for quantum algorithms in second quantization based on the double factorization method.
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
         two_electron (tensor_like): two-electron integrals
-        error (float): target quantum phase estimation error
-        tol_first (float): threshold error value for discarding the negligible factors
-        tol_second (float): threshold error value for discarding the negligible factor eigenvalues
+        error (float): target error in the algorithm
+        rank_r (int): rank of the first factorization of the two-electron integral tensor
+        rank_m (float): average rank of the second factorization of the two-electron integral tensor
+        tol_factor (float): threshold error value for discarding the negligible factors
+        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
         br (int): number of bits for ancilla qubit rotation
-        aleph (int): number of bits for the keep register
-        beth (int): number of bits for the rotation angles
+        alpha (int): number of bits for the keep register
+        beta (int): number of bits for the rotation angles
     """
 
     def __init__(
         self,
         one_electron,
         two_electron,
-        error,
-        tol_first,
-        tol_second,
-        br=None,
-        aleph=None,
-        beth=None,
+        error=0.0016,
+        rank_r=None,
+        rank_m=None,
+        tol_factor=1.0e-5,
+        tol_eigval=1.0e-5,
+        br=7,
+        alpha=10,
+        beta=20,
     ):
-        self.factors, self.vals, self.vecs = self.factorize(two_electron, tol_first, tol_second)
-        self.lamb = self.norm(one_electron, two_electron, self.vals)
 
-        self.rank_r, self.rank_m = self.compute_rank(self.factors, self.vals)
+        self.one_electron = one_electron
+        self.two_electron = two_electron
+        self.error = error
+        self.rank_r = rank_r
+        self.rank_m = rank_m
+        self.tol_factor = tol_factor
+        self.tol_eigval = tol_eigval
+        self.br = br
+        self.alpha = alpha
+        self.beta = beta
 
         self.n = two_electron.shape[0] * 2
 
-        self.rank_r = len(self.factors)
-        self.rank_m = np.mean([len(v) for v in self.vals])
+        self.factors, self.eigvals, self.eigvecs = factorize(
+            self.two_electron, self.tol_factor, self.tol_eigval
+        )
 
-        self.g_cost = self.gate_cost(
-            self.n, self.lamb, self.error, self.rank_r, self.rank_m, br, aleph, beth
+        self.lamb = self.norm(self.one_electron, self.two_electron, self.eigvals)
+
+        if not rank_r:
+            self.rank_r = len(self.factors)
+        if not rank_m:
+            self.rank_m = np.mean([len(v) for v in self.eigvals])
+
+        self.gates = self.gate_cost(
+            self.n, self.lamb, self.error, self.rank_r, self.rank_m, self.br, self.alpha, self.beta
         )
-        self.q_cost = self.qubit_cost(
-            self.n, self.lamb, self.error, self.rank_r, self.rank_m, br, aleph, beth
+        self.qubits = self.qubit_cost(
+            self.n, self.lamb, self.error, self.rank_r, self.rank_m, self.br, self.alpha, self.beta
         )
+
+    num_wires = AnyWires
+    grad_method = None
