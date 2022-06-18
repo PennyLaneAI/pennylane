@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the functionality for algorithm resource estimation.
+The resources module provides the functionality to estimate the cost of implementing advanced
+quantum algorithms.
 """
+
+from .factorization import factorize
