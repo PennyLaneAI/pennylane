@@ -501,11 +501,11 @@ def _compute_vn_entropy(density_matrix, base=None):
     **Example**
 
     >>> x = [[1/2, 0], [0, 1/2]]
-    >>> _compute_vn_entropy(x, indices=[0])
+    >>> _compute_vn_entropy(x)
     0.6931472
 
     >>> x = [[1/2, 0], [0, 1/2]]
-    >>> _compute_vn_entropy(x, indices=[0], base=2)
+    >>> _compute_vn_entropy(x, base=2)
     1.0
 
     """
