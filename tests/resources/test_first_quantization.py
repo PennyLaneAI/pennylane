@@ -36,13 +36,13 @@ def test_success_prob(n_basis, br, prob_ref):
 
 
 @pytest.mark.parametrize(
-    ("eta", "n", "omega", "br", "charge", "norm_ref"),
+    ("eta", "n", "omega", "error", "br", "charge", "norm_ref"),
     [
-        (156, 10000, 1145.166, 7, 0, 281345.03549380635),
+        (156, 10000, 1145.166, 0.001, 7, 0, 1254385.0597111005),
     ],
 )
-def test_norm(eta, n, omega, br, charge, norm_ref):
+def test_norm(eta, n, omega, error, br, charge, norm_ref):
     r"""Test that norm returns the correct value."""
-    norm = qml.resources.norm(eta, n, omega, br, charge)
+    norm = qml.resources.norm(eta, n, omega, error, br, charge)
 
     assert norm == norm_ref

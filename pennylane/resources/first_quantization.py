@@ -47,8 +47,8 @@ def success_prob(n, br):
     return p
 
 
-def norm(eta, n, omega, br=7, charge=0):
-    r"""Return the 1-norm of a first-quantized Hamiltonian in a plane-wave basis.
+def norm(eta, n, omega, error, br=7, charge=0):
+    r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
     The expression for computing the norm is taken from
     [`arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_].
@@ -57,6 +57,7 @@ def norm(eta, n, omega, br=7, charge=0):
         eta (int): number of electrons
         n (int): number of basis states
         omega (float): unit cell volume
+        error (float): target error in the algorithm
         br (int): number of bits for ancilla qubit rotation
         charge (int): total electric charge of the system
 
@@ -71,26 +72,30 @@ def norm(eta, n, omega, br=7, charge=0):
     >>> norm(eta, n, omega)
     5128920.595980267
     """
+    l_z = eta + charge
     n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
     #
-    l_nu = 4 * np.pi * n ** (1 / 3)  # l_nu = self.lambda_nu(N)
-    p_nu = 0.936640680638239  # 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
-    l_nu_1 = 234.007322015  #
+    l_nu = 4 * np.pi * n ** (1 / 3)
+    p_nu = 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
+    n_m = np.log2(
+        (2 * eta) / (0.01 * error * omega ** (1 / 3))
+        + (eta - 1 + 2 * l_z)
+        + (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    )
+    eps = 4 / 2 ** n_m * (7 * 2 ** (n_p + 1) + 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    l_nu_1 = l_nu + eps
+    #
+
+    lambda_u = eta * l_z * l_nu / (np.pi * omega ** (1 / 3))
+    lambda_v = eta * (eta - 1) * l_nu / (2 * np.pi * omega ** (1 / 3))
+    lambda_t_p = 6 * eta * np.pi**2 / omega ** (2 / 3) * 2 ** (2 * n_p - 2)
+
+    lambda_u_1 = lambda_u * l_nu_1 / l_nu
+    lambda_v_1 = lambda_v * l_nu_1 / l_nu
 
     p_eq = success_prob(3, 8) * success_prob(3 * eta + 2 * charge, br) * success_prob(eta, br) ** 2
-
-    lambda_u = l_nu * eta * (eta + charge) / (np.pi * omega ** (1 / 3))
-    lambda_v = l_nu * eta * (eta - 1) / (2 * np.pi * omega ** (1 / 3))
-
-    lambda_t_p = (6 * eta * np.pi**2) / (omega ** (2 / 3)) * 2 ** (2 * n_p - 2)
-    lambda_u_1 = l_nu_1 * lambda_u / l_nu
-    lambda_v_1 = l_nu_1 * lambda_v / l_nu
-
     lambda_a = lambda_t_p + lambda_u_1 + lambda_v_1
     lambda_b = (lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu
-
-    print(lambda_u_1, lambda_v_1, lambda_t_p)
-    print(p_nu, p_eq, n_p)
 
     return np.maximum(lambda_a, lambda_b) / p_eq
