@@ -38,7 +38,7 @@ def test_success_prob(n_basis, br, prob_ref):
 @pytest.mark.parametrize(
     ("eta", "n", "omega", "br", "charge", "norm_ref"),
     [
-        (156, 10000, 1145.166, 7, 0,  1254382.0657073155),
+        (156, 10000, 1145.166, 7, 0, 281345.03549380635),
     ],
 )
 def test_norm(eta, n, omega, br, charge, norm_ref):

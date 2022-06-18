@@ -71,17 +71,26 @@ def norm(eta, n, omega, br=7, charge=0):
     >>> norm(eta, n, omega)
     5128920.595980267
     """
-    n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+    n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
+
+    #
     l_nu = 4 * np.pi * n ** (1 / 3)  # l_nu = self.lambda_nu(N)
-    p_nu = 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
+    p_nu = 0.936640680638239  # 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
+    l_nu_1 = 234.007322015  #
+
     p_eq = success_prob(3, 8) * success_prob(3 * eta + 2 * charge, br) * success_prob(eta, br) ** 2
 
-    # lambda_t = (2 ** (2 * n_p - 1) - 1) * (6 * eta * pi ** 2) / (omega ** (2 / 3))
-    lambda_t = (2 ** (n_p - 1) - 1) ** 2 * (6 * eta * np.pi**2) / (omega ** (2 / 3))
     lambda_u = l_nu * eta * (eta + charge) / (np.pi * omega ** (1 / 3))
     lambda_v = l_nu * eta * (eta - 1) / (2 * np.pi * omega ** (1 / 3))
 
-    lambda_1 = lambda_t + lambda_u + lambda_v
-    lambda_2 = (lambda_u + lambda_v / (1 - 1 / eta)) / p_nu
+    lambda_t_p = (6 * eta * np.pi**2) / (omega ** (2 / 3)) * 2 ** (2 * n_p - 2)
+    lambda_u_1 = l_nu_1 * lambda_u / l_nu
+    lambda_v_1 = l_nu_1 * lambda_v / l_nu
 
-    return np.maximum(lambda_1, lambda_2) / p_eq
+    lambda_a = lambda_t_p + lambda_u_1 + lambda_v_1
+    lambda_b = (lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu
+
+    print(lambda_u_1, lambda_v_1, lambda_t_p)
+    print(p_nu, p_eq, n_p)
+
+    return np.maximum(lambda_a, lambda_b) / p_eq
