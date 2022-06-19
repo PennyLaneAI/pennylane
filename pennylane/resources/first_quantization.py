@@ -62,20 +62,21 @@ def norm(eta, n, omega, error, br=7, charge=0):
         charge (int): total electric charge of the system
 
     Returns:
-        float: the 1-norm of a first-quantized Hamiltonian in a plane-wave basis
+        float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
 
     **Example**
 
     >>> eta = 156
-    >>> n = 100000
-    >>> omega = 169.69608
-    >>> norm(eta, n, omega)
-    5128920.595980267
+    >>> n = 10000
+    >>> omega = 1145.166
+    >>> error = 0.001
+    >>> norm(eta, n, omega, error)
+    1254385.059691027
     """
     l_z = eta + charge
     n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
-    #
+    # l_nu, p_nu, and l_nu_1 are modified versions of TFermion equations
     l_nu = 4 * np.pi * n ** (1 / 3)
     p_nu = 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
     n_m = np.log2(
@@ -83,9 +84,8 @@ def norm(eta, n, omega, error, br=7, charge=0):
         + (eta - 1 + 2 * l_z)
         + (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
     )
-    eps = 4 / 2 ** n_m * (7 * 2 ** (n_p + 1) + 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    eps = 4 / 2**n_m * (7 * 2 ** (n_p + 1) + 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
     l_nu_1 = l_nu + eps
-    #
 
     lambda_u = eta * l_z * l_nu / (np.pi * omega ** (1 / 3))
     lambda_v = eta * (eta - 1) * l_nu / (2 * np.pi * omega ** (1 / 3))
