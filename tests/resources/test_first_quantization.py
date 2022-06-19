@@ -54,7 +54,7 @@ def test_cost_qrom_min(lz, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
-        (100000, 156, 169.69608, 0.01, 5128920.595980267, 7, 0, 12819),
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 10845),
     ],
 )
 def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
@@ -67,7 +67,8 @@ def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
 @pytest.mark.parametrize(
     ("norm", "error", "cost_ref"),
     [
-        (72.49779513025341, 0.001, 113880),
+        # the reference cost is computed manually
+        (5128920.595980267, 0.001, 8056489633),
     ],
 )
 def test_estimation_cost(norm, error, cost_ref):
@@ -78,9 +79,22 @@ def test_estimation_cost(norm, error, cost_ref):
 
 
 @pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
+    [
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 87372630069885),
+    ],
+)
+def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
+    r"""Test that gate_cost returns the correct value."""
+    cost = qml.resources.gate_cost(n, eta, omega, error, lamb, br, charge)
+
+    assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "charge", "cost_ref"),
     [
-        (100000, 156, 169.69608, 0.01, 5128920.595980267, 0, 3867),
+        (10000, 156, 1145.166, 0.001, 281345.0354393263, 0, 3341),
     ],
 )
 def test_qubit_cost(n, eta, omega, error, lamb, charge, cost_ref):
