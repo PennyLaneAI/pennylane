@@ -255,17 +255,17 @@ def _execute_with_fwd(
 
         fwd_shape_dtype_struct = _extract_shape_dtype_structs(tapes, device)
 
-        jacobian_shape = [t.shape(device) + (len(p),) for t in tapes for p in params]
-        jac_dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
+        # params should be the parameters for each tape queried prior, assert
+        # to double-check
+        assert len(tapes) == len(params)
 
-        # Note: for qml.probs we'll first have a [1,dim] shape for the tape
-        # which is then reduced by the QNode
-        jacobian_shape = [
-            jax.ShapeDtypeStruct(tuple([shape]), dtype)
-            if isinstance(shape, int)
-            else jax.ShapeDtypeStruct(tuple(shape), dtype)
-            for shape, dtype in zip(jacobian_shape, jac_dtypes)
-        ]
+        jacobian_shape = []
+        for t, p in zip(tapes, params):
+            shape = t.shape(device) + (len(p),)
+            _dtype = _numeric_type_to_dtype(t.numeric_type)
+            shape = [shape] if isinstance(shape, int) else shape
+            o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
+            jacobian_shape.append(o)
 
         res, jacs = host_callback.call(
             wrapper,
