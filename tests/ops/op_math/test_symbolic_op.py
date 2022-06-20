@@ -24,7 +24,7 @@ class TempOperator(qml.operation.Operator):
     num_wires = 1
 
 
-def test_intialization(self):
+def test_intialization():
     """Test initialization for a SymbolicOp"""
     base = TempOperator("a")
 
