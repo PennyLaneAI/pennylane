@@ -50,7 +50,7 @@
   
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
-  It can be used when obtaining raw samples in the computational basis:
+  `counts=True` can be set when obtaining raw samples in the computational basis:
   
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
