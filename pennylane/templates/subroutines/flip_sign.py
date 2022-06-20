@@ -21,37 +21,48 @@ from pennylane.operation import Operation, AnyWires
 from pennylane.ops import BasisState
 
 class FlipSign(Operation):
-    """Single sentence that summarizes the class.
+    r"""FlipSign operator flips the sign for a given state.
 
-    Multi-line description of the class (optional, if required).
+    In a nutshell, this class perform the following operation:
 
+    FlipSign(n)|m> = -|m> if m = n
+    FlipSign(n)|m> = |m> if m != n
+
+    Where m is the status length to flip and n is the length of the number of qubits.
+    It flips the sign of the state.
+    
     Args:
-        arg1 (type): Description.
-            Continuation line is indented if needed.
-        arg2 (type): description
-
-    Keyword Args:
-        kwarg1 (type): description
-
-    Attributes:
-        attr1 (type): description
+        wires (int): wires that the operator acts on
+        bin_arr (array[int]): binary array vector representing the state to flip the sign
 
     Raises:
-        ExceptionType: description
+        ValueError: "expected at integer binary array "
+        ValueError: "expected at integer binary array for wires "
+        ValueError: "expected at integer binary array not empty "
+        ValueError: "expected at least one wire representing the qubit "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
 
-    **Example**
+    .. details::
 
-    Minimal example with 1 or 2 code blocks (required).
+        :title: Usage Details
 
-    .. UsageDetails::
+        The template is used inside a qnode:
 
-        More complicated use cases, options, and larger code blocks (optional).
+        .. code-block:: python
 
-    **Related tutorials**
+            dev = qml.device("default.qubit", wires=1)
 
-    Links to any relevant PennyLane demos (optional).
+            @qml.qnode(dev)
+            def circuit():
+               qml.Hadamard(wires = 0)
+               qml.FlipSign([1,0,1,0,0], wires = list(range(5)))
+               qml.Hadamard(wires = 0)
+               return qml.sample()
+
+            drawer = qml.draw(circuit, show_all_wires = True)
+            print(drawer())
+
     """
 
     num_wires = AnyWires
@@ -75,18 +86,17 @@ class FlipSign(Operation):
 
         if np.array(wires).dtype != np.dtype("int"):
             raise ValueError(
-                f"expected a integer binary array for wires"
+                f"expected a integer binary array for wires "
             )
 
         if len(bin_arr) == 0:
             raise ValueError(
-                f"expected at integer binary array not empty"
+                f"expected at integer binary array not empty "
             )
 
         if len(wires) == 0:
             raise ValueError(
-                f"expected at least one wire representing the qubit; "
-                f"got {len(wires)}"
+                f"expected at least one wire representing the qubit "
             )
 
         self._hyperparameters = {"bin_arr": bin_arr}
