@@ -595,7 +595,7 @@ def sample(op=None, wires=None, counts=False):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
-        counts (bool): return the result as numbers of counts
+        counts (bool): return the result as number of counts for each sample
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
