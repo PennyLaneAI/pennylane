@@ -514,13 +514,14 @@ When `decomposition()` is called, a list of new operators equal to this one rais
 
 * The `qml.qchem` tests have been restructured.
   [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
+  [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
 
   - OpenFermion-dependent tests are now localized and collected in
     `tests.qchem.of_tests`. The new module `test_structure` is created to collect the tests of the
     `qchem.structure` module in one place and remove their dependency to OpenFermion.
 
   - Test classes have been created to group the integrals and matrices
-    unit tests. [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
+    unit tests.
 
 * An `operations_only` argument is introduced to the `tape.get_parameters` method.
   [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
