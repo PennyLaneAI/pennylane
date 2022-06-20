@@ -953,7 +953,8 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        # TODO: Add after differentiability of qutrit circuits is implemented
+        # TODO: Uncomment after parametric operations are added for qutrits and decomposition
+        # for QutritUnitary exists
         # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
 
     shot_data = [
@@ -990,7 +991,8 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        # TODO: Add after differentiability of qutrit circuits is implemented
+        # TODO: Uncomment after parametric operations are added for qutrits and decomposition
+        # for QutritUnitary exists
         # res = qml.jacobian(circuit, argnum=[0])(pnp.eye(9, dtype=np.complex128))
 
 
