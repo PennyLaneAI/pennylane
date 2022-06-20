@@ -43,7 +43,7 @@ def fold_global(circuit, scale_factor):
     
     num_global_folds, fraction_scale = divmod(scale_factor - 1, 2)
     
-    # Do global folds U => U (U^H U)**n
+    # Do global folds U => U (U^H U)**n.
     new_list_of_ops = copy.deepcopy(base_ops)
 
     for _ in range(int(num_global_folds)):
