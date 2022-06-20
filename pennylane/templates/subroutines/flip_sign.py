@@ -33,7 +33,7 @@ class FlipSign(Operation):
     It flips the sign of the state.
 
     Args:
-        wires (int): wires that the operator acts on
+        wires (array[int]): wires that the operator acts on
         bin_arr (array[int]): binary array vector representing the state to flip the sign
 
     Raises:
@@ -112,7 +112,7 @@ class FlipSign(Operation):
         .. seealso:: :meth:`~.FlipSign.decomposition`.
 
         Args:
-            wires (int): wires that the operator acts on
+            wires (array[int]): wires that the operator acts on
             bin_arr (array[int]): binary array vector representing the state to flip the sign
 
         Returns:
