@@ -28,7 +28,7 @@ requirements = [
     "semantic-version",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.23.0.dev0",
+    "pennylane-lightning>=0.23",
 ]
 
 info = {
