@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
+
 class FlipSign(Operation):
     r"""FlipSign operator flips the sign for a given state.
 
@@ -125,7 +126,9 @@ class FlipSign(Operation):
                 op_list.append(qml.PauliX(wires[-1]))
 
             op_list.append(
-                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(wires=wires[-1])
+                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(
+                    wires=wires[-1]
+                )
             )
 
             if bin_arr[-1] == 0:
