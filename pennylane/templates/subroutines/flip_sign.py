@@ -68,9 +68,14 @@ class FlipSign(Operation):
                 f"expected at integer binary array "
             )
 
-        if not isinstance(wires, int):
+        if not isinstance(wires, list):
             raise ValueError(
-                f"expected at integer value for wires "
+                f"expected at integer binary array for wires "
+            )
+
+        if np.array(wires).dtype != np.dtype("int"):
+            raise ValueError(
+                f"expected a integer binary array for wires"
             )
 
         if len(bin_arr) == 0:
@@ -78,7 +83,7 @@ class FlipSign(Operation):
                 f"expected at integer binary array not empty"
             )
 
-        if wires <= 0:
+        if len(wires) == 0:
             raise ValueError(
                 f"expected at least one wire representing the qubit; "
                 f"got {len(wires)}"
@@ -133,7 +138,7 @@ class FlipSign(Operation):
                 op_list.append(ctrl(PauliZ, control = wires[:-1], control_values = bin_arr[:-1])(wires = wire))
                 op_list.append(PauliX(wire))
         else:
-            for wire in list(range(wires)):
+            for wire in list(range(len(wires))):
                 op_list(Identity(wire))
 
         raise op_list
