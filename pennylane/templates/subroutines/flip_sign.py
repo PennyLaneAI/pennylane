@@ -18,8 +18,6 @@ Contains the FlipSign template.
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops import BasisState
-
 
 class FlipSign(Operation):
     r"""FlipSign operator flips the sign for a given state.
@@ -52,7 +50,7 @@ class FlipSign(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=1)
+            dev = qml.device("default.qubit", wires=5, shots = 1000)
 
             @qml.qnode(dev)
             def circuit():
@@ -79,22 +77,22 @@ class FlipSign(Operation):
     def __init__(self, bin_arr, wires, do_queue=True, id=None):
 
         if not isinstance(bin_arr, list):
-            raise ValueError(f"expected at integer binary array ")
+            raise ValueError("expected at integer binary array ")
 
         if np.array(bin_arr).dtype != np.dtype("int"):
-            raise ValueError(f"expected at integer binary array ")
+            raise ValueError("expected at integer binary array ")
 
         if not isinstance(wires, list):
-            raise ValueError(f"expected at integer binary array for wires ")
+            raise ValueError("expected at integer binary array for wires ")
 
         if np.array(wires).dtype != np.dtype("int"):
-            raise ValueError(f"expected a integer binary array for wires ")
+            raise ValueError("expected a integer binary array for wires ")
 
         if len(bin_arr) == 0:
-            raise ValueError(f"expected at integer binary array not empty ")
+            raise ValueError("expected at integer binary array not empty ")
 
         if len(wires) == 0:
-            raise ValueError(f"expected at least one wire representing the qubit ")
+            raise ValueError("expected at least one wire representing the qubit ")
 
         self._hyperparameters = {"bin_arr": bin_arr}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
@@ -123,16 +121,16 @@ class FlipSign(Operation):
 
         if len(wires) == len(bin_arr):
             if bin_arr[-1] == 0:
-                op_list.append(PauliX(wires[-1]))
+                op_list.append(qml.PauliX(wires[-1]))
 
             op_list.append(
-                ctrl(PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(wires=wires[-1])
+                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(wires=wires[-1])
             )
 
             if bin_arr[-1] == 0:
-                op_list.append(PauliX(wires[-1]))
+                op_list.append(qml.PauliX(wires[-1]))
         else:
             for wire in list(range(len(wires))):
-                op_list.append(Identity(wire))
+                op_list.append(qml.Identity(wire))
 
-        raise op_list
+        return op_list
