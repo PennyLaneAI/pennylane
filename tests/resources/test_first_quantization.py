@@ -39,7 +39,7 @@ def test_success_prob(n_basis, br, prob_ref):
     ("eta", "n", "omega", "error", "br", "charge", "norm_ref"),
     [
         # norm_ref is computed with TFermion by using our versions of l_nu, p_nu, and l_nu_1.
-        (156, 10000, 1145.166, 0.001, 7, 0, 1254385.059691027),
+        (156, 10000, 1145.166, 0.001, 7, 0, 321772.22350284725),
     ],
 )
 def test_norm(eta, n, omega, error, br, charge, norm_ref):
