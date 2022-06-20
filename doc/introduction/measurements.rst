@@ -149,7 +149,7 @@ After executing the circuit, we can directly see how many times each measurement
 [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
  tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
  
-Similarly, if the observable is not provided, the occurencies of each state are returned.
+Similarly, if the observable is not provided, the count of each computational basis state is returned.
 
 .. code-block:: python
 
