@@ -92,8 +92,8 @@ class FlipSign(Operation):
         r"""Find index of occurrences for value in binary array.
 
         Args:
-            value (int): Value to search in binary arrays
-            arr (array[int]): Binary array to search into
+            value (int): value to search in binary arrays
+            arr (array[int]): binary array to search into
 
         Returns:
             list[int]: value indexes of search value present in array
@@ -117,7 +117,7 @@ class FlipSign(Operation):
 
         Args:
             wires (int): wires that the operator acts on
-            bin_arr (array[int]): vector representing the state to flip sign as binary array
+            bin_arr (array[int]): binary array vector representing the state to flip the sign
 
         Returns:
             list[Operator]: decomposition of the operator
