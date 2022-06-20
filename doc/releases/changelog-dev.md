@@ -45,8 +45,7 @@
 
 <h3>Improvements</h3>
   
-* Added the possibility to group samples into counts providing `counts=True` flag in `qml.sample` function. This required
-  creation of a new measurement type `Counts` in `measurements.py`.
+* Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
 
   It can be used when obtaining raw samples in the computational basis:
