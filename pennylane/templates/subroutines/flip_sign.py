@@ -56,9 +56,11 @@ class FlipSign(Operation):
 
             @qml.qnode(dev)
             def circuit():
-               qml.Hadamard(wires = 0)
+               for wire in list(range(5)):
+                    qml.Hadamard(wires = wire)
                qml.FlipSign([1,0,1,0,0], wires = list(range(5)))
-               qml.Hadamard(wires = 0)
+               for wire in list(range(5)):
+                    qml.Hadamard(wires = wire)
                return qml.sample()
 
             drawer = qml.draw(circuit, show_all_wires = True)
@@ -67,10 +69,10 @@ class FlipSign(Operation):
 
             >>> print(drawer())
             0: ──H─╭FlipSign──H─┤  Sample
-            1: ────├FlipSign────┤  Sample
-            2: ────├FlipSign────┤  Sample
-            3: ────├FlipSign────┤  Sample
-            4: ────╰FlipSign────┤  Sample
+            1: ──H─├FlipSign──H─┤  Sample
+            2: ──H─├FlipSign──H─┤  Sample
+            3: ──H─├FlipSign──H─┤  Sample
+            4: ──H─╰FlipSign──H─┤  Sample
 
     """
 
