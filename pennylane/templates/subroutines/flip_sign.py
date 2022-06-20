@@ -30,7 +30,7 @@ class FlipSign(Operation):
 
     Where m is the status length to flip and n is the length of the number of qubits.
     It flips the sign of the state.
-    
+
     Args:
         wires (int): wires that the operator acts on
         bin_arr (array[int]): binary array vector representing the state to flip the sign
@@ -61,7 +61,12 @@ class FlipSign(Operation):
                return qml.sample()
 
             drawer = qml.draw(circuit, show_all_wires = True)
-            print(drawer())
+            >>> print(drawer())
+            0: ──H─╭FlipSign──H─┤  Sample
+            1: ────├FlipSign────┤  Sample
+            2: ────├FlipSign────┤  Sample
+            3: ────├FlipSign────┤  Sample
+            4: ────╰FlipSign────┤  Sample
 
     """
 
