@@ -57,6 +57,7 @@ class TestQNodeIntegration:
                 "autograd": "default.mixed",
                 "tf": "default.mixed",
                 "torch": "default.mixed",
+                "jax": "default.mixed",
             },
         }
 
