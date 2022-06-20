@@ -142,7 +142,7 @@ unique sample. The previous example will be modified as follows:
         # passing the counts flag
         return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
 
-After executing the circuit we can directly see how often each value was measured:
+After executing the circuit, we can directly see how many times each measurement outcome occurred:
         
 >>> result = circuit()
 >>> print(result)
