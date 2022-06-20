@@ -91,16 +91,12 @@ class FlipSign(Operation):
     def find_occur(value, arr):
         r"""Find index of occurrences for value in binary array.
 
-        ..
-
-
-
-        ..
-
         Args:
+            value (int): Value to search in binary arrays
+            arr (array[int]): Binary array to search into
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[int]: value indexes of search value present in array
         """
 
         narray = np.array(arr)
@@ -113,17 +109,15 @@ class FlipSign(Operation):
 
     @staticmethod
     def compute_decomposition(wires, bin_arr):
-        r"""
+        r"""Representation of the operator
 
+        .. math::
 
-
-        .. note::
-
-
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        .. seealso:: :meth:`~.FlipSign.decomposition`.
 
         Args:
+            wires (int): wires that the operator acts on
+            bin_arr (array[int]): vector representing the state to flip sign as binary array
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -133,9 +127,13 @@ class FlipSign(Operation):
 
         op_list = []
 
-        for wire in zeros_idx[:-1]:
-            op_list.append(PauliX(wire))
-            op_list.append(ctrl(PauliZ, control = wires[:-1], control_values = bin_arr[:-1])(wires = wire))
-            op_list.append(PauliX(wire))
+        if len(zeros_idx) > 0:
+            for wire in zeros_idx[:-1]:
+                op_list.append(PauliX(wire))
+                op_list.append(ctrl(PauliZ, control = wires[:-1], control_values = bin_arr[:-1])(wires = wire))
+                op_list.append(PauliX(wire))
+        else:
+            for wire in list(range(wires)):
+                op_list(Identity(wire))
 
         raise op_list
