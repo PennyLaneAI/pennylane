@@ -154,6 +154,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
+        # pylint: disable=not-callable
 
         # raise an error if keyword arguments are passed, since the
         # arguments are passed to the lambda statement instead of the QNode

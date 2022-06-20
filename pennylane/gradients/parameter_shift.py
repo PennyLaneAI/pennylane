@@ -145,7 +145,9 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
+def expval_param_shift(
+    tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
+):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -261,7 +263,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                 grads.append(None)
                 continue
 
-            res = results[start: start + s] if batch_size is None else results[start]
+            res = results[start : start + s] if batch_size is None else results[start]
             start = start + s
 
             if f is not None:
@@ -271,11 +273,13 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             axis = 0
             if not broadcast:
                 res = qml.math.stack(res)
-            elif qml.math.get_interface(res[0])!="torch" and batch_size is not None:
+            elif qml.math.get_interface(res[0]) != "torch" and batch_size is not None:
                 # The torch output is flattened such that the tensordot axis needs to be 0 even for
                 # parameter broadcasting.
                 axis = 1
-            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[axis], [0]])
+            g = qml.math.tensordot(
+                res, qml.math.convert_like(gradient_coeffs[i], res), [[axis], [0]]
+            )
 
             if unshifted_coeffs:
                 # add on the unshifted term
@@ -348,7 +352,9 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         )
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0, broadcast)
+    pdA_tapes, pdA_fn = expval_param_shift(
+        expval_tape, argnum, shifts, gradient_recipes, f0, broadcast
+    )
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
@@ -448,7 +454,13 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
 @gradient_transform
 def param_shift(
-    tape, argnum=None, shifts=None, gradient_recipes=None, fallback_fn=finite_diff, f0=None, broadcast=False,
+    tape,
+    argnum=None,
+    shifts=None,
+    gradient_recipes=None,
+    fallback_fn=finite_diff,
+    f0=None,
+    broadcast=False,
 ):
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.

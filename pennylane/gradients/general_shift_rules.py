@@ -408,7 +408,9 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
 
     if broadcast:
         new_params = params.copy()
-        new_params[index] = new_params[index] * qml.math.convert_like(multipliers, new_params[index]) + qml.math.convert_like(shifts, new_params[index])
+        new_params[index] = new_params[index] * qml.math.convert_like(
+            multipliers, new_params[index]
+        ) + qml.math.convert_like(shifts, new_params[index])
         shifted_tape = tape.copy(copy_operations=True)
         shifted_tape.set_parameters(new_params)
         return [shifted_tape]
@@ -425,6 +427,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         tapes.append(shifted_tape)
 
     return tapes
+
 
 def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
     r"""Generate a list of tapes where multiple marked trainable

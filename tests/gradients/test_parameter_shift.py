@@ -142,7 +142,7 @@ class TestParamShift:
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1]) # does not have any impact on the expval
+            qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
@@ -334,7 +334,7 @@ class TestParamShift:
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, f0=f0)
 
         # one tape per parameter that impacts the expval
-        assert len(tapes) == 2 if y_wire==0 else 1
+        assert len(tapes) == 2 if y_wire == 0 else 1
 
         fn(dev.batch_execute(tapes))
 
@@ -448,7 +448,7 @@ class TestParamShiftBroadcast:
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1]) # does not have any impact on the expval
+            qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
@@ -474,7 +474,9 @@ class TestParamShiftBroadcast:
 
         tape.trainable_params = {0, 2}
         gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
-        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=True)
+        tapes, _ = qml.gradients.param_shift(
+            tape, gradient_recipes=gradient_recipes, broadcast=True
+        )
 
         assert len(tapes) == 2
         assert [t.batch_size for t in tapes] == [2, 3]
@@ -489,7 +491,7 @@ class TestParamShiftBroadcast:
             qml.math.allclose(p, exp)
             for p, exp in zip(
                 tapes[1].get_parameters(trainable_only=False),
-                [1.0, 2.0, [1 * 3.0 + 1, 2 * 3.0 + 2,3 * 3.0 + 3], 4.0],
+                [1.0, 2.0, [1 * 3.0 + 1, 2 * 3.0 + 2, 3 * 3.0 + 3], 4.0],
             )
         )
 
@@ -505,7 +507,9 @@ class TestParamShiftBroadcast:
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
-        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, broadcast=True)
+        tapes, fn = qml.gradients.param_shift(
+            tape, gradient_recipes=gradient_recipes, broadcast=True
+        )
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
@@ -796,7 +800,7 @@ class TestParameterShiftRule:
         def cost_fn(params):
             with qml.tape.QuantumTape() as tape:
                 qml.RX(params[0], wires=[0])
-                RY(params[1], wires=[1]) # Use finite differences for this op
+                RY(params[1], wires=[1])  # Use finite differences for this op
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
@@ -921,7 +925,7 @@ class TestParameterShiftRule:
             qml.var(qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 5 # One unshifted, four shifted tapes
+        assert len(tapes) == 5  # One unshifted, four shifted tapes
         assert [t.batch_size for t in tapes] == [None] * 5
 
         res = fn(dev.batch_execute(tapes))
@@ -1261,6 +1265,7 @@ class TestParameterShiftRule:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
+
 class TestParameterShiftRuleBroadcast:
     """Tests for the parameter shift implementation using broadcasting"""
 
@@ -1478,7 +1483,7 @@ class TestParameterShiftRuleBroadcast:
         def cost_fn(params):
             with qml.tape.QuantumTape() as tape:
                 qml.RX(params[0], wires=[0])
-                RY(params[1], wires=[1]) # Use finite differences for this op
+                RY(params[1], wires=[1])  # Use finite differences for this op
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
@@ -1603,7 +1608,7 @@ class TestParameterShiftRuleBroadcast:
             qml.var(qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
-        assert len(tapes) == 3 # One unshifted, two broadcasted shifted tapes
+        assert len(tapes) == 3  # One unshifted, two broadcasted shifted tapes
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == tapes[2].batch_size == 2
 
@@ -1876,7 +1881,9 @@ class TestParameterShiftRuleBroadcast:
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
-        transform = [qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits]
+        transform = [
+            qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits
+        ]
         # The output shape of transforms for 2D qnode outputs (cost5 & cost6) is currently
         # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
         # TODO: fix qnode/expected once #2296 is resolved
@@ -1885,7 +1892,10 @@ class TestParameterShiftRuleBroadcast:
 
         assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
 
-@pytest.mark.parametrize("broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))])
+
+@pytest.mark.parametrize(
+    "broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))]
+)
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 
@@ -2032,40 +2042,57 @@ class TestParamShiftGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 @pytest.mark.parametrize("broadcast, expected", [(False, (4, [None] * 4)), (True, (2, [2, 2]))])
 class TestParamShiftProbJacobians:
     """Test that the transform is differentiable"""
+
     x = 0.543
     y = -0.654
     expected_res = np.array(
-        [[np.cos(x / 2)**2 * np.cos(y / 2)**2, np.cos(x / 2)**2 * np.sin(y / 2)**2, np.sin(x / 2)**2 * np.sin(y / 2)**2, np.sin(x / 2)**2 * np.cos(y / 2)**2]]
+        [
+            [
+                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
+                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
+                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
+                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
+            ]
+        ]
     )
     expected_first_order = np.array(
         [
-            [[-np.sin(x) * np.cos(y / 2)**2 / 2, -np.sin(y) * np.cos(x / 2)**2 / 2]],
-            [[-np.sin(x) * np.sin(y / 2)**2 / 2, np.sin(y) * np.cos(x / 2)**2 / 2]],
-            [[np.sin(x) * np.sin(y / 2)**2 / 2, np.sin(y) * np.sin(x / 2)**2 / 2]],
-            [[np.sin(x) * np.cos(y / 2)**2 / 2, -np.sin(y) * np.sin(x / 2)**2 / 2]],
+            [[-np.sin(x) * np.cos(y / 2) ** 2 / 2, -np.sin(y) * np.cos(x / 2) ** 2 / 2]],
+            [[-np.sin(x) * np.sin(y / 2) ** 2 / 2, np.sin(y) * np.cos(x / 2) ** 2 / 2]],
+            [[np.sin(x) * np.sin(y / 2) ** 2 / 2, np.sin(y) * np.sin(x / 2) ** 2 / 2]],
+            [[np.sin(x) * np.cos(y / 2) ** 2 / 2, -np.sin(y) * np.sin(x / 2) ** 2 / 2]],
         ]
     )
     expected_second_order = np.array(
         [
-            [[
-                [-np.cos(x) * np.cos(y / 2)**2 / 2, np.sin(y) * np.sin(x) / 4],
-                [np.sin(y) * np.sin(x) / 4, -np.cos(y) * np.cos(x / 2)**2 / 2],
-            ]],
-            [[
-                [-np.cos(x) * np.sin(y / 2)**2 / 2, -np.sin(y) * np.sin(x) / 4],
-                [-np.sin(y) * np.sin(x) / 4, np.cos(y) * np.cos(x / 2)**2 / 2],
-            ]],
-            [[
-                [np.cos(x) * np.sin(y / 2)**2 / 2, np.sin(y) * np.sin(x) / 4],
-                [np.sin(y) * np.sin(x) / 4, np.cos(y) * np.sin(x / 2)**2 / 2],
-            ]],
-            [[
-                [np.cos(x) * np.cos(y / 2)**2 / 2, -np.sin(y) * np.sin(x) / 4],
-                [-np.sin(y) * np.sin(x) / 4, -np.cos(y) * np.sin(x / 2)**2 / 2],
-            ]],
+            [
+                [
+                    [-np.cos(x) * np.cos(y / 2) ** 2 / 2, np.sin(y) * np.sin(x) / 4],
+                    [np.sin(y) * np.sin(x) / 4, -np.cos(y) * np.cos(x / 2) ** 2 / 2],
+                ]
+            ],
+            [
+                [
+                    [-np.cos(x) * np.sin(y / 2) ** 2 / 2, -np.sin(y) * np.sin(x) / 4],
+                    [-np.sin(y) * np.sin(x) / 4, np.cos(y) * np.cos(x / 2) ** 2 / 2],
+                ]
+            ],
+            [
+                [
+                    [np.cos(x) * np.sin(y / 2) ** 2 / 2, np.sin(y) * np.sin(x) / 4],
+                    [np.sin(y) * np.sin(x) / 4, np.cos(y) * np.sin(x / 2) ** 2 / 2],
+                ]
+            ],
+            [
+                [
+                    [np.cos(x) * np.cos(y / 2) ** 2 / 2, -np.sin(y) * np.sin(x) / 4],
+                    [-np.sin(y) * np.sin(x) / 4, -np.cos(y) * np.sin(x / 2) ** 2 / 2],
+                ]
+            ],
         ]
     )
 
@@ -2156,8 +2183,12 @@ class TestParamShiftProbJacobians:
         hess = torch.autograd.functional.jacobian(jacobian, params)
 
         # We need to squeeze the expected derivatives because torch output flattened results
-        assert np.allclose(jac.detach().numpy(), np.squeeze(self.expected_first_order), atol=tol, rtol=0)
-        assert np.allclose(hess.detach().numpy(), np.squeeze(self.expected_second_order), atol=0.1, rtol=0)
+        assert np.allclose(
+            jac.detach().numpy(), np.squeeze(self.expected_first_order), atol=tol, rtol=0
+        )
+        assert np.allclose(
+            hess.detach().numpy(), np.squeeze(self.expected_second_order), atol=0.1, rtol=0
+        )
 
     @pytest.mark.jax
     def test_jax(self, tol, broadcast, expected):
