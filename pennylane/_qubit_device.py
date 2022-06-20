@@ -974,7 +974,8 @@ class QubitDevice(Device):
     def _samples_to_counts(self, samples):
         """Group the obtained samples into a dictionary.
 
-        Example:
+        **Example**
+
             >>> samples
             tensor([[0, 0, 1],
                     [0, 0, 1],
