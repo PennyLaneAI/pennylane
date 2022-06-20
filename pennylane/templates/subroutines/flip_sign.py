@@ -139,6 +139,6 @@ class FlipSign(Operation):
                 op_list.append(PauliX(wire))
         else:
             for wire in list(range(len(wires))):
-                op_list(Identity(wire))
+                op_list.append(Identity(wire))
 
         raise op_list
