@@ -735,7 +735,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
 Albert Mitjans Coma, Isaac De Vlugt, Amintor Dusko, Trent Fridey, Christian Gogolin, Qi Hu, Katharine Hyatt, Josh Izaac, Soran Jahangiri, 
 Edward Jiang, Korbinian Kottmann, Ankit Khandelwal, Christina Lee, Lee James O'Riordan, Chae-Yeun Park, Mason Moreland, Romain Moyard, 
-Maria Schuld, Shuli Shu, Jay Soni, Antal Száva, tal66, Trevor Vincent, David Wierichs, WingCode
+Maria Schuld, Shuli Shu, Jay Soni, Antal Száva, tal66, David Wierichs, WingCode
