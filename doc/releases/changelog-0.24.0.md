@@ -585,6 +585,9 @@ When `decomposition()` is called, a list of new operators equal to this one rais
   submodule. The developer-facing `ControlledOperation` class is no longer imported top-level.
   [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
 
+* Quantum chemistry operations are now remarkably faster with new highly-performant kernels added to `lighting.qubit` and 
+  `lightning.gpu`. For more details, please see the release notes for [lightning.qubit](https://github.com/PennyLaneAI/pennylane-lightning/releases/tag/v0.24.0) and [lightning.gpu](https://github.com/PennyLaneAI/pennylane-lightning-gpu/releases/tag/v0.24.0). 
+* 
 <h3>Deprecations</h3>
 
 * `qml.ExpvalCost` has been deprecated, and usage will now raise a warning.
