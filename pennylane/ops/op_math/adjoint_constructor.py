@@ -55,7 +55,7 @@ def adjoint(fn, lazy=True):
 
         The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
 
-    .. seealso:: :class:`~.ops.arithmetic.Adjoint` and :meth:`~.operation.Operator.adjoint`
+    .. seealso:: :class:`~.ops.op_math.Adjoint` and :meth:`.Operator.adjoint`
 
     **Example**
 
@@ -100,8 +100,8 @@ def adjoint(fn, lazy=True):
         :title: Lazy Evaluation
 
         When ``lazy=False``, the function first attempts operation-specific decomposition of the
-        adjoint via the :meth:`.operation.Operator.adjoint` method. Only if an Operator doesn't have
-        an :meth:`.operation.Operator.adjoint` method is the object wrapped with the :class:`~.ops.arithmetic.Adjoint`
+        adjoint via the :meth:`.Operator.adjoint` method. Only if an Operator doesn't have
+        an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
         wrapper class.
 
         >>> qml.adjoint(qml.PauliZ(0), lazy=False)
