@@ -981,7 +981,7 @@ class QubitDevice(Device):
                     [0, 0, 1],
                     [1, 1, 1]], requires_grad=True)
             >>> self._samples_to_counts(samples)
-             {'111':1, '001':2}
+            {'111':1, '001':2}
         """
         try:
             # Express the states as strings
