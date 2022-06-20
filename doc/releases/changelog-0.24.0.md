@@ -66,7 +66,7 @@
     qfim = qml.qinfo.quantum_fisher(circ)(params)
     ```
 
-    These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction  --- producing what is known as the [*natural* gradient](https://pennylane.ai/qml/demos/tutorial_quantum_natural_gradient.html). For example:
+    These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction  --- producing what is known as the [natural gradient](https://pennylane.ai/qml/demos/tutorial_quantum_natural_gradient.html). For example:
 
     ```pycon
     >>> grad = qml.grad(circ)(params)
@@ -126,10 +126,10 @@
   Currently, all quantum information measurements and transforms are differentiable, but only
   support statevector devices, with hardware support to come in a future release (with the
   exception of `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher`, which are both hardware
-  compatible.
+  compatible).
 
   For more information, check out the new [qinfo module](https://pennylane.readthedocs.io/en/stable/code/qml_qinfo.html) and
-  [measurements page](https://pennylane.readthedocs.io/en/stable/introduction/measurements.html)
+  [measurements page](https://pennylane.readthedocs.io/en/stable/introduction/measurements.html).
 
 * In addition to the QNode transforms and measurements above, functions for computing and
   differentiating quantum information metrics with numerical statevectors and density matrices have
@@ -287,7 +287,7 @@
   * `qml.sample` or
   * multiple `qml.expval` / `qml.var` measurements.
 
-  Consider a `QNode` that returns basis-state probabilities:
+  Consider a QNode that returns basis-state probabilities:
 
   ```python
   dev = qml.device('default.qubit', wires=2)
@@ -403,7 +403,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
 
 * A new transform `qml.split_non_commuting` is available, which splits a quantum
   function or tape into multiple functions/tapes determined by groups of commuting
-  observables.
+  observables:
   [(#2587)](https://github.com/PennyLaneAI/pennylane/pull/2587)
 
   ```python
@@ -426,7 +426,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
 <h3>Improvements</h3>
 
 * Expectation values of multiple non-commuting observables from within a single QNode are now
-  supported.
+  supported:
   [(#2587)](https://github.com/PennyLaneAI/pennylane/pull/2587)
 
   ```
@@ -591,7 +591,7 @@ When `decomposition()` is called, a list of new operators equal to this one rais
   [(#2571)](https://github.com/PennyLaneAI/pennylane/pull/2571)
 
   Instead, it is recommended to simply
-  pass Hamiltonians to the `qml.expval` function inside QNodes.
+  pass Hamiltonians to the `qml.expval` function inside QNodes:
 
   ```python
   @qml.qnode(dev)
