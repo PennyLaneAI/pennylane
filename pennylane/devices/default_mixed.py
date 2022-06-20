@@ -148,6 +148,7 @@ class DefaultMixed(QubitDevice):
         # Create the initial state.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+	self.readout_err = 0.1
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -196,6 +197,7 @@ class DefaultMixed(QubitDevice):
             return None
 
         # convert rho from tensor to matrix
+	self._state = [qml.BitFlip(self.readout_err,wires=k) for k in self.num_wires]
         rho = qnp.reshape(self._state, (2**self.num_wires, 2**self.num_wires))
 
         # probs are diagonal elements
