@@ -22,4 +22,5 @@ import pennylane as qml
 
 class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
+
     pass
