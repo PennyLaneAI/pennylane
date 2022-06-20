@@ -67,7 +67,7 @@ def test_estimation_cost(norm, error, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 90560468001824),
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 90587660604978),
     ],
 )
 def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):

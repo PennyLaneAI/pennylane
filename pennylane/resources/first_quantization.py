@@ -164,7 +164,7 @@ def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
     """
     alpha = 0.01
     # qpe_error obtained to satisfy inequality (131)
-    error_qpe = np.sqrt(error**2 / (1 + 3 * alpha**2))
+    error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
 
     e_cost = estimation_cost(lamb, error_qpe)
     u_cost = unitary_cost(n, eta, omega, error, lamb, br, charge)
