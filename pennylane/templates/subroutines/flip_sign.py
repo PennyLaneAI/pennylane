@@ -99,22 +99,6 @@ class FlipSign(Operation):
         self._hyperparameters = {"bin_arr": bin_arr}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
-    @staticmethod
-    def find_occur(value, arr):
-        r"""Find index of occurrences for value in binary array.
-
-        Args:
-            value (int): value to search in binary arrays
-            arr (array[int]): binary array to search into
-
-        Returns:
-            list[int]: value indexes of search value present in array
-        """
-
-        narray = np.array(arr)
-        res_occur = list(np.where(narray == value)[0])
-        return res_occur
-
     @property
     def num_params(self):
         return 0
@@ -135,17 +119,18 @@ class FlipSign(Operation):
             list[Operator]: decomposition of the operator
         """
 
-        zeros_idx = find_occur(0, bin_arr)
-
         op_list = []
 
-        if len(zeros_idx) > 0:
-            for wire in zeros_idx[:-1]:
-                op_list.append(PauliX(wire))
-                op_list.append(
-                    ctrl(PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(wires=wire)
-                )
-                op_list.append(PauliX(wire))
+        if len(wires) == len(bin_arr):
+            if bin_arr[-1] == 0:
+                op_list.append(PauliX(wires[-1]))
+
+            op_list.append(
+                ctrl(PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(wires=wires[-1])
+            )
+
+            if bin_arr[-1] == 0:
+                op_list.append(PauliX(wires[-1]))
         else:
             for wire in list(range(len(wires))):
                 op_list.append(Identity(wire))
