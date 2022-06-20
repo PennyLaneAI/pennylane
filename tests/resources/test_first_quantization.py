@@ -21,20 +21,6 @@ from pennylane import numpy as np
 
 
 @pytest.mark.parametrize(
-    ("k", "lz", "cost_ref"),
-    [
-        # the reference cost is computed manually
-        (4, 100, 23),
-    ],
-)
-def test_cost_qrom(k, lz, cost_ref):
-    r"""Test that _cost_qrom returns the correct value."""
-    cost = qml.resources._cost_qrom(k, lz)
-
-    assert cost == cost_ref
-
-
-@pytest.mark.parametrize(
     ("lz", "cost_ref"),
     [
         # the reference cost is obtained manually by computing the cost for a range of k values, as
@@ -44,9 +30,9 @@ def test_cost_qrom(k, lz, cost_ref):
         (300, 35),
     ],
 )
-def test_cost_qrom_min(lz, cost_ref):
-    r"""Test that _cost_qrom_min returns the correct value."""
-    cost = qml.resources._cost_qrom_min(lz)
+def test_cost_qrom(lz, cost_ref):
+    r"""Test that _cost_qrom returns the correct value."""
+    cost = qml.resources._cost_qrom(lz)
 
     assert cost == cost_ref
 
@@ -54,7 +40,7 @@ def test_cost_qrom_min(lz, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 10845),
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 10843),
     ],
 )
 def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
@@ -81,7 +67,7 @@ def test_estimation_cost(norm, error, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 87372630069885),
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 87356517090619),
     ],
 )
 def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):

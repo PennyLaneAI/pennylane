@@ -16,35 +16,10 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 # pylint: disable= too-many-arguments
-from functools import partial
-from scipy.optimize import minimize_scalar
 from pennylane import numpy as np
 
 
-def _cost_qrom(k, lz):
-    r"""Return the number of Toffoli gates needed for erasing the output of a QROM.
-    ￼
-    The expression for computing the cost is taken from
-    [`arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_].
-
-    Args:
-        k (int): parameter taken to be a power of 2
-        lz (int): sum of the atomic numbers of nuclei
-
-    Returns:
-        int: the cost of erasing the output of a QROM
-
-    **Example**
-
-    >>> _cost_qrom(4, 100)
-    23
-    """
-    cost = 2**k + np.ceil(2 ** (-k) * lz)
-
-    return int(cost)
-
-
-def _cost_qrom_min(lz):
+def _cost_qrom(lz):
     r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
     ￼
     The expression for computing the cost is taken from
@@ -61,11 +36,13 @@ def _cost_qrom_min(lz):
     >>> _cost_qrom_min(100)
     21
     """
-    n = minimize_scalar(partial(_cost_qrom, lz=lz)).x
+    k_f = np.floor(np.log2(lz) / 2)
+    k_c = np.ceil(np.log2(lz) / 2)
 
-    cost = min(_cost_qrom(np.floor(n), lz), _cost_qrom(np.ceil(n), lz))
+    cost_f = int(2**k_f + np.ceil(2 ** (-1 * k_f) * lz))
+    cost_c = int(2**k_c + np.ceil(2 ** (-1 * k_c) * lz))
 
-    return cost
+    return min(cost_f, cost_c)
 
 
 def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
@@ -111,7 +88,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
         + (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
     )
 
-    e_r = _cost_qrom_min(l_z)
+    e_r = _cost_qrom(l_z)
 
     cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
     cost += 3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1)

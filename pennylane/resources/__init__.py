@@ -18,7 +18,6 @@ quantum algorithms.
 from .factorization import factorize
 from .first_quantization import (
     _cost_qrom,
-    _cost_qrom_min,
     estimation_cost,
     gate_cost,
     qubit_cost,
