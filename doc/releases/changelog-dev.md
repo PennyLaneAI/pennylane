@@ -66,7 +66,7 @@
   {'00': 495, '11': 505}
   ```
   
-  And when sampling the eigenstates of an observable
+  Counts can also be obtained when sampling the eigenstates of an observable:
   
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
