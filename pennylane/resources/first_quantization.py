@@ -75,8 +75,7 @@ def norm(eta, n, omega, error, br=7, charge=0):
     """
     l_z = eta + charge
 
-    # target error in the qubitization of U+V which we assign to be 0.01 of the allowable rms error
-    # in phase estimation
+    # target error in the qubitization of U+V which we set to be 0.01 of the algorithm error
     error_uv = 0.01 * error
 
     # n_p is taken from Eq. (22)
