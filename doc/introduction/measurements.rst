@@ -128,7 +128,7 @@ Counts
 ------
 
 To avoid dealing with long arrays for the larger numbers of shots, one can pass an argument counts=True
-to :func:`~pennylane.sample`. In this case the result will be a dictionnary indicating numbers of occurences for each
+to :func:`~pennylane.sample`. In this case, the result will be a dictionary containing the number of occurrences for each
 unique sample. The previous example will be modified as follows:
 
 .. code-block:: python
