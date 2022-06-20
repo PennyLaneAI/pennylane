@@ -54,6 +54,11 @@
 
 <h3>Documentation</h3>
 
+<h3>Bug fixes</h3>
+
+* `qml.grouping.group_observabeles` now works when individual wire
+  labels are iterable.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
