@@ -302,7 +302,6 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit.observables)
 
-        print(results)
         if not circuit.is_sampled:
 
             ret_types = [m.return_type for m in circuit.measurements]
@@ -328,7 +327,6 @@ class QubitDevice(Device):
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
-        print(results)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1

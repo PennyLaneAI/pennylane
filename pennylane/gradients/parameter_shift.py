@@ -246,6 +246,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
+        print(results)
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             results = [qml.math.squeeze(res) for res in results]
 
@@ -253,7 +254,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
-        print(results)
         for i, (s, f, batch_size) in enumerate(zip(shapes, fns, batch_sizes)):
 
             if s == 0:
@@ -261,14 +261,21 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                 grads.append(None)
                 continue
 
-            res = results[start] if broadcast else results[start: start + s]
+            res = results[start: start + s] if batch_size is None else results[start]
             start = start + s
 
             if f is not None:
                 res = f(res)
 
             # compute the linear combination of results and coefficients
-            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[int(broadcast)], [0]])
+            axis = 0
+            if not broadcast:
+                res = qml.math.stack(res)
+            elif qml.math.get_interface(res[0])!="torch" and batch_size is not None:
+                # The torch output is flattened such that the tensordot axis needs to be 0 even for
+                # parameter broadcasting.
+                axis = 1
+            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[axis], [0]])
 
             if unshifted_coeffs:
                 # add on the unshifted term
