@@ -104,6 +104,8 @@ dev = qml.device("default.qutrit", wires=1, shots=100000)
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
 # TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added
 # TODO: Add tests for inverse decomposition once decomposible operations are added
+# TODO: Add tests for verifying correct behaviour of different observables on default qutrit device.
+# TODO: Add tests for devices with shots for testing correct behaviour of sample
 
 
 class TestApply:
@@ -317,14 +319,6 @@ class TestDefaultQutritIntegration:
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
 
-    # TODO: Add tests that use expval, var to test qutrit circuits after observables
-    # are implemented.
-
-    # TODO: Add tests for verifying correct behaviour of different observables on default
-    # qutrit device.
-
-    # TODO: Add tests for devices with shots for testing correct behaviour of sample
-
 
 class TestProbabilityIntegration:
     """Test probability method for when analytic is True/False"""
@@ -450,4 +444,60 @@ class TestWiresIntegration:
 
 
 class TestApplyOperationUnit:
-    pass
+    """Unit tests for the internal _apply_operation method."""
+
+    # TODO: Add test for testing operations with internal implementations
+
+    @pytest.mark.parametrize("inverse", [True, False])
+    def test_apply_tensordot_case(self, inverse, monkeypatch):
+        """Tests the case when np.tensordot is used to apply an operation in
+        default.qutrit."""
+        dev = qml.device("default.qutrit", wires=2)
+
+        test_state = np.array([1, 0, 0])
+        wires = [0, 1]
+
+        class TestSwap(qml.operation.Operation):
+            num_wires = 2
+
+            @staticmethod
+            def compute_matrix(*params, **hyperparams):
+                return U_tswap
+
+        dev.operations.add("TestSwap")
+        op = TestSwap(wires=wires)
+
+        assert op.name in dev.operations
+        assert op.name not in dev._apply_ops
+
+        if inverse:
+            op = op.inv()
+
+        # Set the internal _apply_unitary_tensordot
+        history = []
+        mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
+
+            dev._apply_operation(test_state, op)
+
+            res_state, res_mat, res_wires = history[0]
+
+            assert np.allclose(res_state, test_state)
+            assert np.allclose(res_mat, op.matrix())
+            assert np.allclose(res_wires, wires)
+
+    def test_identity_skipped(self, mocker):
+        """Test that applying the identity operation does not perform any additional computations"""
+        dev = qml.device("default.qutrit", wires=1)
+
+        starting_state = np.array([1, 0, 0])
+        op = qml.Identity(0)
+
+        spy_unitary = mocker.spy(dev, "_apply_unitary")
+
+        res = dev._apply_operation(starting_state, op)
+
+        assert res is starting_state
+        spy_unitary.assert_not_called()

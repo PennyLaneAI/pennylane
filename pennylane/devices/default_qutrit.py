@@ -58,7 +58,6 @@ class DefaultQutrit(QutritDevice):
 
     observables = {
         "Identity",
-        "QutritUnitary",  # TODO: Remove QutritUnitary from observables list
     }
 
     def __init__(
