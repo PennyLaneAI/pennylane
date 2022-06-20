@@ -79,7 +79,8 @@ class CommutingEvolution(Operation):
     .. details::
         :title: Usage Details
 
-        The template is used inside a qnode:
+        The template is used inside a qnode.
+        The number of shots has to be explicitly set on the device when using sample-based measurements:
 
         .. code-block:: python
 
