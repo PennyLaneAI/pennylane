@@ -41,9 +41,9 @@ def eigvals(op, k=1, which="SA"):
             or function that applies quantum operations.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
-            possible methods for computing the `k` eigenvalues are `LM` (largest in magnitude),
-            `"M` (smallest in magnitude), `LA` (largest algebraic), `SA` (smallest algebraic) and
-            `BE` (k/2 from each end of the spectrum).
+            possible methods are `LM` (largest in magnitude), `M` (smallest in magnitude), `LA`
+            (largest algebraic), `SA` (smallest algebraic) and `BE` (:math:`k/2` from each end of
+            the spectrum).
 
     Returns:
         tensor_like or function: If an operator is provided as input, the eigenvalues are returned
