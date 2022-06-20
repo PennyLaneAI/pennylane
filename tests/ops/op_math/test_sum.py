@@ -18,8 +18,9 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import math
+import pennylane.numpy as qnp
 
-from pennylane.ops.op_math import Sum, sum
+from pennylane.ops.op_math import Sum, op_sum
 from pennylane.operation import MatrixUndefinedError
 import gate_data as gd  # a file containing matrix rep of each gate
 
@@ -67,7 +68,7 @@ param_ops = (
 
 
 def compare_and_expand_mat(mat1, mat2):
-    """helper function which takes two square matrices (of potentially different sizes)
+    """Helper function which takes two square matrices (of potentially different sizes)
     and expands the smaller matrix until their shapes match."""
 
     if mat1.size == mat2.size:
@@ -123,13 +124,73 @@ class TestMatrix:
             sum_op.matrix()
 
     def test_sum_ops_multi_terms(self):
-        return
+        sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliZ(wires=0))
+        mat = sum_op.matrix()
+
+        true_mat = math.array(
+            [
+                [1 / math.sqrt(2) + 1, 1 / math.sqrt(2) + 1],
+                [1 / math.sqrt(2) + 1, -1 / math.sqrt(2) - 1],
+            ]
+        )
+        assert np.allclose(mat, true_mat)
 
     def test_sum_ops_multi_wires(self):
-        return
+        sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliZ(wires=2))
+        mat = sum_op.matrix()
+
+        x = math.array([[0, 1], [1, 0]])
+        h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
+        z = math.array([[1, 0], [0, -1]])
+
+        true_mat = (
+            math.kron(x, math.eye(4))
+            + math.kron(math.kron(math.eye(2), h), math.eye(2))
+            + math.kron(math.eye(4), z)
+        )
+
+        assert np.allclose(mat, true_mat)
+
+    def test_sum_ops_wire_order(self):
+        sum_op = Sum(qml.PauliZ(wires=2), qml.PauliX(wires=0), qml.Hadamard(wires=1))
+        wire_order = [0, 1, 2]
+        mat = sum_op.matrix(wire_order=wire_order)
+
+        x = math.array([[0, 1], [1, 0]])
+        h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
+        z = math.array([[1, 0], [0, -1]])
+
+        true_mat = (
+            math.kron(x, math.eye(4))
+            + math.kron(math.kron(math.eye(2), h), math.eye(2))
+            + math.kron(math.eye(4), z)
+        )
+
+        assert np.allclose(mat, true_mat)
+
+    @staticmethod
+    def get_qft_mat(num_wires):
+        omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
+        mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
+
+        for m in range(2**num_wires):
+            for n in range(2**num_wires):
+                mat[m, n] = omega ** (m * n)
+
+        return 1 / math.sqrt(2**num_wires) * mat
 
     def test_sum_templates(self):
-        return
+        wires = [0, 1, 2]
+        sum_op = Sum(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
+        mat = sum_op.matrix()
+
+        grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
+        qft_mat = self.get_qft_mat(3)
+        x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
+        x_mat = math.kron(x, math.eye(4, dtype="complex128"))
+
+        true_mat = grov_mat + qft_mat + x_mat
+        assert np.allclose(mat, true_mat)
 
     def test_sum_qchem_ops(self):
         return
@@ -139,6 +200,8 @@ class TestMatrix:
 
     def test_sum_qubit_unitary(self):
         return
+
+    # Add interface tests for each interface !
 
 
 class TestProperties:
@@ -190,6 +253,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_eigendecompostion(self, ops_lst):
+
         return
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -204,13 +268,9 @@ class TestProperties:
     def test_eigenvals(self, ops_lst):
         return
 
-    # def test_decomposition(self, ops_lst):
-    #     sum_op = Sum(*ops_lst)
-    #     return
-
 
 class TestWrapperFunc:
-    def test_sum_top_level(self):
+    def test_op_sum_top_level(self):
         """Test that the top level function constructs an identical instance to one
         created using the class."""
 
@@ -218,7 +278,7 @@ class TestWrapperFunc:
         op_id = "sum_op"
         do_queue = False
 
-        sum_func_op = sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = op_sum(*summands, id=op_id, do_queue=do_queue)
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
         assert sum_class_op.summands == sum_func_op.summands
@@ -232,9 +292,6 @@ class TestPrivateSum:
     def test_sum_private(self):
         return
 
-    def test_error_raised_no_mat(self):
-        return
-
     def test_dtype(self):
         return
 
@@ -243,11 +300,62 @@ class TestPrivateSum:
 
 
 class TestIntegration:
-    def test_measurement_process(self):
-        return
+    def test_measurement_process_expval(self):
+        dev = qml.device("default.qubit", wires=2)
+        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
 
-    def test_diff_measurement_process(self):
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.expval(sum_op)
+
+        exp_val = my_circ()
+        true_exp_val = qnp.array(1 / qnp.sqrt(2))
+        assert qnp.allclose(exp_val, true_exp_val)
+
+    def test_measurement_process_var(self):
+        dev = qml.device("default.qubit", wires=2)
+        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.var(sum_op)
+
+        var = my_circ()
+        true_var = qnp.array(3/2)
+        assert qnp.allclose(var, true_var)
+
+    def test_measurement_process_probs(self):
+        dev = qml.device("default.qubit", wires=2)
+        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.probs(op=sum_op)
+
+        hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
+        returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
+        # TODO[Jay]: which of these two is correct?
+        assert qnp.allclose(my_circ(), returned_probs)
+
+    # def test_measurement_process_sample(self):
+    #     dev = qml.device("default.qubit", wires=2)
+    #     sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+    #
+    #     @qml.qnode(dev)
+    #     def my_circ():
+    #         qml.PauliX(0)
+    #         return qml.sample(sum_op)
+    #
+    #     assert my_circ() == 1/math.sqrt(2)
+
+    def test_differentiable_measurement_process(self):
         return
 
     def test_non_hermitian_op_in_measurement_process(self):
+        return
+
+    def test_text_drawer(self):
         return

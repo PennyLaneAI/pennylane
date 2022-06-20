@@ -22,7 +22,7 @@ This module contains classes and functions for Operator arithmetic.
 
 from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
-from .sum import sum, Sum
+from .sum import op_sum, Sum  # top level func cannot be cva
 
 from .control import ctrl, ControlledOperation
 

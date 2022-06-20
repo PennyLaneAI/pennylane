@@ -17,26 +17,20 @@ computing the sum of operations.
 """
 import numpy as np
 import pennylane as qml
+
+from functools import reduce
 from pennylane import math
-from pennylane.operation import Operator, expand_matrix, MatrixUndefinedError
+from pennylane.operation import Operator
 
 
-def sum(*summands, do_queue=True, id=None):
+def op_sum(*summands, do_queue=True, id=None):
     """Top level sum function to create an instance of Sum"""
     return Sum(*summands, do_queue=do_queue, id=id)
 
 
 def _sum(mats_gen, dtype=None, cast_like=None):
-    """Private sum method given a series of matrices of correct size.
-    Super inefficient method just as a proof of concept."""
-
-    res = None
-    try:
-        for i, mat in enumerate(mats_gen):
-            res = mat if i == 0 else math.add(res, mat)
-    except MatrixUndefinedError as error:
-        print(f"\nThe matrix method must be defined for all summands: \n")
-        raise error
+    """Private sum method given a series of matrices of correct size."""  # Note this method is inefficient
+    res = reduce(math.add, mats_gen)
 
     if dtype is not None:
         res = math.cast(res, dtype)
@@ -52,19 +46,20 @@ class Sum(Operator):
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(self, *summands, do_queue=True, id=None):
+        """Initialize a Symbolic Operator class corresponding to the Sum of operations."""
+        self._name = "Sum"
+        self._id = id
+        self.queue_idx = None
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
         self.summands = summands
+        self.data = [s.parameters for s in summands]
+        self._wires = qml.wires.Wires.all_wires([s.wires for s in summands])
 
-        combined_wires = qml.wires.Wires.all_wires([s.wires for s in summands])
-        combined_params = []
-        for s in summands:
-            combined_params += s.parameters
-
-        super().__init__(*combined_params, wires=combined_wires, do_queue=do_queue, id=id)
-        self._name = "Sum"
+        if do_queue:
+            self.queue()
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -85,6 +80,10 @@ class Sum(Operator):
     @property
     def num_wires(self):
         return len(self.wires)
+
+    @property
+    def num_params(self):
+        return sum(op.num_params for op in self.summands)
 
     @property
     def is_hermitian(self):
@@ -154,3 +153,8 @@ class Sum(Operator):
         Returns: None
         """
         return None
+
+    def queue(self, context=qml.QueuingContext):
+        for op in self.summands:
+            context.safe_update_info(op, owner=self)
+        return self
