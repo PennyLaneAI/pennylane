@@ -649,7 +649,7 @@ def sample(op=None, wires=None, counts=False):
            [1, 1],
            [0, 0]])
 
-    If specified counts=True, the function returns numbers of counts for each sample,
+    If specified counts=True, the function returns number of counts for each sample,
     both for observables eigenvalues or the system eigenstates.
 
     .. code-block:: python3
