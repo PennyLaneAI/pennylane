@@ -53,7 +53,6 @@ jobs:
           # Exclude some files known to be divergent during the release process from the PR
           git checkout master -- pennylane/_version.py
           git checkout master -- doc/development/release_notes.md
-          git checkout master -- doc/releases/changelog-dev.md
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git commit -m "exclude files from pr"

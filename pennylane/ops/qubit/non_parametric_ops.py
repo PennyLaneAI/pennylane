@@ -1255,7 +1255,7 @@ class ECR(Operation):
 
     An echoed RZX(pi/2) gate.
 
-    .. math:: \mathtt{ECR} = {1/\sqrt{2}} \begin{bmatrix}
+    .. math:: ECR = {1/\sqrt{2}} \begin{bmatrix}
             0 & 0 & 1 & i \\
             0 & 0 & i & 1 \\
             1 & -i & 0 & 0 \\
@@ -1292,11 +1292,12 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_matrix())
-
          [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
          [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
          [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
-         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]"""
+         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
+        """
+
         return np.array(
             [
                 [0, 0, INV_SQRT2, INV_SQRT2 * 1j],
