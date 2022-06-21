@@ -542,9 +542,8 @@ class TestCounts:
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,)) & np.all(
-            [sum(s.unwrap().values()) == n_sample for s in sample]
-        )
+        assert np.array_equal(sample.shape, (2,))
+        assert np.all([sum(s.unwrap().values()) == n_sample for s in sample])
 
     def test_counts_combination(self, tol):
         """Test the output of combining expval, var and counts"""
