@@ -499,6 +499,8 @@ def param_shift(
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
+        broadcast (bool): Whether or not to use parameter broadcasting to create the
+            a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -602,6 +604,11 @@ def param_shift(
         :attr:`~.operation.Operation.parameter_frequencies`, and finally
         :meth:`~.operation.Operation.generator` via the default implementation of the frequencies.
 
+    .. warning::
+
+        Note that using parameter broadcasting via ``broadcast=True`` is not supported for tapes
+        with multiple return values or for evaluations with shot vectors.
+
     .. details::
         :title: Usage Details
 
@@ -647,6 +654,26 @@ def param_shift(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         [[-0.38751721 -0.18884787 -0.38355704]
          [ 0.69916862  0.34072424  0.69202359]]
+
+        When setting the keyword argument ``broadcast`` to ``True``, the shifted
+        circuit evaluations for each operation are batched together, resulting in
+        broadcasted tapes:
+
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     qml.expval(qml.PauliZ(0))
+        >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        >>> len(gradient_tapes)
+        3
+        >>> [t.batch_size for t in gradient_tapes]
+        [2, 2, 2]
+
+        The postprocessing function will know that broadcasting is used and handle
+        the results accordingly:
+        >>> fn(qml.execute(gradient_tapes, dev, None))
+        [-0.38751721 -0.18884787 -0.38355704]
     """
 
     if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
