@@ -53,9 +53,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Conditionally install PyTorch
         if: matrix.config.suite == 'torch'
@@ -110,9 +110,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Install PyTorch
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
@@ -160,9 +160,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Install PyTorch
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
@@ -215,9 +215,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Install openfermionpyscf
         run: pip3 install openfermionpyscf
@@ -268,9 +268,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
-          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Conditionally install PyTorch
         if: contains(matrix.config.device, 'torch')
