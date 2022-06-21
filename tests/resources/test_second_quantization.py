@@ -15,8 +15,8 @@
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
 import pytest
-
 import pennylane as qml
+from pennylane import numpy as np
 
 
 @pytest.mark.parametrize(
@@ -206,3 +206,35 @@ def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, b
     r"""Test that qubit_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
         qml.resources.qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
+
+
+@pytest.mark.parametrize(
+    ("one", "two", "eigvals", "lamb_ref"),
+    [
+        (
+            np.array([[-1.25330961e00, 4.01900735e-14], [4.01900735e-14, -4.75069041e-01]]),
+            # two-electron integral is arranged in chemist notation
+            np.array(
+                [
+                    [
+                        [[6.74755872e-01, -4.60742555e-14], [-4.60742555e-14, 6.63711349e-01]],
+                        [[-4.61020111e-14, 1.81210478e-01], [1.81210478e-01, -4.26325641e-14]],
+                    ],
+                    [
+                        [[-4.60464999e-14, 1.81210478e-01], [1.81210478e-01, -4.25215418e-14]],
+                        [[6.63711349e-01, -4.28546088e-14], [-4.24105195e-14, 6.97651447e-01]],
+                    ],
+                ]
+            ),
+            np.tensor(
+                [[-0.10489852, 0.10672343], [-0.42568824, 0.42568824], [-0.82864211, -0.81447282]]
+            ),
+            1.6570518796336895,  # lambda value obtained from openfermion
+        )
+    ],
+)
+def test_df_norm(one, two, eigvals, lamb_ref):
+    r"""Test that the norm function returns the correct 1-norm."""
+    lamb = qml.resources.norm(one, two, eigvals)
+
+    assert np.allclose(lamb, lamb_ref)
