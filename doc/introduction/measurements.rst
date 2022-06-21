@@ -170,7 +170,7 @@ And the result is:
 {'00': 495, '11': 505}
 
 If another measurement function than :func:`~.pennylane.sample` is provided,
-the a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
+a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
 
