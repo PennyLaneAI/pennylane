@@ -204,6 +204,16 @@ class DefaultQubit(QubitDevice):
         return dict(wire_map)
 
     # pylint: disable=arguments-differ
+    def _get_batch_size(self, tensor, expected_shape, expected_size):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape."""
+        size = self._size(tensor)
+        if self._ndim(tensor) > len(expected_shape) or size > expected_size:
+            return size // expected_size
+
+        return None
+
+    # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
@@ -252,7 +262,8 @@ class DefaultQubit(QubitDevice):
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
-            axes = self.wires.indices(wires)
+            shift = int(self._ndim(state) > self.num_wires)
+            axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
@@ -358,8 +369,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
+        ndim = self._ndim(state)
+        sl_0 = _get_slice(0, axes[0], ndim)
+        sl_1 = _get_slice(1, axes[0], ndim)
 
         # We will be slicing into the state according to state[sl_1], giving us all of the
         # amplitudes with a |1> for the control qubit. The resulting array has lost an axis
@@ -393,10 +405,11 @@ class DefaultQubit(QubitDevice):
         """
         cntrl_max = np.argmax(axes[:2])
         cntrl_min = cntrl_max ^ 1
-        sl_a0 = _get_slice(0, axes[cntrl_max], self.num_wires)
-        sl_a1 = _get_slice(1, axes[cntrl_max], self.num_wires)
-        sl_b0 = _get_slice(0, axes[cntrl_min], self.num_wires - 1)
-        sl_b1 = _get_slice(1, axes[cntrl_min], self.num_wires - 1)
+        ndim = self._ndim(state)
+        sl_a0 = _get_slice(0, axes[cntrl_max], ndim)
+        sl_a1 = _get_slice(1, axes[cntrl_max], ndim)
+        sl_b0 = _get_slice(0, axes[cntrl_min], ndim - 1)
+        sl_b1 = _get_slice(1, axes[cntrl_min], ndim - 1)
 
         # If both controls are smaller than the target, shift the target axis down by two. If one
         # control is greater and one control is smaller than the target, shift the target axis
@@ -439,8 +452,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
+        ndim = self._ndim(state)
+        sl_0 = _get_slice(0, axes[0], ndim)
+        sl_1 = _get_slice(1, axes[0], ndim)
 
         if axes[1] > axes[0]:
             target_axes = [axes[1] - 1]
@@ -462,9 +476,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        num_wires = len(state.shape)
-        sl_0 = _get_slice(0, axes[0], num_wires)
-        sl_1 = _get_slice(1, axes[0], num_wires)
+        ndim = self._ndim(state)
+        sl_0 = _get_slice(0, axes[0], ndim)
+        sl_1 = _get_slice(1, axes[0], ndim)
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], self._const_mul(phase, state[sl_1])], axis=axes[0])
@@ -484,6 +498,11 @@ class DefaultQubit(QubitDevice):
 
         Returns:
             float: returns the expectation value of the observable
+
+        .. warning::
+
+            This function only supports broadcasting if no differentiation with
+            respect to the Hamiltonian or the quantum state directly is performed.
         """
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
@@ -497,6 +516,7 @@ class DefaultQubit(QubitDevice):
             ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
+                # TODO[dwierichs]: This branch is not adapted to broadcasting yet
                 # We must compute the expectation value assuming that the Hamiltonian
                 # coefficients *and* the quantum states are tensor objects.
 
@@ -535,10 +555,21 @@ class DefaultQubit(QubitDevice):
                     Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
-                res = csr_matrix.dot(
-                    csr_matrix(qml.math.conj(state)),
-                    csr_matrix.dot(Hmat, csr_matrix(state.reshape(len(self.state), 1))),
-                ).toarray()[0]
+                if qml.math.ndim(state) == 2:
+                    res = qml.math.array(
+                        [
+                            csr_matrix.dot(
+                                csr_matrix(qml.math.conj(_state)),
+                                csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
+                            ).toarray()[0]
+                            for _state in state
+                        ]
+                    )
+                else:
+                    res = csr_matrix.dot(
+                        csr_matrix(qml.math.conj(state)),
+                        csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
+                    ).toarray()[0]
 
             if observable.name == "Hamiltonian":
                 res = qml.math.squeeze(res)
@@ -571,6 +602,7 @@ class DefaultQubit(QubitDevice):
             supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
+            supports_broadcasting=True,
             returns_state=True,
             passthru_devices={
                 "tf": "default.qubit.tf",
@@ -590,6 +622,8 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
+
+        Note: This function does not support broadcasted inputs yet.
         """
         state = np.zeros(2**self.num_wires, dtype=np.complex128)
         state[index] = 1
@@ -598,34 +632,41 @@ class DefaultQubit(QubitDevice):
 
     @property
     def state(self):
-        return self._flatten(self._pre_rotated_state)
+        dim = 2**self.num_wires
+        batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
+        shape = (batch_size, dim) if batch_size is not None else (dim,)
+        return self._reshape(self._pre_rotated_state, shape)
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 
         Args:
-            state (array[complex]): normalized input state of length
-                ``2**len(wires)``
+            state (array[complex]): normalized input state of length ``2**len(wires)``
+                or broadcasted state of shape ``(batch_size, 2**len(wires))``
             device_wires (Wires): wires that get initialized in the state
         """
 
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
+        dim = 2 ** len(device_wires)
 
         state = self._asarray(state, dtype=self.C_DTYPE)
-        n_state_vector = state.shape[0]
+        batch_size = self._get_batch_size(state, (dim,), dim)
+        output_shape = [2] * self.num_wires
+        if batch_size is not None:
+            output_shape.insert(0, batch_size)
 
-        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
-            raise ValueError("State vector must be of length 2**wires.")
+        if not (state.shape in [(dim,), (batch_size, dim)]):
+            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
-        norm = qml.math.linalg.norm(state, ord=2)
-        if not qml.math.is_abstract(norm):
+        if not qml.math.is_abstract(state):
+            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
             if not qml.math.allclose(norm, 1.0, atol=tolerance):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
-            # Initialize the entire wires with the state
-            self._state = self._reshape(state, [2] * self.num_wires)
+            # Initialize the entire device state with the input state
+            self._state = self._reshape(state, output_shape)
             return
 
         # generate basis states on subset of qubits via the cartesian product
@@ -638,8 +679,13 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
-        state = self._reshape(state, [2] * self.num_wires)
+        if batch_size is not None:
+            state = self._scatter(
+                (slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires]
+            )
+        else:
+            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._reshape(state, output_shape)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
     def _apply_basis_state(self, state, wires):
@@ -649,6 +695,8 @@ class DefaultQubit(QubitDevice):
             state (array[int]): computational basis state of shape ``(wires,)``
                 consisting of 0s and 1s.
             wires (Wires): wires that the provided computational state should be initialized on
+
+        Note: This function does not support broadcasted inputs yet.
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -679,12 +727,24 @@ class DefaultQubit(QubitDevice):
 
         Returns:
             array[complex]: output state
+
+        Note: This function does not support simultaneously broadcasted states and matrices yet.
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        dim = 2 ** len(device_wires)
+        mat_batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
+        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, 2**self.num_wires)
+
+        shape = [2] * (len(device_wires) * 2)
+        state_axes = device_wires
+        if mat_batch_size:
+            shape.insert(0, mat_batch_size)
+        if state_batch_size:
+            state_axes = [ax + 1 for ax in state_axes]
+        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
+        axes = (np.arange(-len(device_wires), 0), state_axes)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
@@ -693,6 +753,15 @@ class DefaultQubit(QubitDevice):
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
         perm = list(device_wires) + unused_idxs
+        if mat_batch_size:
+            perm = [idx + 1 for idx in perm]
+            perm.insert(0, 0)
+        if state_batch_size:
+            # As the state broadcasting dimension always is the first in the state, it always
+            # ends up in position `len(device_wires)` after the tensordot. The -1 causes it
+            # being permuted to the leading dimension after transposition
+            perm.insert(len(device_wires), -1)
+
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
 
@@ -713,7 +782,13 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        dim = 2 ** len(device_wires)
+        batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
+
+        shape = [2] * (len(device_wires) * 2)
+        if batch_size is not None:
+            shape.insert(0, batch_size)
+        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
@@ -733,7 +808,9 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
+        einsum_indices = (
+            f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
+        )
 
         return self._einsum(einsum_indices, mat, state)
 
@@ -752,14 +829,19 @@ class DefaultQubit(QubitDevice):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
+        dim = 2 ** len(device_wires)
+        batch_size = self._get_batch_size(phases, (dim,), dim)
 
         # reshape vectors
-        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
+        shape = [2] * len(device_wires)
+        if batch_size is not None:
+            shape.insert(0, batch_size)
+        phases = self._cast(self._reshape(phases, shape), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
-        einsum_indices = f"{affected_indices},{state_indices}->{state_indices}"
+        einsum_indices = f"...{affected_indices},...{state_indices}->...{state_indices}"
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
@@ -775,8 +857,11 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        flat_state = self._flatten(self._state)
+        dim = 2**self.num_wires
+        batch_size = self._get_batch_size(self._state, [2] * self.num_wires, dim)
+        flat_state = self._reshape(
+            self._state, (batch_size, dim) if batch_size is not None else (dim,)
+        )
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
-        return prob
+        return self.marginal_prob(real_state**2 + imag_state**2, wires)
