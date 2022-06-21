@@ -242,7 +242,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20)
     return int(e_cost * u_cost)
 
 
-def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+def qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
     r"""Return the number of ancilla qubits needed to implement the double factorization method.
 
     The expression for computing the cost is taken from Eq. (C40) of
@@ -251,7 +251,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20
 
     Args:
         n (int): number of molecular spin-orbitals
-        norm (float): 1-norm of a second-quantized Hamiltonian
+        lamb (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
         rank_r (int): rank of the first factorization of the two-electron integral tensor
         rank_m (float): average rank of the second factorization of the two-electron integral tensor
@@ -266,7 +266,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20
     **Example**
 
     >>> n = 14
-    >>> norm = 52.98761457453095
+    >>> lamb = 52.98761457453095
     >>> error = 0.001
     >>> rank_r = 26
     >>> rank_m = 5.5
@@ -274,7 +274,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20
     >>> br = 7
     >>> alpha = 10
     >>> beta = 20
-    >>> qubit_cost(n, norm, error, rank_r, rank_m, br, alpha, beta)
+    >>> qubit_cost(n, lamb, error, rank_r, rank_m, br, alpha, beta)
     292
     """
     if n <= 0 or not isinstance(n, int) or n % 2 != 0:
@@ -283,7 +283,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20
     if error <= 0.0:
         raise ValueError("The target error must be greater than zero.")
 
-    if norm <= 0.0:
+    if lamb <= 0.0:
         raise ValueError("The 1-norm must be greater than zero.")
 
     if rank_r <= 0 or not isinstance(rank_r, int):
@@ -318,7 +318,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20
     kr = _qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
 
     # the cost is computed using Eq. (C40) of 10.1103/PRXQuantum.2.030305
-    e_cost = estimation_cost(norm, error)
+    e_cost = estimation_cost(lamb, error)
     cost = n + 2 * nl + nxi + 3 * alpha + beta + bo + bp2
     cost += kr * n * beta / 2 + 2 * np.ceil(np.log2(e_cost + 1)) + 7
 
