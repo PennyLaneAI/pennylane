@@ -40,12 +40,18 @@
   -1.1258709813834058
   ```
   
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
+  drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 <h3>Improvements</h3>
 
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
+* A small performance and readability upgrade to the `compute_matrix` method
+  of broadcastable parametric operations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of
+  parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
 <h3>Breaking changes</h3>
@@ -58,4 +64,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+Ankit Khandelwal, Ixchel Meza Chavez, David Wierichs, Moritz Willmann
