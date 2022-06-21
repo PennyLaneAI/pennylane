@@ -19,7 +19,7 @@ method.
 from pennylane import numpy as np
 
 
-def estimation_cost(norm, error):
+def estimation_cost(lamb, error):
     r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
     phase estimation.
 
@@ -27,7 +27,7 @@ def estimation_cost(norm, error):
     [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
     Args:
-        norm (float): 1-norm of a second-quantized Hamiltonian
+        lamb (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
 
     Returns:
@@ -42,10 +42,10 @@ def estimation_cost(norm, error):
     if error <= 0.0:
         raise ValueError("The target error must be greater than zero.")
 
-    if norm <= 0.0:
+    if lamb <= 0.0:
         raise ValueError("The 1-norm must be greater than zero.")
 
-    return int(np.ceil(np.pi * norm / (2 * error)))
+    return int(np.ceil(np.pi * lamb / (2 * error)))
 
 
 def _qrom_cost(constants):
@@ -172,7 +172,7 @@ def unitary_cost(n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
     return int(cost)
 
 
-def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+def gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
     r"""Return the total number of Toffoli gates needed to implement the double factorization
     algorithm.
 
@@ -181,7 +181,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20)
 
     Args:
         n (int): number of molecular spin-orbitals
-        norm (float): 1-norm of a second-quantized Hamiltonian
+        lamb (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
         rank_r (int): rank of the first factorization of the two-electron integral tensor
         rank_m (float): average rank of the second factorization of the two-electron integral tensor
@@ -196,7 +196,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20)
     **Example**
 
     >>> n = 14
-    >>> norm = 52.98761457453095
+    >>> lamb = 52.98761457453095
     >>> error = 0.001
     >>> rank_r = 26
     >>> rank_m = 5.5
@@ -204,7 +204,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20)
     >>> br = 7
     >>> alpha = 10
     >>> beta = 20
-    >>> gate_cost(n, norm, error, rank_r, rank_m, br, alpha, beta)
+    >>> gate_cost(n, lamb, error, rank_r, rank_m, br, alpha, beta)
     167048631
     """
     if n <= 0 or not isinstance(n, int) or n % 2 != 0:
@@ -213,7 +213,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20)
     if error <= 0.0:
         raise ValueError("The target error must be greater than zero.")
 
-    if norm <= 0.0:
+    if lamb <= 0.0:
         raise ValueError("The 1-norm must be greater than zero.")
 
     if rank_r <= 0 or not isinstance(rank_r, int):
@@ -236,7 +236,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20)
     if beta <= 0 or not isinstance(beta, int):
         raise ValueError("beta must be a positive integer.")
 
-    e_cost = estimation_cost(norm, error)
+    e_cost = estimation_cost(lamb, error)
     u_cost = unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
 
     return int(e_cost * u_cost)
