@@ -543,7 +543,7 @@ class TestCounts:
         sample = circuit()
 
         assert np.array_equal(sample.shape, (2,))
-        assert np.all([sum(s.unwrap().values()) == n_sample for s in sample])
+        assert np.all([sum(s.values()) == n_sample for s in sample])
 
     def test_counts_combination(self, tol):
         """Test the output of combining expval, var and counts"""
@@ -582,8 +582,8 @@ class TestCounts:
 
         result = circuit()
 
-        assert isinstance(result, np.ndarray)
-        assert sum(result.unwrap().values()) == n_sample
+        assert isinstance(result, dict)
+        assert sum(result.values()) == n_sample
 
     def test_multi_wire_counts_regular_shape(self, tol):
         """Test the return type and shape of sampling multiple wires
@@ -605,8 +605,8 @@ class TestCounts:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
         assert result.shape[0] == 3
-        assert all(sum(r.unwrap().values()) == n_sample for r in result)
-        assert all(all(v.dtype == np.dtype("int") for v in r.unwrap().values()) for r in result)
+        assert all(sum(r.values()) == n_sample for r in result)
+        assert all(all(v.dtype == np.dtype("int") for v in r.values()) for r in result)
 
     def test_observable_return_type_is_counts(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
