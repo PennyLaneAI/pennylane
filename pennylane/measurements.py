@@ -585,7 +585,8 @@ def var(op):
 
 def sample(op=None, wires=None, counts=False):
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device.
+    determined from the ``dev.shots`` attribute of the corresponding device,
+    returning raw samples (counts=False) or the number of counts for each sample (counts=True).
     If no observable is provided then basis state samples are returned directly
     from the device.
 
@@ -647,6 +648,27 @@ def sample(op=None, wires=None, counts=False):
            [0, 0],
            [1, 1],
            [0, 0]])
+
+    If specified counts=True, the function returns numbers of counts for each sample,
+    both for observables eigenvalues or the system eigenstates.
+
+    .. code-block:: python3
+
+        dev = qml.device('default.qubit', wires=3, shots=10)
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.PauliX(wires=2)
+            return qml.sample(qml.PauliZ(0), counts = True), qml.sample(counts=True)
+
+    Executing this QNode:
+
+    >>> my_circ()
+    tensor([tensor({-1: 5, 1: 5}, dtype=object, requires_grad=True),
+        tensor({'001': 5, '111': 5}, dtype=object, requires_grad=True)],
+       dtype=object, requires_grad=True)
 
     .. note::
 
