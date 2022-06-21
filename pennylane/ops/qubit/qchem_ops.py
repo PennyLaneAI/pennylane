@@ -43,6 +43,7 @@ class SingleExcitation(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -76,6 +77,9 @@ class SingleExcitation(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -178,6 +182,7 @@ class SingleExcitationMinus(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
 
@@ -194,6 +199,9 @@ class SingleExcitationMinus(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -324,6 +332,7 @@ class SingleExcitationPlus(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
 
@@ -340,6 +349,9 @@ class SingleExcitationPlus(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -477,6 +489,7 @@ class DoubleExcitation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -510,6 +523,9 @@ class DoubleExcitation(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -680,6 +696,7 @@ class DoubleExcitationPlus(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
 
@@ -695,6 +712,9 @@ class DoubleExcitationPlus(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -778,6 +798,7 @@ class DoubleExcitationMinus(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
 
@@ -793,6 +814,9 @@ class DoubleExcitationMinus(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -880,6 +904,7 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
       :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
       (see `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__).
@@ -914,6 +939,9 @@ class OrbitalRotation(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""

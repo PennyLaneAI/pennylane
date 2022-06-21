@@ -278,7 +278,6 @@ class RZ(Operation):
 
         phases = qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * theta, [-1, 1]))
         mat = qml.math.einsum("...i,il->...il", phases, np.eye(2))
-        # print(f"RZ({theta}) = {mat}")
         return mat
 
     @staticmethod
