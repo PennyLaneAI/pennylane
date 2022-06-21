@@ -16,7 +16,7 @@ import copy
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply, adjoint
-from pennylane.math import mean, shape
+from pennylane.math import mean, shape, round
 from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform
 
@@ -38,7 +38,7 @@ def fold_global(circuit, scale_factor):
     assert scale_factor >= 1.
 
     # Generate base_circuit without measurements
-    base_ops = copy.deepcopy(circuit.expand().operations)
+    base_ops = copy.deepcopy(circuit.expand().operations) #stop_at=lambda op: not isinstance(op, QuantumTape)
     # Treat all circuits as lists of operations, build new tape in the end
 
     num_global_folds, fraction_scale = divmod(scale_factor - 1, 2)
@@ -47,18 +47,18 @@ def fold_global(circuit, scale_factor):
     new_list_of_ops = copy.deepcopy(base_ops)
 
     for _ in range(int(num_global_folds)):
-        new_list_of_ops += [adjoint(op).__copy__() for op in base_ops[::-1]]
-        new_list_of_ops += base_ops.copy()
+        new_list_of_ops += [adjoint(op.__copy__()) for op in base_ops[::-1]]
+        new_list_of_ops += [op.__copy__() for op in base_ops]
 
     # Do remainder folds
     num_to_fold = int(round(fraction_scale * len(base_ops) / 2))
     n_ops = len(base_ops)
 
     for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
-        new_list_of_ops += [adjoint(base_ops[i]).__copy__()]
+        new_list_of_ops += [adjoint(base_ops[i].__copy__())]
 
     for i in range(n_ops - num_to_fold, n_ops):
-        new_list_of_ops += [base_ops[i]]
+        new_list_of_ops += [base_ops[i].__copy__()]
 
     # Create new_circuit from folded list
     with QuantumTape() as new_circuit:

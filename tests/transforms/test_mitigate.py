@@ -15,6 +15,7 @@
 Tests for mitigation transforms.
 """
 import pytest
+import numpy
 from packaging import version
 
 import pennylane as qml
@@ -330,6 +331,25 @@ class TestMitiqIntegration:
 
 class TestFoldGlobal:
     """Testing ``qml.transforms.fold_global"""
-
+    @pytest.mark.xfail
     def test_constant_result(self):
-        """Ensuring that the circuit always yields the same result upon folding"""
+        """Ensuring that the circuit always yields the same result upon folding."""
+
+        dev = qml.device("default.qubit", wires=5)
+
+        # Select template to use within circuit and generate parameters
+        n_layers = 2
+        n_wires = 3
+        template = qml.SimplifiedTwoDesign
+        weights_shape = template.shape(n_layers, n_wires)
+        w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
+
+        @qml.qnode(dev)
+        def circuit(w1, w2):
+            template(w1, w2, wires=range(n_wires)).decomposition()
+            qml.adjoint(template(w1, w2, wires=range(n_wires))).decomposition()
+            return qml.expval(qml.PauliZ(0))
+
+        folded_qnodes = [qml.transforms.fold_global(circuit, scale_factor=lambda_) for lambda_ in np.arange(1,10)]
+        [_(w1, w2) for _ in folded_qnodes]
+        assert np.allclose(res, 1)
