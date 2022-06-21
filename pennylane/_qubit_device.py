@@ -303,9 +303,7 @@ class QubitDevice(Device):
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                elif circuit.measurements[0].return_type is qml.measurements.Counts:
-                    results = self._asarray(results)
-                else:
+                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
                     results = self._asarray(results, dtype=self.R_DTYPE)
 
@@ -315,7 +313,8 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            else:
+            elif any(ret is not qml.measurements.Counts for ret in ret_types):
+                # all the other cases except all counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
@@ -971,7 +970,7 @@ class QubitDevice(Device):
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         return np.squeeze(np.var(samples, axis=0))
 
-    def _samples_to_counts(self, samples):
+    def _samples_to_counts(self, samples, no_observable_provided):
         """Group the obtained samples into a dictionary.
 
         **Example**
@@ -983,12 +982,9 @@ class QubitDevice(Device):
             >>> self._samples_to_counts(samples)
             {'111':1, '001':2}
         """
-        try:
+        if no_observable_provided:
             # Express the states as strings
             samples = ["".join(self._asarray(sample, dtype=str)) for sample in samples]
-        except TypeError:
-            # Evaluation of an observable
-            pass
         states, counts = np.unique(samples, return_counts=True)
         return dict(zip(states, counts))
 
@@ -998,14 +994,13 @@ class QubitDevice(Device):
         device_wires = self.map_wires(observable.wires)
         name = observable.name
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
-        elif isinstance(
-            observable, MeasurementProcess
-        ):  # if no observable was provided then return the raw samples
+        elif no_observable_provided:  # if no observable was provided then return the raw samples
             if (
                 len(observable.wires) != 0
             ):  # if wires are provided, then we only return samples from those wires
@@ -1033,7 +1028,7 @@ class QubitDevice(Device):
 
         if bin_size is None:
             if counts:
-                return self._samples_to_counts(samples)
+                return self._samples_to_counts(samples, no_observable_provided)
             return samples
 
         return samples.reshape((bin_size, -1))
