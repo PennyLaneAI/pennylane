@@ -25,8 +25,8 @@ class FlipSign(Operation):
 
     In a nutshell, this class perform the following operation:
 
-    FlipSign(n)|m> = -|m> if len(m) = len(n)
-    FlipSign(n)|m> = |m> if len(m) != len(n)
+    FlipSign(n):math:`|m\rangle = -|m\rangle` if len(m) = len(n)
+    FlipSign(n):math:`|m\rangle = |m\rangle` if len(m) != len(n)
 
     Where m is the state to flip and n is the array of qubits (wires).
     It flips the sign of the state.
