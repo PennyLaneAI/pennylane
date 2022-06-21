@@ -248,7 +248,9 @@ def expval_param_shift(
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
-        scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence)
+        scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(
+            tape._qfunc_output, Sequence
+        )
         if scalar_qfunc_output:
             results = [qml.math.squeeze(res) for res in results]
 
