@@ -169,7 +169,7 @@ And the result is:
 >>> print(result)
 {'00': 495, '11': 505}
 
-If another measurement function than :func:`~.pennylane.sample` is provided,
+If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
 a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
