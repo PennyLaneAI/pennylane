@@ -351,5 +351,5 @@ class TestFoldGlobal:
             return qml.expval(qml.PauliZ(0))
 
         folded_qnodes = [qml.transforms.fold_global(circuit, scale_factor=lambda_) for lambda_ in np.arange(1,10)]
-        [_(w1, w2) for _ in folded_qnodes]
+        res = [_(w1, w2) for _ in folded_qnodes]
         assert np.allclose(res, 1)
