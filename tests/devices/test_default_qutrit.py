@@ -245,6 +245,19 @@ class TestApply:
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
+    def test_apply_rotations_one_wire(self, qutrit_device_1_wire, tol):
+        """Tests that rotations are applied in correct order after operations"""
+
+        state = [1, 0, 0]
+        qutrit_device_1_wire._state = np.array(state, dtype=qutrit_device_1_wire.C_DTYPE)
+
+        ops = [qml.QutritUnitary(U_shift, wires=0).inv(), qml.QutritUnitary(U_thadamard_01, wires=0)]
+        rotations = [qml.QutritUnitary(U_thadamard_01, wires=0), qml.QutritUnitary(U_shift, wires=0)]
+
+        qutrit_device_1_wire.apply(ops, rotations)
+
+        assert np.allclose(qutrit_device_1_wire._state.flatten(), state)
+
     # TODO: Add tests for state preperation ops after they're implemented
 
 
@@ -501,3 +514,32 @@ class TestApplyOperationUnit:
 
         assert res is starting_state
         spy_unitary.assert_not_called()
+
+    @pytest.mark.parametrize("inverse", [True, False])
+    def test_internal_apply_ops_case(self, inverse, monkeypatch, mocker):
+        """Tests that if we provide an operation that has an internal
+        implementation, then we use that specific implementation.
+
+        This test provides a new internal function that `default.qutrit` uses to
+        apply `QutritUnitary` (rather than redefining the gate itself).
+        Note: `QutritUnitary` is not in `DefaultQutrit._apply_ops`, and will be
+        temporarily added for this test.
+        """
+        dev = qml.device("default.qutrit", wires=1)
+
+        # Create a dummy operation
+        expected_test_output = np.ones(1)
+        supported_gate_application = lambda *args, **kwargs: expected_test_output
+
+        with monkeypatch.context() as m:
+            # Set the internal ops implementations dict
+            m.setattr(dev, "_apply_ops", {"QutritUnitary": supported_gate_application})
+
+            test_state = np.array([1, 0, 0])
+            op = qml.QutritUnitary(U_shift, wires=0) if not inverse else qml.QutritUnitary(U_shift, wires=0).inv()
+            spy_unitary = mocker.spy(dev, "_apply_unitary")
+
+            res = dev._apply_operation(test_state, op)
+            assert np.allclose(res, expected_test_output)
+            spy_unitary.assert_not_called()
+
