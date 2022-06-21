@@ -240,10 +240,10 @@ class DefaultQutrit(QutritDevice):
             self._state = self._reshape(state, [3] * self.num_wires)
             return
 
-        # generate basis states on subset of qubits via the cartesian product
+        # generate basis states on subset of qutrits via the cartesian product
         basis_states = np.array(list(itertools.product([0, 1, 2], repeat=len(device_wires))))
 
-        # get basis states to alter on full set of qubits
+        # get basis states to alter on full set of qutrits
         unravelled_indices = np.zeros((3 ** len(device_wires), self.num_wires), dtype=int)
         unravelled_indices[:, device_wires] = basis_states
 
