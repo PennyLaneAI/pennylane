@@ -1982,38 +1982,6 @@ class U1(Operation):
         """
         return [PhaseShift(phi, wires=wires)]
 
-    @staticmethod
-    def compute_eigvals(phi):  # pylint: disable=arguments-differ
-        r"""Eigenvalues of the operator in the computational basis (static method).
-
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
-        the operator can be reconstructed as
-
-        .. math:: O = U \Sigma U^{\dagger},
-
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
-        Otherwise, no particular order for the eigenvalues is guaranteed.
-
-        .. seealso:: :meth:`~.U1.eigvals`
-
-
-        Args:
-            phi (tensor_like or float): phase shift
-
-        Returns:
-            tensor_like: eigenvalues
-
-        **Example**
-
-        >>> qml.U1.compute_eigvals(torch.tensor(0.5))
-        tensor([1.0000+0.0000j, 0.8776+0.4794j])
-        """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-
-        return qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 1]))
-
     def adjoint(self):
         return U1(-self.data[0], wires=self.wires)
 
