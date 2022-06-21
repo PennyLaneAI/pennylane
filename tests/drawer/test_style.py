@@ -27,6 +27,8 @@ def test_available_styles():
     assert qml.drawer.available_styles() == (
         "black_white",
         "black_white_dark",
+        "sketch",
+        "sketch_dark",
         "solarized_light",
         "solarized_dark",
         "default",
@@ -37,13 +39,76 @@ def test_black_white_style():
     """Tests the black white style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("black_white")
-    assert plt.rcParams["patch.linewidth"] == 3.0
+    assert plt.rcParams["savefig.facecolor"] == "white"
+    assert plt.rcParams["figure.facecolor"] == "white"
+    assert plt.rcParams["axes.facecolor"] == "white"
     assert plt.rcParams["patch.facecolor"] == "white"
     assert plt.rcParams["patch.edgecolor"] == "black"
+    assert plt.rcParams["patch.linewidth"] == 3.0
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
+    assert plt.rcParams["path.sketch"] == None
 
+    plt.style.use("default")
+
+
+def test_black_white_style_dark():
+    """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
+
+    qml.drawer.use_style("black_white_dark")
+
+    almost_black = "#151515"
+    assert plt.rcParams["savefig.facecolor"] == almost_black
+    assert plt.rcParams["figure.facecolor"] == almost_black
+    assert plt.rcParams["axes.facecolor"] == almost_black
+    assert plt.rcParams["patch.edgecolor"] == "white"
+    assert plt.rcParams["patch.facecolor"] == almost_black
+    assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["lines.color"] == "white"
+    assert plt.rcParams["text.color"] == "white"
+    assert plt.rcParams["path.sketch"] == None
+
+    plt.style.use("default")
+
+
+def test_sketch_style():
+    """Tests the sketch style sets ``plt.rcParams`` with correct values"""
+
+    qml.drawer.use_style("sketch")
+
+    assert plt.rcParams["figure.facecolor"] == "white"
+    assert plt.rcParams["savefig.facecolor"] == "white"
+    assert plt.rcParams["axes.facecolor"] == "#D6F5E2"
+    assert plt.rcParams["patch.facecolor"] == "#FFEED4"
+    assert plt.rcParams["patch.edgecolor"] == "black"
+    assert plt.rcParams["patch.linewidth"] == 3.0
+    assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["lines.color"] == "black"
+    assert plt.rcParams["text.color"] == "black"
+    assert plt.rcParams["font.weight"] == "bold"
+    assert plt.rcParams["path.sketch"] == (1, 100, 2)
+
+    plt.style.use("default")
+
+
+def test_sketch_style_dark():
+    """Tests the sketch style dark sets ``plt.rcParams`` with correct values"""
+
+    qml.drawer.use_style("sketch_dark")
+
+    almost_black = "#151515"  # less harsh than full black
+    assert plt.rcParams["figure.facecolor"] == almost_black
+    assert plt.rcParams["savefig.facecolor"] == almost_black
+    assert plt.rcParams["axes.facecolor"] == "#EBAAC1"
+    assert plt.rcParams["patch.facecolor"] == "#B0B5DC"
+    assert plt.rcParams["patch.edgecolor"] == "white"
+    assert plt.rcParams["patch.linewidth"] == 3.0
+    assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["lines.color"] == "white"
+    assert plt.rcParams["text.color"] == "white"
+    assert plt.rcParams["font.weight"] == "bold"
+    assert plt.rcParams["path.sketch"] == (1, 100, 2)
     plt.style.use("default")
 
 
@@ -60,6 +125,7 @@ def test_solarized_light_style():
     assert plt.rcParams["lines.color"] == "#657b83"
     assert plt.rcParams["text.color"] == "#586e75"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["path.sketch"] == None
 
     plt.style.use("default")
 
@@ -77,6 +143,7 @@ def test_solarized_dark_style():
     assert plt.rcParams["lines.color"] == "#839496"
     assert plt.rcParams["text.color"] == "#2aa198"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["path.sketch"] == None
 
     plt.style.use("default")
 
@@ -93,23 +160,6 @@ def test_default():
 
     # make sure dictionaries are the same
     assert sum(1 for key, value in initial.items() if new[key] != value) == 0
-
-
-def test_black_white_style_dark():
-    """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
-
-    qml.drawer.use_style("black_white_dark")
-
-    almost_black = "#151515"
-    assert plt.rcParams["figure.facecolor"] == almost_black
-    assert plt.rcParams["axes.facecolor"] == almost_black
-    assert plt.rcParams["patch.edgecolor"] == "white"
-    assert plt.rcParams["patch.facecolor"] == almost_black
-    assert plt.rcParams["patch.force_edgecolor"]
-    assert plt.rcParams["lines.color"] == "white"
-    assert plt.rcParams["text.color"] == "white"
-
-    plt.style.use("default")
 
 
 def test_style_none_error():

@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the discrete-variable quantum operations that
-accept a hermitian or an unitary matrix as a parameter.
+This submodule contains the qutrit quantum operations that
+accept a unitary matrix as a parameter.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import warnings
-import numpy as np  # pylint: disable=unused-import
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -93,6 +92,8 @@ class QutritUnitary(Operation):
     def adjoint(self):
         U = self.matrix()
         return QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=self.wires)
+
+    # TODO: Add `_controlled()` method once `ControlledQutritUnitary` is implemented.
 
     def pow(self, z):
         if isinstance(z, int):

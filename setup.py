@@ -28,7 +28,7 @@ requirements = [
     "semantic_version==2.6",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.23",
+    "pennylane-lightning>=0.24",
 ]
 
 info = {
@@ -50,7 +50,6 @@ info = {
             "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
             "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
-            "default.qutrit = pennylane.devices:DefaultQutrit"
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

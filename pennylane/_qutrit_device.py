@@ -23,9 +23,16 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import (
+    MeasurementProcess,
+    Sample,
+    Variance,
+    Expectation,
+    Probability,
+    State,
+)
 from pennylane import QubitDevice
-from pennylane.wires import Wires   # pylint: disable=unused-import
+from pennylane.wires import Wires
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
@@ -81,6 +88,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         return capabilities
 
     # Added here for tests to pass (See tests.test_qutrit_device.ExtractStatistics.test_results_no_state())
+    # The test deleted the state property of QutritDevice to test if the appropriate error is raised by
+    # `QutritDevice.statistics()` when requesting the state as a return type, but was failing as the test wouldn't
+    # actually delete the state attribute, as it was only explicitly defined in `QubitDevice`.
     @property
     def state(self):
         """Returns the state vector of the circuit prior to measurement.
@@ -126,14 +136,13 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
 
+            # This block covers the case when VnEntropy or MutualInfo are the return type for now
+            # Once VnEntropy and MutualInfo support is added for QutritDevice, condition blocks for
+            # them will be added separately.
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
-
-            # TODO: Add support for MutualInfo and VnEntropy return types. Currently, qml.math is hard coded
-            # to calculate these quantities for qubit states, so it needs to be updated before these return types
-            # can be supported for qutrits.
 
         return results
 
@@ -172,7 +181,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Returns:
             array[int]: the sampled basis states
         """
-        # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1, 2), repeat=num_wires)
         return np.fromiter(itertools.chain(*basis_states_generator), dtype=dtype).reshape(
             -1, num_wires
@@ -214,8 +222,48 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             plugin documentation for more details.
         """
         # TODO: Add density matrix support. Currently, qml.math is hard-coded to work only with qubit states,
-        # so it needs to be updated to be able to handle calculations for qutrits before this method can be
-        # implemented.
+        # (see `qml.math.reduced_dm()`) so it needs to be updated to be able to handle calculations for qutrits
+        # before this method can be implemented.
+        raise NotImplementedError
+
+    def vn_entropy(self, wires, log_base):
+        r"""Returns the Von Neumann entropy prior to measurement.
+
+        .. math::
+            S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+        Args:
+            wires (Wires): Wires of the considered subsystem.
+            log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+
+        Returns:
+            float: returns the Von Neumann entropy
+        """
+        # TODO: Add support for VnEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
+        # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
+        # For now, if a user tries to request this return type, an error will be raised.
+        raise NotImplementedError
+
+    def mutual_info(self, wires0, wires1, log_base):
+        r"""Returns the mutual information prior to measurement:
+
+        .. math::
+
+            I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+        where :math:`S` is the von Neumann entropy.
+
+        Args:
+            wires0 (Wires): wires of the first subsystem
+            wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm
+
+        Returns:
+            float: the mutual information
+        """
+        # TODO: Add support for MutualInfo return type. Currently, qml.math is hard coded to calculate this for qubit
+        # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
+        # For now, if a user tries to request this return type, an error will be raised.
         raise NotImplementedError
 
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
@@ -244,7 +292,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
         samples = self._samples[sample_slice, device_wires]
 
-        # convert samples from a list of 0, 1 integers, to base 10 representation
+        # convert samples from a list of 0, 1, 2 integers, to base 10 representation
         powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_three
 
@@ -255,7 +303,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             indices = indices.reshape((bins, -1))
             prob = np.zeros([3 ** len(device_wires), bins], dtype=np.float64)
 
-            # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size
@@ -318,12 +365,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         prob = self._reshape(prob, [3] * self.num_wires)
 
         # sum over all inactive wires
-        # hotfix to catch when default.qubit uses this method
-        # since then device_wires is a list
-        if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
-        else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+        prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+        # TODO: Add case for when inactive_device_wires is not an instance of Wires once
+        # default qutrit device is added
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -346,21 +390,33 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         name = observable.name  # pylint: disable=unused-variable
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
 
-        # Replace the basis state in the computational basis with the correct eigenvalue.
-        # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[
-            sample_slice, np.array(device_wires, dtype=np.int32)
-        ]  # Add np.array here for Jax support.
-        powers_of_three = 3 ** np.arange(samples.shape[-1])[::-1]
-        indices = samples @ powers_of_three
-        indices = np.array(indices)  # Add np.array here for Jax support.
-        try:
-            samples = observable.eigvals()[indices]
-        except qml.operation.EigvalsUndefinedError as e:
-            # if observable has no info on eigenvalues, we cannot return this measurement
-            raise qml.operation.EigvalsUndefinedError(
-                f"Cannot compute samples of {observable.name}."
-            ) from e
+        if isinstance(
+            observable, MeasurementProcess
+        ):  # if no observable was provided then return the raw samples
+            if (
+                len(observable.wires) != 0
+            ):  # if wires are provided, then we only return samples from those wires
+                samples = self._samples[sample_slice, np.array(device_wires)]
+            else:
+                samples = self._samples[sample_slice]
+
+        else:
+
+            # Replace the basis state in the computational basis with the correct eigenvalue.
+            # Extract only the columns of the basis samples required based on ``wires``.
+            samples = self._samples[
+                sample_slice, np.array(device_wires)
+            ]  # Add np.array here for Jax support.
+            powers_of_three = 3 ** np.arange(samples.shape[-1])[::-1]
+            indices = samples @ powers_of_three
+            indices = np.array(indices)  # Add np.array here for Jax support.
+            try:
+                samples = observable.eigvals()[indices]
+            except qml.operation.EigvalsUndefinedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute samples of {observable.name}."
+                ) from e
 
         if bin_size is None:
             return samples
