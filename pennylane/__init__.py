@@ -20,7 +20,7 @@ import types
 import pkg_resources
 
 import numpy as _np
-from semantic_version import Spec, Version
+from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
@@ -306,7 +306,7 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
+        if Version(version()) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."
