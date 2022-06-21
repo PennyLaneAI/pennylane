@@ -23,4 +23,30 @@ import pennylane as qml
 class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
-    pass
+    @pytest.mark.parametrize(
+        ("test_status", "n_qubits"),
+        [
+            ([1, 0, 1, 0], 4),
+            ([1, 0, 1, 0, 1], 5),
+            ([0, 1, 1, 1, 1, 0, 1], 7),
+        ],
+    )
+    def test_eval(self, test_status, n_qubits):
+
+        dev = qml.device("default.qubit", wires=n_qubits, shots=1)
+
+        def circuit_template():
+
+            for wire in list(range(n_qubits)):
+                qml.Hadamard(wires=wire)
+
+            qml.FlipSign(test_status, wires=list(range(n_qubits)))
+
+            for wire in list(range(n_qubits)):
+                qml.Hadamard(wires=wire)
+
+            return qml.sample(qml.PauliZ(n_qubits - 1))
+
+        circuit = qml.QNode(circuit_template, dev)
+
+        assert circuit() == 1
