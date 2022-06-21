@@ -92,9 +92,7 @@ class QubitDevice(Device):
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(
-        lambda array, indices, axis=0: array[:, indices] if axis == 1 else array[indices]
-    )
+    _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
@@ -106,8 +104,6 @@ class QubitDevice(Device):
     _outer = staticmethod(np.outer)
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
-    _size = staticmethod(np.size)
-    _ndim = staticmethod(np.ndim)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -215,7 +211,6 @@ class QubitDevice(Device):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_broadcasting=False,
             supports_finite_shots=True,
             supports_tensor_observables=True,
             returns_probs=True,
@@ -270,10 +265,6 @@ class QubitDevice(Device):
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
 
-            if self._ndim(self._samples) == 3:
-                raise NotImplementedError(
-                    "Parameter broadcasting when using a shot vector is not supported yet."
-                )
             results = []
             s1 = 0
 
@@ -297,7 +288,7 @@ class QubitDevice(Device):
 
             if not multiple_sampled_jobs:
                 # Can only stack single element outputs
-                results = self._stack(results)
+                results = qml.math.stack(results)
 
         else:
             results = self.statistics(circuit.observables)
@@ -307,7 +298,7 @@ class QubitDevice(Device):
             ret_types = [m.return_type for m in circuit.measurements]
 
             if len(circuit.measurements) == 1:
-                if ret_types[0] is qml.measurements.State:
+                if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 else:
@@ -324,6 +315,7 @@ class QubitDevice(Device):
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
+
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
@@ -459,7 +451,7 @@ class QubitDevice(Device):
             >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
 
             This device will execute QNodes using 135 shots, however
-            measurement statistics will be **coarse grained** across these 135
+            measurement statistics will be **course grained** across these 135
             shots:
 
             * All measurement statistics will first be computed using the
@@ -477,20 +469,15 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
-                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Variance:
-                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
-                # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
                 results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
-                # Appends a result of shape (2**len(obs.wires), num_bins,)
-                # if bin_size is not None else (2**len(obs.wires),)
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
@@ -581,7 +568,7 @@ class QubitDevice(Device):
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return self.states_to_binary(samples, self.num_wires)
+        return QubitDevice.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -605,10 +592,6 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        if qml.math.ndim(state_probability) == 2:
-            return np.array(
-                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
-            )
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
@@ -665,8 +648,8 @@ class QubitDevice(Device):
             array[int]: basis states in binary representation
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
-        states_sampled_base_ten = samples[..., None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
+        states_sampled_base_ten = samples[:, None] & powers_of_two
+        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
 
     @property
     def circuit_hash(self):
@@ -798,78 +781,36 @@ class QubitDevice(Device):
         """
 
         wires = wires or self.wires
-        # convert to a Wires object
+        # convert to a wires object
         wires = Wires(wires)
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-        num_wires = len(device_wires)
 
-        if shot_range is None:
-            samples = self._samples[..., device_wires]
-        else:
-            samples = self._samples[..., slice(*shot_range), device_wires]
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        samples = self._samples[sample_slice, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(num_wires)[::-1]
+        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_two
 
-        batch_size = self._samples.shape[0] if np.ndim(self._samples) == 3 else None
-        dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
-            num_bins = samples.shape[-2] // bin_size
-            prob = self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
-        else:
-            prob = self._count_unbinned_samples(indices, batch_size, dim)
+            bins = len(samples) // bin_size
 
-        return self._asarray(prob, dtype=self.R_DTYPE)
+            indices = indices.reshape((bins, -1))
+            prob = np.zeros([2 ** len(device_wires), bins], dtype=np.float64)
 
-    @staticmethod
-    def _count_unbinned_samples(indices, batch_size, dim):
-        """Count the occurences of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability."""
-        prob = np.zeros(dim, dtype=np.float64)
-
-        if batch_size is None:
-            basis_states, counts = np.unique(indices, return_counts=True)
-            prob[basis_states] = counts / len(indices)
-
-            return prob
-
-        prob = np.zeros((batch_size, dim), dtype=np.float64)
-
-        for i, idx in enumerate(indices):
-            basis_states, counts = np.unique(idx, return_counts=True)
-            prob[i, basis_states] = counts / len(idx)
-
-        return prob
-
-    @staticmethod
-    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
-        """Count the occurences of bins of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability per bin."""
-
-        if batch_size is None:
-            prob = np.zeros((dim, num_bins), dtype=np.float64)
-            indices = indices.reshape((num_bins, bin_size))
-            # count the basis state occurrences, and construct the probability vector for each bin
+            # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size
 
-            return prob
+        else:
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
+            prob[basis_states] = counts / len(samples)
 
-        prob = np.zeros((batch_size, dim, num_bins), dtype=np.float64)
-        indices = indices.reshape((batch_size, num_bins, bin_size))
-
-        # count the basis state occurrences, and construct the probability vector
-        # for each bin and broadcasting index
-        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
-            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                basis_states, counts = np.unique(idx, return_counts=True)
-                prob[i, basis_states, b] = counts / bin_size
-
-        return prob
+        return self._asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
@@ -890,14 +831,6 @@ class QubitDevice(Device):
             return self.analytic_probability(wires=wires)
 
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
-
-    @staticmethod
-    def _get_batch_size(tensor, expected_shape, expected_size):
-        """Determine whether a tensor has an additional batch dimension for broadcasting,
-        compared to an expected_shape. As QubitDevice does not natively support broadcasting,
-        it always reports no batch size, that is ``batch_size=None``"""
-        # pylint: disable=unused-argument
-        return None
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -933,8 +866,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
-        dim = 2**self.num_wires
-        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
 
         if wires is None:
             # no need to marginalize
@@ -949,21 +880,15 @@ class QubitDevice(Device):
         inactive_device_wires = self.map_wires(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
-        shape = [2] * self.num_wires
-        if batch_size is not None:
-            shape.insert(0, batch_size)
-        prob = self._reshape(prob, shape)
+        prob = self._reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            inactive_device_wires = inactive_device_wires.labels
-
-        if batch_size is not None:
-            inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
-        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
-        prob = self._reshape(self._reduce_sum(prob, inactive_device_wires), flat_shape)
+            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+        else:
+            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -974,10 +899,7 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
-        # The permutation happens on the last axis both with and without broadcasting
-        out = self._gather(prob, perm, axis=1 if batch_size is not None else 0)
-
-        return out
+        return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
@@ -1002,12 +924,11 @@ class QubitDevice(Device):
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
-            return self._dot(prob, eigvals)
+            return self._dot(eigvals, prob)
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        axis = -1 if bin_size is None else -2
-        return np.squeeze(np.mean(samples, axis=axis))
+        return np.squeeze(np.mean(samples, axis=0))
 
     def var(self, observable, shot_range=None, bin_size=None):
 
@@ -1033,44 +954,40 @@ class QubitDevice(Device):
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
-            return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
+            return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        axis = -1 if bin_size is None else -2
-        return np.squeeze(np.var(samples, axis=axis))
+        return np.squeeze(np.var(samples, axis=0))
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
-        # Select the samples from self._samples that correspond to ``shot_range`` if provided
-        if shot_range is None:
-            sub_samples = self._samples
-        else:
-            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
-            # colon (:) is required because shots is the second-to-last axis and the
-            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
-            sub_samples = self._samples[..., slice(*shot_range), :]
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * sub_samples[..., device_wires[0]]
+            samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
-        elif isinstance(observable, MeasurementProcess):
-            # if no observable was provided then return the raw samples
-            if len(observable.wires) != 0:
-                # if wires are provided, then we only return samples from those wires
-                samples = sub_samples[..., np.array(device_wires)]
+        elif isinstance(
+            observable, MeasurementProcess
+        ):  # if no observable was provided then return the raw samples
+            if (
+                len(observable.wires) != 0
+            ):  # if wires are provided, then we only return samples from those wires
+                samples = self._samples[sample_slice, np.array(device_wires)]
             else:
-                samples = sub_samples
+                samples = self._samples[sample_slice]
 
         else:
 
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
-            samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
+            samples = self._samples[
+                sample_slice, np.array(device_wires)
+            ]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
@@ -1085,9 +1002,7 @@ class QubitDevice(Device):
         if bin_size is None:
             return samples
 
-        # Split up the last axis into bin-sized and number of bins
-        new_shape = qml.math.shape(samples)[:-1] + (bin_size, -1)
-        return samples.reshape(new_shape)  # TODO: Check with broadcasting
+        return samples.reshape((bin_size, -1))
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
