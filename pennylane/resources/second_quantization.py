@@ -23,6 +23,9 @@ def estimation_cost(norm, error):
     r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
     phase estimation.
 
+    The expression for computing the cost is taken from Eq. (45) of
+    [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+
     Args:
         norm (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
@@ -49,8 +52,8 @@ def _qrom_cost(constants):
     r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM for
     the double factorization method.
 
-    The complexity of a QROM computation in the most general form is given by
-    [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_]
+    The complexity of a QROM computation in the most general form is given by (see Eq. (C39) in
+    [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_])
 
     .. math::
 
@@ -61,7 +64,7 @@ def _qrom_cost(constants):
     and the expansion factor :math:`k = 2^n` minimizes the cost. This function computes the optimum
     :math:`k` and the minimum cost for a QROM specification.
 
-    To obtain the optimum values of :math:`k`, we first assume that the cost function is continues
+    To obtain the optimum values of :math:`k`, we first assume that the cost function is continuous
     and use differentiation to obtain the value of :math:`k` that minimizes the cost. This value of
     :math:`k` is not necessarily an integer power of 2. We then obtain the value of :math:`n` as
     :math:`n = \log_2(k)` and compute the cost for
@@ -93,8 +96,8 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator for
     the double factorization algorithm.
 
-    The expression for computing the cost is taken from
-    [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
+    The expression for computing the cost is taken from Eq. (C39) of
+    [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
     Args:
         n (int): number of molecular spin-orbitals
@@ -136,21 +139,22 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     if beta <= 0 or not isinstance(beta, int):
         raise ValueError("beta must be a positive integer.")
 
+    rank_rm = rank_r * rank_m
+
+    # eta is computed based on step 1.(a) in page 030305-41 of 10.1103/PRXQuantum.2.030305
     eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
     eta = int(np.max([n for n in eta if n % 1 == 0]))
 
-    nxi = np.ceil(np.log2(rank_m))
-    nlxi = np.ceil(np.log2(rank_r * rank_m + n / 2))
-    nl = np.ceil(np.log2(rank_r + 1))
+    nxi = np.ceil(np.log2(rank_m))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
+    nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
+    nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of 10.1103/PRXQuantum.2.030305
 
-    bp1 = nl + alpha
-    bp2 = nxi + alpha + 2
-    bo = nxi + nlxi + br + 1
+    bp1 = nl + alpha  # Eq. (C27) of 10.1103/PRXQuantum.2.030305
+    bo = nxi + nlxi + br + 1  # Eq. (C29) of 10.1103/PRXQuantum.2.030305
+    bp2 = nxi + alpha + 2  # Eq. (C31) of 10.1103/PRXQuantum.2.030305
 
-    rank_rm = rank_r * rank_m
-
+    # cost is computed using Eq. (C39) of 10.1103/PRXQuantum.2.030305
     cost = 9 * nl - 6 * eta + 12 * br + 34 * nxi + 8 * nlxi + 9 * alpha + 3 * n * beta - 6 * n - 43
-
     cost += _qrom_cost((rank_r, 1, 0, bp1, -1))[0]
     cost += _qrom_cost((rank_r, 1, 0, bo, -1))[0]
     cost += _qrom_cost((rank_r, 1, 0, 1, 0))[0] * 2
@@ -164,6 +168,9 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
 def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     r"""Return the total number of Toffoli gates needed to implement the double factorization
     algorithm.
+
+    The expression for computing the cost is taken from Eqs. (45) and (C39) of
+    [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
     Args:
         n (int): number of molecular spin-orbitals
@@ -224,8 +231,9 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
 def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     r"""Return the number of ancilla qubits needed to implement the double factorization method.
 
-    The expression for computing the cost is taken from
-    [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
+    The expression for computing the cost is taken from Eq. (C40) of
+    [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+
 
     Args:
         n (int): number of molecular spin-orbitals
@@ -277,16 +285,19 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     if beta <= 0 or not isinstance(beta, int):
         raise ValueError("beta must be a positive integer.")
 
-    nxi = np.ceil(np.log2(rank_m))
-    nlxi = np.ceil(np.log2(rank_r * rank_m + n / 2))
-    nl = np.ceil(np.log2(rank_r + 1))
+    rank_rm = rank_r * rank_m
 
-    bp2 = nxi + alpha + 2
-    bo = nxi + nlxi + br + 1
-    kr = _qrom_cost((rank_r * rank_m, n / 2, rank_r * rank_m, n * beta, 0))[1]
+    nxi = np.ceil(np.log2(rank_m))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
+    nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
+    nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of 10.1103/PRXQuantum.2.030305
 
+    bo = nxi + nlxi + br + 1  # Eq. (C29) of 10.1103/PRXQuantum.2.030305
+    bp2 = nxi + alpha + 2  # Eq. (C31) of 10.1103/PRXQuantum.2.030305
+    # kr is taken from Eq. (C39) of 10.1103/PRXQuantum.2.030305
+    kr = _qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
+
+    # the cost is computed using Eq. (C40) of 10.1103/PRXQuantum.2.030305
     e_cost = estimation_cost(norm, error)
-
     cost = n + 2 * nl + nxi + 3 * alpha + beta + bo + bp2
     cost += kr * n * beta / 2 + 2 * np.ceil(np.log2(e_cost + 1)) + 7
 
