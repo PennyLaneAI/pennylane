@@ -248,8 +248,8 @@ def expval_param_shift(
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
-        print(results)
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+        scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence)
+        if scalar_qfunc_output:
             results = [qml.math.squeeze(res) for res in results]
 
         grads = []
@@ -273,7 +273,11 @@ def expval_param_shift(
             axis = 0
             if not broadcast:
                 res = qml.math.stack(res)
-            elif qml.math.get_interface(res[0]) != "torch" and batch_size is not None:
+            elif (
+                qml.math.get_interface(res[0]) != "torch"
+                and batch_size is not None
+                and not scalar_qfunc_output
+            ):
                 # The torch output is flattened such that the tensordot axis needs to be 0 even for
                 # parameter broadcasting.
                 axis = 1
@@ -287,7 +291,7 @@ def expval_param_shift(
 
             grads.append(g)
             # This clause will be hit at least once, providing a representative for
-            # a 0 gradient to emulate it.
+            # a zero gradient to emulate it.
             zero_rep = qml.math.zeros_like(g)
 
         # The following is for backwards compatibility; currently,
