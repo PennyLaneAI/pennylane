@@ -36,10 +36,25 @@ def test_success_prob(n_basis, br, prob_ref):
 
 
 @pytest.mark.parametrize(
+    ("n_basis", "br"),
+    [
+        (-1, 7),
+        (1.2, 7),
+        (10, 7.2),
+        (10, -7),
+    ],
+)
+def test_success_prob_error(n_basis, br):
+    r"""Test that success_prob raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be a positive integer"):
+        qml.resources.success_prob(n_basis, br)
+
+
+@pytest.mark.parametrize(
     ("eta", "n", "omega", "error", "br", "charge", "norm_ref"),
     [
         # norm_ref is computed with TFermion by using our versions of l_nu, p_nu, and l_nu_1.
-        (156, 10000, 1145.166, 0.001, 7, 0, 321772.22350284725),
+        (156, 10000, 1145.166, 0.001, 7, 0, 27024842.369188346),
     ],
 )
 def test_norm(eta, n, omega, error, br, charge, norm_ref):
@@ -47,3 +62,23 @@ def test_norm(eta, n, omega, error, br, charge, norm_ref):
     norm = qml.resources.first_quantization.norm(eta, n, omega, error, br, charge)
 
     assert np.allclose(norm, norm_ref)
+
+
+@pytest.mark.parametrize(
+    ("eta", "n", "omega", "error", "br", "charge"),
+    [
+        (156.2, 10000, 1145.166, 0.001, 7, 0),
+        (-156, 10000, 1145.166, 0.001, 7, 0),
+        (156, 10000.5, 1145.166, 0.001, 7, 0),
+        (156, -10000, 1145.166, 0.001, 7, 0),
+        (156, 10000, -1145.166, 0.001, 7, 0),
+        (156, 10000, 1145.166, -0.001, 7, 0),
+        (156, 10000, 1145.166, 0.001, 7.5, 0),
+        (156, 10000, 1145.166, 0.001, -7, 0),
+        (156, 10000, 1145.166, 0.001, 7, 1.2),
+    ],
+)
+def test_norm_error(eta, n, omega, error, br, charge):
+    r"""Test that norm raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be"):
+        qml.resources.first_quantization.norm(eta, n, omega, error, br, charge)

@@ -19,7 +19,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 from pennylane import numpy as np
 
 
-def success_prob(n_planewaves, br):
+def success_prob(n, br):
     r"""Return the probability of success for state preparation.
 
     The expression for computing the probability of success is taken from
@@ -27,7 +27,7 @@ def success_prob(n_planewaves, br):
     Eqs. (59-60).
 
     Args:
-        n_planewaves (int): number of plane waves
+        n (int): number of plane waves
         br (int): number of bits for ancilla qubit rotation
 
     Returns:
@@ -38,7 +38,13 @@ def success_prob(n_planewaves, br):
     >>> success_prob(10000, 7)
     0.9998814293823286
     """
-    c = n_planewaves / 2 ** np.ceil(np.log2(n_planewaves))
+    if n <= 0 or not isinstance(n, int):
+        raise ValueError("The number of planewaves must be a positive integer.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    c = n / 2 ** np.ceil(np.log2(n))
     d = 2 * np.pi / 2**br
 
     theta = d * np.round((1 / d) * np.arcsin(np.sqrt(1 / (4 * c))))
@@ -48,7 +54,7 @@ def success_prob(n_planewaves, br):
     return p
 
 
-def norm(eta, n_planewaves, omega, error, br=7, charge=0):
+def norm(eta, n, omega, error, br=7, charge=0):
     r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
     The expression for computing the norm is taken from
@@ -56,7 +62,7 @@ def norm(eta, n_planewaves, omega, error, br=7, charge=0):
 
     Args:
         eta (int): number of electrons
-        n_planewaves (int): number of basis states
+        n (int): number of basis states
         omega (float): unit cell volume
         error (float): target error in the algorithm
         br (int): number of bits for ancilla qubit rotation
@@ -68,21 +74,39 @@ def norm(eta, n_planewaves, omega, error, br=7, charge=0):
     **Example**
 
     >>> eta = 156
-    >>> n_planewaves = 10000
+    >>> n = 10000
     >>> omega = 1145.166
     >>> error = 0.001
     >>> norm(eta, n, omega, error)
     1254385.059691027
     """
+    if n <= 0 or not isinstance(n, int):
+        raise ValueError("The number of planewaves must be a positive integer.")
+
+    if eta <= 0 or not isinstance(n, int):
+        raise ValueError("The number of electrons must be a positive integer.")
+
+    if omega <= 0:
+        raise ValueError("The unit cell volume must be a positive number.")
+
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    if not isinstance(charge, int):
+        raise ValueError("system charge must be an integer.")
+
     l_z = eta + charge
 
     # target error in the qubitization of U+V which we set to be 0.01 of the algorithm error
     error_uv = 0.01 * error
 
     # n_p is taken from Eq. (22)
-    n_p = int(np.ceil(np.log2(n_planewaves ** (1 / 3) + 1)))
+    n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
-    l_nu = 4 * np.pi * n_planewaves ** (2 / 3)  # computed from Eqs. (25) and (103)
+    l_nu = 4 * np.pi * n ** (2 / 3)  # computed from Eqs. (25) and (103)
     p_nu = 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
     n_m = np.log2(  # taken from Eq. (132)
         (2 * eta)
