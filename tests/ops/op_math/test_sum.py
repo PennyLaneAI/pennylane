@@ -21,6 +21,7 @@ from pennylane import math
 import pennylane.numpy as qnp
 
 from pennylane.ops.op_math import Sum, op_sum
+from pennylane import QuantumFunctionError
 from pennylane.operation import MatrixUndefinedError
 import gate_data as gd  # a file containing matrix rep of each gate
 
@@ -193,13 +194,46 @@ class TestMatrix:
         assert np.allclose(mat, true_mat)
 
     def test_sum_qchem_ops(self):
-        return
+        wires = [0, 1, 2, 3]
+        sum_op = Sum(
+            qml.OrbitalRotation(4.56, wires=wires),
+            qml.SingleExcitation(1.23, wires=[0, 1]),
+            qml.Identity(3),
+        )
+        mat = sum_op.matrix()
+
+        or_mat = gd.OrbitalRotation(4.56)
+        se_mat = math.kron(gd.SingleExcitation(1.23), math.eye(4, dtype="complex128"))
+        i_mat = math.eye(16)
+
+        true_mat = or_mat + se_mat + i_mat
+        assert np.allclose(mat, true_mat)
 
     def test_sum_observables(self):
-        return
+        wires = [0, 1]
+        sum_op = Sum(
+            qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
+            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+        )
+        mat = sum_op.matrix()
+
+        her_mat = qnp.kron(qnp.array([[0.0, 1.0], [1.0, 0.0]]), qnp.eye(2))
+        proj_mat = qnp.array(
+            [[0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
+        )
+
+        true_mat = her_mat + proj_mat
+        assert np.allclose(mat, true_mat)
 
     def test_sum_qubit_unitary(self):
-        return
+        U = 1 / qnp.sqrt(2) * qnp.array([[1, 1], [1, -1]])  # Hadamard
+        U_op = qml.QubitUnitary(U, wires=0)
+
+        sum_op = Sum(U_op, qml.Identity(wires=1))
+        mat = sum_op.matrix()
+
+        true_mat = qnp.kron(U, qnp.eye(2)) + qnp.eye(4)
+        assert np.allclose(mat, true_mat)
 
     # Add interface tests for each interface !
 
@@ -251,22 +285,54 @@ class TestProperties:
         sum_op = Sum(*ops_lst)
         assert sum_op._queue_category is None
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_eigendecompostion(self, ops_lst):
+    def test_eigendecompostion(self):
+        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        eig_decomp = diag_sum_op.eigendecomposition
+        eig_vecs = eig_decomp["eigvec"]
+        eig_vals = eig_decomp["eigval"]
 
-        return
+        true_eigvecs = qnp.tensor(
+            [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]]
+        )
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_eigen_caching(self, ops_lst):
-        return
+        true_eigvals = qnp.tensor([0.0, 0.0, 2.0, 2.0])
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_diagonalizing_gates(self, ops_lst):
-        return
+        assert np.allclose(eig_vals, true_eigvals)
+        assert np.allclose(eig_vecs, true_eigvecs)
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_eigenvals(self, ops_lst):
-        return
+    def test_eigen_caching(self):
+        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        eig_decomp = diag_sum_op.eigendecomposition
+
+        eig_vecs = eig_decomp["eigvec"]
+        eig_vals = eig_decomp["eigval"]
+
+        eigs_cache = diag_sum_op._eigs[
+            (2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        ]
+        cached_vecs = eigs_cache["eigvec"]
+        cached_vals = eigs_cache["eigval"]
+
+        assert np.allclose(eig_vals, cached_vals)
+        assert np.allclose(eig_vecs, cached_vecs)
+
+    def test_diagonalizing_gates(
+        self,
+    ):
+        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
+        true_diagonalizing_gates = qnp.array(
+            (
+                [
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                ]
+            )
+        )
+
+        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
 
 class TestWrapperFunc:
@@ -323,8 +389,22 @@ class TestIntegration:
             return qml.var(sum_op)
 
         var = my_circ()
-        true_var = qnp.array(3/2)
+        true_var = qnp.array(3 / 2)
         assert qnp.allclose(var, true_var)
+
+    # def test_measurement_process_probs(self):
+    #     dev = qml.device("default.qubit", wires=2)
+    #     sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+    #
+    #     @qml.qnode(dev)
+    #     def my_circ():
+    #         qml.PauliX(0)
+    #         return qml.probs(op=sum_op)
+    #
+    #     hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
+    #     returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
+    #     # TODO[Jay]: which of these two is correct?
+    #     assert qnp.allclose(my_circ(), returned_probs)
 
     def test_measurement_process_probs(self):
         dev = qml.device("default.qubit", wires=2)
@@ -335,27 +415,38 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.probs(op=sum_op)
 
-        hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
-        returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
-        # TODO[Jay]: which of these two is correct?
-        assert qnp.allclose(my_circ(), returned_probs)
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+        ):
+            my_circ()
 
-    # def test_measurement_process_sample(self):
-    #     dev = qml.device("default.qubit", wires=2)
-    #     sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
-    #
-    #     @qml.qnode(dev)
-    #     def my_circ():
-    #         qml.PauliX(0)
-    #         return qml.sample(sum_op)
-    #
-    #     assert my_circ() == 1/math.sqrt(2)
+    def test_measurement_process_sample(self):
+        dev = qml.device("default.qubit", wires=2)
+        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.sample(op=sum_op)
+
+        with pytest.raises(
+            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
+        ):
+            my_circ()
 
     def test_differentiable_measurement_process(self):
         return
 
     def test_non_hermitian_op_in_measurement_process(self):
-        return
+        wires = [0, 1]
+        dev = qml.device("default.qubit", wires=wires)
+        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
 
-    def test_text_drawer(self):
-        return
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.expval(sum_op)
+
+        with pytest.raises(QuantumFunctionError, match="Sum is not an observable:"):
+            my_circ()
