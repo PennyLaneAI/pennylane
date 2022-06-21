@@ -33,12 +33,14 @@ def fold_global(circuit, scale_factor):
 
     """
 
-    if scale_factor < 1.:
+    if scale_factor < 1.0:
         raise AttributeError("scale_factor must be >= 1")
-    assert scale_factor >= 1.
+    assert scale_factor >= 1.0
 
     # Generate base_circuit without measurements
-    base_ops = copy.deepcopy(circuit.expand().operations) #stop_at=lambda op: not isinstance(op, QuantumTape)
+    base_ops = copy.deepcopy(
+        circuit.expand().operations
+    )  # stop_at=lambda op: not isinstance(op, QuantumTape)
     # Treat all circuits as lists of operations, build new tape in the end
 
     num_global_folds, fraction_scale = divmod(scale_factor - 1, 2)
