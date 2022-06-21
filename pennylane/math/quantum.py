@@ -174,6 +174,7 @@ def marginal_prob(prob, axis):
 def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
     """Compute the density matrix from a state represented with a density matrix.
 
+
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
             integer number of wires``N``.
@@ -249,7 +250,7 @@ def _partial_trace(density_matrix, indices):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
-    # Does not support same indices sum in backprop
+    # Autograd does not support same indices sum in backprop
     if get_interface(density_matrix) == "autograd":
         density_matrix = _partial_trace_autograd(density_matrix, indices)
         return density_matrix
@@ -395,7 +396,8 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
 
 
 def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
-    """Compute the reduced density matrix from a state vector or a density matrix.
+    """Compute the reduced density matrix from a state vector or a density matrix. It supports all interfaces (Numpy,
+    Autograd, Torch, Tensorflow and Jax).
 
     Args:
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
@@ -405,8 +407,6 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
 
     Returns:
         tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
-
-
 
     **Example**
 
@@ -420,7 +420,7 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
      [0.+0.j 0.+0.j]]
 
     >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> reduced_dm(z, indices=[1])
+    >>> reduced_dm(y, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -454,7 +454,8 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem.
+    r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem. It supports all
+    interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
@@ -471,12 +472,20 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
 
     **Example**
 
+    The entropy of a subsystem for any state vectors can be obtained. Here is an example for the
+    maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
+
+
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
     >>> vn_entropy(x, indices=[0])
     0.6931472
 
+    The logarithm base can be switched to 2 for example.
+
     >>> vn_entropy(x, indices=[0], base=2)
     1.0
+
+    The entropy can be obtained by providing a quantum state as a density matrix, for example:
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> vn_entropy(x, indices=[0])
@@ -534,7 +543,8 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
 
     The mutual information is a measure of correlation between two subsystems.
     More specifically, it quantifies the amount of information obtained about
-    one system by measuring the other system.
+    one system by measuring the other system. It supports all interfaces
+    (Numpy, Autograd, Torch, Tensorflow and Jax).
 
     Each state can be given as a state vector in the computational basis, or
     as a density matrix.
@@ -552,12 +562,18 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
 
     **Examples**
 
+    The mutual information between subsystems for a state vector can be returned as follows:
+
     >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
     1.3862943611198906
 
+    It is also possible to change the log basis.
+
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
     2.0
+
+    Similarly the quantum state can be provided as a density matrix:
 
     >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
     >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
@@ -628,8 +644,9 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
         F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
 
     .. note::
-        The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
-        of the interface of the first state.
+        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
+        to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
+        first state.
 
     Args:
         state0 (tensor_like): 1D state vector or 2D density matrix
@@ -643,20 +660,26 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     **Example**
 
-        >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
-        >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
-        >>> qml.math.fidelity(state0, state1)
-        0.9905158135644924
+    Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
 
-        >>> state0 = [0, 1]
-        >>> state1 = [[0, 0], [0, 1]]
-        >>> qml.math.fidelity(state0, state1)
-        1.0
+    >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
+    >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
+    >>> qml.math.fidelity(state0, state1)
+    0.9905158135644924
 
-        >>> state0 = [[1, 0], [0, 0]]
-        >>> state1 = [[0, 0], [0, 1]]
-        >>> qml.math.fidelity(state0, state1)
-        0.0
+    Alternatively one can give a state vector and a density matrix as arguments, e.g.:
+
+    >>> state0 = [0, 1]
+    >>> state1 = [[0, 0], [0, 1]]
+    >>> qml.math.fidelity(state0, state1)
+    1.0
+
+    It also works with two density matrices, e.g.:
+
+    >>> state0 = [[1, 0], [0, 0]]
+    >>> state1 = [[0, 0], [0, 1]]
+    >>> qml.math.fidelity(state0, state1)
+    0.0
 
     """
     # Cast as a c_dtype array
