@@ -167,7 +167,8 @@ def expval_param_shift(
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
-        broadcast (bool): TODO
+        broadcast (bool): Whether or not to use parameter broadcasting to create the
+            a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -333,6 +334,8 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
+        broadcast (bool): Whether or not to use parameter broadcasting to create the
+            a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
