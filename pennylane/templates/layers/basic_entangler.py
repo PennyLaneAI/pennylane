@@ -151,6 +151,8 @@ class BasicEntanglerLayers(Operation):
     def num_params(self):
         return 1
 
+    ndim_params = (2,)
+
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.

@@ -133,6 +133,8 @@ class AmplitudeEmbedding(Operation):
     def num_params(self):
         return 1
 
+    ndim_params = (1,)
+
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
@@ -164,16 +166,16 @@ class AmplitudeEmbedding(Operation):
 
         * If features is batched, the processing that follows is applied to each feature set in the batch.
         * Check that the features tensor is one-dimensional.
-        * If pad_with is None, check that the first dimension of the features tensor
+        * If pad_with is None, check that the last dimension of the features tensor
           has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
-          first dimension of the features tensor is not larger than :math:`2^n` and pad features
+          last dimension of the features tensor is not larger than :math:`2^n` and pad features
           with value if necessary.
-        * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
+        * If normalize is false, check that last dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
 
         # check if features is batched
-        batched = len(qml.math.shape(features)) > 1
+        batched = qml.math.ndim(features) > 1
 
         features_batch = features if batched else [features]
 
@@ -186,29 +188,31 @@ class AmplitudeEmbedding(Operation):
                 raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
             n_features = shape[0]
-            if pad_with is None and n_features != 2 ** len(wires):
+            dim = 2 ** len(wires)
+            if pad_with is None and n_features != dim:
                 raise ValueError(
-                    f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+                    f"Features must be of length {dim}; got length {n_features}. "
                     f"Use the 'pad_with' argument for automated padding."
                 )
 
-            if pad_with is not None and n_features > 2 ** len(wires):
-                raise ValueError(
-                    f"Features must be of length {2 ** len(wires)} or "
-                    f"smaller to be padded; got length {n_features}."
-                )
+            if pad_with is not None:
+                if n_features > dim:
+                    raise ValueError(
+                        f"Features must be of length {dim} or "
+                        f"smaller to be padded; got length {n_features}."
+                    )
 
-            # pad
-            if pad_with is not None and n_features < 2 ** len(wires):
-                padding = [pad_with] * (2 ** len(wires) - n_features)
-                if (
-                    hasattr(feature_set, "device") and feature_set.device.type == "cuda"
-                ):  # pragma: no cover
-                    ## Torch tensor, send to same GPU
-                    dat_type = type(feature_set)
-                    padding = dat_type(padding).to(feature_set.device)
+                # pad
+                if n_features < dim:
+                    padding = [pad_with] * (dim - n_features)
+                    if (
+                        hasattr(feature_set, "device") and feature_set.device.type == "cuda"
+                    ):  # pragma: no cover
+                        ## Torch tensor, send to same GPU
+                        dat_type = type(feature_set)
+                        padding = dat_type(padding).to(feature_set.device)
 
-                feature_set = qml.math.concatenate([feature_set, padding], axis=0)
+                    feature_set = qml.math.concatenate([feature_set, padding], axis=0)
 
             # normalize
             norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
@@ -217,7 +221,7 @@ class AmplitudeEmbedding(Operation):
                 if normalize or pad_with:
                     feature_set = feature_set / qml.math.sqrt(norm)
 
-            elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+            elif not qml.math.isclose(norm, 1.0, atol=TOLERANCE):
                 if normalize or pad_with:
                     feature_set = feature_set / qml.math.sqrt(norm)
                 else:

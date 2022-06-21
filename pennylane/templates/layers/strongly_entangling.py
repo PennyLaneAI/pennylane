@@ -169,6 +169,8 @@ class StronglyEntanglingLayers(Operation):
     def num_params(self):
         return 1
 
+    ndim_params = (3,)
+
     @staticmethod
     def compute_decomposition(
         weights, wires, ranges, imprimitive
@@ -223,15 +225,19 @@ class StronglyEntanglingLayers(Operation):
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires):
+    def shape(n_layers, n_wires, n_broadcast=None):
         r"""Returns the expected shape of the weights tensor.
 
         Args:
             n_layers (int): number of layers
             n_wires (int): number of wires
+            n_broadcast (int): Optional broadcasting dimension
 
         Returns:
             tuple[int]: shape
         """
 
-        return n_layers, n_wires, 3
+        if n_broadcast is None:
+            return n_layers, n_wires, 3
+
+        return n_broadcast, n_layers, n_wires, 3

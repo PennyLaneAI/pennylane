@@ -162,12 +162,16 @@ class ParticleConservingU2(Operation):
 
         shape = qml.math.shape(weights)
 
-        if len(shape) != 2:
-            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
-
-        if shape[1] != 2 * len(wires) - 1:
+        if len(shape) not in {2, 3}:
             raise ValueError(
-                f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
+                "Weights tensor must be 2-dimensional or 3-dimensional when broadcasted;"
+                f" got shape {shape}"
+            )
+
+        wire_dim = 2 * len(wires) - 1
+        if shape[-1] != wire_dim:
+            raise ValueError(
+                f"Weights tensor must have a second dimension of length {wire_dim}; got {shape[-1]}"
             )
 
         self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
@@ -177,6 +181,8 @@ class ParticleConservingU2(Operation):
     @property
     def num_params(self):
         return 1
+
+    ndim_params = (2,)
 
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
@@ -212,26 +218,27 @@ class ParticleConservingU2(Operation):
         """
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
-        n_layers = qml.math.shape(weights)[0]
+        n_layers = qml.math.shape(weights)[-2]
         op_list = [qml.BasisEmbedding(init_state, wires=wires)]
 
         for l in range(n_layers):
 
             for j, _ in enumerate(wires):
-                op_list.append(qml.RZ(weights[l, j], wires=wires[j]))
+                op_list.append(qml.RZ(weights[..., l, j], wires=wires[j]))
 
             for i, wires_ in enumerate(nm_wires):
-                op_list.extend(u2_ex_gate(weights[l, len(wires) + i], wires=wires_))
+                op_list.extend(u2_ex_gate(weights[..., l, len(wires) + i], wires=wires_))
 
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires):
+    def shape(n_layers, n_wires, n_broadcast=None):
         r"""Returns the shape of the weight tensor required for this template.
 
         Args:
             n_layers (int): number of layers
             n_wires (int): number of qubits
+            n_broadcast (int): Optional broadcasting dimension
 
         Returns:
             tuple[int]: shape
@@ -241,4 +248,7 @@ class ParticleConservingU2(Operation):
             raise ValueError(
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
-        return n_layers, 2 * n_wires - 1
+        if broadcast is None:
+            return n_layers, 2 * n_wires - 1
+
+        return n_broadcast, n_layers, 2 * n_wires - 1
