@@ -241,7 +241,7 @@ class MeasurementProcess:
             return shape
 
         # Then: handle return types that require a device; no shot vector
-        if device is None and self.return_type in (Probability, State, Sample, Counts):
+        if device is None and self.return_type in (Probability, State, Sample):
             raise MeasurementShapeError(
                 f"The device argument is required to obtain the shape of the measurement process; got return type {self.return_type}."
             )
