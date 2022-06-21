@@ -59,10 +59,6 @@
 
 <h3>Improvements</h3>
 
-* A small performance and readability upgrade to the `compute_matrix` method
-  of broadcastable parametric operations.
-  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
-
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of
   parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
@@ -77,4 +73,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+Ankit Khandelwal, Ixchel Meza Chavez, David Wierichs, Moritz Willmann
