@@ -44,6 +44,6 @@ def test_success_prob(n_basis, br, prob_ref):
 )
 def test_norm(eta, n, omega, error, br, charge, norm_ref):
     r"""Test that norm returns the correct value."""
-    norm = qml.resources.norm(eta, n, omega, error, br, charge)
+    norm = qml.resources.first_quantization.norm(eta, n, omega, error, br, charge)
 
     assert np.allclose(norm, norm_ref)
