@@ -1030,7 +1030,11 @@ class QubitDevice(Device):
             if counts:
                 return self._samples_to_counts(samples, no_observable_provided)
             return samples
-
+        if counts:
+            return [
+                self._samples_to_counts(bin_sample, no_observable_provided)
+                for bin_sample in samples.reshape((bin_size, -1))
+            ]
         return samples.reshape((bin_size, -1))
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
