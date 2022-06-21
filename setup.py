@@ -25,7 +25,7 @@ requirements = [
     "autograd",
     "toml",
     "appdirs",
-    "semantic-version",
+    "semantic-version>=2.7",
     "autoray>=0.3.1",
     "cachetools",
     "pennylane-lightning>=0.24",
