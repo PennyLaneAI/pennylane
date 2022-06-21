@@ -1619,7 +1619,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = npp.array(0.1, requires_grad=True)
+        phi = npp.array(phi, requires_grad=True)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -1647,7 +1647,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = npp.array(0.1, requires_grad=True)
+        phi = npp.array(phi, requires_grad=True)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
@@ -1685,7 +1685,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
@@ -1723,7 +1723,7 @@ class TestGrad:
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (
             0.5
@@ -1771,7 +1771,7 @@ class TestGrad:
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (
             0.5
@@ -1819,7 +1819,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -1849,7 +1849,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * tf.sin(phi)
 
@@ -1881,7 +1881,7 @@ class TestGrad:
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (
             0.5
@@ -1923,7 +1923,7 @@ class TestGrad:
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (
             0.5
@@ -1965,7 +1965,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
