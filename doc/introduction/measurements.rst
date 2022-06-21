@@ -148,8 +148,7 @@ After executing the circuit, we can directly see how many times each measurement
         
 >>> result = circuit()
 >>> print(result)
-[tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
- tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+[{-1: 526, 1: 474} {-1: 526, 1: 474}]
  
 Similarly, if the observable is not provided, the count of each computational basis state is returned.
 
@@ -169,6 +168,23 @@ And the result is:
 >>> result = circuit()
 >>> print(result)
 {'00': 495, '11': 505}
+
+If another measurement function than :func:`~.pennylane.sample` is provided,
+the a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.PauliX(wires=2)
+        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.sample(counts=True)
+
+>>> result = circuit()
+>>> print(result)
+[tensor(0.026, requires_grad=True) tensor(0.026, requires_grad=True)
+ tensor({'001': 513, '111': 487}, dtype=object, requires_grad=True)]
 
 Probability
 -----------
