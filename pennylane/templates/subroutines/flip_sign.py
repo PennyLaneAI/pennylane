@@ -110,6 +110,7 @@ class FlipSign(Operation):
         r"""Representation of the operator
 
         .. math::
+            \hat{X} \otimes \hat{Z} \otimes \hat{X}
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
 
