@@ -2381,7 +2381,9 @@ class IsingXX(Operation):
         if qml.math.ndim(phi) == 0:
             return c * np.eye(4) + js * np.eye(4)[::-1]
 
-        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(js, np.eye(4)[::-1], axes=0)
+        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(
+            js, np.eye(4)[::-1], axes=0
+        )
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -2533,7 +2535,9 @@ class IsingYY(Operation):
         if qml.math.ndim(phi) == 0:
             return c * np.eye(4) + js * np.diag([1, -1, -1, 1])[::-1]
 
-        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(js, np.diag([1, -1, -1, 1])[::-1], axes=0)
+        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(
+            js, np.diag([1, -1, -1, 1])[::-1], axes=0
+        )
 
     def adjoint(self):
         (phi,) = self.parameters
