@@ -23,26 +23,26 @@ from pennylane.transforms import batch_transform
 
 @batch_transform
 def fold_global(circuit, scale_factor):
-    """Diffable global circuit folding function as is done in :`mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
-    
+    r"""Diffable global circuit folding function as is done in :`mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
+
     For a unitary ``circuit`` :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` implements
 
     .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\adjoint_d L^\adjoint_{d-1} .. L^\adjoint_s) (L_s .. L_d)
 
     where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left((\lambda -1) \mod 2 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
-    
+
     """
 
     if scale_factor < 1.:
         raise AttributeError("scale_factor must be >= 1")
     assert scale_factor >= 1.
-    
+
     # Generate base_circuit without measurements
     base_ops = copy.deepcopy(circuit.expand().operations)
     # Treat all circuits as lists of operations, build new tape in the end
-    
+
     num_global_folds, fraction_scale = divmod(scale_factor - 1, 2)
-    
+
     # Do global folds U => U (U^H U)**n.
     new_list_of_ops = copy.deepcopy(base_ops)
 
@@ -71,7 +71,7 @@ def fold_global(circuit, scale_factor):
     return [new_circuit], lambda res: res
 
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments, protected-access, bad-continuation
 @batch_transform
 def mitigate_with_zne(
     circuit: Union[QNode, QuantumTape],

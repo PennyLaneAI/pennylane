@@ -326,3 +326,10 @@ class TestMitiqIntegration:
         g = qml.grad(mitigated_circuit)(w1, w2)
         for g_ in g:
             assert not np.allclose(g_, 0)
+
+
+class TestFoldGlobal:
+    """Testing ``qml.transforms.fold_global"""
+
+    def test_constant_result(self):
+        """Ensuring that the circuit always yields the same result upon folding"""
