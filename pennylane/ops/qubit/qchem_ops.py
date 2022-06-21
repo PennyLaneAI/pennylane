@@ -24,6 +24,7 @@ from pennylane.operation import Operation
 
 I16 = np.eye(16)
 
+
 class SingleExcitation(Operation):
     r"""
     Single excitation rotation.
