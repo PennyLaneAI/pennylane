@@ -180,7 +180,7 @@ class TestSupportsBroadcasting:
 
         # Provide up to 6 wires and take as many as the class requires
         # This assumes that the class does *not* have `num_wires=qml.operation.AnyWires`
-        wires = ["wire0", 5, 41, "aux_wire", -1, 9][:cls.num_wires]
+        wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
         op = cls(par, wires=wires)
 
         mat1 = op.matrix()

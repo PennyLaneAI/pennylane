@@ -22,6 +22,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.operation import Operation
 
+I16 = np.eye(16)
 
 class SingleExcitation(Operation):
     r"""
@@ -121,7 +122,7 @@ class SingleExcitation(Operation):
         c = qml.math.cos(phi / 2) - 1
         s = qml.math.sin(phi / 2)
 
-        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        mask_c = np.diag([0, 1, 1, 0])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
         diag = qml.math.einsum("...,ij->...ij", c, mask_c)
         off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
@@ -257,8 +258,8 @@ class SingleExcitationMinus(Operation):
 
         e = qml.math.exp(-1j * phi / 2)
 
-        mask_e = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
-        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        mask_e = np.diag([1, 0, 0, 1])
+        mask_c = np.diag([0, 1, 1, 0])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
         diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum(
             "...,ij->...ij", e, mask_e
@@ -407,8 +408,8 @@ class SingleExcitationPlus(Operation):
 
         e = qml.math.exp(1j * phi / 2)
 
-        mask_e = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
-        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        mask_e = np.diag([1, 0, 0, 1])
+        mask_c = np.diag([0, 1, 1, 0])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
         diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum(
             "...,ij->...ij", e, mask_e
@@ -554,6 +555,10 @@ class DoubleExcitation(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
+    mask_s = np.zeros((16, 16))
+    mask_s[3, 12] = -1
+    mask_s[12, 3] = 1
+
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -575,11 +580,8 @@ class DoubleExcitation(Operation):
 
         ones = qml.math.ones_like(c)
         diag = qml.math.stack([ones] * 3 + [c] + [ones] * 8 + [c] + [ones] * 3, axis=-1)
-        mask_s = np.zeros((16, 16))
-        mask_s[3, 12] = -1
-        mask_s[12, 3] = 1
-        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
+        off_diag = qml.math.einsum("...,ij->...ij", s, DoubleExcitation.mask_s)
         return diag + off_diag
 
     @staticmethod
@@ -723,10 +725,8 @@ class DoubleExcitationPlus(Operation):
     """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
-        G = -1 * np.eye(16, dtype=np.complex64)
+        G = 1j * DoubleExcitation.mask_s - I16
         G[3, 3] = G[12, 12] = 0
-        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
@@ -763,11 +763,8 @@ class DoubleExcitationPlus(Operation):
         c = (1 + 0j) * c
 
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        mask_s = np.zeros((16, 16))
-        mask_s[3, 12] = -1
-        mask_s[12, 3] = 1
-        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
+        off_diag = qml.math.einsum("...,ij->...ij", s, DoubleExcitation.mask_s)
         return diag + off_diag
 
     def adjoint(self):
@@ -825,11 +822,8 @@ class DoubleExcitationMinus(Operation):
     """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
-        G = np.eye(16, dtype=np.complex64)
-        G[3, 3] = 0
-        G[12, 12] = 0
-        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+        G = 1j * DoubleExcitation.mask_s + I16
+        G[3, 3] = G[12, 12] = 0
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
@@ -864,11 +858,8 @@ class DoubleExcitationMinus(Operation):
         c = (1 + 0j) * c
 
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        mask_s = np.zeros((16, 16))
-        mask_s[3, 12] = -1
-        mask_s[12, 3] = 1
-        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
+        off_diag = qml.math.einsum("...,ij->...ij", s, DoubleExcitation.mask_s)
         return diag + off_diag
 
     def adjoint(self):
@@ -961,6 +952,18 @@ class OrbitalRotation(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
+    mask_s = np.zeros((16, 16))
+    mask_s[1, 4] = mask_s[2, 8] = mask_s[7, 13] = mask_s[11, 14] = -1
+    mask_s[4, 1] = mask_s[8, 2] = mask_s[13, 7] = mask_s[14, 11] = 1
+
+    mask_cs = np.zeros((16, 16))
+    mask_cs[3, 6] = mask_cs[3, 9] = mask_cs[6, 12] = mask_cs[9, 12] = -1
+    mask_cs[6, 3] = mask_cs[9, 3] = mask_cs[12, 6] = mask_cs[12, 9] = 1
+
+    mask_s2 = np.zeros((16, 16))
+    mask_s2[3, 12] = mask_s2[12, 3] = 1
+    mask_s2[6, 9] = mask_s2[9, 6] = -1
+
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -989,23 +992,12 @@ class OrbitalRotation(Operation):
             [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
             axis=-1,
         )
-        mask_s = np.zeros((16, 16))
-        mask_s[1, 4] = mask_s[2, 8] = mask_s[7, 13] = mask_s[11, 14] = -1
-        mask_s[4, 1] = mask_s[8, 2] = mask_s[13, 7] = mask_s[14, 11] = 1
 
-        mask_cs = np.zeros((16, 16))
-        mask_cs[3, 6] = mask_cs[3, 9] = mask_cs[6, 12] = mask_cs[9, 12] = -1
-        mask_cs[6, 3] = mask_cs[9, 3] = mask_cs[12, 6] = mask_cs[12, 9] = 1
-
-        mask_s2 = np.zeros((16, 16))
-        mask_s2[3, 12] = mask_s2[12, 3] = 1
-        mask_s2[6, 9] = mask_s2[9, 6] = -1
-
-        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
+        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
         off_diag = (
-            qml.math.einsum("...,ij->...ij", s, mask_s)
-            + qml.math.einsum("...,ij->...ij", c * s, mask_cs)
-            + qml.math.einsum("...,ij->...ij", s**2, mask_s2)
+            qml.math.einsum("...,ij->...ij", s, OrbitalRotation.mask_s)
+            + qml.math.einsum("...,ij->...ij", c * s, OrbitalRotation.mask_cs)
+            + qml.math.einsum("...,ij->...ij", s**2, OrbitalRotation.mask_s2)
         )
 
         return diag + off_diag
