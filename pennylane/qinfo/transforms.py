@@ -83,17 +83,24 @@ def vn_entropy(qnode, wires, base=None):
 
     **Example**
 
-        .. code-block:: python
+    It is possible to obtain the entropy of a subsystem from a :class:`.QNode` returning a :func:`~.state`.
 
-            dev = qml.device("default.qubit", wires=2)
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> vn_entropy(circuit, wires=[0])(np.pi/2)
     0.6931472
 
+    The function is differentiable with backpropagation for all interfaces, e.g.:
+
+    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(vn_entropy(circuit, wires=[0]))(param)
+    0.6232252401402305
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -143,14 +150,17 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     **Example**
 
-        .. code-block:: python
+    It is possible to obtain the mutual information of two subsystems from a
+    :class:`.QNode` returning a :func:`~.state`.
 
-            dev = qml.device("default.qubit", wires=2)
+    .. code-block:: python
 
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> mutual_info_circuit = qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
     >>> mutual_info_circuit(np.pi/2)
@@ -158,12 +168,12 @@ def mutual_info(qnode, wires0, wires1, base=None):
     >>> x = np.array(0.4, requires_grad=True)
     >>> mutual_info_circuit(x)
     0.3325090393262875
-    >>> qml.grad(mutual_info_circuit)(0.4)
+    >>> qml.grad(mutual_info_circuit)(np.array(0.4, requires_grad=True))
     1.2430067731198946
 
     .. seealso::
 
-        :func:`~.qinfo.vn_entropy_transform`
+        :func:`~.qinfo.vn_entropy`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -559,9 +569,9 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     **Example**
 
     First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
-    and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
-    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g. `all_args0 = (0.1, 0.3)` and
-    `all_args1 = (0.2)` in the following case:
+    and another circuit with a single parameter. The output of the :func:`~.qinfo.fidelity` transform then requires
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g.
+    ``all_args0 = (0.1, 0.3)`` and ``all_args1 = (0.2)`` in the following case:
 
     .. code-block:: python
 
@@ -581,8 +591,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
     0.9905158135644924
 
-    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
-    need to pass an empty tuple as an argument for the first QNode.
+    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, it
+    is required to pass an empty tuple as an argument for the first QNode.
 
     .. code-block:: python
 
@@ -606,8 +616,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
     0.9900332889206207
 
-    The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
-    with backpropagation, the following example uses `jax` and `backprop`.
+    The :func:`~.qinfo.fidelity` transform is also differentiable and the gradient can be obtained in the different frameworks
+    with backpropagation, the following example uses ``jax`` and ``backprop``.
 
     .. code-block:: python
 
@@ -626,6 +636,27 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
     -0.14776011
 
+    There is also the possibility to pass a single dictionary at the end of the tuple for fixing args,
+    you can follow this example:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(y, use_ry):
+            if use_ry:
+                qml.RY(y, wires=0)
+            return qml.state()
+
+    >>> fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.9, {'use_ry': True}))
+    0.8208074192135424
     """
 
     if len(wires0) != len(wires1):
@@ -648,8 +679,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         the args and kwargs to each :class:`.QNode`.
 
         Args:
-            all_args0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
-            all_args1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
 
         Returns:
             float: Fidelity between two quantum states
@@ -662,14 +693,28 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         # If no all_args is given, evaluate the QNode without args
         if all_args0 is not None:
-            state0 = state_qnode0(*all_args0)
+            # Handle a dictionary as last argument
+            if isinstance(all_args0[-1], dict):
+                args0 = all_args0[:-1]
+                kwargs0 = all_args0[-1]
+            else:
+                args0 = all_args0
+                kwargs0 = {}
+            state0 = state_qnode0(*args0, **kwargs0)
         else:
             # No args
             state0 = state_qnode0()
 
         # If no all_args is given, evaluate the QNode without args
         if all_args1 is not None:
-            state1 = state_qnode1(*all_args1)
+            # Handle a dictionary as last argument
+            if isinstance(all_args1[-1], dict):
+                args1 = all_args1[:-1]
+                kwargs1 = all_args1[-1]
+            else:
+                args1 = all_args1
+                kwargs1 = {}
+            state1 = state_qnode1(*args1, **kwargs1)
         else:
             # No args
             state1 = state_qnode1()
