@@ -21,6 +21,7 @@ from pennylane import math
 import pennylane.numpy as qnp
 
 from pennylane.ops.op_math import Sum, op_sum
+from pennylane.ops.op_math.sum import _sum
 from pennylane import QuantumFunctionError
 from pennylane.operation import MatrixUndefinedError
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -237,6 +238,78 @@ class TestMatrix:
 
     # Add interface tests for each interface !
 
+    @pytest.mark.jax
+    def test_sum_jax(self):
+        import jax
+        import jax.numpy as jnp
+
+        theta = jnp.array(1.23)
+        rot_params = jnp.array([0.12, 3.45, 6.78])
+
+        sum_op = Sum(
+            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
+            qml.RX(theta, wires=1),
+            qml.Identity(wires=0),
+        )
+        mat = sum_op.matrix()
+
+        true_mat = (
+            jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
+            + jnp.kron(qnp.eye(2), gd.Rotx(theta))
+            + qnp.eye(4)
+        )
+        true_mat = jnp.array(true_mat)
+
+        assert jnp.allclose(mat, true_mat)
+
+    @pytest.mark.torch
+    def test_sum_torch(self):
+        import torch
+
+        theta = torch.tensor(1.23)
+        rot_params = torch.tensor([0.12, 3.45, 6.78])
+
+        sum_op = Sum(
+            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
+            qml.RX(theta, wires=1),
+            qml.Identity(wires=0),
+        )
+        mat = sum_op.matrix()
+
+        true_mat = (
+            qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
+            + qnp.kron(qnp.eye(2), gd.Rotx(theta))
+            + qnp.eye(4)
+        )
+        true_mat = torch.tensor(true_mat)
+
+        assert torch.allclose(mat, true_mat)
+
+    @pytest.mark.tf
+    def test_sum_tf(self):
+        import tensorflow as tf
+
+        theta = tf.Variable(1.23)
+        rot_params = tf.Variable([0.12, 3.45, 6.78])
+
+        sum_op = Sum(
+            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
+            qml.RX(theta, wires=1),
+            qml.Identity(wires=0),
+        )
+        mat = sum_op.matrix()
+
+        true_mat = (
+            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
+            + qnp.kron(qnp.eye(2), gd.Rotx(1.23))
+            + qnp.eye(4)
+        )
+        true_mat = tf.Variable(true_mat)
+
+        assert isinstance(mat, tf.Tensor)
+        assert mat.dtype == true_mat.dtype
+        assert np.allclose(mat, true_mat)
+
 
 class TestProperties:
 
@@ -356,13 +429,31 @@ class TestWrapperFunc:
 
 class TestPrivateSum:
     def test_sum_private(self):
-        return
+        mats_gen = (qnp.eye(2) for _ in range(3))
+
+        sum_mat = _sum(mats_gen)
+        expected_sum_mat = 3 * qnp.eye(2)
+        assert qnp.allclose(sum_mat, expected_sum_mat)
 
     def test_dtype(self):
-        return
+        dtype = "complex128"
+        mats_gen = (qnp.eye(2) for _ in range(3))
+
+        sum_mat = _sum(mats_gen, dtype=dtype)
+        expected_sum_mat = 3 * qnp.eye(2, dtype=dtype)
+
+        assert sum_mat.dtype == "complex128"
+        assert qnp.allclose(sum_mat, expected_sum_mat)
 
     def test_cast_like(self):
-        return
+        cast_like = qnp.array(2, dtype="complex128")
+        mats_gen = (qnp.eye(2) for _ in range(3))
+
+        sum_mat = _sum(mats_gen, cast_like=cast_like)
+        expected_sum_mat = 3 * qnp.eye(2, dtype="complex128")
+
+        assert sum_mat.dtype == "complex128"
+        assert qnp.allclose(sum_mat, expected_sum_mat)
 
 
 class TestIntegration:
@@ -436,7 +527,22 @@ class TestIntegration:
             my_circ()
 
     def test_differentiable_measurement_process(self):
-        return
+        sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, grad_method="best")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(weights[2], wires=1)
+            return qml.expval(sum_op)
+
+        weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        grad = qml.grad(circuit)(weights)
+
+        true_grad = qnp.array([-0.09347337, -0.18884787, -0.28818254])
+        assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
         wires = [0, 1]

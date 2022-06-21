@@ -15,10 +15,11 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+from functools import reduce
+
 import numpy as np
 import pennylane as qml
 
-from functools import reduce
 from pennylane import math
 from pennylane.operation import Operator
 
