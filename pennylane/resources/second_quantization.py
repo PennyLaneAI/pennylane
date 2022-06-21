@@ -92,7 +92,7 @@ def _qrom_cost(constants):
     return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
 
 
-def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
+def unitary_cost(n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
     r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator for
     the double factorization algorithm.
 
@@ -103,6 +103,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
         n (int): number of molecular spin-orbitals
         rank_r (int): rank of the first factorization of the two-electron integral tensor
         rank_m (float): average rank of the second factorization of the two-electron integral tensor
+        rank_max (float): maximum rank of the second factorization of the two-electron tensor
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
@@ -115,6 +116,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> n = 14
     >>> rank_r = 26
     >>> rank_m = 5.5
+    >>> rank_m = 7
     >>> br = 7
     >>> alpha = 10
     >>> beta = 20
@@ -129,6 +131,11 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
 
     if rank_m <= 0:
         raise ValueError("The rank of the second factorization step must be a positive number.")
+
+    if rank_max <= 0 or not isinstance(rank_max, int):
+        raise ValueError(
+            "The maximum rank of the second factorization step must be a positive" " integer."
+        )
 
     if br <= 0 or not isinstance(br, int):
         raise ValueError("br must be a positive integer.")
@@ -145,7 +152,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
     eta = int(np.max([n for n in eta if n % 1 == 0]))
 
-    nxi = np.ceil(np.log2(rank_m))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
+    nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
     nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
     nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of 10.1103/PRXQuantum.2.030305
 
@@ -165,7 +172,7 @@ def unitary_cost(n, rank_r, rank_m, br=7, alpha=10, beta=20):
     return int(cost)
 
 
-def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
+def gate_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
     r"""Return the total number of Toffoli gates needed to implement the double factorization
     algorithm.
 
@@ -178,6 +185,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
         error (float): target error in the algorithm
         rank_r (int): rank of the first factorization of the two-electron integral tensor
         rank_m (float): average rank of the second factorization of the two-electron integral tensor
+        rank_max (float): maximum rank of the second factorization of the two-electron tensor
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
@@ -192,6 +200,7 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> error = 0.001
     >>> rank_r = 26
     >>> rank_m = 5.5
+    >>> rank_max = 7
     >>> br = 7
     >>> alpha = 10
     >>> beta = 20
@@ -213,6 +222,11 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     if rank_m <= 0:
         raise ValueError("The rank of the second factorization step must be a positive number.")
 
+    if rank_max <= 0 or not isinstance(rank_max, int):
+        raise ValueError(
+            "The maximum rank of the second factorization step must be a positive" " integer."
+        )
+
     if br <= 0 or not isinstance(br, int):
         raise ValueError("br must be a positive integer.")
 
@@ -223,12 +237,12 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
         raise ValueError("beta must be a positive integer.")
 
     e_cost = estimation_cost(norm, error)
-    u_cost = unitary_cost(n, rank_r, rank_m, br, alpha, beta)
+    u_cost = unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
 
     return int(e_cost * u_cost)
 
 
-def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
+def qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
     r"""Return the number of ancilla qubits needed to implement the double factorization method.
 
     The expression for computing the cost is taken from Eq. (C40) of
@@ -241,6 +255,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
         error (float): target error in the algorithm
         rank_r (int): rank of the first factorization of the two-electron integral tensor
         rank_m (float): average rank of the second factorization of the two-electron integral tensor
+        rank_max (float): maximum rank of the second factorization of the two-electron tensor
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
@@ -255,6 +270,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     >>> error = 0.001
     >>> rank_r = 26
     >>> rank_m = 5.5
+    >>> rank_max = 7
     >>> br = 7
     >>> alpha = 10
     >>> beta = 20
@@ -276,6 +292,11 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     if rank_m <= 0:
         raise ValueError("The rank of the second factorization step must be a positive number.")
 
+    if rank_max <= 0 or not isinstance(rank_max, int):
+        raise ValueError(
+            "The maximum rank of the second factorization step must be a positive" " integer."
+        )
+
     if br <= 0 or not isinstance(br, int):
         raise ValueError("br must be a positive integer.")
 
@@ -287,7 +308,7 @@ def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
 
     rank_rm = rank_r * rank_m
 
-    nxi = np.ceil(np.log2(rank_m))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
+    nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
     nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
     nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of 10.1103/PRXQuantum.2.030305
 
