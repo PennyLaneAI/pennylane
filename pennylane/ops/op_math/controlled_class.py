@@ -28,81 +28,6 @@ from pennylane.queuing import QueuingContext
 from pennylane.wires import Wires
 
 
-# pylint: disable=no-member
-class ControlledOperation(operation.Operation):
-    """Operation-specific methods and properties for the ``Controlled`` class.
-
-    Dynamically mixed in based on the provided base operator.  If the base operator is an
-    Operation, this class will be mixed in.
-
-    When we no longer rely on certain functionality through `Operation`, we can get rid of this
-    class.
-
-    Defers inversion behavior to base.  This way we don't have to modify the ``Controlled.matrix``
-    and ``Controlled.eigvals`` to account for in-place inversion. In-place inversion of a matrix
-    """
-
-    @property
-    def _inverse(self):
-        return False
-
-    @_inverse.setter
-    def _inverse(self, boolean):
-        self.base._inverse = boolean  # pylint: disable=protected-access
-        # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
-
-    def inv(self):
-        self.base.inv()
-        # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
-        return self
-
-    @property
-    def base_name(self):
-        return f"C{self.base.base_name}"
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def grad_method(self):
-        return self.base.grad_method
-
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
-    @property
-    def parameter_frequencies(self):
-        if self.base.num_params == 1:
-            try:
-                base_gen = qml.generator(self.base, format="observable")
-            except operation.GeneratorUndefinedError as e:
-                raise operation.ParameterFrequenciesUndefinedError(
-                    f"Operation {self.base.name} does not have parameter frequencies defined."
-                ) from e
-
-            with warnings.catch_warnings():
-                warnings.filterwarnings(
-                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
-                )
-                base_gen_eigvals = qml.eigvals(base_gen)
-
-            # The projectors in the full generator add a eigenvsalue of `0` to
-            # the eigenvalues of the base generator.
-            gen_eigvals = np.append(base_gen_eigvals, 0)
-
-            processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
-            return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
-        raise operation.ParameterFrequenciesUndefinedError(
-            f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one parameter."
-        )
-
-
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(operation.Operator):
     """Symbolic operator denoting a controlled operator.
@@ -156,42 +81,10 @@ class Controlled(operation.Operator):
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(
-        cls, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
-    ):
-        """Mixes in parents based on inheritance structure of base.
-
-        Though all the types will be named "Pow", their *identity* and location in memory will be different
-        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
-
-        """
-
+    def __new__(cls, base, *_, **__):
+        """If base is an ``Operation``, then the a ``ControlledOp`` should be used instead."""
         if isinstance(base, operation.Operation):
-            if isinstance(base, operation.Observable):
-                if cls._operation_observable_type is None:
-                    base_classes = (
-                        ControlledOperation,
-                        Controlled,
-                        operation.Observable,
-                        operation.Operation,
-                    )
-                    cls._operation_observable_type = type(
-                        "Controlled", base_classes, dict(cls.__dict__)
-                    )
-                return object.__new__(cls._operation_observable_type)
-
-            # not an observable
-            if cls._operation_type is None:
-                base_classes = (ControlledOperation, Controlled, operation.Operation)
-                cls._operation_type = type("Controlled", base_classes, dict(cls.__dict__))
-            return object.__new__(cls._operation_type)
-
-        if isinstance(base, operation.Observable):
-            if cls._observable_type is None:
-                base_classes = (Controlled, operation.Observable)
-                cls._observable_type = type("Controlled", base_classes, dict(cls.__dict__))
-            return object.__new__(cls._observable_type)
-
+            return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
     # pylint: disable=attribute-defined-outside-init
@@ -475,3 +368,81 @@ class Controlled(operation.Operator):
             Controlled(op, self.control_wires, self.control_values, self.work_wires)
             for op in base_pow
         ]
+
+
+class ControlledOp(Controlled, operation.Operation):
+    """Operation-specific methods and properties for the ``Controlled`` class.
+
+    Dynamically mixed in based on the provided base operator.  If the base operator is an
+    Operation, this class will be mixed in.
+
+    When we no longer rely on certain functionality through `Operation`, we can get rid of this
+    class.
+
+    Defers inversion behavior to base.  This way we don't have to modify the ``Controlled.matrix``
+    and ``Controlled.eigvals`` to account for in-place inversion. In-place inversion of a matrix
+    """
+
+    def __new__(cls, *_, **__):
+        # overrides dispatch behavior of ``Controlled``
+        return object.__new__(cls)
+
+    @property
+    def _inverse(self):
+        return False
+
+    @_inverse.setter
+    def _inverse(self, boolean):
+        self.base._inverse = boolean  # pylint: disable=protected-access
+        # refresh name as base_name got updated.
+        self._name = f"C{self.base.name}"
+
+    def inv(self):
+        self.base.inv()
+        # refresh name as base_name got updated.
+        self._name = f"C{self.base.name}"
+        return self
+
+    @property
+    def base_name(self):
+        return f"C{self.base.base_name}"
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
+    @property
+    def parameter_frequencies(self):
+        if self.base.num_params == 1:
+            try:
+                base_gen = qml.generator(self.base, format="observable")
+            except operation.GeneratorUndefinedError as e:
+                raise operation.ParameterFrequenciesUndefinedError(
+                    f"Operation {self.base.name} does not have parameter frequencies defined."
+                ) from e
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                base_gen_eigvals = qml.eigvals(base_gen)
+
+            # The projectors in the full generator add a eigenvsalue of `0` to
+            # the eigenvalues of the base generator.
+            gen_eigvals = np.append(base_gen_eigvals, 0)
+
+            processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
+            return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
+        raise operation.ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed via generator for more than one parameter."
+        )
