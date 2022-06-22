@@ -74,8 +74,8 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         :title: Theory
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error, following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        error following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -86,14 +86,15 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
-        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
+        default value of  :math:`\alpha = 0.01` and obtain
 
         .. math::
 
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
 
-        We assume a default value of  :math:`\alpha = 1`.
+        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
+        error distribution takes place inside the functions.
     """
     alpha = 0.01
     l_z = eta + charge
@@ -159,8 +160,8 @@ def estimation_cost_fq(lamb, error):
         :title: Theory
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error, following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        error following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -171,14 +172,15 @@ def estimation_cost_fq(lamb, error):
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
-        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
+        default value of  :math:`\alpha = 0.01` and obtain
 
         .. math::
 
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
 
-        We assume a default value of  :math:`\alpha = 1`.
+        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
+        error distribution takes place inside the functions.
     """
     alpha = 0.01
     # qpe_error obtained to satisfy inequality (131)
@@ -220,8 +222,8 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         :title: Theory
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error, following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        error following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -232,14 +234,15 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
-        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
+        default value of  :math:`\alpha = 0.01` and obtain
 
         .. math::
 
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
 
-        We assume a default value of  :math:`\alpha = 1`.
+        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
+        error distribution takes place inside the functions.
     """
     e_cost = estimation_cost_fq(lamb, error)
     u_cost = unitary_cost_fq(n, eta, omega, error, lamb, br, charge)
@@ -281,8 +284,8 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
         :title: Theory
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error, following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        error following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -293,14 +296,15 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
-        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
+        default value of  :math:`\alpha = 0.01` and obtain
 
         .. math::
 
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
 
-        We assume a default value of  :math:`\alpha = 1`.
+        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
+        error distribution takes place inside the functions.
     """
     alpha = 0.01
     l_z = eta + charge
