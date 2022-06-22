@@ -39,14 +39,12 @@
   >>> print(energy)
   -1.1258709813834058
   ```
-  
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-* Added new device abstract base class `QutritDevice` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
-* Added operation `qml.QutritUnitary` for applying user-specified unitaries to `QutritDevice`.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
+* Added operation `qml.QutritUnitary` for applying user-specified unitaries to qutrit devices.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 <h3>Improvements</h3>
 
@@ -63,4 +61,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
