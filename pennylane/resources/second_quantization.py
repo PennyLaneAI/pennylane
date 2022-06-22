@@ -25,8 +25,45 @@ class DoubleFactorization(Operation):
     r"""Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in second quantization based on the double factorization method.
 
-    The factorization method and expression for computing the norm and the costs are from
-    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_]
+    To estimate the total number of Toffoli gates and the number of qubits, the molecular
+    Hamiltonian needs to be factorized using the ``factorization`` function following
+    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+    The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
+    such that the two-electron integral tensor in
+    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
+    :math:`V`, can be computed as
+
+    .. math::
+
+           V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
+
+    with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals. The
+    matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
+    smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
+    average number of the retained eigenvalues, :math:`M`, determines the rank of the second
+    factorization step. The 1-norm of the Hamiltonian can then be computed using the ``norm``
+    function from the electron integrals and the eigenvalues of the matrices :math:`L^{(r)}` as
+
+    .. math::
+
+        \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
+
+    where the Schatten 1-norm for a given matrix :math:`T` is defined as
+
+    .. math::
+
+        ||T|| = \sum_k |\text{eigvals}[T]_k|,
+
+    and matrix :math:`T` is constructed from the one- and two-electron integrals
+
+    .. math::
+
+        T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
+
+    The total number of gates and qubits for implementing the quantum phase estimation algorithm
+    for the given Hamiltonian can then be computed using the functions ``gate_cost`` and
+    ``qubit_cost`` with a target error with a default value that is the chemical accuracy
+    (0.0016 Ha).
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
@@ -67,48 +104,6 @@ class DoubleFactorization(Operation):
 
         >>> algo.qubits  # estimated number of qubits
         290
-
-    .. details::
-        :title: Theory
-
-        To estimate the total number of Toffoli gates and the number of qubits, the molecular
-         Hamiltonian needs to be factorized using the ``factorization`` function. The objective of
-        the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`, such that the
-        two-electron integral tensor in
-        `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
-        :math:`V`, can be computed as
-
-        .. math::
-
-               V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
-
-        with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals. The
-        matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
-        smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
-        average number of the retained eigenvalues, :math:`M`, determines the rank of the second
-        factorization step. The 1-norm of the Hamiltonian can then be computed using the ``norm``
-        function from the electron integrals and the eigenvalues of the matrices :math:`L^{(r)}` as
-
-        .. math::
-
-            \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
-
-        where the Schatten 1-norm for a given matrix :math:`T` is defined as
-
-        .. math::
-
-            ||T|| = \sum_k |\text{eigvals}[T]_k|,
-
-        and matrix :math:`T` is constructed from the one- and two-electron integrals
-
-        .. math::
-
-            T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
-
-        The total number of gates and qubits for implementing the quantum phase estimation algorithm
-        for the given Hamiltonian can then be computed using the functions ``gate_cost`` and
-        ``qubit_cost`` with a target error with a default value that is the chemical accuracy
-        (0.0016 Ha).
     """
     num_wires = AnyWires
     grad_method = None
