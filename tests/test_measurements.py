@@ -652,40 +652,39 @@ class TestCounts:
 
         circuit()
 
-    def test_binned_samples_for_operator(self, tol):
-        n_bins = 5
-        n_sample = 1000
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+    def test_binned_counts_for_operator(self, tol):
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-            return qml.sample()
+            qml.PauliZ(0)
+            return qml.sample(qml.PauliZ(0), counts=True)
 
-        circuit()
-        binned_samples = dev.sample(qml.PauliZ(0), bin_size=n_bins, counts=True)
-        assert isinstance(binned_samples, list)
+        binned_samples = circuit()
+
+        assert isinstance(binned_samples, np.ndarray)
         assert isinstance(binned_samples[0], dict)
-        assert len(binned_samples) == n_bins
-        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == n_sample
+        assert len(binned_samples) == len(shot_vec)
+        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == sum(shot_vec)
 
-    def test_binned_samples_for_state_vector(self, tol):
-        n_bins = 4
-        n_sample = 1000
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+    def test_binned_counts_for_state_vector(self, tol):
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-            return qml.sample()
+            qml.PauliZ(0)
+            return qml.sample(None, counts=True)
 
-        circuit()
-        m = MeasurementProcess(Counts)
-        binned_samples = dev.sample(m, bin_size=n_bins, counts=True)
-        assert isinstance(binned_samples, list)
+        binned_samples = circuit()
+
+        assert isinstance(binned_samples, np.ndarray)
         assert isinstance(binned_samples[0], dict)
-        assert len(binned_samples) == n_bins
-        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == n_sample
+        assert len(binned_samples) == len(shot_vec)
+        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == sum(shot_vec)
 
 
 class TestMeasure:

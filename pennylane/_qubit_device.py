@@ -278,10 +278,12 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                else:
+                elif not isinstance(r[0], dict):
                     r = qml.math.squeeze(r)
-
-                if shot_tuple.copies > 1:
+                if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
+                    # This happens when measurement type is Counts
+                    results.append(r)
+                elif shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
                     results.append(r.T)
@@ -1031,12 +1033,16 @@ class QubitDevice(Device):
                 return self._samples_to_counts(samples, no_observable_provided)
             return samples
         if counts:
-            shape = (bin_size, -1, 3) if no_observable_provided else (bin_size, -1)
+            shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
             return [
                 self._samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
-        return samples.reshape((bin_size, -1))
+        return (
+            samples.reshape((3, bin_size, -1))
+            if no_observable_provided
+            else samples.reshape((bin_size, -1))
+        )
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
