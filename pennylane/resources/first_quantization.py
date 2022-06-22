@@ -120,8 +120,10 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 
             \lambda^{1}_{\nu} = \lambda_{\nu} + \epsilon_l,
 
-        where :math:`\epsilon_l` is obtained from Eq. (113) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_:
+        where :math:`\epsilon_l` is simply defined as the difference of :math:`\lambda^{1}_{\nu}`
+        and :math:`\lambda_{\nu}`. We follow Eq. (113) of
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ to
+        derive an upper bound for its absolute value:
 
         .. math::
 
