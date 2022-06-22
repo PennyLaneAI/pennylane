@@ -43,7 +43,7 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-* Added operation `qml.QutritUnitary` for applying user-specified unitaries to qutrit devices.
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
 <h3>Improvements</h3>
