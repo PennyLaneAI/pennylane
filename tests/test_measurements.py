@@ -666,8 +666,8 @@ class TestCounts:
         binned_samples = dev.sample(qml.PauliZ(0), bin_size=n_bins, counts=True)
         assert isinstance(binned_samples, list)
         assert isinstance(binned_samples[0], dict)
-        assert len(binned_samples)==n_bins
-        assert sum(sum(v for v in bin.values()) for bin in binned_samples)==n_sample
+        assert len(binned_samples) == n_bins
+        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == n_sample
 
     def test_binned_samples_for_state_vector(self, tol):
         n_bins = 4
@@ -681,11 +681,11 @@ class TestCounts:
 
         circuit()
         m = MeasurementProcess(Counts)
-        binned_samples = dev.sample(m, bin_size = n_bins, counts=True)
+        binned_samples = dev.sample(m, bin_size=n_bins, counts=True)
         assert isinstance(binned_samples, list)
         assert isinstance(binned_samples[0], dict)
-        assert len(binned_samples)==n_bins
-        assert sum(sum(v for v in bin.values()) for bin in binned_samples)==n_sample
+        assert len(binned_samples) == n_bins
+        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == n_sample
 
 
 class TestMeasure:
