@@ -199,8 +199,8 @@ Example:
 
 .. _jax_optimize:
 
-Optimization using JAXOpt
--------------------------
+Optimization using JAXopt and Optax
+-----------------------------------
 
 To optimize your hybrid classical-quantum model using the JAX interface, you
 **must** make use of a package meant for optimizing JAX code (such as `JAXopt
