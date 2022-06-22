@@ -26,7 +26,7 @@ from .wrapper import wrap_arrays, tensor_wrapper
 wrap_arrays(_random.__dict__, globals())
 
 
-np_version_spec = semantic_version.Spec(">=0.17.0")
+np_version_spec = semantic_version.SimpleSpec(">=0.17.0")
 if np_version_spec.match(semantic_version.Version(np_version)):
     # pylint: disable=too-few-public-methods
     # pylint: disable=missing-class-docstring
