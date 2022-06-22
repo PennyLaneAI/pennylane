@@ -176,18 +176,20 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
         - 3 / n ** (1 / 3)
         + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
     )
-    n_m = np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
-        (2 * eta)
-        / (error_uv * np.pi * omega ** (1 / 3))
-        * (eta - 1 + 2 * l_z)
-        * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    n_m = int(
+        np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
+            (2 * eta)
+            / (error_uv * np.pi * omega ** (1 / 3))
+            * (eta - 1 + 2 * l_z)
+            * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+        )
     )
     # computed using Eq. (113) of PRX Quantum 2, 040332 (2021)
     lambda_nu_1 = lambda_nu + 4 / 2**n_m * (
         7 * 2 ** (n_p + 1) + 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
     )
 
-    p_nu = 0.2398  # upper bound from Eq. (29) in arxiv:1807.09802
+    p_nu = 0.2398  # approximation from Eq. (29) in arxiv:1807.09802
     p_nu_amp = np.sin(3 * np.arcsin(np.sqrt(p_nu))) ** 2  # Eq. (129), PRX Quantum 2, 040332 (2021)
 
     # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021)
