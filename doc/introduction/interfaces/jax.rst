@@ -108,7 +108,7 @@ DeviceArray([-0.47942555,  0.        ], dtype=float32)
 DeviceArray(-3.4332792e-10, dtype=float32)
 
 
-.. _jax_optimize:
+.. _jax_jit:
 
 Using jax.jit on QNodes
 -----------------------
