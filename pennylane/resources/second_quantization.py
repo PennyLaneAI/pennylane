@@ -21,9 +21,12 @@ from pennylane import numpy as np
 from .factorization import factorize
 
 
-class SQ:
+class DoubleFactorization:
     """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in second quantization based on the double factorization method.
+
+    The factorization method and expression for computing the norm and the costs are from
+    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_]
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
