@@ -14,8 +14,6 @@
 """
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
-from unittest.mock import Mock
-
 import pytest
 
 import pennylane as qml

@@ -15,6 +15,7 @@
 This module contains the functions needed for resource estimation with the double factorization
 method.
 """
+# pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 from pennylane import numpy as np
 
 from .factorization import factorize
