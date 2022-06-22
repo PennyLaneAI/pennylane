@@ -39,8 +39,8 @@ def _cost_qrom(lz):
     k_f = np.floor(np.log2(lz) / 2)
     k_c = np.ceil(np.log2(lz) / 2)
 
-    cost_f = int(2 ** k_f + np.ceil(2 ** (-1 * k_f) * lz))
-    cost_c = int(2 ** k_c + np.ceil(2 ** (-1 * k_c) * lz))
+    cost_f = int(2**k_f + np.ceil(2 ** (-1 * k_f) * lz))
+    cost_c = int(2**k_c + np.ceil(2 ** (-1 * k_c) * lz))
 
     return min(cost_f, cost_c)
 
@@ -74,7 +74,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     12819
     """
     l_z = eta + charge
-    l_nu = 4 * np.pi * n ** (1 / 3)
+    l_nu = 2 * np.pi * n ** (2 / 3)
 
     # n_eta and n_etaz are taken from page 040332-15
     n_eta = np.ceil(np.log2(eta))
@@ -88,15 +88,17 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     error_r = 0.01 * error
     error_m = 0.01 * error
 
-    # parameters taken from Eqs. (132-134)
-    n_t = int(np.log2(np.pi * lamb / error_t))
-    n_r = int(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3))))
-    n_m = int(np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
-        (2 * eta)
-        / (error_m * np.pi * omega ** (1 / 3))
-        * (eta - 1 + 2 * l_z)
-        * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
-    ))
+    # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+    n_t = int(np.log2(np.pi * lamb / error_t))  # Eq. (134)
+    n_r = int(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3))))  # Eq. (133)
+    n_m = int(
+        np.log2(  # Eq. (132)
+            (2 * eta)
+            / (error_m * np.pi * omega ** (1 / 3))
+            * (eta - 1 + 2 * l_z)
+            * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+        )
+    )
 
     e_r = _cost_qrom(l_z)
 
@@ -203,7 +205,7 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     4238
     """
     l_z = eta + charge
-    l_nu = 4 * np.pi * n ** (1 / 3)
+    l_nu = 2 * np.pi * n ** (2 / 3)
 
     # n_p is taken from Eq. (22) of 10.1103/PRXQuantum.2.040332
     n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
@@ -213,14 +215,16 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     error_r = 0.01 * error
     error_m = 0.01 * error
 
-    # parameters taken from Eqs. (132-134) of 10.1103/PRXQuantum.2.040332
-    n_t = np.log2(np.pi * lamb / error_t)
-    n_r = np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))
-    n_m = np.log2(
-        (2 * eta)
-        / (error_m * np.pi * omega ** (1 / 3))
-        * (eta - 1 + 2 * l_z)
-        * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+    n_t = int(np.log2(np.pi * lamb / error_t))  # Eq. (134)
+    n_r = int(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3))))  # Eq. (133)
+    n_m = int(
+        np.log2(  # Eq. (132)
+            (2 * eta)
+            / (error_m * np.pi * omega ** (1 / 3))
+            * (eta - 1 + 2 * l_z)
+            * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+        )
     )
 
     # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
