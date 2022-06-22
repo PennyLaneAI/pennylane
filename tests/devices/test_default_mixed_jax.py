@@ -620,7 +620,13 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="jax")
+        qnodes = qml.map(
+            qml.templates.StronglyEntanglingLayers,
+            obs_list,
+            dev,
+            interface="jax",
+            diff_method="backprop",
+        )
 
         assert qnodes.interface == "jax"
 
