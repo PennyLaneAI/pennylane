@@ -63,11 +63,11 @@ def fold_global(circuit, scale_factor):
 
             for op in base_ops:
                 qfunc(op)
-        
+
         # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
         for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
             adjoint(qfunc)(base_ops[i])
-        
+
         for i in range(n_ops - num_to_fold, n_ops):
             qfunc(base_ops[i])
 
