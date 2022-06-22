@@ -56,7 +56,7 @@
 
 <h3>Bug fixes</h3>
 
-* `qml.grouping.group_observabeles` now works when individual wire
+* `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
 
