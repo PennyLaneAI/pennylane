@@ -351,6 +351,9 @@ class TestFoldGlobal:
             qml.adjoint(template(w1, w2, wires=range(n_wires))).decomposition()
             return qml.expval(qml.PauliZ(0))
 
-        folded_qnodes = [qml.transforms.fold_global(circuit, scale_factor=lambda_) for lambda_ in np.arange(1,10)]
+        folded_qnodes = [
+            qml.transforms.fold_global(circuit, scale_factor=lambda_)
+            for lambda_ in np.arange(1, 10)
+        ]
         res = [_(w1, w2) for _ in folded_qnodes]
         assert np.allclose(res, 1)
