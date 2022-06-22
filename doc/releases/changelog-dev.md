@@ -67,4 +67,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
