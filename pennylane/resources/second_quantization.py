@@ -62,8 +62,8 @@ class DoubleFactorization(Operation):
 
     The total number of gates and qubits for implementing the quantum phase estimation algorithm
     for the given Hamiltonian can then be computed using the functions ``gate_cost`` and
-    ``qubit_cost`` with a target error with a default value that is the chemical accuracy
-    (0.0016 Ha).
+    ``qubit_cost`` with a target error that has the default value of chemical accuracy (0.0016 Ha)
+    here.
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
