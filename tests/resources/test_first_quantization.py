@@ -60,7 +60,7 @@ def test_success_prob_error(n_basis, br):
 def test_norm(eta, n, omega, error, br, charge, norm_ref):
     r"""Test that norm_fq returns the correct value."""
     norm = qml.resources.norm_fq(eta, n, omega, error, br, charge)
-    print(norm)
+
     assert np.allclose(norm, norm_ref)
 
 

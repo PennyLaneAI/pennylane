@@ -59,7 +59,7 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 
     The expressions needed for computing the norm are taken from
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
-    For numeriocal convinience, we have used the following modified expressions for computing
+    For numerical convenience, we have used the following modified expressions for computing
     parameters that contain a sum over the elements, :math:`\nu`, of the set of reciprocal lattice
     vectors, :math:`G_0`. For :math:`\lambda_{\nu}` defined in Eq. (25) as
 
