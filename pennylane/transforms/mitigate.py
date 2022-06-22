@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
-import copy
+from copy import copy
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply, adjoint
@@ -37,34 +37,41 @@ def fold_global(circuit, scale_factor):
         raise AttributeError("scale_factor must be >= 1")
     assert scale_factor >= 1.0
 
+    # TODO: simplify this - currently just a workaround, problem is when tape contains adjoint(op)
+    def qfunc(op):
+        copy(op).queue()
+
     # Generate base_circuit without measurements
     base_ops = base_ops = circuit.expand().copy(copy_operations=True).operations
     # Treat all circuits as lists of operations, build new tape in the end
 
     num_global_folds, fraction_scale = divmod(scale_factor - 1, 2)
 
-    # Do global folds U => U (U^H U)**n.
-    new_list_of_ops = [op for op in base_ops]
-
-    for _ in range(int(num_global_folds)):
-        new_list_of_ops += [adjoint(op) for op in base_ops[::-1]]
-        new_list_of_ops += [op for op in base_ops]
-
-    # Do remainder folds
-    num_to_fold = int(round(fraction_scale * len(base_ops) / 2))
     n_ops = len(base_ops)
-
-    for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
-        new_list_of_ops += [adjoint(base_ops[i])]
-
-    for i in range(n_ops - num_to_fold, n_ops):
-        new_list_of_ops += [base_ops[i]]
+    num_to_fold = int(round(fraction_scale * n_ops / 2))
 
     # Create new_circuit from folded list
     with QuantumTape() as new_circuit:
-        for op in new_list_of_ops:
-            apply(op)
+        # Original U
+        for op in base_ops:
+            qfunc(op)
 
+        # Folding U => U (U^H U)**n.
+        for _ in range(int(num_global_folds)):
+            for op in base_ops[::-1]:
+                adjoint(qfunc)(op)
+
+            for op in base_ops:
+                qfunc(op)
+        
+        # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
+        for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
+            adjoint(qfunc)(base_ops[i])
+        
+        for i in range(n_ops - num_to_fold, n_ops):
+            qfunc(base_ops[i])
+
+        # Append measurements
         for meas in circuit.measurements:
             apply(meas)
 
