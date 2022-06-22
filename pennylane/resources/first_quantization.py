@@ -19,7 +19,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 from pennylane import numpy as np
 
 
-def _cost_qrom(lz):
+def _cost_qrom_fq(lz):
     r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
 
     Args:
@@ -42,7 +42,7 @@ def _cost_qrom(lz):
     return min(cost_f, cost_c)
 
 
-def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
+def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
     ￼
     The expression for computing the cost is taken from Eq. (125) of
@@ -123,7 +123,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
         )
     )
 
-    e_r = _cost_qrom(l_z)
+    e_r = _cost_qrom_fq(l_z)
 
     # taken from Eq. (125)
     cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
@@ -135,7 +135,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     return int(np.ceil(cost))
 
 
-def estimation_cost(lamb, error):
+def estimation_cost_fq(lamb, error):
     r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
     phase estimation.
 
@@ -187,7 +187,7 @@ def estimation_cost(lamb, error):
     return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
 
-def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
+def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the total number of Toffoli gates needed to implement the first quantization
     algorithm.
 
@@ -241,13 +241,13 @@ def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
 
         We assume a default value of  :math:`\alpha = 1`.
     """
-    e_cost = estimation_cost(lamb, error)
-    u_cost = unitary_cost(n, eta, omega, error, lamb, br, charge)
+    e_cost = estimation_cost_fq(lamb, error)
+    u_cost = unitary_cost_fq(n, eta, omega, error, lamb, br, charge)
 
     return e_cost * u_cost
 
 
-def qubit_cost(n, eta, omega, error, lamb, charge=0):
+def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
     ￼
     The expression for computing the parameters are taken from
