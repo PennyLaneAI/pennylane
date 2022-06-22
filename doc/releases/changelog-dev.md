@@ -66,8 +66,11 @@
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
 
+* The adjoint of an adjoint has a correct `expand` result.
+  [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+David Ittah, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Moritz Willmann
