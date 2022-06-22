@@ -51,6 +51,27 @@ def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
 
 
 @pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "lamb", "br", "charge"),
+    [
+        (10000.5, 156, 1145.166, 0.001, 281053.7, 7, 0),
+        (-10000, 156, 1145.166, 0.001, 281053.7, 7, 0),
+        (10000, 156.5, 1145.166, 0.001, 281053.7, 7, 0),
+        (10000, -156, 1145.166, 0.001, 281053.7, 7, 0),
+        (10000, 156, -1145.166, 0.001, 281053.7, 7, 0),
+        (10000, 156, 1145.166, -0.001, 281053.7, 7, 0),
+        (10000, 156, 1145.166, 0.001, -281053.7, 7, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, 7.5, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, -7, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, 7, 1.2),
+    ],
+)
+def test_unitary_cost_error(n, eta, omega, error, lamb, br, charge):
+    r"""Test that unitary_cost raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be"):
+        qml.resources.first_quantization.unitary_cost_fq(n, eta, omega, error, lamb, br, charge)
+
+
+@pytest.mark.parametrize(
     ("norm", "error", "cost_ref"),
     [
         # the reference cost is computed manually
@@ -62,6 +83,21 @@ def test_estimation_cost(norm, error, cost_ref):
     cost = qml.resources.first_quantization.estimation_cost_fq(norm, error)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("norm", "error"),
+    [
+        (5.28, 0.0),
+        (5.28, -1.0),
+        (-5.28, 0.01),
+        (0.0, 0.01),
+    ],
+)
+def test_estimation_cost_error(norm, error):
+    r"""Test that estimation_cost raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be greater than zero"):
+        qml.resources.first_quantization.estimation_cost_fq(norm, error)
 
 
 @pytest.mark.parametrize(
@@ -78,6 +114,27 @@ def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
 
 
 @pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "lamb", "br", "charge"),
+    [
+        (10000.5, 156, 1145.166, 0.001, 281053.7, 7, 0),
+        (-10000, 156, 1145.166, 0.001, 281053.7, 7, 0),
+        (10000, 156.5, 1145.166, 0.001, 281053.7, 7, 0),
+        (10000, -156, 1145.166, 0.001, 281053.7, 7, 0),
+        (10000, 156, -1145.166, 0.001, 281053.7, 7, 0),
+        (10000, 156, 1145.166, -0.001, 281053.7, 7, 0),
+        (10000, 156, 1145.166, 0.001, -281053.7, 7, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, 7.5, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, -7, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, 7, 1.2),
+    ],
+)
+def test_gate_cost_error(n, eta, omega, error, lamb, br, charge):
+    r"""Test that gate_cost raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be"):
+        qml.resources.first_quantization.gate_cost_fq(n, eta, omega, error, lamb, br, charge)
+
+
+@pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "charge", "cost_ref"),
     [
         (10000, 156, 1145.166, 0.001, 281345.0354393263, 0, 3747),
@@ -88,3 +145,22 @@ def test_qubit_cost(n, eta, omega, error, lamb, charge, cost_ref):
     cost = qml.resources.first_quantization.qubit_cost_fq(n, eta, omega, error, lamb, charge)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "lamb", "charge"),
+    [
+        (10000.5, 156, 1145.166, 0.001, 281053.7, 0),
+        (-10000, 156, 1145.166, 0.001, 281053.7, 0),
+        (10000, 156.5, 1145.166, 0.001, 281053.7, 0),
+        (10000, -156, 1145.166, 0.001, 281053.7, 0),
+        (10000, 156, -1145.166, 0.001, 281053.7, 0),
+        (10000, 156, 1145.166, -0.001, 281053.7, 0),
+        (10000, 156, 1145.166, 0.001, -281053.7, 0),
+        (10000, 156, 1145.166, 0.001, 281053.7, 1.2),
+    ],
+)
+def test_qubit_cost_error(n, eta, omega, error, lamb, charge):
+    r"""Test that qubit_cost raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be"):
+        qml.resources.first_quantization.qubit_cost_fq(n, eta, omega, error, lamb, charge)

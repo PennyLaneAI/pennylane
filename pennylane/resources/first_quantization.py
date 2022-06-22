@@ -96,6 +96,27 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
+    if n <= 0 or not isinstance(n, int):
+        raise ValueError("The number of planewaves must be a positive integer.")
+
+    if eta <= 0 or not isinstance(eta, int):
+        raise ValueError("The number of electrons must be a positive integer.")
+
+    if omega <= 0:
+        raise ValueError("The unit cell volume must be a positive number.")
+
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if lamb <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    if not isinstance(charge, int):
+        raise ValueError("system charge must be an integer.")
+
     alpha = 0.01
     l_z = eta + charge
     l_nu = 2 * np.pi * n ** (2 / 3)
@@ -182,6 +203,12 @@ def estimation_cost_fq(lamb, error):
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if lamb <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
     alpha = 0.01
     # qpe_error obtained to satisfy inequality (131)
     error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
@@ -244,6 +271,27 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
+    if n <= 0 or not isinstance(n, int):
+        raise ValueError("The number of planewaves must be a positive integer.")
+
+    if eta <= 0 or not isinstance(eta, int):
+        raise ValueError("The number of electrons must be a positive integer.")
+
+    if omega <= 0:
+        raise ValueError("The unit cell volume must be a positive number.")
+
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if lamb <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
+    if br <= 0 or not isinstance(br, int):
+        raise ValueError("br must be a positive integer.")
+
+    if not isinstance(charge, int):
+        raise ValueError("system charge must be an integer.")
+
     e_cost = estimation_cost_fq(lamb, error)
     u_cost = unitary_cost_fq(n, eta, omega, error, lamb, br, charge)
 
@@ -306,6 +354,24 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
+    if n <= 0 or not isinstance(n, int):
+        raise ValueError("The number of planewaves must be a positive integer.")
+
+    if eta <= 0 or not isinstance(eta, int):
+        raise ValueError("The number of electrons must be a positive integer.")
+
+    if omega <= 0:
+        raise ValueError("The unit cell volume must be a positive number.")
+
+    if error <= 0.0:
+        raise ValueError("The target error must be greater than zero.")
+
+    if lamb <= 0.0:
+        raise ValueError("The 1-norm must be greater than zero.")
+
+    if not isinstance(charge, int):
+        raise ValueError("system charge must be an integer.")
+
     alpha = 0.01
     l_z = eta + charge
     l_nu = 2 * np.pi * n ** (2 / 3)
