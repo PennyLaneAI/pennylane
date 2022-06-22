@@ -14,10 +14,12 @@
 """
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
+from unittest.mock import Mock
+
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-from unittest.mock import Mock
 
 one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
@@ -35,6 +37,95 @@ two_h2 = np.array(
 )
 
 df = qml.resources.SQ(one_h2, two_h2)
+
+
+@pytest.mark.parametrize(
+    ("one", "two", "error", "tol_factor", "tol_eigval", "br", "alpha", "beta"),
+    [
+        (one_h2, two_h2, 0.0016, 1.0e-5, 1.0e-5, 7, 10, 20),
+    ],
+)
+def test_sq_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
+    r"""Test that the SQ class initiates correct parameters."""
+    est = qml.resources.SQ(one, two)
+    assert np.allclose(est.one_electron, one)
+    assert np.allclose(est.two_electron, two)
+    assert np.allclose(est.error, error)
+    assert np.allclose(est.tol_factor, tol_factor)
+    assert np.allclose(est.tol_eigval, tol_eigval)
+    assert np.allclose(est.br, br)
+    assert np.allclose(est.alpha, alpha)
+    assert np.allclose(est.beta, beta)
+
+
+@pytest.mark.parametrize(
+    ("one", "two", "n", "factors", "eigvals", "eigvecs", "rank_r", "rank_m", "rank_max"),
+    [
+        (
+            one_h2,
+            two_h2,
+            4,
+            np.array(
+                [
+                    [[1.06723431e-01, 3.28955607e-15], [3.34805476e-15, -1.04898524e-01]],
+                    [[-7.89837537e-14, -4.25688240e-01], [-4.25688240e-01, -1.07150807e-13]],
+                    [[-8.14472824e-01, 1.80079693e-13], [1.79803867e-13, -8.28642110e-01]],
+                ]
+            ),
+            [
+                np.array([-0.10489852, 0.10672343]),
+                np.array([-0.42568824, 0.42568824]),
+                np.array([-0.82864211, -0.81447282]),
+            ],
+            [
+                np.array([[1.58209235e-14, -1.00000000e00], [-1.00000000e00, -1.58209235e-14]]),
+                np.array([[0.70710678, -0.70710678], [0.70710678, 0.70710678]]),
+                np.array([[-1.26896915e-11, -1.00000000e00], [1.00000000e00, -1.26896915e-11]]),
+            ],
+            3,
+            2,
+            2,
+        ),
+    ],
+)
+def test_sq_fac(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m, rank_max):
+    r"""Test that SQ class returns correct factorization values."""
+    est = qml.resources.SQ(one, two)
+
+    assert np.allclose(est.n, n)
+    assert np.allclose(est.factors, factors)
+    assert np.allclose(np.array(est.eigvals), np.array(eigvals))
+    assert np.allclose(np.array(est.eigvecs), np.array(eigvecs))
+    assert np.allclose(est.rank_r, rank_r)
+    assert np.allclose(est.rank_m, rank_m)
+    assert np.allclose(est.rank_max, rank_max)
+
+
+@pytest.mark.parametrize(
+    ("one", "two", "lamb"),
+    [
+        (one_h2, two_h2, 1.6570514682587973),
+    ],
+)
+def test_sq_norm(one, two, lamb):
+    r"""Test that SQ class returns a correct norm."""
+    est = qml.resources.SQ(one, two)
+
+    assert np.allclose(est.lamb, lamb)
+
+
+@pytest.mark.parametrize(
+    ("one", "two", "g_cost", "q_cost"),
+    [
+        (one_h2, two_h2, 876953, 113),
+    ],
+)
+def test_sq_costs(one, two, g_cost, q_cost):
+    r"""Test that SQ class returns correct costs."""
+    est = qml.resources.SQ(one, two)
+
+    assert np.allclose(est.gates, g_cost)
+    assert np.allclose(est.qubits, q_cost)
 
 
 @pytest.mark.parametrize(

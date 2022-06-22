@@ -16,7 +16,6 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 from pennylane import numpy as np
-from pennylane.operation import AnyWires, Operation
 
 from .factorization import factorize
 
@@ -45,6 +44,7 @@ class SQ:
         error=0.0016,
         rank_r=None,
         rank_m=None,
+        rank_max=None,
         tol_factor=1.0e-5,
         tol_eigval=1.0e-5,
         br=7,
@@ -57,6 +57,7 @@ class SQ:
         self.error = error
         self.rank_r = rank_r
         self.rank_m = rank_m
+        self.rank_max = rank_max
         self.tol_factor = tol_factor
         self.tol_eigval = tol_eigval
         self.br = br
@@ -75,16 +76,31 @@ class SQ:
             self.rank_r = len(self.factors)
         if not rank_m:
             self.rank_m = np.mean([len(v) for v in self.eigvals])
+        if not rank_max:
+            self.rank_max = int(np.max([len(v) for v in self.eigvals]))
 
         self.gates = self.gate_cost(
-            self.n, self.lamb, self.error, self.rank_r, self.rank_m, self.br, self.alpha, self.beta
+            self.n,
+            self.lamb,
+            self.error,
+            self.rank_r,
+            self.rank_m,
+            self.rank_max,
+            self.br,
+            self.alpha,
+            self.beta,
         )
         self.qubits = self.qubit_cost(
-            self.n, self.lamb, self.error, self.rank_r, self.rank_m, self.br, self.alpha, self.beta
+            self.n,
+            self.lamb,
+            self.error,
+            self.rank_r,
+            self.rank_m,
+            self.rank_max,
+            self.br,
+            self.alpha,
+            self.beta,
         )
-
-    num_wires = AnyWires
-    grad_method = None
 
     def estimation_cost(self, lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
@@ -185,7 +201,7 @@ class SQ:
         >>> br = 7
         >>> alpha = 10
         >>> beta = 20
-        >>> unitary_cost(n, rank_r, rank_m, br, alpha, beta)
+        >>> unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
         2007
         """
         if n <= 0 or not isinstance(n, int) or n % 2 != 0:
@@ -270,7 +286,7 @@ class SQ:
         >>> br = 7
         >>> alpha = 10
         >>> beta = 20
-        >>> gate_cost(n, lamb, error, rank_r, rank_m, br, alpha, beta)
+        >>> gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         167048631
         """
         if n <= 0 or not isinstance(n, int) or n % 2 != 0:
