@@ -25,8 +25,9 @@ class DoubleFactorization(Operation):
     r"""Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in second quantization based on the double factorization method.
 
-    To estimate the total number of Toffoli gates and the number of qubits, the molecular
-    Hamiltonian needs to be factorized using the ``factorization`` function following
+    To estimate the gate and qubit costs for implementing the quantum phase estimation algorithm
+    for a given Hamiltonian in second quantization, the Hamiltonian needs to be factorized using the
+    ``factorization`` function following
     [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
     such that the two-electron integral tensor in
@@ -63,7 +64,8 @@ class DoubleFactorization(Operation):
     The total number of gates and qubits for implementing the quantum phase estimation algorithm
     for the given Hamiltonian can then be computed using the functions ``gate_cost`` and
     ``qubit_cost`` with a target error that has the default value of chemical accuracy (0.0016 Ha)
-    here.
+    here. The costs are computed using Eqs. (C39-C40) of
+    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
@@ -180,7 +182,7 @@ class DoubleFactorization(Operation):
         phase estimation.
 
         The expression for computing the cost is taken from Eq. (45) of
-        [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
         Args:
             lamb (float): 1-norm of a second-quantized Hamiltonian
@@ -208,7 +210,7 @@ class DoubleFactorization(Operation):
         for the double factorization method.
 
         The complexity of a QROM computation in the most general form is given by (see Eq. (C39) in
-        [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_])
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_])
 
         .. math::
 
@@ -251,7 +253,7 @@ class DoubleFactorization(Operation):
         for the double factorization algorithm.
 
         The expression for computing the cost is taken from Eq. (C39) of
-        [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
         Args:
             n (int): number of molecular spin-orbitals
@@ -302,19 +304,19 @@ class DoubleFactorization(Operation):
 
         rank_rm = rank_r * rank_m
 
-        # eta is computed based on step 1.(a) in page 030305-41 of 10.1103/PRXQuantum.2.030305
+        # eta is computed based on step 1.(a) in page 030305-41 of PRX Quantum 2, 030305 (2021)
         eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
         eta = int(np.max([n for n in eta if n % 1 == 0]))
 
-        nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
-        nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
-        nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of 10.1103/PRXQuantum.2.030305
+        nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of PRX Quantum 2, 030305 (2021)
 
-        bp1 = nl + alpha  # Eq. (C27) of 10.1103/PRXQuantum.2.030305
-        bo = nxi + nlxi + br + 1  # Eq. (C29) of 10.1103/PRXQuantum.2.030305
-        bp2 = nxi + alpha + 2  # Eq. (C31) of 10.1103/PRXQuantum.2.030305
+        bp1 = nl + alpha  # Eq. (C27) of PRX Quantum 2, 030305 (2021)
+        bo = nxi + nlxi + br + 1  # Eq. (C29) of PRX Quantum 2, 030305 (2021)
+        bp2 = nxi + alpha + 2  # Eq. (C31) of PRX Quantum 2, 030305 (2021)
 
-        # cost is computed using Eq. (C39) of 10.1103/PRXQuantum.2.030305
+        # cost is computed using Eq. (C39) of PRX Quantum 2, 030305 (2021)
         cost = (
             9 * nl - 6 * eta + 12 * br + 34 * nxi + 8 * nlxi + 9 * alpha + 3 * n * beta - 6 * n - 43
         )
@@ -332,7 +334,7 @@ class DoubleFactorization(Operation):
         algorithm.
 
         The expression for computing the cost is taken from Eqs. (45) and (C39) of
-        [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
         Args:
             n (int): number of molecular spin-orbitals
@@ -400,8 +402,7 @@ class DoubleFactorization(Operation):
         r"""Return the number of ancilla qubits needed to implement the double factorization method.
 
         The expression for computing the cost is taken from Eq. (C40) of
-        [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
-
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
         Args:
             n (int): number of molecular spin-orbitals
@@ -462,16 +463,16 @@ class DoubleFactorization(Operation):
 
         rank_rm = rank_r * rank_m
 
-        nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
-        nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of 10.1103/PRXQuantum.2.030305
-        nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of 10.1103/PRXQuantum.2.030305
+        nxi = np.ceil(np.log2(rank_max))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nl = np.ceil(np.log2(rank_r + 1))  # Eq. (C14) of PRX Quantum 2, 030305 (2021)
+        nlxi = np.ceil(np.log2(rank_rm + n / 2))  # Eq. (C15) of PRX Quantum 2, 030305 (2021)
 
-        bo = nxi + nlxi + br + 1  # Eq. (C29) of 10.1103/PRXQuantum.2.030305
-        bp2 = nxi + alpha + 2  # Eq. (C31) of 10.1103/PRXQuantum.2.030305
-        # kr is taken from Eq. (C39) of 10.1103/PRXQuantum.2.030305
+        bo = nxi + nlxi + br + 1  # Eq. (C29) of PRX Quantum 2, 030305 (2021)
+        bp2 = nxi + alpha + 2  # Eq. (C31) of PRX Quantum 2, 030305 (2021)
+        # kr is taken from Eq. (C39) of PRX Quantum 2, 030305 (2021)
         kr = self._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
 
-        # the cost is computed using Eq. (C40) of 10.1103/PRXQuantum.2.030305
+        # the cost is computed using Eq. (C40) of PRX Quantum 2, 030305 (2021)
         e_cost = self.estimation_cost(lamb, error)
         cost = n + 2 * nl + nxi + 3 * alpha + beta + bo + bp2
         cost += kr * n * beta / 2 + 2 * np.ceil(np.log2(e_cost + 1)) + 7
