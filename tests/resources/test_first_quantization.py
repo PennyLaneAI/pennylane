@@ -32,7 +32,7 @@ from pennylane import numpy as np
 )
 def test_cost_qrom(lz, cost_ref):
     r"""Test that _cost_qrom returns the correct value."""
-    cost = qml.resources._cost_qrom(lz)
+    cost = qml.resources.first_quantization._cost_qrom(lz)
 
     assert cost == cost_ref
 
@@ -45,7 +45,7 @@ def test_cost_qrom(lz, cost_ref):
 )
 def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
     r"""Test that unitary_cost returns the correct value."""
-    cost = qml.resources.unitary_cost(n, eta, omega, error, lamb, br, charge)
+    cost = qml.resources.first_quantization.unitary_cost(n, eta, omega, error, lamb, br, charge)
 
     assert cost == cost_ref
 
@@ -59,7 +59,7 @@ def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
 )
 def test_estimation_cost(norm, error, cost_ref):
     r"""Test that estimation_cost returns the correct values."""
-    cost = qml.resources.estimation_cost(norm, error)
+    cost = qml.resources.first_quantization.estimation_cost(norm, error)
 
     assert cost == cost_ref
 
@@ -72,7 +72,7 @@ def test_estimation_cost(norm, error, cost_ref):
 )
 def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
     r"""Test that gate_cost returns the correct value."""
-    cost = qml.resources.gate_cost(n, eta, omega, error, lamb, br, charge)
+    cost = qml.resources.first_quantization.gate_cost(n, eta, omega, error, lamb, br, charge)
 
     assert cost == cost_ref
 
@@ -85,6 +85,6 @@ def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
 )
 def test_qubit_cost(n, eta, omega, error, lamb, charge, cost_ref):
     r"""Test that qubit_cost returns the correct value."""
-    cost = qml.resources.qubit_cost(n, eta, omega, error, lamb, charge)
+    cost = qml.resources.first_quantization.qubit_cost(n, eta, omega, error, lamb, charge)
 
     assert cost == cost_ref
