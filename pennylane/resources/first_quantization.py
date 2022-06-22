@@ -72,7 +72,7 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 
         \lambda_{\nu} = \sum_{\nu \in G_0} \frac{1}{\left \| \nu \right \|^2},
 
-    we use
+    we follow `TFermion <https://github.com/PabloAMC/TFermion>`_ and use
 
     .. math::
 
@@ -83,18 +83,24 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 
     .. math::
 
-        \lambda^{\alpha}_{\nu} = \alpha \sum_{\nu \in G_0} \frac{\left \lceil M(2^{\mu - 2}) / \left
-        \| \nu \right \|^2 \right \rceil}{M2^{2\mu - 4}},
+        \lambda^{\alpha}_{\nu} = \alpha \sum_{\nu \in G_0} \frac{\left \lceil
+        \mathcal{M}(2^{\mu - 2}) / \left \| \nu \right \|^2 \right \rceil}{\mathcal{M}
+        2^{2\mu - 4}},
 
-    which we compute here, following Eq. (113) for :math:`\alpha = 1`, as
+    which we compute here, for :math:`\alpha = 1`, as
 
     .. math::
 
-        \lambda^{1}_{\nu} = \lambda_{\nu} + \frac{4}{2^{n_m}} (7 \times 2^{n_p + 1} + 9 n_p -
-        11 - 3 \times 2^{-n_p}),
+        \lambda^{1}_{\nu} = \lambda_{\nu} + \epsilon_l,
 
-    where :math:`M = 2^{n_m}` and :math:`n_m` is defined in Eq. (132). Finally, for :math:`p_{\nu}`
-    defined in Eq. (128)
+    where :math:`\epsilon_l` if obtained from Eq. (113) such that
+
+    .. math::
+
+        \epsilon_l = \frac{4}{2^{n_m}} (7 \times 2^{n_p + 1} + 9 n_p - 11 - 3 \times 2^{-n_p}),
+
+    where :math:`\mathcal{M} = 2^{n_m}` and :math:`n_m` is defined in Eq. (132). Finally, for
+    :math:`p_{\nu}` defined in Eq. (128)
 
     .. math::
 
@@ -151,11 +157,11 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
     n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
     n0 = n ** (1 / 3)
-    lambda_nu = (
+    lambda_nu = (  # expression is taken from TFermion
         4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
         + 3
         - 3 / n ** (1 / 3)
-        + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
+        + 3 * integrate.nquad(lambda x, y: 1 / (x ** 2 + y ** 2), [[1, n0], [1, n0]])[0]
     )
     n_m = np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
         (2 * eta)
