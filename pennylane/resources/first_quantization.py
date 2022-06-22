@@ -146,7 +146,7 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
     if n <= 0 or not isinstance(n, int):
         raise ValueError("The number of planewaves must be a positive integer.")
 
-    if eta <= 0 or not isinstance(n, int):
+    if eta <= 0 or not isinstance(eta, int):
         raise ValueError("The number of electrons must be a positive integer.")
 
     if omega <= 0:
