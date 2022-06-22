@@ -56,7 +56,8 @@
 
 <h3>Bug fixes</h3>
 
-* The adjoint of an adjoint has correct `expand` result.
+* The adjoint of an adjoint has a correct `expand` result.
+  [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
 <h3>Contributors</h3>
 
