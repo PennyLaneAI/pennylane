@@ -1031,9 +1031,10 @@ class QubitDevice(Device):
                 return self._samples_to_counts(samples, no_observable_provided)
             return samples
         if counts:
+            shape = (bin_size,-1,3) if no_observable_provided else (bin_size, -1)
             return [
                 self._samples_to_counts(bin_sample, no_observable_provided)
-                for bin_sample in samples.reshape((bin_size, -1))
+                for bin_sample in samples.reshape(shape)
             ]
         return samples.reshape((bin_size, -1))
 

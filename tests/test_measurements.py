@@ -652,6 +652,41 @@ class TestCounts:
 
         circuit()
 
+    def test_binned_samples_for_operator(self, tol):
+        n_bins = 5
+        n_sample = 1000
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample()
+
+        circuit()
+        binned_samples = dev.sample(qml.PauliZ(0), bin_size=n_bins, counts=True)
+        assert isinstance(binned_samples, list)
+        assert isinstance(binned_samples[0], dict)
+        assert len(binned_samples)==n_bins
+        assert sum(sum(v for v in bin.values()) for bin in binned_samples)==n_sample
+
+    def test_binned_samples_for_state_vector(self, tol):
+        n_bins = 4
+        n_sample = 1000
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample()
+
+        circuit()
+        m = MeasurementProcess(Counts)
+        binned_samples = dev.sample(m, bin_size = n_bins, counts=True)
+        assert isinstance(binned_samples, list)
+        assert isinstance(binned_samples[0], dict)
+        assert len(binned_samples)==n_bins
+        assert sum(sum(v for v in bin.values()) for bin in binned_samples)==n_sample
+
 
 class TestMeasure:
     """Tests for the measure function"""
