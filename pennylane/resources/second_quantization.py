@@ -15,12 +15,10 @@
 This module contains the functions needed for resource estimation with the double factorization
 method.
 """
-# pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 from pennylane import numpy as np
+from pennylane.operation import AnyWires, Operation
 
 from .factorization import factorize
-
-from pennylane.operation import Operation, AnyWires
 
 
 class DoubleFactorization(Operation):
@@ -112,6 +110,8 @@ class DoubleFactorization(Operation):
         ``qubit_cost`` with a target error with a default value that is the chemical accuracy
         (0.0016 Ha).
     """
+    num_wires = AnyWires
+    grad_method = None
 
     def __init__(
         self,
@@ -178,8 +178,7 @@ class DoubleFactorization(Operation):
             self.beta,
         )
 
-    num_wires = AnyWires
-    grad_method = None
+        super().__init__(wires=range(self.qubits))
 
     def estimation_cost(self, lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
