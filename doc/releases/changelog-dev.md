@@ -54,6 +54,10 @@
 
 <h3>Documentation</h3>
 
+<h3>Bug fixes</h3>
+
+* The adjoint of an adjoint has correct `expand` result.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
