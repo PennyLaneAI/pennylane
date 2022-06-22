@@ -50,12 +50,23 @@
 
 <h3>Breaking changes</h3>
 
+* PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
+  which provides an updated API that is incompatible which versions of the package prior to 2.7.
+  If you run into issues relating to this package, please reinstall PennyLane.
+  [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
+  [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
+
+<h3>Bug fixes</h3>
+
+* The adjoint of an adjoint has a correct `expand` result.
+  [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
