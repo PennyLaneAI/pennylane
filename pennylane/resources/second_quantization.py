@@ -24,7 +24,7 @@ from pennylane.operation import Operation, AnyWires
 
 
 class DoubleFactorization(Operation):
-    """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
+    r"""Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in second quantization based on the double factorization method.
 
     The factorization method and expression for computing the norm and the costs are from
