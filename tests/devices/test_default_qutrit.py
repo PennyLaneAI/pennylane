@@ -544,31 +544,30 @@ class TestApplyOperationUnit:
             spy_unitary.assert_not_called()
 
 
-# class TestDensityMatrix:
-#     """Unit tests for the internal density_matrix method"""
+class TestDensityMatrix:
+    """Unit tests for the internal density_matrix method"""
 
-#     density_matrix_data = [
-#         ([0, 1, 2], []),
-#         (0, ),
-#         (1, ),
-#         (2, ),
-#         ([1, 0], ),
-#         ([1, 2], ),
-#         ([1, 2, 0], ),
-#     ]
+    output = np.array([[0, 1, 0, 0, 1, 0, 0, 0, 0]]) / np.sqrt(2)
+    output_0 = np.array([[1, 1, 0]]) / np.sqrt(2)
+    output_1 = np.array([[0, 1, 0]])
+    density_matrix_data = [
+        (Wires([0, 1]), output.T @ output),
+        (Wires([1, 0]), output.T @ output),
+        (Wires([0]), output_0.T @ output_0),
+        (Wires([1]), output_1.T @ output_1),
+    ]
 
-#     @pytest.mark.parametrize("wires, expected", density_matrix_data)
-#     def test_density_matrix_all_wires(self, qutrit_device_3_wires, wires, expected):
-#         """Test that the density matrix is correct for the requested wires"""
+    @pytest.mark.parametrize("wires, expected", density_matrix_data)
+    def test_density_matrix_all_wires(self, qutrit_device_2_wires, wires, expected):
+        """Test that the density matrix is correct for the requested wires"""
 
-#         ops = [
-#             qml.QutritUnitary(U_thadamard_01, wires=0),
-#             qml.QutritUnitary(U_shift, wires=1),
-#             qml.QutritUnitary(U_x_02, wires=2),
-#         ]
-#         qutrit_device_3_wires.apply(ops)
+        ops = [
+            qml.QutritUnitary(U_thadamard_01, wires=0),
+            qml.QutritUnitary(U_shift, wires=1),
+        ]
+        qutrit_device_2_wires.apply(ops)
 
-#         assert np.allclose(qutrit_device_3_wires.density_matrix(wires), expected)
+        assert np.allclose(qutrit_device_2_wires.density_matrix(wires), expected)
 
 
 class TestApplyStateVector:
@@ -641,9 +640,3 @@ class TestApplyStateVector:
         """Test that _apply_state_vector correctly applies the vector when only some wires are included"""
         qutrit_device_3_wires._apply_state_vector(input, wires)
         assert np.allclose(expected, qutrit_device_3_wires._state.flatten())
-
-
-class TestApplyBasisState:
-    """Unit tests for the internal _apply_basis_state method"""
-    pass
-
