@@ -515,15 +515,21 @@ class TestSample:
         assert res.shape(dev) == expected
 
     def test_shape_shot_vector_no_obs(self):
-        """Test that the shape is correct with the shot vector too."""
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        res = qml.sample()
-        with pytest.raises(
-            qml.measurements.MeasurementShapeError,
-            match="Getting the output shape of a measurement returning samples along with a device with a shot vector is not supported.",
-        ):
-            res.shape(dev)
+        """Test that the shape is correct with the shot vector and no observable too."""
+        shot_vec = (2, 2)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliZ(0)
+            return qml.sample(qml.PauliZ(0), counts=False)
+
+        binned_samples = circuit()
+
+        assert isinstance(binned_samples, tuple)
+        assert len(binned_samples) == len(shot_vec)
+        assert binned_samples[0].shape == (shot_vec[0],)
 
 
 class TestCounts:
@@ -653,6 +659,7 @@ class TestCounts:
         circuit()
 
     def test_binned_counts_for_operator(self, tol):
+        """Test that the shape is correct with the shot vector."""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -670,6 +677,7 @@ class TestCounts:
         assert sum(sum(v for v in bin.values()) for bin in binned_samples) == sum(shot_vec)
 
     def test_binned_counts_for_state_vector(self, tol):
+        """Test that the shape is correct with the shot vector and no observable too."""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
