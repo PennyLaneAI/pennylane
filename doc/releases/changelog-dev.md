@@ -43,9 +43,7 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-* Added new device abstract base class `QutritDevice` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
-* Added operation `qml.QutritUnitary` for applying user-specified unitaries to `QutritDevice`.
+* Added operation `qml.QutritUnitary` for applying user-specified unitaries to qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
 <h3>Improvements</h3>
@@ -55,6 +53,12 @@
 
 <h3>Breaking changes</h3>
 
+* PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
+  which provides an updated API that is incompatible which versions of the package prior to 2.7.
+  If you run into issues relating to this package, please reinstall PennyLane.
+  [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
+  [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -63,4 +67,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
