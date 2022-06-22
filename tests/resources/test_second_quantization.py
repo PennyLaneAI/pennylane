@@ -17,6 +17,24 @@ Unit tests for functions needed for resource estimation with the double factoriz
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
+from unittest.mock import Mock
+
+one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
+
+two_h2 = np.array(
+    [
+        [
+            [[6.74755872e-01, -4.00346423e-13], [-4.00290912e-13, 6.63711349e-01]],
+            [[-4.00207645e-13, 1.81210478e-01], [1.81210478e-01, -3.69482223e-13]],
+        ],
+        [
+            [[-4.00263156e-13, 1.81210478e-01], [1.81210478e-01, -3.69482223e-13]],
+            [[6.63711349e-01, -3.69482223e-13], [-3.69260178e-13, 6.97651447e-01]],
+        ],
+    ]
+)
+
+df = qml.resources.SQ(one_h2, two_h2)
 
 
 @pytest.mark.parametrize(
@@ -27,7 +45,7 @@ from pennylane import numpy as np
 )
 def test_estimation_cost(norm, error, cost_ref):
     r"""Test that estimation_cost returns the correct values."""
-    cost = qml.resources.estimation_cost(norm, error)
+    cost = qml.resources.SQ.estimation_cost(df, norm, error)
 
     assert cost == cost_ref
 
@@ -44,7 +62,7 @@ def test_estimation_cost(norm, error, cost_ref):
 def test_estimation_cost_error(norm, error):
     r"""Test that estimation_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be greater than zero"):
-        qml.resources.estimation_cost(norm, error)
+        qml.resources.SQ.estimation_cost(df, norm, error)
 
 
 @pytest.mark.parametrize(
@@ -80,7 +98,7 @@ def test_estimation_cost_error(norm, error):
 )
 def test_qrom_cost(constants, cost_ref, k_ref):
     r"""Test that _qrom_cost returns the correct values."""
-    cost, k = qml.resources._qrom_cost(constants)
+    cost, k = qml.resources.SQ._qrom_cost(df, constants)
 
     assert cost == cost_ref
     assert k == k_ref
@@ -94,7 +112,7 @@ def test_qrom_cost(constants, cost_ref, k_ref):
 )
 def test_unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that unitary_cost returns the correct value."""
-    cost = qml.resources.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
+    cost = qml.resources.SQ.unitary_cost(df, n, rank_r, rank_m, rank_max, br, alpha, beta)
 
     assert cost == cost_ref
 
@@ -121,7 +139,7 @@ def test_unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
 def test_unitary_cost_error(n, rank_r, rank_m, rank_max, br, alpha, beta):
     r"""Test that unitary_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be a positive"):
-        qml.resources.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
+        qml.resources.SQ.unitary_cost(df, n, rank_r, rank_m, rank_max, br, alpha, beta)
 
 
 @pytest.mark.parametrize(
@@ -132,7 +150,7 @@ def test_unitary_cost_error(n, rank_r, rank_m, rank_max, br, alpha, beta):
 )
 def test_gate_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that gate_cost returns the correct value."""
-    cost = qml.resources.gate_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
+    cost = qml.resources.SQ.gate_cost(df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
 
     assert cost == cost_ref
 
@@ -163,7 +181,7 @@ def test_gate_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta, co
 def test_gate_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta):
     r"""Test that gate_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resources.gate_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
+        qml.resources.SQ.gate_cost(df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
 
 
 @pytest.mark.parametrize(
@@ -174,7 +192,9 @@ def test_gate_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, be
 )
 def test_qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that qubit_cost returns the correct value."""
-    cost = qml.resources.qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
+    cost = qml.resources.SQ.qubit_cost(
+        df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
+    )
 
     assert cost == cost_ref
 
@@ -205,7 +225,7 @@ def test_qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta, c
 def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta):
     r"""Test that qubit_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resources.qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
+        qml.resources.SQ.qubit_cost(df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta)
 
 
 @pytest.mark.parametrize(
@@ -235,6 +255,6 @@ def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, b
 )
 def test_df_norm(one, two, eigvals, lamb_ref):
     r"""Test that the norm function returns the correct 1-norm."""
-    lamb = qml.resources.norm(one, two, eigvals)
+    lamb = qml.resources.SQ.norm(df, one, two, eigvals)
 
     assert np.allclose(lamb, lamb_ref)

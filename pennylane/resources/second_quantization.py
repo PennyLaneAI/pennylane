@@ -21,7 +21,7 @@ from pennylane.operation import AnyWires, Operation
 from .factorization import factorize
 
 
-class SQ(Operation):
+class SQ:
     """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in second quantization based on the double factorization method.
 
