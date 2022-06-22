@@ -571,7 +571,8 @@ class TestPassthruIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         if decorator == jax.jit:
-            pytest.skip("Batching currently not supported for JAX jit")
+            # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
+            pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
 
         @qml.batch_params
         @qml.qnode(dev, diff_method="backprop", interface="jax")
