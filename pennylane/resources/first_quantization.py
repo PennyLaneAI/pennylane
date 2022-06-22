@@ -131,7 +131,8 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 
         where :math:`\mathcal{M} = 2^{n_m}` and :math:`n_m` is defined in Eq. (132) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
-        Finally, for :math:`p_{\nu}` defined in Eq. (128)
+        Finally, for :math:`p_{\nu}` defined in Eq. (128) of
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
 
         .. math::
 
