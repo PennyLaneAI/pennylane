@@ -115,8 +115,8 @@ class SQ(Operation):
         return int(np.ceil(np.pi * lamb / (2 * error)))
 
     def _qrom_cost(self, constants):
-        r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM for
-        the double factorization method.
+        r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM
+        for the double factorization method.
 
         The complexity of a QROM computation in the most general form is given by (see Eq. (C39) in
         [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_])
@@ -126,14 +126,14 @@ class SQ(Operation):
             \text{cost} = \left \lceil \frac{a + b}{k} \right \rceil + \left \lceil \frac{c}{k} \right
             \rceil + d \left ( k + e \right ),
 
-        where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM implementation
-        and the expansion factor :math:`k = 2^n` minimizes the cost. This function computes the optimum
-        :math:`k` and the minimum cost for a QROM specification.
+        where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM
+        implementation and the expansion factor :math:`k = 2^n` minimizes the cost. This function
+        computes the optimum :math:`k` and the minimum cost for a QROM specification.
 
-        To obtain the optimum values of :math:`k`, we first assume that the cost function is continuous
-        and use differentiation to obtain the value of :math:`k` that minimizes the cost. This value of
-        :math:`k` is not necessarily an integer power of 2. We then obtain the value of :math:`n` as
-        :math:`n = \log_2(k)` and compute the cost for
+        To obtain the optimum values of :math:`k`, we first assume that the cost function is
+        continuous and use differentiation to obtain the value of :math:`k` that minimizes the cost.
+        This value of :math:`k` is not necessarily an integer power of 2. We then obtain the value
+        of :math:`n` as :math:`n = \log_2(k)` and compute the cost for
         :math:`n_{int}= \left \{\left \lceil n \right \rceil, \left \lfloor n \right \rfloor \right \}`.
         The value of :math:`n_{int}` that gives the smaller cost is used to compute the optimim
         :math:`k`.
@@ -158,8 +158,8 @@ class SQ(Operation):
         return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
 
     def unitary_cost(self, n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
-        r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator for
-        the double factorization algorithm.
+        r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator
+        for the double factorization algorithm.
 
         The expression for computing the cost is taken from Eq. (C39) of
         [`10.1103/PRXQuantum.2.030305 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
@@ -167,7 +167,7 @@ class SQ(Operation):
         Args:
             n (int): number of molecular spin-orbitals
             rank_r (int): rank of the first factorization of the two-electron integral tensor
-            rank_m (float): average rank of the second factorization of the two-electron integral tensor
+            rank_m (float): average rank of the second factorization of the two-electron tensor
             rank_max (float): maximum rank of the second factorization of the two-electron tensor
             br (int): number of bits for ancilla qubit rotation
             alpha (int): number of bits for the keep register
@@ -250,7 +250,7 @@ class SQ(Operation):
             lamb (float): 1-norm of a second-quantized Hamiltonian
             error (float): target error in the algorithm
             rank_r (int): rank of the first factorization of the two-electron integral tensor
-            rank_m (float): average rank of the second factorization of the two-electron integral tensor
+            rank_m (float): average rank of the second factorization of the two-electron tensor
             rank_max (float): maximum rank of the second factorization of the two-electron tensor
             br (int): number of bits for ancilla qubit rotation
             alpha (int): number of bits for the keep register
@@ -319,7 +319,7 @@ class SQ(Operation):
             lamb (float): 1-norm of a second-quantized Hamiltonian
             error (float): target error in the algorithm
             rank_r (int): rank of the first factorization of the two-electron integral tensor
-            rank_m (float): average rank of the second factorization of the two-electron integral tensor
+            rank_m (float): average rank of the second factorization of the two-electron tensor
             rank_max (float): maximum rank of the second factorization of the two-electron tensor
             br (int): number of bits for ancilla qubit rotation
             alpha (int): number of bits for the keep register
@@ -390,8 +390,8 @@ class SQ(Operation):
         return int(cost)
 
     def norm(self, one, two, eigvals):
-        r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals and
-        eigenvalues of the factorized two-electron integral tensor.
+        r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals
+        and eigenvalues of the factorized two-electron integral tensor.
 
         The 1-norm of a double-factorized molecular Hamiltonian is computed as
         [`arXiv:2007.14460 <https://arxiv.org/abs/2007.14460>`_]
