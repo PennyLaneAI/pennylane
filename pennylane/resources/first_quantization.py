@@ -52,7 +52,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     [`10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     Args:
-        n (int): number of basis states
+        n (int): number of plane waves
         eta (int): number of electrons
         omega (float): unit cell volume
         error (float): target error in the algorithm
@@ -73,10 +73,11 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     >>> unitary_cost(n, eta, omega, error, lamb)
     12819
     """
+    alpha = 0.01
     l_z = eta + charge
     l_nu = 2 * np.pi * n ** (2 / 3)
 
-    # n_eta and n_etaz are taken from page 040332-15
+    # n_eta and n_etaz are defined in the third and second paragraphs of page 040332-15
     n_eta = np.ceil(np.log2(eta))
     n_etaz = np.ceil(np.log2(eta + 2 * l_z))
 
@@ -84,9 +85,9 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
     # errors in Eqs. (132-134) are set to be 0.01 of the algorithm error
-    error_t = 0.01 * error
-    error_r = 0.01 * error
-    error_m = 0.01 * error
+    error_t = alpha * error
+    error_r = alpha * error
+    error_m = alpha * error
 
     # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
     n_t = int(np.log2(np.pi * lamb / error_t))  # Eq. (134)
@@ -106,7 +107,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
     cost += 3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1)
     cost += l_z + e_r + 2 * (2 * n_p + 2 * br - 7) + 12 * eta * n_p
-    cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p + n_r + 18
+    cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p * n_r + 18
     cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
 
     return int(np.ceil(cost))
@@ -143,7 +144,7 @@ def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
     [`10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     Args:
-        n (int): number of basis states
+        n (int): number of plane waves
         eta (int): number of electrons
         omega (float): unit cell volume
         error (float): target error in the algorithm
@@ -184,7 +185,7 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     [`arXiv:2204.11890v1 <https://arxiv.org/abs/2204.11890v1>`_].
 
     Args:
-        n (int): number of basis states
+        n (int): number of plane waves
         eta (int): number of electrons
         omega (float): unit cell volume
         error (float): target error in the algorithm
@@ -204,6 +205,7 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     >>> qubit_cost(n, eta, omega, error, lamb)
     4238
     """
+    alpha = 0.01
     l_z = eta + charge
     l_nu = 2 * np.pi * n ** (2 / 3)
 
@@ -211,9 +213,9 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
 
     # errors in Eqs. (132-134) of 10.1103/PRXQuantum.2.040332, set to be 0.01 of the algorithm error
-    error_t = 0.01 * error
-    error_r = 0.01 * error
-    error_m = 0.01 * error
+    error_t = alpha * error
+    error_r = alpha * error
+    error_m = alpha * error
 
     # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
     n_t = int(np.log2(np.pi * lamb / error_t))  # Eq. (134)

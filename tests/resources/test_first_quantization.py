@@ -40,7 +40,7 @@ def test_cost_qrom(lz, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 11232),
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 12333),
     ],
 )
 def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
@@ -67,7 +67,7 @@ def test_estimation_cost(norm, error, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 90531239782464),
+        (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 99405429152166),
     ],
 )
 def test_gate_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
