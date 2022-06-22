@@ -54,7 +54,7 @@ def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
     ("norm", "error", "cost_ref"),
     [
         # the reference cost is computed manually
-        (5128920.595980267, 0.001, 8056489633),
+        (5128920.595980267, 0.001, 8060117502),
     ],
 )
 def test_estimation_cost(norm, error, cost_ref):

@@ -21,9 +21,6 @@ from pennylane import numpy as np
 
 def _cost_qrom(lz):
     r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
-    ￼
-    The expression for computing the cost is taken from
-    [`arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_].
 
     Args:
         lz (int): sum of the atomic numbers of nuclei
@@ -72,6 +69,31 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     >>> lamb = 5128920.595980267
     >>> unitary_cost(n, eta, omega, error, lamb)
     12819
+
+    .. details::
+        :title: Theory
+
+        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
+        error, following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        that
+
+        .. math::
+
+            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
+        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
+        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
+        Eqs. (132-134) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
+        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
+        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+
+        .. math::
+
+            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
+        We assume a default value of  :math:`\alpha = 1`.
     """
     alpha = 0.01
     l_z = eta + charge
@@ -132,8 +154,37 @@ def estimation_cost(lamb, error):
     >>> cost = estimation_cost(72.49779513025341, 0.001)
     >>> print(cost)
     113880
+
+    .. details::
+        :title: Theory
+
+        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
+        error, following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        that
+
+        .. math::
+
+            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
+        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
+        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
+        Eqs. (132-134) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
+        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
+        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+
+        .. math::
+
+            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
+        We assume a default value of  :math:`\alpha = 1`.
     """
-    return int(np.ceil(np.pi * lamb / (2 * error)))
+    alpha = 0.01
+    # qpe_error obtained to satisfy inequality (131)
+    error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
+
+    return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
 
 def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
@@ -164,12 +215,33 @@ def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
     >>> lamb = 5128920.595980267
     >>> gate_cost(n, eta, omega, error, lamb)
     10327614069516
-    """
-    alpha = 0.01
-    # qpe_error obtained to satisfy inequality (131)
-    error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
 
-    e_cost = estimation_cost(lamb, error_qpe)
+    .. details::
+        :title: Theory
+
+        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
+        error, following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        that
+
+        .. math::
+
+            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
+        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
+        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
+        Eqs. (132-134) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
+        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
+        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+
+        .. math::
+
+            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
+        We assume a default value of  :math:`\alpha = 1`.
+    """
+    e_cost = estimation_cost(lamb, error)
     u_cost = unitary_cost(n, eta, omega, error, lamb, br, charge)
 
     return e_cost * u_cost
@@ -204,6 +276,31 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     >>> lamb = 5128920.595980267
     >>> qubit_cost(n, eta, omega, error, lamb)
     4238
+
+    .. details::
+        :title: Theory
+
+        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
+        error, following Eq. (131) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_, such
+        that
+
+        .. math::
+
+            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
+        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
+        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
+        Eqs. (132-134) of
+        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
+        we assume each :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and
+        :math:`\epsilon_T` to be :math:`\alpha \times \epsilon` and obtain
+
+        .. math::
+
+            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
+        We assume a default value of  :math:`\alpha = 1`.
     """
     alpha = 0.01
     l_z = eta + charge
