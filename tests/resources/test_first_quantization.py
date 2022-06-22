@@ -16,6 +16,7 @@ Unit tests for functions needed for estimating the number of logical qubits and 
 for quantum algorithms in first quantization using a plane-wave basis.
 """
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -53,13 +54,12 @@ def test_success_prob_error(n_basis, br):
 @pytest.mark.parametrize(
     ("eta", "n", "omega", "error", "br", "charge", "norm_ref"),
     [
-        # norm_ref is computed with TFermion by using our versions of l_nu, p_nu, and l_nu_1.
-        (156, 10000, 1145.166, 0.001, 7, 0, 1084216.6822847952),
+        (156, 10000, 1145.166, 0.001, 7, 0, 281053.7561247674),
     ],
 )
 def test_norm(eta, n, omega, error, br, charge, norm_ref):
-    r"""Test that norm returns the correct value."""
-    norm = qml.resources.first_quantization.norm(eta, n, omega, error, br, charge)
+    r"""Test that norm_fq returns the correct value."""
+    norm = qml.resources.norm_fq(eta, n, omega, error, br, charge)
     print(norm)
     assert np.allclose(norm, norm_ref)
 
@@ -79,6 +79,6 @@ def test_norm(eta, n, omega, error, br, charge, norm_ref):
     ],
 )
 def test_norm_error(eta, n, omega, error, br, charge):
-    r"""Test that norm raises an error with incorrect inputs."""
+    r"""Test that norm_fq raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resources.first_quantization.norm(eta, n, omega, error, br, charge)
+        qml.resources.norm_fq(eta, n, omega, error, br, charge)
