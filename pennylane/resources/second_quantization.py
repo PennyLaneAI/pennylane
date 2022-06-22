@@ -20,8 +20,10 @@ from pennylane import numpy as np
 
 from .factorization import factorize
 
+from pennylane.operation import Operation, AnyWires
 
-class DoubleFactorization:
+
+class DoubleFactorization(Operation):
     """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in second quantization based on the double factorization method.
 
@@ -39,6 +41,76 @@ class DoubleFactorization:
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
+
+    .. details::
+        :title: Usage Details
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import numpy as np
+
+            symbols  = ['H', 'H', 'O']
+            geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+                                 [0.00000000,  1.45278171, -1.00662237],
+                                 [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+
+            mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+
+            core_, one, two_ph = qml.qchem.electron_integrals(mol)()
+            two = np.swapaxes(two_ph, 1, 3) # convert to chemist notation
+            algo = DoubleFactorization(one, two)
+
+        >>> algo.lamb  # the 1-Norm of the Hamiltonian
+        52.987620428985856
+
+        >>> algo.gates  # estimated number of gates
+        105550609
+
+        >>> algo.qubits  # estimated number of qubits
+        290
+
+    .. details::
+        :title: Theory
+
+        To estimate the total number of Toffoli gates and the number of qubits, the molecular
+         Hamiltonian needs to be factorized using the ``factorization`` function. The objective of
+        the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`, such that the
+        two-electron integral tensor in
+        `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
+        :math:`V`, can be computed as
+
+        .. math::
+
+               V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
+
+        with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals. The
+        matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
+        smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
+        average number of the retained eigenvalues, :math:`M`, determines the rank of the second
+        factorization step. The 1-norm of the Hamiltonian can then be computed using the ``norm``
+        function from the electron integrals and the eigenvalues of the matrices :math:`L^{(r)}` as
+
+        .. math::
+
+            \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
+
+        where the Schatten 1-norm for a given matrix :math:`T` is defined as
+
+        .. math::
+
+            ||T|| = \sum_k |\text{eigvals}[T]_k|,
+
+        and matrix :math:`T` is constructed from the one- and two-electron integrals
+
+        .. math::
+
+            T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
+
+        The total number of gates and qubits for implementing the quantum phase estimation algorithm
+        for the given Hamiltonian can then be computed using the functions ``gate_cost`` and
+        ``qubit_cost`` with a target error with a default value that is the chemical accuracy
+        (0.0016 Ha).
     """
 
     def __init__(
@@ -105,6 +177,9 @@ class DoubleFactorization:
             self.alpha,
             self.beta,
         )
+
+    num_wires = AnyWires
+    grad_method = None
 
     def estimation_cost(self, lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
