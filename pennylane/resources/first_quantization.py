@@ -46,7 +46,7 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
     ￼
     The expression for computing the cost is taken from Eq. (125) of
-    [`10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+    [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     Args:
         n (int): number of plane waves
@@ -75,7 +75,7 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -85,9 +85,9 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
-        default value of  :math:`\alpha = 0.01` and obtain
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
+        with a default value of :math:`\alpha = 0.01` and obtain
 
         .. math::
 
@@ -141,7 +141,7 @@ def estimation_cost_fq(lamb, error):
     phase estimation.
 
     The expression for computing the cost is taken from Eq. (125) of
-    [`10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+    [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     Args:
         lamb (float): 1-norm of a second-quantized Hamiltonian
@@ -161,7 +161,7 @@ def estimation_cost_fq(lamb, error):
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -171,9 +171,9 @@ def estimation_cost_fq(lamb, error):
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
-        default value of  :math:`\alpha = 0.01` and obtain
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
+        with a default value of :math:`\alpha = 0.01` and obtain
 
         .. math::
 
@@ -194,7 +194,7 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     algorithm.
 
     The expression for computing the cost is taken from Eq. (125) of
-    [`10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+    [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     Args:
         n (int): number of plane waves
@@ -223,7 +223,7 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -233,9 +233,9 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
-        default value of  :math:`\alpha = 0.01` and obtain
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
+        with a default value of :math:`\alpha = 0.01` and obtain
 
         .. math::
 
@@ -254,7 +254,7 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
     ￼
     The expression for computing the parameters are taken from
-    [`10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+    [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     The expression for computing the cost is taken from Eq. (101) of
     [`arXiv:2204.11890v1 <https://arxiv.org/abs/2204.11890v1>`_].
@@ -285,7 +285,7 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
 
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
 
         .. math::
@@ -295,9 +295,9 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
-        `10.1103/PRXQuantum.2.040332 <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_. Here,
-        we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with a
-        default value of  :math:`\alpha = 0.01` and obtain
+        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
+        with a default value of :math:`\alpha = 0.01` and obtain
 
         .. math::
 
