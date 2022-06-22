@@ -94,6 +94,7 @@ class QutritUnitary(Operation):
         return QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=self.wires)
 
     # TODO: Add `_controlled()` method once `ControlledQutritUnitary` is implemented.
+    # TODO: Add compute_decomposition() once parametrized operations are added.
 
     def pow(self, z):
         if isinstance(z, int):
