@@ -223,4 +223,4 @@ class Adjoint(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     def adjoint(self):
-        return self.base
+        return self.base.queue()
