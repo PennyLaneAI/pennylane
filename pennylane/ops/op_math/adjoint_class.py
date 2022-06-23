@@ -310,7 +310,7 @@ class Adjoint(Operator):
         return self.base.has_matrix
 
     def adjoint(self):
-        return self.base
+        return self.base.queue()
 
     @property
     def _queue_category(self):
