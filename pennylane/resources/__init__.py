@@ -17,3 +17,4 @@ quantum algorithms.
 """
 from .factorization import factorize
 from .second_quantization import DoubleFactorization
+from .first_quantization import success_prob, norm_fq
