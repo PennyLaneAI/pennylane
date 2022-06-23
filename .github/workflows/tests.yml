@@ -87,7 +87,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage
+          name: core-interfaces-coverage-${{ matrix.config.suite }}-${{ matrix.config.python-version }}
           path: ./coverage.xml
 
   all-interfaces-tests:
