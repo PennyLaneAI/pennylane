@@ -279,6 +279,7 @@ class QubitDevice(Device):
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
                 elif not isinstance(r[0], dict):
+                    # Measurement types except for Counts
                     r = qml.math.squeeze(r)
                 if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
                     # This happens when measurement type is Counts
