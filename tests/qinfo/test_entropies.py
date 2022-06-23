@@ -1249,3 +1249,105 @@ class TestRelativeEntropy:
         actual = [param0.grad, param1.grad]
 
         assert np.allclose(actual, expected, atol=1e-8)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_num_wires_mismatch(self, device, interface):
+        """Test that an error is raised when the number of wires in the
+        two QNodes are different"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface=interface)
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        msg = "The two states must have the same number of wires"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_full_wires(self, device):
+        """Test that the relative entropy transform for full wires works for QNodes"""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0])
+
+        x, y = np.array(0.3), np.array(0.7)
+        actual = rel_ent_circuit(x, y)
+
+        # relative entropy of two pure states is infinity
+        assert np.isinf(actual)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_qnode_no_args(self, device):
+        """Test that the relative entropy transform works for QNodes without arguments"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.PauliY(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.PauliZ(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        actual = rel_ent_circuit()
+
+        # relative entropy of two pure states is infinity
+        assert np.isinf(actual)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_qnode_kwargs(self, device):
+        """Test that the relative entropy transform works for QNodes that take keyword arguments"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit1(param=0):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit2(param=0):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
+        x, y = np.array(0.4), np.array(0.8)
+        actual = rel_ent_circuit(({"param": x},), ({"param": y},))
+
+        # compare transform results with analytic results
+        expected = (
+            np.cos(x / 2) ** 2 * (np.log(np.cos(x / 2) ** 2) - np.log(np.cos(y / 2) ** 2))
+        ) + (np.sin(x / 2) ** 2 * (np.log(np.sin(x / 2) ** 2) - np.log(np.sin(y / 2) ** 2)))
+
+        assert np.allclose(actual, expected)

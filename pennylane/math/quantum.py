@@ -784,7 +784,8 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     # cast all eigenvalues to real
     evs_rho, evs_sig = np.real(evs_rho), np.real(evs_sig)
-    evs_sig = qml.math.where(evs_sig == 0, 0.0, evs_sig)
+    evs_rho = qml.math.where(evs_rho < 1e-15, 0.0, evs_rho)
+    evs_sig = qml.math.where(evs_sig < 1e-15, 0.0, evs_sig)
 
     rho_nonzero_mask = qml.math.where(evs_rho == 0.0, False, True)
 
