@@ -821,7 +821,7 @@ class TestDecompositions:
             (qml.CPhaseShift10, [4, 6]),
         ],
     )
-    def test_c_phase_shift_decomp(self, cphase_op, lam_pos):
+    def test_c_phase_shift_decomp_broadcasted(self, cphase_op, lam_pos):
         """Tests that the CPhaseShift operations
         calculate the correct decomposition"""
         phi = np.array([-0.2, 4.2, 1.8])
