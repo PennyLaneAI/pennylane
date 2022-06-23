@@ -490,6 +490,8 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> vn_entropy(x, indices=[0])
     0.6931472
+
+    .. seealso:: :func:`pennylane.qinfo.vn_entropy` and :func:`pennylane.vn_entropy`
     """
     density_matrix = reduced_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)
@@ -680,6 +682,8 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     >>> state1 = [[0, 0], [0, 1]]
     >>> qml.math.fidelity(state0, state1)
     0.0
+
+    .. seealso:: :func:`pennylane.qinfo.fidelity`
 
     """
     # Cast as a c_dtype array

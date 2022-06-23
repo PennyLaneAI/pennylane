@@ -101,6 +101,8 @@ def vn_entropy(qnode, wires, base=None):
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(vn_entropy(circuit, wires=[0]))(param)
     0.6232252401402305
+
+    .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -657,6 +659,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     >>> fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.9, {'use_ry': True}))
     0.8208074192135424
+
+    .. seealso:: :func:`pennylane.math.fidelity`
     """
 
     if len(wires0) != len(wires1):

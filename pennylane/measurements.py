@@ -890,6 +890,8 @@ def vn_entropy(wires, log_base=None):
         Calculating the derivative of :func:`~.vn_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. seealso:: :func:`pennylane.qinfo.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
