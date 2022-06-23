@@ -492,9 +492,6 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
 
 def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
-    ￼
-    The expression for computing the parameters are taken from
-    [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
     The expression for computing the cost is taken from Eq. (101) of
     [`arXiv:2204.11890v1 <https://arxiv.org/abs/2204.11890v1>`_].
@@ -567,10 +564,10 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     l_z = eta + charge
     l_nu = 2 * np.pi * n ** (2 / 3)
 
-    # n_p is taken from Eq. (22) of 10.1103/PRXQuantum.2.040332
+    # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
     n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
 
-    # errors in Eqs. (132-134) of 10.1103/PRXQuantum.2.040332, set to be 0.01 of the algorithm error
+    # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021), set to 0.01 of the algorithm error
     error_t = alpha * error
     error_r = alpha * error
     error_m = alpha * error
