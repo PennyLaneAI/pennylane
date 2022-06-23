@@ -39,8 +39,8 @@
   >>> print(energy)
   -1.1258709813834058
   ```
-  
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 **Operator Arithmetic:**
@@ -92,6 +92,9 @@
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
+* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
+  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+
 <h3>Breaking changes</h3>
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
@@ -106,6 +109,10 @@
 
 <h3>Bug fixes</h3>
 
+* `qml.grouping.group_observables` now works when individual wire
+  labels are iterable.
+  [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
+
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
@@ -113,4 +120,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Moritz Willmann
