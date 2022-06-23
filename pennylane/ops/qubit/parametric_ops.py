@@ -662,7 +662,7 @@ class CPhaseShift00(Operation):
             \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit** and controls
-        on the zero state :math:|0\rangle.
+        on the zero state :math:`|0\rangle`.
 
     **Details:**
 
@@ -847,7 +847,7 @@ class CPhaseShift01(Operation):
             \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit** and controls
-        on the zero state :math:|0\rangle.
+        on the zero state :math:`|0\rangle`.
 
     **Details:**
 
