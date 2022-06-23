@@ -31,8 +31,8 @@ def eigvals(op, k=1, which="SA"):
     .. note::
 
         For a :class:`~.SparseHamiltonian` object, the eigenvalues are computed with the efficient
-        ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default value
-        of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
+        ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default
+        value of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
         smaller than :math:`N - 1`, otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested
         :math:`k` is equal or larger than :math:`N - 1`, the regular ``qml.math.linalg.eigvalsh``
         is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
