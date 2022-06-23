@@ -76,7 +76,6 @@ ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
 ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 
-
 # -------------------------------- Autograd --------------------------------- #
 
 

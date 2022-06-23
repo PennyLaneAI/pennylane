@@ -724,3 +724,74 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         return fid
 
     return evaluate_fidelity
+
+
+def relative_entropy(qnode0, qnode1, wires0, wires1):
+    r"""Compute relative entropy
+    TODO: docstring
+    """
+
+    if len(wires0) != len(wires1):
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    # Get the state vector if all wires are selected
+    if len(wires0) == len(qnode0.device.wires):
+        state_qnode0 = qnode0
+    else:
+        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+
+    # Get the state vector if all wires are selected
+    if len(wires1) == len(qnode1.device.wires):
+        state_qnode1 = qnode1
+    else:
+        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+
+    def evaluate_relative_entropy(all_args0=None, all_args1=None):
+        """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
+        the args and kwargs to each :class:`.QNode`.
+
+        Args:
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
+
+        Returns:
+            float: Fidelity between two quantum states
+        """
+        if not isinstance(all_args0, tuple) and all_args0 is not None:
+            all_args0 = (all_args0,)
+
+        if not isinstance(all_args1, tuple) and all_args1 is not None:
+            all_args1 = (all_args1,)
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args0 is not None:
+            # Handle a dictionary as last argument
+            if isinstance(all_args0[-1], dict):
+                args0 = all_args0[:-1]
+                kwargs0 = all_args0[-1]
+            else:
+                args0 = all_args0
+                kwargs0 = {}
+            state0 = state_qnode0(*args0, **kwargs0)
+        else:
+            # No args
+            state0 = state_qnode0()
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args1 is not None:
+            # Handle a dictionary as last argument
+            if isinstance(all_args1[-1], dict):
+                args1 = all_args1[:-1]
+                kwargs1 = all_args1[-1]
+            else:
+                args1 = all_args1
+                kwargs1 = {}
+            state1 = state_qnode1(*args1, **kwargs1)
+        else:
+            # No args
+            state1 = state_qnode1()
+
+        # From the two generated states, compute the relative entropy
+        return qml.math.relative_entropy(state0, state1)
+
+    return evaluate_relative_entropy

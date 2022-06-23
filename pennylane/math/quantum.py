@@ -769,6 +769,80 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     return trace
 
 
+def _compute_relative_entropy(rho, sigma, base=None):
+    """
+    Compute the relative entropy of rho with respect to sigma
+    TODO: docstring
+    """
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    evs_rho, u_rho = qml.math.linalg.eigh(rho)
+    evs_sig, u_sig = qml.math.linalg.eigh(sigma)
+
+    # cast all eigenvalues to real
+    evs_rho, evs_sig = np.real(evs_rho), np.real(evs_sig)
+    evs_sig = qml.math.where(evs_sig == 0, 0.0, evs_sig)
+
+    rho_nonzero_mask = qml.math.where(evs_rho == 0.0, False, True)
+
+    ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0)) / div_base
+
+    # zero eigenvalues need to be treated very carefully here
+    # we use the convention that 0 * log(0) = 0
+    rel = np.abs(qml.math.dot(np.transpose(np.conj(u_rho)), u_sig)) ** 2
+    rel = qml.math.sum(
+        qml.math.where(rel == 0.0, 0.0, qml.math.expand_dims(np.log(evs_sig), axis=0) * rel), axis=1
+    )
+    rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0))
+
+    return (rel - ent) / div_base
+
+
+def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="complex128"):
+    """
+    Compute the relative entropy of rho with respect to sigma
+    TODO: docstring
+    """
+    # Cast as a c_dtype array
+    state0 = cast(state0, dtype=c_dtype)
+    len_state0 = state0.shape[0]
+
+    # Cannot be cast_like if jit
+    if not is_abstract(state0):
+        state1 = cast_like(state1, state0)
+
+    len_state1 = state1.shape[0]
+
+    if check_state:
+        if state0.shape == (len_state0,):
+            _check_state_vector(state0)
+        else:
+            _check_density_matrix(state0)
+
+        if state1.shape == (len_state1,):
+            _check_state_vector(state1)
+        else:
+            _check_density_matrix(state1)
+
+    # Get dimension of the quantum system and reshape
+    num_indices0 = int(np.log2(len_state0))
+    num_indices1 = int(np.log2(len_state1))
+
+    if num_indices0 != num_indices1:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    if state0.shape == (len_state0,):
+        state0 = qml.math.outer(state0, np.conj(state0))
+
+    if state1.shape == (len_state1,):
+        state1 = qml.math.outer(state1, np.conj(state1))
+
+    return _compute_relative_entropy(state0, state1, base=base)
+
+
 def _check_density_matrix(density_matrix):
     """Check the shape, the trace and the positive semi-definitiveness of a matrix."""
     shape = density_matrix.shape[0]

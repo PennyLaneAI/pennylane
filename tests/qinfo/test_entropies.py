@@ -953,3 +953,299 @@ class TestMutualInformation:
         msg = "Returning the mutual information is not supported when using custom wire labels"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit(params)
+
+
+class TestRelativeEntropy:
+    """Tests for the mutual information functions"""
+
+    diff_methods = ["backprop", "finite-diff"]
+
+    params = [[0.0, 0.0], [np.pi, 0.0], [0.0, np.pi], [0.123, 0.456], [0.789, 1.618]]
+
+    # to avoid nan values in the gradient for relative entropy
+    grad_params = [[0.123, 0.456], [0.789, 1.618]]
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("param", params)
+    def test_qnode_relative_entropy(self, device, interface, param):
+        """Test that the relative entropy transform works for QNodes by comparing
+        against analytic values"""
+        dev = qml.device(device, wires=2)
+
+        param = qml.math.asarray(np.array(param), like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface=interface)
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        actual = rel_ent_circuit((param[0],), (param[1],))
+
+        # compare transform results with analytic results
+        first_term = (
+            0
+            if np.cos(param[0] / 2) == 0
+            else np.cos(param[0] / 2) ** 2
+            * (np.log(np.cos(param[0] / 2) ** 2) - np.log(np.cos(param[1] / 2) ** 2))
+        )
+        second_term = (
+            0
+            if np.sin(param[0] / 2) == 0
+            else np.sin(param[0] / 2) ** 2
+            * (np.log(np.sin(param[0] / 2) ** 2) - np.log(np.sin(param[1] / 2) ** 2))
+        )
+        expected = first_term + second_term
+
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", params)
+    def test_qnode_relative_entropy_jax_jit(self, param):
+        """Test that the mutual information transform works for QNodes by comparing
+        against analytic values, for the JAX-jit interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        param = jnp.array(param)
+
+        @qml.qnode(dev, interface="jax-jit")
+        def circuit1(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax-jit")
+        def circuit2(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        actual = jax.jit(rel_ent_circuit)((param[0],), (param[1],))
+
+        # compare transform results with analytic results
+        first_term = (
+            0
+            if jnp.cos(param[0] / 2) == 0
+            else jnp.cos(param[0] / 2) ** 2
+            * (jnp.log(jnp.cos(param[0] / 2) ** 2) - jnp.log(jnp.cos(param[1] / 2) ** 2))
+        )
+        second_term = (
+            0
+            if jnp.sin(param[0] / 2) == 0
+            else jnp.sin(param[0] / 2) ** 2
+            * (jnp.log(jnp.sin(param[0] / 2) ** 2) - jnp.log(jnp.sin(param[1] / 2) ** 2))
+        )
+        expected = first_term + second_term
+
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("param", grad_params)
+    def test_qnode_grad(self, param):
+        """Test that the gradient of relative entropy works for QNodes
+        with the autograd interface"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
+        def wrapper(param0, param1):
+            return rel_ent_circuit((param0,), (param1,))
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0, param1 = np.array(param[0]), np.array(param[1])
+        actual = qml.grad(wrapper)(param0, param1)
+
+        assert np.allclose(actual, expected, atol=1e-8)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", grad_params)
+    def test_qnode_grad_jax(self, param):
+        """Test that the gradient of relative entropy works for QNodes
+        with the JAX interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
+        def wrapper(param0, param1):
+            return rel_ent_circuit((param0,), (param1,))
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
+        actual = jax.grad(wrapper, argnums=[0, 1])(param0, param1)
+
+        assert np.allclose(actual, expected, atol=1e-8)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", grad_params)
+    def test_qnode_grad_jax_jit(self, param):
+        """Test that the gradient of relative entropy works for QNodes
+        with the JAX interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
+        def wrapper(param0, param1):
+            return rel_ent_circuit((param0,), (param1,))
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
+        actual = jax.jit(jax.grad(wrapper, argnums=[0, 1]))(param0, param1)
+
+        assert np.allclose(actual, expected, atol=1e-8)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("param", grad_params)
+    def test_qnode_grad_tf(self, param):
+        """Test that the gradient of relative entropy works for QNodes
+        with the TensorFlow interface"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0, param1 = tf.Variable(param[0]), tf.Variable(param[1])
+        with tf.GradientTape() as tape:
+            out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
+
+        actual = tape.gradient(out, [param0, param1])
+
+        assert np.allclose(actual, expected, atol=1e-5)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("param", grad_params)
+    def test_qnode_grad_torch(self, param):
+        """Test that the gradient of relative entropy works for QNodes
+        with the Torch interface"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+            first_expected = (
+                np.sin(param[0] / 2)
+                * np.cos(param[0] / 2)
+                * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2))
+            )
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0 = torch.tensor(param[0], requires_grad=True)
+        param1 = torch.tensor(param[1], requires_grad=True)
+        out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
+        out.backward()
+
+        actual = [param0.grad, param1.grad]
+
+        assert np.allclose(actual, expected, atol=1e-8)
