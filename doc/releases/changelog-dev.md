@@ -63,6 +63,10 @@
 
 <h3>Documentation</h3>
 
+* Optimization examples of using JAXopt and Optax with the JAX interface have
+  been added.
+  [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
+
 <h3>Bug fixes</h3>
 
 * The adjoint of an adjoint has a correct `expand` result.
@@ -72,4 +76,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Antal Száva, Moritz Willmann
