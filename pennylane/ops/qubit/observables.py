@@ -173,7 +173,7 @@ class Hermitian(Observable):
 
 class SparseHamiltonian(Observable):
     r"""
-    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+    A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
     .. warning::
 
