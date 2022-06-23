@@ -240,7 +240,7 @@ def _cost_qrom_fq(lz):
 
 def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
-    ￼
+
     The expression for computing the cost is taken from Eq. (125) of
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
