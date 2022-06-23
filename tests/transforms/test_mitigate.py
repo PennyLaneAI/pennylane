@@ -21,7 +21,7 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms import mitigate_with_zne
+from pennylane.transforms import mitigate_with_zne, poly_extrapolate, fold_global
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -350,9 +350,22 @@ class TestFoldGlobal:
             qml.adjoint(template(w1, w2, wires=range(n_wires)))
             qml.expval(qml.PauliZ(0))
 
-        folded_qnodes = [
-            qml.transforms.fold_global(circuit, scale_factor=lambda_)
-            for lambda_ in np.arange(1, 10)
-        ]
+        folded_qnodes = [fold_global(circuit, scale_factor=lambda_) for lambda_ in np.arange(1, 10)]
         res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
+
+    @pytest.mark.jax
+    @pytest.mark.autograd
+    def test_polyfit(self):
+        """Testing the poly_extrapolator function in autograd"""
+        import jax.numpy as jnp
+
+        x = jnp.arange(10, dtype="float32")
+        y = 0.5 * x**2
+
+        assert qml.math.allclose(poly_extrapolate(x, y, 2), 0.0, atol=1e-6)
+
+        x = np.arange(10)
+        y = 0.5 * x**2
+
+        assert qml.math.allclose(poly_extrapolate(x, y, 2), 0.0)
