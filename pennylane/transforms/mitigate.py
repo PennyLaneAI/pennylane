@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+import pennylane as qml
+
 from copy import copy
 from typing import Any, Dict, Optional, Sequence, Union
 
@@ -21,7 +23,7 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform
 
 
-@batch_transform
+#@batch_transform
 def fold_global(circuit, scale_factor):
     r"""Diffable global circuit folding function as is done in :`mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
 
@@ -75,7 +77,12 @@ def fold_global(circuit, scale_factor):
         for meas in circuit.measurements:
             apply(meas)
 
-    return [new_circuit], lambda res: res
+    return new_circuit
+
+def poly_extrapolate(x, y, order):
+    """Extrapolator to f(0) for f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg] for polynomial fit"""
+    coeff = qml.math.polyfit(x, y, order)
+    return coeff[-1]
 
 
 # pylint: disable=too-many-arguments, protected-access, bad-continuation

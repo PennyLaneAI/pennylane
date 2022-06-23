@@ -345,15 +345,14 @@ class TestFoldGlobal:
         w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
 
         # This circuit itself produces the identity by construction
-        @qml.qnode(dev)
-        def circuit(w1, w2):
-            template(w1, w2, wires=range(n_wires)).decomposition()
-            qml.adjoint(template(w1, w2, wires=range(n_wires))).decomposition()
-            return qml.expval(qml.PauliZ(0))
+        with qml.tape.QuantumTape() as circuit:
+            template(w1, w2, wires=range(n_wires))
+            qml.adjoint(template(w1, w2, wires=range(n_wires)))
+            qml.expval(qml.PauliZ(0))
 
         folded_qnodes = [
             qml.transforms.fold_global(circuit, scale_factor=lambda_)
             for lambda_ in np.arange(1, 10)
         ]
-        res = [_(w1, w2) for _ in folded_qnodes]
+        res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
