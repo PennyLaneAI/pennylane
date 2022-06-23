@@ -68,6 +68,10 @@
 
 <h3>Bug fixes</h3>
 
+* `qml.grouping.group_observables` now works when individual wire
+  labels are iterable.
+  [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
+
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
@@ -75,4 +79,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
