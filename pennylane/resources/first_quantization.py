@@ -16,8 +16,8 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 # pylint: disable=too-many-arguments
-from pennylane import numpy as np
 from scipy import integrate
+from pennylane import numpy as np
 
 
 def success_prob(n, br):
