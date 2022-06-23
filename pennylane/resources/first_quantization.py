@@ -257,6 +257,7 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         int: the number of Toffoli gates needed to implement the qubitization unitary operator
 
     **Example**
+
     >>> n = 100000
     >>> eta = 156
     >>> omega = 169.69608
