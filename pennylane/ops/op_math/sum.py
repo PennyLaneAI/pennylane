@@ -95,7 +95,7 @@ class Sum(Operator):
 
     **Example**
 
-    >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = Sum(qml.PauliX(0), qml.PauliZ(0))
     >>> summed_op
     PauliX(wires=[0]) + PauliZ(wires=[0])
     >>> qml.matrix(summed_op)
