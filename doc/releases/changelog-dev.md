@@ -39,28 +39,39 @@
   >>> print(energy)
   -1.1258709813834058
   ```
-  
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-* Added new device abstract base class `QutritDevice` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
-* Added operation `qml.QutritUnitary` for applying user-specified unitaries to `QutritDevice`.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
+* Added `QutritDevice` as abstract base class for qutrit devices.
 
 <h3>Improvements</h3>
 
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
+* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
+  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+
 <h3>Breaking changes</h3>
+
+* PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
+  which provides an updated API that is incompatible which versions of the package prior to 2.7.
+  If you run into issues relating to this package, please reinstall PennyLane.
+  [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
+  [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
+<h3>Bug fixes</h3>
+
+* The adjoint of an adjoint has a correct `expand` result.
+  [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann

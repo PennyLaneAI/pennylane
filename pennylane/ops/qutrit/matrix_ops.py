@@ -36,11 +36,16 @@ class QutritUnitary(Operation):
         U (array[complex]): square unitary matrix
         wires(Sequence[int] or int): the wire(s) the operation acts on
     """
+    # TODO: Add example to doc-string after devices are added
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -51,20 +56,25 @@ class QutritUnitary(Operation):
         # For pure QutritUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         U = params[0]
+        U_shape = qml.math.shape(U)
 
         dim = 3 ** len(wires)
 
-        if qml.math.shape(U) != (dim, dim):
+        if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
             raise ValueError(
-                f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
+                f"to act on {len(wires)} wires."
             )
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
         # here we issue a warning to check the operation, instead of raising an error outright.
-        if not qml.math.is_abstract(U) and not qml.math.allclose(
-            qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-            qml.math.eye(qml.math.shape(U)[0]),
-            atol=1e-6,
+        if not (
+            qml.math.is_abstract(U)
+            or qml.math.allclose(
+                qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+                qml.math.eye(dim),
+                atol=1e-6,
+            )
         ):
             warnings.warn(
                 f"Operator {U}\n may not be unitary."
@@ -94,6 +104,7 @@ class QutritUnitary(Operation):
         return QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=self.wires)
 
     # TODO: Add `_controlled()` method once `ControlledQutritUnitary` is implemented.
+    # TODO: Add compute_decomposition() once parametrized operations are added.
 
     def pow(self, z):
         if isinstance(z, int):

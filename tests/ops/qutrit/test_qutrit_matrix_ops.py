@@ -57,20 +57,19 @@ class TestQutritUnitary:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.123)
 
-    # TODO: Check with Olivia about broadcasted QutritUnitary
-    # def test_qutrit_unitary_noninteger_pow_broadcasted(self):
-    #     """Test broadcasted QutritUnitary raised to a non-integer power raises an error."""
-    #     U = np.array(
-    #         [
-    #             U_thadamard_01,
-    #             U_thadamard_01,
-    #         ]
-    #     )
+    def test_qutrit_unitary_noninteger_pow_broadcasted(self):
+        """Test broadcasted QutritUnitary raised to a non-integer power raises an error."""
+        U = np.array(
+            [
+                U_thadamard_01,
+                U_thadamard_01,
+            ]
+        )
 
-    #     op = qml.QutritUnitary(U, wires="a")
+        op = qml.QutritUnitary(U, wires="a")
 
-    #     with pytest.raises(qml.operation.PowUndefinedError):
-    #         op.pow(0.123)
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.123)
 
     @pytest.mark.parametrize("n", (1, 3, -1, -3))
     def test_qutrit_unitary_pow(self, n):
@@ -86,27 +85,26 @@ class TestQutritUnitary:
 
         assert qml.math.allclose(mat_to_pow, new_mat)
 
-    # TODO: Check with Olivia about broadcasted QutritUnitary
-    # @pytest.mark.parametrize("n", (1, 3, -1, -3))
-    # def test_qutrit_unitary_pow_broadcasted(self, n):
-    #     """Test broadcasted qutrit unitary raised to an integer power."""
-    #     U = np.array(
-    #         [
-    #             U_thadamard_01,
-    #             U_thadamard_01,
-    #         ]
-    #     )
+    @pytest.mark.parametrize("n", (1, 3, -1, -3))
+    def test_qutrit_unitary_pow_broadcasted(self, n):
+        """Test broadcasted qutrit unitary raised to an integer power."""
+        U = np.array(
+            [
+                U_thadamard_01,
+                U_thadamard_01,
+            ]
+        )
 
-    #     op = qml.QutritUnitary(U, wires="a")
-    #     new_ops = op.pow(n)
+        op = qml.QutritUnitary(U, wires="a")
+        new_ops = op.pow(n)
 
-    #     assert len(new_ops) == 1
-    #     assert new_ops[0].wires == op.wires
+        assert len(new_ops) == 1
+        assert new_ops[0].wires == op.wires
 
-    #     mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
-    #     new_mat = qml.matrix(new_ops[0])
+        mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
+        new_mat = qml.matrix(new_ops[0])
 
-    #     assert qml.math.allclose(mat_to_pow, new_mat)
+        assert qml.math.allclose(mat_to_pow, new_mat)
 
     interface_and_decomp_data = [
         (U_thadamard_01, 1),
@@ -115,7 +113,7 @@ class TestQutritUnitary:
         (unitary_group.rvs(9, random_state=10), 2),
         (np.eye(3), 1),
         (np.eye(9), 2),
-        # (np.tensordot([1j, -1, 1], U_thadamard_01, axes=0), 1)
+        (np.tensordot([1j, -1, 1], U_thadamard_01, axes=0), 1),
     ]
 
     @pytest.mark.autograd
@@ -149,7 +147,9 @@ class TestQutritUnitary:
         # verify adjoint behaves correctly
         op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
-        expected = np.conj(np.transpose(U))
+        expected = (
+            np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
+        )
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.torch
@@ -159,6 +159,9 @@ class TestQutritUnitary:
         catches incorrect input with torch."""
         import torch
 
+        U_adjoint = (
+            np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
+        )
         U = torch.tensor(U)
         out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
 
@@ -185,7 +188,7 @@ class TestQutritUnitary:
         # verify adjoint behaves correctly
         op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
-        expected = torch.conj(torch.t(U))
+        expected = torch.tensor(U_adjoint)
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.tf
@@ -195,6 +198,9 @@ class TestQutritUnitary:
         catches incorrect input with tensorflow."""
         import tensorflow as tf
 
+        U_adjoint = (
+            np.conj(np.transpose(U)) if len(np.shape(U)) == 2 else np.conj(np.swapaxes(U, -2, -1))
+        )
         U = tf.Variable(U)
         out = qml.QutritUnitary(U, wires=range(num_wires)).matrix()
 
@@ -220,7 +226,7 @@ class TestQutritUnitary:
         # verify adjoint behaves correctly
         op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
-        expected = tf.transpose(U, conjugate=True)
+        expected = tf.Variable(U_adjoint)
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.jax
@@ -255,7 +261,11 @@ class TestQutritUnitary:
         # verify adjoint behaves correctly
         op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
-        expected = jnp.conj(jnp.transpose(U))
+        expected = (
+            jnp.conj(jnp.transpose(U))
+            if len(jnp.shape(U)) == 2
+            else jnp.conj(jnp.swapaxes(U, -2, -1))
+        )
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.jax
@@ -278,8 +288,7 @@ class TestQutritUnitary:
 
     def test_matrix_representation(self):
         """Test that the matrix representation is defined correctly"""
-        U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]])
-        U = np.multiply(0.5, U)
+        U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]]) * 0.5
 
         res_static = qml.QutritUnitary.compute_matrix(U)
         res_dynamic = qml.QutritUnitary(U, wires=0).matrix()

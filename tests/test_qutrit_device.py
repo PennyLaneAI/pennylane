@@ -158,6 +158,7 @@ class TestOperations:
                 lambda self, x, **kwargs: call_history.extend(x + kwargs.get("rotations", [])),
             )
             m.setattr(QutritDevice, "analytic_probability", lambda *args: None)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
             dev = mock_qutrit_device()
             dev.execute(tape)
 
@@ -213,6 +214,7 @@ class TestOperations:
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
             dev = mock_qutrit_device()
             dev.execute(tape, hash=tape.graph.hash)
 
@@ -591,16 +593,17 @@ class TestEstimateProb:
     """Test the estimate_probability method"""
 
     @pytest.mark.parametrize(
-        "wires, expected",
+        "wires, bin_size, expected",
         [
-            ([0], [0.5, 0.25, 0.25]),
-            (None, [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
-            ([0, 1], [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
-            ([1], [0.25, 0.25, 0.5]),
+            ([0], None, [0.5, 0.25, 0.25]),
+            (None, None, [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
+            ([0, 1], None, [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
+            ([1], None, [0.25, 0.25, 0.5]),
+            ([0], 4, [[0.5], [0.25], [0.25]]),
         ],
     )
     def test_estimate_probability(
-        self, wires, expected, mock_qutrit_device_with_original_statistics, monkeypatch
+        self, wires, bin_size, expected, mock_qutrit_device_with_original_statistics, monkeypatch
     ):
         """Tests probability method when the analytic attribute is True."""
         dev = mock_qutrit_device_with_original_statistics(wires=2)
@@ -609,7 +612,7 @@ class TestEstimateProb:
         with monkeypatch.context() as m:
             m.setattr(dev, "_samples", samples)
             m.setattr(dev, "shots", 4)
-            res = dev.estimate_probability(wires=wires)
+            res = dev.estimate_probability(wires=wires, bin_size=bin_size)
 
         assert np.allclose(res, expected)
 
