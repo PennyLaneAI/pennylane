@@ -39,8 +39,8 @@
   >>> print(energy)
   -1.1258709813834058
   ```
-  
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
@@ -50,6 +50,9 @@
 
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
+
+* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
+  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
 
 <h3>Breaking changes</h3>
 
@@ -72,4 +75,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
