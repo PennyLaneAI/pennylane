@@ -818,10 +818,11 @@ class CPhaseShift00(Operation):
 
     def adjoint(self):
         return CPhaseShift00(-self.data[0], wires=self.wires)
-
+    def pow(self, z):
+        return CPhaseShift00(self.data[0]*z, wires=self.wires)
     @property
     def control_wires(self):
-        return Wires(self.wires[0])
+        return self.wires[0:1]
 
 
 class CPhaseShift01(Operation):
@@ -953,9 +954,6 @@ class CPhaseShift01(Operation):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-
-
         .. seealso:: :meth:`~.CPhaseShift01.decomposition`.
 
         Args:
@@ -993,7 +991,7 @@ class CPhaseShift01(Operation):
 
     @property
     def control_wires(self):
-        return Wires(self.wires[0])
+        return self.wires[0:1]
 
 
 class CPhaseShift10(Operation):
@@ -1023,7 +1021,7 @@ class CPhaseShift10(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int]): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1125,9 +1123,6 @@ class CPhaseShift10(Operation):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-
-
         .. seealso:: :meth:`~.CPhaseShift10.decomposition`.
 
         Args:
@@ -1165,7 +1160,7 @@ class CPhaseShift10(Operation):
 
     @property
     def control_wires(self):
-        return Wires(self.wires[0])
+        return self.wires[0:1]
 
 
 class Rot(Operation):
