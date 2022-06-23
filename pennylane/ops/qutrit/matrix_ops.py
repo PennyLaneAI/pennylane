@@ -69,18 +69,18 @@ class QutritUnitary(Operation):
         # Check for unitarity; due to variable precision across the different ML frameworks,
         # here we issue a warning to check the operation, instead of raising an error outright.
         if not (
-                qml.math.is_abstract(U)
-                or qml.math.allclose(
-                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
-                    qml.math.eye(dim),
-                    atol=1e-6,
-                )
-            ):
-                warnings.warn(
-                    f"Operator {U}\n may not be unitary."
-                    "Verify unitarity of operation, or use a datatype with increased precision.",
-                    UserWarning,
-                )
+            qml.math.is_abstract(U)
+            or qml.math.allclose(
+                qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+                qml.math.eye(dim),
+                atol=1e-6,
+            )
+        ):
+            warnings.warn(
+                f"Operator {U}\n may not be unitary."
+                "Verify unitarity of operation, or use a datatype with increased precision.",
+                UserWarning,
+            )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
