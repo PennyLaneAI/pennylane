@@ -311,4 +311,6 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v2
         - name: Download reports from tests
-          uses: codecov/codecov-action@v1
+          uses: actions/download-artifact@v2
+        - name: Upload to Codecov
+          uses: codecov/codecov-action@v3
