@@ -22,14 +22,19 @@ from pennylane import numpy as np
 
 def success_prob(n, br):
     r"""Return the probability of success for state preparation.
+
     The expression for computing the probability of success is taken from Eqs. (59, 60) of
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+
     Args:
         n (int): number of plane waves
         br (int): number of bits for ancilla qubit rotation
+
     Returns:
         float: probability of success for state preparation
+
     **Example**
+
     >>> success_prob(10000, 7)
     0.9998814293823286
     """
@@ -51,9 +56,11 @@ def success_prob(n, br):
 
 def norm_fq(eta, n, omega, error, br=7, charge=0):
     r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
+
     The expressions needed for computing the norm are taken from
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_]. The
     norm is computed assuming that amplitude ampliﬁcation is performed.
+
     Args:
         eta (int): number of electrons
         n (int): number of basis states
@@ -61,52 +68,76 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
         error (float): target error in the algorithm
         br (int): number of bits for ancilla qubit rotation
         charge (int): total electric charge of the system
+
     Returns:
         float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
+
     **Example**
+
     >>> eta = 156
     >>> n = 10000
     >>> omega = 1145.166
     >>> error = 0.001
     >>> norm_fq(eta, n, omega, error)
     1254385.059691027
+
     .. details::
         :title: Theory
+
         For numerical convenience, we use the following modified expressions for computing
         parameters that contain a sum over the elements, :math:`\nu`, of the set of reciprocal
         lattice vectors, :math:`G_0`.
+
         For :math:`\lambda_{\nu}` defined in Eq. (25) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ as
+
         .. math::
+
             \lambda_{\nu} = \sum_{\nu \in G_0} \frac{1}{\left \| \nu \right \|^2},
+
         we follow Eq. (F6) of
         `PRX 8, 011044 (2018) <https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.011044>`_
         and use
+
         .. math::
+
             \lambda_{\nu} = 4\pi \left ( \frac{\sqrt{3}}{2} N^{1/3} - 1 \right) + 3 - \frac{3}{N^{1/3}}
             + 3 \int_{x=1}^{N^{1/3}} \int_{y=1}^{N^{1/3}} \frac{1}{x^2 + y^2} dydx.
+
         We also need to compute :math:`\lambda^{\alpha}_{\nu}` defined in Eq. (123) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+
         .. math::
+
             \lambda^{\alpha}_{\nu} = \alpha \sum_{\nu \in G_0} \frac{\left \lceil
             \mathcal{M}(2^{\mu - 2}) / \left \| \nu \right \|^2 \right \rceil}{\mathcal{M}
             2^{2\mu - 4}},
+
         which we compute here, for :math:`\alpha = 1`, as
+
         .. math::
+
             \lambda^{1}_{\nu} = \lambda_{\nu} + \epsilon_l,
+
         where :math:`\epsilon_l` is simply defined as the difference of :math:`\lambda^{1}_{\nu}`
         and :math:`\lambda_{\nu}`. We follow Eq. (113) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ to
         derive an upper bound for its absolute value:
+
         .. math::
+
             \epsilon_l = \frac{4}{2^{n_m}} (7 \times 2^{n_p + 1} + 9 n_p - 11 - 3 \times 2^{-n_p}),
+
         where :math:`\mathcal{M} = 2^{n_m}` and :math:`n_m` is defined in Eq. (132) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
         Finally, for :math:`p_{\nu}` defined in Eq. (128) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+
         .. math::
+
             p_{\nu} = \sum_{\mu = 2}^{n_p + 1} \sum_{\nu \in B_{\mu}} \frac{\left \lceil M(2^{\mu-2}
             / \left \| \nu \right \|)^2 \right \rceil}{M 2^{2\mu} 2^{n_{\mu} + 1}},
+
         we use the upper bound from Eq. (29) in
         `arXiv:1807.09802v2 <https://arxiv.org/abs/1807.09802v2>`_ which gives
         :math:`p_{\nu} = 0.2398`.
@@ -183,11 +214,15 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 
 def _cost_qrom_fq(lz):
     r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
+
     Args:
         lz (int): sum of the atomic numbers
+
     Returns:
         int: the minimum cost of erasing the output of a QROM
+
     **Example**
+
     >>> _cost_qrom_min(100)
     21
     """
@@ -208,6 +243,7 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     ￼
     The expression for computing the cost is taken from Eq. (125) of
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+
     Args:
         n (int): number of plane waves
         eta (int): number of electrons
@@ -216,8 +252,10 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         lamb (float): 1-norm of the Hamiltonian
         br (int): number of bits for ancilla qubit rotation
         charge (int): total electric charge of the system
+
     Returns:
         int: the number of Toffoli gates needed to implement the qubitization unitary operator
+
     **Example**
     >>> n = 100000
     >>> eta = 156
@@ -226,22 +264,29 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     >>> lamb = 5128920.595980267
     >>> unitary_cost(n, eta, omega, error, lamb)
     12819
+
     .. details::
         :title: Theory
+
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
+
         .. math::
             \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+
         Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
         with a default value of :math:`\alpha = 0.01` and obtain
+
         .. math::
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
@@ -309,33 +354,45 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
 def estimation_cost_fq(lamb, error):
     r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
     phase estimation.
+
     The expression for computing the cost is taken from Eq. (125) of
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+
     Args:
         lamb (float): 1-norm of a second-quantized Hamiltonian
         error (float): target error in the algorithm
+
     Returns:
         int: number of calls to unitary
+
     **Example**
+
     >>> cost = estimation_cost(72.49779513025341, 0.001)
     >>> print(cost)
     113880
+
     .. details::
         :title: Theory
+
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
+
         .. math::
             \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+
         Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
         with a default value of :math:`\alpha = 0.01` and obtain
+
         .. math::
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
@@ -355,8 +412,10 @@ def estimation_cost_fq(lamb, error):
 def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the total number of Toffoli gates needed to implement the first quantization
     algorithm.
+
     The expression for computing the cost is taken from Eq. (125) of
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+
     Args:
         n (int): number of plane waves
         eta (int): number of electrons
@@ -365,9 +424,12 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         lamb (float): 1-norm of the Hamiltonian
         br (int): number of bits for ancilla qubit rotation
         charge (int): total electric charge of the system
+
     Returns:
         int: the number of Toffoli gates needed to implement the first quantization algorithm
+
     **Example**
+
     >>> n = 100000
     >>> eta = 156
     >>> omega = 169.69608
@@ -375,22 +437,29 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     >>> lamb = 5128920.595980267
     >>> gate_cost(n, eta, omega, error, lamb)
     10327614069516
+
     .. details::
         :title: Theory
+
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
+
         .. math::
             \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+
         Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
         with a default value of :math:`\alpha = 0.01` and obtain
+
         .. math::
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
@@ -426,8 +495,10 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     ￼
     The expression for computing the parameters are taken from
     [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+
     The expression for computing the cost is taken from Eq. (101) of
     [`arXiv:2204.11890v1 <https://arxiv.org/abs/2204.11890v1>`_].
+
     Args:
         n (int): number of plane waves
         eta (int): number of electrons
@@ -435,9 +506,12 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
         error (float): target error in the algorithm
         lamb (float): 1-norm of the Hamiltonian
         charge (int): total electric charge of the system
+
     Returns:
         int: the number of ancilla qubits needed to implement the first quantization algorithm
+
     **Example**
+
     >>> n = 100000
     >>> eta = 156
     >>> omega = 169.69608
@@ -445,22 +519,29 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     >>> lamb = 5128920.595980267
     >>> qubit_cost(n, eta, omega, error, lamb)
     4238
+
     .. details::
         :title: Theory
+
         The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
         error following Eq. (131) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
         that
+
         .. math::
             \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
         where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
         :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
         Eqs. (132-134) of
         `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+
         Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
         with a default value of :math:`\alpha = 0.01` and obtain
+
         .. math::
             \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
         Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
         error distribution takes place inside the functions.
     """
