@@ -570,73 +570,73 @@ class TestDensityMatrix:
         assert np.allclose(qutrit_device_2_wires.density_matrix(wires), expected)
 
 
-class TestApplyStateVector:
-    """Unit tests for the internal _apply_state_vector method"""
+# class TestApplyStateVector:
+#     """Unit tests for the internal _apply_state_vector method"""
 
-    def test_apply_state_vec_wrong_length(self, qutrit_device_1_wire):
-        """Test that _apply_state_vector throws the correct error for input state of wrong length"""
+#     def test_apply_state_vec_wrong_length(self, qutrit_device_1_wire):
+#         """Test that _apply_state_vector throws the correct error for input state of wrong length"""
 
-        input = np.array([1, 0])
+#         input = np.array([1, 0])
 
-        with pytest.raises(ValueError, match="State vector must be of length"):
-            qutrit_device_1_wire._apply_state_vector(input, Wires([0]))
+#         with pytest.raises(ValueError, match="State vector must be of length"):
+#             qutrit_device_1_wire._apply_state_vector(input, Wires([0]))
 
-    def test_apply_state_vec_bad_norm(self, qutrit_device_1_wire):
-        """Test that _apply_state_vector throws the correct error for non-normalized state"""
+#     def test_apply_state_vec_bad_norm(self, qutrit_device_1_wire):
+#         """Test that _apply_state_vector throws the correct error for non-normalized state"""
 
-        input = np.ones(3)
+#         input = np.ones(3)
 
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one"):
-            qutrit_device_1_wire._apply_state_vector(input, Wires([0]))
+#         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one"):
+#             qutrit_device_1_wire._apply_state_vector(input, Wires([0]))
 
-    all_wires_data = [
-        ([0, 0, 1, 0, 0, 0, 0, 0, 0], Wires([0, 1]), [0, 0, 1, 0, 0, 0, 0, 0, 0]),
-        ([0, 0, 1, 0, 0, 0, 0, 0, 0], Wires([1, 0]), [0, 0, 0, 0, 0, 0, 1, 0, 0]),
-        (np.ones(9) / 3, Wires([0, 1]), np.ones(9) / 3),
-        (
-            [0, 0, 1 / np.sqrt(2), 0, 0, 0, 0, 0, 1 / np.sqrt(2)],
-            Wires([1, 0]),
-            [0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
-        )
-    ]
+#     all_wires_data = [
+#         ([0, 0, 1, 0, 0, 0, 0, 0, 0], Wires([0, 1]), [0, 0, 1, 0, 0, 0, 0, 0, 0]),
+#         ([0, 0, 1, 0, 0, 0, 0, 0, 0], Wires([1, 0]), [0, 0, 0, 0, 0, 0, 1, 0, 0]),
+#         (np.ones(9) / 3, Wires([0, 1]), np.ones(9) / 3),
+#         (
+#             [0, 0, 1 / np.sqrt(2), 0, 0, 0, 0, 0, 1 / np.sqrt(2)],
+#             Wires([1, 0]),
+#             [0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
+#         )
+#     ]
 
-    @pytest.mark.parametrize("input, wires, expected", all_wires_data)
-    def test_apply_state_vec_all_wires(self, qutrit_device_2_wires, input, wires, expected):
-        """Test that _apply_state_vector correctly applies the vector when all wires are included"""
+#     @pytest.mark.parametrize("input, wires, expected", all_wires_data)
+#     def test_apply_state_vec_all_wires(self, qutrit_device_2_wires, input, wires, expected):
+#         """Test that _apply_state_vector correctly applies the vector when all wires are included"""
 
-        qutrit_device_2_wires._apply_state_vector(input, wires)
-        assert np.allclose(expected, qutrit_device_2_wires._state.flatten())
+#         qutrit_device_2_wires._apply_state_vector(input, wires)
+#         assert np.allclose(expected, qutrit_device_2_wires._state.flatten())
 
-    partial_wires_data = [
-        (
-            [0, 0, 1],
-            Wires([0]),
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        ),
-        (
-            [0, 0, 1, 0, 0, 0, 0, 0, 0],
-            Wires([1, 0]),
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        ),
-        (
-            np.ones(9) / 3,
-            Wires([2, 1]),
-            [1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        ),
-        (
-            [0, 0, 1 / np.sqrt(2), 0, 0, 0, 0, 0, 1 / np.sqrt(2)],
-            Wires([1, 0]),
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0],
-        ),
-        (
-            [1 / np.sqrt(3), 0.5, np.sqrt(5 / 12)],
-            Wires([1]),
-            [1 / np.sqrt(3), 0, 0, 0.5, 0, 0, np.sqrt(5 / 12), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        ),
-    ]
+#     partial_wires_data = [
+#         (
+#             [0, 0, 1],
+#             Wires([0]),
+#             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+#         ),
+#         (
+#             [0, 0, 1, 0, 0, 0, 0, 0, 0],
+#             Wires([1, 0]),
+#             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+#         ),
+#         (
+#             np.ones(9) / 3,
+#             Wires([2, 1]),
+#             [1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#         ),
+#         (
+#             [0, 0, 1 / np.sqrt(2), 0, 0, 0, 0, 0, 1 / np.sqrt(2)],
+#             Wires([1, 0]),
+#             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0],
+#         ),
+#         (
+#             [1 / np.sqrt(3), 0.5, np.sqrt(5 / 12)],
+#             Wires([1]),
+#             [1 / np.sqrt(3), 0, 0, 0.5, 0, 0, np.sqrt(5 / 12), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+#         ),
+#     ]
 
-    @pytest.mark.parametrize("input, wires, expected", partial_wires_data)
-    def test_apply_state_vec_few_wires(self, qutrit_device_3_wires, input, wires, expected):
-        """Test that _apply_state_vector correctly applies the vector when only some wires are included"""
-        qutrit_device_3_wires._apply_state_vector(input, wires)
-        assert np.allclose(expected, qutrit_device_3_wires._state.flatten())
+#     @pytest.mark.parametrize("input, wires, expected", partial_wires_data)
+#     def test_apply_state_vec_few_wires(self, qutrit_device_3_wires, input, wires, expected):
+#         """Test that _apply_state_vector correctly applies the vector when only some wires are included"""
+#         qutrit_device_3_wires._apply_state_vector(input, wires)
+#         assert np.allclose(expected, qutrit_device_3_wires._state.flatten())

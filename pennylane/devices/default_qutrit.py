@@ -212,74 +212,74 @@ class DefaultQutrit(QutritDevice):
 
         return density_matrix
 
-    def _apply_state_vector(self, state, device_wires):
-        """Initialize the internal state vector in a specified state.
+    # def _apply_state_vector(self, state, device_wires):
+    #     """Initialize the internal state vector in a specified state.
 
-        Args:
-            state (array[complex]): normalized input state of length
-                ``3**len(wires)``
-            device_wires (Wires): wires that get initialized in the state
-        """
+    #     Args:
+    #         state (array[complex]): normalized input state of length
+    #             ``3**len(wires)``
+    #         device_wires (Wires): wires that get initialized in the state
+    #     """
 
-        # translate to wire labels used by device
-        device_wires = self.map_wires(device_wires)
+    #     # translate to wire labels used by device
+    #     device_wires = self.map_wires(device_wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        n_state_vector = state.shape[0]
+    #     state = self._asarray(state, dtype=self.C_DTYPE)
+    #     n_state_vector = state.shape[0]
 
-        if len(qml.math.shape(state)) != 1 or n_state_vector != 3 ** len(device_wires):
-            raise ValueError("State vector must be of length 3**wires.")
+    #     if len(qml.math.shape(state)) != 1 or n_state_vector != 3 ** len(device_wires):
+    #         raise ValueError("State vector must be of length 3**wires.")
 
-        norm = qml.math.linalg.norm(state, ord=2)
-        if not qml.math.is_abstract(norm):
-            if not qml.math.allclose(norm, 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
+    #     norm = qml.math.linalg.norm(state, ord=2)
+    #     if not qml.math.is_abstract(norm):
+    #         if not qml.math.allclose(norm, 1.0, atol=tolerance):
+    #             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
-            # Initialize the entire wires with the state
-            self._state = self._reshape(state, [3] * self.num_wires)
-            return
+    #     if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
+    #         # Initialize the entire wires with the state
+    #         self._state = self._reshape(state, [3] * self.num_wires)
+    #         return
 
-        # generate basis states on subset of qutrits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1, 2], repeat=len(device_wires))))
+    #     # generate basis states on subset of qutrits via the cartesian product
+    #     basis_states = np.array(list(itertools.product([0, 1, 2], repeat=len(device_wires))))
 
-        # get basis states to alter on full set of qutrits
-        unravelled_indices = np.zeros((3 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
+    #     # get basis states to alter on full set of qutrits
+    #     unravelled_indices = np.zeros((3 ** len(device_wires), self.num_wires), dtype=int)
+    #     unravelled_indices[:, device_wires] = basis_states
 
-        # get indices for which the state is changed to input state vector elements
-        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [3] * self.num_wires)
+    #     # get indices for which the state is changed to input state vector elements
+    #     ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [3] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [3**self.num_wires])
-        state = self._reshape(state, [3] * self.num_wires)
-        self._state = self._asarray(state, dtype=self.C_DTYPE)
+    #     state = self._scatter(ravelled_indices, state, [3**self.num_wires])
+    #     state = self._reshape(state, [3] * self.num_wires)
+    #     self._state = self._asarray(state, dtype=self.C_DTYPE)
 
-    def _apply_basis_state(self, state, wires):
-        """Initialize the state vector in a specified computational basis state.
+    # def _apply_basis_state(self, state, wires):
+    #     """Initialize the state vector in a specified computational basis state.
 
-        Args:
-            state (array[int]): computational basis state of shape ``(wires,)``
-                consisting of 0s, 1s and 2s.
-            wires (Wires): wires that the provided computational state should be initialized on
-        """
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
+    #     Args:
+    #         state (array[int]): computational basis state of shape ``(wires,)``
+    #             consisting of 0s, 1s and 2s.
+    #         wires (Wires): wires that the provided computational state should be initialized on
+    #     """
+    #     # translate to wire labels used by device
+    #     device_wires = self.map_wires(wires)
 
-        # length of basis state parameter
-        n_basis_state = len(state)
+    #     # length of basis state parameter
+    #     n_basis_state = len(state)
 
-        if not set(state.tolist()).issubset({0, 1, 2}):
-            raise ValueError("BasisState parameter must consist of 0, 1, or 2 integers.")
+    #     if not set(state.tolist()).issubset({0, 1, 2}):
+    #         raise ValueError("BasisState parameter must consist of 0, 1, or 2 integers.")
 
-        if n_basis_state != len(device_wires):
-            raise ValueError("BasisState parameter and wires must be of equal length.")
+    #     if n_basis_state != len(device_wires):
+    #         raise ValueError("BasisState parameter and wires must be of equal length.")
 
-        # get computational basis state number
-        basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
-        basis_states = qml.math.convert_like(basis_states, state)
-        num = int(qml.math.dot(state, basis_states))
+    #     # get computational basis state number
+    #     basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
+    #     basis_states = qml.math.convert_like(basis_states, state)
+    #     num = int(qml.math.dot(state, basis_states))
 
-        self._state = self._create_basis_state(num)
+    #     self._state = self._create_basis_state(num)
 
     def _apply_unitary(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
