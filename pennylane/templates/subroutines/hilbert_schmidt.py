@@ -161,7 +161,9 @@ class HilbertSchmidt(Operation):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        for op_v in v_tape.operations:
+        ops = v_tape.operations
+        ops.reverse()
+        for op_v in ops:
             decomp_ops.append(qml.adjoint(op_v, lazy=False))
 
         # CNOT second layer
@@ -171,6 +173,7 @@ class HilbertSchmidt(Operation):
         # Hadamard second layer
         for i in first_range:
             decomp_ops.append(qml.Hadamard(wires[i]))
+
         return decomp_ops
 
 
@@ -269,7 +272,9 @@ class LocalHilbertSchmidt(HilbertSchmidt):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        for op_v in v_tape.operations:
+        ops = v_tape.operations
+        ops.reverse()
+        for op_v in ops:
             decomp_ops.append(qml.adjoint(qml.apply, lazy=False)(op_v))
 
         # Only one CNOT
