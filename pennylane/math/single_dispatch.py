@@ -80,8 +80,8 @@ ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 def _cond(pred, true_fn, false_fn, args):
     if pred:
         return true_fn(*args)
-    else:
-        return false_fn(*args)
+
+    return false_fn(*args)
 
 
 ar.register_function("numpy", "cond", _cond)
