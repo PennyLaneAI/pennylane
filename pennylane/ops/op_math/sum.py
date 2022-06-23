@@ -25,12 +25,48 @@ from pennylane.operation import Operator
 
 
 def op_sum(*summands, do_queue=True, id=None):
-    """Top level sum function to create an instance of Sum"""
+    r"""Construct an operator which is the sum of the given operators.
+
+    Args:
+        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
+
+    Keyword Args:
+        do_queue (bool): determines if the sum operator will be queued (currently not supported).
+            Default is True.
+        id (str or None): id for the sum operator. Default is None.
+
+    Returns:
+        ~ops.op_math.Sum: the operator representing the sum of summands.
+
+    ..seealso:: :class:`~.ops.op_math.Sum`
+
+    **Example**
+
+    >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op
+    PauliX(wires=[0]) + PauliZ(wires=[0])
+    >>> summed_op.matrix()
+    array([[ 1,  1],
+           [ 1, -1]])
+    """
     return Sum(*summands, do_queue=do_queue, id=id)
 
 
 def _sum(mats_gen, dtype=None, cast_like=None):
-    """Private sum method given a series of matrices of correct size."""  # Note this method is inefficient
+    r"""Private method to compute the sum of matrices.
+
+    Args:
+        mats_gen (Generator): a python generator which produces the matricies which
+            will be summed together.
+
+    Keyword Args:
+        dtype (str): a string representing the data type of the entries in the result.
+        cast_like (Tensor): a tensor with the desired data type in its entries.
+
+    Returns:
+        res (Tensor): the tensor which is the sum of the matrices obtained from mats_gen.
+    """
+    # Note this method is currently inefficient (improve addition by looking at wire subgroups)
     res = reduce(math.add, mats_gen)
 
     if dtype is not None:
@@ -42,7 +78,49 @@ def _sum(mats_gen, dtype=None, cast_like=None):
 
 
 class Sum(Operator):
-    """Arithmetic operator subclass representing the sum of operators"""
+    r"""Symbolic operator representing the sum of operators.
+
+    Args:
+        summands (tuple[~.operation.Operators]): a tuple of operators which will be summed together.
+
+    Keyword Args:
+        do_queue (bool): determines if the sum operator will be queued (currently not supported).
+            Default is True.
+        id (str or None): id for the sum operator. Default is None.
+
+    Returns:
+        ~ops.op_math.Sum: the operator representing the sum of summands.
+
+    ..seealso:: :class:`~.ops.op_math.Sum`
+
+    **Example**
+
+    >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op
+    PauliX(wires=[0]) + PauliZ(wires=[0])
+    >>> qml.matrix(summed_op)
+    array([[ 1,  1],
+           [ 1, -1]])
+    >>> summed_op.terms()
+    ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+
+    .. details::
+        :title: Usage Details
+
+        We can combine parameterized operators, and support sums between operators acting on
+        different wires.
+
+        >>> summed_op = op_sum(qml.RZ(1.23, wires=0), qml.Identity(wires=1))
+        >>> summed_op.matrix()
+        array([[1.81677345-0.57695852j, 0.        +0.j        ,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 1.81677345-0.57695852j,
+                0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                1.81677345+0.57695852j, 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,
+                0.        +0.j        , 1.81677345+0.57695852j]])
+    """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
@@ -92,11 +170,23 @@ class Sum(Operator):
         return all(s.is_hermitian for s in self.summands)
 
     def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_terms`
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+        """
         return [1.0] * len(self.summands), self.summands
 
     @property
     def eigendecomposition(self):
-        """Return the eigendecomposition of the matrix specified by the Hermitian observable.
+        r"""Return the eigendecomposition of the matrix specified by the Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -116,13 +206,28 @@ class Sum(Operator):
         return self._eigs[Hkey]
 
     def diagonalizing_gates(self):
-        """Compute diagonalizing_gates (only if op is hermitian)"""
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+        """
 
         eigen_vectors = self.eigendecomposition["eigvec"]
         return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
 
     def eigvals(self):
-        """Return the eigenvalues of the specified Hermitian observable.
+        r"""Return the eigenvalues of the specified Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -133,7 +238,25 @@ class Sum(Operator):
         return self.eigendecomposition["eigval"]
 
     def matrix(self, wire_order=None):
-        """Representation of the operator as a matrix in the computational basis."""
+        r"""Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
 
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
@@ -156,6 +279,8 @@ class Sum(Operator):
         return None
 
     def queue(self, context=qml.QueuingContext):
+        """Updates each operator in the summands owner to Sum, this ensures
+        that the summands are not applied to the circuit repeatedly."""
         for op in self.summands:
             context.safe_update_info(op, owner=self)
         return self

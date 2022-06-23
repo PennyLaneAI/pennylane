@@ -69,6 +69,8 @@ from .utils import (
 from .is_independent import is_independent
 
 sum = ar.numpy.sum
+
+
 def add(*args, **kwargs):
     try:
         return ar.numpy.add(*args, **kwargs)
@@ -76,6 +78,8 @@ def add(*args, **kwargs):
         # catch arg1 = torch, arg2=numpy error
         # works fine with opposite order
         return ar.numpy.add(args[1], args[0], *args[2:], **kwargs)
+
+
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 

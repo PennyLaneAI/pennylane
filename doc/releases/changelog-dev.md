@@ -45,9 +45,48 @@
 
 **Operator Arithmetic:**
 
-* A `Sum` symbolic class is added that allows users to represent the sum of operators
+* A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
+  
+  The `Sum` class provides functionality like any other pennylane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more. 
 
+  ```
+  >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+  >>> summed_op
+  PauliX(wires=[0]) + PauliZ(wires=[0])
+  >>>
+  >>> qml.matrix(summed_op)
+  array([[ 1,  1],
+         [ 1, -1]])
+  >>>
+  >>> summed_op.terms()
+  ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+  ```
+  
+  The `summed_op` can also be used inside a `qnode` as a measurement process. 
+  If the circuit is parameterized, then we can also differentiate through the 
+  sum observable. 
+  
+  ```pycon
+  sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, grad_method="best")
+  def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(sum_op)
+  ```
+  
+  ```
+  >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
+  ```
+  
 <h3>Improvements</h3>
 
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
