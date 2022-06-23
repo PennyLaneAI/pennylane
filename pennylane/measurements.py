@@ -943,9 +943,7 @@ def mutual_info(wires0, wires1, log_base=None):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso::
-
-        :func:`~.vn_entropy`
+    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
     # the subsystems cannot overlap
     if len([wire for wire in wires0 if wire in wires1]) > 0:
