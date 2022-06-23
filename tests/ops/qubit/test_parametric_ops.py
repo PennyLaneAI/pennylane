@@ -805,35 +805,7 @@ class TestDecompositions:
         """Tests that the CPhaseShift operations
         calculate the correct decomposition"""
         op = cphase_op(phi, wires=[0, 2])
-        decomp = op.decomposition()
-
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix(), np.eye(4)))
-            elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), np.kron(i.matrix(), np.eye(2))))
-            elif i.wires.tolist() == [2]:
-                mats.append(np.kron(np.eye(4), i.matrix()))
-            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
-                mats.append(
-                    np.array(
-                        [
-                            [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 1, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 1],
-                            [0, 0, 0, 0, 0, 0, 1, 0],
-                        ]
-                    )
-                )
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
+        decomposed_matrix = qml.matrix(op.decomposition, wire_order=op.wires)()
         lam = np.exp(1j * phi)
         exp = np.eye(8, dtype=complex)
         for i in lam_pos:
@@ -854,37 +826,7 @@ class TestDecompositions:
         calculate the correct decomposition"""
         phi = np.array([-0.2, 4.2, 1.8])
         op = cphase_op(phi, wires=[0, 2])
-        decomp = op.decomposition()
-
-        mats = []
-        for i in reversed(decomp):
-            mat = i.matrix()
-            eye = np.eye(2)[np.newaxis] if np.ndim(mat) == 3 else np.eye(2)
-            if i.wires.tolist() == [0]:
-                mats.append(np.kron(mat, np.kron(eye, eye)))
-            elif i.wires.tolist() == [1]:
-                mats.append(np.kron(eye, np.kron(mat, eye)))
-            elif i.wires.tolist() == [2]:
-                mats.append(np.kron(np.kron(eye, eye), mat))
-            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
-                mats.append(np.kron(mat, eye))
-            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
-                mats.append(
-                    np.array(
-                        [
-                            [1, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 1, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 1, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 1, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 1, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 1],
-                            [0, 0, 0, 0, 0, 0, 1, 0],
-                        ]
-                    )
-                )
-
-        decomposed_matrix = multi_dot_broadcasted(mats)
+        decomposed_matrix = qml.matrix(op.decomposition, wire_order=op.wires)()
         lam = np.exp(1j * phi)
         exp = []
         for el in lam:
