@@ -184,13 +184,16 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
 def _cost_qrom_fq(lz):
     r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
     Args:
-        lz (int): sum of the atomic numbers of nuclei
+        lz (int): sum of the atomic numbers
     Returns:
         int: the minimum cost of erasing the output of a QROM
     **Example**
     >>> _cost_qrom_min(100)
     21
     """
+    if lz <= 0 or not isinstance(lz, int):
+        raise ValueError("The sum of the atomic numbers must be a positive integer.")
+
     k_f = np.floor(np.log2(lz) / 2)
     k_c = np.ceil(np.log2(lz) / 2)
 

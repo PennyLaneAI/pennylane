@@ -38,6 +38,19 @@ def test_cost_qrom(lz, cost_ref):
 
 
 @pytest.mark.parametrize(
+    "lz",
+    [
+        5.7,
+        -6,
+    ],
+)
+def test_cost_qrom_error(lz):
+    r"""Test that _cost_qrom raises an error with incorrect input."""
+    with pytest.raises(ValueError, match="sum of the atomic numbers must be a positive integer"):
+        qml.resources.first_quantization._cost_qrom_fq(lz)
+
+
+@pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
     [
         (10000, 156, 1145.166, 0.001, 5128920.595980267, 7, 0, 12333),
