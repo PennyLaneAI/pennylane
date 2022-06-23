@@ -23,14 +23,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import (
-    MeasurementProcess,
-    Sample,
-    Variance,
-    Expectation,
-    Probability,
-    State,
-)
+from pennylane.measurements import MeasurementProcess
 from pennylane import QubitDevice
 from pennylane.wires import Wires
 
@@ -103,48 +96,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         raise NotImplementedError
 
     def statistics(self, observables, shot_range=None, bin_size=None):
-        # # Overloading QubitDevice.statistics() as VnEntropy and MutualInfo not yet supported for QutritDevice
-        # results = []
-
-        # for obs in observables:
-        #     # Pass instances directly
-        #     if obs.return_type is Expectation:
-        #         results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
-
-        #     elif obs.return_type is Variance:
-        #         results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
-
-        #     elif obs.return_type is Sample:
-        #         results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
-
-        #     elif obs.return_type is Probability:
-        #         results.append(
-        #             self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
-        #         )
-
-        #     elif obs.return_type is State:
-        #         if len(observables) > 1:
-        #             raise qml.QuantumFunctionError(
-        #                 "The state or density matrix cannot be returned in combination"
-        #                 " with other return types"
-        #             )
-        #         if self.wires.labels != tuple(range(self.num_wires)):
-        #             raise qml.QuantumFunctionError(
-        #                 "Returning the state is not supported when using custom wire labels"
-        #             )
-        #         # Check if the state is accessible and decide to return the state or the density
-        #         # matrix.
-        #         results.append(self.access_state(wires=obs.wires))
-
-        #     # This block covers the case when VnEntropy or MutualInfo are the return type for now
-        #     # Once VnEntropy and MutualInfo support is added for QutritDevice, condition blocks for
-        #     # them will be added separately.
-        #     elif obs.return_type is not None:
-        #         raise qml.QuantumFunctionError(
-        #             f"Unsupported return type specified for observable {obs.name}"
-        #         )
-
-        # return results
+        # Overloading QubitDevice.statistics() as VnEntropy and MutualInfo not yet supported for QutritDevice
         raise NotImplementedError
 
     def generate_samples(self):
