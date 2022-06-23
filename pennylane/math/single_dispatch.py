@@ -85,7 +85,7 @@ def _cond(pred, true_fn, false_fn, args):
 
 
 ar.register_function("numpy", "cond", _cond)
-
+ar.register_function("builtins", "cond", _cond)
 
 # -------------------------------- Autograd --------------------------------- #
 
@@ -377,6 +377,11 @@ def _kron_tf(a, b):
 
     a_shape = a.shape
     b_shape = b.shape
+
+    if len(a_shape) == 1:
+        a = a[:, tf.newaxis]
+        b = b[tf.newaxis, :]
+        return tf.reshape(a * b, (a_shape[0] * b_shape[0],))
 
     a = a[:, tf.newaxis, :, tf.newaxis]
     b = b[tf.newaxis, :, tf.newaxis, :]
