@@ -66,6 +66,10 @@
 
 <h3>Documentation</h3>
 
+* Optimization examples of using JAXopt and Optax with the JAX interface have
+  been added.
+  [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
+
 <h3>Bug fixes</h3>
 
 * `qml.grouping.group_observables` now works when individual wire
@@ -79,4 +83,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey,
+Antal Száva, Moritz Willmann
