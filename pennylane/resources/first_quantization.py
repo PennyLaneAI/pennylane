@@ -265,31 +265,6 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     >>> lamb = 5128920.595980267
     >>> unitary_cost(n, eta, omega, error, lamb)
     12819
-
-    .. details::
-        :title: Theory
-
-        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error following Eq. (131) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
-        that
-
-        .. math::
-            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
-
-        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
-        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
-        Eqs. (132-134) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
-
-        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
-        with a default value of :math:`\alpha = 0.01` and obtain
-
-        .. math::
-            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
-
-        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
-        error distribution takes place inside the functions.
     """
     if n <= 0 or not isinstance(n, int):
         raise ValueError("The number of planewaves must be a positive integer.")
@@ -371,31 +346,6 @@ def estimation_cost_fq(lamb, error):
     >>> cost = estimation_cost(72.49779513025341, 0.001)
     >>> print(cost)
     113880
-
-    .. details::
-        :title: Theory
-
-        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error following Eq. (131) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
-        that
-
-        .. math::
-            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
-
-        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
-        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
-        Eqs. (132-134) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
-
-        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
-        with a default value of :math:`\alpha = 0.01` and obtain
-
-        .. math::
-            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
-
-        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
-        error distribution takes place inside the functions.
     """
     if error <= 0.0:
         raise ValueError("The target error must be greater than zero.")
@@ -517,31 +467,6 @@ def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
     >>> lamb = 5128920.595980267
     >>> qubit_cost(n, eta, omega, error, lamb)
     4238
-
-    .. details::
-        :title: Theory
-
-        The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-        error following Eq. (131) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
-        that
-
-        .. math::
-            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
-
-        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
-        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
-        Eqs. (132-134) of
-        `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
-
-        Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
-        with a default value of :math:`\alpha = 0.01` and obtain
-
-        .. math::
-            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
-
-        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
-        error distribution takes place inside the functions.
     """
     if n <= 0 or not isinstance(n, int):
         raise ValueError("The number of planewaves must be a positive integer.")
