@@ -301,7 +301,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: devices-coverage
+          name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
           path: ./coverage.xml
 
   upload-to-codecov:
