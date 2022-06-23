@@ -313,4 +313,4 @@ jobs:
         - name: Download reports from tests
           uses: actions/download-artifact@v2
         - name: Upload to Codecov
-          uses: codecov/codecov-action@v1
+          uses: codecov/codecov-action@v3
