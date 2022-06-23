@@ -164,3 +164,66 @@ def test_qubit_cost_error(n, eta, omega, error, lamb, charge):
     r"""Test that qubit_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
         qml.resources.first_quantization.qubit_cost_fq(n, eta, omega, error, lamb, charge)
+
+
+@pytest.mark.parametrize(
+    ("n_basis", "br", "prob_ref"),
+    [
+        # prob_ref computed with TFermion
+        (1, 7, 1.0),
+        (10000, 7, 0.9998814293823286),
+    ],
+)
+def test_success_prob(n_basis, br, prob_ref):
+    r"""Test that success_prob returns the correct value."""
+    prob = qml.resources.success_prob(n_basis, br)
+
+    assert prob == prob_ref
+
+
+@pytest.mark.parametrize(
+    ("n_basis", "br"),
+    [
+        (-1, 7),
+        (1.2, 7),
+        (10, 7.2),
+        (10, -7),
+    ],
+)
+def test_success_prob_error(n_basis, br):
+    r"""Test that success_prob raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be a positive integer"):
+        qml.resources.success_prob(n_basis, br)
+
+
+@pytest.mark.parametrize(
+    ("eta", "n", "omega", "error", "br", "charge", "norm_ref"),
+    [
+        (156, 10000, 1145.166, 0.001, 7, 0, 281053.7561247674),
+    ],
+)
+def test_norm(eta, n, omega, error, br, charge, norm_ref):
+    r"""Test that norm_fq returns the correct value."""
+    norm = qml.resources.norm_fq(eta, n, omega, error, br, charge)
+
+    assert np.allclose(norm, norm_ref)
+
+
+@pytest.mark.parametrize(
+    ("eta", "n", "omega", "error", "br", "charge"),
+    [
+        (156.2, 10000, 1145.166, 0.001, 7, 0),
+        (-156, 10000, 1145.166, 0.001, 7, 0),
+        (156, 10000.5, 1145.166, 0.001, 7, 0),
+        (156, -10000, 1145.166, 0.001, 7, 0),
+        (156, 10000, -1145.166, 0.001, 7, 0),
+        (156, 10000, 1145.166, -0.001, 7, 0),
+        (156, 10000, 1145.166, 0.001, 7.5, 0),
+        (156, 10000, 1145.166, 0.001, -7, 0),
+        (156, 10000, 1145.166, 0.001, 7, 1.2),
+    ],
+)
+def test_norm_error(eta, n, omega, error, br, charge):
+    r"""Test that norm_fq raises an error with incorrect inputs."""
+    with pytest.raises(ValueError, match="must be"):
+        qml.resources.norm_fq(eta, n, omega, error, br, charge)
