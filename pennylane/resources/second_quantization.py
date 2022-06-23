@@ -23,12 +23,12 @@ from .factorization import factorize
 
 
 class DoubleFactorization(Operation):
-    r"""Contains the functionality for estimating the number of non-Clifford gates and logical qubits
-    for quantum algorithms in second quantization based on the double factorization method.
+    r"""Contains the functionality for estimating the number of non-Clifford gates and logical
+    qubits for implementing the quantum phase estimation algorithm for a second-quantized and
+    double-factorized Hamiltonian.
 
-    To estimate the gate and qubit costs for implementing the quantum phase estimation algorithm
-    for a given Hamiltonian in second quantization, the Hamiltonian needs to be factorized using the
-    ``factorization`` function following
+    To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to be
+    factorized using the :func:`~.pennylane.resources.factorize` function following
     [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
     such that the two-electron integral tensor in
@@ -39,18 +39,19 @@ class DoubleFactorization(Operation):
 
            V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-    with the rank :math:`R \leq n^2` where :math:`n` is the number of molecular orbitals. The
+    with the rank :math:`R \leq n^2`, where :math:`n` is the number of molecular orbitals. The
     matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
     smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
     average number of the retained eigenvalues, :math:`M`, determines the rank of the second
-    factorization step. The 1-norm of the Hamiltonian can then be computed using the ``norm``
+    factorization step. The 1-norm of the Hamiltonian can then be computed using the :func:`~.norm`
     function from the electron integrals and the eigenvalues of the matrices :math:`L^{(r)}` as
 
     .. math::
 
         \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
 
-    where the Schatten 1-norm for a given matrix :math:`T` is defined as
+    where the Schatten 1-norm, :math:`\left \| \cdot \right \|`, for a given matrix :math:`T` is
+    defined as
 
     .. math::
 
@@ -63,9 +64,9 @@ class DoubleFactorization(Operation):
         T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
 
     The total number of gates and qubits for implementing the quantum phase estimation algorithm
-    for the given Hamiltonian can then be computed using the functions ``gate_cost`` and
-    ``qubit_cost`` with a target error that has the default value of chemical accuracy (0.0016 Ha)
-    here. The costs are computed using Eqs. (C39-C40) of
+    for the given Hamiltonian can then be computed using the functions :func:`~.gate_cost` and
+    :func:`~.qubit_cost` with a target error that has the default value of chemical accuracy
+    (0.0016 Ha) here. The costs are computed using Eqs. (C39-C40) of
     [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
     Args:
@@ -73,7 +74,7 @@ class DoubleFactorization(Operation):
         two_electron (tensor_like): two-electron integrals
         error (float): target error in the algorithm
         rank_r (int): rank of the first factorization of the two-electron integral tensor
-        rank_m (float): average rank of the second factorization of the two-electron integral tensor
+        rank_m (int): average rank of the second factorization of the two-electron integral tensor
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
         br (int): number of bits for ancilla qubit rotation
@@ -102,7 +103,7 @@ class DoubleFactorization(Operation):
         >>> algo.lamb  # the 1-Norm of the Hamiltonian
         52.987620428985856
 
-        >>> algo.gates  # estimated number of gates
+        >>> algo.gates  # estimated number of non-Clifford gates
         105550609
 
         >>> algo.qubits  # estimated number of qubits
@@ -260,7 +261,7 @@ class DoubleFactorization(Operation):
             n (int): number of molecular spin-orbitals
             rank_r (int): rank of the first factorization of the two-electron integral tensor
             rank_m (float): average rank of the second factorization of the two-electron tensor
-            rank_max (float): maximum rank of the second factorization of the two-electron tensor
+            rank_max (int): maximum rank of the second factorization of the two-electron tensor
             br (int): number of bits for ancilla qubit rotation
             alpha (int): number of bits for the keep register
             beta (int): number of bits for the rotation angles
@@ -291,7 +292,7 @@ class DoubleFactorization(Operation):
 
         if rank_max <= 0 or not isinstance(rank_max, int):
             raise ValueError(
-                "The maximum rank of the second factorization step must be a positive" " integer."
+                "The maximum rank of the second factorization step must be a positive integer."
             )
 
         if br <= 0 or not isinstance(br, int):
@@ -343,7 +344,7 @@ class DoubleFactorization(Operation):
             error (float): target error in the algorithm
             rank_r (int): rank of the first factorization of the two-electron integral tensor
             rank_m (float): average rank of the second factorization of the two-electron tensor
-            rank_max (float): maximum rank of the second factorization of the two-electron tensor
+            rank_max (int): maximum rank of the second factorization of the two-electron tensor
             br (int): number of bits for ancilla qubit rotation
             alpha (int): number of bits for the keep register
             beta (int): number of bits for the rotation angles
@@ -382,7 +383,7 @@ class DoubleFactorization(Operation):
 
         if rank_max <= 0 or not isinstance(rank_max, int):
             raise ValueError(
-                "The maximum rank of the second factorization step must be a positive" " integer."
+                "The maximum rank of the second factorization step must be a positive integer."
             )
 
         if br <= 0 or not isinstance(br, int):
@@ -411,7 +412,7 @@ class DoubleFactorization(Operation):
             error (float): target error in the algorithm
             rank_r (int): rank of the first factorization of the two-electron integral tensor
             rank_m (float): average rank of the second factorization of the two-electron tensor
-            rank_max (float): maximum rank of the second factorization of the two-electron tensor
+            rank_max (int): maximum rank of the second factorization of the two-electron tensor
             br (int): number of bits for ancilla qubit rotation
             alpha (int): number of bits for the keep register
             beta (int): number of bits for the rotation angles
@@ -450,7 +451,7 @@ class DoubleFactorization(Operation):
 
         if rank_max <= 0 or not isinstance(rank_max, int):
             raise ValueError(
-                "The maximum rank of the second factorization step must be a positive" " integer."
+                "The maximum rank of the second factorization step must be a positive integer."
             )
 
         if br <= 0 or not isinstance(br, int):

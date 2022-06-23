@@ -59,7 +59,7 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
 @pytest.mark.parametrize(
     ("one", "two", "n", "factors", "eigvals", "eigvecs", "rank_r", "rank_m", "rank_max"),
     [
-        (
+        (  # factors computed with openfermion (rearranged)
             one_h2,
             two_h2,
             4,
