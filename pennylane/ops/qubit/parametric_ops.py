@@ -661,7 +661,8 @@ class CPhaseShift00(Operation):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    .. note:: The first wire provided corresponds to the **control qubit** and controls
+        on the zero state :math:|0\rangle.
 
     **Details:**
 
@@ -697,6 +698,9 @@ class CPhaseShift00(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label="Rϕ(00)", cache=cache)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -818,8 +822,14 @@ class CPhaseShift00(Operation):
 
     def adjoint(self):
         return CPhaseShift00(-self.data[0], wires=self.wires)
+
     def pow(self, z):
-        return CPhaseShift00(self.data[0]*z, wires=self.wires)
+        return [CPhaseShift00(self.data[0] * z, wires=self.wires)]
+
+    @property
+    def control_values(self):
+        return "0"
+
     @property
     def control_wires(self):
         return self.wires[0:1]
@@ -836,7 +846,8 @@ class CPhaseShift01(Operation):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    .. note:: The first wire provided corresponds to the **control qubit** and controls
+        on the zero state :math:|0\rangle.
 
     **Details:**
 
@@ -872,6 +883,9 @@ class CPhaseShift01(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label="Rϕ(01)", cache=cache)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -989,6 +1003,13 @@ class CPhaseShift01(Operation):
     def adjoint(self):
         return CPhaseShift01(-self.data[0], wires=self.wires)
 
+    def pow(self, z):
+        return [CPhaseShift01(self.data[0] * z, wires=self.wires)]
+
+    @property
+    def control_values(self):
+        return "0"
+
     @property
     def control_wires(self):
         return self.wires[0:1]
@@ -1041,6 +1062,9 @@ class CPhaseShift10(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label="Rϕ(10)", cache=cache)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -1157,6 +1181,9 @@ class CPhaseShift10(Operation):
 
     def adjoint(self):
         return CPhaseShift10(-self.data[0], wires=self.wires)
+
+    def pow(self, z):
+        return [CPhaseShift10(self.data[0] * z, wires=self.wires)]
 
     @property
     def control_wires(self):
