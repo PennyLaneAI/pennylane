@@ -65,8 +65,11 @@
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* The `hilbert_schmidt` subroutine does not correctly perform the inverse of the operator V.
+[(#2774)](https://github.com/PennyLaneAI/pennylane/pull/2774)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+Guillermo Alonso-Linaje, David Ittah, Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
