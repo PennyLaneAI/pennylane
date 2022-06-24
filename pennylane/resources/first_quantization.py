@@ -55,12 +55,8 @@ class FirstQuantization(Operation):
 
         self.lamb = self.norm(self.n, self.eta, self.omega, self.error, self.br, self.charge)
 
-        self.gates = self.gate_cost(
-            self.n, self.eta, self.omega, self.error, self.lamb, self.br, self.charge
-        )
-        self.qubits = self.qubit_cost(
-            self.n, self.eta, self.omega, self.error, self.lamb, self.charge
-        )
+        self.gates = self.gate_cost(self.n, self.eta, self.omega, self.error, self.br, self.charge)
+        self.qubits = self.qubit_cost(self.n, self.eta, self.omega, self.error, self.charge)
 
         super().__init__(wires=range(self.qubits))
 
@@ -286,7 +282,7 @@ class FirstQuantization(Operation):
 
         return min(cost_f, cost_c)
 
-    def unitary_cost(self, n, eta, omega, error, lamb, br=7, charge=0):
+    def unitary_cost(self, n, eta, omega, error, br=7, charge=0):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary
         operator.
 
@@ -298,7 +294,6 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            lamb (float): 1-norm of the Hamiltonian
             br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
 
@@ -311,8 +306,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> lamb = 5128920.595980267
-        >>> unitary_cost(n, eta, omega, error, lamb)
+        >>> unitary_cost(n, eta, omega, error)
         12819
         """
         if n <= 0 or not isinstance(n, int):
@@ -327,15 +321,13 @@ class FirstQuantization(Operation):
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        if lamb <= 0.0:
-            raise ValueError("The 1-norm must be greater than zero.")
-
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
 
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
+        lamb = self.lamb
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
@@ -375,7 +367,7 @@ class FirstQuantization(Operation):
 
         return int(np.ceil(cost))
 
-    def estimation_cost(self, lamb, error):
+    def estimation_cost(self, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -383,7 +375,6 @@ class FirstQuantization(Operation):
         [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
         Args:
-            lamb (float): 1-norm of a second-quantized Hamiltonian
             error (float): target error in the algorithm
 
         Returns:
@@ -391,23 +382,21 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> cost = estimation_cost(72.49779513025341, 0.001)
+        >>> cost = estimation_cost(0.001)
         >>> print(cost)
         113880
         """
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        if lamb <= 0.0:
-            raise ValueError("The 1-norm must be greater than zero.")
-
+        lamb = self.lamb
         alpha = 0.01
         # qpe_error obtained to satisfy inequality (131)
         error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
 
         return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
-    def gate_cost(self, n, eta, omega, error, lamb, br=7, charge=0):
+    def gate_cost(self, n, eta, omega, error, br=7, charge=0):
         r"""Return the total number of Toffoli gates needed to implement the first quantization
         algorithm.
 
@@ -419,7 +408,6 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            lamb (float): 1-norm of the Hamiltonian
             br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
 
@@ -432,8 +420,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> lamb = 5128920.595980267
-        >>> gate_cost(n, eta, omega, error, lamb)
+        >>> gate_cost(n, eta, omega, error)
         10327614069516
 
         .. details::
@@ -473,21 +460,18 @@ class FirstQuantization(Operation):
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        if lamb <= 0.0:
-            raise ValueError("The 1-norm must be greater than zero.")
-
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
 
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        e_cost = self.estimation_cost(lamb, error)
-        u_cost = self.unitary_cost(n, eta, omega, error, lamb, br, charge)
+        e_cost = self.estimation_cost(error)
+        u_cost = self.unitary_cost(n, eta, omega, error, br, charge)
 
         return e_cost * u_cost
 
-    def qubit_cost(self, n, eta, omega, error, lamb, charge=0):
+    def qubit_cost(self, n, eta, omega, error, charge=0):
         r"""Return the number of ancilla qubits needed to implement the first quantization
         algorithm.
 
@@ -499,7 +483,6 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
-            lamb (float): 1-norm of the Hamiltonian
             charge (int): total electric charge of the system
 
         Returns:
@@ -511,8 +494,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 169.69608
         >>> error = 0.01
-        >>> lamb = 5128920.595980267
-        >>> qubit_cost(n, eta, omega, error, lamb)
+        >>> qubit_cost(n, eta, omega, error)
         4238
         """
         if n <= 0 or not isinstance(n, int):
@@ -527,12 +509,10 @@ class FirstQuantization(Operation):
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        if lamb <= 0.0:
-            raise ValueError("The 1-norm must be greater than zero.")
-
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
+        lamb = self.lamb
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
