@@ -37,6 +37,7 @@ terminal_meas = [
     qml.var(qml.PauliX("b")),
     qml.state(),
     qml.density_matrix(wires=[2, 3]),
+    qml.density_matrix(wires=["b", -231]),
 ]
 
 
