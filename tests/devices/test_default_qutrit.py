@@ -251,8 +251,14 @@ class TestApply:
         state = [1, 0, 0]
         qutrit_device_1_wire._state = np.array(state, dtype=qutrit_device_1_wire.C_DTYPE)
 
-        ops = [qml.QutritUnitary(U_shift, wires=0).inv(), qml.QutritUnitary(U_thadamard_01, wires=0)]
-        rotations = [qml.QutritUnitary(U_thadamard_01, wires=0), qml.QutritUnitary(U_shift, wires=0)]
+        ops = [
+            qml.QutritUnitary(U_shift, wires=0).inv(),
+            qml.QutritUnitary(U_thadamard_01, wires=0),
+        ]
+        rotations = [
+            qml.QutritUnitary(U_thadamard_01, wires=0),
+            qml.QutritUnitary(U_shift, wires=0),
+        ]
 
         qutrit_device_1_wire.apply(ops, rotations)
 
@@ -299,29 +305,26 @@ class TestDefaultQutritIntegration:
         (
             2,
             U_tswap @ np.kron(U_thadamard_01, np.eye(3)),
-            np.array([1, 1, 0, 0, 0, 0, 0, 0, 0]) / np.sqrt(2)
+            np.array([1, 1, 0, 0, 0, 0, 0, 0, 0]) / np.sqrt(2),
         ),
-        (
-            1,
-            U_clock @ U_shift @ U_thadamard_01,
-            np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)
-        ),
+        (1, U_clock @ U_shift @ U_thadamard_01, np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)),
         (
             3,
             np.kron(np.eye(3), U_tadd) @ np.kron(np.eye(3), np.kron(U_thadamard_01, np.eye(3))),
-            three_wire_final_state / np.sqrt(2)
+            three_wire_final_state / np.sqrt(2),
         ),
         (
             4,
-            np.kron(U_tadd, U_tswap) @ np.kron(U_thadamard_01, np.eye(27)) @ np.kron(np.eye(9), np.kron(U_thadamard_01, np.eye(3))),
-            four_wire_final_state / 2.0
+            np.kron(U_tadd, U_tswap)
+            @ np.kron(U_thadamard_01, np.eye(27))
+            @ np.kron(np.eye(9), np.kron(U_thadamard_01, np.eye(3))),
+            four_wire_final_state / 2.0,
         ),
     ]
 
     @pytest.mark.parametrize("num_wires, mat, expected_out", state_measurement_data)
     def test_qutrit_circuit_state_measurement(self, num_wires, mat, expected_out, tol):
-        """Tests if state returned by state function is correct
-        """
+        """Tests if state returned by state function is correct"""
         dev = qml.device("default.qutrit", wires=num_wires)
 
         @qml.qnode(dev)
@@ -536,7 +539,11 @@ class TestApplyOperationUnit:
             m.setattr(dev, "_apply_ops", {"QutritUnitary": supported_gate_application})
 
             test_state = np.array([1, 0, 0])
-            op = qml.QutritUnitary(U_shift, wires=0) if not inverse else qml.QutritUnitary(U_shift, wires=0).inv()
+            op = (
+                qml.QutritUnitary(U_shift, wires=0)
+                if not inverse
+                else qml.QutritUnitary(U_shift, wires=0).inv()
+            )
             spy_unitary = mocker.spy(dev, "_apply_unitary")
 
             res = dev._apply_operation(test_state, op)
