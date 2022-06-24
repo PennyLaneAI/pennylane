@@ -44,6 +44,8 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as abstract base class for qutrit devices.
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 <h3>Improvements</h3>
 
@@ -65,7 +67,15 @@
 
 <h3>Documentation</h3>
 
+* Optimization examples of using JAXopt and Optax with the JAX interface have
+  been added.
+  [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
+
 <h3>Bug fixes</h3>
+
+* `qml.grouping.group_observables` now works when individual wire
+  labels are iterable.
+  [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
 
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
@@ -74,4 +84,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey,
+Antal Száva, Moritz Willmann

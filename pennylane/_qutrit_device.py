@@ -23,14 +23,7 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import (
-    MeasurementProcess,
-    Sample,
-    Variance,
-    Expectation,
-    Probability,
-    State,
-)
+from pennylane.measurements import MeasurementProcess
 from pennylane import QubitDevice
 from pennylane.wires import Wires
 
