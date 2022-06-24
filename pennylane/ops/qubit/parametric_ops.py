@@ -2306,7 +2306,7 @@ class IsingXX(Operation):
     r"""
     Ising XX coupling gate
 
-    .. math:: XX(\phi) = \exp(-i \frac{\theta}{2} (X \otimes X)) =
+    .. math:: XX(\phi) = \exp(-i \frac{\phi}{2} (X \otimes X)) =
         \begin{bmatrix} =
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
@@ -2437,7 +2437,7 @@ class IsingYY(Operation):
     r"""
     Ising YY coupling gate
 
-    .. math:: \mathtt{YY}(\phi) = \exp(-i \frac{\theta}{2} (Y \otimes Y)) =
+    .. math:: \mathtt{YY}(\phi) = \exp(-i \frac{\phi}{2} (Y \otimes Y)) =
         \begin{bmatrix}
             \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
@@ -2567,7 +2567,7 @@ class IsingZZ(Operation):
     r"""
     Ising ZZ coupling gate
 
-    .. math:: ZZ(\phi) = \exp(-i \frac{\theta}{2} (Z \otimes Z) =
+    .. math:: ZZ(\phi) = \exp(-i \frac{\phi}{2} (Z \otimes Z)) =
         \begin{bmatrix}
             e^{-i \phi / 2} & 0 & 0 & 0 \\
             0 & e^{i \phi / 2} & 0 & 0 \\
@@ -2729,7 +2729,7 @@ class IsingXY(Operation):
     r"""
     Ising (XX + YY) coupling gate
 
-    .. math:: \mathtt{XY}(\phi) = \exp(-i \frac{\theta}{4} (X \otimes X + Y \otimes Y) =
+    .. math:: \mathtt{XY}(\phi) = \exp(-i \frac{\theta}{4} (X \otimes X + Y \otimes Y)) =
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
