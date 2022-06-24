@@ -88,11 +88,6 @@ class Sum(Operator):
             Default is True.
         id (str or None): id for the sum operator. Default is None.
 
-    Returns:
-        ~ops.op_math.Sum: the operator representing the sum of summands.
-
-    ..seealso:: :class:`~.ops.op_math.Sum`
-
     **Example**
 
     >>> summed_op = Sum(qml.PauliX(0), qml.PauliZ(0))
@@ -110,7 +105,7 @@ class Sum(Operator):
         We can combine parameterized operators, and support sums between operators acting on
         different wires.
 
-        >>> summed_op = op_sum(qml.RZ(1.23, wires=0), qml.Identity(wires=1))
+        >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.Identity(wires=1))
         >>> summed_op.matrix()
         array([[1.81677345-0.57695852j, 0.        +0.j        ,
                 0.        +0.j        , 0.        +0.j        ],
