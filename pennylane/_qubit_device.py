@@ -488,10 +488,7 @@ class QubitDevice(Device):
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
                     )
-                if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
-                        "Returning the state is not supported when using custom wire labels"
-                    )
+
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
@@ -681,6 +678,7 @@ class QubitDevice(Device):
             representing the reduced density matrix of the state prior to measurement.
         """
         state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
         return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
