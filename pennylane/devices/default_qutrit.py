@@ -55,7 +55,10 @@ class DefaultQutrit(QutritDevice):
         "QutritUnitary",
     }
 
-    observables = {"THermitian"}
+    observables = {
+        "THermitian",
+        "Identity",
+    }
 
     def __init__(
         self,
