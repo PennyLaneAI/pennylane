@@ -199,7 +199,7 @@ from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate
+from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, Richardson_extrapolate
 from .optimization import (
     cancel_inverses,
     commute_controlled,

@@ -21,7 +21,7 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms import mitigate_with_zne, poly_extrapolate, fold_global
+from pennylane.transforms import mitigate_with_zne, poly_extrapolate, Richardson_extrapolate, fold_global
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -354,18 +354,23 @@ class TestFoldGlobal:
         res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
 
-    @pytest.mark.jax
-    @pytest.mark.autograd
+
+class TestPolyfit:
+    """Testing that polyfit correctly fits polynomials"""
+    @pytest.mark.all_interfaces
     def test_polyfit(self):
-        """Testing the poly_extrapolator function in autograd"""
+        """Testing the poly_extrapolator function in"""
         import jax.numpy as jnp
+        import torch
+        import tensorflow as tf
 
-        x = jnp.arange(10, dtype="float32")
-        y = 0.5 * x**2
+        xs = [jnp.arange(10, dtype="float32"),
+              np.arange(10),
+              torch.arange(10, dtype=torch.float64),
+              tf.range(10, dtype="float64")]
 
-        assert qml.math.allclose(poly_extrapolate(x, y, 2), 0.0, atol=1e-6)
+        for x in xs:
+            y = 1.5 + 0.5 * x**2
 
-        x = np.arange(10)
-        y = 0.5 * x**2
-
-        assert qml.math.allclose(poly_extrapolate(x, y, 2), 0.0)
+            assert qml.math.allclose(poly_extrapolate(x, y, 2), 1.5, atol=1e-6)
+            assert qml.math.allclose(Richardson_extrapolate(x, y), 1.5, atol=1e-6)
