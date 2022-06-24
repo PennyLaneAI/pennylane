@@ -173,7 +173,7 @@ def mutual_info(qnode, wires0, wires1, base=None):
     >>> qml.grad(mutual_info_circuit)(np.array(0.4, requires_grad=True))
     1.2430067731198946
 
-    .. seealso:: :func:`~.qinfo.vn_entropy`, `pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
+    .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
