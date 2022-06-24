@@ -117,6 +117,7 @@ Non-parametrized gates
     ~pennylane.CY
     ~pennylane.SWAP
     ~pennylane.ISWAP
+    ~pennylane.ECR
     ~pennylane.SISWAP
     ~pennylane.SQISW
     ~pennylane.CSWAP
@@ -155,6 +156,7 @@ Parametrized gates
     ~pennylane.U2
     ~pennylane.U3
     ~pennylane.IsingXX
+    ~pennylane.IsingXY
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
 

@@ -58,7 +58,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     # pylint misidentifies autograd.builtins as a dict
-    # pylint:disable=no-member
+    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
@@ -261,11 +261,10 @@ def vjp(
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-        if device.capabilities().get("provides_jacobian", False):
-            # in the case where the device provides the jacobian,
-            # the output of grad_fn must be wrapped in a tuple in
-            # order to match the input parameters to _execute.
-            return (return_vjps,)
+        if device.short_name == "strawberryfields.gbs":  # pragma: no cover
+            # TODO: remove this exceptional case once the source of this issue
+            # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
+            return (return_vjps,)  # pragma: no cover
         return return_vjps
 
     return grad_fn

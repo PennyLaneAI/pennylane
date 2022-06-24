@@ -21,7 +21,7 @@ from collections import OrderedDict
 import numpy as np
 
 import pennylane as qml
-from pennylane import apply
+from pennylane import apply, adjoint
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
@@ -29,7 +29,7 @@ from pennylane.ops.qubit.attributes import (
     symmetric_over_all_wires,
 )
 
-
+# pylint: disable=too-many-statements
 @qfunc_transform
 def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
@@ -82,26 +82,26 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(qnode)())
-    0: ──S──Z─╭C──────────┤  <X>
-    1: ──S────╰Z──S─╭C────┤
+    0: ──S──Z─╭●──────────┤  <X>
+    1: ──S────╰Z──S─╭●────┤
     2: ──S──────────╰Z──S─┤
 
     >>> print(qml.draw(optimized_qnode)())
-    0: ──S⁻¹─╭C────┤  <X>
-    1: ──Z───╰Z─╭C─┤
-    2: ──Z──────╰Z─┤
+    0: ──S†─╭●────┤  <X>
+    1: ──Z──╰Z─╭●─┤
+    2: ──Z─────╰Z─┤
 
     Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
     If one would like avoiding this, it possible to give a custom quantum cost dictionary with a negative cost for
     ``pennylane.PauliZ``.
 
-    >>> my_cost = {"PauliZ": -1 , "S": 1, "S.inv": 1}
+    >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
     >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(optimized_qnode)())
-    0: ──S──Z─╭C────┤  <X>
-    1: ──Z────╰Z─╭C─┤
+    0: ──S──Z─╭●────┤  <X>
+    1: ──Z────╰Z─╭●─┤
     2: ──Z───────╰Z─┤
 
     Now we can consider a more complicated example with the following quantum circuit to be optimized
@@ -149,17 +149,17 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
     >>> print(qml.draw(qnode)())
     0: ─╭X──────────╭X────┤  <X>
-    1: ─│──╭C─╭X──Z─│──╭C─┤
-    2: ─│──│──╰C─╭C─├C─│──┤
-    3: ─├C─│───H─╰X─╰C─│──┤
-    4: ─╰C─╰X──────────╰X─┤
+    1: ─│──╭●─╭X──Z─│──╭●─┤
+    2: ─│──│──╰●─╭●─├●─│──┤
+    3: ─├●─│───H─╰X─╰●─│──┤
+    4: ─╰●─╰X──────────╰X─┤
 
     >>> print(qml.draw(optimized_qnode)())
     0: ─╭X──────────╭X─┤  <X>
     1: ─│─────╭X──Z─│──┤
-    2: ─│──╭C─╰C─╭C─├C─┤
-    3: ─├C─│───H─╰X─╰C─┤
-    4: ─╰C─╰X──────────┤
+    2: ─│──╭●─╰●─╭●─├●─┤
+    3: ─├●─│───H─╰X─╰●─┤
+    4: ─╰●─╰X──────────┤
 
     .. seealso:: :func:`~.pattern_matching`
 
@@ -243,8 +243,10 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
                             node = group.template_dag.get_node(index)
                             inst = copy.deepcopy(node.op)
+
                             inst._wires = Wires(wires)
-                            inst.adjoint()
+
+                            adjoint(apply, lazy=False)(inst)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
@@ -463,9 +465,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     # Controlled gate
     if len(node_c.op.control_wires) >= 1:
         circuit_control = node_c.op.control_wires
-        circuit_target = qml.wires.Wires(
-            [w for w in node_c.op.wires if w not in node_c.op.control_wires]
-        )
+        circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
         if control_base[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control
@@ -1528,7 +1528,9 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "RZ": 1,
                 "Hadamard": 1,
                 "T": 1,
+                "Adjoint(T)": 1,
                 "S": 1,
+                "Adjoint(S)": 1,
                 "CNOT": 2,
                 "CZ": 4,
                 "SWAP": 6,

@@ -37,6 +37,7 @@ terminal_meas = [
     qml.var(qml.PauliX("b")),
     qml.state(),
     qml.density_matrix(wires=[2, 3]),
+    qml.density_matrix(wires=["b", -231]),
 ]
 
 
@@ -221,8 +222,8 @@ class TestOtherTransforms:
         assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
-        assert isinstance(ops[1].then_op, qml.RX)
-        assert ops[1].then_op.data == [-r]  # adjoint
+        assert isinstance(ops[1].then_op, qml.ops.op_math.Adjoint)
+        assert isinstance(ops[1].then_op.base, qml.RX)
         assert ops[1].then_op.wires == target_wire
 
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
@@ -250,7 +251,7 @@ class TestOtherTransforms:
         assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
-        assert isinstance(ops[1].then_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(ops[1].then_op, qml.ops.op_math.ControlledOperation)
 
         assert len(ops[1].then_op.subtape.operations) == 1
         controlled_op = ops[1].then_op.subtape.operations[0]
@@ -259,7 +260,7 @@ class TestOtherTransforms:
         assert controlled_op.wires == target_wire
 
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
-        assert isinstance(ops[2].then_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(ops[2].then_op, qml.ops.op_math.ControlledOperation)
 
         assert len(ops[2].then_op.subtape.operations) == 1
         controlled_op = ops[2].then_op.subtape.operations[0]
@@ -286,7 +287,7 @@ class TestOtherTransforms:
         assert len(ops) == 2
         assert ops[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(ops[1], qml.transforms.control.ControlledOperation)
+        assert isinstance(ops[1], qml.ops.op_math.ControlledOperation)
         assert len(ops[1].subtape.operations) == 2
 
         op1 = ops[1].subtape.operations[0]

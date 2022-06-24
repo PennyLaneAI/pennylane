@@ -20,7 +20,7 @@ import types
 import pkg_resources
 
 import numpy as _np
-from semantic_version import Spec, Version
+from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
@@ -44,8 +44,19 @@ from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
+from pennylane.measurements import (
+    density_matrix,
+    measure,
+    expval,
+    probs,
+    sample,
+    state,
+    var,
+    vn_entropy,
+    mutual_info,
+)
 from pennylane.ops import *
+from pennylane.ops import adjoint, ctrl
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -55,7 +66,6 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
-    adjoint,
     adjoint_metric_tensor,
     batch_params,
     batch_input,
@@ -63,9 +73,7 @@ from pennylane.transforms import (
     batch_partial,
     cut_circuit,
     cut_circuit_mc,
-    ControlledOperation,
     compile,
-    ctrl,
     cond,
     defer_measurements,
     measurement_grouping,
@@ -91,6 +99,7 @@ from pennylane.debugging import snapshots
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
+import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
@@ -297,7 +306,7 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
+        if Version(version()) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."

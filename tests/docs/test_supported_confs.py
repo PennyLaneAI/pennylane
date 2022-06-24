@@ -29,7 +29,15 @@ import re
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import QuantumFunctionError
-from pennylane.measurements import State, Probability, Expectation, Variance, Sample
+from pennylane.measurements import (
+    State,
+    Probability,
+    Expectation,
+    Variance,
+    Sample,
+    VnEntropy,
+    MutualInfo,
+)
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -67,9 +75,20 @@ return_types = [
     "Hermitian",  # non-standard variant of expectation values
     "Projector",  # non-standard variant of expectation values
     Variance,
+    VnEntropy,
+    MutualInfo,
 ]
 
-grad_return_cases = ["StateCost", "DensityMatrix", Expectation, "Hermitian", "Projector", Variance]
+grad_return_cases = [
+    "StateCost",
+    "DensityMatrix",
+    Expectation,
+    "Hermitian",
+    "Projector",
+    Variance,
+    VnEntropy,
+    MutualInfo,
+]
 
 
 def get_qnode(interface, diff_method, return_type, shots, wire_specs):
@@ -116,6 +135,11 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
             return qml.expval(qml.Projector(np.array([1]), wires=single_meas_wire))
         elif return_type == Variance:
             return qml.var(qml.PauliZ(wires=single_meas_wire))
+        elif return_type == VnEntropy:
+            return qml.vn_entropy(wires=single_meas_wire)
+        elif return_type == MutualInfo:
+            wires1 = [w for w in wire_labels if w != single_meas_wire]
+            return qml.mutual_info(wires0=[single_meas_wire], wires1=wires1)
 
     return circuit
 
@@ -283,22 +307,13 @@ class TestSupportedConfs:
             "Hermitian",
             "Projector",
             Variance,
+            VnEntropy,
+            MutualInfo,
         ],
     )
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_backprop_none_shots(self, interface, return_type, wire_specs):
         """Test diff_method=backprop works for all interfaces when shots=None"""
-
-        # DensityMatrix doesn't work with torch at the moment
-        # TODO: github issue https://github.com/PennyLaneAI/pennylane/issues/2553
-        if interface == "torch" and return_type == "DensityMatrix":
-            with pytest.raises(IndexError):
-                circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
-                x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, return_type)
-            return
-
-        # correctness is already tested in other test files
         circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
         x = get_variable(interface, wire_specs)
         grad = compute_gradient(x, interface, circuit, return_type)
@@ -310,20 +325,13 @@ class TestSupportedConfs:
         """Test diff_method=backprop fails for all interfaces when shots>0"""
         msg = "Backpropagation is only supported when shots=None."
 
-        # DensityMatrix doesn't work with torch at the moment
-        # TODO: github issue https://github.com/PennyLaneAI/pennylane/issues/2553
-        if interface == "torch" and return_type == "DensityMatrix":
-            with pytest.raises(IndexError):
-                circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
-                x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, return_type)
-            return
-
         with pytest.raises(QuantumFunctionError, match=msg):
             circuit = get_qnode(interface, "backprop", return_type, 100, wire_specs)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", ["StateCost", "DensityMatrix", Probability, Variance])
+    @pytest.mark.parametrize(
+        "return_type", ["StateCost", "DensityMatrix", Probability, Variance, VnEntropy, MutualInfo]
+    )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_adjoint_nonexp(self, interface, return_type, shots, wire_specs):
@@ -368,7 +376,8 @@ class TestSupportedConfs:
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
-        "return_type", [Probability, Expectation, "Hermitian", "Projector", Variance]
+        "return_type",
+        [Probability, Expectation, "Hermitian", "Projector", Variance],
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -382,7 +391,9 @@ class TestSupportedConfs:
         grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
+    @pytest.mark.parametrize(
+        "return_type", ["StateCost", "StateVector", "DensityMatrix", VnEntropy, MutualInfo]
+    )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_paramshift_state(self, interface, return_type, shots, wire_specs):
@@ -398,7 +409,8 @@ class TestSupportedConfs:
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
-        "return_type", [Probability, Expectation, "Hermitian", "Projector", Variance]
+        "return_type",
+        [Probability, Expectation, "Hermitian", "Projector", Variance, VnEntropy, MutualInfo],
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
