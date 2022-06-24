@@ -170,22 +170,32 @@ def vjp(
     def _get_jac():
         if ans[1]:
             return ans[1]
-        elif "jacobian" in intermed_jac:
+
+        if "jacobian" in intermed_jac:
             return intermed_jac["jacobian"]
-        else:
-            jacs = []
-            for t in tapes:
-                g_tapes, fn = gradient_fn(t)
-                jacs.append(fn(qml.execute(g_tapes, device, None)))
-            intermed_jac["jacobian"] = jacs
-            return jacs
+
+        jacs = []
+        for t in tapes:
+            g_tapes, fn = gradient_fn(t)
+
+            with qml.tape.Unwrap(*g_tapes):
+                res, _ = execute_fn(g_tapes, **gradient_kwargs)
+                jacs.append(fn(res))
+
+        intermed_jac["jacobian"] = jacs
+        return jacs
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
         dy = [qml.math.T(d) for d in dy[0]]
-        if gradient_fn and gradient_fn.__name__ == "param_shift":
+
+        # TODO: could improve the following to cache higher-order derivatives
+        # too and not just on the last call of recursion (see recursive logic
+        # later below)
+        computing_jacobian = _n == max_diff
+        if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac()
         else:
             jacs = ans[1]
