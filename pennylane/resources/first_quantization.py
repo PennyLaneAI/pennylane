@@ -54,7 +54,7 @@ def success_prob(n, br):
     return p
 
 
-def norm_fq(eta, n, omega, error, br=7, charge=0):
+def norm(eta, n, omega, error, br=7, charge=0):
     r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
     The expressions needed for computing the norm are taken from
@@ -78,7 +78,7 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
     >>> n = 10000
     >>> omega = 1145.166
     >>> error = 0.001
-    >>> norm_fq(eta, n, omega, error)
+    >>> norm(eta, n, omega, error)
     1254385.059691027
 
     .. details::
@@ -212,7 +212,7 @@ def norm_fq(eta, n, omega, error, br=7, charge=0):
     return np.maximum(lambda_a, lambda_b) / p_eq
 
 
-def _cost_qrom_fq(lz):
+def _cost_qrom(lz):
     r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
 
     Args:
@@ -238,7 +238,7 @@ def _cost_qrom_fq(lz):
     return min(cost_f, cost_c)
 
 
-def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
+def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
 
     The expression for computing the cost is taken from Eq. (125) of
@@ -315,7 +315,7 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
         )
     )
 
-    e_r = _cost_qrom_fq(l_z)
+    e_r = _cost_qrom(l_z)
 
     # taken from Eq. (125)
     cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
@@ -327,7 +327,7 @@ def unitary_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     return int(np.ceil(cost))
 
 
-def estimation_cost_fq(lamb, error):
+def estimation_cost(lamb, error):
     r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
     phase estimation.
 
@@ -360,7 +360,7 @@ def estimation_cost_fq(lamb, error):
     return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
 
-def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
+def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
     r"""Return the total number of Toffoli gates needed to implement the first quantization
     algorithm.
 
@@ -435,13 +435,13 @@ def gate_cost_fq(n, eta, omega, error, lamb, br=7, charge=0):
     if not isinstance(charge, int):
         raise ValueError("system charge must be an integer.")
 
-    e_cost = estimation_cost_fq(lamb, error)
-    u_cost = unitary_cost_fq(n, eta, omega, error, lamb, br, charge)
+    e_cost = estimation_cost(lamb, error)
+    u_cost = unitary_cost(n, eta, omega, error, lamb, br, charge)
 
     return e_cost * u_cost
 
 
-def qubit_cost_fq(n, eta, omega, error, lamb, charge=0):
+def qubit_cost(n, eta, omega, error, lamb, charge=0):
     r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
 
     The expression for computing the cost is taken from Eq. (101) of

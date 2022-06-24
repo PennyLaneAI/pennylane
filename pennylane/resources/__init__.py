@@ -17,19 +17,12 @@ quantum algorithms.
 """
 from .factorization import factorize
 from .first_quantization import (
-    _cost_qrom_fq,
-    estimation_cost_fq,
-    gate_cost_fq,
-    norm_fq,
-    qubit_cost_fq,
-    success_prob,
-    unitary_cost_fq,
-)
-from .second_quantization import (
-    _qrom_cost,
+    _cost_qrom,
     estimation_cost,
     gate_cost,
     norm,
     qubit_cost,
+    success_prob,
     unitary_cost,
 )
+from .second_quantization import DoubleFactorization
