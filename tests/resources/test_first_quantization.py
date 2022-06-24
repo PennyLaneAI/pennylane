@@ -27,6 +27,39 @@ fq = qml.resources.FirstQuantization(n_fq, eta_fq, omega_fq)
 
 
 @pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "charge", "br"),
+    [
+        (10000, 156, 1145.166, 0.0016, 0, 7),
+    ],
+)
+def test_fq_params(n, eta, omega, error, charge, br):
+    r"""Test that the FirstQuantization class initiates correct parameters."""
+    est = qml.resources.FirstQuantization(n, eta, omega)
+
+    assert np.allclose(est.n, n)
+    assert np.allclose(est.eta, eta)
+    assert np.allclose(est.omega, omega)
+    assert np.allclose(est.error, error)
+    assert np.allclose(est.charge, charge)
+    assert np.allclose(est.br, br)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "lamb", "g_cost", "q_cost"),
+    [
+        (10000, 156, 1145.166, 281053.7561247674, 3386558458840, 3716),
+    ],
+)
+def test_fq_vals(n, eta, omega, lamb, g_cost, q_cost):
+    r"""Test that the FirstQuantization class computes correct attributes."""
+    est = qml.resources.FirstQuantization(n, eta, omega)
+
+    assert np.allclose(est.lamb, lamb)
+    assert np.allclose(est.gates, g_cost)
+    assert np.allclose(est.qubits, q_cost)
+
+
+@pytest.mark.parametrize(
     ("lz", "cost_ref"),
     [
         # the reference cost is obtained manually by computing the cost for a range of k values, as
