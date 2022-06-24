@@ -18,8 +18,13 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import DecompositionUndefinedError, GeneratorUndefinedError
-from pennylane.ops.op_math.controlled_class import Controlled, ControlledOperation
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    GeneratorUndefinedError,
+    Operator,
+    Operation,
+)
+from pennylane.ops.op_math.controlled_class import Controlled, ControlledOp
 from pennylane.wires import Wires
 
 
@@ -37,11 +42,11 @@ base_num_control_mats = [
 ]
 
 
-class TempOperator(qml.operation.Operator):
+class TempOperator(Operator):
     num_wires = 1
 
 
-class TempOperation(qml.operation.Operation):
+class TempOperation(Operation):
     num_wires = 1
 
 
@@ -55,19 +60,15 @@ class TestInheritanceMixins:
         op = Controlled(base, 1.2)
 
         assert isinstance(op, Controlled)
-        assert isinstance(op, qml.operation.Operator)
-        assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
-        assert not isinstance(op, ControlledOperation)
-
-        # checking we can call `dir` without problems
-        assert "num_params" in dir(op)
+        assert isinstance(op, Operator)
+        assert not isinstance(op, Operation)
+        assert not isinstance(op, ControlledOp)
 
     def test_operation(self):
-        """When the operation inherits from `Operation`, the `ControlledOperation` mixin should
+        """When the operation inherits from `Operation`, the `ControlledOp` mixin should
         be added and the Controlled should now have Operation functionality."""
 
-        class CustomOp(qml.operation.Operation):
+        class CustomOp(Operation):
             num_wires = 1
             num_params = 1
 
@@ -75,38 +76,9 @@ class TestInheritanceMixins:
         op = Controlled(base, 6.5)
 
         assert isinstance(op, Controlled)
-        assert isinstance(op, qml.operation.Operator)
-        assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
-        assert isinstance(op, ControlledOperation)
-
-        # check operation-specific properties made it into the mapping
-        assert "grad_recipe" in dir(op)
-        assert "control_wires" in dir(op)
-
-    def test_observable(self):
-        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
-
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
-
-        base = CustomObs(wires=0)
-        ob = Controlled(base, -1.2)
-
-        assert isinstance(ob, Controlled)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert isinstance(ob, qml.operation.Observable)
-        assert not isinstance(ob, ControlledOperation)
-
-        # Check some basic observable functionality
-        assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
-
-        # check the dir
-        assert "return_type" in dir(ob)
-        assert "grad_recipe" not in dir(ob)
+        assert isinstance(op, Operator)
+        assert isinstance(op, Operation)
+        assert isinstance(op, ControlledOp)
 
 
 class TestInitialization:
@@ -146,16 +118,17 @@ class TestInitialization:
         assert op.num_wires == 4
 
     def test_default_control_values(self):
-
+        """Test assignment of default control_values."""
         op = Controlled(self.temp_op, (0, 1))
         assert op.control_values == [True, True]
 
     def test_zero_one_control_values(self):
-
+        """Test assignment of provided control_values."""
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
         assert op.control_values == [False, True]
 
     def test_string_control_values(self):
+        """Test warning and conversion of string control_values."""
 
         with pytest.warns(UserWarning, match="Specifying control values as a string"):
             op = Controlled(self.temp_op, (0, 1), "01")
@@ -163,19 +136,29 @@ class TestInitialization:
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
-
+        """Test checking control_values are booleans."""
         with pytest.raises(AssertionError, match="control_values can only take on"):
             Controlled(self.temp_op, (0, 1), ["b", 2])
 
     def test_control_values_wrong_length(self):
-
+        """Test checking control_values length error."""
         with pytest.raises(AssertionError, match="control_values should be the same length"):
             Controlled(self.temp_op, (0, 1), [True])
 
     def test_target_control_wires_overlap(self):
-
+        """Test checking overlap of target wires and control_wires"""
         with pytest.raises(AssertionError, match="The control wires must be different"):
             Controlled(self.temp_op, "a")
+
+    def test_work_wires_overlap_target(self):
+        """Test checking work wires are not in target wires."""
+        with pytest.raises(AssertionError, match="Work wires must be different"):
+            Controlled(self.temp_op, "b", work_wires="a")
+
+    def test_work_wires_overlap_control(self):
+        """Test checking work wires are not in contorl wires."""
+        with pytest.raises(AssertionError, match="Work wires must be different."):
+            Controlled(self.temp_op, control_wires="b", work_wires="b")
 
 
 class TestProperties:
@@ -213,7 +196,7 @@ class TestProperties:
     def test_has_matrix(self, value):
         """Test that controlled defers has_matrix to base operator."""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(Operator):
             num_wires = 1
             has_matrix = value
 
@@ -224,7 +207,7 @@ class TestProperties:
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(Operator):
             num_wires = 1
             _queue_category = value
 
@@ -235,7 +218,7 @@ class TestProperties:
     def test_is_hermitian(self, value):
         """Test that controlled defers `is_hermitian` to base operator."""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(Operator):
             num_wires = 1
             is_hermitian = value
 
@@ -245,7 +228,7 @@ class TestProperties:
     def test_batching_properties(self):
         """Test that Adjoint batching behavior mirrors that of the base."""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(Operator):
             ndim_params = (0, 2)
             num_wires = 1
 
@@ -381,7 +364,7 @@ class TestMiscMethods:
 
 
 class TestOperationProperties:
-    """Test ControlledOperation specific properties."""
+    """Test ControlledOp specific properties."""
 
     def test_invert_controlled_op(self):
         """Test that in-place inversion of a power operator inverts the base operator."""
@@ -400,7 +383,7 @@ class TestOperationProperties:
         assert op.base_name == "CS"
 
     def test_inverse_setter(self):
-
+        """Teest that the inverse property can be set."""
         base = qml.T(0)
         op = Controlled(base, 1)
 
@@ -418,7 +401,7 @@ class TestOperationProperties:
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(Operation):
             num_wires = 1
             grad_method = gm
 
@@ -429,7 +412,7 @@ class TestOperationProperties:
     def test_basis(self):
         """Test that controlled mimics the basis attribute of the base op."""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(Operation):
             num_wires = 1
             basis = "Z"
 
@@ -645,13 +628,16 @@ class TestDecomposition:
 
 
 class TestArithmetic:
+    """Test arithmetic decomposition methods."""
 
     control_wires = qml.wires.Wires((3, 4))
     work_wires = qml.wires.Wires("aux")
     control_values = [True, False]
 
     def test_adjoint(self):
-        class DummyOp(qml.operation.Operator):
+        """Test the adjoint method for Controlled Operators."""
+
+        class DummyOp(Operator):
             num_wires = 1
 
             def adjoint(self):
@@ -670,7 +656,9 @@ class TestArithmetic:
 
     @pytest.mark.parametrize("z", (2, -1, 0.5))
     def test_pow(self, z):
-        class DummyOp(qml.operation.Operator):
+        """Test the pow method for Controlled Operators."""
+
+        class DummyOp(Operator):
             num_wires = 1
 
             def pow(self, z):

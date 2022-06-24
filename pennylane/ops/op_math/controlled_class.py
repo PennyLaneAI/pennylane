@@ -27,7 +27,6 @@ from pennylane import operation
 from pennylane.queuing import QueuingContext
 from pennylane.wires import Wires
 
-
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(operation.Operator):
     """Symbolic operator denoting a controlled operator.
@@ -42,6 +41,8 @@ class Controlled(operation.Operator):
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     **Example:**
+
+
 
     >>> base = qml.RX(1.234, 2)
     >>> op = Controlled(base, (0,1))
@@ -76,10 +77,6 @@ class Controlled(operation.Operator):
 
     """
 
-    _operation_type = None  # type if base inherits from operation and not observable
-    _operation_observable_type = None  # type if base inherits from both operation and observable
-    _observable_type = None  # type if base inherits from observable and not oepration
-
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
         """If base is an ``Operation``, then the a ``ControlledOp`` should be used instead."""
@@ -108,6 +105,8 @@ class Controlled(operation.Operator):
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
         control_wires = Wires(control_wires)
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+
         if control_values is None:
             control_values = [True] * len(control_wires)
         else:
@@ -129,10 +128,14 @@ class Controlled(operation.Operator):
             len(Wires.shared_wires([base.wires, control_wires])) == 0
         ), "The control wires must be different from the base operation wires."
 
+        assert (
+            len(Wires.shared_wires([work_wires, base.wires + control_wires])) == 0
+        ), "Work wires must be different the control_wires and base operation wires."
+
         self.hyperparameters["base"] = base
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["control_values"] = control_values
-        self.hyperparameters["work_wires"] = Wires([]) if work_wires is None else Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
 
         self._name = f"C{base.name}"
 
