@@ -973,26 +973,25 @@ class QubitDevice(Device):
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         return np.squeeze(np.var(samples, axis=0))
 
-    def _samples_to_counts(self, samples, no_observable_provided):
-        """Group the obtained samples into a dictionary.
-
-        **Example**
-
-            >>> samples
-            tensor([[0, 0, 1],
-                    [0, 0, 1],
-                    [1, 1, 1]], requires_grad=True)
-            >>> self._samples_to_counts(samples)
-            {'111':1, '001':2}
-        """
-        if no_observable_provided:
-            # We need to extract element from an assay before converting to str
-            # to satisfy the case of jax interface, as jax does not support str.
-            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-        states, counts = np.unique(samples, return_counts=True)
-        return dict(zip(states, counts))
-
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        def _samples_to_counts(samples, no_observable_provided):
+            """Group the obtained samples into a dictionary.
+
+            **Example**
+
+                >>> samples
+                tensor([[0, 0, 1],
+                        [0, 0, 1],
+                        [1, 1, 1]], requires_grad=True)
+                >>> self._samples_to_counts(samples)
+                {'111':1, '001':2}
+            """
+            if no_observable_provided:
+                # We need to extract element from an assay before converting to str
+                # to satisfy the case of jax interface, as jax does not support str.
+                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            states, counts = np.unique(samples, return_counts=True)
+            return dict(zip(states, counts))
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
@@ -1032,12 +1031,12 @@ class QubitDevice(Device):
 
         if bin_size is None:
             if counts:
-                return self._samples_to_counts(samples, no_observable_provided)
+                return _samples_to_counts(samples, no_observable_provided)
             return samples
         if counts:
             shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
             return [
-                self._samples_to_counts(bin_sample, no_observable_provided)
+                _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
         return (
