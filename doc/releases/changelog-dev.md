@@ -48,6 +48,10 @@
 
 <h3>Improvements</h3>
 
+* The `qml.state` and `qml.density_matrix` measurements now support custom wire
+  labels.
+  [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
+
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 

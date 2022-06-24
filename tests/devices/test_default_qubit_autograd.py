@@ -264,22 +264,22 @@ class TestPassthruIntegration:
         res = grad_fn(p)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = qml.device("default.qubit.autograd", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.RY(a, wires=wires[0])
+            return qml.state()
 
         a = np.array(0.54, requires_grad=True)
 
         def cost(a):
             """A function of the device quantum state, as a function
             of input QNode parameters."""
-            circuit(a)
-            res = np.abs(dev.state) ** 2
+            res = np.abs(circuit(a)) ** 2
             return res[1] - res[0]
 
         grad = qml.grad(cost)(a)
