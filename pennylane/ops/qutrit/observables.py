@@ -16,9 +16,10 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
-import pennylane as qml     # pylint: disable=unused-import
+import pennylane as qml  # pylint: disable=unused-import
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
+
 
 class THermitian(Hermitian):
     r"""
