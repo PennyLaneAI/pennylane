@@ -677,3 +677,28 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
+
+    def test_tf_function_channel_ops(self):
+        """Test that tf.function works for a QNode with channel ops"""
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(p):
+            qml.AmplitudeDamping(p, wires=0)
+            qml.GeneralizedAmplitudeDamping(p, p, wires=0)
+            qml.PhaseDamping(p, wires=0)
+            qml.DepolarizingChannel(p, wires=0)
+            qml.BitFlip(p, wires=0)
+            qml.ResetError(p, p, wires=0)
+            qml.PauliError("X", p, wires=0)
+            qml.PhaseFlip(p, wires=0)
+            qml.ThermalRelaxationError(p, p, p, 0.0001, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        vcircuit = tf.function(circuit)
+
+        x = tf.Variable(0.005)
+        res = vcircuit(x)
+
+        # compare results to results of non-decorated circuit
+        assert np.allclose(circuit(x), res)
