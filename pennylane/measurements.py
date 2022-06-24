@@ -28,8 +28,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.ops.op_math import Sum
-
 # =============================================================================
 # ObservableReturnTypes types
 # =============================================================================
@@ -656,7 +654,7 @@ def sample(op=None, wires=None):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    if isinstance(op, Sum):
+    if isinstance(op, qml.ops.Sum):  # pylint: disable=no-member
         raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
 
     if wires is not None:
@@ -743,7 +741,7 @@ def probs(wires=None, op=None):
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, Sum):
+    if isinstance(op, qml.ops.Sum):  # pylint: disable=no-member
         raise qml.QuantumFunctionError(
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
