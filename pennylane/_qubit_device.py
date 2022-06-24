@@ -987,8 +987,10 @@ class QubitDevice(Device):
                 {'111':1, '001':2}
             """
             if no_observable_provided:
-                # We need to extract element from an assay before converting to str
-                # to satisfy the case of jax interface, as jax does not support str.
+                # If we describe a state vector, we need to convert its list representation
+                # into string (it's hashable and good-looking).
+                # Before converting to str, we need to extract elements from arrays
+                # to satisfy the case of jax interface, as jax arrays do not support str.
                 samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
