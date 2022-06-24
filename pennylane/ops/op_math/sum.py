@@ -81,7 +81,7 @@ class Sum(Operator):
     r"""Symbolic operator representing the sum of operators.
 
     Args:
-        summands (tuple[~.operation.Operators]): a tuple of operators which will be summed together.
+        summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
