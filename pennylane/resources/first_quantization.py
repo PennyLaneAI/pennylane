@@ -22,8 +22,35 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FirstQuantization(Operation):
-    """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
+    r"""Contains the functionality for estimating the number of non-Clifford gates and logical qubits
     for quantum algorithms in first quantization using a plane-wave basis.
+
+    To estimate the gate and qubit costs for implementing this method, the number of plane waves,
+    the number of electrons and the unit cell volume need to be defined. Once these parameters are
+    defined, the costs can be computed using the functions :func:`~.gate_cost` and
+    :func:`~.qubit_cost` with a target error that has the default value of chemical accuracy
+    (0.0016 Ha) here.
+
+    The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
+    error following Eq. (131) of
+    `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such that
+
+    .. math::
+        \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
+
+    where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
+    :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in Eqs.
+    (132-134) of
+    `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+
+    Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with
+    a default value of :math:`\alpha = 0.01` and obtain
+
+    .. math::
+        \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
+
+    Note that the user only needs to define the target algorithm error :math:`\epsilon`. The error
+    distribution takes place inside the functions.
 
     Args:
         n (int): number of basis states
@@ -32,6 +59,29 @@ class FirstQuantization(Operation):
         error (float): target error in the algorithm
         charge (int): total electric charge of the system
         br (int): number of bits for ancilla qubit rotation
+
+    .. details::
+        :title: Usage Details
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane import numpy as np
+
+            n = 10000
+            eta = 156
+            omega = 1145.166
+
+            algo = DoubleFactorization(n, eta, omega)
+
+        >>> algo.lamb  # the 1-Norm of the Hamiltonian
+        281053.7561435654
+
+        >>> algo.gates  # estimated number of non-Clifford gates
+        3386558458840
+
+        >>> algo.qubits  # estimated number of qubits
+        3716
     """
 
     num_wires = AnyWires
@@ -422,31 +472,6 @@ class FirstQuantization(Operation):
         >>> error = 0.01
         >>> gate_cost(n, eta, omega, error)
         10327614069516
-
-        .. details::
-            :title: Theory
-
-            The target algorithm error, :math:`\epsilon`, is distributed among four different
-            sources of error following Eq. (131) of
-            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
-            such that
-
-            .. math::
-                \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
-
-            where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
-            :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined
-            in Eqs. (132-134) of
-            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
-
-            Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
-            with a default value of :math:`\alpha = 0.01` and obtain
-
-            .. math::
-                \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
-
-            Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
-            error distribution takes place inside the functions.
         """
         if n <= 0:
             raise ValueError("The number of planewaves must be a positive number.")
