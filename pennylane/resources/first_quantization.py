@@ -101,8 +101,8 @@ class FirstQuantization(Operation):
         r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
         The expressions needed for computing the norm are taken from
-        [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_]. The
-        norm is computed assuming that amplitude ampliﬁcation is performed.
+        [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+        The norm is computed assuming that amplitude ampliﬁcation is performed.
 
         Args:
             n (int): number of basis states
@@ -132,7 +132,8 @@ class FirstQuantization(Operation):
             lattice vectors, :math:`G_0`.
 
             For :math:`\lambda_{\nu}` defined in Eq. (25) of
-            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ as
+            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+            as
 
             .. math::
 
@@ -162,10 +163,10 @@ class FirstQuantization(Operation):
 
                 \lambda^{1}_{\nu} = \lambda_{\nu} + \epsilon_l,
 
-            where :math:`\epsilon_l` is simply defined as the difference of :math:`\lambda^{1}_{\nu}`
-            and :math:`\lambda_{\nu}`. We follow Eq. (113) of
-            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ to
-            derive an upper bound for its absolute value:
+            where :math:`\epsilon_l` is simply defined as the difference of
+            :math:`\lambda^{1}_{\nu}` and :math:`\lambda_{\nu}`. We follow Eq. (113) of
+            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+            to derive an upper bound for its absolute value:
 
             .. math::
 
@@ -286,7 +287,8 @@ class FirstQuantization(Operation):
         return min(cost_f, cost_c)
 
     def unitary_cost(self, n, eta, omega, error, lamb, br=7, charge=0):
-        r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
+        r"""Return the number of Toffoli gates needed to implement the qubitization unitary
+        operator.
 
         The expression for computing the cost is taken from Eq. (125) of
         [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
@@ -437,17 +439,17 @@ class FirstQuantization(Operation):
         .. details::
             :title: Theory
 
-            The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-            error following Eq. (131) of
-            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such
-            that
+            The target algorithm error, :math:`\epsilon`, is distributed among four different
+            sources of error following Eq. (131) of
+            `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+            such that
 
             .. math::
                 \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
 
             where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
-            :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
-            Eqs. (132-134) of
+            :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined
+            in Eqs. (132-134) of
             `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
 
             Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon`
@@ -486,7 +488,8 @@ class FirstQuantization(Operation):
         return e_cost * u_cost
 
     def qubit_cost(self, n, eta, omega, error, lamb, charge=0):
-        r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
+        r"""Return the number of ancilla qubits needed to implement the first quantization
+        algorithm.
 
         The expression for computing the cost is taken from Eq. (101) of
         [`arXiv:2204.11890v1 <https://arxiv.org/abs/2204.11890v1>`_].
@@ -537,7 +540,8 @@ class FirstQuantization(Operation):
         # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
         n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
 
-        # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021), set to 0.01 of the algorithm error
+        # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021),
+        # set to 0.01 of the algorithm error
         error_t = alpha * error
         error_r = alpha * error
         error_m = alpha * error
