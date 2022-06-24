@@ -890,6 +890,8 @@ def vn_entropy(wires, log_base=None):
         Calculating the derivative of :func:`~.vn_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
@@ -941,9 +943,7 @@ def mutual_info(wires0, wires1, log_base=None):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso::
-
-        :func:`~.vn_entropy`
+    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
     # the subsystems cannot overlap
     if len([wire for wire in wires0 if wire in wires1]) > 0:
