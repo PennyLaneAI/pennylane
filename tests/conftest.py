@@ -174,6 +174,7 @@ def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
+
 @pytest.fixture
 def tear_down_thermitian():
     yield None
