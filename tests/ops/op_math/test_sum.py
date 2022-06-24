@@ -137,6 +137,18 @@ class TestInitialization:
         sum_op = op_sum(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
         assert sum_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_terms(self, ops_lst):
+        sum_op = Sum(*ops_lst)
+        coeff, ops = sum_op.terms()
+
+        assert coeff == [1.0, 1.0, 1.0]
+
+        for op1, op2 in zip(ops, ops_lst):
+            assert op1.name == op2.name
+            assert op1.wires == op2.wires
+            assert op1.data == op2.data
+
     def test_ndim_params_raises_error(self):
         sum_op = op_sum(qml.PauliX(0), qml.Identity(1))
 
