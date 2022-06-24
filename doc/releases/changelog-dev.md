@@ -55,19 +55,17 @@
   get the matrix, eigenvalues, terms, diagonalizing gates and more. 
 
   ```
-  >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+  >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(0))
   >>> summed_op
   PauliX(wires=[0]) + PauliZ(wires=[0])
-  >>>
   >>> qml.matrix(summed_op)
   array([[ 1,  1],
          [ 1, -1]])
-  >>>
   >>> summed_op.terms()
   ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
   ```
   
-  The `summed_op` can also be used inside a `qnode` as a measurement process. 
+  The `summed_op` can also be used inside a `qnode` as an observable. 
   If the circuit is parameterized, then we can also differentiate through the 
   sum observable. 
   
