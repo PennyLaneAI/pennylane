@@ -44,6 +44,7 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as abstract base class for qutrit devices.
+[(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
@@ -54,6 +55,24 @@
 
 * The `default.mixed` device now supports backpropagation with the `"jax"` interface.
   [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+
+* Quantum channels such as `qml.BitFlip` now support abstract tensors. This allows
+  their usage inside QNodes decorated by `tf.function`, `jax.jit`, or `jax.vmap`:
+
+  ```python
+  dev = qml.device("default.mixed", wires=1)
+
+  @qml.qnode(dev, diff_method="backprop", interface="jax")
+  def circuit(t):
+      qml.PauliX(wires=0)
+      qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> x = jnp.array([0.8, 1.0, 1.2])
+  >>> jax.vmap(circuit)(x)
+  DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
+  ```
 
 <h3>Breaking changes</h3>
 
