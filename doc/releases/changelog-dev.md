@@ -74,4 +74,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey, Antal Száva, Moritz Willmann
