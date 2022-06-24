@@ -707,7 +707,7 @@ class TestCounts:
         assert res == {"000": n_shots}
 
     def test_counts_operator_jax(self, tol):
-        "Check jax interface with observable measurment counts"
+        "Check jax interface with observable measurement counts"
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -731,7 +731,7 @@ class TestCounts:
         assert res == {"000": n_shots}
 
     def test_counts_operator_tf(self, tol):
-        "Check TensorFlow interface with observable measurment counts"
+        "Check TensorFlow interface with observable measurement counts"
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -755,7 +755,7 @@ class TestCounts:
         assert res == {"000": n_shots}
 
     def test_counts_operator_torch(self, tol):
-        "Check pyTorch interface with observable measurment counts"
+        "Check pyTorch interface with observable measurement counts"
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -765,6 +765,84 @@ class TestCounts:
 
         res = circuit()
         assert res == {1: n_shots}
+
+    def test_counts_state_jax_binned(self, tol):
+        "Check jax interface with state vector counts"
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev, inteface="jax")
+        def circuit():
+            return qml.sample(counts=True)
+
+        res = circuit()
+        assert res[0] == {"000": shot_vec[0]}
+        assert res[1] == {"000": shot_vec[1]}
+
+    def test_counts_operator_jax_binned(self, tol):
+        "Check jax interface with observable measurement counts"
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev, inteface="jax")
+        def circuit():
+            return qml.sample(qml.PauliZ(0), counts=True)
+
+        res = circuit()
+        assert res[0] == {1: shot_vec[0]}
+        assert res[1] == {1: shot_vec[1]}
+
+    def test_counts_state_tf_binned(self, tol):
+        "Check TensorFlow interface with state vector counts"
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev, inteface="tf")
+        def circuit():
+            return qml.sample(counts=True)
+
+        res = circuit()
+        assert res[0] == {"000": shot_vec[0]}
+        assert res[1] == {"000": shot_vec[1]}
+
+    def test_counts_operator_tf_binned(self, tol):
+        "Check TensorFlow interface with observable measurement counts"
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev, inteface="tf")
+        def circuit():
+            return qml.sample(qml.PauliZ(0), counts=True)
+
+        res = circuit()
+        assert res[0] == {1: shot_vec[0]}
+        assert res[1] == {1: shot_vec[1]}
+
+    def test_counts_state_torch_binned(self, tol):
+        "Check pyTorch interface with state vector counts"
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev, inteface="torch")
+        def circuit():
+            return qml.sample(counts=True)
+
+        res = circuit()
+        assert res[0] == {"000": shot_vec[0]}
+        assert res[1] == {"000": shot_vec[1]}
+
+    def test_counts_operator_torch_binned(self, tol):
+        "Check pyTorch interface with observable measurement counts"
+        shot_vec = (10, 10)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+
+        @qml.qnode(dev, inteface="torch")
+        def circuit():
+            return qml.sample(qml.PauliZ(0), counts=True)
+
+        res = circuit()
+        assert res[0] == {1: shot_vec[0]}
+        assert res[1] == {1: shot_vec[1]}
 
 
 class TestMeasure:
