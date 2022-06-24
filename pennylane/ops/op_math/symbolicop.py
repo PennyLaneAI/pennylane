@@ -21,7 +21,7 @@ from pennylane.queuing import QueuingContext
 
 
 class SymbolicOp(Operator):
-    """Base class for single-operator Symbolic Operators.
+    """Developer-facing base class for single-operator symbolic operators.
 
     Args:
         base (~.operation.Operator): The base operation that is modified symbolicly
@@ -29,13 +29,24 @@ class SymbolicOp(Operator):
             recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
+
+    This *developer-facing* class can serve as a parent to single base symbolic operators, such as
+    :class:`~.ops.op_math.Adjoint` and :class:`~.ops.op_math.Pow`.
+
+    New symbolic operators can inherit from this class to recieve some common default behavior, such as
+    deferring properties to the the base class, copying the base class during a shallow copy, and updating
+    the metadata of the base operator during queueing.
+
+    The child symbolic operator should define the `_name` property during initialization and define any
+    relevant representations, such as :meth:`~.operation.Operator.matrix`, :meth:`~.operation.Operator.diagonalizing_gates`,
+    :meth:`~.operation.Operator.eigvals`, and :meth:`~.operation.Operator.decomposition`.
     """
 
     _name = "Symbolic"
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
-        # this method needs to be overwritten becuase the base must be copied too.
+        # this method needs to be overwritten because the base must be copied too.
         copied_op = object.__new__(type(self))
         # copied_op must maintain inheritance structure of self
         # Relevant for symbolic ops that mix in operation-specific components.
@@ -45,7 +56,7 @@ class SymbolicOp(Operator):
                 setattr(copied_op, attr, value)
 
         copied_op._hyperparameters = copy(self._hyperparameters)
-        copied_op.hyperparameters["base"] = self.base.__copy__()
+        copied_op._hyperparameters["base"] = copy(self.base)
 
         return copied_op
 
