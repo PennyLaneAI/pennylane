@@ -37,3 +37,5 @@ to verify and test quantum gradient computations.
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
+
+from .tape_translator import TapeTranslator, DefaultTranslator
