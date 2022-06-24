@@ -21,7 +21,7 @@ simulation of qutrit-based quantum computing.
 import functools
 import numpy as np
 
-import pennylane as qml # pylint: disable=unused-import
+import pennylane as qml  # pylint: disable=unused-import
 from pennylane import QutritDevice
 from pennylane.wires import WireError  # pylint: disable=unused-import
 from .._version import __version__
