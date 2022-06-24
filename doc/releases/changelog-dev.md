@@ -49,6 +49,9 @@
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
 
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
+
 <h3>Improvements</h3>
 
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
@@ -86,5 +89,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Antal Száva,
-Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey,
+Antal Száva, Moritz Willmann
