@@ -113,5 +113,5 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
-    "add"
+    "add",
 ]

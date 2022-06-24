@@ -16,14 +16,16 @@ Unit tests for the Sum arithmetic class of qubit operations
 """
 import pytest
 import numpy as np
+from copy import copy
 import pennylane as qml
 from pennylane import math
 import pennylane.numpy as qnp
 
-from pennylane.ops.op_math import Sum, op_sum
-from pennylane.ops.op_math.sum import _sum
+from pennylane.wires import Wires
 from pennylane import QuantumFunctionError
-from pennylane.operation import MatrixUndefinedError
+from pennylane.ops.op_math import Sum, op_sum
+from pennylane.ops.op_math.sum import _sum  # pylint: disable=protected-access
+from pennylane.operation import MatrixUndefinedError, DecompositionUndefinedError
 import gate_data as gd  # a file containing matrix rep of each gate
 
 no_mat_ops = (
@@ -68,6 +70,22 @@ param_ops = (
     (qml.IsingZZ, gd.IsingZZ),
 )
 
+ops = (
+    (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
+    (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
+    (
+        qml.IsingXX(4.56, wires=[2, 3]),
+        qml.Toffoli(wires=[1, 2, 3]),
+        qml.Rot(0.34, 1.0, 0, wires=0),
+    ),
+)
+
+ops_rep = (
+    "PauliX(wires=[0]) + PauliZ(wires=[0]) + Hadamard(wires=[0])",
+    "CNOT(wires=[0, 1]) + RX(1.23, wires=[1]) + Identity(wires=[0])",
+    "IsingXX(4.56, wires=[2, 3]) + Toffoli(wires=[1, 2, 3]) + Rot(0.34, 1.0, 0, wires=[0])",
+)
+
 
 def compare_and_expand_mat(mat1, mat2):
     """Helper function which takes two square matrices (of potentially different sizes)
@@ -87,6 +105,79 @@ def compare_and_expand_mat(mat1, mat2):
         return larger_mat, smaller_mat
 
     return smaller_mat, larger_mat
+
+
+class TestInitialization:
+    @pytest.mark.parametrize("id", ("foo", "bar"))
+    def test_init_sum_op(self, id):
+        sum_op = op_sum(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True, id=id)
+
+        assert sum_op.wires == Wires((0, "a"))
+        assert sum_op.num_wires == 2
+        assert sum_op.name == "Sum"
+        assert sum_op.id == id
+
+        assert sum_op.data == [[], [0.23]]
+        assert sum_op.parameters == [[], [0.23]]
+        assert sum_op.num_params == 1
+
+    def test_raise_error_fewer_then_2_summands(self):
+        with pytest.raises(ValueError, match="Require at least two operators to sum;"):
+            sum_op = op_sum(qml.PauliX(0))
+
+    def test_queue_idx(self):
+        sum_op = op_sum(qml.PauliX(0), qml.Identity(1))
+        assert sum_op.queue_idx is None
+
+    def test_parameters(self):
+        sum_op = op_sum(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
+        assert sum_op.parameters == [[9.87], [1.23, 4.0, 5.67]]
+
+    def test_data(self):
+        sum_op = op_sum(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
+        assert sum_op.data == [[9.87], [1.23, 4.0, 5.67]]
+
+    def test_ndim_params_raises_error(self):
+        sum_op = op_sum(qml.PauliX(0), qml.Identity(1))
+
+        with pytest.raises(
+            ValueError,
+            match="Dimension of parameters is not currently implemented for Sum operators.",
+        ):
+            sum_op.ndim_params()
+
+    def test_batch_size_raises_error(self):
+        sum_op = op_sum(qml.PauliX(0), qml.Identity(1))
+
+        with pytest.raises(ValueError, match="Batch size is not defined for Sum operators."):
+            sum_op.batch_size()
+
+    def test_decomposition_raises_error(self):
+        sum_op = op_sum(qml.PauliX(0), qml.Identity(1))
+
+        with pytest.raises(DecompositionUndefinedError):
+            sum_op.decomposition()
+
+
+class TestMscMethods:
+    @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
+    def test_repr(self, ops_lst, ops_rep):
+        sum_op = Sum(*ops_lst)
+        assert ops_rep == sum_op.__repr__()
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_copy(self, ops_lst):
+        sum_op = Sum(*ops_lst)
+        copied_op = copy(sum_op)
+
+        assert sum_op.id == copied_op.id
+        assert sum_op.data == copied_op.data
+        assert sum_op.wires == copied_op.wires
+
+        for s1, s2 in zip(sum_op.summands, copied_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
 
 
 class TestMatrix:
@@ -327,17 +418,6 @@ class TestMatrix:
 
 
 class TestProperties:
-
-    ops = (
-        (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
-        (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
-        (
-            qml.IsingXX(4.56, wires=[2, 3]),
-            qml.Toffoli(wires=[1, 2, 3]),
-            qml.Rot(0.34, 1.0, 0, wires=0),
-        ),
-    )
-
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_params(self, ops_lst):
         """Test num_params property updates correctly."""
