@@ -53,7 +53,7 @@ class FirstQuantization(Operation):
         self.charge = charge
         self.br = br
 
-        self.lamb = self.norm(self.eta, self.n, self.omega, self.error, self.br, self.charge)
+        self.lamb = self.norm(self.n, self.eta, self.omega, self.error, self.br, self.charge)
 
         self.gates = self.gate_cost(
             self.n, self.eta, self.omega, self.error, self.lamb, self.br, self.charge
@@ -97,7 +97,7 @@ class FirstQuantization(Operation):
 
         return p
 
-    def norm(self, eta, n, omega, error, br=7, charge=0):
+    def norm(self, n, eta, omega, error, br=7, charge=0):
         r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
         The expressions needed for computing the norm are taken from
@@ -105,8 +105,8 @@ class FirstQuantization(Operation):
         norm is computed assuming that amplitude ampliﬁcation is performed.
 
         Args:
-            eta (int): number of electrons
             n (int): number of basis states
+            eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
             br (int): number of bits for ancilla qubit rotation
@@ -117,11 +117,11 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> eta = 156
         >>> n = 10000
+        >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.001
-        >>> norm(eta, n, omega, error)
+        >>> norm(n, eta, omega, error)
         1254385.059691027
 
         .. details::
