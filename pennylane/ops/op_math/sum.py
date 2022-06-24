@@ -119,7 +119,7 @@ class Sum(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *summands, do_queue=True, id=None):
+    def __init__(self, *summands, do_queue=True, id=None):  # pylint: disable=super-init-not-called
         """Initialize a Symbolic Operator class corresponding to the Sum of operations."""
         self._name = "Sum"
         self._id = id
