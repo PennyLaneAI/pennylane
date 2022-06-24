@@ -72,7 +72,6 @@ def test_unitary_cost(n, eta, omega, error, br, charge, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "br", "charge"),
     [
-        (10000.5, 156, 1145.166, 0.001, 7, 0),
         (-10000, 156, 1145.166, 0.001, 7, 0),
         (10000, 156.5, 1145.166, 0.001, 7, 0),
         (10000, -156, 1145.166, 0.001, 7, 0),
@@ -132,7 +131,6 @@ def test_gate_cost(n, eta, omega, error, br, charge, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "br", "charge"),
     [
-        (10000.5, 156, 1145.166, 0.001, 7, 0),
         (-10000, 156, 1145.166, 0.001, 7, 0),
         (10000, 156.5, 1145.166, 0.001, 7, 0),
         (10000, -156, 1145.166, 0.001, 7, 0),
@@ -165,7 +163,6 @@ def test_qubit_cost(n, eta, omega, error, charge, cost_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "charge"),
     [
-        (10000.5, 156, 1145.166, 0.001, 0),
         (-10000, 156, 1145.166, 0.001, 0),
         (10000, 156.5, 1145.166, 0.001, 0),
         (10000, -156, 1145.166, 0.001, 0),
@@ -198,15 +195,14 @@ def test_success_prob(n_basis, br, prob_ref):
 @pytest.mark.parametrize(
     ("n_basis", "br"),
     [
-        (-1, 7),
-        (1.2, 7),
-        (10, 7.2),
-        (10, -7),
+        (-10000, 7),
+        (10000, 7.2),
+        (10000, -7),
     ],
 )
 def test_success_prob_error(n_basis, br):
     r"""Test that success_prob raises an error with incorrect inputs."""
-    with pytest.raises(ValueError, match="must be a positive integer"):
+    with pytest.raises(ValueError, match="must be a positive"):
         qml.resources.FirstQuantization.success_prob(fq, n_basis, br)
 
 
@@ -226,7 +222,6 @@ def test_norm(n, eta, omega, error, br, charge, norm_ref):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "br", "charge"),
     [
-        (10000.5, 156.2, 1145.166, 0.001, 7, 0),
         (-10000, -156, 1145.166, 0.001, 7, 0),
         (10000, 156.2, 1145.166, 0.001, 7, 0),
         (10000, -156, 1145.166, 0.001, 7, 0),
