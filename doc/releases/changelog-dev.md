@@ -43,6 +43,9 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
+
 <h3>Improvements</h3>
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
@@ -84,5 +87,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Antal Száva,
-Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey,
+Antal Száva, Moritz Willmann
