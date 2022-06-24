@@ -21,7 +21,12 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms import mitigate_with_zne, poly_extrapolate, Richardson_extrapolate, fold_global
+from pennylane.transforms import (
+    mitigate_with_zne,
+    poly_extrapolate,
+    Richardson_extrapolate,
+    fold_global,
+)
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -357,6 +362,7 @@ class TestFoldGlobal:
 
 class TestPolyfit:
     """Testing that polyfit correctly fits polynomials"""
+
     @pytest.mark.all_interfaces
     def test_polyfit(self):
         """Testing the poly_extrapolator function in"""
@@ -364,10 +370,12 @@ class TestPolyfit:
         import torch
         import tensorflow as tf
 
-        xs = [jnp.arange(10, dtype="float32"),
-              np.arange(10),
-              torch.arange(10, dtype=torch.float64),
-              tf.range(10, dtype="float64")]
+        xs = [
+            jnp.arange(10, dtype="float32"),
+            np.arange(10),
+            torch.arange(10, dtype=torch.float64),
+            tf.range(10, dtype="float64"),
+        ]
 
         for x in xs:
             y = 1.5 + 0.5 * x**2

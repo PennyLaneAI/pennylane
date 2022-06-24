@@ -89,9 +89,10 @@ def poly_extrapolate(x, y, order):
     coeff = qml.math.polyfit(x, y, order)
     return coeff[-1]
 
+
 def Richardson_extrapolate(x, y):
     """Extrapolator to f(0) for f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg] for polynomial fit with ``degree = len(x)-1``"""
-    return poly_extrapolate(x, y, len(x)-1)
+    return poly_extrapolate(x, y, len(x) - 1)
 
 
 # pylint: disable=too-many-arguments, protected-access, bad-continuation
