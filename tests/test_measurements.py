@@ -1388,9 +1388,6 @@ class TestDensityMatrix:
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_torch(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using torch interface."""
-        if dev_name == "default.mixed" and diff_method == "backprop":
-            pytest.skip("Mixed device does not support backprop.")
-
         dev = qml.device(dev_name, wires=2)
 
         @qml.qnode(dev, interface="torch")
@@ -1409,9 +1406,6 @@ class TestDensityMatrix:
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_jax(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using JAX interface."""
-        if dev_name == "default.mixed" and diff_method == "backprop":
-            pytest.skip("Mixed device does not support backprop.")
-
         dev = qml.device(dev_name, wires=2)
 
         @qml.qnode(dev, interface="jax", diff_method=diff_method)
@@ -1430,9 +1424,6 @@ class TestDensityMatrix:
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_tf(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using the TensorFlow interface."""
-        if dev_name == "default.mixed" and diff_method == "backprop":
-            pytest.skip("Mixed device does not support backprop.")
-
         dev = qml.device(dev_name, wires=2)
 
         @qml.qnode(dev, interface="tf")
