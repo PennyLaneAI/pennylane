@@ -16,5 +16,13 @@ The resources module provides the functionality to estimate the cost of implemen
 quantum algorithms.
 """
 from .factorization import factorize
+from .first_quantization import (
+    _cost_qrom,
+    estimation_cost,
+    gate_cost,
+    norm,
+    qubit_cost,
+    success_prob,
+    unitary_cost,
+)
 from .second_quantization import DoubleFactorization
-from .first_quantization import success_prob, norm_fq
