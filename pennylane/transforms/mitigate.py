@@ -71,9 +71,11 @@ def fold_global(circuit, scale_factor):
         # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
         for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
             adjoint(qfunc)(base_ops[i])
+            # print("(L_d^H .. L_s^H): ", adjoint(qfunc)(base_ops[i]))
 
         for i in range(n_ops - num_to_fold, n_ops):
             qfunc(base_ops[i])
+            # print("(L_s .. L_d)", base_ops[i])
 
         # Append measurements
         for meas in circuit.measurements:
@@ -283,11 +285,14 @@ def mitigate_with_zne(
             [apply(m) for m in tape.measurements]
         out_tapes.append(t)
 
+    print(qml.drawer.tape_text(out_tapes[1].expand(), decimals=3))
+
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
         results = [
             results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
         ]  # creates nested list according to reps_per_factor
+        print(results)
         results = mean(results, axis=1)
         extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
