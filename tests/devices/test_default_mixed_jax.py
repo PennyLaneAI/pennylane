@@ -329,16 +329,17 @@ class TestPassthruIntegration:
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
     @pytest.mark.parametrize("decorator", decorators)
-    def test_density_matrix_differentiability(self, decorator, tol):
+    def test_density_matrix_differentiability(self, decorator, wires, tol):
         """Test that the density matrix can be differentiated"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.density_matrix(wires=1)
+            qml.RY(a, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            return qml.density_matrix(wires=wires[1])
 
         a = jnp.array(0.54)
 
