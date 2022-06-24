@@ -25,9 +25,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import (
     MeasurementProcess,
-    Sample,
-    Variance,
     Expectation,
+    Variance,
+    Sample,
     Probability,
     State,
 )

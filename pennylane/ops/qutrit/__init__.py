@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ The operations are in one file:
 from .matrix_ops import *
 from ..identity import Identity
 
+# TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
 ops = {
     "Identity",
     "QutritUnitary",
