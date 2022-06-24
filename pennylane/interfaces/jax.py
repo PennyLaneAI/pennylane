@@ -48,10 +48,15 @@ def get_jax_interface_name(tapes):
         "jax-jit"
     """
     for t in tapes:
-        for op in t.operations:
-            for param in op.data:
-                if qml.math.is_abstract(param):
-                    return "jax-jit"
+        for op in t:
+
+            # Unwrap the observable from a MeasurementProcess
+            op = op.obs if hasattr(op, "obs") else op
+            if op is not None:
+                # Some MeasurementProcess objects have op.obs=None
+                for param in op.data:
+                    if qml.math.is_abstract(param):
+                        return "jax-jit"
 
     return "jax"
 
@@ -158,14 +163,15 @@ def _execute(
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
 
+    # Copy a given tape with operations and set parameters
+    def cp_tape(t, a):
+        tc = t.copy(copy_operations=True)
+        tc.set_parameters(a)
+        return tc
+
     @jax.custom_vjp
     def wrapped_exec(params):
-        new_tapes = []
-
-        for t, a in zip(tapes, params):
-            new_tapes.append(t.copy(copy_operations=True))
-            new_tapes[-1].set_parameters(a)
-
+        new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -182,17 +188,12 @@ def _execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-
             args = tuple(params) + (g,)
-            new_tapes = []
+
             p = args[:-1]
             dy = args[-1]
 
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
-                new_tapes[-1].trainable_params = t.trainable_params
-
+            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
@@ -259,6 +260,36 @@ def _execute(
     return wrapped_exec(params)
 
 
+def _raise_vector_valued_fwd(tapes):
+    """Raises an error for vector-valued tapes in forward mode due to incorrect
+    results being produced.
+
+    There is an issue when jax.jacobian is being used, either due to issues
+    with tensor updating (TypeError: Updates tensor must be of rank 0; got 1)
+    or because jax.vmap introduces a redundant dimensionality in the result by
+    duplicating entries.
+
+    Example to the latter:
+
+    1. Output when using jax.jacobian:
+    DeviceArray([[-0.09983342,  0.01983384],\n
+                 [-0.09983342, 0.01983384]], dtype=float64),
+    DeviceArray([[ 0.        , -0.97517033],\n
+                 [ 0.        , -0.97517033]], dtype=float64)),
+
+    2. Expected output:
+    DeviceArray([[-0.09983342, 0.01983384],\n
+                [ 0.        , -0.97517033]]
+
+    The output produced by this function matches 1.
+    """
+    scalar_outputs = all(t.output_dim == 1 for t in tapes)
+    if not scalar_outputs:
+        raise InterfaceUnsupportedError(
+            "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+        )
+
+
 def _execute_with_fwd(
     params,
     tapes=None,
@@ -297,28 +328,7 @@ def _execute_with_fwd(
         # Use the jacobian that was computed on the forward pass
         jacs, params = params
 
-        # Note: there is an issue when jax.jacobian is being used, either due
-        # to issues with tensor updating (TypeError: Updates tensor must be of
-        # rank 0; got 1) or because jax.vmap introduces a redundant
-        # dimensionality in the result by duplicating entries
-        # Example to the latter:
-        #
-        # 1. Output when using jax.jacobian:
-        # DeviceArray([[-0.09983342,  0.01983384],\n
-        #              [-0.09983342, 0.01983384]], dtype=float64),
-        # DeviceArray([[ 0.        , -0.97517033],\n
-        #              [ 0.        , -0.97517033]], dtype=float64)),
-        #
-        # 2. Expected output:
-        # DeviceArray([[-0.09983342, 0.01983384],\n
-        #             [ 0.        , -0.97517033]]
-        #
-        # The output produced by this function matches 2.
-        scalar_outputs = all(t.output_dim == 1 for t in tapes)
-        if not scalar_outputs:
-            raise InterfaceUnsupportedError(
-                "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
-            )
+        _raise_vector_valued_fwd(tapes)
 
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases

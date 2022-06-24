@@ -15,7 +15,8 @@
 from pennylane.wires import Wires
 
 import pennylane as qml
-from pennylane.transforms import qfunc_transform, ctrl
+from pennylane.ops.op_math import ctrl
+from pennylane.transforms import qfunc_transform
 from pennylane.queuing import apply
 
 

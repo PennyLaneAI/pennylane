@@ -80,10 +80,11 @@ class MPS(Operation):
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.n_blocks(wires, n_block_wires)``.
+        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires)``.
         The length of ``template_weights`` argument should match the number of blocks.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This example demonstrates the use of ``MPS`` for a simple block.
 
@@ -110,9 +111,9 @@ class MPS(Operation):
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
         >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-        0: ─╭C──RY(0.10)──────────────────────────────┤
-        1: ─╰X──RY(-0.30)─╭C──RY(0.10)────────────────┤
-        2: ───────────────╰X──RY(-0.30)─╭C──RY(0.10)──┤
+        0: ─╭●──RY(0.10)──────────────────────────────┤
+        1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
+        2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
         3: ─────────────────────────────╰X──RY(-0.30)─┤  <Z>
 
     """

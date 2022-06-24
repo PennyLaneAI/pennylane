@@ -21,8 +21,11 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
+
+pytestmark = pytest.mark.autograd
 
 
 class TestAutogradExecuteUnitTests:
@@ -46,8 +49,8 @@ class TestAutogradExecuteUnitTests:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="Autograd not found. Please install the latest version "
-            "of Autograd to enable the 'autograd' interface",
+            match="autograd not found. Please install the latest version "
+            "of autograd to enable the 'autograd' interface",
         ):
             qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 
@@ -1111,3 +1114,64 @@ class TestHamiltonianWorkflows:
         res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2, dev=dev))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestCustomJacobian:
+    def test_custom_jacobians(self):
+        class CustomJacobianDevice(DefaultQubit):
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities()
+                capabilities["provides_jacobian"] = True
+                return capabilities
+
+            def jacobian(self, tape):
+                return np.array([1.0, 2.0, 3.0, 4.0])
+
+        dev = CustomJacobianDevice(wires=2)
+
+        @qml.qnode(dev, diff_method="device")
+        def circuit(v):
+            qml.RX(v, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        d_circuit = qml.jacobian(circuit, argnum=0)
+
+        params = np.array(1.0, requires_grad=True)
+
+        d_out = d_circuit(params)
+        assert np.allclose(d_out, np.array([1.0, 2.0, 3.0, 4.0]))
+
+    def test_custom_jacobians_2(self):
+        """Test computing the gradient using the parameter-shift
+        rule with a device that provides a jacobian"""
+
+        class MyQubit(DefaultQubit):
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    provides_jacobian=True,
+                )
+                return capabilities
+
+            def jacobian(self, *args, **kwargs):
+                raise NotImplementedError()
+
+        dev = MyQubit(wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", mode="backward")
+        def qnode(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        res = qml.jacobian(qnode)(a, b)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+
+        assert np.allclose(res[0], expected[0])
+        assert np.allclose(res[1], expected[1])

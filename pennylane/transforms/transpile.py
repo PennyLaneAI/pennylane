@@ -4,6 +4,7 @@ Contains the transpiler transform.
 from typing import Union, List
 import networkx as nx
 
+import pennylane as qml
 from pennylane import apply, Hamiltonian
 from pennylane.ops.qubit import SWAP
 from pennylane.operation import Tensor
@@ -50,9 +51,9 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     .. code-block:: text
 
-        0: ──╭C──────────────╭C──╭┤ Probs
-        1: ──╰X──╭C──╭C──────│───├┤ Probs
-        2: ──╭C──│───╰X──╭C──│───├┤ Probs
+        0: ──╭●──────────────╭●──╭┤ Probs
+        1: ──╰X──╭●──╭●──────│───├┤ Probs
+        2: ──╭●──│───╰X──╭●──│───├┤ Probs
         3: ──╰X──╰X──────╰X──╰X──╰┤ Probs
 
     Suppose we have a device which has connectivity constraints according to the graph:
@@ -69,11 +70,11 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
     >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
     >>> transpiled_qnode = qml.QNode(circuit, dev)
-    >>> print(qml.draw(transpiled_qnode))
-    0: ──╭C─────────────────────╭C──╭┤ Probs
-    1: ──╰X──╭C─────────╭C──────│───├┤ Probs
-    2: ──╭C──│───╭SWAP──│───╭X──╰X──├┤ Probs
-    3: ──╰X──╰X──╰SWAP──╰X──╰C──────╰┤ Probs
+    >>> print(qml.draw(transpiled_qnode)())
+    0: ─╭●────────────────╭●─┤ ╭Probs
+    1: ─╰X─╭●───────╭●────│──┤ ├Probs
+    2: ─╭●─│──╭SWAP─│──╭X─╰X─┤ ├Probs
+    3: ─╰X─╰X─╰SWAP─╰X─╰●────┤ ╰Probs
 
     A swap gate has been applied to wires 2 and 3, and the remaining gates have been adapted accordingly
 
@@ -172,7 +173,7 @@ def _adjust_mmt_indices(_m, _map_wires):
 
     # change wires of observable
     if _m.obs is None:
-        return type(_m)(return_type=_m.return_type, eigvals=_m.eigvals, wires=_new_wires)
+        return type(_m)(return_type=_m.return_type, eigvals=qml.eigvals(_m), wires=_new_wires)
 
     _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
     return type(_m)(return_type=_m.return_type, obs=_new_obs)

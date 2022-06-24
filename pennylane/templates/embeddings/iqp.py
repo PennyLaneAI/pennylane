@@ -25,7 +25,7 @@ class IQPEmbedding(Operation):
     r"""
     Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
 
-    The embedding has been proposed by `Havlicek et al. (2018) <https://arxiv.org/pdf/1804.11326.pdf>`_.
+    The embedding has been proposed by `Havlicek et al. (2018) <https://arxiv.org/abs/1804.11326>`_.
 
     The basic IQP circuit can be repeated by specifying ``n_repeats``. Repetitions can make the
     embedding "richer" through interference.
@@ -79,7 +79,8 @@ class IQPEmbedding(Operation):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         A typical usage example of the template is the following:
 

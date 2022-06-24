@@ -23,8 +23,8 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.measurements import Variance, Expectation
 from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.interfaces.jax import _raise_vector_valued_fwd
 
 dtype = jnp.float64
 
@@ -61,8 +61,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     if max_diff > 1:
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
-    _validate_tapes(tapes)
-
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
@@ -91,26 +89,39 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     )
 
 
-def _validate_tapes(tapes):
-    """Validates that the input tapes are compatible with JAX support.
+def _numeric_type_to_dtype(numeric_type):
+    """Auxiliary function for converting from Python numeric types to JAX
+    dtypes based on the precision defined for the interface."""
 
-    Raises:
-        ValueError: if tapes with non-scalar outputs were provided or a return
-        type other than variance and expectation value was used
+    single_precision = dtype is jnp.float32
+    if numeric_type is int:
+        return jnp.int32 if single_precision else jnp.int64
+
+    if numeric_type is float:
+        return jnp.float32 if single_precision else jnp.float64
+
+    # numeric_type is complex
+    return jnp.complex64 if single_precision else jnp.complex128
+
+
+def _extract_shape_dtype_structs(tapes, device):
+    """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
+    the tapes and the device.
+
+    The host_callback.call function expects jax.ShapeDtypeStruct objects to
+    describe the output of the function call.
     """
+    shape_dtypes = []
+
     for t in tapes:
+        shape = t.shape(device)
 
-        if len(t.observables) != 1:
-            raise InterfaceUnsupportedError(
-                "The jittable JAX interface currently only supports quantum nodes with a single return type."
-            )
+        tape_dtype = _numeric_type_to_dtype(t.numeric_type)
+        shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
-        for o in t.observables:
-            return_type = o.return_type
-            if return_type is not Variance and return_type is not Expectation:
-                raise InterfaceUnsupportedError(
-                    f"Only Variance and Expectation returns are supported for the jittable JAX interface, given {return_type}."
-                )
+        shape_dtypes.append(shape_and_dtype)
+
+    return shape_dtypes
 
 
 def _execute(
@@ -122,28 +133,25 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
     total_params = np.sum([len(p) for p in params])
+
+    # Copy a given tape with operations and set parameters
+    def cp_tape(t, a):
+        tc = t.copy(copy_operations=True)
+        tc.set_parameters(a)
+        return tc
 
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = []
-
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
-
+            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
-
             return res
 
-        shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        res = host_callback.call(wrapper, params, result_shape=shapes)
+        shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
+        res = host_callback.call(wrapper, params, result_shape=shape_dtype_structs)
         return res
 
     def wrapped_exec_fwd(params):
@@ -155,15 +163,10 @@ def _execute(
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
-                new_tapes = []
                 p = args[:-1]
                 dy = args[-1]
 
-                for t, a in zip(tapes, p):
-                    new_tapes.append(t.copy(copy_operations=True))
-                    new_tapes[-1].set_parameters(a)
-                    new_tapes[-1].trainable_params = t.trainable_params
-
+                new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
                     dy,
@@ -206,10 +209,18 @@ def _execute(
 
             return (tuple(res),)
 
-        # Gradient function is a device method.
-        with qml.tape.Unwrap(*tapes):
-            jacs = gradient_fn(tapes, **gradient_kwargs)
+        def jacs_wrapper(p):
+            """Compute the jacs"""
+            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+            with qml.tape.Unwrap(*new_tapes):
+                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+            return jacs
 
+        shapes = [
+            jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
+            for t, p in zip(tapes, params)
+        ]
+        jacs = host_callback.call(jacs_wrapper, params, result_shape=shapes)
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
@@ -227,10 +238,6 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
-
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
@@ -246,12 +253,24 @@ def _execute_with_fwd(
             # On the forward execution return the jacobian too
             return res, jacs
 
-        fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        fwd_shape_dtype_struct = _extract_shape_dtype_structs(tapes, device)
+
+        # params should be the parameters for each tape queried prior, assert
+        # to double-check
+        assert len(tapes) == len(params)
+
+        jacobian_shape = []
+        for t, p in zip(tapes, params):
+            shape = t.shape(device) + (len(p),)
+            _dtype = _numeric_type_to_dtype(t.numeric_type)
+            shape = [shape] if isinstance(shape, int) else shape
+            o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
+            jacobian_shape.append(o)
+
         res, jacs = host_callback.call(
             wrapper,
             params,
-            result_shape=tuple([fwd_shapes, jacobian_shape]),
+            result_shape=tuple([fwd_shape_dtype_struct, jacobian_shape]),
         )
         return res, jacs
 
@@ -260,6 +279,8 @@ def _execute_with_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
+
+        _raise_vector_valued_fwd(tapes)
 
         # Use the jacobian that was computed on the forward pass
         jacs, params = params

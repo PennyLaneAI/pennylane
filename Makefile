@@ -16,6 +16,7 @@ help:
 	@echo "  clean-docs         to delete all built documentation"
 	@echo "  test               to run the test suite"
 	@echo "  coverage           to generate a coverage report"
+	@echo "  format [check=1]   to apply black formatter; use with 'check=1' to check instead of modify (requires black)"
 
 .PHONY: install
 install:
@@ -46,7 +47,6 @@ clean:
 	rm -rf .coverage coverage_html_report/
 	rm -rf tmp
 	rm -rf *.dat
-	make -C qchem clean
 
 docs:
 	make -C doc html
@@ -64,3 +64,11 @@ coverage:
 	@echo "Generating coverage report..."
 	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
 	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd $(COVERAGE) --cov-append
+
+.PHONY:format
+format:
+ifdef check
+	black -l 100 ./pennylane ./tests --check
+else
+	black -l 100 ./pennylane ./tests
+endif

@@ -13,8 +13,6 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
-import warnings
-
 from pennylane._grad import grad as get_gradient
 
 
@@ -36,43 +34,6 @@ class GradientDescentOptimizer:
     """
 
     def __init__(self, stepsize=0.01):
-        self.stepsize = stepsize
-
-    @property
-    def _stepsize(self):
-        warnings.warn(
-            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
-            UserWarning,
-            stacklevel=2,
-        )
-
-        return self.stepsize
-
-    @_stepsize.setter
-    def _stepsize(self, stepsize):
-        warnings.warn(
-            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
-            UserWarning,
-            stacklevel=2,
-        )
-
-        self.stepsize = stepsize
-
-    def update_stepsize(self, stepsize):
-        r"""Update the initialized stepsize value :math:`\eta`.
-
-        This allows for techniques such as learning rate scheduling.
-
-        Args:
-            stepsize (float): the user-defined hyperparameter :math:`\eta`
-        """
-        warnings.warn(
-            "'update_stepsize' is deprecated. Stepsize value can be updated using "
-            "the 'stepsize' attribute.",
-            UserWarning,
-            stacklevel=2,
-        )
-
         self.stepsize = stepsize
 
     def step_and_cost(self, objective_fn, *args, grad_fn=None, **kwargs):

@@ -61,9 +61,9 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, tag=None):
+    def __init__(self, tag=None, do_queue=True):
         self.tag = tag
-        super().__init__(wires=[], do_queue=True)
+        super().__init__(wires=[], do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|S|"
@@ -75,5 +75,5 @@ class Snapshot(Operation):
     def _controlled(self, _):
         return Snapshot(tag=self.tag)
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         return Snapshot(tag=self.tag)

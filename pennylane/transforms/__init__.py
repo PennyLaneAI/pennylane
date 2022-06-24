@@ -32,13 +32,13 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
-    ~draw
-    ~draw_mpl
-    ~transforms.get_unitary_matrix
+    ~batch_partial
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
+    ~transforms.split_non_commuting
     ~transforms.mitigate_with_zne
+    ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,8 +49,6 @@ containing quantum operations) that are used to construct QNodes.
 .. autosummary::
     :toctree: api
 
-    ~adjoint
-    ~ctrl
     ~transforms.cond
     ~defer_measurements
     ~apply_controlled_Q
@@ -101,7 +99,7 @@ There are also utility functions that take a circuit and return a DAG.
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This transform accepts a QNode and returns a new function that cuts the original circuit,
+The :func:`~.cut_circuit` transform accepts a QNode and returns a new function that cuts the original circuit,
 allowing larger circuits to be split into smaller circuits that are compatible with devices that
 have a restricted number of qubits.
 
@@ -109,6 +107,17 @@ have a restricted number of qubits.
     :toctree: api
 
     ~cut_circuit
+
+The :func:`~.cut_circuit_mc` transform is designed to be used for cutting circuits which contain :func:`~.sample`
+measurements and is implemented using a Monte Carlo method. Similarly to the :func:`~.cut_circuit`
+transform, this transform accepts a QNode and returns a new function that cuts the original circuit.
+This transform can also accept an optional classical processing function to calculate an
+expectation value.
+
+.. autosummary::
+    :toctree: api
+
+    ~cut_circuit_mc
 
 There are also low-level functions that can be used to build up the circuit cutting functionalities:
 
@@ -121,11 +130,11 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.graph_to_tape
     ~transforms.qcut.remap_tape_wires
     ~transforms.qcut.expand_fragment_tape
-    ~transforms.qcut.qcut_processing_fn
-    ~transforms.qcut.CutStrategy
     ~transforms.qcut.expand_fragment_tapes_mc
+    ~transforms.qcut.qcut_processing_fn
     ~transforms.qcut.qcut_processing_fn_sample
     ~transforms.qcut.qcut_processing_fn_mc
+    ~transforms.qcut.CutStrategy
     ~transforms.qcut.kahypar_cut
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
@@ -139,6 +148,7 @@ more tapes as well as a classical processing function.
 .. autosummary::
     :toctree: api
 
+    ~transforms.broadcast_expand
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
@@ -168,17 +178,16 @@ to help build custom QNode, quantum function, and tape transforms:
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
-from .adjoint import adjoint
 from .batch_params import batch_params
 from .batch_input import batch_input
+from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
-from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
+from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
@@ -198,7 +207,6 @@ from .optimization import (
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
-from .get_unitary_matrix import get_unitary_matrix
 from .commutation_dag import (
     commutation_dag,
     is_commuting,
@@ -217,4 +225,5 @@ from .tape_expand import (
 )
 from .transpile import transpile
 from . import qcut
-from .qcut import cut_circuit
+from .qcut import cut_circuit, cut_circuit_mc
+from .broadcast_expand import broadcast_expand

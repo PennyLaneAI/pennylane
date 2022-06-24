@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
-
+# pylint: disable=too-many-branches
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
-from pennylane.math import allclose, stack, cast_like, zeros
+from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
 
 from pennylane.ops.qubit.attributes import composable_rotations
+from pennylane.ops.op_math import Adjoint
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
@@ -62,9 +63,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
-     0: ───RX(1)──RX(2)──────────╭RZ(3)──┤ ⟨Z⟩
-     1: ──╭C──────RY(2)──RY(-2)──│───────┤
-     2: ──╰X──────H──────────────╰C──────┤
+    0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
+    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+    2: ─╰X─────────H────────╰●───────────────────┤
 
     By inspection, we can combine the two ``RX`` rotations on the first qubit.
     On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
@@ -72,9 +73,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     >>> optimized_qfunc = merge_rotations()(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-     0: ───RX(3)─────╭RZ(3)──┤ ⟨Z⟩
-     1: ──╭C─────────│───────┤
-     2: ──╰X──────H──╰C──────┤
+    0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
+    1: ─╭●───────────│─────────┤
+    2: ─╰X─────────H─╰●────────┤
 
     It is also possible to explicitly specify which rotations ``merge_rotations`` should
     be merged using the ``include_gates`` argument. For example, if in the above
@@ -83,12 +84,14 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-     0: ───RX(3)─────────────────╭RZ(3)──┤ ⟨Z⟩
-     1: ──╭C──────RY(2)──RY(-2)──│───────┤
-     2: ──╰X──────H──────────────╰C──────┤
+    0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
+    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+    2: ─╰X─────────H────────╰●───────────────────┤
+
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
+    # Expand away adjoint ops
+    expanded_tape = tape.expand(stop_at=lambda obj: not isinstance(obj, Adjoint))
+    list_copy = expanded_tape.operations
 
     while len(list_copy) > 0:
         current_gate = list_copy[0]
@@ -119,7 +122,6 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
 
         # We need to use stack to get this to work and be differentiable in all interfaces
         cumulative_angles = stack(current_gate.parameters)
-
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
             # Get the next gate
@@ -128,17 +130,25 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             # If next gate is of the same type, we can merge the angles
             if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
-
                 # The Rot gate must be treated separately
                 if current_gate.name == "Rot":
-                    cumulative_angles = fuse_rot_angles(
-                        cumulative_angles, cast_like(stack(next_gate.parameters), cumulative_angles)
-                    )
+                    if is_abstract(cumulative_angles):
+                        # jax-jit does not support cast_like
+                        cumulative_angles = cumulative_angles + stack(next_gate.parameters)
+                    else:
+                        cumulative_angles = fuse_rot_angles(
+                            cumulative_angles,
+                            cast_like(stack(next_gate.parameters), cumulative_angles),
+                        )
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
-                    cumulative_angles = cumulative_angles + cast_like(
-                        stack(next_gate.parameters), cumulative_angles
-                    )
+                    if is_abstract(cumulative_angles):
+                        # jax-jit does not support cast_like
+                        cumulative_angles = cumulative_angles + stack(next_gate.parameters)
+                    else:
+                        cumulative_angles = cumulative_angles + cast_like(
+                            stack(next_gate.parameters), cumulative_angles
+                        )
             # If it is not, we need to stop
             else:
                 break
@@ -146,8 +156,14 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
+        # If we are tracing/jitting, don't perform any conditional checks and
+        # apply the operation regardless of the angles. Otherwise, only apply if
+        # the rotation angle is non-trivial.
+        if is_abstract(cumulative_angles):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+        else:
+            if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
+                current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list
         list_copy.pop(0)

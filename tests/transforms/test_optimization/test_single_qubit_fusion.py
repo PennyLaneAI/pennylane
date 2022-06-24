@@ -68,7 +68,7 @@ class TestSingleQubitFusion:
             qml.RX(-0.2, wires=0)
             qml.RZ(-0.1, wires=0)
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(atol=1e-7)(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
 
@@ -185,6 +185,7 @@ expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([
 class TestSingleQubitFusionInterfaces:
     """Test that rotation merging works in all interfaces."""
 
+    @pytest.mark.autograd
     def test_single_qubit_fusion_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
@@ -205,9 +206,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_single_qubit_fusion_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
@@ -231,9 +233,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     def test_single_qubit_fusion_tf(self):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
@@ -262,9 +265,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_single_qubit_fusion_jax(self):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         # Enable float64 support
@@ -285,6 +289,41 @@ class TestSingleQubitFusionInterfaces:
         assert qml.math.allclose(
             jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
         )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    @pytest.mark.jax
+    def test_single_qubit_fusion_jax_jit(self):
+        """Test QNode and gradient in JAX interface with JIT."""
+        import jax
+        from jax import numpy as jnp
+
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        original_qnode = qml.QNode(qfunc, dev, interface="jax")
+        jitted_qnode = jax.jit(original_qnode)
+
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        jitted_transformed_qnode = jax.jit(transformed_qnode)
+
+        input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
+
+        # Check that the numerical output is the same
+        original_output = original_qnode(input)
+        assert qml.math.allclose(jitted_qnode(input), original_output)
+        assert qml.math.allclose(transformed_qnode(input), original_output)
+        assert qml.math.allclose(jitted_transformed_qnode(input), original_output)
+
+        # Check that the gradients are the same even after jitting
+        original_gradient = jax.grad(original_qnode)(input)
+        assert qml.math.allclose(jax.grad(jitted_qnode)(input), original_gradient)
+        assert qml.math.allclose(jax.grad(transformed_qnode)(input), original_gradient)
+        assert qml.math.allclose(jax.grad(jitted_transformed_qnode)(input), original_gradient)
 
         # Check operation list
         ops = transformed_qnode.qtape.operations

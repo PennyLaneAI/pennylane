@@ -125,7 +125,8 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
     In the first example, both vertex pairs are not in ``reward``. In the second example, one pair is in ``reward`` and
     the other is not. Finally, in the third example, both pairs are in ``reward``.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The goal of many combinatorial problems that can be solved with QAOA is to
         find a `Graph colouring <https://en.wikipedia.org/wiki/Graph_coloring>`__ of some supplied
@@ -333,7 +334,8 @@ def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = 
     Returns:
         (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         There are two variations of QAOA for this problem, constrained and unconstrained:
 
@@ -341,8 +343,8 @@ def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = 
 
         .. note::
 
-            This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in arXiv:1709.03489.
+            This method of constrained QAOA was introduced by
+            `Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas (2019) <https://doi.org/10.3390/a12020034>`__.
 
         The Maximum Independent Set cost Hamiltonian for constrained QAOA is defined as:
 
@@ -413,7 +415,8 @@ def min_vertex_cover(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = Tru
     Returns:
         (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         There are two variations of QAOA for this problem, constrained and unconstrained:
 
@@ -492,7 +495,8 @@ def max_clique(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     Returns:
         (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         There are two variations of QAOA for this problem, constrained and unconstrained:
 
@@ -586,7 +590,8 @@ def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrain
         (.Hamiltonian, .Hamiltonian, dict): The cost and mixer Hamiltonians, as well as a dictionary
         mapping from wires to the graph's edges
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         There are two variations of QAOA for this problem, constrained and unconstrained:
 

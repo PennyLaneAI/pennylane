@@ -124,6 +124,7 @@ def test_integration_analytic_false(tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.autograd
 def test_numerical_analytic_diff_agree(init_state, tol):
     """Test that the finite difference and parameter shift rule
     provide the same Jacobian."""
@@ -435,6 +436,25 @@ def test_hamiltonian_error(coeffs, obs, init_state, tol):
         match="Hamiltonians are not supported for rotating probabilities.",
     ):
         circuit()
+
+
+def test_probs_no_wires_obs_raises():
+    """Test that an informative error is raised when no wires or observables
+    are passed to qml.probs."""
+    num_wires = 1
+
+    dev = qml.device("default.qubit", wires=num_wires, shots=None)
+
+    @qml.qnode(dev)
+    def circuit_probs():
+        qml.RY(0.34, wires=0)
+        return qml.probs()
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="qml.probs requires either the wires or the observable to be passed.",
+    ):
+        circuit_probs()
 
 
 @pytest.mark.parametrize(

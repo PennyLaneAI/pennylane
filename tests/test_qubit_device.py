@@ -475,7 +475,7 @@ class TestExpval:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.expval(obs)
 
-        assert res == (obs.get_eigvals() @ probs).real
+        assert res == (obs.eigvals() @ probs).real
 
     def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is False
@@ -539,7 +539,7 @@ class TestVar:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.var(obs)
 
-        assert res == (obs.get_eigvals() ** 2) @ probs - (obs.get_eigvals() @ probs).real ** 2
+        assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
 
     def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is False
@@ -770,6 +770,7 @@ class TestCapabilities:
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "returns_probs": True,
+            "supports_broadcasting": False,
         }
         assert capabilities == QubitDevice.capabilities()
 
@@ -934,6 +935,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 2), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple expectation values"""
@@ -970,6 +972,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 4), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a probability return"""
@@ -1003,6 +1006,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 2, 2), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple probability returns"""

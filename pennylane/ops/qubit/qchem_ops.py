@@ -17,7 +17,7 @@ from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -44,7 +44,7 @@ class SingleExcitation(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695)
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -153,6 +153,9 @@ class SingleExcitation(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
+
+    def pow(self, z):
+        return [SingleExcitation(self.data[0] * z, wires=self.wires)]
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
@@ -461,7 +464,7 @@ class DoubleExcitation(Operation):
     * Number of wires: 4
     * Number of parameters: 1
     * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -515,6 +518,9 @@ class DoubleExcitation(Operation):
         ]
         return qml.Hamiltonian(coeffs, obs)
 
+    def pow(self, z):
+        return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
+
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
@@ -552,7 +558,7 @@ class DoubleExcitation(Operation):
         .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
 
         For the source of this decomposition, see page 17 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -683,7 +689,7 @@ class DoubleExcitationPlus(Operation):
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-        H = coo_matrix(-0.5 * G)
+        H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
@@ -780,7 +786,7 @@ class DoubleExcitationMinus(Operation):
         G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-        H = coo_matrix(-0.5 * G)
+        H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
@@ -853,7 +859,7 @@ class OrbitalRotation(Operation):
     * Number of parameters: 1
     * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
       :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
-      (see https://arxiv.org/abs/2107.12390).
+      (see `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__).
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -971,7 +977,7 @@ class OrbitalRotation(Operation):
         .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
 
         For the source of this decomposition, see page 18 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
         Args:
             phi (float): rotation angle :math:`\phi`

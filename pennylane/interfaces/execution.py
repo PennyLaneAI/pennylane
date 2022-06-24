@@ -20,7 +20,9 @@ devices with autodifferentiation support.
 """
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 from functools import wraps
-import itertools
+import warnings
+import inspect
+from contextlib import _GeneratorContextManager
 from cachetools import LRUCache
 
 import pennylane as qml
@@ -28,17 +30,25 @@ import pennylane as qml
 from .set_shots import set_shots
 
 
-INTERFACE_NAMES = {
-    "NumPy": (None,),
-    "Autograd": ("autograd", "numpy"),  # for backwards compatibility
-    "JAX": ("jax", "jax-jit", "jax-python", "JAX"),
-    "PyTorch": ("torch", "pytorch"),
-    "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
+INTERFACE_MAP = {
+    None: "Numpy",
+    "autograd": "autograd",
+    "numpy": "autograd",
+    "jax": "jax",
+    "jax-jit": "jax",
+    "jax-python": "jax",
+    "JAX": "jax",
+    "torch": "torch",
+    "pytorch": "torch",
+    "tf": "tf",
+    "tensorflow": "tf",
+    "tensorflow-autograph": "tf",
+    "tf-autograph": "tf",
 }
-"""dict[str, str]: maps the name of the interface to allowed interface strings"""
+"""dict[str, str]: maps an allowed interface specification to its canonical name."""
 
 #: list[str]: allowed interface strings
-SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
+SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
@@ -119,6 +129,33 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
+
+                # Introspect the set_shots decorator of the input function:
+                #   warn the user in case of finite shots with cached results
+                finite_shots = False
+
+                closure = inspect.getclosurevars(fn).nonlocals
+                if "original_fn" in closure:  # deal with expand_fn wrapper above
+                    closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
+
+                # retrieve the captured context manager instance (for set_shots)
+                if "self" in closure and isinstance(closure["self"], _GeneratorContextManager):
+                    # retrieve the shots from the arguments or device instance
+                    if closure["self"].func.__name__ == "set_shots":
+                        dev, shots = closure["self"].args
+                        shots = dev.shots if shots is False else shots
+                        finite_shots = isinstance(shots, int)
+
+                if finite_shots and getattr(cache, "_persistent_cache", True):
+                    warnings.warn(
+                        "Cached execution with finite shots detected!\n"
+                        "Note that samples as well as all noisy quantities computed via sampling "
+                        "will be identical across executions. This situation arises where tapes "
+                        "are executed with identical operations, measurements, and parameters.\n"
+                        "To avoid this behavior, provide 'cache=False' to the QNode or execution "
+                        "function.",
+                        UserWarning,
+                    )
             else:
                 # Tape does not exist within the cache, store the tape
                 # for execution via the execution function.
@@ -280,6 +317,7 @@ def execute(
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
+        setattr(cache, "_persistent_cache", False)
 
     batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
@@ -348,31 +386,29 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     try:
-        if interface in INTERFACE_NAMES["Autograd"]:
+        mapped_interface = INTERFACE_MAP[interface]
+    except KeyError as e:
+        raise ValueError(
+            f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
+        ) from e
+    try:
+        if mapped_interface == "autograd":
             from .autograd import execute as _execute
-        elif interface in INTERFACE_NAMES["TensorFlow"]:
+        elif mapped_interface == "tf":
             import tensorflow as tf
 
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
             else:
                 from .tensorflow import execute as _execute
-
-        elif interface in INTERFACE_NAMES["PyTorch"]:
+        elif mapped_interface == "torch":
             from .torch import execute as _execute
-        elif interface in INTERFACE_NAMES["JAX"]:
+        else:  # is jax
             _execute = _get_jax_execute_fn(interface, tapes)
-        else:
-            raise ValueError(
-                f"Unknown interface {interface}. Supported "
-                f"interfaces are {SUPPORTED_INTERFACES}"
-            )
     except ImportError as e:
-        interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]
-
         raise qml.QuantumFunctionError(
-            f"{interface_name} not found. Please install the latest "
-            f"version of {interface_name} to enable the '{interface}' interface."
+            f"{mapped_interface} not found. Please install the latest "
+            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
     res = _execute(
@@ -386,7 +422,7 @@ def _get_jax_execute_fn(interface, tapes):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
 
-    # The most general JAX interface was sepcified, automatically determine if
+    # The most general JAX interface was specified, automatically determine if
     # support for jitting is needed by swapping to "jax-jit" or "jax-python"
     if interface == "jax":
         from .jax import get_jax_interface_name

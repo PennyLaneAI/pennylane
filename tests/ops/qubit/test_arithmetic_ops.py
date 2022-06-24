@@ -20,22 +20,6 @@ import numpy as np
 import pennylane as qml
 
 
-@pytest.mark.parametrize(
-    "op_builder",
-    [
-        lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
-    ],
-)
-def test_adjoint_with_decomposition(op_builder):
-    """Tests the ``QubitCarry`` op under adjoint and decomposition."""
-    op = op_builder()
-    decomposed_ops = op.decomposition()
-    with qml.tape.QuantumTape() as adjoint_tape:
-        qml.adjoint(op_builder)()
-    for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
-        np.testing.assert_allclose(a.get_matrix(), np.conj(b.get_matrix()).T)
-
-
 label_data = [
     (qml.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),
     (qml.QubitSum(wires=(0, 1, 2)), "Σ"),
@@ -134,7 +118,7 @@ class TestQubitCarry:
         """Test that the matrix representation is defined correctly"""
 
         res_static = qml.QubitCarry.compute_matrix()
-        res_dynamic = qml.QubitCarry(wires=[0, 1, 2, 3]).get_matrix()
+        res_dynamic = qml.QubitCarry(wires=[0, 1, 2, 3]).matrix()
         expected = np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -238,7 +222,7 @@ class TestQubitSum:
         """Test that the matrix representation is defined correctly"""
 
         res_static = qml.QubitSum.compute_matrix()
-        res_dynamic = qml.QubitSum(wires=[0, 1, 2]).get_matrix()
+        res_dynamic = qml.QubitSum(wires=[0, 1, 2]).matrix()
         expected = np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],

@@ -133,9 +133,6 @@ class AmplitudeEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def adjoint(self):  # pylint: disable=arguments-differ
-        return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
-
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
@@ -204,6 +201,13 @@ class AmplitudeEmbedding(Operation):
             # pad
             if pad_with is not None and n_features < 2 ** len(wires):
                 padding = [pad_with] * (2 ** len(wires) - n_features)
+                if (
+                    hasattr(feature_set, "device") and feature_set.device.type == "cuda"
+                ):  # pragma: no cover
+                    ## Torch tensor, send to same GPU
+                    dat_type = type(feature_set)
+                    padding = dat_type(padding).to(feature_set.device)
+
                 feature_set = qml.math.concatenate([feature_set, padding], axis=0)
 
             # normalize

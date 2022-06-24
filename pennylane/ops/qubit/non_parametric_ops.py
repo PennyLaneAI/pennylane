@@ -158,6 +158,9 @@ class Hadamard(Observable, Operation):
         # H = RZ(\pi) RY(\pi/2) RZ(0)
         return [np.pi, np.pi / 2, 0.0]
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -287,6 +290,12 @@ class PauliX(Observable, Operation):
 
     def adjoint(self):
         return PauliX(wires=self.wires)
+
+    def pow(self, z):
+        z_mod2 = z % 2
+        if abs(z_mod2 - 0.5) < 1e-6:
+            return [SX(wires=self.wires)]
+        return super().pow(z_mod2)
 
     def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
@@ -427,6 +436,9 @@ class PauliY(Observable, Operation):
     def adjoint(self):
         return PauliY(wires=self.wires)
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
 
@@ -554,6 +566,20 @@ class PauliZ(Observable, Operation):
     def adjoint(self):
         return PauliZ(wires=self.wires)
 
+    def pow(self, z):
+        z_mod2 = z % 2
+        if z_mod2 == 0:
+            return []
+        if z_mod2 == 1:
+            return [self.__copy__()]
+
+        if abs(z_mod2 - 0.5) < 1e-6:
+            return [S(wires=self.wires)]
+        if abs(z_mod2 - 0.25) < 1e-6:
+            return [T(wires=self.wires)]
+
+        return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
+
     def _controlled(self, wire):
         CZ(wires=Wires(wire) + self.wires)
 
@@ -653,10 +679,17 @@ class S(Operation):
         """
         return [qml.PhaseShift(np.pi / 2, wires=wires)]
 
-    def adjoint(self):
-        op = S(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+    def pow(self, z):
+        z_mod4 = z % 4
+        pow_map = {
+            0: lambda op: [],
+            0.5: lambda op: [T(wires=op.wires)],
+            1: lambda op: [op.__copy__()],
+            2: lambda op: [PauliZ(wires=op.wires)],
+        }
+        return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
+            self
+        )
 
     def single_qubit_rot_angles(self):
         # S = RZ(\pi/2) RY(0) RZ(0)
@@ -754,10 +787,17 @@ class T(Operation):
         """
         return [qml.PhaseShift(np.pi / 4, wires=wires)]
 
-    def adjoint(self):
-        op = T(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+    def pow(self, z):
+        z_mod8 = z % 8
+        pow_map = {
+            0: lambda op: [],
+            1: lambda op: [op.__copy__()],
+            2: lambda op: [S(wires=op.wires)],
+            4: lambda op: [PauliZ(wires=op.wires)],
+        }
+        return pow_map.get(z_mod8, lambda op: [qml.PhaseShift(np.pi * z_mod8 / 4, wires=op.wires)])(
+            self
+        )
 
     def single_qubit_rot_angles(self):
         # T = RZ(\pi/4) RY(0) RZ(0)
@@ -865,10 +905,11 @@ class SX(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
-        op = SX(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+    def pow(self, z):
+        z_mod4 = z % 4
+        if z_mod4 == 2:
+            return [PauliX(wires=self.wires)]
+        return super().pow(z_mod4)
 
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
@@ -930,6 +971,9 @@ class CNOT(Operation):
 
     def adjoint(self):
         return CNOT(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
@@ -1019,6 +1063,9 @@ class CZ(Operation):
 
     def adjoint(self):
         return CZ(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @property
     def control_wires(self):
@@ -1112,6 +1159,9 @@ class CY(Operation):
     def adjoint(self):
         return CY(wires=self.wires)
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1190,11 +1240,143 @@ class SWAP(Operation):
         ]
         return decomp_ops
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
     def adjoint(self):
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
+
+
+class ECR(Operation):
+    r""" ECR(wires)
+
+    An echoed RZX(pi/2) gate.
+
+    .. math:: ECR = {1/\sqrt{2}} \begin{bmatrix}
+            0 & 0 & 1 & i \\
+            0 & 0 & i & 1 \\
+            1 & -i & 0 & 0 \\
+            -i & 1 & 0 & 0
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+    """
+
+    num_wires = 2
+    num_params = 0
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.ECR.matrix`
+
+
+        Return type: tensor_like
+
+        **Example**
+
+        >>> print(qml.ECR.compute_matrix())
+         [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
+         [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
+         [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
+         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
+        """
+
+        return np.array(
+            [
+                [0, 0, INV_SQRT2, INV_SQRT2 * 1j],
+                [0, 0, INV_SQRT2 * 1j, INV_SQRT2],
+                [INV_SQRT2, -INV_SQRT2 * 1j, 0, 0],
+                [-INV_SQRT2 * 1j, INV_SQRT2, 0, 0],
+            ]
+        )
+
+    @staticmethod
+    def compute_eigvals():
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.ECR.eigvals`
+
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> print(qml.ECR.compute_eigvals())
+        [1, -1, 1, -1]
+        """
+
+        return np.array([1, -1, 1, -1])
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+           .. math:: O = O_1 O_2 \dots O_n.
+
+
+           .. seealso:: :meth:`~.ECR.decomposition`.
+
+           Args:
+               wires (Iterable, Wires): wires that the operator acts on
+
+           Returns:
+               list[Operator]: decomposition into lower level operations
+
+           **Example:**
+
+           >>> print(qml.ECR.compute_decomposition((0,1)))
+
+
+        [PauliZ(wires=[0]),
+         CNOT(wires=[0, 1]),
+         SX(wires=[1]),
+         RX(1.5707963267948966, wires=[0]),
+         RY(1.5707963267948966, wires=[0]),
+         RX(1.5707963267948966, wires=[0])]
+
+        """
+        pi = np.pi
+        return [
+            PauliZ(wires=[wires[0]]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=[wires[1]]),
+            qml.RX(pi / 2, wires=[wires[0]]),
+            qml.RY(pi / 2, wires=[wires[0]]),
+            qml.RX(pi / 2, wires=[wires[0]]),
+        ]
+
+    def adjoint(self):
+        return ECR(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
 
 class ISWAP(Operation):
@@ -1304,10 +1486,11 @@ class ISWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
-        op = ISWAP(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+    def pow(self, z):
+        z_mod2 = z % 2
+        if abs(z_mod2 - 0.5) < 1e-6:
+            return [SISWAP(wires=self.wires)]
+        return super().pow(z_mod2)
 
 
 class SISWAP(Operation):
@@ -1437,10 +1620,9 @@ class SISWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
-        op = SISWAP(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+    def pow(self, z):
+        z_mod4 = z % 4
+        return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
 
 SQISW = SISWAP
@@ -1543,6 +1725,9 @@ class CSWAP(Operation):
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
         ]
         return decomp_ops
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
@@ -1681,6 +1866,9 @@ class Toffoli(Operation):
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @property
     def control_wires(self):
@@ -1854,6 +2042,9 @@ class MultiControlledX(Operation):
             control_values=self.hyperparameters["control_values"],
         )
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
@@ -1925,7 +2116,7 @@ class MultiControlledX(Operation):
     @staticmethod
     def _decomposition_with_many_workers(control_wires, target_wire, work_wires):
         """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
-        https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a suitably large register of
+        https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
         work wires"""
         num_work_wires_needed = len(control_wires) - 2
         work_wires = work_wires[:num_work_wires_needed]
@@ -1968,7 +2159,7 @@ class MultiControlledX(Operation):
     @staticmethod
     def _decomposition_with_one_worker(control_wires, target_wire, work_wire):
         """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
-        https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a single work wire"""
+        https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire"""
         tot_wires = len(control_wires) + 2
         partition = int(np.ceil(tot_wires / 2))
 
@@ -2053,8 +2244,11 @@ class Barrier(Operation):
     def _controlled(self, _):
         return Barrier(wires=self.wires)
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         return Barrier(wires=self.wires)
+
+    def pow(self, z):
+        return [self.__copy__()]
 
 
 class WireCut(Operation):
@@ -2103,3 +2297,6 @@ class WireCut(Operation):
 
     def adjoint(self):
         return WireCut(wires=self.wires)
+
+    def pow(self, z):
+        return [self.__copy__()]

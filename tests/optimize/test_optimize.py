@@ -115,17 +115,19 @@ class TestOverOpts:
         """Check non-trainable argument does not get updated"""
 
         def func(a, b, c, d):
+            assert qml.math.allclose(b, 1.0)
             return a * b * c * d
 
-        a = np.array(1.0, requires_grad=True)
+        a = np.array(0.1, requires_grad=True)
         b = np.array(1.0, requires_grad=False)
         c = 1.0
-        d = np.array(1.0, requires_grad=True)
+        d = np.array(0.2, requires_grad=True)
 
-        args_new = opt.step(func, a, b, c, d)
+        args1 = opt.step(func, a, b, c, d)
+        args2 = opt.step(func, *args1)
 
-        assert args_new[1] is b
-        assert args_new[2] == 1.0
+        assert args2[1] is b
+        assert args2[2] == 1.0
 
     def test_steps_the_same(self, opt, tol):
         """Tests whether separating the args into different inputs affects their

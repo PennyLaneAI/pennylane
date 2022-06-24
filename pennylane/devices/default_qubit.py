@@ -23,7 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
@@ -79,10 +79,6 @@ class DefaultQubit(QubitDevice):
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
@@ -106,12 +102,17 @@ class DefaultQubit(QubitDevice):
         "MultiRZ",
         "Hadamard",
         "S",
+        "Adjoint(S)",
         "T",
+        "Adjoint(T)",
         "SX",
+        "Adjoint(SX)",
         "CNOT",
         "SWAP",
         "ISWAP",
+        "Adjoint(ISWAP)",
         "SISWAP",
+        "Adjoint(SISWAP)",
         "SQISW",
         "CSWAP",
         "Toffoli",
@@ -131,6 +132,7 @@ class DefaultQubit(QubitDevice):
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
@@ -141,6 +143,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "ECR",
     }
 
     observables = {
@@ -155,8 +158,10 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+    def __init__(
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+    ):
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 
         # Create the initial state. Internally, we store the
@@ -250,7 +255,7 @@ class DefaultQubit(QubitDevice):
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
-        matrix = self._get_unitary_matrix(operation)
+        matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
         if operation in diagonal_in_z_basis:
             return self._apply_diagonal_unitary(state, matrix, wires)
@@ -315,7 +320,7 @@ class DefaultQubit(QubitDevice):
         """
         state_x = self._apply_x(state, axes)
         state_z = self._apply_z(state, axes)
-        return SQRT2INV * (state_x + state_z)
+        return self._const_mul(SQRT2INV, state_x + state_z)
 
     def _apply_s(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, 1j, inverse)
@@ -462,7 +467,7 @@ class DefaultQubit(QubitDevice):
         sl_1 = _get_slice(1, axes[0], num_wires)
 
         phase = self._conj(parameters) if inverse else parameters
-        return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
+        return self._stack([state[sl_0], self._const_mul(phase, state[sl_1])], axis=axes[0])
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a
@@ -506,7 +511,7 @@ class DefaultQubit(QubitDevice):
                 for op, coeff in zip(observable.ops, observable.data):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
                     Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
@@ -524,16 +529,15 @@ class DefaultQubit(QubitDevice):
             else:
                 # Coefficients and the state are not trainable, we can be more
                 # efficient in how we compute the Hamiltonian sparse matrix.
-
                 if observable.name == "Hamiltonian":
                     Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
-                res = coo_matrix.dot(
-                    coo_matrix(qml.math.conj(state)),
-                    coo_matrix.dot(Hmat, coo_matrix(state.reshape(len(self.state), 1))),
+                res = csr_matrix.dot(
+                    csr_matrix(qml.math.conj(state)),
+                    csr_matrix.dot(Hmat, csr_matrix(state.reshape(len(self.state), 1))),
                 ).toarray()[0]
 
             if observable.name == "Hamiltonian":
@@ -555,9 +559,9 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.get_eigvals()
+            return unitary.eigvals()
 
-        return unitary.get_matrix()
+        return unitary.matrix()
 
     @classmethod
     def capabilities(cls):
@@ -595,36 +599,6 @@ class DefaultQubit(QubitDevice):
     @property
     def state(self):
         return self._flatten(self._pre_rotated_state)
-
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix of a given set of wires.
-
-        Args:
-            wires (Wires): wires of the reduced system.
-
-        Returns:
-            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix.
-        """
-        dim = self.num_wires
-        state = self._pre_rotated_state
-
-        # Return the full density matrix by using numpy tensor product
-        if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), axes=0)
-            density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-            return density_matrix
-
-        complete_system = list(range(0, dim))
-        traced_system = [x for x in complete_system if x not in wires.labels]
-
-        # Return the reduced density matrix by using numpy tensor product
-        density_matrix = self._tensordot(
-            state, self._conj(state), axes=(traced_system, traced_system)
-        )
-        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-
-        return density_matrix
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.

@@ -29,9 +29,9 @@ from .gradient_transform import (
     grad_method_validation,
     choose_grad_methods,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
+from .finite_difference import finite_diff
 from .parameter_shift import expval_param_shift, _get_operation_recipe
-from .general_shift_rules import process_shifts
+from .general_shift_rules import process_shifts, generate_shifted_tapes
 
 
 def _grad_method(tape, idx):
@@ -119,7 +119,7 @@ def _grad_method(tape, idx):
     return "A"
 
 
-def _gradient_analysis(tape):
+def _gradient_analysis_cv(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
 
@@ -337,11 +337,11 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         arg_idx = argnum.index(idx)
         recipe = gradient_recipes[arg_idx]
         if recipe is not None:
-            recipe = process_shifts(np.array(recipe).T)
+            recipe = process_shifts(np.array(recipe))
         else:
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
-        coeffs, multipliers, op_shifts = recipe
+        coeffs, multipliers, op_shifts = recipe.T
 
         if len(op_shifts) != 2:
             # The 2nd order CV parameter-shift rule only accepts two-term shifts
@@ -413,10 +413,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             )
 
         if not any(i is None for i in constants):
-            # Check if *all* transformed observables corresponds to a constant term.
-            # term. If this is the case for all transformed observables on the tape,
-            # then <psi|A|psi> = A<psi|psi> = A,
-            # and we can avoid the device execution.
+            # Check if *all* transformed observables corresponds to a constant
+            # term. If this is the case for all transformed observables on the
+            # tape, then <psi|A|psi> = A<psi|psi> = A, and we can avoid the
+            # device execution.
             shapes[-1] = 0
             obs_indices.append(transformed_obs_idx)
             gradient_values.append(constants)
@@ -615,7 +615,8 @@ def param_shift_cv(
     >>> qml.jacobian(circuit)(params)
     array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
@@ -662,10 +663,7 @@ def param_shift_cv(
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    _gradient_analysis(tape)
-    gradient_tapes = []
-    shapes = []
-    fns = []
+    _gradient_analysis_cv(tape)
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
@@ -673,7 +671,11 @@ def param_shift_cv(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: ()
+        return [], lambda _: qml.math.zeros((tape.output_dim, 0))
+
+    gradient_tapes = []
+    shapes = []
+    fns = []
 
     def _update(data):
         """Utility function to update the list of gradient tapes,
@@ -684,9 +686,8 @@ def param_shift_cv(
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
-    all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if all_params_grad_method_zero:
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(m.return_type is qml.measurements.Variance for m in tape.measurements)
