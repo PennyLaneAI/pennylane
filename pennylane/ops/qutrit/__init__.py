@@ -21,6 +21,7 @@ The operations are in one file:
 """
 
 from .matrix_ops import *
+from .observables import *
 from ..identity import Identity
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
@@ -31,7 +32,7 @@ ops = {
 
 # TODO: Remove QutritUnitary from obs list
 obs = {
-    "QutritUnitary",  # Added here to prevent errors when using device
+    "THermitian",  # Added here to prevent errors when using device
 }
 
 __all__ = list(ops | obs)

@@ -16,16 +16,13 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
-import numpy as np
+import pennylane as qml     # pylint: disable=unused-import
+from pennylane.ops.qubit import Hermitian
+from pennylane.ops.qutrit import QutritUnitary
 
-import pennylane as qml
-from pennylane.operation import AllWires, AnyWires, Observable
-from pennylane.wires import Wires
-from .matrix_ops import QubitUnitary
-
-class THermitian(Observable):
+class THermitian(Hermitian):
     r"""
-    An arbitrary Ternary Hermitian observable.
+    An arbitrary Hermitian observable for qutrits.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
 
@@ -50,15 +47,59 @@ class THermitian(Observable):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
-    num_wires = AnyWires
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
 
-    # TODO: Add grad_method
-    _eigs = {}
+    @staticmethod
+    def compute_matrix(A):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
-    def __init__(self, A, wires, do_queue=True, id=None):
-        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+        .. seealso:: :meth:`~.THermitian.matrix`
+
+        Args:
+            A (tensor_like): hermitian matrix
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> A = np.array([[6+0j, 1-2j, 0],[1+2j, -1, 0], [0, 0, 1]])
+        >>> qml.Hermitian.compute_matrix(A)
+        [[ 6.+0.j  1.-2.j  0.+0.j]
+         [ 1.+2.j -1.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  1.+0.j]]
+        """
+        return Hermitian.compute_matrix(A)
+
+    @staticmethod
+    def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.THermitian.diagonalizing_gates`.
+
+        Args:
+            eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"]
+            wires (Iterable[Any], Wires): wires that the operator acts on
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> A = np.array([[-6, 2 + 1j, 0], [2 - 1j, 0, 0], [0, 0, 1]])
+        >>> _, evecs = np.linalg.eigh(A)
+        >>> qml.THermitian.compute_diagonalizing_gates(evecs, wires=[0])
+        [QutritUnitary(tensor([[-0.94915323-0.j    0.1407893 +0.2815786j  -0.        -0.j  ]
+                               [ 0.31481445-0.j    0.42447423+0.84894846j  0.        -0.j  ]
+                               [ 0.        -0.j    0.        -0.j          1.        -0.j  ]], requires_grad=True), wires=[0])]
+
+        """
+        return [QutritUnitary(eigenvectors.conj().T, wires=wires)]
