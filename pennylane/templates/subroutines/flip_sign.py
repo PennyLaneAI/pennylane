@@ -38,8 +38,8 @@ class FlipSign(Operation):
     Raises:
         ValueError: "expected at integer array for wires "
         ValueError: "expected at least one wire representing the qubit "
-        ValueError: "expected at integer greater than zero for basic flipping state "
         ValueError: "expected at integer binary array "
+        ValueError: "expected at integer greater than zero for basic flipping state "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
 
