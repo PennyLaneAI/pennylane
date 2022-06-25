@@ -44,10 +44,11 @@ class TestFlipSign:
             return qml.state()
 
         # we check that only the indicated value has been changed
-        status = False
+        statuses = []
         for ind, x in enumerate(circuit()):
             if ind == n_qubits:
-                status = np.sign(x) == -1
-                break
+                statuses.append((np.sign(x) == -1))
+            else:
+                statuses.append((np.sign(x) == 1))
 
-        assert status == True
+        assert np.array(statuses).all()
