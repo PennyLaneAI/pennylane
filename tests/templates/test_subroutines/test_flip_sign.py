@@ -25,9 +25,11 @@ class TestFlipSign:
     @pytest.mark.parametrize(
         ("n_status", "n_wires"),
         [
-            ([1, 0], 2),
-            ([1, 0, 0, 0], 4),
+            ([1,0],2),
+            ([1,1,0], 3),
+            ([1,0,0,0], 4),
             (6, 3),
+            (8, 4),
         ],
     )
     def test_eval(self, n_status, n_wires):
@@ -45,9 +47,9 @@ class TestFlipSign:
         # we check that only the indicated value has been changed
         statuses = []
         for ind, x in enumerate(circuit()):
-            if ind == n_wires:
-                statuses.append(np.sign(x) == -1)
+            if ind == n_status:
+                statuses.append(bool(np.sign(x) == -1))
             else:
-                statuses.append(np.sign(x) == 1)
+                statuses.append(bool(np.sign(x) == 1))
 
         assert np.all(np.array(statuses))
