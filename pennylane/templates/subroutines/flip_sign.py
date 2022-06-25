@@ -21,7 +21,7 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FlipSign(Operation):
-    r"""FlipSign operator flips the sign for a given state.
+    r"""FlipSign operator flips the sign for a given basic state.
 
     In a nutshell, this class perform the following operation:
 
