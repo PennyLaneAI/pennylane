@@ -47,6 +47,43 @@
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
 <h3>Improvements</h3>
+  
+* Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
+  [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  
+  Note that the change included creating a new `Counts` measurement type in `measurements.py`.
+
+  `counts=True` can be set when obtaining raw samples in the computational basis:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     # passing the counts flag
+  ...     return qml.sample(counts=True)   
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '11': 505}
+  ```
+  
+  Counts can also be obtained when sampling the eigenstates of an observable:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...   qml.Hadamard(wires=0)
+  ...   qml.CNOT(wires=[0, 1])
+  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+  >>> result = circuit()
+  >>> print(result)
+  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
+   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ```
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
   labels.
@@ -105,5 +142,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey,
+
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
 Antal Száva, Moritz Willmann
