@@ -47,8 +47,8 @@ class TestFlipSign:
         statuses = []
         for ind, x in enumerate(circuit()):
             if ind == n_qubits:
-                statuses.append((np.sign(x) == -1))
+                statuses.append(np.sign(x) == -1)
             else:
-                statuses.append((np.sign(x) == 1))
+                statuses.append(np.sign(x) == 1)
 
         assert np.array(statuses).all()
