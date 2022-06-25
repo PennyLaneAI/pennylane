@@ -50,4 +50,4 @@ class TestFlipSign:
             else:
                 statuses.append(np.sign(x) == 1)
 
-        assert np.array(statuses).all()
+        assert np.all(np.array(statuses))
