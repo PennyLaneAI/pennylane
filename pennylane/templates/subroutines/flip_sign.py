@@ -61,7 +61,7 @@ class FlipSign(Operation):
                qml.FlipSign([1,0], wires = list(range(2)))
                return qml.sample()
 
-            drawer = qml.draw(circuit, show_all_wires = True)
+            circuit()
 
         The result for the above circuit is:
 
