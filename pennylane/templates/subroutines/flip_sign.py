@@ -110,7 +110,7 @@ class FlipSign(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, n):
+    def compute_decomposition(wires, n):  # pylint: disable=arguments-differ
         r"""Representation of the operator
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
