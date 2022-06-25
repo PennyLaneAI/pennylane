@@ -60,4 +60,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+Ankit Khandelwal, Sergio Martínez-Losa, Ixchel Meza Chavez, Moritz Willmann

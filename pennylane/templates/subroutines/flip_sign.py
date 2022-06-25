@@ -32,14 +32,14 @@ class FlipSign(Operation):
     It flips the sign of the state.
 
     Args:
-        wires (array[int]): wires that the operator acts on
-        n (array[int]) or int: binary array vector or integer value representing the state to flip the sign
+        n (array[int] or int): binary array vector or integer value representing the state to flip the sign
+        wires (array[int]): number of wires that the operator acts on
 
     Raises:
-        ValueError: "expected at integer greater than zero for basic flipping state "
-        ValueError: "expected at integer binary array "
         ValueError: "expected at integer array for wires "
         ValueError: "expected at least one wire representing the qubit "
+        ValueError: "expected at integer greater than zero for basic flipping state "
+        ValueError: "expected at integer binary array "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
 
@@ -52,7 +52,7 @@ class FlipSign(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=5, shots = 1000)
+            dev = qml.device("default.qubit", wires=5, shots = 1)
 
             @qml.qnode(dev)
             def circuit():
@@ -78,31 +78,38 @@ class FlipSign(Operation):
 
     def __init__(self, n, wires, do_queue=True, id=None):
 
+        if not isinstance(wires, list):
+            raise ValueError("expected at integer array for wires ")
+
+        if len(wires) == 0:
+            raise ValueError("expected at least one wire representing the qubit ")
+
         if type(n) == int:
-            if n > 0:
-                n = self.to_list(n)
+            if n >= 0:
+                n = self.to_list(n, len(wires))
             else:
                 raise ValueError("expected at integer greater than zero for basic flipping state ")
 
         if np.array(n).dtype != np.dtype("int"):
             raise ValueError("expected at integer binary array ")
 
-        if not isinstance(wires, list):
-            raise ValueError("expected at integer array for wires ")
-
-        if np.array(wires).dtype != np.dtype("int"):
-            raise ValueError("expected a integer array for wires ")
-
-        if len(wires) == 0:
-            raise ValueError("expected at least one wire representing the qubit ")
-
         self._hyperparameters = {"n": n}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def to_list(n):
-        r"""Convert an integer into a binary integer list"""
-        b_str = f"{n:b}".zfill(n)
+    def to_list(n, n_wires):
+        r"""Convert an integer into a binary integer list
+
+        Raises:
+            ValueError: "expected at integer greater than zero for basic flipping state "
+
+        Returns:
+            (array[int]): integer binary array
+        """
+        if n >= 2**n_wires:
+            raise ValueError("cannot encode n with n wires ")
+
+        b_str = f"{n:b}".zfill(n_wires)
         bin_list = [int(i) for i in b_str]
         return bin_list
 

@@ -27,21 +27,27 @@ class TestFlipSign:
         ("test_status", "n_qubits"),
         [
             ([1, 0], 2),
+            ([1, 0, 0, 0], 4),
+            (6, 3),
         ],
     )
     def test_eval(self, test_status, n_qubits):
 
         dev = qml.device("default.qubit", wires=n_qubits, shots=1)
 
-        def circuit_template():
-
+        @qml.qnode(dev)
+        def circuit():
             for wire in list(range(n_qubits)):
                 qml.Hadamard(wires=wire)
-
             qml.FlipSign(test_status, wires=list(range(n_qubits)))
 
             return qml.state()
 
-        circuit = qml.QNode(circuit_template, dev)
+        # we check that only the indicated value has been changed
+        status = False
+        for ind, x in enumerate(circuit()):
+            if ind == n_qubits:
+                status = np.sign(x) == -1
+                break
 
-        assert circuit() == 1
+        assert status == True
