@@ -135,14 +135,14 @@ class FlipSign(Operation):
                 op_list.append(qml.PauliX(wires[-1]))
 
             op_list.append(
-                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=n[:-1])(
-                    wires=wires[-1]
-                )
+                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=n[:-1])(wires=wires[-1])
             )
 
             if n[-1] == 0:
                 op_list.append(qml.PauliX(wires[-1]))
         else:
-            raise ValueError("Wires length and flipping state length does not match, they must be equal length ")
+            raise ValueError(
+                "Wires length and flipping state length does not match, they must be equal length "
+            )
 
         return op_list
