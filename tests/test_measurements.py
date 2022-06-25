@@ -694,8 +694,8 @@ class TestCounts:
         assert len(binned_samples) == len(shot_vec)
         assert sum(sum(v for v in bin.values()) for bin in binned_samples) == sum(shot_vec)
 
-    def test_counts_state_jax(self, tol):
-        "Check jax interface with state vector counts"
+    def test_counts_jax(self, tol):
+        """Check jax interface with computational basis state counts"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -707,7 +707,7 @@ class TestCounts:
         assert res == {"000": n_shots}
 
     def test_counts_operator_jax(self, tol):
-        "Check jax interface with observable measurement counts"
+        """Check jax interface with observable measurement counts"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -718,8 +718,8 @@ class TestCounts:
         res = circuit()
         assert res == {1: n_shots}
 
-    def test_counts_state_tf(self, tol):
-        "Check TensorFlow interface with state vector counts"
+    def test_counts_tf(self, tol):
+        """Check TensorFlow interface with computational basis state counts"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -731,7 +731,7 @@ class TestCounts:
         assert res == {"000": n_shots}
 
     def test_counts_operator_tf(self, tol):
-        "Check TensorFlow interface with observable measurement counts"
+        """Check TensorFlow interface with observable measurement counts"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -742,8 +742,8 @@ class TestCounts:
         res = circuit()
         assert res == {1: n_shots}
 
-    def test_counts_state_torch(self, tol):
-        "Check pyTorch interface with state vector counts"
+    def test_counts_torch(self, tol):
+        """Check pyTorch interface with computational basis state counts"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -755,7 +755,7 @@ class TestCounts:
         assert res == {"000": n_shots}
 
     def test_counts_operator_torch(self, tol):
-        "Check pyTorch interface with observable measurement counts"
+        """Check pyTorch interface with observable measurement counts"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
@@ -766,8 +766,8 @@ class TestCounts:
         res = circuit()
         assert res == {1: n_shots}
 
-    def test_counts_state_jax_binned(self, tol):
-        "Check jax interface with state vector counts"
+    def test_counts_jax_binned(self, tol):
+        """Check jax interface with computational basis state counts"""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -780,7 +780,7 @@ class TestCounts:
         assert res[1] == {"000": shot_vec[1]}
 
     def test_counts_operator_jax_binned(self, tol):
-        "Check jax interface with observable measurement counts"
+        """Check jax interface with observable measurement counts"""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -792,8 +792,8 @@ class TestCounts:
         assert res[0] == {1: shot_vec[0]}
         assert res[1] == {1: shot_vec[1]}
 
-    def test_counts_state_tf_binned(self, tol):
-        "Check TensorFlow interface with state vector counts"
+    def test_counts_tf_binned(self, tol):
+        """Check TensorFlow interface with computational basis state counts"""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -806,7 +806,7 @@ class TestCounts:
         assert res[1] == {"000": shot_vec[1]}
 
     def test_counts_operator_tf_binned(self, tol):
-        "Check TensorFlow interface with observable measurement counts"
+        """Check TensorFlow interface with observable measurement counts"""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -818,8 +818,8 @@ class TestCounts:
         assert res[0] == {1: shot_vec[0]}
         assert res[1] == {1: shot_vec[1]}
 
-    def test_counts_state_torch_binned(self, tol):
-        "Check pyTorch interface with state vector counts"
+    def test_counts_torch_binned(self, tol):
+        """Check pyTorch interface with computational basis state counts"""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -832,7 +832,7 @@ class TestCounts:
         assert res[1] == {"000": shot_vec[1]}
 
     def test_counts_operator_torch_binned(self, tol):
-        "Check pyTorch interface with observable measurement counts"
+        """Check pyTorch interface with observable measurement counts"""
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
