@@ -176,7 +176,7 @@ def vjp(
 
         jacs = []
         for t in tapes:
-            g_tapes, fn = gradient_fn(t)
+            g_tapes, fn = gradient_fn(t, **gradient_kwargs)
 
             with qml.tape.Unwrap(*g_tapes):
                 res, _ = execute_fn(g_tapes, **gradient_kwargs)
