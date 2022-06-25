@@ -26,9 +26,7 @@ class TestFlipSign:
     @pytest.mark.parametrize(
         ("test_status", "n_qubits"),
         [
-            ([1, 0, 1, 0], 4),
-            ([1, 0, 1, 0, 1], 5),
-            ([0, 1, 1, 1, 1, 0, 1], 7),
+            ([1, 0], 2),
         ],
     )
     def test_eval(self, test_status, n_qubits):
@@ -42,10 +40,7 @@ class TestFlipSign:
 
             qml.FlipSign(test_status, wires=list(range(n_qubits)))
 
-            for wire in list(range(n_qubits)):
-                qml.Hadamard(wires=wire)
-
-            return qml.sample(qml.PauliZ(n_qubits - 1))
+            return qml.state()
 
         circuit = qml.QNode(circuit_template, dev)
 

@@ -33,7 +33,7 @@ class FlipSign(Operation):
 
     Args:
         wires (array[int]): wires that the operator acts on
-        bin_arr (array[int]): binary array vector representing the state to flip the sign
+        n (array[int]) or int: binary array vector or integer value representing the state to flip the sign
 
     Raises:
         ValueError: "expected at integer binary array "
@@ -78,45 +78,51 @@ class FlipSign(Operation):
 
     num_wires = AnyWires
 
-    def __init__(self, bin_arr, wires, do_queue=True, id=None):
+    def __init__(self, n, wires, do_queue=True, id=None):
 
-        if not isinstance(bin_arr, list):
-            raise ValueError("expected at integer binary array ")
+        if type(n) == int:
+            if n == 0:
+                raise ValueError("expected at integer greater than zero for basic flipping state ")
+            else:
+                n = self.to_list(n)
 
-        if np.array(bin_arr).dtype != np.dtype("int"):
+        if np.array(n).dtype != np.dtype("int"):
             raise ValueError("expected at integer binary array ")
 
         if not isinstance(wires, list):
-            raise ValueError("expected at integer binary array for wires ")
+            raise ValueError("expected at integer array for wires ")
 
         if np.array(wires).dtype != np.dtype("int"):
-            raise ValueError("expected a integer binary array for wires ")
-
-        if len(bin_arr) == 0:
-            raise ValueError("expected at integer binary array not empty ")
+            raise ValueError("expected a integer array for wires ")
 
         if len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
-        self._hyperparameters = {"bin_arr": bin_arr}
+        self._hyperparameters = {"n": n}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def to_list(n):
+        b_str = f"{n:b}".zfill(n)
+        bin_list = [int(i) for i in b_str]
+        return bin_list
 
     @property
     def num_params(self):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, bin_arr):
+    def compute_decomposition(wires, n):
         r"""Representation of the operator
-
-        .. math::
-            \hat{X} \otimes \hat{Z} \otimes \hat{X}
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
 
         Args:
             wires (array[int]): wires that the operator acts on
-            bin_arr (array[int]): binary array vector representing the state to flip the sign
+            n (array[int]): binary array vector representing the state to flip the sign
+
+        Raises:
+            ValueError: "Wires length and flipping state length does not match, they must be equal length "
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -124,20 +130,19 @@ class FlipSign(Operation):
 
         op_list = []
 
-        if len(wires) == len(bin_arr):
-            if bin_arr[-1] == 0:
+        if len(wires) == len(n):
+            if n[-1] == 0:
                 op_list.append(qml.PauliX(wires[-1]))
 
             op_list.append(
-                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=bin_arr[:-1])(
+                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=n[:-1])(
                     wires=wires[-1]
                 )
             )
 
-            if bin_arr[-1] == 0:
+            if n[-1] == 0:
                 op_list.append(qml.PauliX(wires[-1]))
         else:
-            for wire in list(range(len(wires))):
-                op_list.append(qml.Identity(wire))
+            raise ValueError("Wires length and flipping state length does not match, they must be equal length ")
 
         return op_list
