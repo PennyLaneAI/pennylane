@@ -15,8 +15,7 @@
 Tests for the FlipSign template.
 """
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 import pennylane as qml
 
 
@@ -24,29 +23,29 @@ class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
     @pytest.mark.parametrize(
-        ("test_status", "n_qubits"),
+        ("n_status", "n_wires"),
         [
             ([1, 0], 2),
             ([1, 0, 0, 0], 4),
             (6, 3),
         ],
     )
-    def test_eval(self, test_status, n_qubits):
+    def test_eval(self, n_status, n_wires):
 
-        dev = qml.device("default.qubit", wires=n_qubits, shots=1)
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():
-            for wire in list(range(n_qubits)):
+            for wire in list(range(n_wires)):
                 qml.Hadamard(wires=wire)
-            qml.FlipSign(test_status, wires=list(range(n_qubits)))
+            qml.FlipSign(n_status, wires=list(range(n_wires)))
 
             return qml.state()
 
         # we check that only the indicated value has been changed
         statuses = []
         for ind, x in enumerate(circuit()):
-            if ind == n_qubits:
+            if ind == n_wires:
                 statuses.append(np.sign(x) == -1)
             else:
                 statuses.append(np.sign(x) == 1)
