@@ -79,10 +79,10 @@ class FlipSign(Operation):
     def __init__(self, n, wires, do_queue=True, id=None):
 
         if type(n) == int:
-            if n == 0:
-                raise ValueError("expected at integer greater than zero for basic flipping state ")
-            else:
+            if n > 0:
                 n = self.to_list(n)
+            else:
+                raise ValueError("expected at integer greater than zero for basic flipping state ")
 
         if np.array(n).dtype != np.dtype("int"):
             raise ValueError("expected at integer binary array ")
