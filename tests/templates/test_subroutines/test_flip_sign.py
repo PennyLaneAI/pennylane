@@ -23,10 +23,10 @@ class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
     @pytest.mark.parametrize(
-        ("n_status", "n_wires"),
+        ("n_status,n_wires"),
         [
             ([1, 0], 2),
-            ([1, 1, 0], 3),
+            ([1,1,0],3),
             ([1, 0, 0, 0], 4),
             (6, 3),
             (8, 4),
@@ -51,5 +51,5 @@ class TestFlipSign:
                 statuses.append(bool(np.sign(x) == -1))
             else:
                 statuses.append(bool(np.sign(x) == 1))
-
+        print(statuses)
         assert np.all(np.array(statuses))
