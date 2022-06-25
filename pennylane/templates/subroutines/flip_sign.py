@@ -36,9 +36,9 @@ class FlipSign(Operation):
         n (array[int]) or int: binary array vector or integer value representing the state to flip the sign
 
     Raises:
+        ValueError: "expected at integer greater than zero for basic flipping state "
         ValueError: "expected at integer binary array "
-        ValueError: "expected at integer binary array for wires "
-        ValueError: "expected at integer binary array not empty "
+        ValueError: "expected at integer array for wires "
         ValueError: "expected at least one wire representing the qubit "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
