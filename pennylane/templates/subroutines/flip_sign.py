@@ -101,6 +101,7 @@ class FlipSign(Operation):
 
     @staticmethod
     def to_list(n):
+        r"""Convert an integer into a binary integer list"""
         b_str = f"{n:b}".zfill(n)
         bin_list = [int(i) for i in b_str]
         return bin_list
