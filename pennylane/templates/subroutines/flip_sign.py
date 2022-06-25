@@ -28,7 +28,7 @@ class FlipSign(Operation):
     FlipSign(n):math:`|m\rangle = -|m\rangle` if m = n
     FlipSign(n):math:`|m\rangle = |m\rangle` if m != n
 
-    Where m is the state to flip and n is the array of qubits (wires).
+    Where n is the basic state to flip and m is the input.
     It flips the sign of the state.
 
     Args:
