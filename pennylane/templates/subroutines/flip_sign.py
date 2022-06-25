@@ -101,7 +101,7 @@ class FlipSign(Operation):
         r"""Convert an integer into a binary integer list
 
         Raises:
-            ValueError: "expected at integer greater than zero for basic flipping state "
+            ValueError: "cannot encode n with n wires "
 
         Returns:
             (array[int]): integer binary array
