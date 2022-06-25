@@ -84,6 +84,9 @@ class FlipSign(Operation):
         if len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
+        if np.array(wires).dtype != np.dtype("int"):
+            raise ValueError("expected at integer binary array ")
+
         if type(n) == int:
             if n >= 0:
                 n = self.to_list(n, len(wires))
