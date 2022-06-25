@@ -32,14 +32,14 @@ class FlipSign(Operation):
     It flips the sign of the state.
 
     Args:
-        n (array[int] or int): binary array vector or integer value representing the state to flip the sign
+        n (int): integer value representing the state to flip the sign
         wires (array[int]): number of wires that the operator acts on
 
     Raises:
         ValueError: "expected at integer array for wires "
         ValueError: "expected at least one wire representing the qubit "
+        ValueError: "expected at integer equal or greater than zero for basic flipping state "
         ValueError: "expected at integer binary array "
-        ValueError: "expected at integer greater than zero for basic flipping state "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
 
@@ -91,7 +91,13 @@ class FlipSign(Operation):
             if n >= 0:
                 n = self.to_list(n, len(wires))
             else:
-                raise ValueError("expected at integer greater than zero for basic flipping state ")
+                raise ValueError(
+                    "expected at integer equal or greater than zero for basic flipping state "
+                )
+        else:
+            raise ValueError(
+                "expected at integer equal or greater than zero for basic flipping state "
+            )
 
         if np.array(n).dtype != np.dtype("int"):
             raise ValueError("expected at integer binary array ")

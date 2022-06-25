@@ -23,11 +23,9 @@ class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
     @pytest.mark.parametrize(
-        ("n_status,n_wires"),
+        ("n_status, n_wires"),
         [
-            ([1, 0], 2),
-            ([1,1,0],3),
-            ([1, 0, 0, 0], 4),
+            (2, 2),
             (6, 3),
             (8, 4),
         ],
@@ -40,6 +38,7 @@ class TestFlipSign:
         def circuit():
             for wire in list(range(n_wires)):
                 qml.Hadamard(wires=wire)
+
             qml.FlipSign(n_status, wires=list(range(n_wires)))
 
             return qml.state()
