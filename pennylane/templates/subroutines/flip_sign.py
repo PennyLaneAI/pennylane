@@ -32,7 +32,7 @@ class FlipSign(Operation):
     It flips the sign of the state.
 
     Args:
-        n (int): integer value representing the state to flip the sign
+        n (array[int] or int): binary array or integer value representing the state to flip the sign
         wires (array[int]): number of wires that the operator acts on
 
     Raises:
@@ -52,7 +52,7 @@ class FlipSign(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=5, shots = 1)
+            dev = qml.device("default.qubit", wires=2, shots = 1)
 
             @qml.qnode(dev)
             def circuit():
@@ -86,6 +86,9 @@ class FlipSign(Operation):
 
         if np.array(wires).dtype != np.dtype("int"):
             raise ValueError("expected at integer binary array ")
+
+        if isinstance(n, list):
+            n = self.to_number(n)
 
         if type(n) == int:
             if n >= 0:
@@ -121,6 +124,15 @@ class FlipSign(Operation):
         b_str = f"{n:b}".zfill(n_wires)
         bin_list = [int(i) for i in b_str]
         return bin_list
+
+    @staticmethod
+    def to_number(arr_bin):
+        r"""Convert a binary array to integer number
+
+        Returns:
+            (int): integer number
+        """
+        return sum([arr_bin[i] * 2 ** (len(arr_bin) - i - 1) for i in range(len(arr_bin))])
 
     @property
     def num_params(self):
