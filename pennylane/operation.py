@@ -95,6 +95,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 # pylint:disable=access-member-before-definition
 import abc
 import copy
+from email.mime import base
 import itertools
 import functools
 import numbers
@@ -125,7 +126,7 @@ def __getattr__(name):
         raise AttributeError from e
 
 
-def expand_matrix(base_matrix, wires, wire_order):
+def expand_matrix(base_matrix, wires, wire_order = None):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -183,6 +184,10 @@ def expand_matrix(base_matrix, wires, wire_order):
     >>> res.requires_grad
     True
     """
+    
+    if wire_order is None or wires == Wires(wire_order):
+        return base_matrix
+
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
