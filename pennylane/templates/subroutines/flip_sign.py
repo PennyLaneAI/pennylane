@@ -36,10 +36,10 @@ class FlipSign(Operation):
         wires (array[int]): number of wires that the operator acts on
 
     Raises:
-        ValueError: "expected at integer array for wires "
+        ValueError: "expected an integer array for wires "
         ValueError: "expected at least one wire representing the qubit "
-        ValueError: "expected at integer equal or greater than zero for basic flipping state "
-        ValueError: "expected at integer binary array "
+        ValueError: "expected an integer binary array or integer number for basic flipping state "
+        ValueError: "expected an integer equal or greater than zero for basic flipping state "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
 
@@ -79,35 +79,38 @@ class FlipSign(Operation):
     def __init__(self, n, wires, do_queue=True, id=None):
 
         if not isinstance(wires, list):
-            raise ValueError("expected at integer array for wires ")
+            raise ValueError("expected an integer array for wires ")
 
         if len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
         if np.array(wires).dtype != np.dtype("int"):
-            raise ValueError("expected at integer binary array ")
+            raise ValueError("expected an integer array for wires")
 
-        if (
-            isinstance(n, list)
-            and np.array(wires).dtype != np.dtype("int")
-            and self.is_binary_array(n)
-        ):
-            n = self.to_number(n)
+        if isinstance(n, list):
+            if np.array(wires).dtype != np.dtype("int"):
+                if self.is_binary_array(n):
+                    n = self.to_number(n)
+                else:
+                    raise ValueError(
+                        "expected an integer binary array or integer number for basic flipping state "
+                    )
+            else:
+                raise ValueError(
+                    "expected an integer binary array or integer number for basic flipping state "
+                )
 
         if type(n) == int:
             if n >= 0:
                 n = self.to_list(n, len(wires))
             else:
                 raise ValueError(
-                    "expected at integer equal or greater than zero for basic flipping state "
+                    "expected an integer equal or greater than zero for basic flipping state "
                 )
         else:
             raise ValueError(
-                "expected at integer equal or greater than zero for basic flipping state "
+                "expected an integer equal or greater than zero for basic flipping state "
             )
-
-        if np.array(n).dtype != np.dtype("int"):
-            raise ValueError("expected at integer binary array ")
 
         self._hyperparameters = {"n": n}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
