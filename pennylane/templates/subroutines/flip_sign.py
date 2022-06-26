@@ -87,7 +87,11 @@ class FlipSign(Operation):
         if np.array(wires).dtype != np.dtype("int"):
             raise ValueError("expected at integer binary array ")
 
-        if isinstance(n, list):
+        if (
+            isinstance(n, list)
+            and np.array(wires).dtype != np.dtype("int")
+            and self.is_binary_array(n)
+        ):
             n = self.to_number(n)
 
         if type(n) == int:
@@ -107,6 +111,15 @@ class FlipSign(Operation):
 
         self._hyperparameters = {"n": n}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def is_binary_array(arr):
+        r"""Check if array is binary or not (only 0's and 1's)
+
+        Returns:
+            (bool): boolean that checks whether array is binary or not
+        """
+        return np.array_equal(arr, arr.astype(bool))
 
     @staticmethod
     def to_list(n, n_wires):
