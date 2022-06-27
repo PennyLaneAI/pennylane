@@ -94,8 +94,8 @@ class TestTHermitian:
         assert np.allclose(eigendecomp["eigvec"], eigvecs, atol=tol, rtol=0)
 
         key = tuple(observable.flatten().tolist())
-        assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
-        assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
+        assert np.allclose(qml.THermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
+        assert np.allclose(qml.THermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.THermitian._eigs) == 1
 
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
@@ -155,7 +155,7 @@ class TestTHermitian:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol):
-        """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
+        """Tests that the diagonalizing_gates method of the THermitian class returns the correct results."""
         qutrit_unitary = qml.THermitian(observable, wires=[0]).diagonalizing_gates()
 
         key = tuple(observable.flatten().tolist())

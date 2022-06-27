@@ -15,6 +15,7 @@
 This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
+from pennylane import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
 from pennylane.ops.qubit import Hermitian
@@ -49,8 +50,9 @@ class THermitian(Hermitian):
         id (str or None): String representing the operation (optional)
     """
 
+    # This method is overridden to update the docstring.
     @staticmethod
-    def compute_matrix(A):  # pylint: disable=arguments-differ
+    def compute_matrix(A):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -73,6 +75,29 @@ class THermitian(Hermitian):
          [ 0.+0.j  0.+0.j  1.+0.j]]
         """
         return Hermitian.compute_matrix(A)
+
+    # This overrides `Hermitian.eigendecomposition`, because keying into the dictionary `THermitian_eigs` directly
+    # does not work as expected and users need to key into `Hermitian._eigs` instead without this override.
+    @property
+    def eigendecomposition(self):
+        """Return the eigendecomposition of the matrix specified by the Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+        """
+        Hmat = self.matrix()
+        Hmat = qml.math.to_numpy(Hmat)
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in THermitian._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            THermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+        return THermitian._eigs[Hkey]
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
