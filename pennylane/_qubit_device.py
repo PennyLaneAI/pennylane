@@ -29,6 +29,7 @@ from pennylane import DeviceError
 from pennylane.operation import operation_derivative
 from pennylane.measurements import (
     Sample,
+    Counts,
     Variance,
     Expectation,
     Probability,
@@ -36,6 +37,7 @@ from pennylane.measurements import (
     VnEntropy,
     MutualInfo,
 )
+
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -276,10 +278,13 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                else:
+                elif not isinstance(r[0], dict):
+                    # Measurement types except for Counts
                     r = qml.math.squeeze(r)
-
-                if shot_tuple.copies > 1:
+                if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
+                    # This happens when measurement type is Counts
+                    results.append(r)
+                elif shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
                     results.append(r.T)
@@ -301,7 +306,7 @@ class QubitDevice(Device):
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                else:
+                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
                     results = self._asarray(results, dtype=self.R_DTYPE)
 
@@ -311,7 +316,8 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            else:
+            elif any(ret is not qml.measurements.Counts for ret in ret_types):
+                # all the other cases except all counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
@@ -475,7 +481,14 @@ class QubitDevice(Device):
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
-                results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                )
+
+            elif obs.return_type is Counts:
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+                )
 
             elif obs.return_type is Probability:
                 results.append(
@@ -958,20 +971,39 @@ class QubitDevice(Device):
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         return np.squeeze(np.var(samples, axis=0))
 
-    def sample(self, observable, shot_range=None, bin_size=None):
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        def _samples_to_counts(samples, no_observable_provided):
+            """Group the obtained samples into a dictionary.
+
+            **Example**
+
+                >>> samples
+                tensor([[0, 0, 1],
+                        [0, 0, 1],
+                        [1, 1, 1]], requires_grad=True)
+                >>> self._samples_to_counts(samples)
+                {'111':1, '001':2}
+            """
+            if no_observable_provided:
+                # If we describe a state vector, we need to convert its list representation
+                # into string (it's hashable and good-looking).
+                # Before converting to str, we need to extract elements from arrays
+                # to satisfy the case of jax interface, as jax arrays do not support str.
+                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            states, counts = np.unique(samples, return_counts=True)
+            return dict(zip(states, counts))
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
-        elif isinstance(
-            observable, MeasurementProcess
-        ):  # if no observable was provided then return the raw samples
+        elif no_observable_provided:  # if no observable was provided then return the raw samples
             if (
                 len(observable.wires) != 0
             ):  # if wires are provided, then we only return samples from those wires
@@ -998,9 +1030,20 @@ class QubitDevice(Device):
                 ) from e
 
         if bin_size is None:
+            if counts:
+                return _samples_to_counts(samples, no_observable_provided)
             return samples
-
-        return samples.reshape((bin_size, -1))
+        if counts:
+            shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
+            return [
+                _samples_to_counts(bin_sample, no_observable_provided)
+                for bin_sample in samples.reshape(shape)
+            ]
+        return (
+            samples.reshape((3, bin_size, -1))
+            if no_observable_provided
+            else samples.reshape((bin_size, -1))
+        )
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
