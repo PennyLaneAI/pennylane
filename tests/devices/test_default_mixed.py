@@ -991,10 +991,8 @@ class TestApply:
 class TestReadoutError:
     """Tests for measurement readout error"""
 
-    #def test_prob_out_of_range(self,nr_wires):
-    #    dev = qml.device("default.mixed", wires=nr_wires,readout_prob=2)
-
     def test_readout_prob_0(self,nr_wires):
+        """Tests that the measurement results are not affected when readout error probability is set to 0"""
         dev = qml.device("default.mixed",wires=nr_wires,readout_prob=0)
 
         @qml.qnode(dev)
@@ -1006,6 +1004,7 @@ class TestReadoutError:
         assert np.allclose(res,expected)
 
     def test_readout_prob_1(self,nr_wires):
+        """Tests the measurement results when readout error probability is set to 1"""
         dev = qml.device("default.mixed",wires=nr_wires,readout_prob=1)
 
         @qml.qnode(dev)
@@ -1017,6 +1016,7 @@ class TestReadoutError:
         assert np.allclose(res,expected)
 
     def test_readout_prob_half(self,nr_wires):
+        """Tests the measurement results on PauliZ operator when readout error probability is set to 0.5. For a finite number of shots, the results will deviate from the ideal value, that is, 0. The simulation result is compared with the ideal value after taking into account a tolerance value"""
         dev = qml.device("default.mixed",wires=nr_wires,shots=10000,readout_prob=0.5)
 
         @qml.qnode(dev)
@@ -1030,10 +1030,12 @@ class TestReadoutError:
         assert abs(res-expected) < tol1
 
     def test_prob_out_of_range(self,nr_wires):
+        """Tests that an error is raised when the user inputs a value for readout error probability outside the range [0,1]"""
         with pytest.raises(ValueError, match="The readout error probability should be in the range"):
             dev = qml.device("default.mixed",wires=nr_wires,readout_prob=2)
 
     def test_prob_type(self,nr_wires):
+        """Tests that an error is raised when the user inputs a wrong data type for readout error probability"""
         with pytest.raises(TypeError, match="The readout error probability should be an integer or a floating point number"):
             dev = qml.device("default.mixed",wires=nr_wires,readout_prob='RandomNum')
 
