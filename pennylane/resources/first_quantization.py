@@ -174,8 +174,9 @@ class FirstQuantization(Operation):
             :title: Theory
 
             For numerical convenience, we use the following modified expressions for computing
-            parameters that contain a sum over the elements, :math:`\nu`, of the set of reciprocal
-            lattice vectors, :math:`G_0`.
+            parameters that contain a sum over :math`\frac{1}{\left \| \nu \right \|^k}` where
+            :math:`\nu` denotes an element of the set of reciprocal lattice vectors, :math:`G_0`,
+            and :math:`k \in \left \{ 1, 2 \right \}`.
 
             For :math:`\lambda_{\nu}` defined in Eq. (25) of
             `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
@@ -216,7 +217,7 @@ class FirstQuantization(Operation):
 
             .. math::
 
-                \epsilon_l = \frac{4}{2^{n_m}} (7 \times 2^{n_p + 1} + 9 n_p - 11 - 3 \times 2^{-n_p}),
+                |\epsilon_l| \le \frac{4}{2^{n_m}} (7 \times 2^{n_p + 1} + 9 n_p - 11 - 3 \times 2^{-n_p}),
 
             where :math:`\mathcal{M} = 2^{n_m}` and :math:`n_m` is defined in Eq. (132) of
             `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
