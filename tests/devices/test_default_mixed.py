@@ -987,6 +987,55 @@ class TestApply:
 
         assert np.allclose(dev.state, target, atol=tol, rtol=0)
 
+@pytest.mark.parametrize("nr_wires", [2,3])
+class TestReadoutError:
+    """Tests for measurement readout error"""
+
+    #def test_prob_out_of_range(self,nr_wires):
+    #    dev = qml.device("default.mixed", wires=nr_wires,readout_prob=2)
+
+    def test_readout_prob_0(self,nr_wires):
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=0)
+
+        @qml.qnode(dev)
+        def circuit1():
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        res=circuit1()
+        expected = np.array([1, 1])
+        assert np.allclose(res,expected)
+
+    def test_readout_prob_1(self,nr_wires):
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=1)
+
+        @qml.qnode(dev)
+        def circuit2():
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        res=circuit2()
+        expected = np.array([-1,-1])
+        assert np.allclose(res,expected)
+
+    def test_readout_prob_half(self,nr_wires):
+        dev = qml.device("default.mixed",wires=nr_wires,shots=10000,readout_prob=0.5)
+
+        @qml.qnode(dev)
+        def circuit3():
+            return qml.expval(qml.PauliZ(0))
+
+        res=circuit3()
+        # setting the tolerance in expectation value to be 5 per cent.
+        tol1 = 0.05
+        expected = 0
+        assert abs(res-expected) < tol1
+
+    def test_prob_out_of_range(self,nr_wires):
+        with pytest.raises(ValueError, match="The readout error probability should be in the range"):
+            dev = qml.device("default.mixed",wires=nr_wires,readout_prob=2)
+
+    def test_prob_type(self,nr_wires):
+        with pytest.raises(TypeError, match="The readout error probability should be an integer or a floating point number"):
+            dev = qml.device("default.mixed",wires=nr_wires,readout_prob='RandomNum')
 
 class TestInit:
     """Tests related to device initializtion"""

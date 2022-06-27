@@ -23,6 +23,7 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
+import pennylane as qml
 from pennylane import numpy as np
 import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
@@ -134,12 +135,24 @@ class DefaultMixed(QubitDevice):
         return res
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None, readout_prob=None
     ):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
+
+        self.readout_err = readout_prob
+        # Check that the readout error probability, if entered, is either integer or float in [0,1]
+        if self.readout_err is not None:
+            if not isinstance(self.readout_err, float) and not isinstance(self.readout_err, int):
+                raise TypeError(
+                    "The readout error probability should be an integer or a floating point number in [0,1]"
+                )
+            if self.readout_err < 0 or self.readout_err > 1:
+                raise ValueError(
+                    "The readout error probability should be in the range [0,1]"
+                )
 
         # call QubitDevice init
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
@@ -148,7 +161,6 @@ class DefaultMixed(QubitDevice):
         # Create the initial state.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
-	self.readout_err = 0.1
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -197,7 +209,6 @@ class DefaultMixed(QubitDevice):
             return None
 
         # convert rho from tensor to matrix
-	self._state = [qml.BitFlip(self.readout_err,wires=k) for k in self.num_wires]
         rho = qnp.reshape(self._state, (2**self.num_wires, 2**self.num_wires))
 
         # probs are diagonal elements
@@ -516,3 +527,9 @@ class DefaultMixed(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._apply_operation(operation)
+
+        # apply the readout error if readout_prob is non-zero
+        if self.readout_err:
+            bitflips = [qml.BitFlip(self.readout_err,wires=k) for k in self.wires]
+            for bf in bitflips:
+                self._apply_operation(bf)
