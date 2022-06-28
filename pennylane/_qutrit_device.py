@@ -127,7 +127,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         of wires specified.
 
         Args:
-            num_wires (int): the number wires
+            num_wires (int): the number of wires
             dtype=np.uint32 (type): the data type of the arrays to use
 
         Returns:
