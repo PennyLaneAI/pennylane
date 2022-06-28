@@ -15,9 +15,9 @@
 This module contains the :class:`QutritDevice` abstract base class.
 """
 
-# For now, arguments may be different from the signatures provided in Device
+# For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import itertools
 
 import numpy as np
@@ -332,7 +332,10 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         perm = basis_states @ powers_of_three
         return self._gather(prob, perm)
 
-    def sample(self, observable, shot_range=None, bin_size=None):
+    # TODO: Update in next PR to add counts capability for binning
+    def sample(
+        self, observable, shot_range=None, bin_size=None
+    ):  # pylint: disable=arguments-differ
 
         # TODO: Add special cases for any observables that require them once list of
         # observables is updated.
