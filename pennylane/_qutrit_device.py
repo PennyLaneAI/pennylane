@@ -123,8 +123,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
-        """
-        Generates basis states in ternary representation according to the number
+        """Generates basis states in ternary representation according to the number
         of wires specified.
 
         Args:
