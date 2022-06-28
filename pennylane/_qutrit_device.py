@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
-    """Abstract base class for Pennylane qutrit devices.
+    """Abstract base class for PennyLane qutrit devices.
 
     The following abstract method **must** be defined:
 
