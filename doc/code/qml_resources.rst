@@ -10,6 +10,4 @@ Overview
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
-
-.. autoclass:: FirstQuantization
-    :inherited-members: Operation
+    :no-inherited-members:
