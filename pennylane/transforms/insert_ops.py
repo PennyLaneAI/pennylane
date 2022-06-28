@@ -58,6 +58,7 @@ def insert(
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
+    p: float = 0.,
 ) -> Union[callable, QuantumTape]:
     """Insert an operation into specified points in an input circuit.
 
@@ -219,43 +220,50 @@ def insert(
 
     not_op, req_ops = _check_position(position)
 
-    if position not in ("start", "end", "all") and not_op:
+    if position not in ("start", "end", "all", "p") and not_op:
         raise ValueError(
-            "Position must be either 'start', 'end', or 'all' (default) OR a PennyLane operation or list of operations."
+            "Position must be either 'start', 'end', 'p', or 'all' (default) OR a PennyLane operation or list of operations."
         )
 
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
+    
+    def new_args(op_args):
+        """Randomize amplitudes in case position == 'p'"""
+        if position == "p":
+            return qml.math.random.rand(len(op_args)) * op_args
+        else:
+            return op_args
 
     num_preps = len(circuit._prep)  # pylint: disable=protected-access
 
     for i in range(num_preps):
         apply(circuit.operations[i])
 
-    if position == "start":
+    if position == "start" or (position == "p" and qml.math.random.rand(1)[0] < p):
         for w in circuit.wires:
-            op(*op_args, wires=w)
+            op(*new_args(op_args), wires=w)
 
     for circuit_op in circuit.operations[num_preps:]:
         if not before:
             apply(circuit_op)
 
-        if position == "all":
+        if position == "all" or (position == "p" and qml.math.random.rand(1)[0] < p):
             for w in circuit_op.wires:
-                op(*op_args, wires=w)
+                op(*new_args(op_args), wires=w)
 
         if req_ops:
             for operation in req_ops:
                 if operation == type(circuit_op):
                     for w in circuit_op.wires:
-                        op(*op_args, wires=w)
+                        op(*new_args(op_args), wires=w)
 
         if before:
             apply(circuit_op)
 
-    if position == "end":
+    if position == "end" or (position == "p" and qml.math.random.rand(1)[0] < p):
         for w in circuit.wires:
-            op(*op_args, wires=w)
+            op(*new_args(op_args), wires=w)
 
     for m in circuit.measurements:
         apply(m)
