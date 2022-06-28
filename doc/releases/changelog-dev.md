@@ -46,7 +46,7 @@
 * Added `QutritDevice` as abstract base class for qutrit devices.
 [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
 <h3>Improvements</h3>
   
