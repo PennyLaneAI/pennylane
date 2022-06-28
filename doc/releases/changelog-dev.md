@@ -51,10 +51,10 @@
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
   
-  The `Sum` class provides functionality like any other pennylane operator. We can
+  The `Sum` class provides functionality like any other PennyLane operator. We can
   get the matrix, eigenvalues, terms, diagonalizing gates and more. 
 
-  ```
+  ```pycon
   >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(0))
   >>> summed_op
   PauliX(wires=[0]) + PauliZ(wires=[0])
@@ -69,7 +69,7 @@
   If the circuit is parameterized, then we can also differentiate through the 
   sum observable. 
   
-  ```pycon
+  ```python
   sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
   dev = qml.device("default.qubit", wires=2)
 
