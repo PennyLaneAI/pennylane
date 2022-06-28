@@ -390,8 +390,8 @@ class TestSampleBasisStates:
 class TestStatesToTernary:
     """Test the states_to_ternary method"""
 
-    def test_correct_conversion_two_states(self, mock_qutrit_device):
-        """Tests that the sample_basis_states method converts samples to binary correctly"""
+    def test_correct_conversion_three_states(self, mock_qutrit_device):
+        """Tests that the sample_basis_states method converts samples to ternary correctly"""
         wires = 4
         samples = [10, 31, 80, 65, 44, 2]
 
