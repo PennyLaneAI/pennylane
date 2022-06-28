@@ -22,28 +22,26 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FirstQuantization(Operation):
-    r"""Contains the functionality for estimating the number of non-Clifford gates and logical qubits
-    for quantum algorithms in first quantization using a plane-wave basis.
+    r"""Estimate the number of non-Clifford gates and logical qubits for quantum algorithms in
+    first quantization using a plane-wave basis.
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
-    the number of electrons and the unit cell volume need to be defined. Once these parameters are
-    defined, the costs can be computed using the functions :func:`~.gate_cost` and
-    :func:`~.qubit_cost` with a target error that has the default value of chemical accuracy
-    (0.0016 Ha) here.
+    the number of electrons and the unit cell volume need to be defined. The costs can then be
+    computed using the functions :func:`~.gate_cost` and :func:`~.qubit_cost` with a target error
+    that has the default value of chemical accuracy (0.0016 Ha).
 
-    The target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-    error following Eq. (131) of
-    `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_ such that
+    Following `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+    , the target algorithm error, :math:`\epsilon`, is distributed among four different sources of
+    error using Eq. (131)
 
     .. math::
         \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
 
     where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
     :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in Eqs.
-    (132-134) of
-    `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_.
+    (132-134).
 
-    Here, we assume :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with
+    Here, we fix :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with
     a default value of :math:`\alpha = 0.01` and obtain
 
     .. math::
@@ -53,7 +51,7 @@ class FirstQuantization(Operation):
     distribution takes place inside the functions.
 
     Args:
-        n (int): number of basis states
+        n (int): number of plane waves
         eta (int): number of electrons
         omega (float): unit cell volume
         error (float): target error in the algorithm
@@ -68,17 +66,17 @@ class FirstQuantization(Operation):
             import pennylane as qml
             from pennylane import numpy as np
 
-            n = 10000
+            n = 100000
             eta = 156
             omega = 1145.166
 
-            algo = DoubleFactorization(n, eta, omega)
+            algo = FirstQuantization(n, eta, omega)
 
         >>> algo.lamb  # the 1-Norm of the Hamiltonian
         281053.7561435654
 
         >>> algo.gates  # estimated number of non-Clifford gates
-        3386558458840
+        3.39e+12
 
         >>> algo.qubits  # estimated number of qubits
         3716
@@ -117,7 +115,7 @@ class FirstQuantization(Operation):
         [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
         Args:
-            n (int): number of plane waves
+            n (int): number of basis states to create an equal superposition for state preparation
             br (int): number of bits for ancilla qubit rotation
 
         Returns:
@@ -151,7 +149,7 @@ class FirstQuantization(Operation):
         The norm is computed assuming that amplitude ampliﬁcation is performed.
 
         Args:
-            n (int): number of basis states
+            n (int): number of plane waves
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
@@ -512,7 +510,7 @@ class FirstQuantization(Operation):
             charge (int): total electric charge of the system
 
         Returns:
-            int: the number of ancilla qubits needed to implement the first quantization algorithm
+            int: number of qubits needed to implement the first quantization algorithm
 
         **Example**
 

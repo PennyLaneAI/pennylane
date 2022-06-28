@@ -10,3 +10,4 @@ Overview
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
+    :inherited-members: Operation
