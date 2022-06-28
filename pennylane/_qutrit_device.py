@@ -375,7 +375,8 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
         return samples.reshape((bin_size, -1))
 
-    # TODO: Implement function
+    # TODO: Implement function. Currently unimplemented due to lack of decompositions available
+    # for existing operations and lack of non-parametrized observables.
     def adjoint_jacobian(
         self, tape, starting_state=None, use_device_state=False
     ):  # pylint: disable=missing-function-docstring
