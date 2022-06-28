@@ -381,70 +381,6 @@ class TestExtractStatistics:
             dev.execute(tape)
 
 
-class TestSample:
-    """Test the sample method"""
-
-    # TODO: Add tests for sampling with observables that have eigenvalues to sample from once
-    # such observables are added for qutrits.
-
-    def test_sample_with_no_observable_and_no_wires(
-        self, mock_qutrit_device_with_original_statistics, tol
-    ):
-        """Test that when we sample a device without providing an observable or wires then it
-        will return the raw samples"""
-        obs = qml.measurements.sample(op=None, wires=None)
-        dev = mock_qutrit_device_with_original_statistics(wires=2)
-        generated_samples = np.array([[1, 2], [0, 1]])
-        dev._samples = generated_samples
-
-        res = dev.sample(obs)
-        assert np.array_equal(res, generated_samples)
-
-    def test_sample_with_no_observable_and_with_wires(
-        self, mock_qutrit_device_with_original_statistics, tol
-    ):
-        """Test that when we sample a device without providing an observable but we specify
-        wires then it returns the generated samples for only those wires"""
-        obs = qml.measurements.sample(op=None, wires=[1])
-        dev = mock_qutrit_device_with_original_statistics(wires=2)
-        generated_samples = np.array([[1, 0], [2, 1]])
-        dev._samples = generated_samples
-
-        wire_samples = np.array([[0], [1]])
-        res = dev.sample(obs)
-
-        assert np.array_equal(res, wire_samples)
-
-    def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
-        """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
-        dev = mock_qutrit_device_with_original_statistics(wires=2)
-        dev._samples = np.array([[1, 0], [0, 2]])
-
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = Sample
-
-        obs = SomeObservable(wires=0)
-        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(SomeObservable(wires=0))
-
-    def test_samples_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
-        """Tests that sample works correctly when instantiating device with shot list"""
-
-        dev = mock_qutrit_device_with_original_statistics(wires=2)
-        samples = np.array([[0, 1], [2, 0], [2, 1], [1, 1], [2, 2], [1, 2]])
-        dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
-
-        shot_range = [0, 6]
-        bin_size = 3
-
-        out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size)
-        expected_samples = samples.reshape(3, -1)
-
-        assert np.array_equal(out, expected_samples)
-
-
 class TestGenerateSamples:
     """Test the generate_samples method"""
 
@@ -587,6 +523,201 @@ class TestStatesToTernary:
         wires = ternary_states.shape[1]
         res = dev.states_to_ternary(samples, wires)
         assert np.allclose(res, ternary_states, atol=tol, rtol=0)
+
+
+class TestExpval:
+    """Test the expval method"""
+
+    def test_analytic_expval(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that expval method when the analytic attribute is True
+
+        Additional QutritDevice methods that are mocked:
+        -probability
+        """
+        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        probs = [0.5, 0.25, 0.25]
+        dev = mock_qutrit_device_with_original_statistics()
+
+        assert dev.shots is None
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QutritDevice, "probability", lambda self, wires=None: probs)
+            res = dev.expval(obs)
+
+        assert res == (obs.eigvals() @ probs).real
+
+    def test_non_analytic_expval(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that expval method when the analytic attribute is False
+
+        Additional QutritDevice methods that are mocked:
+        -sample
+        -numpy.mean
+        """
+        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        dev = mock_qutrit_device_with_original_statistics()
+
+        dev.shots = 1000
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QutritDevice, "sample", lambda self, obs, *args, **kwargs: obs)
+            m.setattr("numpy.mean", lambda obs, axis=None: obs)
+            res = dev.expval(obs)
+
+        assert res == obs
+
+    def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
+        """Tests that an error is thrown if expval is called with an observable that does
+        not have eigenvalues defined."""
+        dev = mock_qutrit_device_with_original_statistics()
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
+        obs = MyObs(wires=0)
+
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"
+        ):
+            dev.expval(obs)
+
+
+class TestVar:
+    """Test the var method"""
+
+    def test_analytic_var(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the analytic attribute is True
+
+        Additional QutritDevice methods that are mocked:
+        -probability
+        """
+        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        probs = [0.5, 0.25, 0.25]
+        dev = mock_qutrit_device_with_original_statistics()
+
+        assert dev.shots is None
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QutritDevice, "probability", lambda self, wires=None: probs)
+            res = dev.var(obs)
+
+        assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
+
+    def test_non_analytic_var(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that var method when the analytic attribute is False
+
+        Additional QutritDevice methods that are mocked:
+        -sample
+        -numpy.var
+        """
+        obs = qml.THermitian(np.array([[2, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0)
+        dev = mock_qutrit_device_with_original_statistics()
+
+        dev.shots = 1000
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QutritDevice, "sample", lambda self, obs, *args, **kwargs: obs)
+            m.setattr("numpy.var", lambda obs, axis=None: obs)
+            res = dev.var(obs)
+
+        assert res == obs
+
+    def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
+        """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
+        dev = mock_qutrit_device_with_original_statistics()
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
+        obs = MyObs(wires=0)
+
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
+            dev.var(obs)
+
+
+class TestSample:
+    """Test the sample method"""
+
+    def test_correct_eigenvalues(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Test that samples method only produces samples of eigenvalues given an observable"""
+        obs = qml.THermitian(np.array([[-2, 0, 0], [0, -1, 0], [0, 0, 2]]), wires=0)
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        dev._samples = np.array([[0, 2], [1, 1], [2, 1]])
+
+        with monkeypatch.context() as m:
+            res = dev.sample(obs)
+
+        assert np.array_equal(res, np.array([-2, -1, 2]))
+
+    def test_sample_with_no_observable_and_no_wires(
+        self, mock_qutrit_device_with_original_statistics, tol
+    ):
+        """Test that when we sample a device without providing an observable or wires then it
+        will return the raw samples"""
+        obs = qml.measurements.sample(op=None, wires=None)
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        generated_samples = np.array([[1, 2], [0, 1]])
+        dev._samples = generated_samples
+
+        res = dev.sample(obs)
+        assert np.array_equal(res, generated_samples)
+
+    def test_sample_with_no_observable_and_with_wires(
+        self, mock_qutrit_device_with_original_statistics, tol
+    ):
+        """Test that when we sample a device without providing an observable but we specify
+        wires then it returns the generated samples for only those wires"""
+        obs = qml.measurements.sample(op=None, wires=[1])
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        generated_samples = np.array([[1, 0], [2, 1]])
+        dev._samples = generated_samples
+
+        wire_samples = np.array([[0], [1]])
+        res = dev.sample(obs)
+
+        assert np.array_equal(res, wire_samples)
+
+    def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
+        """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        dev._samples = np.array([[1, 0], [0, 2]])
+
+        class SomeObservable(qml.operation.Observable):
+            num_wires = 1
+            return_type = Sample
+
+        obs = SomeObservable(wires=0)
+        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
+            dev.sample(SomeObservable(wires=0))
+
+    def test_samples_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that sample works correctly when instantiating device with shot list"""
+
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 1], [2, 0], [2, 1], [1, 1], [2, 2], [1, 2]])
+        dev._samples = samples
+        obs = qml.measurements.sample(op=None, wires=[0, 1])
+
+        shot_range = [0, 6]
+        bin_size = 3
+
+        out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size)
+        expected_samples = samples.reshape(3, -1)
+
+        assert np.array_equal(out, expected_samples)
 
 
 class TestEstimateProb:

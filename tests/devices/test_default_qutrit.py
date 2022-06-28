@@ -267,6 +267,116 @@ class TestApply:
     # TODO: Add tests for state preperation ops after they're implemented
 
 
+class TestExpval:
+    """Tests that expectation values are properly calculated or that the proper errors are raised."""
+
+    # TODO: Add test for expval of non-parametrized observables
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output,par",
+        [
+            (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (
+                qml.THermitian,
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
+                1,
+                [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
+            ),
+        ],
+    )
+    def test_expval_single_wire_with_parameters(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+    ):
+        """Tests that expectation values are properly calculated for single-wire observables with parameters."""
+
+        obs = operation(np.array(par), wires=[0])
+
+        qutrit_device_1_wire.reset()
+        qutrit_device_1_wire._state = np.array(input).reshape([3])
+        qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
+        res = qutrit_device_1_wire.expval(obs)
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output,par",
+        [
+            (
+                qml.THermitian,
+                [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
+                5 / 3,
+                [[1, 1j, 0, 1], [-1j, 1, 0, 0], [0, 0, 1, -1j], [1, 0, 1j, 1]],
+            ),
+            (
+                qml.THermitian,
+                [0, 0, 0, 1],
+                0,
+                [[0, 1j, 0, 0], [-1j, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]],
+            ),
+            (
+                qml.THermitian,
+                [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
+                1,
+                [[1, 1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, 1]],
+            ),
+            (
+                qml.THermitian,
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1 / math.sqrt(6), 1 / math.sqrt(6)],
+                1,
+                [[1, 1j, 0, 0.5j], [-1j, 1, 0, 0], [0, 0, 1, -1j], [-0.5j, 0, 1j, 1]],
+            ),
+            (
+                qml.THermitian,
+                [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
+                1,
+                [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]],
+            ),
+            (
+                qml.THermitian,
+                [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
+                -1,
+                [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]],
+            ),
+        ],
+    )
+    def test_expval_two_wires_with_parameters(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+    ):
+        """Tests that expectation values are properly calculated for two-wire observables with parameters."""
+
+        obs = operation(np.array(par), wires=[0, 1])
+
+        qutrit_device_2_wires.reset()
+        qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
+        res = qutrit_device_2_wires.expval(obs)
+
+        assert np.isclose(res, expected_output, atol=tol, rtol=0)
+
+    def test_expval_estimate(self):
+        """Test that the expectation value is not analytically calculated"""
+
+        dev = qml.device("default.qubit", wires=1, shots=3)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            return qml.expval(qml.PauliX(0))
+
+        expval = circuit()
+
+        # With 3 samples we are guaranteed to see a difference between
+        # an estimated variance an an analytically calculated one
+        assert expval != 0.0
+
+
+class TestVar:
+    pass
+
+
+class TestSample:
+    pass
+
+
 class TestDefaultQutritIntegration:
     """Integration tests for default.qutrit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
@@ -334,6 +444,22 @@ class TestDefaultQutritIntegration:
 
         state = circuit(mat)
         assert np.allclose(state, expected_out, atol=tol)
+
+
+class TestTensorExpval:
+    pass
+
+
+class TestTensorVar:
+    pass
+
+
+class TestTensorSample:
+    pass
+
+
+class TestDtypePreserved:
+    pass
 
 
 class TestProbabilityIntegration:
