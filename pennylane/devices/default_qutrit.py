@@ -56,6 +56,7 @@ class DefaultQutrit(QutritDevice):
         "QutritUnitary",
         "TShift",
         "TClock",
+        "TAdd",
     }
 
     observables = {
@@ -86,6 +87,7 @@ class DefaultQutrit(QutritDevice):
             # manipulating the internal state array will be included in this dictionary
             "TShift": self._apply_tshift,
             "TClock": self._apply_tclock,
+            "TAdd": self._apply_tadd,
         }
 
     @functools.lru_cache()
@@ -177,6 +179,39 @@ class DefaultQutrit(QutritDevice):
         """
         partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
+
+    def _apply_tadd(self, state, axes, **kwargs):
+        """Applies a controlled add gate by slicing along the first axis specified in ``axes`` and
+        applying a TShift transformation along the second axis
+
+        By slicing along the first axis, we are able to select all of the amplitudes with corresponding
+        :math:`|1\rangle` and :math:`|2\rangle` for the control qutrit. This means we just need to apply
+        a :class:`~.TShift` gate when slicing along index 1, and a :class:`~.TShift` adjoint gate when
+
+        slicing along index 2
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        slices = [_get_slice(i, axes[0], self.num_wires) for i in range(3)]
+
+        # We will be slicing into the state according to state[slices[1]] and state[slices[2]],
+        # giving us all of the amplitudes with a |1> and |2> for the control qutrit. The resulting
+        # array has lost an axis relative to state and we need to be careful about the axis we
+        # roll. If axes[1] is larger than axes[0], then we need to shift the target axis down by
+        # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
+        # target=3. Then, state[slices[1]] has 3 axes and target=3 now corresponds to the second axis.
+        if axes[1] > axes[0]:
+            target_axes = [axes[1] - 1]
+        else:
+            target_axes = [axes[1]]
+
+        state_1 = self._apply_tshift(state[slices[1]], axes=target_axes)
+        state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=True)
+        return self._stack([state[slices[0]], state_1, state_2], axis=axes[0])
 
     def _apply_phase(self, state, axes, index, parameters, inverse=False):
         """Applies a phase onto the specified index along the axis specified in ``axes``.

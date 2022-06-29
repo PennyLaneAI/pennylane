@@ -31,6 +31,7 @@ ops = {
     "QutritUnitary",
     "TShift",
     "TClock",
+    "TAdd",
 }
 
 # TODO: Remove QutritUnitary from obs list
