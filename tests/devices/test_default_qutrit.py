@@ -100,12 +100,11 @@ def test_dtype_errors():
 dev = qml.device("default.qutrit", wires=1, shots=100000)
 
 
-# TODO: Add tests for expval, var, sample and tensor observables after addition of observables
+# TODO: Add tests for expval, var, sample and tensor observables after addition of non-parametric observables
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
 # TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added
 # TODO: Add tests for inverse decomposition once decomposible operations are added
 # TODO: Add tests for verifying correct behaviour of different observables on default qutrit device.
-# TODO: Add tests for devices with shots for testing correct behaviour of sample
 
 
 class TestApply:
@@ -608,18 +607,67 @@ class TestDefaultQutritIntegration:
 
 
 class TestTensorExpval:
-    pass
+    """Test tensor expectation values"""
+
+    # TODO: Add tests for non-parametric observables and identity
+
+    def test_hermitian_hermitian(self, tol):
+        """Test that a tensor product involving two Hermitian matrices works correctly"""
+        dev = qml.device("default.qutrit", wires=3)
+
+        A1 = np.array([[3, 0, 0], [0, -3, 0], [0, 0, -2]])
+
+        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
+        A2 = np.kron(A, B)
+
+        obs = qml.THermitian(A1, wires=[0]) @ qml.THermitian(A2, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_shift, wires=0),
+                qml.QutritUnitary(U_tadd, wires=[0, 1]),
+                qml.QutritUnitary(U_shift, wires=0),
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        res = dev.expval(obs)
+
+        expected = 8
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_hermitian_two_wires_identity_expectation(self, tol):
+        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+        dev = qml.device("default.qutrit", wires=3)
+
+        A = np.array([[-2, 0, 0], [0, 8, 0], [0, 0, -1]])
+        Identity = np.eye(3)
+        H = np.kron(np.kron(Identity, Identity), A)
+        obs = qml.THermitian(H, wires=[2, 1, 0])
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(U_shift, wires=0),
+                qml.QutritUnitary(U_shift, wires=1),
+                qml.QutritUnitary(U_tadd, wires=[0, 1]),
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.expval(obs)
+
+        expected = 3.5 * 1 * 1
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+# TODO: Add tests for tensor non-parametrized observables
 class TestTensorVar:
     pass
 
 
+# TODO: Add tests for tensor non-parametrized observables
 class TestTensorSample:
-    pass
-
-
-class TestDtypePreserved:
     pass
 
 
