@@ -33,16 +33,20 @@ ZETA = OMEGA ** (1 / 3)
 class TShift(Operation):
     r"""TShift(wires)
     The qutrit shift operator
+
     .. math:: TShift = \begin{bmatrix}
                         0 & 0 & 1 \\
                         1 & 0 & 0 \\
                         0 & 1 & 0
                     \end{bmatrix}
-**Details:**
-* Number of wires: 1
-* Number of parameters: 0
-Args:
-    wires (Sequence[int] or int): the wire the operation acts on
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
 """
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -56,11 +60,17 @@ Args:
     @staticmethod
     def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.TShift.matrix`
+
         Returns:
             ndarray: matrix
+
         **Example**
+
         >>> print(qml.TShift.compute_matrix())
         [[0 0 1]
          [1 0 0]
@@ -71,14 +81,23 @@ Args:
     @staticmethod
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
+
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
+
         .. math:: O = U \Sigma U^{\dagger},
+
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
         Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.TShift.eigvals`
+
         Returns:
             array: eigenvalues
+
         **Example**
+
         >>> print(qml.TShift.compute_eigvals())
         [ 1. +0.j        -0.5-0.8660254j -0.5+0.8660254j]
         """
