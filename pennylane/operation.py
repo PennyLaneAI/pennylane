@@ -95,16 +95,15 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 # pylint:disable=access-member-before-definition
 import abc
 import copy
-from email.mime import base
 import itertools
 import functools
 import numbers
 import warnings
 from enum import IntEnum
-from scipy.sparse import kron, eye, coo_matrix
+# from scipy.sparse import kron, eye, coo_matrix
 
-import numpy as np
-from numpy.linalg import multi_dot
+# import numpy as np
+# from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -183,8 +182,15 @@ def expand_matrix(base_matrix, wires, wire_order = None):
     torch.Tensor
     >>> res.requires_grad
     True
+
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
+    base_matrix
+
+    >>> print(expand_matrix(base_matrix, wires = ["a", "b"], wire_order = ["a", "b"]))
+    base_matrix
+
     """
-    
+
     if wire_order is None or wires == Wires(wire_order):
         return base_matrix
 
