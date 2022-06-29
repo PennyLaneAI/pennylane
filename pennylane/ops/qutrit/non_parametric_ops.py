@@ -309,3 +309,79 @@ class TAdd(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+
+class TSWAP(Operation):
+    r"""TSWAP(wires)
+    The ternary swap operator
+
+    .. math:: TSWAP = \begin{bmatrix}
+                1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+                0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+                0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+                0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+                0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+            \end{bmatrix}
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "TSWAP"
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.TSWAP.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.TSWAP.compute_matrix())
+        [[1 0 0 0 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0 0]
+         [0 0 0 0 0 0 1 0 0]
+         [0 1 0 0 0 0 0 0 0]
+         [0 0 0 0 1 0 0 0 0]
+         [0 0 0 0 0 0 0 1 0]
+         [0 0 1 0 0 0 0 0 0]
+         [0 0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 0 0 1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
+
+    # TODO: Add compute_decomposition(), compute_eigvals(), pow()
+
+    def adjoint(self):
+        return TSWAP(wires=self.wires)
