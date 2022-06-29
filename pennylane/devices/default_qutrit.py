@@ -146,14 +146,17 @@ class DefaultQutrit(QutritDevice):
 
     def _apply_tshift(self, state, axes, inverse=False):
         """Applies a Shift gate by rolling 1 unit along the axis specified in ``axes``.
+
         Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
         shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
         the last index loops back to the first, :math:`|2 \rangle` is transformed to
         :math:`|0\rangle`.
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             inverse (bool): whether to apply the inverse operation
+
         Returns:
             array[complex]: output state
         """
@@ -163,10 +166,12 @@ class DefaultQutrit(QutritDevice):
     def _apply_tclock(self, state, axes, inverse=False):
         """Applies a ternary Clock gate by adding a phase of :math:`\omega` to the 1 index and
         :math:`\omega^{2}` to the 2 index along the axis specified in ``axes``
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             inverse (bool): whether to apply the inverse operation
+
         Returns:
             array[complex]: output state
         """
@@ -175,19 +180,18 @@ class DefaultQutrit(QutritDevice):
 
     def _apply_phase(self, state, axes, index, parameters, inverse=False):
         """Applies a phase onto the specified index along the axis specified in ``axes``.
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             index (int): target index of axis to apply phase to
             parameters (float): phase to apply
             inverse (bool): whether to apply the inverse phase
+
         Returns:
             array[complex]: output state
         """
         num_wires = len(state.shape)
-        # sl_0 = _get_slice(0, axes[0], num_wires)
-        # sl_1 = _get_slice(1, axes[0], num_wires)
-        # sl_2 = _get_slice(2, axes[0], num_wires)
         slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
 
         phase = self._conj(parameters) if inverse else parameters
