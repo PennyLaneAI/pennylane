@@ -98,9 +98,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
+        print('trainable params: ', params, qml.math.get_trainable_indices(params))
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
+    print('Get parameters: ', parameters)
 
     if gradient_fn is None:
         return _execute_with_fwd(

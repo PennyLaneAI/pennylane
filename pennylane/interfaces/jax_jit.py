@@ -25,6 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
+from pennylane import math
 
 dtype = jnp.float64
 
@@ -123,6 +124,137 @@ def _extract_shape_dtype_structs(tapes, device):
 
     return shape_dtypes
 
+def compute_vjp(dy, jac, num=None):
+    if jac is None:
+        return None
+
+    dy_row = math.reshape(dy, [-1])
+
+    if num is None:
+        num = math.shape(dy_row)[0]
+
+    if not isinstance(dy_row, np.ndarray):
+        jac = math.convert_like(jac, dy_row)
+        jac = math.cast(jac, dy_row.dtype)
+
+    jac = math.reshape(jac, [num, -1])
+
+    try:
+        if math.allclose(dy, 0):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero.
+            num_params = jac.shape[1]
+            res = math.convert_like(np.zeros([num_params]), dy)
+            return math.cast(res, dy.dtype)
+    except (AttributeError, TypeError):
+        pass
+
+    return math.tensordot(jac, dy_row, [[0], [0]])
+
+def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
+    gradient_kwargs = gradient_kwargs or {}
+    num_params = len(tape.trainable_params)
+
+    if num_params == 0:
+        # The tape has no trainable parameters; the VJP
+        # is simply none.
+        return [], lambda _, num=None: None
+
+    try:
+        if math.allclose(dy, 0):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero,
+            # and we can avoid a quantum computation.
+
+            def func(_, num=None):  # pylint: disable=unused-argument
+                res = math.convert_like(np.zeros([num_params]), dy)
+                return math.cast(res, dy.dtype)
+
+            return [], func
+    except (AttributeError, TypeError):
+        pass
+
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+
+    def processing_fn(results, num=None):
+        # postprocess results to compute the Jacobian
+        jac = fn(results)
+        return compute_vjp(dy, jac, num=num)
+
+    return gradient_tapes, processing_fn
+
+def compute_jacobian(tape, gradient_fn, gradient_kwargs=None):
+    gradient_kwargs = gradient_kwargs or {}
+    num_params = len(tape.trainable_params)
+
+    #TODO: how to simplify if dy is zero? Check g before hostcallback call
+
+    if num_params == 0:
+        # The tape has no trainable parameters; the VJP
+        # is simply none.
+        return [], lambda _, num=None: None
+
+    # Compute the gradient related tapes and func
+    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+
+    def processing_fn(results, num=None):
+
+        # postprocess results to compute the Jacobian
+        return fn(results)
+
+    return gradient_tapes, processing_fn
+
+
+def batch_jacobians(jacobians, gradient_fn, reduction="append", gradient_kwargs=None):
+    # TODO: instead of tapes, just get in the jacobians
+
+    gradient_kwargs = gradient_kwargs or {}
+    reshape_info = []
+    gradient_tapes = []
+    processing_fns = []
+
+    # TODO: need to reshape info based on g_tapes
+    #    reshape_info.append(len(g_tapes))
+
+    # Loop through the tapes and dys vector
+    for tape in zip(jacobians):
+
+        g_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+
+        reshape_info.append(len(g_tapes))
+        processing_fns.append(fn)
+        gradient_tapes.extend(g_tapes)
+
+    def processing_fn(results, nums=None):
+        vjps = []
+        start = 0
+
+        if nums is None:
+            nums = [None] * len(jacobians)
+
+        for t_idx in range(len(jacobians)):
+            # extract the correct results from the flat list
+            res_len = reshape_info[t_idx]
+            res_t = results[start : start + res_len]
+            start += res_len
+
+            # postprocess results to compute the VJP
+            vjp_ = processing_fns[t_idx](res_t, num=nums[t_idx])
+
+            if vjp_ is None:
+                if reduction == "append":
+                    vjps.append(None)
+                continue
+
+            if isinstance(reduction, str):
+                getattr(vjps, reduction)(vjp_)
+            elif callable(reduction):
+                reduction(vjps, vjp_)
+
+        return vjps
+
+    return gradient_tapes, processing_fn
+
 
 def _execute(
     params,
@@ -133,7 +265,9 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
     total_params = np.sum([len(p) for p in params])
+    shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
 
     # Copy a given tape with operations and set parameters
     def cp_tape(t, a):
@@ -150,7 +284,6 @@ def _execute(
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
             return res
 
-        shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
         res = host_callback.call(wrapper, params, result_shape=shape_dtype_structs)
         return res
 
@@ -163,37 +296,74 @@ def _execute(
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
-                p = args[:-1]
-                dy = args[-1]
+                p = args
 
                 new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    new_tapes,
-                    dy,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
 
-                partial_res = execute_fn(vjp_tapes)[0]
-                res = processing_fn(partial_res)
-                return np.concatenate(res)
+                # ---------------------
+                gradient_tapes = []
+                processing_fns = []
 
-            args = tuple(params) + (g,)
-            vjps = host_callback.call(
+                jacs = []
+                for t in tapes:
+                    g_tapes, fn = gradient_fn(t, **gradient_kwargs)
+
+                    with qml.tape.Unwrap(*g_tapes):
+                        res, _ = execute_fn(g_tapes, **gradient_kwargs)
+
+                    res = fn(res)
+                    print('res: ', res)
+                    jacs.append(res)
+
+                return jacs
+
+            args = tuple(params)
+            print(non_diff_wrapper(args))
+
+            # Break up batch_vjp:
+            #
+            # Compute the Jacobian
+            # A. Hostcallback
+            # 1. We gather the vjp_tapes
+            # 2. Compute the Jacobian
+
+            shape = tapes[0].shape(device)
+            sh_lst = list(shape)
+            shape = tuple([sh_lst[1], sh_lst[0]])
+
+            shape = jax.ShapeDtypeStruct(tuple([2,1]), dtype)
+            jacobians = host_callback.call(
                 non_diff_wrapper,
                 args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
+                result_shape=shape_dtype_structs,
             )
 
+            # B. Simple call
+            # 3. Use batch_jacobian (that takes in the jacobians)
+            print(jnp.array(jacobians).shape, g[0].shape)
+            vjps = jnp.array(jacobians) @ g[0].T
+
+            # vjp_tapes, processing_fn = compute_jacobian(
+            #     new_tapes,
+            #     gradient_fn,
+            #     reduction="append",
+            #     gradient_kwargs=gradient_kwargs,
+            # )
+
+            #res = processing_fn(partial_res)
+
+            # Use g to recreate the VJP
+
             param_idx = 0
-            res = []
+            return (tuple(list(vjps)),)
+
+            res = vjps
 
             # Group the vjps based on the parameters of the tapes
-            for p in params:
-                param_vjp = vjps[param_idx : param_idx + len(p)]
-                res.append(param_vjp)
-                param_idx += len(p)
+            #for p in params:
+            #    param_vjp = vjps[param_idx : param_idx + len(p)]
+            #    res.append(param_vjp)
+            #    param_idx += len(p)
 
             # Unwrap partial results into ndim=0 arrays to allow
             # differentiability with JAX
