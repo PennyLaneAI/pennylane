@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 ZETA = OMEGA ** (1 / 3)
@@ -33,6 +34,7 @@ ZETA = OMEGA ** (1 / 3)
 class TShift(Operation):
     r"""TShift(wires)
     The qutrit shift operator
+
     .. math:: TShift = \begin{bmatrix}
                         0 & 0 & 1 \\
                         1 & 0 & 0 \\
@@ -160,3 +162,114 @@ Args:
         op = TClock(wires=self.wires)
         op.inverse = not self.inverse
         return op
+
+
+class TAdd(Operation):
+    r"""TAdd(wires)
+    The 2-qutrit controlled add gate
+
+    .. math:: TAdd = \begin{bmatrix}
+                        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+                        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+                        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0
+                    \end{bmatrix}
+
+    .. note:: The first wire provided corresponds to the **control qutrit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "TAdd"
+
+    @staticmethod
+    def compute_matrix():
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.TAdd.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.TAdd.compute_matrix())
+        [[1 0 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0 0]
+         [0 0 0 0 0 1 0 0 0]
+         [0 0 0 1 0 0 0 0 0]
+         [0 0 0 0 1 0 0 0 0]
+         [0 0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 1 0 0]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0],
+            ]
+        )
+
+    @staticmethod
+    def compute_eigvals():
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.TAdd.eigvals`
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> print(qml.TAdd.compute_eigvals())
+        [ 1. +0.j         1. +0.j         1. +0.j         1. +0.j         1. +0.j        -0.5-0.8660254j -0.5-0.8660254j -0.5+0.8660254j -0.5+0.8660254j ]
+        """
+        return np.array([1, 1, 1, 1, 1, OMEGA**2, OMEGA**2, OMEGA, OMEGA])
+
+    # TODO: Add compute_decomposition() once parametric ops are added.
+    # TODO: Add pow()
+
+    def adjoint(self):
+        op = TAdd(self.wires)
+        op.inverse = not self.inverse
+        return op
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
