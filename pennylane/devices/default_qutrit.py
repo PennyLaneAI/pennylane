@@ -163,10 +163,12 @@ class DefaultQutrit(QutritDevice):
     def _apply_tclock(self, state, axes, inverse=False):
         """Applies a ternary Clock gate by adding a phase of :math:`\omega` to the 1 index and
         :math:`\omega^{2}` to the 2 index along the axis specified in ``axes``
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             inverse (bool): whether to apply the inverse operation
+
         Returns:
             array[complex]: output state
         """
@@ -175,12 +177,14 @@ class DefaultQutrit(QutritDevice):
 
     def _apply_phase(self, state, axes, index, parameters, inverse=False):
         """Applies a phase onto the specified index along the axis specified in ``axes``.
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             index (int): target index of axis to apply phase to
             parameters (float): phase to apply
             inverse (bool): whether to apply the inverse phase
+
         Returns:
             array[complex]: output state
         """
