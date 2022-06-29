@@ -23,9 +23,8 @@ from .factorization import factorize
 
 
 class DoubleFactorization(Operation):
-    r"""Contains the functionality for estimating the number of non-Clifford gates and logical
-    qubits for implementing the quantum phase estimation algorithm for a second-quantized and
-    double-factorized Hamiltonian.
+    r"""Estimate the number of non-Clifford gates and logical qubits for quantum algorithms in
+    second quantization with a double-factorized Hamiltonian.
 
     To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to be
     factorized using the :func:`~.pennylane.resources.factorize` function following
