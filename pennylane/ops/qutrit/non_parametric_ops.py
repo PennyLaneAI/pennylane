@@ -83,9 +83,17 @@ Args:
         """
         return np.array([1, OMEGA**2, OMEGA])
 
+    # TODO: Add compute_decomposition once parametric ops are added.
+
+    def pow(self, z):
+        if isinstance(z, int):
+            z_mod3 = z % 3
+            if z_mod3 < 2:
+                return super().pow(z_mod3)
+            return [TShift(wires=self.wires).adjoint()]
+        return super().pow(z)
+
     def adjoint(self):
         op = TShift(wires=self.wires)
         op.inverse = not self.inverse
         return op
-
-    # TODO: Add compute_decomposition once parametric ops are added.
