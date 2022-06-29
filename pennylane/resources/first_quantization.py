@@ -73,13 +73,13 @@ class FirstQuantization(Operation):
             algo = FirstQuantization(n, eta, omega)
 
         >>> algo.lamb  # the 1-Norm of the Hamiltonian
-        281053.7561435654
+        649912.4801542697
 
         >>> algo.gates  # estimated number of non-Clifford gates
-        3.39e+12
+        9.38e+12
 
         >>> algo.qubits  # estimated number of qubits
-        3716
+        4416
     """
 
     num_wires = AnyWires
