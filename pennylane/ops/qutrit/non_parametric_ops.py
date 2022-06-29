@@ -47,7 +47,7 @@ class TShift(Operation):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-"""
+    """
     num_wires = 1
     """int: Number of wires that the operator acts on."""
 
