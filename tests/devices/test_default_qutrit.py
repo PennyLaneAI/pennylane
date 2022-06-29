@@ -22,53 +22,16 @@ from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
 from pennylane.wires import Wires, WireError
 
+from gate_data import TSHIFT, TCLOCK, TSWAP, TADD
+
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 
 
-U_thadamard_01 = np.multiply(
-    1 / np.sqrt(2),
-    np.array(
-        [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]],
-    ),
-)
+U_thadamard_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
 
 U_x_02 = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]], dtype=np.complex128)
 
 U_z_12 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]], dtype=np.complex128)
-
-U_shift = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=np.complex128)
-
-U_clock = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])
-
-U_tswap = np.array(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-    ],
-    dtype=np.complex128,
-)
-
-U_tadd = np.array(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
-    ],
-    dtype=np.complex128,
-)
 
 
 def include_inverses_with_test_data(test_data):
@@ -121,16 +84,16 @@ class TestApply:
         (qml.QutritUnitary, [1, 0, 0], [1, 0, 0], U_z_12),
         (qml.QutritUnitary, [0, 1, 0], [0, 1, 0], U_x_02),
         (qml.QutritUnitary, [0, 0, 1], [0, 0, -1], U_z_12),
-        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], U_shift),
-        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], U_clock),
+        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], TSHIFT),
+        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], TCLOCK),
     ]
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters_inverse = [
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_shift),
-        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], U_shift),
-        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], U_clock),
-        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], U_clock),
+        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], TSHIFT),
+        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], TSHIFT),
+        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], TCLOCK),
+        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], TCLOCK),
     ]
 
     @pytest.mark.parametrize(
@@ -167,43 +130,43 @@ class TestApply:
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], U_tswap),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], U_tswap),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
+        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], TSWAP),
         (
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            U_tswap,
+            TSWAP,
         ),
         (
             qml.QutritUnitary,
             np.multiply(0.5, [0, 1, 1, 0, 0, 0, 0, 1, 1]),
             np.multiply(0.5, [0, 0, 0, 1, 0, 1, 1, 0, 1]),
-            U_tswap,
+            TSWAP,
         ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], U_tadd),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], U_tadd),
+        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], TADD),
     ]
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters_inverse = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], U_tswap),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], U_tswap),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
+        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], TSWAP),
         (
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            U_tswap,
+            TSWAP,
         ),
         (
             qml.QutritUnitary,
             np.multiply([0, 1, 1, 0, 0, 0, 0, 1, 1], 0.5),
             np.multiply([0, 0, 0, 1, 0, 1, 1, 0, 1], 0.5),
-            U_tswap,
+            TSWAP,
         ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0], U_tadd),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], U_tadd),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], U_tadd),
+        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0], TADD),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TADD),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
     ]
 
     @pytest.mark.parametrize(
@@ -251,12 +214,12 @@ class TestApply:
         qutrit_device_1_wire._state = np.array(state, dtype=qutrit_device_1_wire.C_DTYPE)
 
         ops = [
-            qml.QutritUnitary(U_shift, wires=0).inv(),
+            qml.QutritUnitary(TSHIFT, wires=0).inv(),
             qml.QutritUnitary(U_thadamard_01, wires=0),
         ]
         rotations = [
             qml.QutritUnitary(U_thadamard_01, wires=0),
-            qml.QutritUnitary(U_shift, wires=0),
+            qml.QutritUnitary(TSHIFT, wires=0),
         ]
 
         qutrit_device_1_wire.apply(ops, rotations)
@@ -494,7 +457,7 @@ class TestSample:
         # initialized during reset
         dev = qml.device("default.qutrit", wires=2, shots=1000)
 
-        dev.apply([qml.QutritUnitary(U_shift, wires=0)])
+        dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
 
         dev.shots = 10
         dev._wires_measured = {0}
@@ -526,7 +489,7 @@ class TestSample:
         # initialized during reset
         dev = qml.device("default.qutrit", wires=2, shots=1000)
 
-        dev.apply([qml.QutritUnitary(U_shift, wires=0)])
+        dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
         dev._wires_measured = {0}
         dev._samples = dev.generate_samples()
 
@@ -570,22 +533,22 @@ class TestDefaultQutritIntegration:
     four_wire_final_state[37] = 1
     state_measurement_data = [
         (1, U_thadamard_01, np.array([1, 1, 0]) / np.sqrt(2)),
-        (2, U_tadd @ np.kron(U_shift, np.eye(3)), [0, 0, 0, 0, 1, 0, 0, 0, 0]),
-        (1, U_shift, [0, 1, 0]),
+        (2, TADD @ np.kron(TSHIFT, np.eye(3)), [0, 0, 0, 0, 1, 0, 0, 0, 0]),
+        (1, TSHIFT, [0, 1, 0]),
         (
             2,
-            U_tswap @ np.kron(U_thadamard_01, np.eye(3)),
+            TSWAP @ np.kron(U_thadamard_01, np.eye(3)),
             np.array([1, 1, 0, 0, 0, 0, 0, 0, 0]) / np.sqrt(2),
         ),
-        (1, U_clock @ U_shift @ U_thadamard_01, np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)),
+        (1, TCLOCK @ TSHIFT @ U_thadamard_01, np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)),
         (
             3,
-            np.kron(np.eye(3), U_tadd) @ np.kron(np.eye(3), np.kron(U_thadamard_01, np.eye(3))),
+            np.kron(np.eye(3), TADD) @ np.kron(np.eye(3), np.kron(U_thadamard_01, np.eye(3))),
             three_wire_final_state / np.sqrt(2),
         ),
         (
             4,
-            np.kron(U_tadd, U_tswap)
+            np.kron(TADD, TSWAP)
             @ np.kron(U_thadamard_01, np.eye(27))
             @ np.kron(np.eye(9), np.kron(U_thadamard_01, np.eye(3))),
             four_wire_final_state / 2.0,
@@ -625,9 +588,9 @@ class TestTensorExpval:
 
         dev.apply(
             [
-                qml.QutritUnitary(U_shift, wires=0),
-                qml.QutritUnitary(U_tadd, wires=[0, 1]),
-                qml.QutritUnitary(U_shift, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qml.QutritUnitary(TSHIFT, wires=0),
             ],
             obs.diagonalizing_gates(),
         )
@@ -649,9 +612,9 @@ class TestTensorExpval:
         dev.apply(
             [
                 qml.QutritUnitary(U_thadamard_01, wires=0),
-                qml.QutritUnitary(U_shift, wires=0),
-                qml.QutritUnitary(U_shift, wires=1),
-                qml.QutritUnitary(U_tadd, wires=[0, 1]),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
             ],
             obs.diagonalizing_gates(),
         )
@@ -679,7 +642,7 @@ class TestProbabilityIntegration:
         return np.array([1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=float)
 
     @pytest.mark.parametrize(
-        "x", [[U_thadamard_01, U_clock], [U_shift, U_thadamard_01], [U_z_12, U_thadamard_01]]
+        "x", [[U_thadamard_01, TCLOCK], [TSHIFT, U_thadamard_01], [U_z_12, U_thadamard_01]]
     )
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
@@ -689,7 +652,7 @@ class TestProbabilityIntegration:
         def circuit(x):
             qml.QutritUnitary(x[0], wires=0)
             qml.QutritUnitary(x[1], wires=0)
-            qml.QutritUnitary(U_tadd, wires=[0, 1])
+            qml.QutritUnitary(TADD, wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
         prob = qml.QNode(circuit, dev)
@@ -730,10 +693,10 @@ class TestWiresIntegration:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QutritUnitary(U_shift, wires=wires[0 % n_wires])
-            qml.QutritUnitary(U_clock, wires=wires[1 % n_wires])
+            qml.QutritUnitary(TSHIFT, wires=wires[0 % n_wires])
+            qml.QutritUnitary(TCLOCK, wires=wires[1 % n_wires])
             if n_wires > 1:
-                qml.QutritUnitary(U_tswap, wires=[wires[0], wires[1]])
+                qml.QutritUnitary(TSWAP, wires=[wires[0], wires[1]])
             return qml.probs(wires=wires)
 
         return circuit
@@ -813,7 +776,7 @@ class TestApplyOperationUnit:
 
             @staticmethod
             def compute_matrix(*params, **hyperparams):
-                return U_tswap
+                return TSWAP
 
         dev.operations.add("TestSwap")
         op = TestSwap(wires=wires)
@@ -875,9 +838,9 @@ class TestApplyOperationUnit:
 
             test_state = np.array([1, 0, 0])
             op = (
-                qml.QutritUnitary(U_shift, wires=0)
+                qml.QutritUnitary(TSHIFT, wires=0)
                 if not inverse
-                else qml.QutritUnitary(U_shift, wires=0).inv()
+                else qml.QutritUnitary(TSHIFT, wires=0).inv()
             )
             spy_unitary = mocker.spy(dev, "_apply_unitary")
 
@@ -905,7 +868,7 @@ class TestDensityMatrix:
 
         ops = [
             qml.QutritUnitary(U_thadamard_01, wires=0),
-            qml.QutritUnitary(U_shift, wires=1),
+            qml.QutritUnitary(TSHIFT, wires=1),
         ]
         qutrit_device_2_wires.apply(ops)
 

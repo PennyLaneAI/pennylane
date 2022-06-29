@@ -23,7 +23,8 @@ import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
 from pennylane import QutritDevice
-from pennylane.wires import WireError  # pylint: disable=unused-import
+from pennylane.wires import WireError
+from pennylane.devices.default_qutrit import _get_slice
 from .._version import __version__
 
 # tolerance for numerical errors
@@ -53,6 +54,7 @@ class DefaultQutrit(QutritDevice):
     # TODO: Update list of operations and observables once more are added
     operations = {
         "QutritUnitary",
+        "TShift",
     }
 
     observables = {
@@ -80,7 +82,8 @@ class DefaultQutrit(QutritDevice):
         # TODO: Add operations
         self._apply_ops = {
             # All operations that can be applied on the `default.qutrit` device by directly
-            # manipulating the internal state array will be included in this set
+            # manipulating the internal state array will be included in this dictionary
+            "TShift": self._apply_tshift,
         }
 
     @functools.lru_cache()
@@ -138,6 +141,22 @@ class DefaultQutrit(QutritDevice):
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _apply_tshift(self, state, axes, inverse=False):
+        """Applies a Shift gate by rolling 1 unit along the axis specified in ``axes``.
+        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
+        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
+        the last index loops back to the first, :math:`|2 \rangle` is transformed to
+        :math:`|0\rangle`.
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            inverse (bool): whether to apply the inverse operation
+        Returns:
+            array[complex]: output state
+        """
+        shift = -1 if inverse else 1
+        return self._roll(state, shift, axes[0])
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.

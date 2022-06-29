@@ -12,28 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the discrete-variable qutrit quantum operations.
-
-The operations are in one file:
-
-* ``matrix_ops.py``: Generalized operations that accept a matrix parameter,
-  either unitary or hermitian depending.
+Unit tests for the available non-parametric qutrit operations
 """
+import pytest
+import numpy as np
+from scipy.stats import unitary_group
 
-from .matrix_ops import *
-from .observables import *
-from ..identity import Identity
+import pennylane as qml
+from pennylane.wires import Wires
 
-# TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
-ops = {
-    "Identity",
-    "QutritUnitary",
-    "TShift",
-}
-
-# TODO: Remove QutritUnitary from obs list
-obs = {
-    "THermitian",  # Added here to prevent errors when using device
-}
-
-__all__ = list(ops | obs)
+from gate_data import TSHIFT

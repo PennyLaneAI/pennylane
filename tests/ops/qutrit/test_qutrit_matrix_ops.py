@@ -22,26 +22,13 @@ import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
 
+from gate_data import TSWAP
+
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
     np.array(
         [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]],
     ),
-)
-
-U_tswap = np.array(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-    ],
-    dtype=np.complex128,
 )
 
 # TODO: Add tests for adding controls to `QutritUnitary` once `ControlledQutritUnitary` is implemented
@@ -108,7 +95,7 @@ class TestQutritUnitary:
 
     interface_and_decomp_data = [
         (U_thadamard_01, 1),
-        (U_tswap, 2),
+        (TSWAP, 2),
         (unitary_group.rvs(3, random_state=10), 1),
         (unitary_group.rvs(9, random_state=10), 2),
         (np.eye(3), 1),
@@ -326,7 +313,7 @@ class TestUnitaryLabels:
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
-        cache = {"matrices": [U_tswap]}
+        cache = {"matrices": [TSWAP]}
         assert op.label(cache=cache) == "U(M1)"
 
         assert len(cache["matrices"]) == 2
@@ -335,7 +322,7 @@ class TestUnitaryLabels:
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
-        cache = {"matrices": [U_tswap, mat]}
+        cache = {"matrices": [TSWAP, mat]}
         assert op.label(cache=cache) == "U(M1)"
 
         assert len(cache["matrices"]) == 2
