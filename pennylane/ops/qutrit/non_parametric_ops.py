@@ -24,6 +24,11 @@ from pennylane.operation import Operation
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 ZETA = OMEGA ** (1 / 3)
 
+# Note: When Operation.matrix() is used for qutrit operations, `wire_order` must be `None` as specifying
+# an order that is expected to return a permuted and expanded matrix different from the canonical matrix
+# will lead to errors as `expand_matrix()` in `pennylane/operation.py`, which is used to compute the
+# permuted and expanded matrix from the canonical matrix, is hard coded to work correctly for qubits.
+
 
 class TShift(Operation):
     r"""TShift(wires)
@@ -48,10 +53,6 @@ Args:
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "TShift"
 
-    # Note: When Operation.matrix() is used for qutrit operations, `wire_order` must be `None` as specifying
-    # an order that is expected to return a permuted and expanded matrix different from the canonical matrix
-    # will lead to errors as `expand_matrix()` in `pennylane/operation.py`, which is used to compute the
-    # permuted and expanded matrix from the canonical matrix, is hard coded to work correctly for qubits.
     @staticmethod
     def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -85,6 +86,67 @@ Args:
 
     def adjoint(self):
         op = TShift(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
+
+    # TODO: Add compute_decomposition once parametric ops are added.
+
+
+class TClock(Operation):
+    r"""TClock(wires)
+    Ternary Clock gate
+.. math:: TClock = \begin{bmatrix}
+                    1 & 0      & 0        \\
+                    0 & \omega & 0        \\
+                    0 & 0      & \omega^2
+                \end{bmatrix}
+                \omega = \exp{2 \cdot \pi \cdot i / 3}
+**Details:**
+* Number of wires: 1
+* Number of parameters: 0
+Args:
+    wires (Sequence[int] or int): the wire the operation acts on
+"""
+    num_wires = 1
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "TClock"
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+        Returns:
+            ndarray: matrix
+        **Example**
+        >>> print(qml.TClock.compute_matrix())
+        [[ 1. +0.j         0. +0.j         0. +0.j       ]
+         [ 0. +0.j        -0.5+0.8660254j  0. +0.j       ]
+         [ 0. +0.j         0. +0.j        -0.5-0.8660254j]]
+        """
+        return np.diag([1, OMEGA, OMEGA**2])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+        .. math:: O = U \Sigma U^{\dagger},
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+        Returns:
+            array: eigenvalues
+        **Example**
+        >>> print(qml.TClock.compute_eigvals())
+        [ 1. +0.j        -0.5+0.8660254j -0.5-0.8660254j]
+        """
+        return np.array([1, OMEGA, OMEGA**2])
+
+    def adjoint(self):
+        op = TClock(wires=self.wires)
         op.inverse = not self.inverse
         return op
 
