@@ -192,9 +192,6 @@ class DefaultQutrit(QutritDevice):
             array[complex]: output state
         """
         num_wires = len(state.shape)
-        # sl_0 = _get_slice(0, axes[0], num_wires)
-        # sl_1 = _get_slice(1, axes[0], num_wires)
-        # sl_2 = _get_slice(2, axes[0], num_wires)
         slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
 
         phase = self._conj(parameters) if inverse else parameters
