@@ -66,7 +66,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
-        print(tape.trainable_params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -315,7 +314,6 @@ def _execute(
                         r = fn(res)
 
                     res = jnp.hstack(r)
-                    print(args, res)
                     jacs.append(res)
                 # ---------------------
 
@@ -334,8 +332,11 @@ def _execute(
             # sh_lst = list(shape)
             # shape = tuple([sh_lst[1], sh_lst[0]])
 
-            #jax_shape = shape_dtype_structs
-            jax_shape = jax.ShapeDtypeStruct(tuple([1,4]), dtype)
+            shape = list(tapes[0].shape(device))
+            shape[1] *= len(tapes[0].trainable_params)
+            shape = tuple(shape)
+
+            jax_shape = jax.ShapeDtypeStruct(shape, dtype)
             # for idx in range(len(jax_shape)):
 
             #     this_shape = jax_shape[idx]
@@ -349,24 +350,23 @@ def _execute(
             jacobians = host_callback.call(
                 non_diff_wrapper,
                 args,
-                result_shape=jax_shape,
+                result_shape=[jax_shape],
             )
             #jacobians = non_diff_wrapper(args)
 
             # B. Simple call
             # 3. Use batch_jacobian (that takes in the jacobians)
 
-            # TODO: why do we need to squeeze?
 
             assert len(jacobians) == len(g)
 
             vjps = []
             for j, e in zip(jacobians, g):
+                # TODO: why is squeezing required?
                 e = jnp.squeeze(e)
-                vjps.append(j)# @ e)
+                vjps.append(j @ e)
 
             final_res = vjps[0][0]
-            print(final_res, final_res.shape, jnp.array(final_res))
             return tuple([final_res])
 
             # vjp_tapes, processing_fn = compute_jacobian(
