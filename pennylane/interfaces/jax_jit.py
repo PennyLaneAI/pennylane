@@ -66,6 +66,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
+        print(tape.trainable_params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -300,25 +301,27 @@ def _execute(
 
                 new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
 
-                # ---------------------
                 gradient_tapes = []
                 processing_fns = []
 
                 jacs = []
-                for t in tapes:
+                # ---------------------
+                for t in new_tapes:
+
                     g_tapes, fn = gradient_fn(t, **gradient_kwargs)
 
                     with qml.tape.Unwrap(*g_tapes):
-                        res, _ = execute_fn(g_tapes, **gradient_kwargs)
+                        res, _ = execute_fn(g_tapes)
+                        r = fn(res)
 
-                    res = fn(res)
-                    print('res: ', res)
+                    res = jnp.hstack(r)
+                    print(args, res)
                     jacs.append(res)
+                # ---------------------
 
                 return jacs
 
             args = tuple(params)
-            print(non_diff_wrapper(args))
 
             # Break up batch_vjp:
             #
@@ -327,21 +330,44 @@ def _execute(
             # 1. We gather the vjp_tapes
             # 2. Compute the Jacobian
 
-            shape = tapes[0].shape(device)
-            sh_lst = list(shape)
-            shape = tuple([sh_lst[1], sh_lst[0]])
+            # shape = tapes[0].shape(device)
+            # sh_lst = list(shape)
+            # shape = tuple([sh_lst[1], sh_lst[0]])
 
-            shape = jax.ShapeDtypeStruct(tuple([2,1]), dtype)
+            #jax_shape = shape_dtype_structs
+            jax_shape = jax.ShapeDtypeStruct(tuple([1,4]), dtype)
+            # for idx in range(len(jax_shape)):
+
+            #     this_shape = jax_shape[idx]
+
+            #     # If Probability, disregard the extra (1,) item in the shape
+            #     # and consider only the second component
+            #     if len(this_shape.shape) == 2 and this_shape.shape[0] == 1:
+            #         jax_shape[idx].shape = (this_shape.shape[1],)
+
+            #print("result: ", non_diff_wrapper(args))
             jacobians = host_callback.call(
                 non_diff_wrapper,
                 args,
-                result_shape=shape_dtype_structs,
+                result_shape=jax_shape,
             )
+            #jacobians = non_diff_wrapper(args)
 
             # B. Simple call
             # 3. Use batch_jacobian (that takes in the jacobians)
-            print(jnp.array(jacobians).shape, g[0].shape)
-            vjps = jnp.array(jacobians) @ g[0].T
+
+            # TODO: why do we need to squeeze?
+
+            assert len(jacobians) == len(g)
+
+            vjps = []
+            for j, e in zip(jacobians, g):
+                e = jnp.squeeze(e)
+                vjps.append(j)# @ e)
+
+            final_res = vjps[0][0]
+            print(final_res, final_res.shape, jnp.array(final_res))
+            return tuple([final_res])
 
             # vjp_tapes, processing_fn = compute_jacobian(
             #     new_tapes,
@@ -354,10 +380,9 @@ def _execute(
 
             # Use g to recreate the VJP
 
-            param_idx = 0
-            return (tuple(list(vjps)),)
+            # param_idx = 0
 
-            res = vjps
+            #res = vjps
 
             # Group the vjps based on the parameters of the tapes
             #for p in params:
@@ -373,11 +398,11 @@ def _execute(
             # is mapped to
             # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
             # dtype=float32), DeviceArray(0., dtype=float32)]].
-            need_unstacking = any(r.ndim != 0 for r in res)
-            if need_unstacking:
-                res = [qml.math.unstack(x) for x in res]
+            # need_unstacking = any(r.ndim != 0 for r in res)
+            # if need_unstacking:
+            #     res = [qml.math.unstack(x) for x in res]
 
-            return (tuple(res),)
+            # return (tuple(res),)
 
         def jacs_wrapper(p):
             """Compute the jacs"""
