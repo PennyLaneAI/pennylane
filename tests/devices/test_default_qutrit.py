@@ -757,6 +757,43 @@ class TestWiresIntegration:
         assert dev.map_wires.cache_info().hits > original_hits
 
 
+@pytest.mark.parametrize("inverse", [True, False])
+class TestApplyOps:
+    """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
+    gates in DefaultQutrit."""
+
+    state = np.arange(3**4, dtype=np.complex128).reshape((3, 3, 3, 3))
+    dev = qml.device("default.qutrit", wires=4)
+
+    single_qutrit_ops = [
+        (qml.TShift, dev._apply_tshift),
+        (qml.TClock, dev._apply_tclock),
+    ]
+
+    two_qutrit_ops = [
+        (qml.TAdd, dev._apply_tadd),
+    ]
+
+    @pytest.mark.parametrize("op, method", single_qutrit_ops)
+    def test_apply_single_qutrit_op(self, op, method, inverse):
+        """Test if the application of single qutrit operations is correct"""
+        state_out = method(self.state, axes=[1], inverse=inverse)
+        op = op(wires=[1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct."""
+        state_out = method(self.state, axes=[0, 1], inverse=inverse)
+        op = op(wires=[0, 1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 

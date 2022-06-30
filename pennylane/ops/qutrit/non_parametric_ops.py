@@ -55,9 +55,6 @@ class TShift(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "TShift"
-
     @staticmethod
     def compute_matrix():
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -100,9 +97,9 @@ class TShift(Operation):
         **Example**
 
         >>> print(qml.TShift.compute_eigvals())
-        [ 1. +0.j        -0.5-0.8660254j -0.5+0.8660254j]
+        [ -0.5+0.8660254j -0.5-0.8660254j  1. +0.j       ]
         """
-        return np.array([1, OMEGA**2, OMEGA])
+        return np.array([OMEGA, OMEGA**2, 1])
 
     # TODO: Add compute_decomposition once parametric ops are added.
 
@@ -111,7 +108,7 @@ class TShift(Operation):
             z_mod3 = z % 3
             if z_mod3 < 2:
                 return super().pow(z_mod3)
-            return [TShift(wires=self.wires).adjoint()]
+            return [self.adjoint()]
         return super().pow(z)
 
     def adjoint(self):
@@ -142,9 +139,6 @@ class TClock(Operation):
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "TClock"
 
     @staticmethod
     def compute_matrix():
@@ -192,7 +186,14 @@ class TClock(Operation):
         return np.array([1, OMEGA, OMEGA**2])
 
     # TODO: Add compute_decomposition() once parametric ops are added.
-    # TODO: Add pow()
+
+    def pow(self, z):
+        if isinstance(z, int):
+            z_mod3 = z % 3
+            if z_mod3 < 2:
+                return super().pow(z_mod3)
+            return [self.adjoint()]
+        return super().pow(z)
 
     def adjoint(self):
         op = TClock(wires=self.wires)
@@ -231,9 +232,6 @@ class TAdd(Operation):
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "TAdd"
 
     @staticmethod
     def compute_matrix():
@@ -294,12 +292,19 @@ class TAdd(Operation):
         **Example**
 
         >>> print(qml.TAdd.compute_eigvals())
-        [ 1. +0.j         1. +0.j         1. +0.j         1. +0.j         1. +0.j        -0.5-0.8660254j -0.5-0.8660254j -0.5+0.8660254j -0.5+0.8660254j ]
+        [-0.5+0.8660254j -0.5-0.8660254j  1. +0.j        -0.5+0.8660254j -0.5-0.8660254j  1. +0.j         1. +0.j         1. +0.j         1. +0.j       ]
         """
-        return np.array([1, 1, 1, 1, 1, OMEGA**2, OMEGA**2, OMEGA, OMEGA])
+        return np.array([OMEGA, OMEGA**2, 1, OMEGA, OMEGA**2, 1, 1, 1, 1])
 
     # TODO: Add compute_decomposition() once parametric ops are added.
-    # TODO: Add pow()
+
+    def pow(self, z):
+        if isinstance(z, int):
+            z_mod3 = z % 3
+            if z_mod3 < 2:
+                return super().pow(z_mod3)
+            return [self.adjoint()]
+        return super().pow(z)
 
     def adjoint(self):
         op = TAdd(self.wires)

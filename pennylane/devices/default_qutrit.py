@@ -182,15 +182,15 @@ class DefaultQutrit(QutritDevice):
         partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
 
-    def _apply_tadd(self, state, axes, **kwargs):
+    def _apply_tadd(self, state, axes, inverse=False):
         """Applies a controlled add gate by slicing along the first axis specified in ``axes`` and
         applying a TShift transformation along the second axis
 
         By slicing along the first axis, we are able to select all of the amplitudes with corresponding
         :math:`|1\rangle` and :math:`|2\rangle` for the control qutrit. This means we just need to apply
         a :class:`~.TShift` gate when slicing along index 1, and a :class:`~.TShift` adjoint gate when
-
         slicing along index 2
+
         Args:
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
@@ -211,8 +211,8 @@ class DefaultQutrit(QutritDevice):
         else:
             target_axes = [axes[1]]
 
-        state_1 = self._apply_tshift(state[slices[1]], axes=target_axes)
-        state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=True)
+        state_1 = self._apply_tshift(state[slices[1]], axes=target_axes, inverse=inverse)
+        state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=not inverse)
         return self._stack([state[slices[0]], state_1, state_2], axis=axes[0])
 
     def _apply_tswap(self, state, axes, **kwargs):
