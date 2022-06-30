@@ -71,11 +71,19 @@ class TestEigenval:
         res = op.eigvals()
         assert np.allclose(res, exp)
 
+    def test_tadd_eigenval(self):
+        """Tests that the TAdd eigenvalue matches the numpy eigenvalues of the TAdd matrix"""
+        op = qml.TAdd(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
 
-period_three_ops = (
+
+period_three_ops = [
     qml.TShift(wires=0),
     qml.TClock(wires=0),
-)
+    qml.TAdd(wires=[0, 1]),
+]
 
 
 class TestPowMethod:
@@ -110,6 +118,7 @@ class TestPowMethod:
 label_data = [
     (qml.TShift(0), "TShift", "TShift⁻¹"),
     (qml.TClock(0), "TClock", "TClock⁻¹"),
+    (qml.TAdd([0, 1]), "TAdd", "TAdd⁻¹"),
 ]
 
 
@@ -120,3 +129,33 @@ def test_label_method(op, label1, label2):
 
     op.inv()
     assert op.label() == label2
+
+
+control_data = [
+    (qml.TShift(0), Wires([])),
+    (qml.TClock(0), Wires([])),
+    (qml.TAdd([0, 1]), Wires([0])),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test ``control_wires`` attribute for non-parametrized operations."""
+
+    assert op.control_wires == control_wires
+
+
+adjoint_ops = [  # ops that are not their own inverses
+    qml.TShift(wires=0),
+    qml.TClock(wires=0),
+    qml.TAdd(wires=[0, 1]),
+]
+
+
+@pytest.mark.parametrize("op", adjoint_ops)
+def test_adjoint_method(op, tol):
+    adj_op = copy.copy(op)
+    adj_op = adj_op.adjoint()
+
+    assert adj_op.name == op.name + ".inv"
+    assert np.allclose(adj_op.matrix(), op.matrix().conj().T)

@@ -770,8 +770,9 @@ class TestApplyOps:
         (qml.TClock, dev._apply_tclock),
     ]
 
-    # TODO: Add tests for two-qutrit ops once they are added
-    two_qutrit_ops = []
+    two_qutrit_ops = [
+        (qml.TAdd, dev._apply_tadd),
+    ]
 
     @pytest.mark.parametrize("op, method", single_qutrit_ops)
     def test_apply_single_qutrit_op(self, op, method, inverse):
@@ -782,7 +783,15 @@ class TestApplyOps:
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
-    # TODO: Add tests for two-qutrit operations
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct."""
+        state_out = method(self.state, axes=[0, 1], inverse=inverse)
+        op = op(wires=[0, 1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
 
 
 class TestApplyOperationUnit:
