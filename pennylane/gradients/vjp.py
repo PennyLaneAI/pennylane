@@ -38,18 +38,20 @@ def compute_vjp(dy, jac, num=None):
     """
     if jac is None:
         return None
-
+    print("dy_rpw", dy)
     dy_row = math.reshape(dy, [-1])
-
+    print("dy_rpw", dy_row)
+    print("be", jac.shape)
     if num is None:
         num = math.shape(dy_row)[0]
 
     if not isinstance(dy_row, np.ndarray):
         jac = math.convert_like(jac, dy_row)
         jac = math.cast(jac, dy_row.dtype)
-
+    print("num", num)
     jac = math.reshape(jac, [num, -1])
-
+    print("jac", jac)
+    print("ba", jac.shape)
     try:
         if math.allclose(dy, 0):
             # If the dy vector is zero, then the

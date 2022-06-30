@@ -547,6 +547,7 @@ class TestJaxExecuteIntegration:
             return (result[0] + result[1] - 7 * result[1])[0]
 
         res = jax.grad(cost_fn)(params)
+        print(res)
         assert res.shape == (2,)
 
     def test_multiple_tapes_output(self, execute_kwargs, interface, tol):

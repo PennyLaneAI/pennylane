@@ -25,13 +25,13 @@ class TestComputeVJP:
 
     def test_computation(self):
         """Test that the correct JVP is returned"""
-        dy = np.array([[1.0, 2.0], [3.0, 4.0]])
-        jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
+        dy = np.array([[1.0], [2.0]])
+        jac = np.array([[[1.0, 0.1], [0.2, 0.6]], [[0.4, -0.7], [-0.5, -0.6]]])
 
         jvp = qml.gradients.compute_jvp(dy, jac)
-        print(jvp)
-        # assert jvp.shape == (3,)
-        # assert np.all(jvp == np.tensordot(jac, dy, axes=[[0, 1], [0, 1]]))
+
+        assert jvp.shape == (4,)
+        assert np.allclose(np.array([1.2, 1.4, -1.0, -1.7]), jvp)
 
     def test_jacobian_is_none(self):
         """A None Jacobian returns a None JVP"""
@@ -39,16 +39,18 @@ class TestComputeVJP:
         dy = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
-        vjp = qml.gradients.compute_vjp(dy, jac)
-        assert vjp is None
+        jvp = qml.gradients.compute_jvp(dy, jac)
+        assert jvp is None
 
     def test_zero_dy(self):
         """A zero dy vector will return a zero matrix"""
-        dy = np.zeros([2, 2])
+        dy = np.zeros(3)
+        print(dy)
         jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
 
-        vjp = qml.gradients.compute_jvp(dy, jac)
-        assert np.all(vjp == np.zeros([3]))
+        jvp = qml.gradients.compute_jvp(dy, jac)
+        print(jvp)
+        assert np.all(jvp == np.zeros([4]))
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -63,7 +65,7 @@ class TestComputeVJP:
         dy = torch.ones(4, dtype=dtype1)
         jac = torch.ones((4, 4), dtype=dtype2)
 
-        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+        assert qml.gradients.compute_jvp(dy, jac).dtype == dtype1
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -78,7 +80,7 @@ class TestComputeVJP:
         dy = tf.ones(4, dtype=dtype1)
         jac = tf.ones((4, 4), dtype=dtype2)
 
-        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+        assert qml.gradients.compute_jvp(dy, jac).dtype == dtype1
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -96,4 +98,4 @@ class TestComputeVJP:
         dy = jax.numpy.array([0, 1], dtype=dtype1)
         jac = jax.numpy.array([[0, 1], [2, 3]], dtype=dtype2)
 
-        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+        assert qml.gradients.compute_jvp(dy, jac).dtype == dtype1

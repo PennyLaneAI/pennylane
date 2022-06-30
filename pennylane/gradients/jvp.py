@@ -39,26 +39,27 @@ def compute_jvp(dy, jac, num=None):
     if jac is None:
         return None
 
+    dy_row = math.reshape(dy, [-1])
+
     if num is None:
-        num = math.shape(dy)[0]
+        num = math.shape(dy_row)[0]
+    if not isinstance(dy_row, np.ndarray):
+        jac = math.convert_like(jac, dy_row)
+        jac = math.cast(jac, dy_row.dtype)
 
-    if not isinstance(dy, np.ndarray):
-        jac = math.convert_like(jac, dy)
-        jac = math.cast(jac, dy.dtype)
-
-    jac = math.reshape(jac, [num, 1])
+    jac = math.reshape(jac, [-1, num])
 
     try:
         if math.allclose(dy, 0):
             # If the dy vector is zero, then the
-            # corresponding element of the JVP will be zero.
-            num_params = jac.shape[1]
+            # corresponding element of the VJP will be zero.
+            num_params = jac.shape[0]
             res = math.convert_like(np.zeros([num_params]), dy)
             return math.cast(res, dy.dtype)
     except (AttributeError, TypeError):
         pass
 
-    return math.tensordot(jac, dy, [[0], [0]])
+    return math.tensordot(jac, dy_row, axes=[[1], [0]])
 
 
 def jvp(tape, dy, gradient_fn, gradient_kwargs=None):
@@ -182,6 +183,10 @@ def jvp(tape, dy, gradient_fn, gradient_kwargs=None):
     def processing_fn(results, num=None):
         # Postprocess results to compute the Jacobian-vector product
         jac = fn(results)
+        print("JAC", jac.shape)
+        print("dy", dy.shape)
+        print(num)
+        print(compute_jvp(dy, jac, num=num))
         return compute_jvp(dy, jac, num=num)
 
     return gradient_tapes, processing_fn
