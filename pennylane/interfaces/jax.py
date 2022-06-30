@@ -184,12 +184,10 @@ def _execute(
 
     @wrapped_exec.defjvp
     def wrapped_exec_jvp(params, tangents):
-        print("param", params)
-        print("tangent", tangents)
         params = params[0]
 
         len_params = [len(param) for param in params]
-        if all(x==len_params[0] for x in len_params):
+        if all(x == len_params[0] for x in len_params):
             tangents = jnp.array(tangents[0])
         else:
             tangents = [jnp.array(t) for t in tangents[0]]
@@ -198,8 +196,6 @@ def _execute(
             # Maybe just for one tape
 
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
-            print(new_tapes)
-            print(tangents.shape)
             with qml.tape.Unwrap(*new_tapes):
                 jvp_tapes, processing_fn = qml.gradients.batch_jvp(
                     new_tapes,
@@ -208,10 +204,7 @@ def _execute(
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
                 )
-                print(jvp_tapes[0].operations)
-                print(jvp_tapes[1].operations)
                 partial_res = execute_fn(jvp_tapes)[0]
-                print("p_res", partial_res)
 
             for t in tapes:
                 multi_probs = (
@@ -229,17 +222,14 @@ def _execute(
                     else:
                         new_partial_res.append(r)
                 partial_res = new_partial_res
-            print("partial_res", partial_res)
             res = processing_fn(partial_res)
-            print("res", res)
 
             jvps = jnp.concatenate(res)
-            print("jvps", jvps)
 
             param_idx = 0
             res = []
 
-            # Group the vjps based on the parameters of the tapes
+            # Group the jvps based on the parameters of the tapes
             for p in params:
                 param_jvp = jvps[param_idx : param_idx + len(p)]
                 res.append(param_jvp)
@@ -261,13 +251,12 @@ def _execute(
                 res = [jnp.array(r) for r in res]
             else:
                 res = jnp.array(res)
-            print(wrapped_exec(params), res)
             return wrapped_exec(params), res
 
         # Gradient function is a device method.
         with qml.tape.Unwrap(*tapes):
             jacs = gradient_fn(tapes, **gradient_kwargs)
-        print(jacs)
+
         jvps = [qml.gradients.compute_jvp(d, jac) for d, jac in zip(tangents, jacs)]
         res = [[jnp.array(p) for p in v] for v in jvps]
 
@@ -275,7 +264,6 @@ def _execute(
             res = [jnp.array(r) for r in res]
         else:
             res = jnp.array(res)
-        print(wrapped_exec(params), res)
         return wrapped_exec(params), res
 
     return wrapped_exec(params)

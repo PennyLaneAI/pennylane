@@ -66,36 +66,6 @@ def jvp(tape, dy, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian-vector products of a tape.
 
-    Consider a function :math:`\mathbf{f}(\mathbf{x})`. The Jacobian is given by
-
-    .. math::
-
-        \mathbf{J}_{\mathbf{f}}(\mathbf{x}) = \begin{pmatrix}
-            \frac{\partial f_1}{\partial x_1} &\cdots &\frac{\partial f_1}{\partial x_n}\\
-            \vdots &\ddots &\vdots\\
-            \frac{\partial f_m}{\partial x_1} &\cdots &\frac{\partial f_m}{\partial x_n}\\
-        \end{pmatrix}.
-
-    During backpropagation, the chain rule is applied. For example, consider the
-    cost function :math:`h = y\circ f: \mathbb{R}^n \rightarrow \mathbb{R}`,
-    where :math:`y: \mathbb{R}^m \rightarrow \mathbb{R}`.
-    The gradient is:
-
-    .. math::
-
-        \nabla h(\mathbf{x}) = \frac{\partial y}{\partial \mathbf{f}} \frac{\partial \mathbf{f}}{\partial \mathbf{x}}
-        = \frac{\partial y}{\partial \mathbf{f}} \mathbf{J}_{\mathbf{f}}(\mathbf{x}).
-
-    Denote :math:`d\mathbf{y} = \frac{\partial y}{\partial \mathbf{f}}`; we can write this in the form
-    of a matrix multiplication:
-
-    .. math:: \left[\nabla h(\mathbf{x})\right]_{j} = \sum_{i=0}^m d\mathbf{y}_i ~ \mathbf{J}_{ij}.
-
-    Thus, we can see that the gradient of the cost function is given by the so-called
-    **Jacobian-vector product**; the product of the row-vector :math:`d\mathbf{y}`, representing
-    the gradient of subsequent components of the cost function, and :math:`\mathbf{J}`,
-    the Jacobian of the current node of interest.
-
     Args:
         tape (.QuantumTape): quantum tape to differentiate
         dy (tensor_like): Gradient-output vector. Must have shape
@@ -111,50 +81,6 @@ def jvp(tape, dy, gradient_fn, gradient_kwargs=None):
 
     **Example**
 
-    Consider the following quantum tape with PyTorch parameters:
-
-    .. code-block:: python
-
-        import torch
-
-        x = torch.tensor([[0.1, 0.2, 0.3],
-                          [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(x[0, 1], wires=1)
-            qml.RZ(x[0, 2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x[1, 0], wires=1)
-            qml.RY(x[1, 1], wires=0)
-            qml.RZ(x[1, 2], wires=1)
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=1)
-
-    We can use the ``jvp`` function to compute the Jacobian-vector product,
-    given a gradient-output vector ``dy``:
-
-    >>> dy = torch.tensor([1., 1., 1.], dtype=torch.float64)
-    >>> jvp_tapes, fn = qml.gradients.jvp(tape, dy, qml.gradients.param_shift)
-
-    Note that ``dy`` has shape ``(3,)``, matching the output dimension of the tape
-    (1 expectation and 2 probability values).
-
-    Executing the JVP tapes, and applying the processing function:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> jvp = fn(qml.execute(jvp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
-    >>> jvp
-    tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.3878e-16, -4.8217e-01,
-             2.1329e-17], dtype=torch.float64, grad_fn=<ViewBackward>)
-
-    The output JVP is also differentiable with respect to the tape parameters:
-
-    >>> cost = torch.sum(jvp)
-    >>> cost.backward()
-    >>> x.grad
-    tensor([[-1.1025e+00, -2.0554e-01, -1.4917e-01],
-            [-1.2490e-16, -9.1580e-01,  0.0000e+00]], dtype=torch.float64)
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
@@ -183,10 +109,6 @@ def jvp(tape, dy, gradient_fn, gradient_kwargs=None):
     def processing_fn(results, num=None):
         # Postprocess results to compute the Jacobian-vector product
         jac = fn(results)
-        print("JAC", jac.shape)
-        print("dy", dy.shape)
-        print(num)
-        print(compute_jvp(dy, jac, num=num))
         return compute_jvp(dy, jac, num=num)
 
     return gradient_tapes, processing_fn
@@ -195,36 +117,6 @@ def jvp(tape, dy, gradient_fn, gradient_kwargs=None):
 def batch_jvp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian-vector products of a batch of tapes.
-
-    Consider a function :math:`\mathbf{f}(\mathbf{x})`. The Jacobian is given by
-
-    .. math::
-
-        \mathbf{J}_{\mathbf{f}}(\mathbf{x}) = \begin{pmatrix}
-            \frac{\partial f_1}{\partial x_1} &\cdots &\frac{\partial f_1}{\partial x_n}\\
-            \vdots &\ddots &\vdots\\
-            \frac{\partial f_m}{\partial x_1} &\cdots &\frac{\partial f_m}{\partial x_n}\\
-        \end{pmatrix}.
-
-    During backpropagation, the chain rule is applied. For example, consider the
-    cost function :math:`h = y\circ f: \mathbb{R}^n \rightarrow \mathbb{R}`,
-    where :math:`y: \mathbb{R}^m \rightarrow \mathbb{R}`.
-    The gradient is:
-
-    .. math::
-
-        \nabla h(\mathbf{x}) = \frac{\partial y}{\partial \mathbf{f}} \frac{\partial \mathbf{f}}{\partial \mathbf{x}}
-        = \frac{\partial y}{\partial \mathbf{f}} \mathbf{J}_{\mathbf{f}}(\mathbf{x}).
-
-    Denote :math:`d\mathbf{y} = \frac{\partial y}{\partial \mathbf{f}}`; we can write this in the form
-    of a matrix multiplication:
-
-    .. math:: \left[\nabla h(\mathbf{x})\right]_{j} = \sum_{i=0}^m d\mathbf{y}_i ~ \mathbf{J}_{ij}.
-
-    Thus, we can see that the gradient of the cost function is given by the so-called
-    **Jacobian-vector product**; the product of the row-vector :math:`d\mathbf{y}`, representing
-    the gradient of subsequent components of the cost function, and :math:`\mathbf{J}`,
-    the Jacobian of the current node of interest.
 
     Args:
         tapes (Sequence[.QuantumTape]): sequence of quantum tapes to differentiate
@@ -246,65 +138,6 @@ def batch_jvp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
     **Example**
 
-    Consider the following Torch-compatible quantum tapes:
-
-    .. code-block:: python
-
-        x = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
-
-        def ansatz(x):
-            qml.RX(x[0, 0], wires=0)
-            qml.RY(x[0, 1], wires=1)
-            qml.RZ(x[0, 2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(x[1, 0], wires=1)
-            qml.RY(x[1, 1], wires=0)
-            qml.RZ(x[1, 2], wires=1)
-
-        with qml.tape.QuantumTape() as tape1:
-            ansatz(x)
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=1)
-
-        with qml.tape.QuantumTape() as tape2:
-            ansatz(x)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        tapes = [tape1, tape2]
-
-    Both tapes share the same circuit ansatz, but have different measurement outputs.
-
-    We can use the ``batch_jvp`` function to compute the Jacobian-vector product,
-    given a list of gradient-output vectors ``dys`` per tape:
-
-    >>> dys = [torch.tensor([1., 1., 1.], dtype=torch.float64),
-    ...  torch.tensor([1.], dtype=torch.float64)]
-    >>> jvp_tapes, fn = qml.gradients.batch_jvp(tapes, dys, qml.gradients.param_shift)
-
-    Note that each ``dy`` has shape matching the output dimension of the tape
-    (``tape1`` has 1 expectation and 2 probability values --- 3 outputs --- and ``tape2``
-    has 1 expectation value).
-
-    Executing the JVP tapes, and applying the processing function:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> jvps = fn(qml.execute(jvps_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
-    >>> jvpss
-    [tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.3878e-16, -4.8217e-01,
-              2.1329e-17], dtype=torch.float64, grad_fn=<ViewBackward>),
-     tensor([ 1.7393e-01, -1.6412e-01, -5.3983e-03, -2.9366e-01, -4.0083e-01,
-              2.1134e-17], dtype=torch.float64, grad_fn=<ViewBackward>)]
-
-    We have two JVPs; one per tape. Each one corresponds to the number of parameters
-    on the tapes (6).
-
-    The output JVPs are also differentiable with respect to the tape parameters:
-
-    >>> cost = torch.sum(jvps[0] + jvps[1])
-    >>> cost.backward()
-    >>> x.grad
-    tensor([[-0.4792, -0.9086, -0.2420],
-            [-0.0930, -1.0772,  0.0000]], dtype=torch.float64)
     """
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
