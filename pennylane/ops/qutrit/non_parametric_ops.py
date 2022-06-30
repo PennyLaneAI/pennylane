@@ -49,9 +49,6 @@ class TShift(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "TShift"
-
     # Note: When Operation.matrix() is used for qutrit operations, `wire_order` must be `None` as specifying
     # an order that is expected to return a permuted and expanded matrix different from the canonical matrix
     # will lead to errors as `expand_matrix()` in `pennylane/operation.py`, which is used to compute the
@@ -100,7 +97,7 @@ class TShift(Operation):
         >>> print(qml.TShift.compute_eigvals())
         [ 1. +0.j        -0.5-0.8660254j -0.5+0.8660254j]
         """
-        return np.array([1, OMEGA**2, OMEGA])
+        return np.array([OMEGA, OMEGA**2, 1])
 
     # TODO: Add compute_decomposition once parametric ops are added.
 
@@ -109,7 +106,7 @@ class TShift(Operation):
             z_mod3 = z % 3
             if z_mod3 < 2:
                 return super().pow(z_mod3)
-            return [TShift(wires=self.wires).adjoint()]
+            return [self.adjoint()]
         return super().pow(z)
 
     def adjoint(self):
