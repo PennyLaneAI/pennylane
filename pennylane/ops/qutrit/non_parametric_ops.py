@@ -386,7 +386,10 @@ class TSWAP(Operation):
             ]
         )
 
-    # TODO: Add compute_decomposition(), compute_eigvals(), pow()
+    # TODO: Add compute_decomposition()
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def adjoint(self):
         return TSWAP(wires=self.wires)

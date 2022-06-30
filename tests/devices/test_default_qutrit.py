@@ -772,6 +772,7 @@ class TestApplyOps:
 
     two_qutrit_ops = [
         (qml.TAdd, dev._apply_tadd),
+        (qml.TSWAP, dev._apply_tswap),
     ]
 
     @pytest.mark.parametrize("op, method", single_qutrit_ops)

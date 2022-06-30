@@ -114,11 +114,23 @@ class TestPowMethod:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
 
+    @pytest.mark.parametrize("offset", [0, 2, -2, 4, -4])
+    def test_tswap_pow(self, offset):
+        """Test powers of the TSWAP operator"""
+        op = qml.TSWAP(wires=[0, 1])
+
+        assert len(op.pow(0 + offset)) == 0
+        assert op.pow(1 + offset)[0].__class__ is qml.TSWAP
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(1.234)  # Expect error raised for non-integer power
+
 
 label_data = [
     (qml.TShift(0), "TShift", "TShift⁻¹"),
     (qml.TClock(0), "TClock", "TClock⁻¹"),
     (qml.TAdd([0, 1]), "TAdd", "TAdd⁻¹"),
+    (qml.TSWAP([0, 1]), "TSWAP", "TSWAP"),
 ]
 
 
@@ -135,6 +147,7 @@ control_data = [
     (qml.TShift(0), Wires([])),
     (qml.TClock(0), Wires([])),
     (qml.TAdd([0, 1]), Wires([0])),
+    (qml.TSWAP([0, 1]), Wires([])),
 ]
 
 
@@ -151,6 +164,10 @@ adjoint_ops = [  # ops that are not their own inverses
     qml.TAdd(wires=[0, 1]),
 ]
 
+involution_ops = [
+    qml.TSWAP([0, 1]),
+]  # ops that are their own inverses
+
 
 @pytest.mark.parametrize("op", adjoint_ops)
 def test_adjoint_method(op, tol):
@@ -159,3 +176,12 @@ def test_adjoint_method(op, tol):
 
     assert adj_op.name == op.name + ".inv"
     assert np.allclose(adj_op.matrix(), op.matrix().conj().T)
+
+
+@pytest.mark.parametrize("op", involution_ops)
+def test_adjoint_method_involution(op, tol):
+    adj_op = copy.copy(op)
+    adj_op = adj_op.adjoint()
+
+    assert adj_op.name == op.name
+    assert np.allclose(adj_op.matrix(), op.matrix())
