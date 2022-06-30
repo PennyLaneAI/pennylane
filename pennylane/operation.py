@@ -184,14 +184,14 @@ def expand_matrix(base_matrix, wires, wire_order = None):
     True
 
     >>> print(expand_matrix(base_matrix, wires=[0, 2]))
-    base_matrix
-
-    >>> print(expand_matrix(base_matrix, wires = ["a", "b"], wire_order = ["a", "b"]))
-    base_matrix
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
 
     """
 
-    if wire_order is None or wires == Wires(wire_order):
+    if wire_order is None:
         return base_matrix
 
     wire_order = Wires(wire_order)
