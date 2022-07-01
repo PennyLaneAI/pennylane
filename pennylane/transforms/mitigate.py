@@ -24,8 +24,6 @@ from pennylane.transforms import batch_transform
 import pennylane as qml
 
 
-
-
 # @batch_transform
 def fold_global(circuit, scale_factor):
     r"""Diffable global circuit folding function as is done in :`mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
@@ -54,12 +52,11 @@ def fold_global(circuit, scale_factor):
 
     def _divmod(a, b):
         """Performs divmod but in an all-interface compatible manner"""
-        out1 = qml.math.floor(a/b)
+        out1 = qml.math.floor(a / b)
         out2 = a - out1 * b
         return int(out1), int(out2)
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
-    
 
     n_ops = len(base_ops)
     num_to_fold = int(round(fraction_scale * n_ops / 2))
@@ -91,25 +88,26 @@ def fold_global(circuit, scale_factor):
 
     return new_circuit
 
+
 # TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
-    #print(f"x.dtype = {x.dtype} and y.dtype = {y.dtype}")
+    # print(f"x.dtype = {x.dtype} and y.dtype = {y.dtype}")
     print(f"x = {x} and y = {y}")
-    lhs = qml.math.vander(x, order+1)
+    lhs = qml.math.vander(x, order + 1)
     rhs = qml.math.stack([qml.math.stack(i) for i in y])
     print(f"rhs = {rhs}")
-    #rcond = len(x)*np.finfo(x.dtype).eps
+    # rcond = len(x)*np.finfo(x.dtype).eps
 
     # scale lhs to improve condition number and solve
-    scale = qml.math.sum(qml.math.sqrt((lhs*lhs)), axis=0)
+    scale = qml.math.sum(qml.math.sqrt((lhs * lhs)), axis=0)
     lhs /= scale
     # c, resids, rank, s = np.linalg.lstsq(lhs, rhs, rcond)
     # This part is typically done using a lstq solver, do it with the penrose inverse by hand:
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
     c = qml.math.linalg.pinv(qml.math.transpose(lhs) @ lhs) @ qml.math.transpose(lhs) @ rhs
-    
-    c = qml.math.transpose(qml.math.transpose(c)/scale)  # broadcast scale coefficients
+
+    c = qml.math.transpose(qml.math.transpose(c) / scale)  # broadcast scale coefficients
     return c
 
 
@@ -319,7 +317,7 @@ def mitigate_with_zne(
             [apply(m) for m in tape.measurements]
         out_tapes.append(t)
 
-    #print(qml.drawer.tape_text(out_tapes[1].expand(), decimals=3))
+    # print(qml.drawer.tape_text(out_tapes[1].expand(), decimals=3))
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
@@ -327,7 +325,7 @@ def mitigate_with_zne(
             results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
         ]  # creates nested list according to reps_per_factor
 
-        #results = mean(results, axis=1)
+        # results = mean(results, axis=1)
         extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
