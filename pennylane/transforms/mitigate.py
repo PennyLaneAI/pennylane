@@ -13,6 +13,7 @@
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
+import torch
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply, adjoint
@@ -21,6 +22,8 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform
 
 import pennylane as qml
+
+
 
 
 # @batch_transform
@@ -49,7 +52,14 @@ def fold_global(circuit, scale_factor):
     base_ops = base_ops = circuit.expand().copy(copy_operations=True).operations
     # Treat all circuits as lists of operations, build new tape in the end
 
-    num_global_folds, fraction_scale = divmod(scale_factor - 1, 2)
+    def _divmod(a, b):
+        """Performs divmod but in an all-interface compatible manner"""
+        out1 = qml.math.floor(a/b)
+        out2 = a - out1 * b
+        return int(out1), int(out2)
+
+    num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
+    
 
     n_ops = len(base_ops)
     num_to_fold = int(round(fraction_scale * n_ops / 2))
@@ -71,11 +81,9 @@ def fold_global(circuit, scale_factor):
         # Remainder folding U => U (U^H U)**n (L_d^H .. L_s^H) (L_s .. L_d)
         for i in range(n_ops - 1, n_ops - num_to_fold - 1, -1):
             adjoint(qfunc)(base_ops[i])
-            # print("(L_d^H .. L_s^H): ", adjoint(qfunc)(base_ops[i]))
 
         for i in range(n_ops - num_to_fold, n_ops):
             qfunc(base_ops[i])
-            # print("(L_s .. L_d)", base_ops[i])
 
         # Append measurements
         for meas in circuit.measurements:
@@ -83,10 +91,31 @@ def fold_global(circuit, scale_factor):
 
     return new_circuit
 
+# TODO: make this a pennylane.math function
+def _polyfit(x, y, order):
+    """Brute force implementation of polynomial fit"""
+    #print(f"x.dtype = {x.dtype} and y.dtype = {y.dtype}")
+    print(f"x = {x} and y = {y}")
+    lhs = qml.math.vander(x, order+1)
+    rhs = qml.math.stack([qml.math.stack(i) for i in y])
+    print(f"rhs = {rhs}")
+    #rcond = len(x)*np.finfo(x.dtype).eps
+
+    # scale lhs to improve condition number and solve
+    scale = qml.math.sum(qml.math.sqrt((lhs*lhs)), axis=0)
+    lhs /= scale
+    # c, resids, rank, s = np.linalg.lstsq(lhs, rhs, rcond)
+    # This part is typically done using a lstq solver, do it with the penrose inverse by hand:
+    # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
+    c = qml.math.linalg.pinv(qml.math.transpose(lhs) @ lhs) @ qml.math.transpose(lhs) @ rhs
+    
+    c = qml.math.transpose(qml.math.transpose(c)/scale)  # broadcast scale coefficients
+    return c
+
 
 def poly_extrapolate(x, y, order):
     """Extrapolator to f(0) for f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg] for polynomial fit"""
-    coeff = qml.math.polyfit(x, y, order)
+    coeff = _polyfit(x, y, order)
     return coeff[-1]
 
 
@@ -290,15 +319,15 @@ def mitigate_with_zne(
             [apply(m) for m in tape.measurements]
         out_tapes.append(t)
 
-    print(qml.drawer.tape_text(out_tapes[1].expand(), decimals=3))
+    #print(qml.drawer.tape_text(out_tapes[1].expand(), decimals=3))
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
         results = [
             results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
         ]  # creates nested list according to reps_per_factor
-        print(results)
-        results = mean(results, axis=1)
+
+        #results = mean(results, axis=1)
         extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
