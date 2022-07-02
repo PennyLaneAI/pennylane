@@ -13,7 +13,7 @@
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
-import torch
+
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply, adjoint
@@ -95,7 +95,7 @@ def _polyfit(x, y, order):
     # print(f"x.dtype = {x.dtype} and y.dtype = {y.dtype}")
     #print(f"x = {x} and y = {y}")
     lhs = qml.math.vander(x, order + 1)
-    rhs = qml.math.stack([qml.math.stack(i) for i in y])
+    rhs = qml.math.stack(y) #[qml.math.stack(i) for i in y]
     #print(f"rhs = {rhs}")
     # rcond = len(x)*np.finfo(x.dtype).eps
 
@@ -105,7 +105,9 @@ def _polyfit(x, y, order):
     # c, resids, rank, s = np.linalg.lstsq(lhs, rhs, rcond)
     # This part is typically done using a lstq solver, do it with the penrose inverse by hand:
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
-    c = qml.math.linalg.pinv(qml.math.transpose(lhs) @ lhs) @ qml.math.transpose(lhs) @ rhs
+    c = qml.math.linalg.pinv(qml.math.transpose(lhs) @ lhs)
+    c = c @ qml.math.transpose(lhs)
+    c = qml.math.dot(c, rhs)
 
     c = qml.math.transpose(qml.math.transpose(c) / scale)  # broadcast scale coefficients
     return c
@@ -321,12 +323,16 @@ def mitigate_with_zne(
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
-        results = [
-            results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
-        ]  # creates nested list according to reps_per_factor
+        #results = [
+        #    mean(results[i : i + reps_per_factor]) for i in range(0, len(results), reps_per_factor)
+        #]  # creates nested list according to reps_per_factor
 
-        # results = mean(results, axis=1)
-        extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
+        results_flattened = []
+        for i in range(0, len(results), reps_per_factor):
+            results_flattened.append(mean(qml.math.stack(results[i : i + reps_per_factor])))
+
+        #results = mean(results, axis=1)
+        extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
     return out_tapes, processing_fn

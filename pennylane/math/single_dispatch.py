@@ -19,7 +19,6 @@ import numbers
 import autoray as ar
 import numpy as np
 import semantic_version
-import tensorflow as tf
 
 
 def _i(name):
@@ -401,19 +400,7 @@ def _cond_tf(pred, true_fn, false_fn, args):
 ar.register_function("tensorflow", "cond", _cond_tf)
 
 
-def _polyfit_tf(x_tf, y_tf, deg):
-    """Polynomial fitting is simply the least squares of Vandermonde matrix of x and y"""
-    import tensorflow as tf
-    import pennylane as qml
-
-    y_tf = tf.reshape(y_tf, (-1, 1))
-    X_tf = tf.cast(tf.experimental.numpy.vander(x_tf, deg + 1), y_tf.dtype)
-
-    return qml.math.squeeze(tf.linalg.lstsq(X_tf, y_tf))
-
-
-ar.register_function("tensorflow", "polyfit", _polyfit_tf)
-ar.register_function("tensorflow", "vander", tf.experimental.numpy.vander)
+ar.register_function("tensorflow", "vander", _i("tf").experimental.numpy.vander)
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -633,22 +620,6 @@ def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
 
 ar.register_function("torch", "sum", _sum_torch)
 ar.register_function("torch", "cond", _cond)
-
-
-def _polyfit_torch(x_torch, y_torch, deg):
-    """Polynomial fitting is simply the least squares of Vandermonde matrix of x and y"""
-    import torch
-
-    y_torch = torch.tensor(y_torch)
-
-    X_torch = torch.vander(x_torch, deg + 1).type(y_torch.dtype)
-
-    coeff_torch, _, _, _ = torch.linalg.lstsq(X_torch, y_torch)
-
-    return coeff_torch
-
-
-ar.register_function("torch", "polyfit", _polyfit_torch)
 
 
 # -------------------------------- JAX --------------------------------- #

@@ -334,11 +334,30 @@ class TestMitiqIntegration:
             assert not np.allclose(g_, 0)
 
 
-class TestFoldGlobal:
-    """Testing ``qml.transforms.fold_global"""
+# qnodes for the diffable ZNE error mitigation
+def qfunc(theta):
+    qml.RY(theta[0], wires=0)
+    qml.RY(theta[1], wires=1)
+    return qml.expval(1*qml.PauliZ(0) + 2*qml.PauliZ(1))
 
-    def test_constant_result(self):
-        """Ensuring that the circuit always yields the same result upon folding."""
+n_wires = 2
+
+# Describe noise
+noise_gate = qml.PhaseDamping
+noise_strength = 0.05
+
+# Load devices
+dev_ideal = qml.device("default.mixed", wires=n_wires)
+dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+
+out_ideal = np.sqrt(2)/2 + np.sqrt(2)
+grad_ideal_0 = [-np.sqrt(2)/2, -np.sqrt(2)]
+
+class TestDiffableZNE:
+    """Testing differentiable ZNE"""
+
+    def test_global_fold_constant_result(self):
+        """Ensuring that the folded circuits always yields the same results."""
 
         dev = qml.device("default.qubit", wires=5)
 
@@ -359,26 +378,57 @@ class TestFoldGlobal:
         res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
 
-
-class TestPolyfit:
-    """Testing that polyfit correctly fits polynomials"""
-
-    @pytest.mark.all_interfaces
     def test_polyfit(self):
-        """Testing the poly_extrapolator function in"""
+        """Testing the custom diffable _polyfit function"""
+        x = np.linspace(1, 4, 4)
+        y = 3. * x**2 + 2. * x + 1.
+        coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
+        assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
+
+    @pytest.mark.autograd
+    def test_diffability_autograd(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+
+        scale_factors = [1., 2., 3.]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = np.array([np.pi/4, np.pi/4], requires_grad=True)
+
+        res = mitigated_qnode(theta)
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        grad = qml.grad(mitigated_qnode)(theta)
+        grad_ideal = qml.grad(qnode_ideal)(theta)
+        grad_noisy = qml.grad(qnode_noisy)(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)
+
+    @pytest.mark.jax
+    def test_diffability_jax(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
+        import jax
         import jax.numpy as jnp
-        import torch
-        import tensorflow as tf
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
-        xs = [
-            jnp.arange(10, dtype="float32"),
-            np.arange(10),
-            torch.arange(10, dtype=torch.float64),
-            tf.range(10, dtype="float64"),
-        ]
+        scale_factors = jnp.array([1., 2., 3.])
 
-        for x in xs:
-            y = 1.5 + 0.5 * x**2
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+            qnode_noisy
+        )
 
-            assert qml.math.allclose(poly_extrapolate(x, y, 2), 1.5, atol=1e-6)
-            assert qml.math.allclose(Richardson_extrapolate(x, y), 1.5, atol=1e-6)
+        theta = jnp.array([np.pi/4, np.pi/4],)
+
+        res = mitigated_qnode(theta)
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        grad = jax.grad(mitigated_qnode)(theta)
+        grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad_noisy = jax.grad(qnode_noisy)(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)
