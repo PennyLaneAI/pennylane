@@ -461,3 +461,33 @@ class TestDiffableZNE:
         assert qml.math.allclose(grad_ideal, grad_ideal_0) # False, wrong by a factor 2
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2) # True
         assert qml.math.allclose(grad, grad_ideal, atol=1e-1) # True
+
+    @pytest.mark.tf
+    def test_diffability_tf(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
+        import tensorflow as tf
+
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
+
+        scale_factors = tf.cast(tf.constant([1., 2., 3.]), "float64")
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = tf.Variable([np.pi/4, np.pi/4])
+
+        with tf.GradientTape() as tape:
+            res = mitigated_qnode(theta)
+
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+
+        grad = tape.gradient(res, theta)
+        with tf.GradientTape() as tape:
+            res_ideal = qnode_ideal(theta)
+        grad_ideal = tape.gradient(res_ideal, theta)
+
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)
