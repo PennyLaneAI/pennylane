@@ -93,10 +93,10 @@ def fold_global(circuit, scale_factor):
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
     # print(f"x.dtype = {x.dtype} and y.dtype = {y.dtype}")
-    print(f"x = {x} and y = {y}")
+    #print(f"x = {x} and y = {y}")
     lhs = qml.math.vander(x, order + 1)
     rhs = qml.math.stack([qml.math.stack(i) for i in y])
-    print(f"rhs = {rhs}")
+    #print(f"rhs = {rhs}")
     # rcond = len(x)*np.finfo(x.dtype).eps
 
     # scale lhs to improve condition number and solve
