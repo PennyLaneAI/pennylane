@@ -322,24 +322,19 @@ def mitigate_with_zne(
     # print(qml.drawer.tape_text(out_tapes[1].expand(), decimals=3))
 
     def processing_fn(results):
-        # print(results)
-        # """Maps from input tape executions to an error-mitigated estimate"""
-        # results = [
-        #     results[i : i + reps_per_factor] for i in range(0, len(results), reps_per_factor)
-        # ]  # creates nested list according to reps_per_factor
-        # print(results)
-        # results_flattened = mean(results, axis=1)
-        # print(results_flattened)
+        """Maps from input tape executions to an error-mitigated estimate"""
 
+        # Averaing over reps_per_factor repititons
         results_flattened = []
         for i in range(0, len(results), reps_per_factor):
+            # The stacking ensures the right interface is used
+            # averaging over axis=0 is critical because the qnode may have multiple outputs
            results_flattened.append(mean(qml.math.stack(results[i : i + reps_per_factor]), axis=0))
 
-        #results = mean(results, axis=1)
-        print("scale factors: ", scale_factors)
-        print("result_flattened: ", results_flattened)
+        #print("scale factors: ", scale_factors)
+        #print("result_flattened: ", results_flattened)
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
-        print("extrapolated: ", extrapolated, "kwargs", extrapolate_kwargs)
+        #print("extrapolated: ", extrapolated, "kwargs", extrapolate_kwargs)
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
     return out_tapes, processing_fn
