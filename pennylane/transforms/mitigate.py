@@ -316,7 +316,6 @@ def mitigate_with_zne(
             [apply(m) for m in tape.measurements]
         out_tapes.append(t)
 
-
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
 
