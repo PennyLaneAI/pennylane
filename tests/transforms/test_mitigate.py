@@ -460,7 +460,7 @@ class TestDiffableZNE:
         assert qml.math.allclose(res, out_ideal, atol=1e-2)  # True
         res.backward()
         grad = theta.grad
-        theta0 = torch.tensor([np.pi/4, np.pi/4], requires_grad=True)
+        theta0 = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
         res_ideal = qnode_ideal(theta0)
         res_ideal.backward()
         grad_ideal = theta0.grad
