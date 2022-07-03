@@ -24,18 +24,68 @@ from pennylane.transforms import batch_transform
 import pennylane as qml
 
 
-# @batch_transform
+#@batch_transform
 def fold_global(circuit, scale_factor):
-    r"""Diffable global circuit folding function as is done in :`mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
+    r"""Diffable global circuit folding function as is done in `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
 
     For a unitary ``circuit`` :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` implements
 
-    .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\adjoint_d L^\adjoint_{d-1} .. L^\adjoint_s) (L_s .. L_d)
+    .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)
 
     where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left((\lambda -1) \mod 2 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
 
-    TODO: add examples
+    Args:
+        circuit (callable or QuantumTape): the circuit to be folded
+        scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
+    Returns:
+        QuantumTape: Folded circuit
+
+    **Example:**
+
+    .. code-block:: python
+
+        x = np.arange(6)
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.RZ(x[2], wires=2)
+            qml.CNOT(wires=(0,1))
+            qml.CNOT(wires=(1,2))
+            qml.RX(x[3], wires=0)
+            qml.RY(x[4], wires=1)
+            qml.RZ(x[5], wires=2)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+    
+    Setting ``scale_factor = 1`` does not affect the circuit:
+
+    >>> folded_tape = qml.transforms.fold_global(tape, 1)
+    >>> print(qml.drawer.tape_text(folded_tape, decimals=1))
+    0: ──RX(0.0)─╭●──RX(3.0)──────────┤ ╭<Z@Z@Z>
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)─┤ ├<Z@Z@Z>
+    2: ──RZ(2.0)────╰X────────RZ(5.0)─┤ ╰<Z@Z@Z>
+
+    Setting ``scale_factor = 2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
+    with :math:`s = \lfloor \left(1 \mod 2 \right) d/2 \rfloor = 4` since the circuit is composed of :math:`d=8` gates.
+
+    >>> folded_tape = qml.transforms.fold_global(tape, 2)
+    >>> print(qml.drawer.tape_text(folded_tape, decimals=1))
+    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†──RX(3.0)──────────────────┤ ╭<Z@Z@Z>
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╭●──RY(4.0)─┤ ├<Z@Z@Z>
+    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†─╰X──RZ(5.0)─┤ ╰<Z@Z@Z>
+
+    Setting ``scale_factor = 3`` results in the folded circuit :math:`U (U^\dagger U)`.
+
+    >>> folded_tape = qml.transforms.fold_global(tape, 3)
+    >>> print(qml.drawer.tape_text(folded_tape, decimals=1))
+    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭●─────────RX(0.0)†──RX(0.0)─╭●──RX(3.0)──────────┤╭<Z@Z@Z>
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────────RY(4.0)─┤├<Z@Z@Z>
+    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────────RZ(5.0)─┤╰<Z@Z@Z>
+
+    .. note:: 
+    
+        Circuits are treated as lists of operations. Since the ordering is ambiguous, as seen exemplarily
+        for :math:`U = X(0) Y(0) X(1) Y(1) = X(0) X(1) Y(0) Y(1)`, also partially folded circuits are ambiguous.
     """
 
     if scale_factor < 1.0:
