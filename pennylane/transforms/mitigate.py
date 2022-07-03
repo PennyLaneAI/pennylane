@@ -28,11 +28,12 @@ import pennylane as qml
 def fold_global(circuit, scale_factor):
     r"""Diffable global circuit folding function as is done in `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
 
-    For a unitary ``circuit`` :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` implements
+    For a unitary ``circuit`` :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
 
     .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)
 
     where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left((\lambda -1) \mod 2 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
+    The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
         circuit (callable or QuantumTape): the circuit to be folded
@@ -161,13 +162,52 @@ def _polyfit(x, y, order):
 
 
 def poly_extrapolate(x, y, order):
-    """Extrapolator to f(0) for f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg] for polynomial fit"""
+    """Extrapolator to f(0) for polynomial fit.
+
+    The polynomial is defined as ``f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg]`` such that ``deg = order + 1``.
+
+    Args:
+        x (Array): Data in x
+        y (Array): Data in y = f(x)
+        order (int): Order of the polynomial fit
+
+    Returns:
+        float: Extrapolated value at f(0).
+
+    .. seealso:: :func:`~.pennylane.transforms.Richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
+
+    **Example:**
+
+    >>> x = np.linspace(1, 10, 5)
+    >>> y = x**2 + x + 1 + 0.3 * np.random.rand(len(x))
+    >>> qml.transforms.poly_extrapolate(x, y, 2)
+    tensor(1.01717601, requires_grad=True)
+
+    """
     coeff = _polyfit(x, y, order)
     return coeff[-1]
 
 
 def Richardson_extrapolate(x, y):
-    """Extrapolator to f(0) for f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg] for polynomial fit with ``degree = len(x)-1``"""
+    """Polynomial fit :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
+
+    Args:
+        x (Array): Data in x
+        y (Array): Data in y = f(x)
+
+    Returns:
+        float: Extrapolated value at f(0).
+
+    .. seealso:: :func:`~.pennylane.transforms.poly_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
+
+    **Example:**
+
+    >>> x = np.linspace(1, 10, 5)
+    >>> y = x**2 + x + 1 + 0.3 * np.random.rand(len(x))
+    >>> qml.transforms.Richardson_extrapolate(x, y)
+    tensor(1.15105156, requires_grad=True)
+
+    """
     return poly_extrapolate(x, y, len(x) - 1)
 
 
@@ -197,11 +237,6 @@ def mitigate_with_zne(
     from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package (version 0.11.0 and above),
     see the example and usage details for further information.
 
-    .. warning::
-
-        Calculating the gradient of mitigated circuits is not supported when using the Mitiq
-        package as a backend for folding or extrapolation.
-
     Args:
         circuit (callable or QuantumTape): the circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
@@ -230,16 +265,17 @@ def mitigate_with_zne(
         dev = qml.device("default.mixed", wires=2)
         dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
 
-    We can now set up a mitigated QNode by harnessing functionality from the
-    `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package:
+    We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides propriertary
+    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.Richardson_extrapolate` that
+    allow for differentiating through them. Custom functions, as well as functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
+    are supported as well (see usage details below).
 
     .. code-block:: python3
 
         from pennylane import numpy as np
         from pennylane import qnode
 
-        from mitiq.zne.scaling import fold_global
-        from mitiq.zne.inference import RichardsonFactory
+        from pennylane.transforms import fold_global, poly_extrapolate
 
         n_wires = 2
         n_layers = 2
@@ -248,7 +284,7 @@ def mitigate_with_zne(
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @qml.transforms.mitigate_with_zne([1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs = {'order': 2})
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -261,6 +297,10 @@ def mitigate_with_zne(
 
     The unmitigated circuit result is ``0.33652776`` while the ideal circuit result is
     ``0.23688169`` and we can hence see that mitigation has helped reduce our estimation error.
+
+    This mitigated qnode can be differentiated like any other qnode.
+
+    >>> qml.grad(circuit)(w1, w2)
 
     .. details::
         :title: Usage Details
@@ -314,6 +354,11 @@ def mitigate_with_zne(
         in the
         `zne.scaling.folding <https://mitiq.readthedocs.io/en/stable/apidoc.html#module-mitiq.zne.scaling.folding>`__
         module.
+
+        .. warning::
+
+            Calculating the gradient of mitigated circuits is not supported when using the Mitiq
+            package as a backend for folding or extrapolation.
 
         **Extrapolation**
 

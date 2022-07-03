@@ -180,6 +180,8 @@ Transforms for error mitigation
 
     ~transforms.mitigate_with_zne
     ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.Richardson_extrapolate
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
