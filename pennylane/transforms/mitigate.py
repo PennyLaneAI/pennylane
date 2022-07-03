@@ -24,7 +24,7 @@ from pennylane.transforms import batch_transform
 import pennylane as qml
 
 
-#@batch_transform
+# @batch_transform
 def fold_global(circuit, scale_factor):
     r"""Diffable global circuit folding function as is done in `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
 
@@ -56,7 +56,7 @@ def fold_global(circuit, scale_factor):
             qml.RY(x[4], wires=1)
             qml.RZ(x[5], wires=2)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
-    
+
     Setting ``scale_factor = 1`` does not affect the circuit:
 
     >>> folded_tape = qml.transforms.fold_global(tape, 1)
@@ -82,8 +82,8 @@ def fold_global(circuit, scale_factor):
     1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────────RY(4.0)─┤├<Z@Z@Z>
     2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────────RZ(5.0)─┤╰<Z@Z@Z>
 
-    .. note:: 
-    
+    .. note::
+
         Circuits are treated as lists of operations. Since the ordering is ambiguous, as seen exemplarily
         for :math:`U = X(0) Y(0) X(1) Y(1) = X(0) X(1) Y(0) Y(1)`, also partially folded circuits are ambiguous.
     """
