@@ -183,6 +183,21 @@ def test_analytic_deprecation():
 
 
 #####################################################
+# Helper Method Test
+#####################################################
+
+
+def test_conj_helper_method():
+    """Unittests the _conj helper method."""
+
+    dev = qml.device("default.qubit.torch", wires=1)
+
+    x = qml.numpy.array(1.0 + 1j)
+    conj_x = dev._conj(x)
+    assert qml.math.allclose(conj_x, qml.math.conj(x))
+
+
+#####################################################
 # Device-level integration tests
 #####################################################
 
@@ -191,6 +206,17 @@ def test_analytic_deprecation():
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestApply:
     """Test application of PennyLane operations."""
+
+    def test_conj_array(self, device, torch_device, tol):
+        """Test using conj method from the device."""
+        dev = device(wires=4, torch_device=torch_device)
+        state = torch.tensor([-1.0 + 1j, 1.0 + 1j], dtype=torch.complex128, device=torch_device)
+        assert torch.allclose(
+            dev._conj(state),
+            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128),
+            atol=tol,
+            rtol=0,
+        )
 
     def test_basis_state(self, device, torch_device, tol):
         """Test basis state initialization"""
@@ -1130,6 +1156,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_interface": "torch",
             "passthru_devices": {
                 "torch": "default.qubit.torch",
@@ -1381,19 +1408,19 @@ class TestPassthruIntegration:
         p_grad = p_torch.grad
         assert qml.math.allclose(p_grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, device, torch_device, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, device, torch_device, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=wires, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.RY(a, wires=wires[0])
+            return qml.state()
 
         a = torch.tensor(0.54, requires_grad=True, device=torch_device)
 
-        circuit(a)
-        res = torch.abs(dev.state) ** 2
+        res = torch.abs(circuit(a)) ** 2
         res = res[1] - res[0]
         res.backward()
 

@@ -429,15 +429,18 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if mapped_interface in backprop_devices:
+
+                # no need to create another device if the child device is the same (e.g., default.mixed)
+                if backprop_devices[mapped_interface] == device.short_name:
+                    return "backprop", {}, device
+
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
 
                 device = qml.device(
-                    backprop_devices[mapped_interface],
-                    wires=device.wires,
-                    shots=device.shots,
+                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
                 )
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
@@ -647,6 +650,9 @@ class QNode:
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
+        if self._qfunc_output.return_type is qml.measurements.Counts:
+            # return a dictionary with counts not as a single-element array
+            return res[0]
 
         return qml.math.squeeze(res)
 
