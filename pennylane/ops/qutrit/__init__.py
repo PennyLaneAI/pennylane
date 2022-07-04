@@ -29,6 +29,7 @@ from ..identity import Identity
 ops = {
     "Identity",
     "QutritUnitary",
+    "ControlledQutritUnitary",
     "TShift",
     "TClock",
 }
