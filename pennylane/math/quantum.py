@@ -439,6 +439,8 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.reduced_dm` and :func:`pennylane.density_matrix`
     """
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
@@ -490,6 +492,8 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> vn_entropy(x, indices=[0])
     0.6931472
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`
     """
     density_matrix = reduced_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)
@@ -579,9 +583,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
 
-    .. seealso::
-
-        :func:`~.math.vn_entropy`
+    .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.mutual_info`
     """
 
     # the subsystems cannot overlap
@@ -680,6 +682,8 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     >>> state1 = [[0, 0], [0, 1]]
     >>> qml.math.fidelity(state0, state1)
     0.0
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.fidelity`
 
     """
     # Cast as a c_dtype array
