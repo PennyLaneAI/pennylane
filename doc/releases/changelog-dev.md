@@ -43,10 +43,99 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+**Operator Arithmetic:**
+
+* Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
+  operators such as `Adjoint` and `Pow`.
+  [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
+
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
+**Operator Arithmetic:**
+
+* A `Sum` symbolic class is added that allows users to represent the sum of operators.
+  [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
+  
+  The `Sum` class provides functionality like any other PennyLane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more. 
+
+  ```pycon
+  >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(0))
+  >>> summed_op
+  PauliX(wires=[0]) + PauliZ(wires=[0])
+  >>> qml.matrix(summed_op)
+  array([[ 1,  1],
+         [ 1, -1]])
+  >>> summed_op.terms()
+  ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+  ```
+  
+  The `summed_op` can also be used inside a `qnode` as an observable. 
+  If the circuit is parameterized, then we can also differentiate through the 
+  sum observable. 
+  
+  ```python
+  sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, grad_method="best")
+  def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(sum_op)
+  ```
+  
+  ```
+  >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
+  ```
+
 <h3>Improvements</h3>
+  
+* Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
+  [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  
+  Note that the change included creating a new `Counts` measurement type in `measurements.py`.
+
+  `counts=True` can be set when obtaining raw samples in the computational basis:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     # passing the counts flag
+  ...     return qml.sample(counts=True)   
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '11': 505}
+  ```
+  
+  Counts can also be obtained when sampling the eigenstates of an observable:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...   qml.Hadamard(wires=0)
+  ...   qml.CNOT(wires=[0, 1])
+  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+  >>> result = circuit()
+  >>> print(result)
+  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
+   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ```
+
+* The `qml.state` and `qml.density_matrix` measurements now support custom wire
+  labels.
+  [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
@@ -101,5 +190,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Mudit Pandey,
+
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
 Antal Száva, Moritz Willmann
