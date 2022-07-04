@@ -16,7 +16,6 @@ This submodule defines the symbolic operation that indicates the control of an o
 """
 
 import warnings
-from copy import copy
 
 import numpy as np
 from scipy import sparse
@@ -24,11 +23,12 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.queuing import QueuingContext
 from pennylane.wires import Wires
 
+from .symbolicop import SymbolicOp
+
 # pylint: disable=too-many-arguments, too-many-public-methods
-class Controlled(operation.Operator):
+class Controlled(SymbolicOp):
     """Symbolic operator denoting a controlled operator.
 
     Args:
@@ -84,23 +84,7 @@ class Controlled(operation.Operator):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
-    # pylint: disable=attribute-defined-outside-init
-    def __copy__(self):
-        # this method needs to be overwritten becuase the base must be copied too.
-        copied_op = object.__new__(type(self))
-        # copied_op must maintain inheritance structure of self
-        # For example, it must keep AdjointOperation if self has it
-        # this way preserves inheritance structure
-
-        for attr, value in vars(self).items():
-            if attr != "_hyperparameters":
-                setattr(copied_op, attr, value)
-        copied_op._hyperparameters = copy(self._hyperparameters)
-        copied_op._hyperparameters["base"] = copy(self.base)
-
-        return copied_op
-
-    # pylint: disable=super-init-not-called
+    # pylint: disable=too-many-function-args
     def __init__(
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
@@ -132,50 +116,13 @@ class Controlled(operation.Operator):
             len(Wires.shared_wires([work_wires, base.wires + control_wires])) == 0
         ), "Work wires must be different the control_wires and base operation wires."
 
-        self.hyperparameters["base"] = base
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires
 
         self._name = f"C{base.name}"
 
-        self._id = id
-        self.queue_idx = None
-
-        if do_queue:
-            self.queue()
-
-    @property
-    def base(self):
-        """The Operator being controlled."""
-        return self.hyperparameters["base"]
-
-    # Properties on the parameters ###########################
-
-    @property
-    def data(self):
-        """Trainable parameters that the operator depends on."""
-        return self.base.data
-
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
-
-    @property
-    def parameters(self):
-        return self.base.parameters
-
-    @property
-    def num_params(self):
-        return self.base.num_params
-
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
+        super().__init__(self, base, do_queue, id)
 
     # Properties on the control values ######################
     @property
@@ -237,44 +184,7 @@ class Controlled(operation.Operator):
         else:
             self.hyperparameters["work_wires"] = Wires([])
 
-    @property
-    def num_wires(self):
-        return len(self.wires)
-
-    # Operator Properties #####################################
-
-    @property
-    def is_hermitian(self):
-        return self.base.is_hermitian
-
-    # pylint: disable=invalid-overridden-method, arguments-renamed
-    @property
-    def has_matrix(self):
-        return self.base.has_matrix
-
-    @property
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns ``_queue_cateogory`` for base operator.
-
-        Options are:
-            * `"_prep"`
-            * `"_ops"`
-            * `"_measurements"`
-            * `None`
-        """
-        return self.base._queue_category  # pylint: disable=protected-access
-
     # Methods ##########################################
-
-    def queue(self, context=QueuingContext):
-        context.safe_update_info(self.base, owner=self)
-        context.append(self, owns=self.base)
-        return self
 
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
