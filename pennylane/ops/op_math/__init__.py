@@ -26,3 +26,5 @@ from .adjoint_constructor import adjoint
 from .control import ctrl, ControlledOperation
 
 from .pow_class import Pow
+
+from .symbolicop import SymbolicOp
