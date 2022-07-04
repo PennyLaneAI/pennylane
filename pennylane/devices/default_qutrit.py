@@ -54,6 +54,7 @@ class DefaultQutrit(QutritDevice):
     # TODO: Update list of operations and observables once more are added
     operations = {
         "QutritUnitary",
+        "ControlledQutritUnitary",
         "TShift",
         "TClock",
         "TAdd",
