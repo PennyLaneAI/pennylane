@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains classes and functions for Operator arithmetic.
+This module contains the discrete-variable qutrit quantum operations.
 
-.. currentmodule:: pennylane.ops.op_math
-.. autosummary::
-    :toctree: api
+The operations are in one file:
 
+* ``matrix_ops.py``: Generalized operations that accept a matrix parameter,
+  either unitary or hermitian depending.
 """
 
-from .adjoint_class import Adjoint
-from .adjoint_constructor import adjoint
-from .controlled_class import Controlled, ControlledOp
-from .control import ctrl, ControlledOperation
-from .pow_class import Pow
+from .matrix_ops import *
+from ..identity import Identity
 
-from .symbolicop import SymbolicOp
+# TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
+ops = {
+    "Identity",
+    "QutritUnitary",
+}
+
+# TODO: Remove QutritUnitary from obs list
+obs = {
+    "QutritUnitary",  # Added here to prevent errors when using device
+}
+
+__all__ = list(ops | obs)
