@@ -27,3 +27,5 @@ from .sum import op_sum, Sum
 from .control import ctrl, ControlledOperation
 
 from .pow_class import Pow
+
+from .symbolicop import SymbolicOp

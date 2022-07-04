@@ -43,6 +43,12 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+**Operator Arithmetic:**
+
+* Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
+  operators such as `Adjoint` and `Pow`.
+  [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
+
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
 
