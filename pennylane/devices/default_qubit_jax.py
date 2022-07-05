@@ -213,12 +213,15 @@ class DefaultQubitJax(DefaultQubit):
         else:
             key = self._prng_key
         if jnp.ndim(state_probability) == 2:
-            # TODO [dwierichs]: Check whether the following introduces strong correlations between
-            # different samples along the broadcasted axis
+            # Produce separate keys for each of the probabilities along the broadcasted axis
+            keys = []
+            for _ in state_probability:
+                key, subkey = jax.random.split(key)
+                keys.append(subkey)
             return jnp.array(
                 [
-                    jax.random.choice(key, number_of_states, shape=(shots,), p=prob)
-                    for prob in state_probability
+                    jax.random.choice(_key, number_of_states, shape=(shots,), p=prob)
+                    for _key, prob in zip(keys, state_probability)
                 ]
             )
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
