@@ -77,7 +77,7 @@ class FlipSign(Operation):
 
     def __init__(self, n, wires, do_queue=True, id=None):
 
-        if len(wires) == 0:
+        if type(wires) is not int and len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
         if type(n) is int:
@@ -88,7 +88,8 @@ class FlipSign(Operation):
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
         else:
-            if self.istypeof(n, int):
+
+            if self.is_list_typeof(n, int):
                 n = self.to_number(n)
             else:
                 raise ValueError(
@@ -99,7 +100,7 @@ class FlipSign(Operation):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def istypeof(arr, type_val):
+    def is_list_typeof(arr, type_val):
         r"""Check if array is for a given type or not
         Args:
             type_val (type): Type to infer and check for array
