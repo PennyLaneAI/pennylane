@@ -55,7 +55,7 @@ class TestFlipSign:
         def to_number(status):
             return sum([status[i] * 2 ** (len(status) - i - 1) for i in range(len(status))])
 
-        if isinstance(n_status, list):
+        if type(n_status) == list:
             n_status = to_number(n_status)
 
         # we check that only the indicated value has been changed
