@@ -77,6 +77,16 @@ ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
 ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 
 
+def _cond(pred, true_fn, false_fn, args):
+    if pred:
+        return true_fn(*args)
+
+    return false_fn(*args)
+
+
+ar.register_function("numpy", "cond", _cond)
+ar.register_function("builtins", "cond", _cond)
+
 # -------------------------------- Autograd --------------------------------- #
 
 
@@ -174,6 +184,7 @@ ar.register_function(
 )
 
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
+ar.register_function("autograd", "cond", _cond)
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -359,6 +370,34 @@ ar.register_function("tensorflow", "eigvalsh", _eigvalsh_tf)
 ar.register_function(
     "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
 )
+
+
+def _kron_tf(a, b):
+    import tensorflow as tf
+
+    a_shape = a.shape
+    b_shape = b.shape
+
+    if len(a_shape) == 1:
+        a = a[:, tf.newaxis]
+        b = b[tf.newaxis, :]
+        return tf.reshape(a * b, (a_shape[0] * b_shape[0],))
+
+    a = a[:, tf.newaxis, :, tf.newaxis]
+    b = b[tf.newaxis, :, tf.newaxis, :]
+    return tf.reshape(a * b, (a_shape[0] * b_shape[0], a_shape[1] * b_shape[1]))
+
+
+ar.register_function("tensorflow", "kron", _kron_tf)
+
+
+def _cond_tf(pred, true_fn, false_fn, args):
+    import tensorflow as tf
+
+    return tf.cond(pred, lambda: true_fn(*args), lambda: false_fn(*args))
+
+
+ar.register_function("tensorflow", "cond", _cond_tf)
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -577,6 +616,7 @@ def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
 
 
 ar.register_function("torch", "sum", _sum_torch)
+ar.register_function("torch", "cond", _cond)
 
 
 # -------------------------------- JAX --------------------------------- #
@@ -605,6 +645,17 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _scatter_jax(indices, array, new_dimensions):
+    from jax import numpy as jnp
+
+    new_array = jnp.zeros(new_dimensions, dtype=array.dtype.type)
+    new_array = new_array.at[indices].set(array)
+    return new_array
+
+
+ar.register_function("jax", "scatter", _scatter_jax)
 ar.register_function(
     "jax",
     "scatter_element_add",
@@ -614,3 +665,9 @@ ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))
+
+ar.register_function(
+    "jax",
+    "cond",
+    lambda pred, true_fn, false_fn, args: _i("jax").lax.cond(pred, true_fn, false_fn, *args),
+)
