@@ -1100,7 +1100,7 @@ class QubitDevice(Device):
             # colon (:) is required because shots is the second-to-last axis and the
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             sub_samples = self._samples[..., slice(*shot_range), :]
-            
+
         no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
@@ -1135,7 +1135,7 @@ class QubitDevice(Device):
             if counts:
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
-            
+
         # TODO: Check the following remaining logical branch with broadcasting
         if counts:
             shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
