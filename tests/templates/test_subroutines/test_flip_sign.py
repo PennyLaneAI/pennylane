@@ -18,7 +18,6 @@ import pytest
 from pennylane import numpy as np
 import pennylane as qml
 
-
 class TestFlipSign:
     """Tests that the template defines the correct sign flip."""
 
@@ -67,3 +66,25 @@ class TestFlipSign:
                 statuses.append(bool(np.sign(x) == 1))
 
         assert np.all(np.array(statuses))
+
+    @pytest.mark.parametrize(
+        ("n_status, n_wires"),
+        [
+            ([1,0], []),
+        ],
+    )
+    def test_empty_wire_error(self, n_status, n_wires):
+        """Assert error raised when given empty wires"""
+        with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
+            op = qml.FlipSign(n_status, wires=n_wires)
+
+    @pytest.mark.parametrize(
+        ("n_status, n_wires"),
+        [
+            (-1, 0),
+        ],
+    )
+    def test_empty_wire_error(self, n_status, n_wires):
+        """Assert error raised when given negative basic status"""
+        with pytest.raises(ValueError, match="expected an integer equal or greater than zero for basic flipping state"):
+            op = qml.FlipSign(n_status, wires=n_wires)
