@@ -75,14 +75,14 @@ class FlipSign(Operation):
 
     def __init__(self, n, wires, do_queue=True, id=None):
 
-        if type(wires) is not int and len(wires) == 0:
+        if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
-        if type(wires) is int:
+        if isinstance(wires, int):
             wires = 1 if wires == 0 else wires
             wires = list(range(wires))
 
-        if type(n) is int:
+        if isinstance(n, int):
             if n >= 0:
                 n = self.to_list(n, len(wires))
             else:

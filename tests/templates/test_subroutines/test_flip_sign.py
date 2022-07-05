@@ -37,7 +37,7 @@ class TestFlipSign:
     )
     def test_eval(self, n_status, n_wires):
 
-        if type(n_wires) is int:
+        if isinstance(n_wires, int):
             n_wires = 1 if n_wires == 0 else n_wires
             n_wires = list(range(n_wires))
 
@@ -55,7 +55,7 @@ class TestFlipSign:
         def to_number(status):
             return sum([status[i] * 2 ** (len(status) - i - 1) for i in range(len(status))])
 
-        if type(n_status) is list:
+        if isinstance(n_status, list):
             n_status = to_number(n_status)
 
         # we check that only the indicated value has been changed
