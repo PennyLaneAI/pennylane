@@ -50,6 +50,7 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
+    add,
 )
 
 from .quantum import cov_matrix, marginal_prob
@@ -112,4 +113,5 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
+    "add",
 ]
