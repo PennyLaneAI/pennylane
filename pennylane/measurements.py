@@ -1301,12 +1301,21 @@ class MeasurementValueV2:
         return MeasurementValueV2(self.measurements, lambda x: fn(self.fn(*x)))
 
     def merge(self, other):
+
+        # create a new merged list with no duplicates and in lexical ordering
         merged_measurements = list(set(self.measurements).union(set(other.measurements)))
         merged_measurements.sort()
-        [merged_measurements.index(m) for m in self.measurements]
+
+        # create a new function that selects the correct indices for each sub function
+        def merged_fn(x):
+            out_1 = self.fn(x[i] for i in [merged_measurements.index(m) for m in self.measurements])
+            out_2 = other.fn(x[i] for i in [merged_measurements.index(m) for m in other.measurements])
+
+            return out_1, out_2
+
         return MeasurementValueV2(
             merged_measurements,
-            lambda x: (*self.fn(x[i] for i in [merged_measurements.index(m) for m in self.measurements]), *other.fn(x[i] for i in [merged_measurements.index(m) for m in other.measurements]))
+            merged_fn
         )
 
     def eval(self, i):
