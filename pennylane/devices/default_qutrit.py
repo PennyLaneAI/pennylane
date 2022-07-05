@@ -59,6 +59,7 @@ class DefaultQutrit(QutritDevice):
         "TClock",
         "TAdd",
         "TSWAP",
+        "TRX",
     }
 
     observables = {
