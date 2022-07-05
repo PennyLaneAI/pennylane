@@ -292,6 +292,8 @@ class ControlledQutritUnitary(QutritUnitary):
         interface = qml.math.get_interface(U)
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
         right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
+        if len(qml.math.shape(U)) == 3:
+            return qml.math.stack([qml.math.block_diag([left_pad, _U, right_pad]) for _U in U])
         return qml.math.block_diag([left_pad, U, right_pad])
 
     @property
