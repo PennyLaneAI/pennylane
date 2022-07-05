@@ -88,7 +88,6 @@ class FlipSign(Operation):
             raise ValueError("expected an integer array for wires")
 
         if isinstance(n, list):
-            if np.array(wires).dtype != np.dtype("int"):
                 if self.is_binary_array(n):
                     n = self.to_number(n)
                 else:
