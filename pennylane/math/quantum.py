@@ -774,9 +774,13 @@ def _compute_fidelity(density_matrix0, density_matrix1):
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
-    """
-    Compute the relative entropy of rho with respect to sigma
-    TODO: docstring
+    r"""
+    Compute the quantum relative entropy of density matrix rho with respect to sigma.
+
+    .. math::
+        S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+
+    where :math:`S` is the von Neumann entropy.
     """
     if base:
         div_base = np.log(base)
@@ -792,7 +796,7 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     rho_nonzero_mask = qml.math.where(evs_rho == 0.0, False, True)
 
-    ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0)) / div_base
+    ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0))
 
     # zero eigenvalues need to be treated very carefully here
     # we use the convention that 0 * log(0) = 0
@@ -806,9 +810,56 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
 
 def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="complex128"):
-    """
-    Compute the relative entropy of rho with respect to sigma
-    TODO: docstring
+    r"""
+    Compute the quantum relative entropy of one state with respect to another.
+
+    .. math::
+        S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+
+    Roughly speaking, quantum relative entropy is a measure of distinguishability between two
+    quantum states. It is the quantum mechanical analog of relative entropy.
+
+    Each state can be given as a state vector in the computational basis or
+    as a density matrix.
+
+    Args:
+        state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Quantum relative entropy of state0 with respect to state1
+
+    **Examples**
+
+    The relative entropy between two equal states is always zero:
+
+    >>> x = np.array([1, 0])
+    >>> qml.math.relative_entropy(x, x)
+    0.0
+
+    and the relative entropy between two non-equal pure states is always infinity:
+
+    >>> y = np.array([1, 1]) / np.sqrt(2)
+    >>> qml.math.relative_entropy(x, y)
+    inf
+
+    The quantum states can be provided as density matrices, allowing for computation
+    of relative entropy between mixed states:
+
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+    >>> qml.math.relative_entropy(rho, sigma)
+    tensor(0.08228288, requires_grad=True)
+
+    It is also possible to change the log base:
+
+    >>> qml.math.relative_entropy(rho, sigma, base=2)
+    tensor(0.1187091, requires_grad=True)
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.relative_entropy`
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)

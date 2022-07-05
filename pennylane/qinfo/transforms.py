@@ -729,8 +729,63 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
 
 def relative_entropy(qnode0, qnode1, wires0, wires1):
-    r"""Compute relative entropy
-    TODO: docstring
+    r"""
+    Compute the relative entropy for two :class:`.QNode`s returning a :func:`~.state` (a state can be a state vector
+    or a density matrix, depending on the device) acting on quantum systems with the same size.
+
+    .. math::
+        S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+
+    Roughly speaking, quantum relative entropy is a measure of distinguishability between two
+    quantum states. It is the quantum mechanical analog of relative entropy.
+
+    Args:
+        qnode0 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        qnode1 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        wires0 (Sequence[int]): the subsystem of the first QNode
+        wires1 (Sequence[int]): the subsystem of the second QNode
+
+    Returns:
+        func: A function that takes as input the joint arguments of the two QNodes,
+        and returns the relative entropy from their output states.
+
+    **Example**
+
+    Consider the following QNode:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+    The ``qml.qinfo.relative_entropy`` transform can be used to compute the relative
+    entropy between the output states of the QNode:
+
+    >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
+
+    The returned function takes two tuples as input, the first being the arguments to the
+    first QNode and the second being the arguments to the second QNode:
+
+    >>> x, y = np.array(0.4), np.array(0.6)
+    >> relative_entropy_circuit((x,), (y,))
+    0.017750012490703237
+
+    This transform is fully differentiable:
+
+    .. code-block:: python
+
+        def wrapper(x, y):
+            return relative_entropy_circuit((x,), (y,))
+
+    >>> wrapper(x, y)
+    0.017750012490703237
+    >>> qml.grad(wrapper)(x, y)
+    (array(-0.16458856), array(0.16953273))
     """
 
     if len(wires0) != len(wires1):
