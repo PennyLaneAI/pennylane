@@ -638,13 +638,14 @@ class TestPassthruIntegration:
         )
         assert all(jnp.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a):
-            qml.RY(a, wires=0)
+            qml.RY(a, wires=wires[0])
             return qml.state()
 
         a = jnp.array(0.54)
