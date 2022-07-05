@@ -162,7 +162,8 @@
   ```
 
 * `AnnotatedQueue` no longer inherits from `QueuingContext`. `QueuingContext` is now purely
-  class methods for commuticating with the currently active recording queue. 
+  class methods for communicating with the currently active recording queue. 
+  [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
 
 <h3>Breaking changes</h3>
 
