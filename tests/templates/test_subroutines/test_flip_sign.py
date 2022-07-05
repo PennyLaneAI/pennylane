@@ -32,7 +32,7 @@ class TestFlipSign:
             ([1, 1, 0], 3),
             ([1, 0, 0, 0], 4),
             ([1, 0, 0, 0], [0, 1, 2, 3]),
-            (1,0),
+            (1, 0),
         ],
     )
     def test_eval(self, n_status, n_wires):
