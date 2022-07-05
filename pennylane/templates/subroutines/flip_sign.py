@@ -80,7 +80,7 @@ class FlipSign(Operation):
         if len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
-        if isinstance(n, int):
+        if type(n) is int:
             if n >= 0:
                 n = self.to_list(n, len(wires))
             else:
@@ -88,13 +88,8 @@ class FlipSign(Operation):
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
         else:
-            if np.array(wires).dtype != np.dtype("int"):
-                if self.is_binary_array(n):
-                    n = self.to_number(n)
-                else:
-                    raise ValueError(
-                        "expected an integer binary array or integer number for basic flipping state "
-                    )
+            if self.istypeof(n, int):
+                n = self.to_number(n)
             else:
                 raise ValueError(
                     "expected an integer binary array or integer number for basic flipping state "
@@ -104,15 +99,16 @@ class FlipSign(Operation):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def is_binary_array(arr):
-        r"""Check if array is binary or not (only 0's and 1's)
+    def istypeof(arr, type_val):
+        r"""Check if array is for a given type or not
         Args:
-            arr (array[int]): Integer binary array with regarding basis state
+            type_val (type): Type to infer and check for array
+            arr (array[object]): Integer binary array with regarding basis state
 
         Returns:
             (bool): boolean that checks whether array is binary or not
         """
-        return np.array_equal(arr, arr.astype(bool))
+        return np.array_equal(arr, np.array(arr).astype(type_val))
 
     @staticmethod
     def to_list(n, n_wires):

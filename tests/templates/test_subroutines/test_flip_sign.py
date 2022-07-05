@@ -31,18 +31,22 @@ class TestFlipSign:
             ([1, 0], 2),
             ([1, 1, 0], 3),
             ([1, 0, 0, 0], 4),
+            ([1, 0, 0, 0], [0, 1, 2, 3]),
         ],
     )
     def test_eval(self, n_status, n_wires):
 
         dev = qml.device("default.qubit", wires=n_wires)
 
+        if type(n_wires) is int:
+            n_wires = list(range(n_wires))
+
         @qml.qnode(dev)
         def circuit():
-            for wire in list(range(n_wires)):
+            for wire in n_wires:
                 qml.Hadamard(wires=wire)
 
-            qml.FlipSign(n_status, wires=list(range(n_wires)))
+            qml.FlipSign(n_status, wires=n_wires)
 
             return qml.state()
 
