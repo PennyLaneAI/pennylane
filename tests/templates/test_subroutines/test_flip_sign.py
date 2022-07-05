@@ -32,14 +32,16 @@ class TestFlipSign:
             ([1, 1, 0], 3),
             ([1, 0, 0, 0], 4),
             ([1, 0, 0, 0], [0, 1, 2, 3]),
+            (1,0),
         ],
     )
     def test_eval(self, n_status, n_wires):
 
-        dev = qml.device("default.qubit", wires=n_wires)
-
         if type(n_wires) is int:
+            n_wires = 1 if n_wires == 0 else n_wires
             n_wires = list(range(n_wires))
+
+        dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit():

@@ -36,9 +36,7 @@ class FlipSign(Operation):
         wires (array[int]): number of wires that the operator acts on
 
     Raises:
-        ValueError: "expected an integer array for wires "
         ValueError: "expected at least one wire representing the qubit "
-        ValueError: "expected an integer binary array or integer number for basic flipping state "
         ValueError: "expected an integer equal or greater than zero for basic flipping state "
 
     .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
@@ -80,20 +78,16 @@ class FlipSign(Operation):
         if type(wires) is not int and len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
+        if type(wires) is int:
+            wires = 1 if wires == 0 else wires
+            wires = list(range(wires))
+
         if type(n) is int:
             if n >= 0:
                 n = self.to_list(n, len(wires))
             else:
                 raise ValueError(
                     "expected an integer equal or greater than zero for basic flipping state"
-                )
-        else:
-
-            if self.is_list_typeof(n, int):
-                n = self.to_number(n)
-            else:
-                raise ValueError(
-                    "expected an integer binary array or integer number for basic flipping state "
                 )
 
         self._hyperparameters = {"arr_bin": n}
@@ -130,17 +124,6 @@ class FlipSign(Operation):
         b_str = f"{n:b}".zfill(n_wires)
         bin_list = [int(i) for i in b_str]
         return bin_list
-
-    @staticmethod
-    def to_number(arr_bin):
-        r"""Convert a binary array to integer number
-
-        Args:
-            arr_bin (array[int]): Integer binary array that represent the basis state
-        Returns:
-            (int): integer number
-        """
-        return sum([arr_bin[i] * 2 ** (len(arr_bin) - i - 1) for i in range(len(arr_bin))])
 
     @property
     def num_params(self):
