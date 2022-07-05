@@ -105,6 +105,7 @@ __all__ = [
     "mutual_info",
     "ones_like",
     "reduced_dm",
+    "relative_entropy",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",
