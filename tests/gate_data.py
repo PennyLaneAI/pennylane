@@ -1,5 +1,5 @@
 """Convenience gate representations for testing"""
-import math
+from pennylane import math
 import cmath
 import numpy as np
 
@@ -37,8 +37,10 @@ SISWAP = np.array(
     ]
 )
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
+CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])  #: CY gate
 S = np.array([[1, 0], [0, 1j]])  #: Phase Gate
 T = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])  #: T Gate
+SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])  #: SX Gate
 ECR = np.array(
     [
         [0, 0, 1 / math.sqrt(2), 1j * 1 / math.sqrt(2)],  # ECR Gate
@@ -137,6 +139,66 @@ def Rot3(a, b, c):
         array: unitary 2x2 rotation matrix ``rz(c) @ ry(b) @ rz(a)``
     """
     return Rotz(c) @ (Roty(b) @ Rotz(a))
+
+
+def U1(phi):
+    r""" Return the matrix representation of the U1 gate.
+
+    .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+            1 & 0 \\
+            0 & e^{i\phi}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    """
+    return math.array([[1.0, 0.0], [0.0, math.exp(phi * 1j)]])
+
+
+def U2(phi, delta):
+    r"""Return the matrix representation of the U2 gate.
+
+    .. math::
+
+        U_2(\phi, \delta) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \delta)
+        \\ \exp(i \phi) & \exp(i (\phi + \delta)) \end{bmatrix}
+
+    Args:dd
+        phi (float): azimuthal angle :math:`\phi`
+        delta (float): quantum phase :math:`\delta`
+    """
+    return (
+        1
+        / math.sqrt(2)
+        * math.array(
+            [[1.0, -math.exp(delta * 1j)], [math.exp(phi * 1j), math.exp((phi + delta) * 1j)]]
+        )
+    )
+
+
+def U3(theta, phi, delta):
+    r"""
+    Arbitrary single qubit unitary.
+
+    .. math::
+
+        U_3(\theta, \phi, \delta) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \delta)\sin(\theta/2) \\
+        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \delta))\cos(\theta/2) \end{bmatrix}
+
+    Args:dd
+        theta (float): polar angle :math:`\theta`
+        phi (float): azimuthal angle :math:`\phi`
+        delta (float): quantum phase :math:`\delta`
+    """
+    return math.array(
+        [
+            [math.cos(theta / 2), -math.exp(delta * 1j) * math.sin(theta / 2)],
+            [
+                math.exp(phi * 1j) * math.sin(theta / 2),
+                math.exp((phi + delta) * 1j) * math.cos(theta / 2),
+            ],
+        ]
+    )
 
 
 def CRotx(theta):
