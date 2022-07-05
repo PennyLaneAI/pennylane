@@ -400,7 +400,11 @@ def _cond_tf(pred, true_fn, false_fn, args):
 ar.register_function("tensorflow", "cond", _cond_tf)
 
 
-ar.register_function("tensorflow", "vander", lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs))
+ar.register_function(
+    "tensorflow",
+    "vander",
+    lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
+)
 
 
 # -------------------------------- Torch --------------------------------- #

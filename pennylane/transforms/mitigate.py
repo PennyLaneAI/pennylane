@@ -146,9 +146,8 @@ def fold_global_tape(circuit, scale_factor):
         for meas in circuit.measurements:
             apply(meas)
 
-    #return [new_circuit], lambda x: x
+    # return [new_circuit], lambda x: x
     return new_circuit
-
 
 
 # TODO: make this a pennylane.math function
@@ -408,21 +407,21 @@ def mitigate_with_zne(
     with QuantumTape() as tape_removed:
         for op in tape._ops:
             apply(op)
-    #print("tape: ", tape)
+    # print("tape: ", tape)
     tapes = [
         [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
         for s in scale_factors
     ]
-    #print("tapes: ", tapes)
+    # print("tapes: ", tapes)
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-    #print("tapes after un-nesting: ", tapes)
+    # print("tapes after un-nesting: ", tapes)
 
     out_tapes = []
 
     for tape_ in tapes:
         # pylint: disable=expression-not-assigned
-        #print("tape_:", tape_)
-        #tape_ = tape_[0][0]
+        # print("tape_:", tape_)
+        # tape_ = tape_[0][0]
         with QuantumTape() as t:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]
