@@ -941,8 +941,9 @@ class TestApplyBroadcasted:
         expected = np.einsum("ij,lj->li", mat, state)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_do_not_split_analytic_tf_broadcasted(self, mocker):
-        """Tests that the Hamiltonian is not split for shots=None using the tf device."""
+    def test_direct_eval_hamiltonian_broadcasted_error_tf(self, mocker):
+        """Tests that an error is raised when attempting to evaluate a Hamiltonian with
+        broadcasting and shots=None directly via its sparse representation with TF."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit.tf", wires=2)
@@ -955,9 +956,8 @@ class TestApplyBroadcasted:
 
         spy = mocker.spy(dev, "expval")
 
-        circuit()
-        # evaluated one expval altogether
-        assert spy.call_count == 1
+        with pytest.raises(NotImplementedError, match="Hamiltonians for interface!=None"):
+            circuit()
 
 
 THETA = np.linspace(0.11, 1, 3)

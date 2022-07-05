@@ -502,8 +502,10 @@ class DefaultQubit(QubitDevice):
 
         .. warning::
 
-            This function only supports broadcasting if no differentiation with
-            respect to the Hamiltonian or the quantum state directly is performed.
+            This function does not support broadcasting if ``observable`` is a
+            :class:``~.Hamiltonian`` and the device interface or the interface of the
+            Hamiltonian is not NumPy or Autograd
+
         """
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
@@ -518,6 +520,11 @@ class DefaultQubit(QubitDevice):
 
             if backprop_mode:
                 # TODO[dwierichs]: This branch is not adapted to broadcasting yet
+                if qml.math.ndim(self.state) == 2:
+                    raise NotImplementedError(
+                        "Expectation values of Hamiltonians for interface!=None are "
+                        "not supported together with parameter broadcasting yet"
+                    )
                 # We must compute the expectation value assuming that the Hamiltonian
                 # coefficients *and* the quantum states are tensor objects.
 
@@ -526,9 +533,10 @@ class DefaultQubit(QubitDevice):
                 res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
                 interface = qml.math.get_interface(self.state)
 
-                # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
-                # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
-                # whereas the .coeff attribute will always be the same input dtype that the user provided.
+                # Note: it is important that we use the Hamiltonian's data and not the coeffs
+                # attribute. This is because the .data attribute may be 'unwrapped' as required by
+                # the interfaces, whereas the .coeff attribute will always be the same input dtype
+                # that the user provided.
                 for op, coeff in zip(observable.ops, observable.data):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
