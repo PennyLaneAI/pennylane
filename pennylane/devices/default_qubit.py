@@ -634,6 +634,7 @@ class DefaultQubit(QubitDevice):
     def state(self):
         dim = 2**self.num_wires
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
+        # Do not flatten the state completely but leave the broadcasting dimension if there is one
         shape = (batch_size, dim) if batch_size is not None else (dim,)
         return self._reshape(self._pre_rotated_state, shape)
 
@@ -739,8 +740,16 @@ class DefaultQubit(QubitDevice):
 
         shape = [2] * (len(device_wires) * 2)
         state_axes = device_wires
+        # If the matrix is broadcasted, it is reshaped to have leading axis of size mat_batch_size
         if mat_batch_size:
             shape.insert(0, mat_batch_size)
+            if state_batch_size:
+                raise NotImplementedError(
+                    "Applying a broadcasted unitary to an already broadcasted state via "
+                    "_apply_unitary is not supported. Broadcasting sizes are "
+                    f"({mat_batch_size}, {state_batch_size})."
+                )
+        # If the state is broadcasted, the affected state axes need to be shifted by 1.
         if state_batch_size:
             state_axes = [ax + 1 for ax in state_axes]
         mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
@@ -753,6 +762,7 @@ class DefaultQubit(QubitDevice):
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
         perm = list(device_wires) + unused_idxs
+        # If the matrix is broadcasted, all but the first dimension are shifted by 1
         if mat_batch_size:
             perm = [idx + 1 for idx in perm]
             perm.insert(0, 0)
@@ -785,6 +795,7 @@ class DefaultQubit(QubitDevice):
         dim = 2 ** len(device_wires)
         batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
 
+        # If the matrix is broadcasted, it is reshaped to have leading axis of size mat_batch_size
         shape = [2] * (len(device_wires) * 2)
         if batch_size is not None:
             shape.insert(0, batch_size)
@@ -808,6 +819,7 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
+        # This notation allows for the state, the matrix, or both to be broadcasted
         einsum_indices = (
             f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
         )

@@ -199,6 +199,8 @@ class DefaultQubitTF(DefaultQubit):
                 return size // expected_size
 
         except (ValueError, tf.errors.OperatorNotAllowedInGraphError) as err:
+            # This except clause covers the usage of tf.function, which is not compatible
+            # with `DefaultQubit._get_batch_size`
             if not qml.math.is_abstract(tensor):
                 raise err
 

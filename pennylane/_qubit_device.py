@@ -94,7 +94,7 @@ class QubitDevice(Device):
     _flatten = staticmethod(lambda array: array.flatten())
     _gather = staticmethod(
         lambda array, indices, axis=0: array[:, indices] if axis == 1 else array[indices]
-    )
+    )  # Make sure to only use _gather with axis=0 or axis=1
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
@@ -606,6 +606,7 @@ class QubitDevice(Device):
 
         basis_states = np.arange(number_of_states)
         if qml.math.ndim(state_probability) == 2:
+            # np.random.choice does not support broadcasting as needed here.
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
@@ -665,7 +666,10 @@ class QubitDevice(Device):
             array[int]: basis states in binary representation
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
+        # `samples` typically is one-dimensional, but can be two-dimensional with broadcasting.
+        # In any case we want to append a new axis at the *end* of the shape.
         states_sampled_base_ten = samples[..., None] & powers_of_two
+        # `states_sampled_base_ten` can be two- or three-dimensional. We revert the *last* axis.
         return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
 
     @property
@@ -805,14 +809,18 @@ class QubitDevice(Device):
         num_wires = len(device_wires)
 
         if shot_range is None:
+            # The Ellipsis (...) corresponds to broadcasting and shots dimensions or only shots
             samples = self._samples[..., device_wires]
         else:
+            # The Ellipsis (...) corresponds to the broadcasting dimension or no axis at all
             samples = self._samples[..., slice(*shot_range), device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
         powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
+        # `self._samples` typically has two axes ((shots, wires)) but can also have three with
+        # broadcasting ((batch_size, shots, wires)) so that we simply read out the batch_size.
         batch_size = self._samples.shape[0] if np.ndim(self._samples) == 3 else None
         dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
@@ -837,7 +845,7 @@ class QubitDevice(Device):
 
         prob = np.zeros((batch_size, dim), dtype=np.float64)
 
-        for i, idx in enumerate(indices):
+        for i, idx in enumerate(indices):  # iterate over the broadcasting dimension
             basis_states, counts = np.unique(idx, return_counts=True)
             prob[i, basis_states] = counts / len(idx)
 
@@ -951,6 +959,7 @@ class QubitDevice(Device):
         shape = [2] * self.num_wires
         if batch_size is not None:
             shape.insert(0, batch_size)
+        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
         prob = self._reshape(prob, shape)
 
         # sum over all inactive wires
@@ -997,14 +1006,18 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            # the probability vector must be permuted to account for the permuted wire order of the observable
+            # the probability vector must be permuted to account for the permuted
+            # wire order of the observable
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
+            # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
             return self._dot(prob, eigvals)
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
+        # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
         return np.squeeze(np.mean(samples, axis=axis))
 
@@ -1032,10 +1045,13 @@ class QubitDevice(Device):
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
+            # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
             return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
+        # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
         return np.squeeze(np.var(samples, axis=axis))
 
