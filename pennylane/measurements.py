@@ -1269,3 +1269,45 @@ def measure(wires):
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
+
+
+# class LazyEval:
+#
+#     def __init__(self, fn, args, kwargs):
+#         self.fn = fn
+#         self.args = args
+#         self.kwargs = kwargs
+#
+#     def eval(self):
+#         partial = MeasurementLeaf()
+#         for arg in self.args:
+#             if not isinstance(arg, MeasurementValue):
+#                 arg = MeasurementLeaf(arg)
+#             partial = partial.merge(arg)
+#         partial.transform_leaves_inplace(
+#             lambda *unwrapped: func(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
+#         )
+#         return partial
+
+
+
+class MeasurementValueV2:
+
+    def __init__(self, measurements, fn=lambda x: x):
+        self.measurements = measurements
+        self.fn = fn
+
+    def apply_function(self, fn):
+        return MeasurementValueV2(self.measurements, lambda x: fn(self.fn(*x)))
+
+    def merge(self, other):
+        merged_measurements = list(set(self.measurements).union(set(other.measurements)))
+        merged_measurements.sort()
+        [merged_measurements.index(m) for m in self.measurements]
+        return MeasurementValueV2(
+            merged_measurements,
+            lambda x: (*self.fn(x[i] for i in [merged_measurements.index(m) for m in self.measurements]), *other.fn(x[i] for i in [merged_measurements.index(m) for m in other.measurements]))
+        )
+
+    def eval(self, i):
+        pass
