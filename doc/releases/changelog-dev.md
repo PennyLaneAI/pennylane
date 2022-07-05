@@ -161,6 +161,9 @@
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
+* `AnnotatedQueue` no longer inherits from `QueuingContext`. `QueuingContext` is now purely
+  class methods for commuticating with the currently active recording queue. 
+
 <h3>Breaking changes</h3>
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
