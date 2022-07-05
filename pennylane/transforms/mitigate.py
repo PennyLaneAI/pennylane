@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 from pennylane import QNode, apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.tape import QuantumTape
-from pennylane.transforms import batch_transform, single_tape_transform, qfunc_transform
+from pennylane.transforms import batch_transform
 
 import pennylane as qml
 
