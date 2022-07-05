@@ -730,7 +730,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
 def relative_entropy(qnode0, qnode1, wires0, wires1):
     r"""
-    Compute the relative entropy for two :class:`.QNode`s returning a :func:`~.state` (a state can be a state vector
+    Compute the relative entropy for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
     or a density matrix, depending on the device) acting on quantum systems with the same size.
 
     .. math::
