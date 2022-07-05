@@ -283,6 +283,17 @@ class TestQutritUnitary:
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
 
+    def test_matrix_representation_broadcasted(self):
+        """Test that the matrix representation is defined correctly"""
+        U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]]) * 0.5
+        U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
+
+        res_static = qml.QutritUnitary.compute_matrix(U)
+        res_dynamic = qml.QutritUnitary(U, wires=0).matrix()
+        expected = U
+        assert np.allclose(res_static, expected)
+        assert np.allclose(res_dynamic, expected)
+
     def test_controlled(self):
         dev = qml.device("default.qutrit", wires=2)
 
@@ -415,44 +426,84 @@ class TestControlledQutritUnitary:
                 control_values=control_values,
             ).matrix()
 
-    # mixed_polarity_data = [
-    #     ([0], 1, "0"),
-    #     ([0], 1, "1"),
-    #     ([0], 1, "2"),
-    #     ([0, 1], 2, "00"),
-    #     ([0, 1], 2, "01"),
-    #     ([0, 1], 2, "02"),
-    #     ([1, 0], 2, "10"),
-    #     ([0, 1], 2, "11"),
-    #     ([0, 1], 2, "12"),
-    #     ([0, 1], 2, "20"),
-    #     ([1, 0], 2, "21"),
-    #     ([1, 0], 2, "22"),
-    #     ([0, 1], [2, 3], "01"),
-    #     ([0, 2], [3, 1], "12"),
-    #     ([1, 2, 0], [3, 4], "012"),
-    #     ([1, 0, 2], [4, 3], "210"),
-    # ]
+    mixed_polarity_data = [
+        ([0], 1, "0"),
+        ([0], 1, "1"),
+        ([0], 1, "2"),
+        ([0, 1], 2, "00"),
+        ([0, 1], 2, "01"),
+        ([0, 1], 2, "02"),
+        ([1, 0], 2, "10"),
+        ([0, 1], 2, "11"),
+        ([0, 1], 2, "12"),
+        ([0, 1], 2, "20"),
+        ([1, 0], 2, "21"),
+        ([1, 0], 2, "22"),
+        ([0, 1], [2, 3], "01"),
+        ([0, 2], [3, 1], "12"),
+        ([1, 2, 0], [3, 4], "012"),
+        ([1, 0, 2], [4, 3], "210"),
+    ]
 
-    # @pytest.mark.parametrize("control_wires,wires,control_values", mixed_polarity_data)
-    # def test_mixed_polarity_controls_matrix(self, control_wires, wires, control_values):
-    #     """Test if ControlledQutritUnitary properly applies mixed-polarity
-    #     control values by examining the matrix."""
+    @pytest.mark.parametrize("control_wires,wires,control_values", mixed_polarity_data)
+    def test_mixed_polarity_controls(self, control_wires, wires, control_values, tol):
+        """Test if ControlledQutritUnitary properly applies mixed-polarity
+        control values."""
+        target_wires = Wires(wires)
 
-    #     # Pick a random unitary
-    #     U = unitary_group.rvs(3 ** len(wires), random_state=10)
-    #     res_static = qml.ControlledQutritUnitary.compute_matrix(
-    #         U, control_wires=control_wires, u_wires=wires, control_values=control_values
-    #     )
-    #     res_dynamic = qml.ControlledQutritUnitary(
-    #         U, control_wires=control_wires, u_wires=wires, control_values=control_values
-    #     ).matrix()
+        dev = qml.device("default.qutrit", wires=len(control_wires + target_wires))
 
-    #     # TODO: Created expected matrix
-    #     expected = None
+        # Pick a random unitary
+        U = unitary_group.rvs(3 ** len(target_wires), random_state=1967)
 
-    #     assert np.allclose(res_static, expected)
-    #     assert np.allclose(res_dynamic, expected)
+        # Pick random starting state for the control and target qutrits
+        starting_state = np.random.normal(size=3 ** (len(control_wires + target_wires)))
+        starting_state = starting_state / np.linalg.norm(starting_state)
+        print(np.linalg.norm(starting_state))
+        dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
+        dev.apply(
+            [
+                qml.ControlledQutritUnitary(
+                    U,
+                    control_wires=control_wires,
+                    wires=target_wires,
+                    control_values=control_values,
+                ),
+            ]
+        )
+        final_state = dev._state.flatten()
+
+        dev.reset()
+        dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
+        one_locations = [x for x in range(len(control_values)) if control_values[x] == "1"]
+        zero_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+
+        ops = []
+        for wire in one_locations:
+            ops.append(qml.TShift(wires=control_wires[wire]))
+
+        for wire in zero_locations:
+            ops.append(qml.TShift(wires=control_wires[wire]))
+            ops.append(qml.TShift(wires=control_wires[wire]))
+
+        ops.append(
+            qml.ControlledQutritUnitary(
+                U,
+                control_wires=control_wires,
+                wires=target_wires,
+            )
+        )
+
+        for wire in zero_locations:
+            ops.append(qml.TShift(wires=control_wires[wire]))
+
+        for wire in one_locations:
+            ops.append(qml.TShift(wires=control_wires[wire]))
+            ops.append(qml.TShift(wires=control_wires[wire]))
+
+        dev.apply(ops)
+
+        assert np.allclose(dev._state.flatten(), final_state, atol=tol)
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
@@ -462,6 +513,22 @@ class TestControlledQutritUnitary:
         expected = np.eye(9, dtype=np.complex128)
         expected[6:9, 6:9] = U
 
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
+    def test_matrix_representation_broadcasted(self, tol):
+        """Test that the matrix representation is defined correctly"""
+        U1 = unitary_group.rvs(3, random_state=10)
+        U2 = unitary_group.rvs(3, random_state=10)
+        U3 = unitary_group.rvs(3, random_state=10)
+        U = np.array([U1, U2, U3])
+
+        res_static = qml.ControlledQutritUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
+        res_dynamic = qml.ControlledQutritUnitary(U, control_wires=[1], wires=0).matrix()
+        expected = np.array([np.eye(9), np.eye(9), np.eye(9)], dtype=np.complex128)
+        expected[0, 6:, 6:] = U1
+        expected[1, 6:, 6:] = U2
+        expected[2, 6:, 6:] = U3
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
@@ -487,6 +554,27 @@ class TestControlledQutritUnitary:
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
 
+    @pytest.mark.parametrize("n", (2, -1, -2))
+    def test_pow_broadcasted(self, n):
+        """Tests the metadata and unitary for a broadcasted
+        ControlledQutritUnitary raised to a power."""
+        U1 = np.tensordot(
+            np.array([1j, -1.0, 1j]),
+            U_thadamard_01,
+            axes=0,
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+
+        assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_ops[0].control_wires == op.control_wires
+
+        op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
+        assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
+
     def test_noninteger_pow(self):
         """Test that a ControlledQutritUnitary raised to a non-integer power raises an error."""
         U1 = unitary_group.rvs(3, random_state=10)
@@ -495,6 +583,58 @@ class TestControlledQutritUnitary:
 
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
+
+    def test_noninteger_pow_broadcasted(self):
+        """Test that a ControlledQutritUnitary raised to a non-integer power raises an error."""
+        U1 = unitary_group.rvs(3, random_state=10)
+        U = np.array([U1, U1, U1])
+
+        op = qml.ControlledQutritUnitary(U, control_wires=("b", "c"), wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.12)
+
+    def test_controlled(self):
+        dev = qml.device("default.qutrit", wires=3)
+
+        op = qml.ControlledQutritUnitary(U_thadamard_01, control_wires=1, wires=2)
+        with qml.tape.QuantumTape() as tape:
+            qml.TShift(wires=1)
+            qml.TShift(wires=1)
+            qml.TShift(wires=0)
+            qml.TShift(wires=0)
+            op._controlled(wire=0)
+            qml.state()
+
+        res = dev.execute(tape)
+
+        expected = np.zeros(27)
+        expected[24] = 1 / np.sqrt(2)
+        expected[25] = 1 / np.sqrt(2)
+        assert np.allclose(res, expected)
+
+        dev.reset()
+        with qml.tape.QuantumTape() as tape:
+            op._controlled(wire=0)
+            qml.state()
+
+        res = dev.execute(tape)
+
+        expected = np.zeros(27)
+        expected[0] = 1
+        assert np.allclose(res, expected)
+
+        dev.reset()
+        with qml.tape.QuantumTape() as tape:
+            qml.TShift(wires=0)
+            op._controlled(wire=0)
+            qml.state()
+
+        res = dev.execute(tape)
+
+        expected = np.zeros(27)
+        expected[9] = 1
+        assert np.allclose(res, expected)
 
 
 label_data = [
