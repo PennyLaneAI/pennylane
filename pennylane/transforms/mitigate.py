@@ -24,7 +24,7 @@ from pennylane.transforms import batch_transform
 import pennylane as qml
 
 
-# @batch_transform
+#@batch_transform
 def fold_global(circuit, scale_factor):
     r"""Diffable global circuit folding function as is done in `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
 
@@ -137,7 +137,9 @@ def fold_global(circuit, scale_factor):
         for meas in circuit.measurements:
             apply(meas)
 
+    #return [new_circuit], lambda x: x
     return new_circuit
+
 
 
 # TODO: make this a pennylane.math function

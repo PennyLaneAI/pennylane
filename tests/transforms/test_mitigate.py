@@ -417,8 +417,8 @@ class TestDiffableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy)
-        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
 
         scale_factors = jnp.array([1.0, 2.0, 3.0])
 
