@@ -19,7 +19,7 @@ method.
 from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 
-from .factorization import factorize
+from pennylane.qchem import factorize
 
 
 class DoubleFactorization(Operation):

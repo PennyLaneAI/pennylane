@@ -80,7 +80,7 @@ from pennylane import numpy as np
 )
 def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     r"""Test that factorize function returns the correct values."""
-    factors, eigvals, eigvecs = qml.future.factorize(two_tensor, tol_f, tol_s)
+    factors, eigvals, eigvecs = qml.qchem.factorize(two_tensor, tol_f, tol_s)
 
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
@@ -114,7 +114,7 @@ def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
 )
 def test_factorize_reproduce(two_tensor):
     r"""Test that factors returned by the factorize function reproduce the two-electron tensor."""
-    factors, _, _ = qml.future.factorize(two_tensor, 1e-5, 1e-5)
+    factors, _, _ = qml.qchem.factorize(two_tensor, 1e-5, 1e-5)
     two_computed = np.zeros(two_tensor.shape)
     for mat in factors:
         two_computed += np.einsum("ij, lk", mat, mat)
@@ -139,7 +139,7 @@ def test_shape_error(two_tensor):
     r"""Test that the factorize function raises an error when the two-electron integral tensor does
     not have the correct shape."""
     with pytest.raises(ValueError, match="The two-electron repulsion tensor must have"):
-        qml.future.factorize(two_tensor, 1e-5, 1e-5)
+        qml.qchem.factorize(two_tensor, 1e-5, 1e-5)
 
 
 @pytest.mark.parametrize(
@@ -163,7 +163,7 @@ def test_empty_error(two_tensor):
     r"""Test that the factorize function raises an error when all factors or their eigenvectors are
     discarded."""
     with pytest.raises(ValueError, match="All factors are discarded."):
-        qml.future.factorize(two_tensor, 1e1, 1e-5)
+        qml.qchem.factorize(two_tensor, 1e1, 1e-5)
 
     with pytest.raises(ValueError, match="All eigenvectors are discarded."):
-        qml.future.factorize(two_tensor, 1e-5, 1e1)
+        qml.qchem.factorize(two_tensor, 1e-5, 1e1)

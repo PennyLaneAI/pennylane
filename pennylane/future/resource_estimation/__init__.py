@@ -15,6 +15,5 @@
 The resources module provides the functionality to estimate the cost of implementing advanced
 quantum algorithms.
 """
-from .factorization import factorize
 from .first_quantization import FirstQuantization
 from .second_quantization import DoubleFactorization
