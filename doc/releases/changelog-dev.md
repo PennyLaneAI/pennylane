@@ -7,11 +7,11 @@
 * `DefaultQubit` devices now natively support parameter broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
   
-  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
   devices now are able to directly execute broadcasted circuits, providing
   a faster way of executing the same circuit at varied parameter positions.
 
-  Given a standard `QNode`
+  Given a standard `QNode`,
 
   ```python
   dev = qml.device("default.qubit", wires=2)

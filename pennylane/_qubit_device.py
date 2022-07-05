@@ -828,9 +828,8 @@ class QubitDevice(Device):
     def _count_unbinned_samples(indices, batch_size, dim):
         """Count the occurences of sampled indices and convert them to relative
         counts in order to estimate their occurence probability."""
-        prob = np.zeros(dim, dtype=np.float64)
-
         if batch_size is None:
+            prob = np.zeros(dim, dtype=np.float64)
             basis_states, counts = np.unique(indices, return_counts=True)
             prob[basis_states] = counts / len(indices)
 
