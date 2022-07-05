@@ -52,25 +52,24 @@ class FlipSign(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2, shots = 1)
+            dev = qml.device("default.qubit", wires=4, shots = 1)
 
             @qml.qnode(dev)
             def circuit():
-               for wire in list(range(2)):
+               for wire in list(range(4)):
                     qml.Hadamard(wires = wire)
-               qml.FlipSign([1,0], wires = list(range(2)))
+               qml.FlipSign([1,0,0,0], wires = list(range(4)))
                return qml.sample()
 
             circuit()
 
         The result for the above circuit is:
 
-            >>> print(drawer())
-            0: ──H─╭FlipSign──H─┤  Sample
-            1: ──H─├FlipSign──H─┤  Sample
-            2: ──H─├FlipSign──H─┤  Sample
-            3: ──H─├FlipSign──H─┤  Sample
-            4: ──H─╰FlipSign──H─┤  Sample
+            >>> print(circuit.draw())
+            0: ──H─╭FlipSign───┤  Sample
+            1: ──H─├FlipSign───┤  Sample
+            2: ──H─├FlipSign───┤  Sample
+            3: ──H─╰FlipSign───┤  Sample
 
     """
 
@@ -78,16 +77,17 @@ class FlipSign(Operation):
 
     def __init__(self, n, wires, do_queue=True, id=None):
 
-        if not isinstance(wires, list):
-            raise ValueError("expected an integer array for wires ")
-
         if len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
-        if np.array(wires).dtype != np.dtype("int"):
-            raise ValueError("expected an integer array for wires")
-
-        if isinstance(n, list):
+        if isinstance(n, int):
+            if n >= 0:
+                n = self.to_list(n, len(wires))
+            else:
+                raise ValueError(
+                    "expected an integer equal or greater than zero for basic flipping state"
+                )
+        else:
             if np.array(wires).dtype != np.dtype("int"):
                 if self.is_binary_array(n):
                     n = self.to_number(n)
@@ -100,24 +100,14 @@ class FlipSign(Operation):
                     "expected an integer binary array or integer number for basic flipping state "
                 )
 
-        if type(n) == int:
-            if n >= 0:
-                n = self.to_list(n, len(wires))
-            else:
-                raise ValueError(
-                    "expected an integer equal or greater than zero for basic flipping state "
-                )
-        else:
-            raise ValueError(
-                "expected an integer equal or greater than zero for basic flipping state "
-            )
-
-        self._hyperparameters = {"n": n}
+        self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def is_binary_array(arr):
         r"""Check if array is binary or not (only 0's and 1's)
+        Args:
+            arr (array[int]): Integer binary array with regarding basis state
 
         Returns:
             (bool): boolean that checks whether array is binary or not
@@ -127,6 +117,9 @@ class FlipSign(Operation):
     @staticmethod
     def to_list(n, n_wires):
         r"""Convert an integer into a binary integer list
+        Args:
+            n (int): Basis state as integer
+            n_wires (int): Numer of wires to transform the basis state
 
         Raises:
             ValueError: "cannot encode n with n wires "
@@ -145,6 +138,8 @@ class FlipSign(Operation):
     def to_number(arr_bin):
         r"""Convert a binary array to integer number
 
+        Args:
+            arr_bin (array[int]): Integer binary array that represent the basis state
         Returns:
             (int): integer number
         """
@@ -155,14 +150,14 @@ class FlipSign(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, n):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires, arr_bin):  # pylint: disable=arguments-differ
         r"""Representation of the operator
 
         .. seealso:: :meth:`~.FlipSign.decomposition`.
 
         Args:
             wires (array[int]): wires that the operator acts on
-            n (array[int]): binary array vector representing the state to flip the sign
+            arr_bin (array[int]): binary array vector representing the state to flip the sign
 
         Raises:
             ValueError: "Wires length and flipping state length does not match, they must be equal length "
@@ -173,15 +168,17 @@ class FlipSign(Operation):
 
         op_list = []
 
-        if len(wires) == len(n):
-            if n[-1] == 0:
+        if len(wires) == len(arr_bin):
+            if arr_bin[-1] == 0:
                 op_list.append(qml.PauliX(wires[-1]))
 
             op_list.append(
-                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=n[:-1])(wires=wires[-1])
+                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=arr_bin[:-1])(
+                    wires=wires[-1]
+                )
             )
 
-            if n[-1] == 0:
+            if arr_bin[-1] == 0:
                 op_list.append(qml.PauliX(wires[-1]))
         else:
             raise ValueError(
