@@ -371,14 +371,17 @@ class TestDiffableZNE:
         weights_shape = template.shape(n_layers, n_wires)
         w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
 
+        dev = qml.device("default.qubit", wires=range(n_wires))
+
         # This circuit itself produces the identity by construction
-        with qml.tape.QuantumTape() as circuit:
+        @qml.qnode(dev)
+        def circuit(w1, w2):
             template(w1, w2, wires=range(n_wires))
             qml.adjoint(template(w1, w2, wires=range(n_wires)))
-            qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
 
-        folded_qnodes = [fold_global(circuit, scale_factor=lambda_) for lambda_ in np.arange(1, 10)]
-        res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
+        res = [fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1,5)]
+        #res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
 
     def test_polyfit(self):

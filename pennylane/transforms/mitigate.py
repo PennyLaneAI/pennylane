@@ -19,12 +19,12 @@ from typing import Any, Dict, Optional, Sequence, Union
 from pennylane import QNode, apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.tape import QuantumTape
-from pennylane.transforms import batch_transform
+from pennylane.transforms import batch_transform, single_tape_transform, qfunc_transform
 
 import pennylane as qml
 
 
-#@batch_transform
+@batch_transform
 def fold_global(circuit, scale_factor):
     r"""Diffable global circuit folding function as is done in `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
 
@@ -88,6 +88,14 @@ def fold_global(circuit, scale_factor):
         Circuits are treated as lists of operations. Since the ordering is ambiguous, as seen exemplarily
         for :math:`U = X(0) Y(0) X(1) Y(1) = X(0) X(1) Y(0) Y(1)`, also partially folded circuits are ambiguous.
     """
+    # The main intention for providing ``fold_global`` was for it to be used in combination with ``mitigate_with_zne``, which also works with mitiq functions.
+    # To preserve the mitiq functionality, ``mitigate_with_zne`` should get a tape transform.
+    # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
+    return [fold_global_tape(circuit, scale_factor)], lambda x: x[0]
+
+
+def fold_global_tape(circuit, scale_factor):
+    """TODO doc-string linkling to fold_global"""
 
     if scale_factor < 1.0:
         raise AttributeError("scale_factor must be >= 1")
@@ -99,6 +107,7 @@ def fold_global(circuit, scale_factor):
 
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
+
     base_ops = circuit.expand().copy(copy_operations=True).operations
 
     def _divmod(a, b):
@@ -391,22 +400,29 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
+    if folding.__name__ == "fold_global":
+        folding = fold_global_tape
+
     tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
 
     with QuantumTape() as tape_removed:
         for op in tape._ops:
             apply(op)
-
+    #print("tape: ", tape)
     tapes = [
         [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
         for s in scale_factors
     ]
+    #print("tapes: ", tapes)
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
+    #print("tapes after un-nesting: ", tapes)
 
     out_tapes = []
 
     for tape_ in tapes:
         # pylint: disable=expression-not-assigned
+        #print("tape_:", tape_)
+        #tape_ = tape_[0][0]
         with QuantumTape() as t:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]
