@@ -14,9 +14,10 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from pennylane.operation import Operator, Operation, AdjointUndefinedError, Observable
-from pennylane.queuing import QueuingContext
+from pennylane.operation import Operation, AdjointUndefinedError, Observable
 from pennylane.math import transpose, conj
+
+from .symbolicop import SymbolicOp
 
 
 # pylint: disable=no-member
@@ -92,7 +93,7 @@ class AdjointOperation(Operation):
 
 
 # pylint: disable=too-many-public-methods
-class Adjoint(Operator):
+class Adjoint(SymbolicOp):
     """
     The Adjoint of an operator.
 
@@ -168,7 +169,7 @@ class Adjoint(Operator):
         if isinstance(base, Operation):
             if isinstance(base, Observable):
                 if cls._operation_observable_type is None:
-                    class_bases = (AdjointOperation, Adjoint, Observable, Operation)
+                    class_bases = (AdjointOperation, Adjoint, SymbolicOp, Observable, Operation)
                     cls._operation_observable_type = type(
                         "Adjoint", class_bases, dict(cls.__dict__)
                     )
@@ -176,104 +177,21 @@ class Adjoint(Operator):
 
             # not an observable
             if cls._operation_type is None:
-                class_bases = (AdjointOperation, Adjoint, Operation)
+                class_bases = (AdjointOperation, Adjoint, SymbolicOp, Operation)
                 cls._operation_type = type("Adjoint", class_bases, dict(cls.__dict__))
             return object.__new__(cls._operation_type)
 
         if isinstance(base, Observable):
             if cls._observable_type is None:
-                class_bases = (Adjoint, Observable)
+                class_bases = (Adjoint, SymbolicOp, Observable)
                 cls._observable_type = type("Adjoint", class_bases, dict(cls.__dict__))
             return object.__new__(cls._observable_type)
 
         return object.__new__(Adjoint)
 
-    # pylint: disable=attribute-defined-outside-init
-    def __copy__(self):
-        # this method needs to be overwritten becuase the base must be copied too.
-        copied_op = object.__new__(type(self))
-        # copied_op must maintain inheritance structure of self
-        # For example, it must keep AdjointOperation if self has it
-        # this way preserves inheritance structure
-
-        copied_base = self.base.__copy__()
-        copied_op._hyperparameters = {"base": copied_base}
-        for attr, value in vars(self).items():
-            if attr not in {"data", "base", "_hyperparameters"}:
-                setattr(copied_op, attr, value)
-
-        return copied_op
-
-    # pylint: disable=super-init-not-called
     def __init__(self, base=None, do_queue=True, id=None):
-        self.hyperparameters["base"] = base
-        self._id = id
-        self.queue_idx = None
-
-        self._name = f"Adjoint({self.base.name})"
-
-        if do_queue:
-            self.queue()
-
-    @property
-    def base(self):
-        """The operator that is adjointed."""
-        return self.hyperparameters["base"]
-
-    @property
-    def data(self):
-        """Trainable parameters that the operator depends on."""
-        return self.base.data
-
-    @data.setter
-    def data(self, new_data):
-        """Allows us to set base operation parameters."""
-        self.base.data = new_data
-
-    @property
-    def parameters(self):
-        return self.base.parameters
-
-    @property
-    def num_params(self):
-        return self.base.num_params
-
-    @property
-    def wires(self):
-        return self.base.wires
-
-    # pylint: disable=protected-access
-    @property
-    def _wires(self):
-        return self.base._wires
-
-    # pylint: disable=protected-access
-    @_wires.setter
-    def _wires(self, new_wires):
-        # we should have a better way of updating wires than accessing a private attribute.
-        self.base._wires = new_wires
-
-    @property
-    def num_wires(self):
-        return self.base.num_wires
-
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
-
-    @property
-    def is_hermitian(self):
-        return self.base.is_hermitian
-
-    def queue(self, context=QueuingContext):
-        context.safe_update_info(self.base, owner=self)
-        context.append(self, owns=self.base)
-
-        return self
+        self._name = f"Adjoint({base.name})"
+        super().__init__(base, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals, base_label, cache=cache) + "†"
@@ -304,21 +222,5 @@ class Adjoint(Operator):
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return self.base.has_matrix
-
     def adjoint(self):
         return self.base.queue()
-
-    @property
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns ``_queue_cateogory`` for base operator.
-        """
-        return self.base._queue_category  # pylint: disable=protected-access
