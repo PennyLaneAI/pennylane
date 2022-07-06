@@ -38,8 +38,6 @@ class FlipSign(Operation):
         ValueError: "expected at least one wire representing the qubit "
         ValueError: "expected an integer equal or greater than zero for basic flipping state "
 
-    .. seealso:: :func:`~.relevant_func`, :class:`~.RelevantClass` (optional)
-
     .. details::
 
         :title: Usage Details
