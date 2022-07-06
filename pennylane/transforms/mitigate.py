@@ -43,7 +43,150 @@ def fold_global(circuit, scale_factor):
         QuantumTape: Folded circuit
 
     **Example:**
-    # TODO: change to qnode examples, provide manual ZNE with fitting example.
+
+    Let us look at the following circuit.
+
+    .. code-block:: python
+
+        x = np.arange(6)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.RZ(x[2], wires=2)
+            qml.CNOT(wires=(0,1))
+            qml.CNOT(wires=(1,2))
+            qml.RX(x[3], wires=0)
+            qml.RY(x[4], wires=1)
+            qml.RZ(x[5], wires=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+
+    Setting ``scale_factor = 1`` does not affect the circuit:
+
+    >>> folded = qml.transforms.fold_global(circuit, 1)
+    >>> print(qml.draw(folded)(x))
+    0: ──RX(0.0)─╭●──RX(3.0)──────────┤ ╭<Z@Z@Z>
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)─┤ ├<Z@Z@Z>
+    2: ──RZ(2.0)────╰X────────RZ(5.0)─┤ ╰<Z@Z@Z>
+
+    Setting ``scale_factor = 2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
+    with :math:`s = \lfloor \left(1 \mod 2 \right) d/2 \rfloor = 4` since the circuit is composed of :math:`d=8` gates.
+
+    >>> folded = qml.transforms.fold_global(circuit, 2)
+    >>> print(qml.draw(folded)(x))
+    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†──RX(3.0)──────────────────┤ ╭<Z@Z@Z>
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╭●──RY(4.0)─┤ ├<Z@Z@Z>
+    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†─╰X──RZ(5.0)─┤ ╰<Z@Z@Z>
+
+    Setting ``scale_factor = 3`` results in the folded circuit :math:`U (U^\dagger U)`.
+
+    >>> folded = qml.transforms.fold_global(circuit, 3)
+    >>> print(qml.draw(folded)(x))
+    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭●─────────RX(0.0)†──RX(0.0)─╭●──RX(3.0)──────────┤╭<Z@Z@Z>
+    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────────RY(4.0)─┤├<Z@Z@Z>
+    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────────RZ(5.0)─┤╰<Z@Z@Z>
+
+    .. note::
+
+        Circuits are treated as lists of operations. Since the ordering is ambiguous, as seen exemplarily
+        for :math:`U = X(0) Y(0) X(1) Y(1) = X(0) X(1) Y(0) Y(1)`, also partially folded circuits are ambiguous.
+
+    .. details::
+
+        The main purpose of folding is for zero noise extrapolation (ZNE). PennyLane provides a differentiable transform :func:`~.pennylane.transforms.mitigate_with_zne`
+        that allows you to perform ZNE as a black box. If you want more control and `see` the extrapolation, you can follow the logic of the following example.
+
+        We start by setting up a noisy device using the mixed state simulator and a noise channel.
+
+        .. code-block:: python
+
+            n_wires = 4
+
+            # Describe noise
+            noise_gate = qml.DepolarizingChannel
+            noise_strength = 0.05
+
+            # Load devices
+            dev_ideal = qml.device("default.mixed", wires=n_wires)
+            dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+
+            x = np.arange(6)
+
+            H = 1.*qml.PauliX(0) @ qml.PauliX(1) + 1.*qml.PauliX(1) @ qml.PauliX(2)
+
+            def circuit(x):
+                qml.RY(x[0], wires=0)
+                qml.RY(x[1], wires=1)
+                qml.RY(x[2], wires=2)
+                qml.CNOT(wires=(0,1))
+                qml.CNOT(wires=(1,2))
+                qml.RY(x[3], wires=0)
+                qml.RY(x[4], wires=1)
+                qml.RY(x[5], wires=2)
+                return qml.expval(H)
+
+            qnode_ideal = qml.QNode(circuit, dev_ideal)
+            qnode_noisy = qml.QNode(circuit, dev_noisy)
+
+        We can then create folded versions of the noisy qnode and execute them for different scaling factors.
+
+        >>> scale_factors = [1., 2., 3.]
+        >>> folded_res = [qml.transforms.fold_global(qnode_noisy, lambda_)(x) for lambda_ in scale_factors]
+
+        We want to later compare the ZNE with the ideal result.
+
+        >>> ideal_res = qnode_ideal(x)
+
+        ZNE is, as the name suggests, an extrapolation in the noise to zero. The underlyding assumption is that the level of noise is proportional to the scaling factor
+        by artificially increasing the circuit depth. We can perform a polynomial fit using ``numpy`` functions. Note that internally in :func:`~.pennylane.transforms.mitigate_with_zne`
+        a differentiable polynomial fit function :func:`~.pennylane.transforms.poly_extrapolate` is used.
+
+        >>> # coefficients are ordered like coeffs[0] * x**2 + coeffs[1] * x + coeffs[0]
+        >>> coeffs = np.polyfit(scale_factors, folded_res, 2)
+        >>> zne_res = coeffs[-1]
+
+        We used a polynomial fit of ``order = 2``. Using ``order = len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.transforms.Richardson_extrapolate`.
+        We can now visualize our fit to see how close we get to the ideal result with this mitigation technique.
+
+        .. code-block:: python
+
+            x_fit = np.linspace(0, 3, 20)
+            y_fit = np.poly1d(coeffs)(x_fit)
+
+            plt.plot(scale_factors, folded_res, "x--", label="folded")
+            plt.plot(0, ideal_res, "X", label="ideal res")
+            plt.plot(0, zne_res, "X", label="ZNE res", color="tab:red")
+            plt.plot(x_fit, y_fit, label="fit", color="tab:red", alpha=0.5)
+            plt.legend()
+
+        .. figure:: ../../_static/fold_global_zne_by-hand.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+
+    """
+    # The main intention for providing ``fold_global`` was for it to be used in combination with ``mitigate_with_zne``, which also works with mitiq functions.
+    # To preserve the mitiq functionality, ``mitigate_with_zne`` should get a tape transform.
+    # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
+    return [fold_global_tape(circuit, scale_factor)], lambda x: x[0]
+
+
+def fold_global_tape(circuit, scale_factor):
+    """
+    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`. For the user-facing function see :func:`~.pennylane.transforms.fold_global`
+
+    Args:
+        circuit (QuantumTape): the circuit to be folded
+        scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
+
+    Returns:
+        QuantumTape: Folded circuit
+
+    **Example:**
+
     .. code-block:: python
 
         x = np.arange(6)
@@ -82,20 +225,7 @@ def fold_global(circuit, scale_factor):
     0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭●─────────RX(0.0)†──RX(0.0)─╭●──RX(3.0)──────────┤╭<Z@Z@Z>
     1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────────RY(4.0)─┤├<Z@Z@Z>
     2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────────RZ(5.0)─┤╰<Z@Z@Z>
-
-    .. note::
-
-        Circuits are treated as lists of operations. Since the ordering is ambiguous, as seen exemplarily
-        for :math:`U = X(0) Y(0) X(1) Y(1) = X(0) X(1) Y(0) Y(1)`, also partially folded circuits are ambiguous.
     """
-    # The main intention for providing ``fold_global`` was for it to be used in combination with ``mitigate_with_zne``, which also works with mitiq functions.
-    # To preserve the mitiq functionality, ``mitigate_with_zne`` should get a tape transform.
-    # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
-    return [fold_global_tape(circuit, scale_factor)], lambda x: x[0]
-
-
-def fold_global_tape(circuit, scale_factor):
-    """TODO doc-string linkling to fold_global"""
 
     if scale_factor < 1.0:
         raise AttributeError("scale_factor must be >= 1")
