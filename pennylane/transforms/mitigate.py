@@ -42,7 +42,7 @@ def fold_global(circuit, scale_factor):
     Returns:
         QuantumTape: Folded circuit
 
-    **Example:**
+    **Example**
 
     Let us look at the following circuit.
 
@@ -63,7 +63,7 @@ def fold_global(circuit, scale_factor):
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
 
-    Setting ``scale_factor = 1`` does not affect the circuit:
+    Setting ``scale_factor=1`` does not affect the circuit:
 
     >>> folded = qml.transforms.fold_global(circuit, 1)
     >>> print(qml.draw(folded)(x))
@@ -71,7 +71,7 @@ def fold_global(circuit, scale_factor):
     1: ──RY(1.0)─╰X─╭●────────RY(4.0)─┤ ├<Z@Z@Z>
     2: ──RZ(2.0)────╰X────────RZ(5.0)─┤ ╰<Z@Z@Z>
 
-    Setting ``scale_factor = 2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
+    Setting ``scale_factor=2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
     with :math:`s = \lfloor \left(1 \mod 2 \right) d/2 \rfloor = 4` since the circuit is composed of :math:`d=8` gates.
 
     >>> folded = qml.transforms.fold_global(circuit, 2)
@@ -80,7 +80,7 @@ def fold_global(circuit, scale_factor):
     1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╭●──RY(4.0)─┤ ├<Z@Z@Z>
     2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†─╰X──RZ(5.0)─┤ ╰<Z@Z@Z>
 
-    Setting ``scale_factor = 3`` results in the folded circuit :math:`U (U^\dagger U)`.
+    Setting ``scale_factor=3`` results in the folded circuit :math:`U (U^\dagger U)`.
 
     >>> folded = qml.transforms.fold_global(circuit, 3)
     >>> print(qml.draw(folded)(x))
@@ -147,7 +147,7 @@ def fold_global(circuit, scale_factor):
         >>> coeffs = np.polyfit(scale_factors, folded_res, 2)
         >>> zne_res = coeffs[-1]
 
-        We used a polynomial fit of ``order = 2``. Using ``order = len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.transforms.Richardson_extrapolate`.
+        We used a polynomial fit of ``order=2``. Using ``order=len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.transforms.Richardson_extrapolate`.
         We can now visualize our fit to see how close we get to the ideal result with this mitigation technique.
 
         .. code-block:: python
@@ -176,7 +176,7 @@ def fold_global(circuit, scale_factor):
 
 def fold_global_tape(circuit, scale_factor):
     r"""
-    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`. For the user-facing function see :func:`~.pennylane.transforms.fold_global`
+    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`. For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
 
     Args:
         circuit (QuantumTape): the circuit to be folded
@@ -185,7 +185,7 @@ def fold_global_tape(circuit, scale_factor):
     Returns:
         QuantumTape: Folded circuit
 
-    **Example:**
+    **Example**
 
     .. code-block:: python
 
@@ -276,7 +276,6 @@ def fold_global_tape(circuit, scale_factor):
         for meas in circuit.measurements:
             apply(meas)
 
-    # return [new_circuit], lambda x: x
     return new_circuit
 
 
@@ -303,7 +302,7 @@ def _polyfit(x, y, order):
 
 
 def poly_extrapolate(x, y, order):
-    r"""Extrapolator to f(0) for polynomial fit.
+    r"""Extrapolator to :math:`f(0)` for polynomial fit.
 
     The polynomial is defined as ``f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg]`` such that ``deg = order + 1``.
 
@@ -425,7 +424,7 @@ def mitigate_with_zne(
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs = {'order': 2})
+        @qml.transforms.mitigate_with_zne([1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -562,7 +561,7 @@ def mitigate_with_zne(
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
 
-        # Averaing over reps_per_factor repititons
+        # Averaging over reps_per_factor repetitions
         results_flattened = []
         for i in range(0, len(results), reps_per_factor):
             # The stacking ensures the right interface is used
