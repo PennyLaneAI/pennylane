@@ -43,7 +43,7 @@ def fold_global(circuit, scale_factor):
         QuantumTape: Folded circuit
 
     **Example:**
-
+    # TODO: change to qnode examples, provide manual ZNE with fitting example.
     .. code-block:: python
 
         x = np.arange(6)
@@ -399,7 +399,8 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    if folding.__name__ == "fold_global":
+
+    if isinstance(folding, qml.batch_transform):
         folding = fold_global_tape
 
     tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))

@@ -425,9 +425,9 @@ class TestDiffableZNE:
 
         scale_factors = jnp.array([1.0, 2.0, 3.0])
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+        mitigated_qnode = jax.jit(mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
             qnode_noisy
-        )
+        ))
 
         theta = jnp.array(
             [np.pi / 4, np.pi / 4],
