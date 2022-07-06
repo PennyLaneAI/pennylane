@@ -235,7 +235,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`FlipSign operator flips the sign for a given basic state<../code/api/pennylane.FlipSign>`
-    :figure: ../_static/templates/subroutines/flip_sign.svg
+    :figure: ../_static/templates/subroutines/flip_sign.png
 
 .. raw:: html
 
