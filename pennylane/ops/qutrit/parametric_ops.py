@@ -81,15 +81,19 @@ class TRX(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
+    # TODO: Add parameter frequency
 
     def generator(self):
         gen_mat = np.zeros((3, 3))
         gen_mat[self.subspace] = 1
         gen_mat[self.subspace[::-1]] = 1
-        return -0.5 * QutritUnitary(gen_mat, wires=self.wires)
+        return QutritUnitary(-0.5 * gen_mat, wires=self.wires)
 
     def __init__(self, phi, wires, subspace=[0, 1], do_queue=True, id=None):
-        self._subspace = sorted(tuple(subspace))
+        self._subspace = subspace
+        self._hyperparameters = {
+            "subspace": self.subspace,
+        }
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -103,7 +107,7 @@ class TRX(Operation):
         Returns:
             tuple[int]: subspace on which operator acts
         """
-        return self._subspace
+        return tuple(sorted(self._subspace))
 
     @staticmethod
     def compute_matrix(theta, subspace=[0, 1]):  # pylint: disable=arguments-differ
@@ -128,7 +132,7 @@ class TRX(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        subspace = sorted(tuple(subspace))
+        subspace = tuple(sorted(subspace))
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -139,8 +143,11 @@ class TRX(Operation):
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
-
-        mat = qml.math.eye(3)
+        mat = (
+            qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
+            if len(qml.math.shape(theta)) != 0 and qml.math.shape(theta)[0] > 1
+            else qml.math.eye(3)
+        )
         mat = qml.math.cast_like(mat, js)
         slices = tuple(itertools.product(subspace, subspace))
 
