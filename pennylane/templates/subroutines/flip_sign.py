@@ -24,20 +24,16 @@ class FlipSign(Operation):
 
     In a nutshell, this class perform the following operation:
 
-    FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`.
+    FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`
 
-    FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`.
+    FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`,
 
-    Where n is the basic state to flip and m is the input.
-    It flips the sign of the state.
+    where n is the basic state to flip and m is the input.
 
     Args:
         n (array[int] or int): binary array or integer value representing the state to flip the sign
         wires (array[int]): number of wires that the operator acts on
 
-    Raises:
-        ValueError: "expected at least one wire representing the qubit "
-        ValueError: "expected an integer equal or greater than zero for basic flipping state "
 
     .. details::
         :title: Usage Details
