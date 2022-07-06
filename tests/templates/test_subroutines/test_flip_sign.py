@@ -71,18 +71,6 @@ class TestFlipSign:
     @pytest.mark.parametrize(
         ("n_status, n_wires"),
         [
-            ([1, 0], []),
-            (2, []),
-        ],
-    )
-    def test_empty_wire_error(self, n_status, n_wires):
-        """Assert error raised when given empty wires"""
-        with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
-            op = qml.FlipSign(n_status, wires=n_wires)
-
-    @pytest.mark.parametrize(
-        ("n_status, n_wires"),
-        [
             (-1, 0),
         ],
     )
@@ -117,4 +105,19 @@ class TestFlipSign:
             ValueError,
             match="Wires length and flipping state length does not match, they must be equal length ",
         ):
+            op = qml.FlipSign(n_status, wires=n_wires)
+
+    @pytest.mark.parametrize(
+        ("n_status, n_wires"),
+        [
+            ([1, 0], []),
+            (2, []),
+            (1, ""),
+            (2, ""),
+            (3, ""),
+        ],
+    )
+    def test_wire_empty_error(self, n_status, n_wires):
+        """Assert error raised when given empty wires"""
+        with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
             op = qml.FlipSign(n_status, wires=n_wires)
