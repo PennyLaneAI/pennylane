@@ -94,18 +94,6 @@ class FlipSign(Operation):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def is_list_typeof(arr, type_val):
-        r"""Check if array is for a given type or not
-        Args:
-            type_val (type): Type to infer and check for array
-            arr (array[object]): Integer binary array with regarding basis state
-
-        Returns:
-            (bool): boolean that checks whether array is binary or not
-        """
-        return np.array_equal(arr, np.array(arr).astype(type_val))
-
-    @staticmethod
     def to_list(n, n_wires):
         r"""Convert an integer into a binary integer list
         Args:

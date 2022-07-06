@@ -92,3 +92,28 @@ class TestFlipSign:
             match="expected an integer equal or greater than zero for basic flipping state",
         ):
             op = qml.FlipSign(n_status, wires=n_wires)
+
+    @pytest.mark.parametrize(
+        ("n_status, n_wires"),
+        [
+            (2, 1),
+        ],
+    )
+    def test_number_wires_error(self, n_status, n_wires):
+        """Assert error raised when given basis state length is less than number of wires"""
+        with pytest.raises(ValueError, match=f"cannot encode {n_status} with {n_wires} wires "):
+            op = qml.FlipSign(n_status, wires=n_wires)
+
+    @pytest.mark.parametrize(
+        ("n_status, n_wires"),
+        [
+            ([1, 0, 0], [0, 1]),
+        ],
+    )
+    def test_length_not_match_error(self, n_status, n_wires):
+        """Assert error raised when length of basis state and wires length does not match"""
+        with pytest.raises(
+            ValueError,
+            match="Wires length and flipping state length does not match, they must be equal length ",
+        ):
+            op = qml.FlipSign(n_status, wires=n_wires)
