@@ -24,8 +24,9 @@ class FlipSign(Operation):
 
     In a nutshell, this class perform the following operation:
 
-    FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`
-    FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`
+    FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`.
+
+    FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`.
 
     Where n is the basic state to flip and m is the input.
     It flips the sign of the state.
