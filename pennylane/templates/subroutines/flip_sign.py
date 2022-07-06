@@ -15,7 +15,6 @@ r"""
 Contains the FlipSign template.
 """
 
-import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
