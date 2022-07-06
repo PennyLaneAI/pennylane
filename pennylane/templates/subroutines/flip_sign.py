@@ -89,6 +89,11 @@ class FlipSign(Operation):
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
 
+        if len(wires) != len(n):
+            raise ValueError(
+                "Wires length and flipping state length does not match, they must be equal length "
+            )
+
         self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
@@ -135,21 +140,14 @@ class FlipSign(Operation):
 
         op_list = []
 
-        if len(wires) == len(arr_bin):
-            if arr_bin[-1] == 0:
-                op_list.append(qml.PauliX(wires[-1]))
+        if arr_bin[-1] == 0:
+            op_list.append(qml.PauliX(wires[-1]))
 
-            op_list.append(
-                qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=arr_bin[:-1])(
-                    wires=wires[-1]
-                )
-            )
+        op_list.append(
+            qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=arr_bin[:-1])(wires=wires[-1])
+        )
 
-            if arr_bin[-1] == 0:
-                op_list.append(qml.PauliX(wires[-1]))
-        else:
-            raise ValueError(
-                "Wires length and flipping state length does not match, they must be equal length "
-            )
+        if arr_bin[-1] == 0:
+            op_list.append(qml.PauliX(wires[-1]))
 
         return op_list
