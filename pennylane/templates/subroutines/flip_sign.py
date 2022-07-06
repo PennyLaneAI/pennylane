@@ -49,24 +49,23 @@ class FlipSign(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=4, shots = 1)
+            dev = qml.device("default.qubit", wires=2, shots = 1)
 
             @qml.qnode(dev)
             def circuit():
-               for wire in list(range(4)):
+               for wire in list(range(2)):
                     qml.Hadamard(wires = wire)
-               qml.FlipSign([1,0,0,0], wires = list(range(4)))
+               qml.FlipSign([1,0], wires = list(range(2)))
                return qml.sample()
 
             circuit()
 
         The result for the above circuit is:
 
-            >>> print(circuit.draw())
-            0: ──H─╭FlipSign───┤  Sample
-            1: ──H─├FlipSign───┤  Sample
-            2: ──H─├FlipSign───┤  Sample
-            3: ──H─╰FlipSign───┤  Sample
+            >>> print("Basis state: ", [1, 0])
+            Basis state: [1, 0]
+            >>> print("Flipped state: ", circuit().tolist())
+            Flipped state: [0, 1]
 
     """
 

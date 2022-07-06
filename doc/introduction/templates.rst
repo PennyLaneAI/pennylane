@@ -233,6 +233,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`LocalHilbertSchmidt <../code/api/pennylane.LocalHilbertSchmidt>`
     :figure: _static/templates/subroutines/lhst.png
 
+.. gallery-item::
+    :description: :doc:`FlipSign operator flips the sign for a given basic state<../code/api/pennylane.FlipSign>`
+    :figure: ../_static/templates/subroutines/flip_sign.svg
+
 .. raw:: html
 
         <div style='clear:both'></div>
