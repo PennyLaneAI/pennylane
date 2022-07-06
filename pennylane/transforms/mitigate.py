@@ -26,7 +26,7 @@ import pennylane as qml
 
 @batch_transform
 def fold_global(circuit, scale_factor):
-    r"""Diffable global circuit folding function as is done in `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_
+    r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary ``circuit`` :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
 
@@ -34,6 +34,7 @@ def fold_global(circuit, scale_factor):
 
     where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left((\lambda -1) \mod 2 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
+    This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
     Args:
         circuit (callable or QuantumTape): the circuit to be folded
@@ -282,8 +283,7 @@ def fold_global_tape(circuit, scale_factor):
 # TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
-    #x = qml.math.cast_like(x, y)
-    lhs = qml.math.vander(x, order + 1)
+    lhs = qml.math.vander(qml.math.cast_like(x, y), order + 1)
     rhs = qml.math.stack(y)  # [qml.math.stack(i) for i in y]
 
     # scale lhs to improve condition number and solve
