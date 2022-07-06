@@ -259,8 +259,12 @@ class ControlledQutritUnitary(QutritUnitary):
                [ 0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  0.        +0.j,  1.        +0.j]])
         """
         target_dim = 3 ** len(u_wires)
-        if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+        shape = qml.math.shape(U)
+        if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)} or "
+                f"(batch_size, {target_dim}, {target_dim})."
+            )
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
