@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position
+# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
 import numbers
 
@@ -605,7 +605,7 @@ def _ndim_torch(tensor):
 
 
 ar.register_function("torch", "ndim", _ndim_torch)
-# pylint: disable=unnecessary-lambda
+
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
