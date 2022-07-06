@@ -380,8 +380,10 @@ class TestDiffableZNE:
             qml.adjoint(template(w1, w2, wires=range(n_wires)))
             return qml.expval(qml.PauliZ(0))
 
-        res = [fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1,5)]
-        #res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
+        res = [
+            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1, 5)
+        ]
+        # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
 
     def test_polyfit(self):
@@ -425,9 +427,9 @@ class TestDiffableZNE:
 
         scale_factors = jnp.array([1.0, 2.0, 3.0])
 
-        mitigated_qnode = jax.jit(mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
-            qnode_noisy
-        ))
+        mitigated_qnode = jax.jit(
+            mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(qnode_noisy)
+        )
 
         theta = jnp.array(
             [np.pi / 4, np.pi / 4],

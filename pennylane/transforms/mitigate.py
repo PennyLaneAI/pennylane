@@ -399,7 +399,6 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-
     if isinstance(folding, qml.batch_transform):
         folding = fold_global_tape
 
