@@ -1271,52 +1271,40 @@ def measure(wires):
     return MeasurementValue(measurement_id)
 
 
-# class LazyEval:
-#
-#     def __init__(self, fn, args, kwargs):
-#         self.fn = fn
-#         self.args = args
-#         self.kwargs = kwargs
-#
-#     def eval(self):
-#         partial = MeasurementLeaf()
-#         for arg in self.args:
-#             if not isinstance(arg, MeasurementValue):
-#                 arg = MeasurementLeaf(arg)
-#             partial = partial.merge(arg)
-#         partial.transform_leaves_inplace(
-#             lambda *unwrapped: func(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
-#         )
-#         return partial
-
-
-
 class MeasurementValueV2:
 
-    def __init__(self, measurements, fn=lambda x: x):
-        self.measurements = measurements
+    def __init__(self, measurement_ids, fn=lambda x: x):
+        self.measurement_ids = measurement_ids
         self.fn = fn
 
     def apply_function(self, fn):
-        return MeasurementValueV2(self.measurements, lambda x: fn(self.fn(*x)))
+        return MeasurementValueV2(self.measurement_ids, lambda x: fn(self.fn(*x)))
 
-    def merge(self, other):
+    def merge(self, other: 'MeasurementValueV2'):
 
         # create a new merged list with no duplicates and in lexical ordering
-        merged_measurements = list(set(self.measurements).union(set(other.measurements)))
-        merged_measurements.sort()
+        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
+        merged_measurement_ids.sort()
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(x):
-            out_1 = self.fn(x[i] for i in [merged_measurements.index(m) for m in self.measurements])
-            out_2 = other.fn(x[i] for i in [merged_measurements.index(m) for m in other.measurements])
+            out_1 = self.fn([x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]])
+            out_2 = other.fn([x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]])
 
             return out_1, out_2
 
         return MeasurementValueV2(
-            merged_measurements,
+            merged_measurement_ids,
             merged_fn
         )
 
-    def eval(self, i):
-        pass
+    def __getitem__(self, i):
+        # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
+        branch = tuple(int(b) for b in np.binary_repr(i, width=2))
+        return self.fn(branch)
+
+    def __array_function__(self, func, types, args, kwargs):
+        print("hello!!")
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        print("I don't know")

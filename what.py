@@ -11,7 +11,8 @@
 #
 # print(circuit(4, 5))
 
-
+import numpy as np
+import jax.numpy as jnp
 import pennylane.measurements as m
 
 a = m.MeasurementValueV2("a")
@@ -22,6 +23,8 @@ o = a.merge(b).merge(b)
 print(o.fn((1, 1)))
 
 print(o)
+print(o[0])
+np.sin(o)
 
 
 
