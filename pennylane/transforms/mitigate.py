@@ -175,7 +175,7 @@ def fold_global(circuit, scale_factor):
 
 
 def fold_global_tape(circuit, scale_factor):
-    """
+    r"""
     This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`. For the user-facing function see :func:`~.pennylane.transforms.fold_global`
 
     Args:
@@ -302,7 +302,7 @@ def _polyfit(x, y, order):
 
 
 def poly_extrapolate(x, y, order):
-    """Extrapolator to f(0) for polynomial fit.
+    r"""Extrapolator to f(0) for polynomial fit.
 
     The polynomial is defined as ``f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg]`` such that ``deg = order + 1``.
 
@@ -329,7 +329,7 @@ def poly_extrapolate(x, y, order):
 
 
 def Richardson_extrapolate(x, y):
-    """Polynomial fit :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
+    r"""Polynomial fit :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
 
     Args:
         x (Array): Data in x
