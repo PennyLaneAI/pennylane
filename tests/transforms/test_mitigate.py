@@ -392,8 +392,6 @@ class TestDifferentiableZNE:
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
-    
-
 
     @pytest.mark.autograd
     def test_diffability_autograd(self):

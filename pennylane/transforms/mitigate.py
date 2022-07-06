@@ -176,11 +176,13 @@ def fold_global(circuit, scale_factor):
     # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
     return [fold_global_tape(circuit, scale_factor)], lambda x: x[0]
 
+
 def _divmod(a, b):
     """Performs divmod but in an all-interface compatible manner"""
     out1 = qml.math.floor(a / b)
     out2 = a - out1 * b
     return int(out1), int(out2)
+
 
 def fold_global_tape(circuit, scale_factor):
     r"""
@@ -197,7 +199,7 @@ def fold_global_tape(circuit, scale_factor):
     """
 
     # TODO: simplify queing via qfunc(op) - currently just a workaround, to solve the problem of ownership when tape contains adjoint(op)
-    # https://github.com/PennyLaneAI/pennylane/pull/2766 already touched on the issue, future work 
+    # https://github.com/PennyLaneAI/pennylane/pull/2766 already touched on the issue, future work
     # in Q3 2022 should make it possible to substantially simplify this.
     def qfunc(op):
         copy(op).queue()
@@ -255,7 +257,7 @@ def _polyfit(x, y, order):
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
     c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
     c = c @ qml.math.transpose(X)
-    c = qml.math.dot(c, y)    
+    c = qml.math.dot(c, y)
 
     c = qml.math.transpose(qml.math.transpose(c) / scale)
     return c
