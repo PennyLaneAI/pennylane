@@ -779,6 +779,7 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     .. math::
         S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+        =\text{Tr}(\rho(\log\rho-\log\sigma))
 
     where :math:`S` is the von Neumann entropy.
     """
@@ -792,18 +793,19 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     # cast all eigenvalues to real
     evs_rho, evs_sig = np.real(evs_rho), np.real(evs_sig)
-    evs_sig = qml.math.where(evs_sig == 0, 0.0, evs_sig)
 
+    # zero eigenvalues need to be treated very carefully here
+    # we use the convention that 0 * log(0) = 0
+    evs_sig = qml.math.where(evs_sig == 0, 0.0, evs_sig)
     rho_nonzero_mask = qml.math.where(evs_rho == 0.0, False, True)
 
     ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0))
 
-    # zero eigenvalues need to be treated very carefully here
-    # we use the convention that 0 * log(0) = 0
+    # the matrix of inner products between eigenvectors of rho and eigenvectors
+    # of sigma; this is a doubly stochastic matrix
     rel = np.abs(qml.math.dot(np.transpose(np.conj(u_rho)), u_sig)) ** 2
-    rel = qml.math.sum(
-        qml.math.where(rel == 0.0, 0.0, qml.math.expand_dims(np.log(evs_sig), axis=0) * rel), axis=1
-    )
+
+    rel = qml.math.sum(qml.math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), axis=1)
     rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0))
 
     return (rel - ent) / div_base

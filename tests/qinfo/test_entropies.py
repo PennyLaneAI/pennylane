@@ -1274,7 +1274,6 @@ class TestRelativeEntropy:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
 
-    @pytest.mark.autograd
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_full_wires(self, device):
         """Test that the relative entropy transform for full wires works for QNodes"""
@@ -1297,7 +1296,6 @@ class TestRelativeEntropy:
         # test that the circuit executes
         actual = rel_ent_circuit(x, y)
 
-    @pytest.mark.autograd
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_no_args(self, device):
         """Test that the relative entropy transform works for QNodes without arguments"""
@@ -1320,7 +1318,6 @@ class TestRelativeEntropy:
         # test that the circuit executes
         actual = rel_ent_circuit()
 
-    @pytest.mark.autograd
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_kwargs(self, device):
         """Test that the relative entropy transform works for QNodes that take keyword arguments"""
