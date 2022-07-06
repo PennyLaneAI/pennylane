@@ -176,6 +176,11 @@ def fold_global(circuit, scale_factor):
     # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
     return [fold_global_tape(circuit, scale_factor)], lambda x: x[0]
 
+def _divmod(a, b):
+    """Performs divmod but in an all-interface compatible manner"""
+    out1 = qml.math.floor(a / b)
+    out2 = a - out1 * b
+    return int(out1), int(out2)
 
 def fold_global_tape(circuit, scale_factor):
     r"""
@@ -191,10 +196,9 @@ def fold_global_tape(circuit, scale_factor):
 
     """
 
-    if scale_factor < 1.0:
-        raise AttributeError("scale_factor must be >= 1")
-
-    # TODO: simplify this - currently just a workaround, problem is when tape contains adjoint(op)
+    # TODO: simplify queing via qfunc(op) - currently just a workaround, to solve the problem of ownership when tape contains adjoint(op)
+    # https://github.com/PennyLaneAI/pennylane/pull/2766 already touched on the issue, future work 
+    # in Q3 2022 should make it possible to substantially simplify this.
     def qfunc(op):
         copy(op).queue()
 
@@ -202,12 +206,6 @@ def fold_global_tape(circuit, scale_factor):
     # Treat all circuits as lists of operations, build new tape in the end
 
     base_ops = circuit.expand().copy(copy_operations=True).operations
-
-    def _divmod(a, b):
-        """Performs divmod but in an all-interface compatible manner"""
-        out1 = qml.math.floor(a / b)
-        out2 = a - out1 * b
-        return int(out1), int(out2)
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
@@ -245,19 +243,19 @@ def fold_global_tape(circuit, scale_factor):
 # TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
-    lhs = qml.math.vander(x, order + 1)
-    rhs = qml.math.stack(y)  # [qml.math.stack(i) for i in y]
+    X = qml.math.vander(x, order + 1)
+    y = qml.math.stack(y)
 
-    # scale lhs to improve condition number and solve
-    scale = qml.math.sum(qml.math.sqrt((lhs * lhs)), axis=0)
-    lhs /= scale
+    # scale X to improve condition number and solve
+    scale = qml.math.sum(qml.math.sqrt((X * X)), axis=0)
+    X /= scale
 
     # Compute coeffs:
     # This part is typically done using a lstq solver, do it with the penrose inverse by hand:
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
-    c = qml.math.linalg.pinv(qml.math.transpose(lhs) @ lhs)
-    c = c @ qml.math.transpose(lhs)
-    c = qml.math.dot(c, rhs)
+    c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
+    c = c @ qml.math.transpose(X)
+    c = qml.math.dot(c, y)    
 
     c = qml.math.transpose(qml.math.transpose(c) / scale)
     return c

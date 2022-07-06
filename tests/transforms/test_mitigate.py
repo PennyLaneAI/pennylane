@@ -356,7 +356,7 @@ out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
 grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
 
 
-class TestDiffableZNE:
+class TestDifferentiableZNE:
     """Testing differentiable ZNE"""
 
     def test_global_fold_constant_result(self):
@@ -392,6 +392,8 @@ class TestDiffableZNE:
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
+    
+
 
     @pytest.mark.autograd
     def test_diffability_autograd(self):
