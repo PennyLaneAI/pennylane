@@ -817,6 +817,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
 
     .. math::
         S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+        =\text{Tr}(\rho(\log\rho-\log\sigma))
 
     Roughly speaking, quantum relative entropy is a measure of distinguishability between two
     quantum states. It is the quantum mechanical analog of relative entropy.
