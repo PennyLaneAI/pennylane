@@ -91,8 +91,10 @@ def fold_global(circuit, scale_factor):
 
     .. note::
 
-        Circuits are treated as lists of operations. Since the ordering is ambiguous, as seen exemplarily
-        for :math:`U = X(0) Y(0) X(1) Y(1) = X(0) X(1) Y(0) Y(1)`, also partially folded circuits are ambiguous.
+        Circuits are treated as lists of operations. Since the ordering of that list is ambiguous, so is its folding.
+        This can be seen exemplarily for two equivalent unitaries :math:`U1 = X(0) Y(0) X(1) Y(1)` and :math:`U2 = X(0) X(1) Y(0) Y(1)`.
+        The folded circuits according to ``scale_factor=2`` would be :math:`U1 (X(0) Y(0) Y(0) X(0))` and :math:`U2 (X(0) X(1) X(1) X(0))`, respectively.
+        So even though :math:`U1` and :math:`U2` are describing the same quantum circuit, the ambiguity in their ordering as a list yields two differently folded circuits.
 
     .. details::
 
@@ -148,7 +150,7 @@ def fold_global(circuit, scale_factor):
         >>> coeffs = np.polyfit(scale_factors, folded_res, 2)
         >>> zne_res = coeffs[-1]
 
-        We used a polynomial fit of ``order=2``. Using ``order=len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.transforms.Richardson_extrapolate`.
+        We used a polynomial fit of ``order=2``. Using ``order=len(scale_factors) -1`` is also referred to as Richardson extrapolation and implemented in :func:`~.pennylane.transforms.richardson_extrapolate`.
         We can now visualize our fit to see how close we get to the ideal result with this mitigation technique.
 
         .. code-block:: python
@@ -177,7 +179,8 @@ def fold_global(circuit, scale_factor):
 
 def fold_global_tape(circuit, scale_factor):
     r"""
-    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`. For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
+    This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`.
+    For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
 
     Args:
         circuit (QuantumTape): the circuit to be folded
@@ -186,51 +189,10 @@ def fold_global_tape(circuit, scale_factor):
     Returns:
         QuantumTape: Folded circuit
 
-    **Example**
-
-    .. code-block:: python
-
-        x = np.arange(6)
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.RZ(x[2], wires=2)
-            qml.CNOT(wires=(0,1))
-            qml.CNOT(wires=(1,2))
-            qml.RX(x[3], wires=0)
-            qml.RY(x[4], wires=1)
-            qml.RZ(x[5], wires=2)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
-
-    Setting ``scale_factor = 1`` does not affect the circuit:
-
-    >>> folded_tape = qml.transforms.fold_global(tape, 1)
-    >>> print(qml.drawer.tape_text(folded_tape, decimals=1))
-    0: ──RX(0.0)─╭●──RX(3.0)──────────┤ ╭<Z@Z@Z>
-    1: ──RY(1.0)─╰X─╭●────────RY(4.0)─┤ ├<Z@Z@Z>
-    2: ──RZ(2.0)────╰X────────RZ(5.0)─┤ ╰<Z@Z@Z>
-
-    Setting ``scale_factor = 2`` results in the partially folded circuit :math:`U (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)`
-    with :math:`s = \lfloor \left(1 \mod 2 \right) d/2 \rfloor = 4` since the circuit is composed of :math:`d=8` gates.
-
-    >>> folded_tape = qml.transforms.fold_global(tape, 2)
-    >>> print(qml.drawer.tape_text(folded_tape, decimals=1))
-    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†──RX(3.0)──────────────────┤ ╭<Z@Z@Z>
-    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╭●──RY(4.0)─┤ ├<Z@Z@Z>
-    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†─╰X──RZ(5.0)─┤ ╰<Z@Z@Z>
-
-    Setting ``scale_factor = 3`` results in the folded circuit :math:`U (U^\dagger U)`.
-
-    >>> folded_tape = qml.transforms.fold_global(tape, 3)
-    >>> print(qml.drawer.tape_text(folded_tape, decimals=1))
-    0: ──RX(0.0)─╭●──RX(3.0)──RX(3.0)†───────────────╭●─────────RX(0.0)†──RX(0.0)─╭●──RX(3.0)──────────┤╭<Z@Z@Z>
-    1: ──RY(1.0)─╰X─╭●────────RY(4.0)───RY(4.0)†─╭●──╰X†────────RY(1.0)†──RY(1.0)─╰X─╭●────────RY(4.0)─┤├<Z@Z@Z>
-    2: ──RZ(2.0)────╰X────────RZ(5.0)───RZ(5.0)†─╰X†──RZ(2.0)†──RZ(2.0)──────────────╰X────────RZ(5.0)─┤╰<Z@Z@Z>
     """
 
     if scale_factor < 1.0:
         raise AttributeError("scale_factor must be >= 1")
-    assert scale_factor >= 1.0
 
     # TODO: simplify this - currently just a workaround, problem is when tape contains adjoint(op)
     def qfunc(op):
@@ -283,7 +245,7 @@ def fold_global_tape(circuit, scale_factor):
 # TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
-    lhs = qml.math.vander(qml.math.cast_like(x, y), order + 1)
+    lhs = qml.math.vander(x, order + 1)
     rhs = qml.math.stack(y)  # [qml.math.stack(i) for i in y]
 
     # scale lhs to improve condition number and solve
@@ -314,7 +276,7 @@ def poly_extrapolate(x, y, order):
     Returns:
         float: Extrapolated value at f(0).
 
-    .. seealso:: :func:`~.pennylane.transforms.Richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
+    .. seealso:: :func:`~.pennylane.transforms.richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
 
     **Example:**
 
@@ -328,8 +290,10 @@ def poly_extrapolate(x, y, order):
     return coeff[-1]
 
 
-def Richardson_extrapolate(x, y):
-    r"""Polynomial fit :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
+def richardson_extrapolate(x, y):
+    r"""Polynomial fit where the degree of the polynomial is fixed to being equal to the length of ``x``.
+
+    In a nutshell, this function is calling  :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
 
     Args:
         x (Array): Data in x
@@ -344,14 +308,14 @@ def Richardson_extrapolate(x, y):
 
     >>> x = np.linspace(1, 10, 5)
     >>> y = x**2 + x + 1 + 0.3 * np.random.rand(len(x))
-    >>> qml.transforms.Richardson_extrapolate(x, y)
+    >>> qml.transforms.richardson_extrapolate(x, y)
     tensor(1.15105156, requires_grad=True)
 
     """
     return poly_extrapolate(x, y, len(x) - 1)
 
 
-# pylint: disable=too-many-arguments, protected-access, bad-continuation
+# pylint: disable=too-many-arguments, protected-access
 @batch_transform
 def mitigate_with_zne(
     circuit: Union[QNode, QuantumTape],
@@ -406,7 +370,7 @@ def mitigate_with_zne(
         dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
 
     We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides propriertary
-    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.Richardson_extrapolate` that
+    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
     allow for differentiating through them. Custom functions, as well as functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
     are supported as well (see usage details below).
 
@@ -537,21 +501,18 @@ def mitigate_with_zne(
     with QuantumTape() as tape_removed:
         for op in tape._ops:
             apply(op)
-    # print("tape: ", tape)
+
     tapes = [
         [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
         for s in scale_factors
     ]
-    # print("tapes: ", tapes)
+
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-    # print("tapes after un-nesting: ", tapes)
 
     out_tapes = []
 
     for tape_ in tapes:
         # pylint: disable=expression-not-assigned
-        # print("tape_:", tape_)
-        # tape_ = tape_[0][0]
         with QuantumTape() as t:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]

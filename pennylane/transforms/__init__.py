@@ -181,7 +181,7 @@ Transforms for error mitigation
     ~transforms.mitigate_with_zne
     ~transforms.fold_global
     ~transforms.poly_extrapolate
-    ~transforms.Richardson_extrapolate
+    ~transforms.richardson_extrapolate
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -201,7 +201,7 @@ from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, Richardson_extrapolate
+from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
     cancel_inverses,
     commute_controlled,

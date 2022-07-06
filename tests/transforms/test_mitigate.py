@@ -25,7 +25,7 @@ from pennylane.tape import QuantumTape
 from pennylane.transforms import (
     mitigate_with_zne,
     poly_extrapolate,
-    Richardson_extrapolate,
+    richardson_extrapolate,
     fold_global,
 )
 
@@ -401,7 +401,7 @@ class TestDiffableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
             qnode_noisy
         )
 
@@ -414,7 +414,6 @@ class TestDiffableZNE:
         grad_noisy = qml.grad(qnode_noisy)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
-        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)
 
     @pytest.mark.jax
     def test_diffability_jax(self):
@@ -427,8 +426,8 @@ class TestDiffableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = jax.jit(
-            mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(qnode_noisy)
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
         )
 
         theta = jnp.array(
@@ -442,7 +441,33 @@ class TestDiffableZNE:
         grad_noisy = jax.grad(qnode_noisy)(theta)
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
-        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)
+
+    @pytest.mark.jax
+    def test_diffability_jaxjit(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
+        import jax
+        import jax.numpy as jnp
+
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = jax.jit(
+            mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(qnode_noisy)
+        )
+
+        theta = jnp.array(
+            [np.pi / 4, np.pi / 4],
+        )
+
+        res = mitigated_qnode(theta)
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        grad = jax.grad(mitigated_qnode)(theta)
+        grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad_noisy = jax.grad(qnode_noisy)(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.torch
     def test_diffability_torch(self):
@@ -454,7 +479,7 @@ class TestDiffableZNE:
 
         scale_factors = torch.tensor([1.0, 2.0, 3.0]).type(torch.float64)
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
             qnode_noisy
         )
 
@@ -462,16 +487,15 @@ class TestDiffableZNE:
 
         res = mitigated_qnode(theta)
 
-        assert qml.math.allclose(res, out_ideal, atol=1e-2)  # True
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
         res.backward()
         grad = theta.grad
         theta0 = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
         res_ideal = qnode_ideal(theta0)
         res_ideal.backward()
         grad_ideal = theta0.grad
-        assert qml.math.allclose(grad_ideal, grad_ideal_0)  # False, wrong by a factor 2
-        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)  # True
-        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)  # True
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.tf
     def test_diffability_tf(self):
@@ -483,7 +507,7 @@ class TestDiffableZNE:
 
         scale_factors = tf.cast(tf.constant([1.0, 2.0, 3.0]), "float64")
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
             qnode_noisy
         )
 
@@ -501,4 +525,3 @@ class TestDiffableZNE:
 
         assert qml.math.allclose(grad_ideal, grad_ideal_0)
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
-        assert qml.math.allclose(grad, grad_ideal, atol=1e-1)
