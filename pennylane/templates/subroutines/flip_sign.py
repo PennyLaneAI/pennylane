@@ -51,7 +51,7 @@ class FlipSign(Operation):
 
             basis_state = [1, 0]
 
-            dev = qml.device("default.qubit", wires=2, shots = 1)
+            dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
             def circuit():
@@ -66,10 +66,8 @@ class FlipSign(Operation):
 
         .. code-block:: python
 
-            >>> print("Basis state: ", basis_state)
-            Basis state: [1, 0]
-            >>> print("Flipped state: ", circuit().tolist())
-            Flipped state: [0, 1]
+            >>> print(circuit())
+            [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
 
     """
 
