@@ -425,7 +425,7 @@ class TestDiffableZNE:
         qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
         qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
 
-        scale_factors = jnp.array([1.0, 2.0, 3.0])
+        scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
             mitigate_with_zne(scale_factors, fold_global, Richardson_extrapolate)(qnode_noisy)
