@@ -64,6 +64,8 @@ class FlipSign(Operation):
 
         The result for the above circuit is:
 
+        .. code-block:: python
+
             >>> print("Basis state: ", basis_state)
             Basis state: [1, 0]
             >>> print("Flipped state: ", circuit().tolist())
