@@ -315,12 +315,16 @@ class RZ(Operation):
         >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
+        if qml.math.get_interface(theta)=="tensorflow":
+            phase = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
+            return qml.math.stack([phase, qml.math.conj(phase)], axis=-1)
 
-        if qml.math.get_interface(theta) == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
-
-        phase = qml.math.exp(0.5j * theta)
-        return stack_last([qml.math.conj(phase), phase])
+        prefactors = qml.math.array([-0.5j, 0.5j], like=theta)
+        if qml.math.ndim(theta) == 0:
+            product = theta * prefactors
+        else:
+            product = qml.math.outer(theta, prefactors)
+        return qml.math.exp(product)
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
