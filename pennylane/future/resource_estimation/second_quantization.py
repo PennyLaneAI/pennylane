@@ -80,8 +80,7 @@ class DoubleFactorization(Operation):
 
             mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
 
-            core_, one, two_ph = qml.qchem.electron_integrals(mol)()
-            two = np.swapaxes(two_ph, 1, 3) # convert to chemist notation
+            core_, one, two = qml.qchem.electron_integrals(mol)()
             algo = DoubleFactorization(one, two)
 
         >>> algo.lamb  # the 1-Norm of the Hamiltonian
@@ -184,8 +183,9 @@ class DoubleFactorization(Operation):
 
         **Example**
 
-        >>> cost = estimation_cost(72.49779513025341, 0.001)
-        >>> print(cost)
+        >>> lamb = 72.49779513025341
+        >>> error = 0.001
+        >>> estimation_cost(lamb, error)
         113880
         """
         if error <= 0.0:
@@ -525,7 +525,7 @@ class DoubleFactorization(Operation):
         >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         >>> core, one, two = qml.qchem.electron_integrals(mol)()
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
-        >>> _, eigvals, _ = factorize(two, 1e-5)
+        >>> _, eigvals, _ = qml.qchem.factorize(two, 1e-5)
         >>> print(norm(one, two, eigvals))
         52.98762043980203
         """
