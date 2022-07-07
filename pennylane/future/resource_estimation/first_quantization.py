@@ -128,7 +128,7 @@ class FirstQuantization(Operation):
         0.9998814293823286
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
@@ -233,7 +233,7 @@ class FirstQuantization(Operation):
             :math:`p_{\nu} = 0.2398`.
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -360,7 +360,7 @@ class FirstQuantization(Operation):
         12819
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -474,7 +474,7 @@ class FirstQuantization(Operation):
         10327614069516
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -523,7 +523,7 @@ class FirstQuantization(Operation):
         4238
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")

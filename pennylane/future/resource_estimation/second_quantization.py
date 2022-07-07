@@ -224,7 +224,7 @@ class DoubleFactorization(Operation):
         **Example**
 
         >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
-        >>> cost_qrom(constants)
+        >>> _qrom_cost(constants)
         168, 4
         """
         a, b, c, d, e = constants
@@ -258,7 +258,7 @@ class DoubleFactorization(Operation):
         >>> n = 14
         >>> rank_r = 26
         >>> rank_m = 5.5
-        >>> rank_m = 7
+        >>> rank_max = 7
         >>> br = 7
         >>> alpha = 10
         >>> beta = 20
@@ -415,7 +415,7 @@ class DoubleFactorization(Operation):
         >>> br = 7
         >>> alpha = 10
         >>> beta = 20
-        >>> qubit_cost(n, lamb, error, rank_r, rank_m, br, alpha, beta)
+        >>> qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         292
         """
         if n <= 0 or not isinstance(n, int) or n % 2 != 0:
