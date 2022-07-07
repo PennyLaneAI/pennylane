@@ -152,3 +152,119 @@ class TestMatrix:
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi, subspace=[0, 2]), expected, atol=tol, rtol=0
         )
+
+
+# TODO: Add tests for grad
+
+label_data = [
+    (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX⁻¹\n(1)"),
+]
+
+label_data_broadcasted = [
+    (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX⁻¹"),
+]
+
+
+class TestLabel:
+    """Test the label method on parametric ops"""
+
+    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data)
+    def test_label_method(self, op, label1, label2, label3, label4):
+        """Test label method with plain scalers."""
+
+        assert op.label() == label1
+        assert op.label(decimals=2) == label2
+        assert op.label(decimals=0) == label3
+
+        op.inv()
+        assert op.label(decimals=0) == label4
+        op.inv()
+
+    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_broadcasted)
+    def test_label_method_broadcasted(self, op, label1, label2, label3, label4):
+        """Test label method with plain scalers."""
+
+        assert op.label() == label1
+        assert op.label(decimals=2) == label2
+        assert op.label(decimals=0) == label3
+
+        op.inv()
+        assert op.label(decimals=0) == label4
+        op.inv()
+
+    @pytest.mark.tf
+    def test_label_tf(self):
+        """Test label methods work with tensorflow variables"""
+        import tensorflow as tf
+
+        op1 = qml.TRX(tf.Variable(0.123456), wires=0)
+        assert op1.label(decimals=2) == "TRX\n(0.12)"
+
+    @pytest.mark.torch
+    def test_label_torch(self):
+        """Test label methods work with torch tensors"""
+        import torch
+
+        op1 = qml.TRX(torch.tensor(1.23456), wires=0)
+        assert op1.label(decimals=2) == "TRX\n(1.23)"
+
+    @pytest.mark.jax
+    def test_label_jax(self):
+        """Test the label method works with jax"""
+        import jax
+
+        op1 = qml.TRX(jax.numpy.array(1.23456), wires=0)
+        assert op1.label(decimals=2) == "TRX\n(1.23)"
+
+    def test_string_parameter(self):
+        """Test labelling works if variable is a string instead of a float."""
+
+        op1 = qml.TRX("x", wires=0)
+        assert op1.label() == "TRX"
+        assert op1.label(decimals=0) == "TRX\n(x)"
+
+    def test_string_parameter_broadcasted(self):
+        """Test labelling works (i.e. does not raise an Error) if variable is a
+        string instead of a float."""
+
+        op1 = qml.TRX(np.array(["x0", "x1", "x2"]), wires=0)
+        assert op1.label() == "TRX"
+        assert op1.label(decimals=0) == "TRX"
+
+
+pow_parametric_ops = (qml.TRX(1.234, wires=0),)
+
+
+class TestParametricPow:
+    @pytest.mark.parametrize("op", pow_parametric_ops)
+    @pytest.mark.parametrize("n", (2, -1, 0.2631, -0.987))
+    def test_pow_method_parametric_ops(self, op, n):
+        """Assert that a matrix raised to a power is the same as
+        multiplying the data by n for relevant ops."""
+        pow_op = op.pow(n)
+
+        assert len(pow_op) == 1
+        assert pow_op[0].__class__ is op.__class__
+        assert all((qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
+
+    @pytest.mark.parametrize("op", pow_parametric_ops)
+    @pytest.mark.parametrize("n", (3, -2))
+    def test_pow_matrix(self, op, n):
+        """Test that the matrix of an op first raised to a power is the same as the
+        matrix raised to the power.  This test only can work for integer powers."""
+        op_mat = qml.matrix(op)
+        # Can't use qml.matrix(op.pow)(n) because qml.matrix is hardcoded to work with qubits
+        pow_mat = op.pow(n)[0].matrix()
+
+        assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
+
+
+control_data = [
+    (qml.TRX(1.234, wires=0), Wires([])),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test the ``control_wires`` attribute for parametrized operations."""
+    assert op.control_wires == control_wires
