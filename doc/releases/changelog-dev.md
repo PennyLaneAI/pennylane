@@ -229,5 +229,6 @@
 This release contains contributions from (in alphabetical order):
 
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
+Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
+Sergio Martínez-Losa, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
 Antal Száva, Moritz Willmann
