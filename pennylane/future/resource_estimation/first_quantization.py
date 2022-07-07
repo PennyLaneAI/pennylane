@@ -27,8 +27,9 @@ class FirstQuantization(Operation):
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
     the number of electrons and the unit cell volume need to be defined. The costs can then be
-    computed using the functions :func:`~.gate_cost` and :func:`~.qubit_cost` with a target error
-    that has the default value of chemical accuracy (0.0016 Ha).
+    computed using the functions :func:`~.pennylane.future.FirstQuantization.gate_cost` and
+    :func:`~.pennylane.future.FirstQuantization.qubit_cost` with a target error that has the default
+    value of 0.0016 Ha (chemical accuracy).
 
     Following `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
     , the target algorithm error, :math:`\epsilon`, is distributed among four different sources of

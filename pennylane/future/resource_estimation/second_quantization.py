@@ -27,7 +27,7 @@ class DoubleFactorization(Operation):
     second quantization with a double-factorized Hamiltonian.
 
     To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to be
-    factorized using the :func:`~.pennylane.resources.factorize` function following
+    factorized using the :func:`~.pennylane.qchem.factorize` function following
     [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
     such that the two-electron integral tensor in
@@ -42,31 +42,16 @@ class DoubleFactorization(Operation):
     matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
     smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
     average number of the retained eigenvalues, :math:`M`, determines the rank of the second
-    factorization step. The 1-norm of the Hamiltonian can then be computed using the :func:`~.norm`
-    function from the electron integrals and the eigenvalues of the matrices :math:`L^{(r)}` as
-
-    .. math::
-
-        \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
-
-    where the Schatten 1-norm, :math:`\left \| \cdot \right \|`, for a given matrix :math:`T` is
-    defined as
-
-    .. math::
-
-        ||T|| = \sum_k |\text{eigvals}[T]_k|,
-
-    and matrix :math:`T` is constructed from the one- and two-electron integrals
-
-    .. math::
-
-        T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
+    factorization step. The 1-norm of the Hamiltonian can then be computed using the
+    :func:`~.pennylane.future.DoubleFactorization.norm` function from the electron integrals and
+    the eigenvalues of the matrices :math:`L^{(r)}`.
 
     The total number of gates and qubits for implementing the quantum phase estimation algorithm
-    for the given Hamiltonian can then be computed using the functions :func:`~.gate_cost` and
-    :func:`~.qubit_cost` with a target error that has the default value of chemical accuracy
-    (0.0016 Ha) here. The costs are computed using Eqs. (C39-C40) of
-    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+    for the given Hamiltonian can then be computed using the functions
+    :func:`~.pennylane.future.DoubleFactorization.gate_cost` and
+    :func:`~.pennylane.future.DoubleFactorization.qubit_cost` with a target error that has the
+    default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
+    of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
