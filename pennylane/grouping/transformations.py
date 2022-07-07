@@ -137,39 +137,54 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
       PauliZ(wires=[0]) @ PauliZ(wires=[3]),
       PauliZ(wires=[1]) @ PauliZ(wires=[3])])
     """
-    # If all Paulis are the same kind they are naturally QWC and we
-    # don't need to do the expensive quadratic scaling check
-    first_pauli_name = qwc_grouping[0].name
-    if isinstance(first_pauli_name, list):
-        first_pauli_name = first_pauli_name[0]
-    all_paulis_same_kind = all(
-        all(first_pauli_name == sub_word_name for sub_word_name in pauli_word.name)
-        if isinstance(pauli_word.name, list)
-        else first_pauli_name == pauli_word.name
-        for pauli_word in qwc_grouping
-    )
+    # # If all Paulis are the same kind they are naturally QWC and we
+    # # don't need to do the expensive quadratic scaling check
+    # first_pauli_name = qwc_grouping[0].name
+    # if isinstance(first_pauli_name, list):
+    #     first_pauli_name = first_pauli_name[0]
+    # all_paulis_same_kind = all(
+    #     all(first_pauli_name == sub_word_name for sub_word_name in pauli_word.name)
+    #     if isinstance(pauli_word.name, list)
+    #     else first_pauli_name == pauli_word.name
+    #     for pauli_word in qwc_grouping
+    # )
+    #
+    # if not all_paulis_same_kind:
+    #     m_paulis = len(qwc_grouping)
+    #     all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
+    #     wire_map = {label: ind for ind, label in enumerate(all_wires)}
+    #     pauli_binaries = [
+    #         pauli_to_binary(
+    #             qwc_grouping[i],
+    #             wire_map=wire_map,
+    #             check_is_pauli_word=False,
+    #         )
+    #         for i in range(m_paulis)
+    #     ]
+    #     for i in range(m_paulis):
+    #         for j in range(i + 1, m_paulis):
+    #             if not is_qwc(
+    #                 pauli_binaries[i],
+    #                 pauli_binaries[j],
+    #             ):
+    #                 raise ValueError(
+    #                     f"{qwc_grouping[i]} and {qwc_grouping[j]} are not qubit-wise commuting."
+    #                 )
 
-    if not all_paulis_same_kind:
-        m_paulis = len(qwc_grouping)
-        all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
-        wire_map = {label: ind for ind, label in enumerate(all_wires)}
-        pauli_binaries = [
-            pauli_to_binary(
-                qwc_grouping[i],
-                wire_map=wire_map,
-                check_is_pauli_word=False,
-            )
-            for i in range(m_paulis)
-        ]
-        for i in range(m_paulis):
-            for j in range(i + 1, m_paulis):
-                if not is_qwc(
-                    pauli_binaries[i],
-                    pauli_binaries[j],
-                ):
-                    raise ValueError(
-                        f"{qwc_grouping[i]} and {qwc_grouping[j]} are not qubit-wise commuting."
-                    )
+    wire_dict = {}
+
+    for op in qwc_grouping:  # iterate over the list of observables
+        op_names = [op.name] if not isinstance(op.name, list) else op.name
+        op_wires = op.wires.tolist()
+
+        for name, wire in zip(op_names, op_wires):
+            try:
+                if wire_dict[wire] != name and (name != "Identity" and wire_dict[wire] != "Identity"):
+                    raise ValueError(f"the list of pauli-words are not qubit-wise commuting.")
+                elif wire_dict[wire] == "Identity":
+                    wire_dict[wire] = name  # update name
+            except KeyError:
+                wire_dict[wire] = name  # add wire and name for the first time
 
     pauli_operators = []
     diag_terms = []
