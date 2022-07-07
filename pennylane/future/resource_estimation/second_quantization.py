@@ -109,10 +109,14 @@ class DoubleFactorization(Operation):
         br=7,
         alpha=10,
         beta=20,
+        chemist_notation=False,
     ):
 
         self.one_electron = one_electron
-        self.two_electron = two_electron
+        if chemist_notation:
+            self.two_electron = two_electron
+        else:
+            self.two_electron = np.swapaxes(two_electron, 1, 3)
         self.error = error
         self.rank_r = rank_r
         self.rank_m = rank_m
@@ -163,7 +167,8 @@ class DoubleFactorization(Operation):
 
         super().__init__(wires=range(self.qubits))
 
-    def estimation_cost(self, lamb, error):
+    @staticmethod
+    def estimation_cost(lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -191,7 +196,8 @@ class DoubleFactorization(Operation):
 
         return int(np.ceil(np.pi * lamb / (2 * error)))
 
-    def _qrom_cost(self, constants):
+    @staticmethod
+    def _qrom_cost(constants):
         r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM
         for the double factorization method.
 
@@ -234,7 +240,8 @@ class DoubleFactorization(Operation):
 
         return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
 
-    def unitary_cost(self, n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+    @staticmethod
+    def unitary_cost(n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator
         for the double factorization algorithm.
 
@@ -306,16 +313,17 @@ class DoubleFactorization(Operation):
         cost = (
             9 * nl - 6 * eta + 12 * br + 34 * nxi + 8 * nlxi + 9 * alpha + 3 * n * beta - 6 * n - 43
         )
-        cost += self._qrom_cost((rank_r, 1, 0, bp1, -1))[0]
-        cost += self._qrom_cost((rank_r, 1, 0, bo, -1))[0]
-        cost += self._qrom_cost((rank_r, 1, 0, 1, 0))[0] * 2
-        cost += self._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[0]
-        cost += self._qrom_cost((rank_rm, n / 2, rank_rm, 2, 0))[0] * 2
-        cost += self._qrom_cost((rank_rm, n / 2, rank_rm, 2 * bp2, -1))[0]
+        cost += DoubleFactorization._qrom_cost((rank_r, 1, 0, bp1, -1))[0]
+        cost += DoubleFactorization._qrom_cost((rank_r, 1, 0, bo, -1))[0]
+        cost += DoubleFactorization._qrom_cost((rank_r, 1, 0, 1, 0))[0] * 2
+        cost += DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[0]
+        cost += DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, 2, 0))[0] * 2
+        cost += DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, 2 * bp2, -1))[0]
 
         return int(cost)
 
-    def gate_cost(self, n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+    @staticmethod
+    def gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
         r"""Return the total number of Toffoli gates needed to implement the double factorization
         algorithm.
 
@@ -379,12 +387,13 @@ class DoubleFactorization(Operation):
         if beta <= 0 or not isinstance(beta, int):
             raise ValueError("beta must be a positive integer.")
 
-        e_cost = self.estimation_cost(lamb, error)
-        u_cost = self.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
+        e_cost = DoubleFactorization.estimation_cost(lamb, error)
+        u_cost = DoubleFactorization.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
 
         return int(e_cost * u_cost)
 
-    def qubit_cost(self, n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+    @staticmethod
+    def qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
         r"""Return the number of ancilla qubits needed to implement the double factorization method.
 
         The expression for computing the cost is taken from Eq. (C40) of
@@ -456,16 +465,17 @@ class DoubleFactorization(Operation):
         bo = nxi + nlxi + br + 1  # Eq. (C29) of PRX Quantum 2, 030305 (2021)
         bp2 = nxi + alpha + 2  # Eq. (C31) of PRX Quantum 2, 030305 (2021)
         # kr is taken from Eq. (C39) of PRX Quantum 2, 030305 (2021)
-        kr = self._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
+        kr = DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
 
         # the cost is computed using Eq. (C40) of PRX Quantum 2, 030305 (2021)
-        e_cost = self.estimation_cost(lamb, error)
+        e_cost = DoubleFactorization.estimation_cost(lamb, error)
         cost = n + 2 * nl + nxi + 3 * alpha + beta + bo + bp2
         cost += kr * n * beta / 2 + 2 * np.ceil(np.log2(e_cost + 1)) + 7
 
         return int(cost)
 
-    def norm(self, one, two, eigvals):
+    @staticmethod
+    def norm(one, two, eigvals):
         r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals
         and eigenvalues of the factorized two-electron integral tensor.
 
