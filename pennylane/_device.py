@@ -950,7 +950,7 @@ class Device(abc.ABC):
                     )
                 operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
+            if not self.stopping_condition(o):
                 raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )

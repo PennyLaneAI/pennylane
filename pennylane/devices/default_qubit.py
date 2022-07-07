@@ -184,6 +184,10 @@ class DefaultQubit(QubitDevice):
             "Toffoli": self._apply_toffoli,
         }
 
+    @property
+    def stopping_condition(self):
+        return qml.BooleanFn(lambda obj: getattr(obj, "has_matrix", False))
+
     @functools.lru_cache()
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
