@@ -144,17 +144,14 @@ class TRX(Operation):
         c = (1 + 0j) * c
         js = -1j * s
 
-        shape = qml.math.shape(theta)
-        is_broadcasted = len(shape) != 0 and shape[0] > 1
         mat = (
             qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
-            if is_broadcasted
+            if len(qml.math.shape(theta)) != 0 and qml.math.shape(theta)[0] > 1
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, js)
         slices = tuple(itertools.product(subspace, subspace))
-        if is_broadcasted:
-            slices = [(Ellipsis, *s) for s in slices]
+        slices = [(Ellipsis, *s) for s in slices]
 
         mat[slices[0]] = mat[slices[3]] = c
         mat[slices[1]] = mat[slices[2]] = js
@@ -165,3 +162,141 @@ class TRX(Operation):
 
     def pow(self, z):
         return [TRX(self.data[0] * z, wires=self.wires, subspace=self.subspace)]
+
+
+class TRY(Operation):
+    r"""
+    The single qutrit Y rotation
+
+    Performs the RY operation on the specified 2D subspace. The subspace is
+    given as a keyword argument and determines which two of three single-qutrit
+    basis states the operation applies to.
+
+    .. math:: TR_y^{jk}(\phi) = \exp(-i\phi\sigma_y^{jk}/2),
+                \sigma_y^{jk} = -i |j\rangle\langle k| + i |k\rangle\langle j|,
+                j, k \in \{0, 1, 2\}, j \neq k
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+        subspace (Sequence[int]): the 2D subspace on which to apply operation
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+
+    **Example**
+
+    The specified subspace will determine which basis states the operation actually
+    applies to:
+
+    >>> qml.TRY(0.5, wires=0, subspace=[0, 1]).matrix()
+    array([[ 0.96891242+0.j, -0.24740396-0.j,  0.        +0.j],
+           [ 0.24740396+0.j,  0.96891242+0.j,  0.        +0.j],
+           [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
+
+    >>> qml.TRY(0.5, wires=0, subspace=[0, 2]).matrix()
+    array([[ 0.96891242+0.j,  0.        +0.j, -0.24740396-0.j],
+           [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
+           [ 0.24740396+0.j,  0.        +0.j,  0.96891242+0.j]])
+
+    >>> qml.TRY(0.5, wires=0, subspace=[1, 2]).matrix()
+    array([[ 1.        +0.j,  0.        +0.j,  0.        +0.j],
+           [ 0.        +0.j,  0.96891242+0.j, -0.24740396-0.j],
+           [ 0.        +0.j,  0.24740396+0.j,  0.96891242+0.j]])
+    """
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = "A"
+    # TODO: Add parameter frequency
+
+    def generator(self):
+        gen_mat = np.zeros((3, 3))
+        gen_mat[self.subspace] = -1j
+        gen_mat[self.subspace[::-1]] = 1j
+        return THermitian(-0.5 * gen_mat, wires=self.wires)
+
+    def __init__(self, phi, wires, subspace=[0, 1], do_queue=True, id=None):
+        self._subspace = subspace
+        self._hyperparameters = {
+            "subspace": self.subspace,
+        }
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def subspace(self):
+        """The single-qutrit basis states which the operator acts on
+
+        This property returns the 2D subspace on which the operator acts. This subspace
+        determines which two single-qutrit basis states the operator acts on. The remaining
+        basis state is not affected by the operator.
+
+        Returns:
+            tuple[int]: subspace on which operator acts
+        """
+        return tuple(sorted(self._subspace))
+
+    @staticmethod
+    def compute_matrix(theta, subspace=[0, 1]):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.TRY.matrix`
+
+        Args:
+            theta (tensor_like or float): rotation angle
+            subspace (Sequence[int]): the 2D subspace on which to apply operation
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.TRY.compute_matrix(torch.tensor(0.5), subspace=[0, 2])
+        tensor([[ 0.9689+0.j,  0.0000+0.j, -0.2474-0.j],
+                [ 0.0000+0.j,  1.0000+0.j,  0.0000+0.j],
+                [ 0.2474+0.j,  0.0000+0.j,  0.9689+0.j]])
+        """
+        subspace = tuple(sorted(subspace))
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        if qml.math.get_interface(theta) == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        s = (1 + 0j) * s
+
+        mat = (
+            qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
+            if len(qml.math.shape(theta)) != 0 and qml.math.shape(theta)[0] > 1
+            else qml.math.eye(3)
+        )
+        mat = qml.math.cast_like(mat, s)
+        slices = tuple(itertools.product(subspace, subspace))
+        slices = [(Ellipsis, *s) for s in slices]
+
+        mat[slices[0]] = mat[slices[3]] = c
+        mat[slices[1]] = -s
+        mat[slices[2]] = s
+        return qml.math.convert_like(mat, theta)
+
+    def adjoint(self):
+        return TRY(-self.data[0], wires=self.wires, subspace=self.subspace)
+
+    def pow(self, z):
+        return [TRY(self.data[0] * z, wires=self.wires, subspace=self.subspace)]
