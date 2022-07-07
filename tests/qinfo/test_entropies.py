@@ -19,12 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.all_interfaces
-
-tf = pytest.importorskip("tensorflow", minversion="2.1")
-torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
-
 
 def expected_entropy_ising_xx(param):
     """
@@ -67,7 +61,7 @@ def expected_entropy_grad_ising_xx(param):
 
 
 class TestVonNeumannEntropy:
-    """Tests for creating a density matrix from state vectors."""
+    """Tests Von Neumann entropy transform"""
 
     single_wires_list = [
         [0],
@@ -78,8 +72,8 @@ class TestVonNeumannEntropy:
 
     check_state = [True, False]
 
-    parameters = np.linspace(0, 2 * np.pi, 20)
-    devices = ["default.qubit", "default.mixed"]
+    parameters = np.linspace(0, 2 * np.pi, 10)
+    devices = ["default.qubit", "default.mixed", "lightning.qubit"]
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
@@ -356,11 +350,282 @@ class TestVonNeumannEntropy:
         assert qml.math.allclose(entropy, expected_entropy)
 
 
+class TestVonNeumannEntropyQNode:
+
+    parameters = np.linspace(0, 2 * np.pi, 10)
+
+    devices = ["default.qubit", "default.mixed", "lightning.qubit"]
+
+    single_wires_list = [
+        [0],
+        [1],
+    ]
+
+    base = [2, np.exp(1), 10]
+
+    check_state = [True, False]
+
+    devices = ["default.qubit", "default.mixed"]
+    diff_methods = ["backprop", "finite-diff"]
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("base", base)
+    def test_IsingXX_qnode_entropy(self, param, wires, device, base):
+        """Test entropy for a QNode numpy."""
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        entropy = circuit_entropy(param)
+
+        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad(self, param, wires, base, diff_method):
+        """Test entropy for a QNode gradient with autograd."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        grad_entropy = qml.grad(circuit_entropy)(param)
+
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
+        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("base", base)
+    def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base):
+        """Test entropy for a QNode with torch interface."""
+        import torch
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        entropy = circuit_entropy(torch.tensor(param))
+
+        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
+
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method):
+        """Test entropy for a QNode gradient with torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
+
+        param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+        entropy = circuit_entropy(param)
+        entropy.backward()
+        grad_entropy = param.grad
+
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("base", base)
+    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base):
+        """Test entropy for a QNode with tf interface."""
+        import tensorflow as tf
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        entropy = circuit_entropy(tf.Variable(param))
+
+        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
+
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method):
+        """Test entropy for a QNode gradient with tf."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        param = tf.Variable(param)
+        with tf.GradientTape() as tape:
+            entropy = circuit_entropy(param)
+
+        grad_entropy = tape.gradient(entropy, param)
+
+        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
+
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("base", base)
+    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base):
+        """Test entropy for a QNode with jax interface."""
+        import jax.numpy as jnp
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        entropy = circuit_entropy(jnp.array(param))
+
+        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
+
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, diff_method):
+        """Test entropy for a QNode gradient with Jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        grad_entropy = jax.grad(circuit_entropy)(jax.numpy.array(param))
+        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
+
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("device", devices)
+    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, device):
+        """Test entropy for a QNode with jax-jit interface."""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="jax-jit")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        entropy = jax.jit(circuit_entropy)(jnp.array(param))
+
+        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
+
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, diff_method):
+        """Test entropy for a QNode gradient with Jax-jit."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires, log_base=base)
+
+        grad_entropy = jax.jit(jax.grad(circuit_entropy))(jax.numpy.array(param))
+
+        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_qnode_entropy_no_custom_wires(self, device):
+        """Test that entropy cannot be returned with custom wires."""
+
+        dev = qml.device(device, wires=["a", 1])
+
+        @qml.qnode(dev)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=["a", 1])
+            return qml.vn_entropy(wires=["a"])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Returning the Von Neumann entropy is not supported when using custom wire labels",
+        ):
+            circuit_entropy(0.1)
+
+
 class TestMutualInformation:
     """Tests for the mutual information functions"""
 
     diff_methods = ["backprop", "finite-diff"]
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
@@ -386,6 +651,7 @@ class TestMutualInformation:
 
         assert np.allclose(actual, expected)
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
@@ -422,6 +688,7 @@ class TestMutualInformation:
     def test_qnode_state_jax_jit(self, params):
         """Test that the mutual information transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -448,11 +715,12 @@ class TestMutualInformation:
     def test_qnode_mutual_info_jax_jit(self, params):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform, for the JAX-jit interface"""
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
-        params = qml.math.asarray(np.array(params), like="jax")
+        params = jnp.array(params)
 
         @qml.qnode(dev, interface="jax-jit")
         def circuit_mutual_info(params):
@@ -509,6 +777,7 @@ class TestMutualInformation:
     def test_qnode_grad_jax(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the JAX interface"""
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -541,6 +810,7 @@ class TestMutualInformation:
     def test_qnode_grad_jax_jit(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the JAX-jit interface"""
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -573,6 +843,8 @@ class TestMutualInformation:
     def test_qnode_grad_tf(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the tensorflow interface"""
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         param = tf.Variable(param)
@@ -606,6 +878,8 @@ class TestMutualInformation:
     def test_qnode_grad_torch(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the torch interface"""
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch", diff_method=diff_method)
@@ -632,6 +906,7 @@ class TestMutualInformation:
         actual = param.grad
         assert np.allclose(actual, expected, atol=tol)
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
@@ -655,6 +930,7 @@ class TestMutualInformation:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit(params)
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(

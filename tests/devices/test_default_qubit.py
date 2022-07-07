@@ -2463,6 +2463,27 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
+    def test_apply_unitary_tensordot_double_broadcasting_error(self):
+        """Tests that an error is raised if attempting to use _apply_unitary
+        with a broadcasted matrix and a broadcasted state simultaneously."""
+        dev = qml.device("default.qubit", wires=3)
+
+        class BroadcastedToffoli(qml.operation.Operation):
+            num_wires = 3
+            batch_size = 3
+            num_params = 0
+
+            @staticmethod
+            def compute_matrix(*params, **hyperparams):
+                return np.array([U_toffoli] * 3)
+
+        state = np.eye(8)[:3]
+        wires = qml.wires.Wires([0, 1, 2])
+
+        mat = BroadcastedToffoli(wires=wires).matrix()
+        with pytest.raises(NotImplementedError, match="broadcasted unitary to an already"):
+            dev._apply_unitary(state, mat, wires=wires)
+
     def test_identity_skipped(self, mocker):
         """Test that applying the identity operation does not perform any additional computations."""
         dev = qml.device("default.qubit", wires=1)

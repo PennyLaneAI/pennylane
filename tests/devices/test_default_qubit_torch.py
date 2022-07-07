@@ -795,9 +795,7 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor(
-            [Rot3(_a, _b, c) for _a, _b in zip(a, b)], dtype=torch.complex128, device=torch_device
-        )
+        op_mat = torch.stack([Rot3(_a, _b, c) for _a, _b in zip(a, b)])
         expected = qml.math.einsum("lij,j->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -815,9 +813,7 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor(
-            [Rot3(_a, _b, c) for _a, _b in zip(a, b)], dtype=torch.complex128, device=torch_device
-        )
+        op_mat = torch.stack([Rot3(_a, _b, c) for _a, _b in zip(a, b)])
         expected = qml.math.einsum("lij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -971,6 +967,25 @@ class TestApplyBroadcasted:
         op_mat = torch.tensor(mat, dtype=torch.complex128, device=torch_device)
         expected = qml.math.einsum("ij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_direct_eval_hamiltonian_broadcasted_error_torch(self, device, torch_device, mocker):
+        """Tests that an error is raised when attempting to evaluate a Hamiltonian with
+        broadcasting and shots=None directly via its sparse representation with torch."""
+
+        dev = device(wires=2, torch_device=torch_device)
+        H = qml.Hamiltonian(
+            torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
+        )
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        def circuit():
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        with pytest.raises(NotImplementedError, match="Hamiltonians for interface!=None"):
+            circuit()
 
 
 THETA = torch.linspace(0.11, 1, 3, dtype=torch.float64)
@@ -1981,19 +1996,19 @@ class TestPassthruIntegration:
         p_grad = p_torch.grad
         assert qml.math.allclose(p_grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, device, torch_device, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, device, torch_device, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=wires, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.RY(a, wires=wires[0])
+            return qml.state()
 
         a = torch.tensor(0.54, requires_grad=True, device=torch_device)
 
-        circuit(a)
-        res = torch.abs(dev.state) ** 2
+        res = torch.abs(circuit(a)) ** 2
         res = res[1] - res[0]
         res.backward()
 

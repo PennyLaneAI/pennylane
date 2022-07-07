@@ -50,6 +50,7 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
+    add,
 )
 
 from .quantum import cov_matrix, marginal_prob
@@ -102,7 +103,6 @@ __all__ = [
     "is_independent",
     "marginal_prob",
     "mutual_info",
-    "reduced_dm",
     "ones_like",
     "reduced_dm",
     "requires_grad",
@@ -113,4 +113,5 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
+    "add",
 ]
