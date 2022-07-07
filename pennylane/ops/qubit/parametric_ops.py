@@ -253,6 +253,41 @@ class RZ(Operation):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
+    def compute_matrix_new(theta):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RZ.matrix`
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RZ.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j]])
+        """
+        if qml.math.get_interface(theta)=="tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            signs = qml.math.cast_like([-1, 1], 1j)
+        else:
+            signs = qml.math.array([-1, 1], like=theta)
+        arg = 0.5j * theta
+
+        if qml.math.ndim(arg) == 0:
+            return qml.math.diag(qml.math.exp(arg * signs))
+
+        diags = qml.math.exp(qml.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
+
+
+    @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
