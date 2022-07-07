@@ -175,14 +175,14 @@ def test_gate_cost_error(n, eta, omega, error, br, charge):
 
 
 @pytest.mark.parametrize(
-    ("n", "eta", "omega", "error", "charge", "cost_ref"),
+    ("n", "eta", "omega", "error", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 0, 3747),
+        (10000, 156, 1145.166, 0.001, 7, 0, 3747),
     ],
 )
-def test_qubit_cost(n, eta, omega, error, charge, cost_ref):
+def test_qubit_cost(n, eta, omega, error, br, charge, cost_ref):
     r"""Test that qubit_cost returns the correct value."""
-    cost = qml.future.FirstQuantization.qubit_cost(n, eta, omega, error, charge)
+    cost = qml.future.FirstQuantization.qubit_cost(n, eta, omega, error, br, charge)
 
     assert cost == cost_ref
 

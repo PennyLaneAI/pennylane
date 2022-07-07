@@ -105,7 +105,9 @@ class FirstQuantization(Operation):
         self.lamb = self.norm(self.n, self.eta, self.omega, self.error, self.br, self.charge)
 
         self.gates = self.gate_cost(self.n, self.eta, self.omega, self.error, self.br, self.charge)
-        self.qubits = self.qubit_cost(self.n, self.eta, self.omega, self.error, self.charge)
+        self.qubits = self.qubit_cost(
+            self.n, self.eta, self.omega, self.error, self.br, self.charge
+        )
 
         super().__init__(wires=range(self.qubits))
 
@@ -433,7 +435,12 @@ class FirstQuantization(Operation):
         [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
         Args:
+            n (int): number of plane waves
+            eta (int): number of electrons
+            omega (float): unit cell volume
             error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
+            charge (int): total electric charge of the system
 
         Returns:
             int: number of calls to unitary
@@ -509,7 +516,7 @@ class FirstQuantization(Operation):
         return e_cost * u_cost
 
     @staticmethod
-    def qubit_cost(n, eta, omega, error, charge=0):
+    def qubit_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the number of ancilla qubits needed to implement the first quantization
         algorithm.
 
@@ -521,6 +528,7 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
 
         Returns:
@@ -550,7 +558,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        lamb = FirstQuantization.norm(n, eta, omega, error, br=7, charge=charge)
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=br, charge=charge)
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
