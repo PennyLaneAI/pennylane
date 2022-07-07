@@ -273,7 +273,7 @@ class RZ(Operation):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if qml.math.get_interface(theta)=="tensorflow":
+        if qml.math.get_interface(theta) == "tensorflow":
             p = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             z = qml.math.zeros_like(p)
 
@@ -315,7 +315,7 @@ class RZ(Operation):
         >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if qml.math.get_interface(theta)=="tensorflow":
+        if qml.math.get_interface(theta) == "tensorflow":
             phase = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             return qml.math.stack([phase, qml.math.conj(phase)], axis=-1)
 
@@ -566,7 +566,7 @@ class ControlledPhaseShift(Operation):
 
         phase = qml.math.exp(1j * phi)
         if qml.math.ndim(phase) == 0:
-            return qml.math.diag([0, 0, 0, phase])
+            return qml.math.diag([1, 1, 1, phase])
 
         ones = qml.math.ones_like(phase)
         diags = stack_last([ones, ones, ones, phase])
@@ -604,7 +604,7 @@ class ControlledPhaseShift(Operation):
 
         phase = qml.math.exp(1j * phi)
         if qml.math.ndim(phase) == 0:
-            return qml.math.stack([0, 0, 0, phase])
+            return qml.math.stack([1, 1, 1, phase])
 
         ones = qml.math.ones_like(phase)
         return stack_last([ones, ones, ones, phase])
@@ -883,7 +883,9 @@ class MultiRZ(Operation):
             return qml.math.diag(qml.math.exp(-0.5j * theta * eigs))
 
         diags = qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
-        return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2**num_wires, like=diags), diags)
+        return diags[:, :, np.newaxis] * qml.math.cast_like(
+            qml.math.eye(2**num_wires, like=diags), diags
+        )
 
     def generator(self):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
@@ -1674,7 +1676,7 @@ class CRZ(Operation):
         if qml.math.ndim(theta) == 0:
             return qml.math.diag([1, 1, qml.math.conj(phase), phase])
 
-        ones = qml.math.zeros_like(phase)
+        ones = qml.math.ones_like(phase)
         diags = stack_last([ones, ones, qml.math.conj(phase), phase])
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(4, like=diags), diags)
 

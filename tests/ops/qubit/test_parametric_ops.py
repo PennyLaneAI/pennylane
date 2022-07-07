@@ -1491,7 +1491,7 @@ class TestMatrix:
         assert np.allclose(res, exp)
 
         res = op.eigvals()
-        assert np.allclose(res, np.diag(exp))
+        assert np.allclose(np.diag(res), exp)
 
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
     def test_controlled_phase_shift_matrix_and_eigvals_broadcasted(self, cphase_op):
@@ -1965,7 +1965,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = tf.Variable(phi, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.float64)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
