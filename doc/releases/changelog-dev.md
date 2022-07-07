@@ -40,6 +40,37 @@
   -1.1258709813834058
   ```
 
+* The quantum information module now supports computation of relative entropy.
+  [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
+
+  It includes a function in `qml.math`:
+
+  ```pycon
+  >>> rho = np.array([[0.3, 0], [0, 0.7]])
+  >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+  >>> qml.math.relative_entropy(rho, sigma)
+  tensor(0.08228288, requires_grad=True)
+  ```
+
+  as well as a QNode transform:
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(param):
+      qml.RY(param, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.state()
+  ```
+  ```pycon
+  >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
+  >>> x, y = np.array(0.4), np.array(0.6)
+  >>> relative_entropy_circuit((x,), (y,))
+  0.017750012490703237
+  ```
+
+
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
@@ -57,9 +88,9 @@
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
-  
+
   The `Sum` class provides functionality like any other PennyLane operator. We can
-  get the matrix, eigenvalues, terms, diagonalizing gates and more. 
+  get the matrix, eigenvalues, terms, diagonalizing gates and more.
 
   ```pycon
   >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(0))
@@ -71,11 +102,11 @@
   >>> summed_op.terms()
   ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
   ```
-  
-  The `summed_op` can also be used inside a `qnode` as an observable. 
-  If the circuit is parameterized, then we can also differentiate through the 
-  sum observable. 
-  
+
+  The `summed_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the
+  sum observable.
+
   ```python
   sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
   dev = qml.device("default.qubit", wires=2)
@@ -88,7 +119,7 @@
         qml.RX(weights[2], wires=1)
         return qml.expval(sum_op)
   ```
-  
+
   ```
   >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
   >>> qml.grad(circuit)(weights)
@@ -98,14 +129,14 @@
 
 
 <h3>Improvements</h3>
-  
+
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
-  
+
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
   `counts=True` can be set when obtaining raw samples in the computational basis:
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
   >>>
@@ -119,9 +150,9 @@
   >>> print(result)
   {'00': 495, '11': 505}
   ```
-  
+
   Counts can also be obtained when sampling the eigenstates of an observable:
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
   >>>
