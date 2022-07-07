@@ -290,8 +290,8 @@ class ControlledQutritUnitary(QutritUnitary):
         else:
             raise ValueError("Alternative control values must be passed as a ternary string.")
 
-        padding_left = control_int * len(U)
-        padding_right = 3 ** len(total_wires) - len(U) - padding_left
+        padding_left = control_int * target_dim
+        padding_right = 3 ** len(total_wires) - target_dim - padding_left
 
         interface = qml.math.get_interface(U)
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
