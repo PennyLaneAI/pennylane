@@ -773,7 +773,7 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     first QNode and the second being the arguments to the second QNode:
 
     >>> x, y = np.array(0.4), np.array(0.6)
-    >> relative_entropy_circuit((x,), (y,))
+    >>> relative_entropy_circuit((x,), (y,))
     0.017750012490703237
 
     This transform is fully differentiable:
