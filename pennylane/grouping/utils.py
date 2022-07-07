@@ -658,6 +658,38 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
+def are_pauli_words_qwc(lst_pauli_words):
+    """Given a list of observables assumed to be valid Pauli words, determine if they
+     are all mutually qubit-wise commuting.
+
+    This implementation has time complexity ~ O(m * n) for n wires and m Pauli words.
+
+    Args:
+        lst_pauliwords (list[Observable]): list of observables (assumed to be valid Pauli words).
+
+    Returns:
+        (bool): True if they are all qubit-wise commuting, false otherwise.
+    """
+    wire_dict = {}
+
+    for op in lst_pauli_words:  # iterate over the list of observables
+        op_names = [op.name] if not isinstance(op.name, list) else op.name
+        op_wires = op.wires.tolist()
+
+        for name, wire in zip(op_names, op_wires):
+            try:
+                if wire_dict[wire] != name and (
+                    name != "Identity" and wire_dict[wire] != "Identity"
+                ):
+                    return False
+                if wire_dict[wire] == "Identity":
+                    wire_dict[wire] = name  # update name
+            except KeyError:
+                wire_dict[wire] = name  # add wire and name for the first time
+
+    return True  # if we get through all ops, then they are qwc!
+
+
 def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
     """Converts a list of Pauli words to the binary vector representation and yields a row matrix
     of the binary vectors.
