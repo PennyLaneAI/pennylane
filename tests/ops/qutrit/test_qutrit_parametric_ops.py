@@ -224,6 +224,7 @@ class TestMatrix:
 
 label_data = [
     (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX⁻¹\n(1)"),
+    (qml.TRY(1.23456, wires=0), "TRY", "TRY\n(1.23)", "TRY\n(1)", "TRY⁻¹\n(1)"),
 ]
 
 label_data_broadcasted = [
@@ -298,7 +299,10 @@ class TestLabel:
         assert op1.label(decimals=0) == "TRX"
 
 
-pow_parametric_ops = (qml.TRX(1.234, wires=0),)
+pow_parametric_ops = (
+    qml.TRX(1.234, wires=0),
+    qml.TRY(1.234, wires=0),
+)
 
 
 class TestParametricPow:
@@ -327,6 +331,7 @@ class TestParametricPow:
 
 control_data = [
     (qml.TRX(1.234, wires=0), Wires([])),
+    (qml.TRY(1.234, wires=0), Wires([])),
 ]
 
 
