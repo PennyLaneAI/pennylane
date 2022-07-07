@@ -125,8 +125,10 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> success_prob(10000, 7)
-        0.9998814293823286
+        >>> n = 3
+        >>> br = 8
+        >>> success_prob(n, br)
+        0.9999928850303523
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
@@ -169,7 +171,7 @@ class FirstQuantization(Operation):
         >>> omega = 1145.166
         >>> error = 0.001
         >>> norm(n, eta, omega, error)
-        1254385.059691027
+        281053.75612801575
 
         .. details::
             :title: Theory
@@ -321,7 +323,8 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> _cost_qrom_min(100)
+        >>> lz = 100
+        >>> _cost_qrom(lz)
         21
         """
         if lz <= 0 or not isinstance(lz, int):
@@ -361,7 +364,7 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> unitary_cost(n, eta, omega, error)
-        12819
+        14635
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
@@ -437,9 +440,12 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> cost = estimation_cost(0.001)
-        >>> print(cost)
-        113880
+        >>> n = 100000
+        >>> eta = 156
+        >>> omega = 1145.166
+        >>> error = 0.01
+        >>> qml.future.FirstQuantization.estimation_cost(n, eta, omega, error)
+        102133985
         """
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
@@ -477,7 +483,7 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> gate_cost(n, eta, omega, error)
-        10327614069516
+        3158951256530
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
@@ -527,7 +533,7 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> qubit_cost(n, eta, omega, error)
-        4238
+        4377
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
