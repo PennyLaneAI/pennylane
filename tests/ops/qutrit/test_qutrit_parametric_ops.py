@@ -28,12 +28,14 @@ from gate_data import TSHIFT, TCLOCK
 
 PARAMETRIZED_OPERATIONS = [
     qml.TRX(0.123, wires=0, subspace=[1, 2]),
+    qml.TRY(0.123, wires=0, subspace=[0, 2]),
     qml.QutritUnitary(TSHIFT, wires=0),
     qml.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
 ]
 
 BROADCASTED_OPERATIONS = [
     qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[1, 2]),
+    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[0, 2]),
     qml.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
     qml.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
 ]
@@ -151,4 +153,68 @@ class TestMatrix:
         expected = -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+
+    def test_try(self, tol):
+        """Test y rotation is correct"""
+
+        # test identity for theta = 0
+        expected = np.eye(3)
+        assert np.allclose(qml.TRY.compute_matrix(0, subspace=[0, 1]), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.TRY.compute_matrix(0, subspace=[1, 2]), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.TRY.compute_matrix(0, subspace=[0, 2]), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
+        assert np.allclose(
+            qml.TRY.compute_matrix(np.pi / 2, subspace=[0, 1]), expected, atol=tol, rtol=0
+        )
+
+        expected = np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2)
+        assert np.allclose(
+            qml.TRY.compute_matrix(np.pi / 2, subspace=[1, 2]), expected, atol=tol, rtol=0
+        )
+
+        expected = np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2)
+        assert np.allclose(
+            qml.TRY.compute_matrix(np.pi / 2, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+
+        # test identity for broadcasted theta=pi/2
+        pi_half = np.array([np.pi / 2] * 2)
+        expected = np.tensordot(
+            [1, 1], np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
+        )
+        assert np.allclose(
+            qml.TRY.compute_matrix(pi_half, subspace=[0, 1]), expected, atol=tol, rtol=0
+        )
+
+        expected = np.tensordot(
+            [1, 1], np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2), axes=0
+        )
+        assert np.allclose(
+            qml.TRY.compute_matrix(pi_half, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+
+        expected = np.tensordot(
+            [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2), axes=0
+        )
+        assert np.allclose(
+            qml.TRY.compute_matrix(pi_half, subspace=[1, 2]), expected, atol=tol, rtol=0
+        )
+
+        # test identity for theta=pi
+        expected = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+        assert np.allclose(
+            qml.TRY.compute_matrix(np.pi, subspace=[0, 1]), expected, atol=tol, rtol=0
+        )
+
+        expected = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        assert np.allclose(
+            qml.TRY.compute_matrix(np.pi, subspace=[1, 2]), expected, atol=tol, rtol=0
+        )
+
+        expected = np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])
+        assert np.allclose(
+            qml.TRY.compute_matrix(np.pi, subspace=[0, 2]), expected, atol=tol, rtol=0
         )
