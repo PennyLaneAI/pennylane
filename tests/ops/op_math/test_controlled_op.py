@@ -50,8 +50,8 @@ class TempOperation(Operation):
     num_wires = 1
 
 
-class TestInheritanceMixins:
-    """Test the inheritance structure and mixin addition through dynamic __new__ method."""
+class TestControlledInheritance:
+    """Test the inheritance structure modified through dynamic __new__ method."""
 
     def test_plain_operator(self):
         """Test when base directly inherits from Operator only inherits from Operator."""
@@ -65,8 +65,8 @@ class TestInheritanceMixins:
         assert not isinstance(op, ControlledOp)
 
     def test_operation(self):
-        """When the operation inherits from `Operation`, the `ControlledOp` mixin should
-        be added and the Controlled should now have Operation functionality."""
+        """When the operation inherits from `Operation`, then a `ControlledOp` should
+        be created instead and the Controlled should now have Operation functionality."""
 
         class CustomOp(Operation):
             num_wires = 1
@@ -75,10 +75,21 @@ class TestInheritanceMixins:
         base = CustomOp(1.234, wires=0)
         op = Controlled(base, 6.5)
 
+        assert type(op) is ControlledOp
+
         assert isinstance(op, Controlled)
         assert isinstance(op, Operator)
         assert isinstance(op, Operation)
         assert isinstance(op, ControlledOp)
+
+    def test_controlledop_new(self):
+        """Test that if a `ControlledOp` is directly requested, it is created
+        even if the base isn't an operation."""
+
+        base = TempOperator(1.234, wires="a")
+        op = ControlledOp(base, "b")
+
+        assert type(op) is ControlledOp
 
 
 class TestInitialization:
