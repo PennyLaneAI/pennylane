@@ -282,7 +282,7 @@ def expval_param_shift(
                 and not scalar_qfunc_output
             ):
                 # If the original output is not scalar and broadcasting is used, the second axis
-                # (index 1) needs to be contracted. For Torch, this is not true because the 
+                # (index 1) needs to be contracted. For Torch, this is not true because the
                 # output of the broadcasted tape is flattened.
                 axis = 1
             g = qml.math.tensordot(
