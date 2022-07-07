@@ -171,6 +171,10 @@
 
 <h3>Deprecations</h3>
 
+* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
+  `qml.qchem`.
+  [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
+
 <h3>Documentation</h3>
 
 * Optimization examples of using JAXopt and Optax with the JAX interface have
