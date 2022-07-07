@@ -43,6 +43,7 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+
 **Operator Arithmetic:**
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
@@ -93,6 +94,8 @@
   >>> qml.grad(circuit)(weights)
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
+* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
+
 
 <h3>Improvements</h3>
   
@@ -191,5 +194,5 @@
 This release contains contributions from (in alphabetical order):
 
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
 Antal Száva, Moritz Willmann
