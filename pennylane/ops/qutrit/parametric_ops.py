@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops.qutrit import QutritUnitary
+from pennylane.ops.qutrit.observables import THermitian
 from pennylane.wires import Wires
 
 
@@ -87,7 +87,7 @@ class TRX(Operation):
         gen_mat = np.zeros((3, 3))
         gen_mat[self.subspace] = 1
         gen_mat[self.subspace[::-1]] = 1
-        return QutritUnitary(-0.5 * gen_mat, wires=self.wires)
+        return THermitian(-0.5 * gen_mat, wires=self.wires)
 
     def __init__(self, phi, wires, subspace=[0, 1], do_queue=True, id=None):
         self._subspace = subspace
@@ -143,13 +143,18 @@ class TRX(Operation):
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
+
+        shape = qml.math.shape(theta)
+        is_broadcasted = len(shape) != 0 and shape[0] > 1
         mat = (
             qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
-            if len(qml.math.shape(theta)) != 0 and qml.math.shape(theta)[0] > 1
+            if is_broadcasted
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, js)
         slices = tuple(itertools.product(subspace, subspace))
+        if is_broadcasted:
+            slices = [(Ellipsis, *s) for s in slices]
 
         mat[slices[0]] = mat[slices[3]] = c
         mat[slices[1]] = mat[slices[2]] = js

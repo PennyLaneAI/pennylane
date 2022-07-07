@@ -33,7 +33,7 @@ PARAMETRIZED_OPERATIONS = [
 ]
 
 BROADCASTED_OPERATIONS = [
-    qml.TRX([0.142, -0.61, 2.3], wires=0, subspace=[1, 2]),
+    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[1, 2]),
     qml.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
     qml.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
 ]
