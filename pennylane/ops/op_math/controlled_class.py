@@ -368,7 +368,7 @@ class ControlledOp(Controlled, operation.Operation):
                 )
                 base_gen_eigvals = qml.eigvals(base_gen)
 
-            # The projectors in the full generator add a eigenvsalue of `0` to
+            # The projectors in the full generator add a eigenvalue of `0` to
             # the eigenvalues of the base generator.
             gen_eigvals = np.append(base_gen_eigvals, 0)
 
