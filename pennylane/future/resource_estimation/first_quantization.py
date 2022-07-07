@@ -109,7 +109,8 @@ class FirstQuantization(Operation):
 
         super().__init__(wires=range(self.qubits))
 
-    def success_prob(self, n, br):
+    @staticmethod
+    def success_prob(n, br):
         r"""Return the probability of success for state preparation.
 
         The expression for computing the probability of success is taken from Eqs. (59, 60) of
@@ -142,7 +143,8 @@ class FirstQuantization(Operation):
 
         return p
 
-    def norm(self, n, eta, omega, error, br=7, charge=0):
+    @staticmethod
+    def norm(n, eta, omega, error, br=7, charge=0):
         r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
         The expressions needed for computing the norm are taken from
@@ -296,9 +298,9 @@ class FirstQuantization(Operation):
 
         # taken from Eq. (63) of PRX Quantum 2, 040332 (2021)
         p_eq = (
-            self.success_prob(3, 8)
-            * self.success_prob(3 * eta + 2 * charge, br)
-            * self.success_prob(eta, br) ** 2
+            FirstQuantization.success_prob(3, 8)
+            * FirstQuantization.success_prob(3 * eta + 2 * charge, br)
+            * FirstQuantization.success_prob(eta, br) ** 2
         )
 
         # final lambda value is computed from Eq. (126) of PRX Quantum 2, 040332 (2021)
@@ -307,7 +309,8 @@ class FirstQuantization(Operation):
 
         return np.maximum(lambda_a, lambda_b) / p_eq
 
-    def _cost_qrom(self, lz):
+    @staticmethod
+    def _cost_qrom(lz):
         r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
 
         Args:
@@ -332,7 +335,8 @@ class FirstQuantization(Operation):
 
         return min(cost_f, cost_c)
 
-    def unitary_cost(self, n, eta, omega, error, br=7, charge=0):
+    @staticmethod
+    def unitary_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary
         operator.
 
@@ -377,7 +381,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        lamb = self.lamb
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=7, charge=charge)
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
@@ -406,7 +410,7 @@ class FirstQuantization(Operation):
             )
         )
 
-        e_r = self._cost_qrom(l_z)
+        e_r = FirstQuantization._cost_qrom(l_z)
 
         # taken from Eq. (125)
         cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
@@ -417,7 +421,8 @@ class FirstQuantization(Operation):
 
         return int(np.ceil(cost))
 
-    def estimation_cost(self, error):
+    @staticmethod
+    def estimation_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -439,14 +444,15 @@ class FirstQuantization(Operation):
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        lamb = self.lamb
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=br, charge=charge)
         alpha = 0.01
         # qpe_error obtained to satisfy inequality (131)
         error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
 
         return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
-    def gate_cost(self, n, eta, omega, error, br=7, charge=0):
+    @staticmethod
+    def gate_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the total number of Toffoli gates needed to implement the first quantization
         algorithm.
 
@@ -491,12 +497,13 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        e_cost = self.estimation_cost(error)
-        u_cost = self.unitary_cost(n, eta, omega, error, br, charge)
+        e_cost = FirstQuantization.estimation_cost(n, eta, omega, error, br=br, charge=charge)
+        u_cost = FirstQuantization.unitary_cost(n, eta, omega, error, br, charge)
 
         return e_cost * u_cost
 
-    def qubit_cost(self, n, eta, omega, error, charge=0):
+    @staticmethod
+    def qubit_cost(n, eta, omega, error, charge=0):
         r"""Return the number of ancilla qubits needed to implement the first quantization
         algorithm.
 
@@ -537,7 +544,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        lamb = self.lamb
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=7, charge=charge)
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
