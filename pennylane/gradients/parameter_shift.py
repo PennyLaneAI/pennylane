@@ -281,8 +281,9 @@ def expval_param_shift(
                 and batch_size is not None
                 and not scalar_qfunc_output
             ):
-                # The torch output is flattened such that the tensordot axis needs to be 0 even for
-                # parameter broadcasting.
+                # If the original output is not scalar and broadcasting is used, the second axis
+                # (index 1) needs to be contracted. For Torch, this is not true because the 
+                # output of the broadcasted tape is flattened.
                 axis = 1
             g = qml.math.tensordot(
                 res, qml.math.convert_like(gradient_coeffs[i], res), [[axis], [0]]
@@ -293,8 +294,8 @@ def expval_param_shift(
                 g = g + unshifted_coeffs[i] * r0
 
             grads.append(g)
-            # This clause will be hit at least once, providing a representative for
-            # a zero gradient to emulate it.
+            # This clause will be hit at least once (because otherwise all gradients would have
+            # been zero), providing a representative for a zero gradient to emulate its type/shape.
             zero_rep = qml.math.zeros_like(g)
 
         # The following is for backwards compatibility; currently,
