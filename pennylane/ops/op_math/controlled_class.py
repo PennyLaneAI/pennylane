@@ -42,38 +42,59 @@ class Controlled(SymbolicOp):
 
     **Example:**
 
-
-
-    >>> base = qml.RX(1.234, 2)
-    >>> op = Controlled(base, (0,1))
+    >>> base = qml.RX(1.234, 1)
+    >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
+    CRX(1.234, wires=[0, 2, 3, 1])
+    >>> op = Controlled(base, 0, control_values=[0])
     >>> op
-    CRX(1.234, wires=[0, 1, 2])
+    CRX(1.234, wires=[0, 1])
+
+    The operation has both standard :class:`~.operation.Operator` properties
+    and ``Controlled`` specific properties:
+
     >>> op.base
-    RX(1.234, wires=[2])
+    RX(1.234, wires=[1])
     >>> op.data
     [1.234]
     >>> op.wires
-    <Wires = [0, 1, 2]>
-    >>> op.control_wires
     <Wires = [0, 1]>
+    >>> op.control_wires
+    <Wires = [0]>
     >>> op.target_wires
-    <Wires = [2]>
+    <Wires = [1]>
+
+    Control values are lists of booleans, indicating whether or not to control on the
+    ``0==False`` value or the ``1==True`` wire.
+
     >>> op.control_values
-    [True, True]
+    [0]
 
-    >>> op2 = Controlled(qml.PauliX(1), 0)
-    >>> qml.matrix(op2)
-    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-           [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-           [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-           [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
-    >>> qml.eigvals(op2)
-    tensor([ 1.,  1.,  1., -1.], requires_grad=True)
-    >>> qml.generator(op)
-    (Projector([1, 1], wires=[0, 1]) @ PauliX(wires=[2]), -0.5)
-    >>> op.pow(-1.2)
-    [CRX(-1.4808, wires=[0, 1, 2])]
+    Representations for an operator are available if the base class defines them.
+    Sparse matrices are available if the base class defines either a sparse matrix
+    or only a dense matrix.
 
+    >>> np.set_printoptions(precision=4) # easier to read the matrix
+    >>> qml.matrix(op)
+    array([[0.8156+0.j    , 0.    -0.5786j, 0.    +0.j    , 0.    +0.j    ],
+           [0.    -0.5786j, 0.8156+0.j    , 0.    +0.j    , 0.    +0.j    ],
+           [0.    +0.j    , 0.    +0.j    , 1.    +0.j    , 0.    +0.j    ],
+           [0.    +0.j    , 0.    +0.j    , 0.    +0.j    , 1.    +0.j    ]])
+    >>> qml.eigvals(op)
+    array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
+    >>> qml.generator(op, format='observable')
+    (-0.5) [Projector0 X1]
+    >>> op.sparse_matrix()
+    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+                with 6 stored elements in Compressed Sparse Row format>
+
+    If the provided base matrix is an :class:`~.operation.Operation`, then the created
+    object will be of type :class:`~.ops.op_math.ControlledOp`. This class adds some additional methods
+    and properties to the basic :class:`~.ops.op_math.Controlled` class.
+
+    >>> type(op)
+    pennylane.ops.op_math.controlled_class.ControlledOp
+    >>> op.parameter_frequencies
+    [(0.5, 1.0)]
 
     """
 
@@ -122,7 +143,7 @@ class Controlled(SymbolicOp):
 
         self._name = f"C{base.name}"
 
-        super().__init__(self, base, do_queue, id)
+        super().__init__(base, do_queue, id)
 
     # Properties on the control values ######################
     @property
@@ -284,16 +305,14 @@ class Controlled(SymbolicOp):
 
 
 class ControlledOp(Controlled, operation.Operation):
-    """Operation-specific methods and properties for the ``Controlled`` class.
+    """Operation-specific methods and properties for the :class:`~.ops.op_math.Controlled` class.
 
-    Dynamically mixed in based on the provided base operator.  If the base operator is an
-    Operation, this class will be mixed in.
+    When an :class:`~.operation.Operation` is provided to the :class:`~.ops.op_math.Controlled`
+    class, this type is constructed instead. It adds some additional :class:`~.operation.Operation`
+    specific methods and properties.
 
-    When we no longer rely on certain functionality through `Operation`, we can get rid of this
+    When we no longer rely on certain functionality through ``Operation``, we can get rid of this
     class.
-
-    Defers inversion behavior to base.  This way we don't have to modify the ``Controlled.matrix``
-    and ``Controlled.eigvals`` to account for in-place inversion. In-place inversion of a matrix
     """
 
     def __new__(cls, *_, **__):
