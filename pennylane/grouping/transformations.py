@@ -20,11 +20,11 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import OperationRecorder
 from pennylane.operation import Tensor
-from pennylane.wires import Wires
+# from pennylane.wires import Wires
 from pennylane.grouping.utils import (
-    pauli_to_binary,
+    # pauli_to_binary,
     are_identical_pauli_words,
-    is_qwc,
+    # is_qwc,
     is_pauli_word,
 )
 
@@ -180,8 +180,8 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
         for name, wire in zip(op_names, op_wires):
             try:
                 if wire_dict[wire] != name and (name != "Identity" and wire_dict[wire] != "Identity"):
-                    raise ValueError(f"the list of pauli-words are not qubit-wise commuting.")
-                elif wire_dict[wire] == "Identity":
+                    raise ValueError("the list of pauli-words are not qubit-wise commuting.")
+                if wire_dict[wire] == "Identity":
                     wire_dict[wire] = name  # update name
             except KeyError:
                 wire_dict[wire] = name  # add wire and name for the first time
