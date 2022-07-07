@@ -40,7 +40,7 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
-    **Example:**
+    **Example**
 
     >>> base = qml.RX(1.234, 1)
     >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
