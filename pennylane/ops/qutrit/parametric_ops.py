@@ -79,10 +79,10 @@ class TRX(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
-    # TODO: Add parameter frequency
+    parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
-        gen_mat = np.zeros((3, 3))
+        gen_mat = np.zeros((3, 3)).astype(np.complex128)
         gen_mat[self.subspace] = 1
         gen_mat[self.subspace[::-1]] = 1
         return THermitian(-0.5 * gen_mat, wires=self.wires)
@@ -223,10 +223,10 @@ class TRY(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
-    # TODO: Add parameter frequency
+    parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
-        gen_mat = np.zeros((3, 3))
+        gen_mat = np.zeros((3, 3)).astype(np.complex128)
         gen_mat[self.subspace] = -1j
         gen_mat[self.subspace[::-1]] = 1j
         return THermitian(-0.5 * gen_mat, wires=self.wires)
