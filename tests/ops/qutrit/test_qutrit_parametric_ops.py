@@ -84,7 +84,32 @@ class TestOperations:
         assert op.wires == op_d.wires
 
 
-# TODO: Add tests for parameter frequencies
+class TestParameterFrequencies:
+    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    def test_parameter_frequencies_match_generator(self, op, tol):
+        if not qml.operation.has_gen(op):
+            pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
+
+        gen = op.generator()
+
+        try:
+            mat = gen.matrix()
+        except (AttributeError, qml.operation.MatrixUndefinedError):
+
+            if isinstance(gen, qml.Hamiltonian):
+                mat = qml.utils.sparse_hamiltonian(gen).toarray()
+            elif isinstance(gen, qml.SparseHamiltonian):
+                mat = gen.sparse_matrix().toarray()
+            else:
+                pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
+
+        gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
+        freqs_from_gen = qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+
+        freqs = op.parameter_frequencies
+        assert np.allclose(freqs, freqs_from_gen, atol=tol)
+
+
 # TODO: Add tests for decompositions
 
 
