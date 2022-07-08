@@ -191,9 +191,6 @@ def vjp(
 
         dy = [qml.math.T(d) for d in dy[0]]
 
-        # TODO: could improve the following to cache higher-order derivatives
-        # too and not just on the last call of recursion (see recursive logic
-        # later below)
         computing_jacobian = _n == max_diff
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac()
