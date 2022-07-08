@@ -100,10 +100,10 @@ import functools
 import numbers
 import warnings
 from enum import IntEnum
-# from scipy.sparse import kron, eye, coo_matrix
+from scipy.sparse import kron, eye, coo_matrix
 
-# import numpy as np
-# from numpy.linalg import multi_dot
+import numpy as np
+from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -191,7 +191,7 @@ def expand_matrix(base_matrix, wires, wire_order = None):
 
     """
 
-    if wire_order is None:
+    if (wire_order is None) or (wire_order == wires):
         return base_matrix
 
     wire_order = Wires(wire_order)
@@ -1427,8 +1427,6 @@ class Operation(Operator):
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
 
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
