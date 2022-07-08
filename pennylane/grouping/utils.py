@@ -665,27 +665,27 @@ def are_pauli_words_qwc(lst_pauli_words):
     This implementation has time complexity ~ O(m * n) for n wires and m Pauli words.
 
     Args:
-        lst_pauliwords (list[Observable]): List of observables (assumed to be valid Pauli words).
+        lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
 
     Returns:
         (bool): True if they are all qubit-wise commuting, false otherwise.
     """
-    wire_dict = {}
+    latest_op_name_per_wire = {}
 
     for op in lst_pauli_words:  # iterate over the list of observables
         op_names = [op.name] if not isinstance(op.name, list) else op.name
         op_wires = op.wires.tolist()
 
-        for name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
+        for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
             try:
-                if wire_dict[wire] != name and (
-                    name != "Identity" and wire_dict[wire] != "Identity"
+                if latest_op_name_per_wire[wire] != op_name and (
+                    op_name != "Identity" and latest_op_name_per_wire[wire] != "Identity"
                 ):
                     return False
-                if wire_dict[wire] == "Identity":
-                    wire_dict[wire] = name  # update name
+                if latest_op_name_per_wire[wire] == "Identity":
+                    latest_op_name_per_wire[wire] = op_name  # update name
             except KeyError:
-                wire_dict[wire] = name  # add wire and name for the first time
+                latest_op_name_per_wire[wire] = op_name  # add wire and name for the first time
 
     return True  # if we get through all ops, then they are qwc!
 
