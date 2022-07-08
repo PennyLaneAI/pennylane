@@ -97,21 +97,39 @@ class TestMatrix:
         assert np.allclose(qml.TRX.compute_matrix(0, subspace=[0, 1]), expected, atol=tol, rtol=0)
         assert np.allclose(qml.TRX.compute_matrix(0, subspace=[1, 2]), expected, atol=tol, rtol=0)
         assert np.allclose(qml.TRX.compute_matrix(0, subspace=[0, 2]), expected, atol=tol, rtol=0)
+        assert np.allclose(
+            qml.TRX(0, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.TRX(0, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.TRX(0, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
+        )
 
         # test identity for theta=pi/2
         expected = np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi / 2, subspace=[0, 1]), expected, atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.TRX(np.pi / 2, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
+        )
 
         expected = np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2)
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi / 2, subspace=[1, 2]), expected, atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.TRX(np.pi / 2, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
+        )
 
         expected = np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2)
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi / 2, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.TRX(np.pi / 2, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
         )
 
         # test identity for broadcasted theta=pi/2
@@ -122,12 +140,18 @@ class TestMatrix:
         assert np.allclose(
             qml.TRX.compute_matrix(pi_half, subspace=[0, 1]), expected, atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.TRX(pi_half, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
+        )
 
         expected = np.tensordot(
             [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
         )
         assert np.allclose(
             qml.TRX.compute_matrix(pi_half, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.TRX(pi_half, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
         )
 
         expected = np.tensordot(
@@ -136,21 +160,33 @@ class TestMatrix:
         assert np.allclose(
             qml.TRX.compute_matrix(pi_half, subspace=[1, 2]), expected, atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.TRX(pi_half, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
+        )
 
         # test identity for theta=pi
         expected = -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi, subspace=[0, 1]), expected, atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.TRX(np.pi, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
+        )
 
         expected = -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi, subspace=[1, 2]), expected, atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.TRX(np.pi, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
+        )
 
         expected = -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])
         assert np.allclose(
             qml.TRX.compute_matrix(np.pi, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.TRX(np.pi, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
         )
 
 
