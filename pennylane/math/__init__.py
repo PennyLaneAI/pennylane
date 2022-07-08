@@ -70,7 +70,6 @@ from .utils import (
 from .is_independent import is_independent
 
 sum = ar.numpy.sum
-add = ar.numpy.add
 mult = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
