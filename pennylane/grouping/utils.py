@@ -660,23 +660,23 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 def are_pauli_words_qwc(lst_pauli_words):
     """Given a list of observables assumed to be valid Pauli words, determine if they
-     are all mutually qubit-wise commuting.
+     are pairwise qubit-wise commuting.
 
     This implementation has time complexity ~ O(m * n) for n wires and m Pauli words.
 
     Args:
-        lst_pauliwords (list[Observable]): list of observables (assumed to be valid Pauli words).
+        lst_pauliwords (list[Observable]): List of observables (assumed to be valid Pauli words).
 
     Returns:
         (bool): True if they are all qubit-wise commuting, false otherwise.
     """
     wire_dict = {}
 
-    for op in lst_pauli_words:  # iterate over the list of  m observables
+    for op in lst_pauli_words:  # iterate over the list of observables
         op_names = [op.name] if not isinstance(op.name, list) else op.name
         op_wires = op.wires.tolist()
 
-        for name, wire in zip(op_names, op_wires):  # iterate over wires, this is at most n
+        for name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
             try:
                 if wire_dict[wire] != name and (
                     name != "Identity" and wire_dict[wire] != "Identity"

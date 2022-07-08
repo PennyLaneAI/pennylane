@@ -137,7 +137,7 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
     """
 
     if not are_pauli_words_qwc(qwc_grouping):
-        raise ValueError("the list of pauli-words are not qubit-wise commuting.")
+        raise ValueError("The list of Pauli words are not qubit-wise commuting.")
 
     pauli_operators = []
     diag_terms = []
