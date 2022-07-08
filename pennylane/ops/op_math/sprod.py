@@ -15,9 +15,8 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, expand_matrix
+from .symbolicop import SymbolicOp
 
 
 def s_prod(scalar, operator):
@@ -25,50 +24,68 @@ def s_prod(scalar, operator):
     return SProd(scalar, operator)
 
 
-class SProd(Operator):
+def _sprod(mat, scalar, dtype=None, cast_like=None):
+    """Multiply matrix with scalar"""
+    res = math.mult(scalar, mat)
+
+    if dtype is not None:              # additional casting logic
+        res = math.cast(res, dtype)
+    if cast_like is not None:
+        res = math.cast_like(res, cast_like)
+
+    return res
+
+
+class SProd(SymbolicOp):
     """Arithmetic operator subclass representing the scalar product of an
     operator with the given scalar."""
 
-    def __init__(self, scalar, operator, do_queue=True, id=None):
-        # Add validation checks for size / shape / type of scalar and operator
-
-        if isinstance(operator, self.__class__):  # SProd(0.5, SProd(3, PauliX)) = SProd(1.5, PauliX)
-            self.op = operator.op
-            self.scalar = scalar * operator.scalar
-        else:
-            self.op = operator
-            self.scalar = scalar
-
-        super().__init__(
-            operator.parameters, wires=operator.wires, do_queue=do_queue, id=id
-        )
-        self._name = "SProd"
+    def __init__(self, scalar, base, do_queue=True, id=None):
+        self.scalar = scalar
+        super().__init__(base=base, do_queue=do_queue, id=id)
+        self._name = self.__repr__()
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.scalar}*({self.op})"
+        return f"{self.scalar}*({self.base})"
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return
 
     @property
-    def num_wires(self):
-        return len(self.wires)
+    def data(self):
+        """The trainable parameters"""
+        return [self.scalar] + self.base.data  # Not sure if this is the best way to deal with this
+
+    @data.setter
+    def data(self, new_data):
+        self.scalar = new_data[0]
+        if len(new_data) > 1:
+            self.base.data = new_data[1:]
+
+    @property
+    def parameters(self):
+        return self.data.copy()
 
     def terms(self):  # is this method necessary for this class?
-        return [self.scalar], [self.op]
+        return [self.scalar], [self.base]
+
+    def diagonalizing_gates(self):
+        return self.base.diagonalizing_gates()
+
+    def eigvals(self):
+        return self.base.eigvals()
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        if wire_order is None:
-            wire_order = self.wires
-        return self._sprod(self.op.matrix(wire_order=wire_order), self.scalar)
+        return _sprod(self.base.matrix(wire_order=wire_order), self.scalar)
 
-    @staticmethod
-    def _sprod(mat, scalar, dtype=None, cast_like=None):
-        """Multiply matrix with scalar"""
-        res = math.mult(scalar, mat)
+    @property
+    def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
 
-        if dtype is not None:              # additional casting logic
-            res = math.cast(res, dtype)
-        if cast_like is not None:
-            res = math.cast_like(res, cast_like)
-
-        return res
+        Returns: None
+        """
+        return None
