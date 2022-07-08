@@ -672,11 +672,11 @@ def are_pauli_words_qwc(lst_pauli_words):
     """
     wire_dict = {}
 
-    for op in lst_pauli_words:  # iterate over the list of observables
+    for op in lst_pauli_words:  # iterate over the list of  m observables 
         op_names = [op.name] if not isinstance(op.name, list) else op.name
         op_wires = op.wires.tolist()
 
-        for name, wire in zip(op_names, op_wires):
+        for name, wire in zip(op_names, op_wires):  # iterate over wires, this is at most n 
             try:
                 if wire_dict[wire] != name and (
                     name != "Identity" and wire_dict[wire] != "Identity"
