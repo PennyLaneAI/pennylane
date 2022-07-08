@@ -171,14 +171,12 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
-    intermed_jac = {}
+    cached_jac = {}
 
-    def _get_jac():
-        if ans[1]:
-            return ans[1]
+    def _get_jac_with_caching():
 
-        if "jacobian" in intermed_jac:
-            return intermed_jac["jacobian"]
+        if "jacobian" in cached_jac:
+            return cached_jac["jacobian"]
 
         jacs = []
         for t in tapes:
@@ -188,7 +186,7 @@ def vjp(
                 res, _ = execute_fn(g_tapes, **gradient_kwargs)
                 jacs.append(fn(res))
 
-        intermed_jac["jacobian"] = jacs
+        cached_jac["jacobian"] = jacs
         return jacs
 
     def grad_fn(dy):
@@ -199,7 +197,7 @@ def vjp(
 
         computing_jacobian = _n == max_diff
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
-            jacs = _get_jac()
+            jacs = _get_jac_with_caching()
         else:
             jacs = ans[1]
 
