@@ -79,7 +79,7 @@ class TRX(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
-    # TODO: Add parameter frequency
+    parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
         gen_mat = np.zeros((3, 3))
