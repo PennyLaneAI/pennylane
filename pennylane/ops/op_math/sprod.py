@@ -28,7 +28,7 @@ def _sprod(mat, scalar, dtype=None, cast_like=None):
     """Multiply matrix with scalar"""
     res = math.mult(scalar, mat)
 
-    if dtype is not None:              # additional casting logic
+    if dtype is not None:  # additional casting logic
         res = math.cast(res, dtype)
     if cast_like is not None:
         res = math.cast_like(res, cast_like)
