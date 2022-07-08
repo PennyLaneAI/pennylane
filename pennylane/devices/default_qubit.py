@@ -186,7 +186,16 @@ class DefaultQubit(QubitDevice):
 
     @property
     def stopping_condition(self):
-        return qml.BooleanFn(lambda obj: getattr(obj, "has_matrix", False))
+        def accepts_obj(obj):
+            if getattr(obj, "has_matrix", False):
+                return True
+            if obj.name in self.operations:
+                return True
+            if obj.name in self.observables:
+                return True
+            return False
+
+        return qml.BooleanFn(accepts_obj)
 
     @functools.lru_cache()
     def map_wires(self, wires):
