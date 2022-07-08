@@ -61,6 +61,7 @@ class DefaultQutrit(QutritDevice):
         "TSWAP",
         "TRX",
         "TRY",
+        "TRZ",
     }
 
     observables = {
