@@ -87,7 +87,9 @@ class TRX(Operation):
         gen_mat[self.subspace[::-1]] = 1
         return THermitian(-0.5 * gen_mat, wires=self.wires)
 
-    def __init__(self, phi, wires, subspace=[0, 1], do_queue=True, id=None):
+    def __init__(
+        self, phi, wires, subspace=[0, 1], do_queue=True, id=None
+    ):  # pylint: disable=dangerous-default-value
         self._subspace = subspace
         self._hyperparameters = {
             "subspace": self.subspace,
@@ -108,7 +110,9 @@ class TRX(Operation):
         return tuple(sorted(self._subspace))
 
     @staticmethod
-    def compute_matrix(theta, subspace=[0, 1]):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        theta, subspace=[0, 1]
+    ):  # pylint: disable=arguments-differ,dangerous-default-value
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
