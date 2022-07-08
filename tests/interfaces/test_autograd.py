@@ -328,13 +328,17 @@ class TestCaching:
 
         expected_runs = 1  # forward pass
 
-        # The jacobian is being cached in the interface by default
+        # Jacobian of an involutory observable:
+        # ------------------------------------
         #
-        # TODO: revisit this calculation:
-        # expected_runs += 2 * N  # Jacobian
+        # 2 * N execs: evaluate the analytic derivative of <A>
+        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
+        num_shifted_evals = 2 * N
+        runs_for_jacobian = num_shifted_evals + 1
+        expected_runs += runs_for_jacobian
 
-        expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N**2  # Hessian off-diagonal
+        # Each tape used to compute the Jacobian is then shifted again
+        expected_runs += runs_for_jacobian * num_shifted_evals
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
