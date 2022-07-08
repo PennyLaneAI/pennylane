@@ -250,7 +250,7 @@ def _polyfit(x, y, order):
 
     # scale X to improve condition number and solve
     scale = qml.math.sum(qml.math.sqrt((X * X)), axis=0)
-    X /= scale
+    X = X / scale
 
     # Compute coeffs:
     # This part is typically done using a lstq solver, do it with the penrose inverse by hand:
