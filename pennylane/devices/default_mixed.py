@@ -47,6 +47,9 @@ class DefaultMixed(QubitDevice):
         shots (None, int): Number of times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that
             outputs are computed exactly.
+        readout_prob (None, int, float): Probability for adding readout error to the measurement
+            outcomes of observables. Defaults to ``None`` if not specified, which means that the outcomes are
+            without any readout error.
     """
 
     name = "Default mixed-state qubit PennyLane plugin"
@@ -147,11 +150,11 @@ class DefaultMixed(QubitDevice):
         if self.readout_err is not None:
             if not isinstance(self.readout_err, float) and not isinstance(self.readout_err, int):
                 raise TypeError(
-                    "The readout error probability should be an integer or a floating point number in [0,1]"
+                    "The readout error probability should be an integer or a floating-point number in [0,1]."
                 )
             if self.readout_err < 0 or self.readout_err > 1:
                 raise ValueError(
-                    "The readout error probability should be in the range [0,1]"
+                    "The readout error probability should be in the range [0,1]."
                 )
 
         # call QubitDevice init
@@ -505,6 +508,22 @@ class DefaultMixed(QubitDevice):
             self._apply_channel(matrices, wires)
 
     # pylint: disable=arguments-differ
+
+    def statistics(self, observables, shot_range=None, bin_size=None):
+        """Applies a readout error to the measurement outcomes of any observable if
+        readout_prob is non-zero. It applies to the following properties being
+        measured: Expectation, Variance, Sample, and Probability. This is done
+        by applying a BitFlip channel to the wires being measured after applying the
+        circuit rotations to the pre-rotated state. The results of state and density_matrix
+        are unaffected by the readout error because they correspond to the pre-rotated state."""
+
+        if self.readout_err:
+            measured_wires = qml.wires.Wires.all_wires([obs.wires for obs in observables])
+            bitflips = [qml.BitFlip(self.readout_err,wires=k) for k in measured_wires]
+            for bf in bitflips:
+                self._apply_operation(bf)
+        return super().statistics(observables, shot_range, bin_size)
+
     def apply(self, operations, rotations=None, **kwargs):
 
         rotations = rotations or []
@@ -527,9 +546,3 @@ class DefaultMixed(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._apply_operation(operation)
-
-        # apply the readout error if readout_prob is non-zero
-        if self.readout_err:
-            bitflips = [qml.BitFlip(self.readout_err,wires=k) for k in self.wires]
-            for bf in bitflips:
-                self._apply_operation(bf)

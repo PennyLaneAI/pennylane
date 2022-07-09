@@ -987,10 +987,36 @@ class TestApply:
 
         assert np.allclose(dev.state, target, atol=tol, rtol=0)
 
-@pytest.mark.parametrize("nr_wires", [2,3])
 class TestReadoutError:
     """Tests for measurement readout error"""
 
+    @pytest.mark.parametrize("prob", [0,0.5,1])
+    def test_state(self,prob):
+        """Tests the state output is not affected by readout error"""
+        dev = qml.device("default.mixed",wires=1,readout_prob=prob)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        res=circuit()
+        expected = np.array([[1.+0.j, 0.+0.j],[0.+0.j, 0.+0.j]])
+        assert np.allclose(res,expected)
+
+    @pytest.mark.parametrize("prob", [0,0.5,1])
+    def test_density_matrix(self,prob):
+        """Tests the density matrix output is not affected by readout error"""
+        dev = qml.device("default.mixed",wires=2,readout_prob=prob)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.density_matrix(wires=0)
+
+        res=circuit()
+        expected = np.array([[1.+0.j, 0.+0.j],[0.+0.j, 0.+0.j]])
+        assert np.allclose(res,expected)
+
+    @pytest.mark.parametrize("nr_wires", [2,3])
     def test_readout_prob_0(self,nr_wires):
         """Tests the measurement results for readout error probability=0"""
         dev = qml.device("default.mixed",wires=nr_wires,readout_prob=0)
@@ -1003,40 +1029,67 @@ class TestReadoutError:
         expected = np.array([1, 1])
         assert np.allclose(res,expected)
 
+        @qml.qnode(dev)
+        def circuit2():
+            return qml.probs(wires=0)
+
+        res=circuit2()
+        expected = np.array([1, 0])
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("nr_wires", [2,3])
     def test_readout_prob_1(self,nr_wires):
         """Tests the measurement results when readout error probability=1"""
         dev = qml.device("default.mixed",wires=nr_wires,readout_prob=1)
 
         @qml.qnode(dev)
-        def circuit2():
+        def circuit1():
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        res=circuit2()
+        res=circuit1()
         expected = np.array([-1,-1])
         assert np.allclose(res,expected)
 
+        @qml.qnode(dev)
+        def circuit2():
+            return qml.probs(wires=0)
+
+        res=circuit2()
+        expected = np.array([0, 1])
+        assert np.allclose(res, expected)
+
+
+    @pytest.mark.parametrize("nr_wires", [2,3])
     def test_readout_prob_half(self,nr_wires):
-        """Tests the measurement results on PauliZ operator when readout error probability=0.5"""
-        dev = qml.device("default.mixed",wires=nr_wires,shots=10000,readout_prob=0.5)
+        """Tests the measurement results when readout error probability=0.5"""
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=0.5)
 
         @qml.qnode(dev)
-        def circuit3():
-            return qml.expval(qml.PauliZ(0))
+        def circuit1():
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        res=circuit3()
-        # setting the tolerance in expectation value to be 5 per cent.
-        tol1 = 0.05
-        expected = 0
-        assert abs(res-expected) < tol1
+        res=circuit1()
+        expected = np.array([0, 0])
+        assert np.allclose(res,expected)
 
+        @qml.qnode(dev)
+        def circuit2():
+            return qml.probs(wires=0)
+
+        res=circuit2()
+        expected = np.array([0.5, 0.5])
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("nr_wires", [2,3])
     def test_prob_out_of_range(self,nr_wires):
         """Tests that an error is raised when readout error probability is outside [0,1]"""
         with pytest.raises(ValueError, match="should be in the range"):
             qml.device("default.mixed",wires=nr_wires,readout_prob=2)
 
+    @pytest.mark.parametrize("nr_wires", [2,3])
     def test_prob_type(self,nr_wires):
         """Tests that an error is raised for wrong data type of readout error probability"""
-        with pytest.raises(TypeError, match="should be an integer or a floating point number"):
+        with pytest.raises(TypeError, match="should be an integer or a floating-point number"):
             qml.device("default.mixed",wires=nr_wires,readout_prob='RandomNum')
 
 class TestInit:
