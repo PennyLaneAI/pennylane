@@ -199,7 +199,9 @@ def test_qrom_cost(constants, cost_ref, k_ref):
 )
 def test_unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that unitary_cost returns the correct value."""
-    cost = qml.resource.DoubleFactorization.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
+    cost = qml.resource.DoubleFactorization.unitary_cost(
+        n, rank_r, rank_m, rank_max, br, alpha, beta
+    )
 
     assert cost == cost_ref
 
