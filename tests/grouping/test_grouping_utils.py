@@ -214,7 +214,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize("obs_lst, expected_qwc", obs_lsts)
     def test_are_qwc_pauli_words(self, obs_lst, expected_qwc):
         """Given a list of Pauli words test that this function accurately
-        determines if they are pairwise, qubit-wise commuting."""
+        determines if they are pairwise qubit-wise commuting."""
         qwc = are_pauli_words_qwc(obs_lst)
         assert qwc == expected_qwc
 
