@@ -15,10 +15,10 @@ r"""
 Contains the BasicEntanglerLayers template.
 """
 # pylint: disable=consider-using-enumerate,too-many-arguments
+from multiprocessing.sharedctypes import Value
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-
-
+from pennylane.ops.op_math.product import Product, op_prod
 class BasicEntanglerLayers(Operation):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
@@ -120,6 +120,47 @@ class BasicEntanglerLayers(Operation):
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
+
+
+        !!! Update for more than one single-qubit rotation gates !!! 
+         - The basic entangler can now take more than one gate as parameter for repetition. The code works as follows:
+         For a given list of operations, rotations = [RX,RY,RZ], the model takes in parameters in shape (num_layers,num_wires*num_rotations)
+         where num_rotations = len(rotations). Meaning that each rotation takes a parameter per layer per wire. 
+        - The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
+        For a list, it checks the length of the list, if the length is equal to 1, the code gets the element and works as usual. If the length of 
+        rotations list is more than 1, the code implements the operation product between the single-qubit operations. 
+
+        For more information refer to pennylane.ops.op_math.product.py
+
+        Example: 
+        For a two layer, 3 rotations and 4 wires system, the params have the form 
+        
+        tensor([[0.98490185, 0.48615071, 0.65416114, 0.76073784, 0.4379965 ,
+         0.91467668, 0.37770095, 0.91138513, 0.14018763, 0.48878116,
+         0.94855556, 0.67714962],
+        [0.54151177, 0.05728717, 0.94766153, 0.43230254, 0.49035082,
+         0.50956715, 0.56727017, 0.57852111, 0.86937769, 0.03215202,
+         0.78536781, 0.81338788]], requires_grad=True)
+
+         Where the first index of the tensor indicates the layer, the second one indicates the position of the parameter. For a layer,
+         the first 4 parameters correspond to the parameters for the first rotation on each wire, the next 4 parameters correspond to the 
+         parameters for the second rotation on each wire, and so on. 
+
+        ** Example Usage **
+            >>> import pennylane as qml
+            >>> from pennylane import numpy as np
+
+            >>> n_wires = 4
+            ... dev = qml.device('default.qubit', wires=n_wires)
+            ... rotations = [qml.RX, qml.RZ,qml.RY]
+            ... n_layers = 2
+            ... @qml.qnode(dev)
+            ... def circuit(weights):
+            ...     qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation = rotations)
+            ...     return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
+            ... params = np.random.random(size=(n_layers, n_wires*len(rotations)))
+            >>> circuit(params)
+            tensor([1., 1., 1., 1.], requires_grad=True)
     """
 
     num_wires = AnyWires
@@ -137,11 +178,15 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must be 2-dimensional "
                 f"or 3-dimensional if batching; got shape {shape}"
             )
-
-        if shape[-1] != len(wires):
+        try:
+            # For more than one rotation, the dimension of the tensor of parameters must be num_rot*num_wires for each layer
+            num_rot = len(rotation)
+        except TypeError:
+            num_rot = 1
+        if shape[-1] != num_rot*len(wires):
             # index with -1 since we may or may not have batching in first dimension
             raise ValueError(
-                f"Weights tensor must have last dimension of length {len(wires)}; got {shape[-1]}"
+                f"Weights tensor must have last dimension of length {num_rot*len(wires)}; got {shape[-1]}"
             )
 
         self._hyperparameters = {"rotation": rotation or qml.RX}
@@ -178,6 +223,10 @@ class BasicEntanglerLayers(Operation):
         CNOT(wires=['a', 'b']),
         RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),
         CNOT(wires=['a', 'b'])]
+        Update on more than one rotation: 
+        - The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
+        For a list, it checks the length of the list, if the length is equal to 1, the code gets the element and works as usual. If the length of 
+        rotations list is more than 1, the code implements the operation product between the single-qubit operations. 
         """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
@@ -186,8 +235,22 @@ class BasicEntanglerLayers(Operation):
         op_list = []
         for layer in range(repeat):
             for i in range(len(wires)):
-                op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
-
+                try:
+                    op_prod_list = []
+                    if len(rotation)>1:
+                        for j in range(len(rotation)):
+                            op_prod_list.append(rotation[j](weights[..., layer, i+j*len(wires)], wires=wires[i : i + 1]))
+                        if len(op_prod_list)>2:
+                            prod1 = Product(op_prod_list[0],op_prod_list[1])
+                            for i in range(2,len(op_prod_list)):
+                                prod1 = Product(prod1,op_prod_list[i])
+                            op_list.append(prod1)
+                        else:
+                            op_list.append(Product(op_prod_list[0],op_prod_list[1]))
+                    else:
+                        op_list.append(rotation[0](weights[..., layer, i], wires=wires[i : i + 1]))
+                except TypeError: 
+                    op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
             if len(wires) == 2:
                 op_list.append(qml.CNOT(wires=wires))
 
