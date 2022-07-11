@@ -79,51 +79,106 @@ class TestApply:
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
-        (qml.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), U_thadamard_01),
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_x_02),
-        (qml.QutritUnitary, [1, 0, 0], [1, 0, 0], U_z_12),
-        (qml.QutritUnitary, [0, 1, 0], [0, 1, 0], U_x_02),
-        (qml.QutritUnitary, [0, 0, 1], [0, 0, -1], U_z_12),
-        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], TSHIFT),
-        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], TCLOCK),
+        (qml.QutritUnitary, [1, 0, 0], [1, 1, 0] / np.sqrt(2), [U_thadamard_01], None),
+        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], [U_x_02], None),
+        (qml.QutritUnitary, [1, 0, 0], [1, 0, 0], [U_z_12], None),
+        (qml.QutritUnitary, [0, 1, 0], [0, 1, 0], [U_x_02], None),
+        (qml.QutritUnitary, [0, 0, 1], [0, 0, -1], [U_z_12], None),
+        (qml.QutritUnitary, [0, 1, 0], [0, 0, 1], [TSHIFT], None),
+        (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], [TCLOCK], None),
+        (qml.TRX, [1, 0, 0], [1 / math.sqrt(2), -1j / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qml.TRX, [1, 0, 0], [0, 0, -1j], [math.pi], [0, 2]),
+        (
+            qml.TRX,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            [0, 1 / 2 - 1j / 2, 1 / 2 - 1j / 2],
+            np.array([math.pi / 2]),
+            [1, 2],
+        ),
+        (qml.TRY, [1, 0, 0], [1 / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qml.TRY, [1, 0, 0], [0, 0, 1], [math.pi], [0, 2]),
+        (qml.TRY, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 0, 1], [math.pi / 2], [1, 2]),
+        (qml.TRZ, [1, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0], [math.pi / 2], [0, 1]),
+        (qml.TRZ, [1, 0, 0], [-1j, 0, 0], [math.pi], [0, 2]),
+        (
+            qml.TRZ,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            [0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
+            [math.pi / 2],
+            [1, 2],
+        ),
     ]
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters_inverse = [
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], TSHIFT),
-        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], TSHIFT),
-        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], TCLOCK),
-        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], TCLOCK),
+        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], [TSHIFT], None),
+        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], [TSHIFT], None),
+        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], [TCLOCK], None),
+        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], [TCLOCK], None),
+        (qml.TRX, [1, 0, 0], [1 / math.sqrt(2), 1j * 1 / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qml.TRX, [1, 0, 0], [0, 0, 1j], [math.pi], [0, 2]),
+        (
+            qml.TRX,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            [0, 1 / 2 + 1j / 2, 1 / 2 + 1j / 2],
+            [math.pi / 2],
+            [1, 2],
+        ),
+        (qml.TRY, [1, 0, 0], [1 / math.sqrt(2), -1 / math.sqrt(2), 0], [math.pi / 2], [0, 1]),
+        (qml.TRY, [1, 0, 0], [0, 0, -1], [math.pi], [0, 2]),
+        (qml.TRY, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], [0, 1, 0], [math.pi / 2], [1, 2]),
+        (qml.TRZ, [1, 0, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0, 0], [math.pi / 2], [0, 1]),
+        (qml.TRZ, [0, 0, 1], [0, 0, -1j], [math.pi], [0, 2]),
+        (
+            qml.TRZ,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            [0, 1 / 2 + 1 / 2 * 1j, 1 / 2 - 1 / 2 * 1j],
+            [math.pi / 2],
+            [1, 2],
+        ),
     ]
 
     @pytest.mark.parametrize(
-        "operation, input, expected_output, par", test_data_single_wire_with_parameters
+        "operation, input, expected_output, par, subspace", test_data_single_wire_with_parameters
     )
     def test_apply_operation_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
     ):
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
 
-        qutrit_device_1_wire.apply([operation(par, wires=[0])])
+        qutrit_device_1_wire.apply(
+            [
+                operation(*par, wires=[0])
+                if subspace is None
+                else operation(*par, wires=[0], subspace=subspace)
+            ]
+        )
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize(
-        "operation, input, expected_output, par", test_data_single_wire_with_parameters_inverse
+        "operation, input, expected_output, par, subspace",
+        test_data_single_wire_with_parameters_inverse,
     )
     def test_apply_operation_single_wire_with_parameters_inverse(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
     ):
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
 
-        qutrit_device_1_wire.apply([operation(par, wires=[0]).inv()])
+        qutrit_device_1_wire.apply(
+            [
+                operation(*par, wires=[0]).inv()
+                if subspace is None
+                else operation(*par, wires=[0], subspace=subspace).inv()
+            ]
+        )
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
