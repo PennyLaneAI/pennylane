@@ -173,26 +173,6 @@ class Product(Operator):
 
         return self._eigs[Hkey]
 
-    def diagonalizing_gates(self):
-        r"""Sequence of gates that diagonalize the operator in the computational basis.
-
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
-
-        The diagonalizing gates rotate the state into the eigenbasis
-        of the operator.
-
-        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
-
-        Returns:
-            list[.Operator] or None: a list of operators
-        """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified Hermitian observable.
