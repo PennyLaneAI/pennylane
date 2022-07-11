@@ -331,43 +331,43 @@ class TestApply:
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], TSWAP),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TSWAP]),
+        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], [TSWAP]),
         (
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            TSWAP,
+            [TSWAP],
         ),
         (
             qml.QutritUnitary,
             np.multiply(0.5, [0, 1, 1, 0, 0, 0, 0, 1, 1]),
             np.multiply(0.5, [0, 0, 0, 1, 0, 1, 1, 0, 1]),
-            TSWAP,
+            [TSWAP],
         ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], TADD),
+        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], [TADD]),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], [TADD]),
     ]
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters_inverse = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], TSWAP),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TSWAP]),
+        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], [TSWAP]),
         (
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            TSWAP,
+            [TSWAP],
         ),
         (
             qml.QutritUnitary,
             np.multiply([0, 1, 1, 0, 0, 0, 0, 1, 1], 0.5),
             np.multiply([0, 0, 0, 1, 0, 1, 1, 0, 1], 0.5),
-            TSWAP,
+            [TSWAP],
         ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0], TADD),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TADD),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
+        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0], [TADD]),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], [TADD]),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], [TADD]),
     ]
 
     @pytest.mark.parametrize(
@@ -382,7 +382,7 @@ class TestApply:
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
             (3, 3)
         )
-        qutrit_device_2_wires.apply([operation(par, wires=[0, 1])])
+        qutrit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
             qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
@@ -401,7 +401,7 @@ class TestApply:
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
             (3, 3)
         )
-        qutrit_device_2_wires.apply([operation(par, wires=[0, 1]).inv()])
+        qutrit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(
             qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
