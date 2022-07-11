@@ -662,7 +662,7 @@ def are_pauli_words_qwc(lst_pauli_words):
     """Given a list of observables assumed to be valid Pauli words, determine if they
      are pairwise qubit-wise commuting.
 
-    This implementation has time complexity ~ O(m * n) for n wires and m Pauli words.
+    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the number of distinct wire labels used to represent the Pauli words.
 
     Args:
         lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
