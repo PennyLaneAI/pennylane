@@ -159,6 +159,10 @@
 
 <h3>Improvements</h3>
 
+* Jacobians are cached with the Autograd interface when using the
+  parameter-shift rule.
+  [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
+
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
 
@@ -259,6 +263,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
-Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
+Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
