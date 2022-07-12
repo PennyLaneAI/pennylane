@@ -15,23 +15,23 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from pennylane import math
+import pennylane as qml
 from .symbolicop import SymbolicOp
 
 
-def s_prod(scalar, operator):
+def s_prod(scalar, operator, do_queue=True, id=None):
     """Associate an operator with a scalar to represent scalar multiplication."""
-    return SProd(scalar, operator)
+    return SProd(scalar, operator, do_queue=do_queue, id=id)
 
 
 def _sprod(mat, scalar, dtype=None, cast_like=None):
     """Multiply matrix with scalar"""
-    res = math.mult(scalar, mat)
+    res = qml.math.multiply(scalar, mat)
 
     if dtype is not None:  # additional casting logic
-        res = math.cast(res, dtype)
+        res = qml.math.cast(res, dtype)
     if cast_like is not None:
-        res = math.cast_like(res, cast_like)
+        res = qml.math.cast_like(res, cast_like)
 
     return res
 
@@ -50,7 +50,7 @@ class SProd(SymbolicOp):
         return f"{self.scalar}*({self.base})"
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return
+        return base_label or f"{self.scalar} {self.base.label(decimals=decimals, cache=cache)}"
 
     @property
     def data(self):
@@ -74,7 +74,7 @@ class SProd(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     def eigvals(self):
-        return self.base.eigvals()
+        return self.scalar * self.base.eigvals()
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
