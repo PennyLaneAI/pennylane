@@ -134,10 +134,10 @@ class TestOperations:
     def test_op_queue_accessed_outside_execution_context(self, mock_qutrit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
+        dev = mock_qutrit_device()
         with pytest.raises(
             ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
-            dev = mock_qutrit_device()
             dev.op_queue
 
     def test_op_queue_is_filled_during_execution(self, mock_qutrit_device, monkeypatch):
@@ -183,8 +183,8 @@ class TestOperations:
             ]
             observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
 
+        dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
-            dev = mock_qutrit_device()
             dev.execute(tape)
 
     unitaries = [unitary_group.rvs(3, random_state=1967) for _ in range(3)]
@@ -230,11 +230,11 @@ class TestObservables:
     def test_obs_queue_accessed_outside_execution_context(self, mock_qutrit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
+        dev = mock_qutrit_device()
         with pytest.raises(
             ValueError,
             match="Cannot access the observable value queue outside of the execution context!",
         ):
-            dev = mock_qutrit_device()
             dev.obs_queue
 
     def test_unsupported_observables_raise_error(self, mock_qutrit_device):
@@ -245,8 +245,8 @@ class TestObservables:
             queue = [qml.QutritUnitary(U, wires=0)]
             observables = [qml.expval(qml.Hadamard(0))]
 
+        dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
-            dev = mock_qutrit_device()
             dev.execute(tape)
 
 
@@ -256,11 +256,11 @@ class TestParameters:
     def test_parameters_accessed_outside_execution_context(self, mock_qutrit_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
+        dev = mock_qutrit_device()
         with pytest.raises(
             ValueError,
             match="Cannot access the free parameter mapping outside of the execution context!",
         ):
-            dev = mock_qutrit_device()
             dev.parameters
 
 
@@ -371,8 +371,8 @@ class TestSampleBasisStates:
         assert res[1] == shots
         assert res[2] == state_probs
 
-    def test_raises_deprecation_warning(self, mock_qutrit_device, monkeypatch):
-        """Test that sampling basis states on a device with shots=None produces a warning."""
+    def test_raises_deprecation_error(self, mock_qutrit_device, monkeypatch):
+        """Test that sampling basis states on a device with shots=None produces an error."""
 
         dev = mock_qutrit_device()
         number_of_states = 9
