@@ -477,7 +477,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="torch")
         qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="torch")
 
-        scale_factors = torch.tensor([1.0, 2.0, 3.0]).type(torch.float64)
+        scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
             qnode_noisy
@@ -505,7 +505,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
         qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
 
-        scale_factors = tf.cast(tf.constant([1.0, 2.0, 3.0]), "float64")
+        scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
             qnode_noisy

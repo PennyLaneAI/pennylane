@@ -245,6 +245,8 @@ def fold_global_tape(circuit, scale_factor):
 # TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
+    x = qml.math.convert_like(x, y[0])
+    x = qml.math.cast_like(x, y[0])
     X = qml.math.vander(x, order + 1)
     y = qml.math.stack(y)
 
@@ -258,7 +260,6 @@ def _polyfit(x, y, order):
     c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
     c = c @ qml.math.transpose(X)
     c = qml.math.dot(c, y)
-
     c = qml.math.transpose(qml.math.transpose(c) / scale)
     return c
 
