@@ -43,7 +43,7 @@ class SProd(SymbolicOp):
     def __init__(self, scalar, base, do_queue=True, id=None):
         self.scalar = scalar
         super().__init__(base=base, do_queue=do_queue, id=id)
-        self._name = self.__repr__()
+        self._name = "SProd"
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -55,7 +55,7 @@ class SProd(SymbolicOp):
     @property
     def data(self):
         """The trainable parameters"""
-        return [self.scalar] + self.base.data  # Not sure if this is the best way to deal with this
+        return [[self.scalar], self.base.data]  # Not sure if this is the best way to deal with this
 
     @data.setter
     def data(self, new_data):
@@ -67,6 +67,10 @@ class SProd(SymbolicOp):
     def parameters(self):
         return self.data.copy()
 
+    @property
+    def num_params(self):
+        return 1 + self.base.num_params
+
     def terms(self):  # is this method necessary for this class?
         return [self.scalar], [self.base]
 
@@ -75,6 +79,9 @@ class SProd(SymbolicOp):
 
     def eigvals(self):
         return self.scalar * self.base.eigvals()
+
+    def sparse_matrix(self, wire_order=None):
+        return _sprod(self.base.sparse_matrix(wire_order=wire_order), self.scalar)
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
