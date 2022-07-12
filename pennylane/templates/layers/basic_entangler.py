@@ -19,6 +19,8 @@ from multiprocessing.sharedctypes import Value
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops.op_math.product import Product, op_prod
+
+
 class BasicEntanglerLayers(Operation):
     r"""Layers consisting of one-parameter single-qubit rotations on each qubit, followed by a closed chain
     or *ring* of CNOT gates.
@@ -183,7 +185,7 @@ class BasicEntanglerLayers(Operation):
             num_rot = len(rotation)
         except TypeError:
             num_rot = 1
-        if shape[-1] != num_rot*len(wires):
+        if shape[-1] != num_rot * len(wires):
             # index with -1 since we may or may not have batching in first dimension
             raise ValueError(
                 f"Weights tensor must have last dimension of length {num_rot*len(wires)}; got {shape[-1]}"
@@ -237,19 +239,23 @@ class BasicEntanglerLayers(Operation):
             for i in range(len(wires)):
                 try:
                     op_prod_list = []
-                    if len(rotation)>1:
+                    if len(rotation) > 1:
                         for j in range(len(rotation)):
-                            op_prod_list.append(rotation[j](weights[..., layer, i+j*len(wires)], wires=wires[i : i + 1]))
-                        if len(op_prod_list)>2:
-                            prod1 = Product(op_prod_list[0],op_prod_list[1])
-                            for i in range(2,len(op_prod_list)):
-                                prod1 = Product(prod1,op_prod_list[i])
+                            op_prod_list.append(
+                                rotation[j](
+                                    weights[..., layer, i + j * len(wires)], wires=wires[i : i + 1]
+                                )
+                            )
+                        if len(op_prod_list) > 2:
+                            prod1 = Product(op_prod_list[0], op_prod_list[1])
+                            for i in range(2, len(op_prod_list)):
+                                prod1 = Product(prod1, op_prod_list[i])
                             op_list.append(prod1)
                         else:
-                            op_list.append(Product(op_prod_list[0],op_prod_list[1]))
+                            op_list.append(Product(op_prod_list[0], op_prod_list[1]))
                     else:
                         op_list.append(rotation[0](weights[..., layer, i], wires=wires[i : i + 1]))
-                except TypeError: 
+                except TypeError:
                     op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
             if len(wires) == 2:
                 op_list.append(qml.CNOT(wires=wires))

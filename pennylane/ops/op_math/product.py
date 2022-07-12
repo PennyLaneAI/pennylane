@@ -7,6 +7,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 
+
 def op_prod(*Prods, do_queue=True, id=None):
     r"""This constructs an operator that is the product of operators.
     All operators like qml.RX, qml.RZ and qml.RY are rotation matrices, thus the product is commutative and
@@ -38,6 +39,7 @@ def op_prod(*Prods, do_queue=True, id=None):
     """
     return Product(*Prods, id=id)
 
+
 def _prod(mats_gen, dtype=None, cast_like=None):
     """
     Function that gives the multiplication of matrices from operators.
@@ -50,17 +52,18 @@ def _prod(mats_gen, dtype=None, cast_like=None):
         cast_like (Tensor): a tensor with the desired data type in its entries.
 
     """
-    
+
     try:
         res = reduce(np.dot, mats_gen)
-    except ValueError: 
-        print('The operators you have defined are not in the expected form')
+    except ValueError:
+        print("The operators you have defined are not in the expected form")
     if dtype is not None:
         res = math.cast(res, dtype)
     if cast_like is not None:
         res = math.cast_like(res, cast_like)
 
     return res
+
 
 class Product(Operator):
     r"""Symbolic operator representing the product of operators.
@@ -136,7 +139,9 @@ class Product(Operator):
     @property
     def ndim_params(self):
         """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Product operators.")
+        raise ValueError(
+            "Dimension of parameters is not currently implemented for Product operators."
+        )
 
     @property
     def num_wires(self):
@@ -150,7 +155,6 @@ class Product(Operator):
     def is_hermitian(self):
         """If all of the terms in the product are hermitian, then the product is hermitian for rotation matrices"""
         return all(s.is_hermitian for s in self.products)
-
 
     @property
     def eigendecomposition(self):
@@ -172,7 +176,6 @@ class Product(Operator):
             self._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
         return self._eigs[Hkey]
-
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified Hermitian observable.
