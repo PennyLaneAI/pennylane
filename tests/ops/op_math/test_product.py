@@ -137,18 +137,6 @@ class TestInitialization:
         prod_op = op_prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
         assert prod_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_terms(self, ops_lst):
-        prod_op = Product (*ops_lst)
-        coeff, ops = prod_op.terms()
-
-        assert coeff == [1.0, 1.0, 1.0]
-
-        for op1, op2 in zip(ops, ops_lst):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert op1.data == op2.data
-
     def test_ndim_params_raises_error(self):
         prod_op = op_prod(qml.PauliX(0), qml.Identity(1))
 
@@ -170,26 +158,7 @@ class TestInitialization:
         with pytest.raises(DecompositionUndefinedError):
             prod_op.decomposition()
 
-
-class TestMscMethods:
-    @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
-    def test_repr(self, ops_lst, ops_rep):
-        prod_op = Product (*ops_lst)
-        assert ops_rep == prod_op.__repr__()
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_copy(self, ops_lst):
-        prod_op = Product (*ops_lst)
-        copied_op = copy(prod_op)
-
-        assert prod_op.id == copied_op.id
-        assert prod_op.data == copied_op.data
-        assert prod_op.wires == copied_op.wires
-
-        for s1, s2 in zip(prod_op.summands, copied_op.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
+    
 
 
 class TestMatrix:
@@ -202,10 +171,10 @@ class TestMatrix:
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
 
         prod_op = Product (op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
-        sum_mat = prod_op.matrix()
+        prod_mat = prod_op.matrix()
 
-        true_mat = mat1 + mat2
-        assert np.allclose(sum_mat, true_mat)
+        true_mat = np.dot(mat1, mat2)
+        assert np.allclose(prod_mat, true_mat)
 
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
@@ -367,7 +336,7 @@ class TestPrivateProduct:
         mats_gen = (qnp.eye(2) for _ in range(3))
 
         product_mat = _prod(mats_gen, cast_like=cast_like)
-        expected_product_mat = 3 * qnp.eye(2, dtype="complex128")
+        expected_product_mat = qnp.eye(2, dtype="complex128")
 
         assert product_mat.dtype == "complex128"
         assert qnp.allclose(product_mat, expected_product_mat)
