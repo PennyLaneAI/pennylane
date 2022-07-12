@@ -1,5 +1,21 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This file contains the implementation of the Product class which contains logic for
+computing the product of operations.
+"""
 from functools import reduce
-from multiprocessing.sharedctypes import Value
 
 import numpy as np
 import pennylane as qml
@@ -24,8 +40,7 @@ def op_prod(*Prods, do_queue=True, id=None):
     Returns:
         ~ops.op_math.Product: Operator representign the product of operators
 
-    ..seealso:: :class:`~.ops.op_math.prod`
-
+    ..seealso:: :class:`~.ops.op_math.product`
     **Example**
     The product of qml.RX and qml.RZ must be equal to -iqml.RY. Which means that the matrix must be equal to 
     -i*array([[0,-i],[i,0]])
@@ -34,10 +49,9 @@ def op_prod(*Prods, do_queue=True, id=None):
     PauliX(wires=[0]) * PauliZ(wires=[0])
     >>> prouct_op.matrix()
     array([[ 0,  -1],
-           [ 1, 0]])
-        
+           [ 1, 0]]) 
     """
-    return Product(*Prods, id=id)
+    return Product(*Prods, do_queue=do_queue, id=id)
 
 
 def _prod(mats_gen, dtype=None, cast_like=None):
@@ -50,7 +64,6 @@ def _prod(mats_gen, dtype=None, cast_like=None):
     Keyword Args:
         dtype (str): a string representing the data type of the entries in the result.
         cast_like (Tensor): a tensor with the desired data type in its entries.
-
     """
 
     try:
@@ -91,7 +104,6 @@ class Product(Operator):
 
     .. details::
         :title: Usage Details
-
         We can have products of operators in the same Hilbert Space. 
         For example, multiplying operators whose matrices have the same dimensions. 
         Support for operators with different dimensions is not available yet.
