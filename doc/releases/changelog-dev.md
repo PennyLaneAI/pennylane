@@ -82,9 +82,7 @@
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
 
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
-
-**Operator Arithmetic:**
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
@@ -171,7 +169,8 @@
   labels.
   [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking 
+  into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
 * The `default.mixed` device now supports backpropagation with the `"jax"` interface.
@@ -194,6 +193,11 @@
   >>> jax.vmap(circuit)(x)
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
+
+* Added an `are_pauli_words_qwc` function which checks if certain 
+  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians 
+  with many commuting terms. 
+  [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
 <h3>Breaking changes</h3>
 
@@ -225,5 +229,5 @@
 This release contains contributions from (in alphabetical order):
 
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
-Antal Száva, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
+Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
