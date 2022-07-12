@@ -28,13 +28,12 @@ import pennylane as qml
 def fold_global(circuit, scale_factor):
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
-    For a unitary ``circuit`` :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
+    For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
 
     .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)
 
     where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left((\lambda -1) \mod 2 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
-    This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
     Args:
         circuit (callable or QuantumTape): the circuit to be folded
@@ -42,6 +41,8 @@ def fold_global(circuit, scale_factor):
 
     Returns:
         QuantumTape: Folded circuit
+
+    .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
     **Example**
 
@@ -268,6 +269,7 @@ def poly_extrapolate(x, y, order):
     r"""Extrapolator to :math:`f(0)` for polynomial fit.
 
     The polynomial is defined as ``f(x) = p[0] * x**deg + p[1] * x**(deg-1) + ... + p[deg]`` such that ``deg = order + 1``.
+    This function is compatible with all interfaces supported by pennylane.
 
     Args:
         x (Array): Data in x
@@ -295,6 +297,7 @@ def richardson_extrapolate(x, y):
     r"""Polynomial fit where the degree of the polynomial is fixed to being equal to the length of ``x``.
 
     In a nutshell, this function is calling  :func:`~.pennylane.transforms.poly_extrapolate` with ``order = len(x)-1``.
+    This function is compatible with all interfaces supported by pennylane.
 
     Args:
         x (Array): Data in x
@@ -406,6 +409,9 @@ def mitigate_with_zne(
     This mitigated qnode can be differentiated like any other qnode.
 
     >>> qml.grad(circuit)(w1, w2)
+    (array([-0.89319941,  0.37949841]),
+    array([[[-7.04121596e-01,  3.00073104e-01]],
+            [[-6.41155176e-01,  8.32667268e-17]]]))
 
     .. details::
         :title: Usage Details

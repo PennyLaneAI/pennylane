@@ -68,7 +68,8 @@
   
   theta = np.array(0.5, requires_grad=True)
   grad = qml.grad(qnode_mitigated)
-  print(grad(theta))
+  >>> grad(theta)
+  0.5712737447327619
   ```
 
 * The quantum information module now supports computation of relative entropy.
