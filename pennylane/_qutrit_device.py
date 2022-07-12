@@ -287,7 +287,8 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
                 \mathbb{P}^{(2, 0)}
                             = \left[
-                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                               |00\rangle, |10\rangle, |20\rangle, |01\rangle, |11\rangle,
+                               |21\rangle, |02\rangle, |12\rangle, |22\rangle
                               \right]
 
         Args:
