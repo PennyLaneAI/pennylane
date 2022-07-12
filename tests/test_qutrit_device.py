@@ -302,10 +302,10 @@ class TestExtractStatistics:
     def test_results_no_state(self, mock_qutrit_device_extract_stats, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QutritDevice does not have a state attribute"""
-        with monkeypatch.context():
+        with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
-            delattr(dev.__class__, "state")
-            del QubitDevice.state
+            m.delattr(dev.__class__, "state")
+            m.delattr(QubitDevice, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
