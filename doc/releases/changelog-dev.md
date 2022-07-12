@@ -4,6 +4,23 @@
 
 <h3>New features since last release</h3>
 
+* Added readout error functionality to the MixedDevice.
+  [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
+
+  Readout error has been added by applying a BitFlip channel to the wires being
+  measured after the diagonalizing gates corresponding to the measurement
+  observable has been applied. The probability in the BitFlip channel
+  is to be specified by the user.
+
+  ```pycon
+  >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(circuit())
+  0.8
+  ```
+
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -58,4 +75,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+Ankit Khandelwal, Ixchel Meza Chavez, Meenu Kumari, Moritz Willmann
