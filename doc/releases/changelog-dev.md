@@ -40,6 +40,38 @@
   -1.1258709813834058
   ```
 
+* Differentiable zero-noise-extrapolation error mitigation via ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
+  [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
+  
+  When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
+
+  ```python
+  # Describe noise
+  noise_gate = qml.DepolarizingChannel
+  noise_strength = 0.1
+
+  # Load devices
+  dev_ideal = qml.device("default.mixed", wires=n_wires)
+  dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+
+  scale_factors = [1, 2, 3]
+  @mitigate_with_zne(
+    scale_factors,
+    qml.transforms.fold_global,
+    qml.transforms.poly_extrapolate,
+    extrapolate_kwargs={'order': 2}
+  )
+  @qml.qnode(dev_noisy)
+  def qnode_mitigated(theta):
+      qml.RY(theta, wires=0)
+      return qml.expval(qml.PauliX(0))
+  
+  theta = np.array(0.5, requires_grad=True)
+  grad = qml.grad(qnode_mitigated)
+  >>> grad(theta)
+  0.5712737447327619
+  ```
+
 * The quantum information module now supports computation of relative entropy.
   [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
 
@@ -69,7 +101,6 @@
   >>> relative_entropy_circuit((x,), (y,))
   0.017750012490703237
   ```
-
 
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
