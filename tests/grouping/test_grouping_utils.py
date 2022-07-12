@@ -30,6 +30,7 @@ from pennylane.grouping.utils import (
     pauli_word_to_matrix,
     is_commuting,
     is_qwc,
+    are_pauli_words_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
@@ -194,6 +195,28 @@ class TestGroupingUtils:
             == is_qwc(identity, identity)
             == True
         )
+
+    obs_lsts = [
+        ([qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(2), qml.PauliX(1) @ qml.PauliY(2)], True),
+        ([qml.PauliZ(0) @ qml.Identity(1), qml.PauliY(2), qml.PauliX(2) @ qml.PauliY(1)], False),
+        (
+            [
+                qml.PauliZ(0) @ qml.PauliX(1),
+                qml.PauliY(2),
+                qml.Identity(1) @ qml.PauliY(2),
+                qml.Identity(0),
+            ],
+            True,
+        ),  # multi I
+        ([qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(2), qml.PauliX(1) @ qml.PauliY(2)], False),
+    ]
+
+    @pytest.mark.parametrize("obs_lst, expected_qwc", obs_lsts)
+    def test_are_qwc_pauli_words(self, obs_lst, expected_qwc):
+        """Given a list of Pauli words test that this function accurately
+        determines if they are pairwise qubit-wise commuting."""
+        qwc = are_pauli_words_qwc(obs_lst)
+        assert qwc == expected_qwc
 
     def test_is_qwc_not_equal_lengths(self):
         """Tests ValueError is raised when input Pauli vectors are not of equal length."""
