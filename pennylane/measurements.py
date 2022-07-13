@@ -683,6 +683,9 @@ def sample(op=None, wires=None, counts=False):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
+    if isinstance(op, qml.ops.Sum):  # pylint: disable=no-member
+        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+
     sample_or_counts = Counts if counts else Sample
 
     if wires is not None:
@@ -767,6 +770,11 @@ def probs(wires=None, op=None):
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
+
+    if isinstance(op, qml.ops.Sum):  # pylint: disable=no-member
+        raise qml.QuantumFunctionError(
+            "Symbolic Operations are not supported for rotating probabilities yet."
+        )
 
     if op is not None and not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
