@@ -133,7 +133,9 @@ class AmplitudeEmbedding(Operation):
     def num_params(self):
         return 1
 
-    ndim_params = (1,)
+    @property
+    def ndim_params(self):
+        return (1,)
 
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
@@ -177,8 +179,12 @@ class AmplitudeEmbedding(Operation):
         # check if features is batched
         batched = qml.math.ndim(features) > 1
 
+        if batched and qml.math.get_interface(features) == "tensorflow":
+            raise ValueError("AmplitudeEmbedding does not support batched Tensorflow features.")
+
         features_batch = features if batched else [features]
 
+        new_features_batch = []
         # apply pre-processing to each features tensor in the batch
         for i, feature_set in enumerate(features_batch):
             shape = qml.math.shape(feature_set)
@@ -221,7 +227,7 @@ class AmplitudeEmbedding(Operation):
                 if normalize or pad_with:
                     feature_set = feature_set / qml.math.sqrt(norm)
 
-            elif not qml.math.isclose(norm, 1.0, atol=TOLERANCE):
+            elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
                 if normalize or pad_with:
                     feature_set = feature_set / qml.math.sqrt(norm)
                 else:
@@ -230,6 +236,6 @@ class AmplitudeEmbedding(Operation):
                         "Use 'normalize=True' to automatically normalize."
                     )
 
-            features_batch[i] = feature_set
+            new_features_batch.append(feature_set)
 
-        return qml.math.cast(features_batch if batched else features_batch[0], np.complex128)
+        return qml.math.cast(qml.math.stack(new_features_batch) if batched else new_features_batch[0], np.complex128)

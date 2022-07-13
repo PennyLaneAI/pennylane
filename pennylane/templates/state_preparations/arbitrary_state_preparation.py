@@ -85,9 +85,10 @@ class ArbitraryStatePreparation(Operation):
     def __init__(self, weights, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)
-        if shape != (2 ** (len(wires) + 1) - 2,):
+        dim = 2 ** (len(wires) + 1) - 2
+        if len(shape) not in {1, 2} or shape[-1] != dim:
             raise ValueError(
-                f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
+                f"Weights tensor must be of shape {(dim,)} or (batch_size, {dim}); got {shape}."
             )
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
@@ -95,6 +96,10 @@ class ArbitraryStatePreparation(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def ndim_params(self):
+        return (1,)
 
     @staticmethod
     def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
@@ -127,7 +132,7 @@ class ArbitraryStatePreparation(Operation):
         """
         op_list = []
         for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
-            op_list.append(qml.PauliRot(weights[i], pauli_word, wires=wires))
+            op_list.append(qml.PauliRot(weights[..., i], pauli_word, wires=wires))
 
         return op_list
 
