@@ -225,13 +225,13 @@ class TestMatrix:
         true_mat = mat1 + mat2
 
         sum_op_0 = Sum(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
-        sum_mat_0 = sum_op_0.matrix()
+        sum_mat_0 = qml.matrix(sum_op_0)
 
         assert np.allclose(sum_mat_0, true_mat)
 
         sum_op_1 = op1(wires=range(op1.num_wires)) + op2(wires=range(op2.num_wires))
         if isinstance(sum_op_1, Sum):
-            sum_mat_1 = sum_op_1.matrix()
+            sum_mat_1 = qml.matrix(sum_op_1)
             assert np.allclose(sum_mat_1, true_mat)
 
     @pytest.mark.parametrize("op_mat1", param_ops)
@@ -253,8 +253,8 @@ class TestMatrix:
             op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires))
         )
         sum_op_1 = op1(*par1, wires=range(op1.num_wires)) + op2(*par2, wires=range(op2.num_wires))
-        sum_mat_0 = sum_op_0.matrix()
-        sum_mat_1 = sum_op_1.matrix()
+        sum_mat_0 = qml.matrix(sum_op_0)
+        sum_mat_1 = qml.matrix(sum_op_1)
 
         true_mat = mat1 + mat2
         assert np.allclose(sum_mat_0, true_mat)
@@ -266,7 +266,7 @@ class TestMatrix:
         have its matrix method defined."""
         sum_op = Sum(op(wires=0), qml.PauliX(wires=2), qml.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
-            sum_op.matrix()
+            qml.matrix(sum_op)
 
     @pytest.mark.parametrize("op", no_mat_ops)
     def test_error_no_mat_with_add_operator(self, op: Operator):
@@ -274,12 +274,12 @@ class TestMatrix:
         have its matrix method defined using the + operator."""
         sum_op = op(wires=0) + qml.PauliX(wires=2)
         with pytest.raises(MatrixUndefinedError):
-            sum_op.matrix()
+            qml.matrix(sum_op)
 
     def test_sum_ops_multi_terms(self):
         """Test matrix is correct for a sum of more than two terms."""
         sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliZ(wires=0))
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         true_mat = math.array(
             [
@@ -296,7 +296,7 @@ class TestMatrix:
         sum_op = (
             qml.RX(0, wires=0) + qml.PauliX(wires=0) + qml.Hadamard(wires=0) + qml.PauliZ(wires=0)
         )
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         true_mat = math.array(
             [
@@ -309,7 +309,7 @@ class TestMatrix:
     def test_sum_ops_multi_wires(self):
         """Test matrix is correct when multiple wires are used in the sum."""
         sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliZ(wires=2))
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         x = math.array([[0, 1], [1, 0]])
         h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
@@ -329,7 +329,7 @@ class TestMatrix:
             qml.RX(0, wires=0) + qml.PauliX(wires=0) + qml.Hadamard(wires=1) + qml.PauliZ(wires=2)
         )
 
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         wire_0 = math.array([[1, 1], [1, 1]])
         h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
@@ -377,7 +377,7 @@ class TestMatrix:
         """Test that we can sum templates and generated matrix is correct."""
         wires = [0, 1, 2]
         sum_op = Sum(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
         qft_mat = self.get_qft_mat(3)
@@ -395,7 +395,7 @@ class TestMatrix:
             qml.SingleExcitation(1.23, wires=[0, 1]),
             qml.Identity(3),
         )
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         or_mat = gd.OrbitalRotation(4.56)
         se_mat = math.kron(gd.SingleExcitation(1.23), math.eye(4, dtype="complex128"))
@@ -411,7 +411,7 @@ class TestMatrix:
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
             qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
         )
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         her_mat = qnp.kron(qnp.array([[0.0, 1.0], [1.0, 0.0]]), qnp.eye(2))
         proj_mat = qnp.array(
@@ -427,7 +427,7 @@ class TestMatrix:
         U_op = qml.QubitUnitary(U, wires=0)
 
         sum_op = Sum(U_op, qml.Identity(wires=1))
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         true_mat = qnp.kron(U, qnp.eye(2)) + qnp.eye(4)
         assert np.allclose(mat, true_mat)
@@ -448,7 +448,7 @@ class TestMatrix:
             qml.RX(theta, wires=1),
             qml.Identity(wires=0),
         )
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         true_mat = (
             jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
@@ -472,7 +472,7 @@ class TestMatrix:
             qml.RX(theta, wires=1),
             qml.Identity(wires=0),
         )
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         true_mat = (
             qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
@@ -496,7 +496,7 @@ class TestMatrix:
             qml.RX(theta, wires=1),
             qml.Identity(wires=0),
         )
-        mat = sum_op.matrix()
+        mat = qml.matrix(sum_op)
 
         true_mat = (
             qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
@@ -588,7 +588,7 @@ class TestProperties:
     ):
         """Test that the diagonalizing gates are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
+        diagonalizing_gates = qml.matrix(diag_sum_op.diagonalizing_gates()[0])
         true_diagonalizing_gates = qnp.array(
             (
                 [
@@ -616,7 +616,7 @@ class TestWrapperFunc:
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
         assert sum_class_op.summands == sum_func_op.summands
-        assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
+        assert np.allclose(qml.matrix(sum_class_op), qml.matrix(sum_func_op))
         assert sum_class_op.id == sum_func_op.id
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
