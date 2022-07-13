@@ -1194,6 +1194,20 @@ class Operator(abc.ABC):
 
         return tape
 
+    def __add__(self, other):
+        r"""The addition operation between Operator objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
+        if isinstance(other, Operator):
+            return qml.Sum(self, other)
+        raise ValueError(f"Cannot add Operator and {type(other)}")
+
+    def __pow__(self, other):
+        r"""The power operation of an Operator object."""
+        if isinstance(other, numbers.Number):
+            return qml.Pow(base=self, z=other)
+        raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
+
 
 # =============================================================================
 # Base Operation class
