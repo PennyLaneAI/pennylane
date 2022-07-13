@@ -252,6 +252,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where custom implementations of devices' `states_to_binary`
+  method was not used.
+  [(#27xx)](https://github.com/PennyLaneAI/pennylane/pull/27xx)
+  
 * `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
