@@ -14,13 +14,20 @@
 """
 Tests for mitigation transforms.
 """
+# pylint:disable=no-self-use
 import pytest
+
 from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms import mitigate_with_zne
+from pennylane.transforms import (
+    mitigate_with_zne,
+    poly_extrapolate,
+    richardson_extrapolate,
+    fold_global,
+)
 
 with QuantumTape() as tape:
     qml.BasisState([1], wires=0)
@@ -326,3 +333,195 @@ class TestMitiqIntegration:
         g = qml.grad(mitigated_circuit)(w1, w2)
         for g_ in g:
             assert not np.allclose(g_, 0)
+
+
+# qnodes for the diffable ZNE error mitigation
+def qfunc(theta):
+    qml.RY(theta[0], wires=0)
+    qml.RY(theta[1], wires=1)
+    return qml.expval(1 * qml.PauliZ(0) + 2 * qml.PauliZ(1))
+
+
+n_wires = 2
+
+# Describe noise
+noise_gate = qml.PhaseDamping
+noise_strength = 0.05
+
+# Load devices
+dev_ideal = qml.device("default.mixed", wires=n_wires)
+dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+
+out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
+grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
+
+
+class TestDifferentiableZNE:
+    """Testing differentiable ZNE"""
+
+    def test_global_fold_constant_result(self):
+        """Ensuring that the folded circuits always yields the same results."""
+
+        dev = qml.device("default.qubit", wires=5)
+
+        # Select template to use within circuit and generate parameters
+        n_layers = 2
+        n_wires = 3
+        template = qml.SimplifiedTwoDesign
+        weights_shape = template.shape(n_layers, n_wires)
+        w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
+
+        dev = qml.device("default.qubit", wires=range(n_wires))
+
+        # This circuit itself produces the identity by construction
+        @qml.qnode(dev)
+        def circuit(w1, w2):
+            template(w1, w2, wires=range(n_wires))
+            qml.adjoint(template(w1, w2, wires=range(n_wires)))
+            return qml.expval(qml.PauliZ(0))
+
+        res = [
+            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1, 5)
+        ]
+        # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
+        assert np.allclose(res, 1)
+
+    def test_polyfit(self):
+        """Testing the custom diffable _polyfit function"""
+        x = np.linspace(1, 4, 4)
+        y = 3.0 * x**2 + 2.0 * x + 1.0
+        coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
+        assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
+
+    @pytest.mark.autograd
+    def test_diffability_autograd(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
+
+        res = mitigated_qnode(theta)
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        grad = qml.grad(mitigated_qnode)(theta)
+        grad_ideal = qml.grad(qnode_ideal)(theta)
+        grad_noisy = qml.grad(qnode_noisy)(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.jax
+    def test_diffability_jax(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
+        import jax
+        import jax.numpy as jnp
+
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = jnp.array(
+            [np.pi / 4, np.pi / 4],
+        )
+
+        res = mitigated_qnode(theta)
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        grad = jax.grad(mitigated_qnode)(theta)
+        grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad_noisy = jax.grad(qnode_noisy)(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.jax
+    def test_diffability_jaxjit(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
+        import jax
+        import jax.numpy as jnp
+
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = jax.jit(
+            mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(qnode_noisy)
+        )
+
+        theta = jnp.array(
+            [np.pi / 4, np.pi / 4],
+        )
+
+        res = mitigated_qnode(theta)
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        grad = jax.grad(mitigated_qnode)(theta)
+        grad_ideal = jax.grad(qnode_ideal)(theta)
+        grad_noisy = jax.grad(qnode_noisy)(theta)
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.torch
+    def test_diffability_torch(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
+        import torch
+
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="torch")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="torch")
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
+
+        res = mitigated_qnode(theta)
+
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+        res.backward()
+        grad = theta.grad
+        theta0 = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
+        res_ideal = qnode_ideal(theta0)
+        res_ideal.backward()
+        grad_ideal = theta0.grad
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
+
+    @pytest.mark.tf
+    def test_diffability_tf(self):
+        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
+        import tensorflow as tf
+
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
+
+        scale_factors = [1.0, 2.0, 3.0]
+
+        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
+            qnode_noisy
+        )
+
+        theta = tf.Variable([np.pi / 4, np.pi / 4])
+
+        with tf.GradientTape() as tape:
+            res = mitigated_qnode(theta)
+
+        assert qml.math.allclose(res, out_ideal, atol=1e-2)
+
+        grad = tape.gradient(res, theta)
+        with tf.GradientTape() as tape:
+            res_ideal = qnode_ideal(theta)
+        grad_ideal = tape.gradient(res_ideal, theta)
+
+        assert qml.math.allclose(grad_ideal, grad_ideal_0)
+        assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
