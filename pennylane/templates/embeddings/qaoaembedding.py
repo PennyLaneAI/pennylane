@@ -310,7 +310,7 @@ class QAOAEmbedding(Operation):
         elif n_wires == 2:
             wire_dim = 3
         else:
-            wire_dim = 2 * n_wires 
+            wire_dim = 2 * n_wires
 
         if n_broadcast:
             return n_broadcast, n_layers, wire_dim

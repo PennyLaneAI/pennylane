@@ -170,6 +170,7 @@ def circuit_decomposed_lists(features):
     qml.MultiRZ(features[0] * features[1], wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_decomposed(features):
     qml.Hadamard(wires=0)
     qml.RZ(features[..., 0], wires=0)
@@ -183,7 +184,10 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [np.array([0.5, 2.]), np.array([1.2, 0.6]), np.array([-0.7, 0.3])]])
+    @pytest.mark.parametrize(
+        "features",
+        [[0.1, -1.3], [np.array([0.5, 2.0]), np.array([1.2, 0.6]), np.array([-0.7, 0.3])]],
+    )
     def test_list_and_tuples(self, tol, features):
         """Tests common iterables as inputs."""
 
@@ -193,7 +197,7 @@ class TestInterfaces:
         res = circuit(features)
         if isinstance(features[0], np.ndarray):
             circuit2 = qml.QNode(circuit_decomposed, dev)
-            features = np.array(features) # circuit_decomposed does not work with broadcasting
+            features = np.array(features)  # circuit_decomposed does not work with broadcasting
         else:
             circuit2 = qml.QNode(circuit_decomposed_lists, dev)
 
@@ -204,7 +208,7 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.], [1.2, 0.6], [-0.7, 0.3]]])
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_autograd(self, tol, features):
         """Tests the autograd interface."""
 
@@ -228,7 +232,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.], [1.2, 0.6], [-0.7, 0.3]]])
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_jax(self, tol, features):
         """Tests the jax interface."""
 
@@ -255,7 +259,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.], [1.2, 0.6], [-0.7, 0.3]]])
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_tf(self, tol, features):
         """Tests the tf interface."""
 
@@ -283,7 +287,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.], [1.2, 0.6], [-0.7, 0.3]]])
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_torch(self, tol, features):
         """Tests the torch interface."""
 
@@ -301,9 +305,9 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         grads = torch.autograd.functional.jacobian(circuit, features)
-        #res = circuit(features)
-        #res.backward()
-        #grads = [features.grad]
+        # res = circuit(features)
+        # res.backward()
+        # grads = [features.grad]
 
         grads2 = torch.autograd.functional.jacobian(circuit2, features)
 

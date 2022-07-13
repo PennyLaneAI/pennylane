@@ -132,7 +132,7 @@ class TestDecomposition:
             return qml.state()
 
         state = circuit(x=inpt)
-        assert len(np.unique(state[:, inpt.shape[1]:])) == 1
+        assert len(np.unique(state[:, inpt.shape[1] :])) == 1
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -191,7 +191,13 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
             circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
-    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES + TOO_MANY_FEATURES + NOT_ENOUGH_BROADCASTED_FEATURES + TOO_MANY_BROADCASTED_FEATURES)
+    @pytest.mark.parametrize(
+        "inpt",
+        NOT_ENOUGH_FEATURES
+        + TOO_MANY_FEATURES
+        + NOT_ENOUGH_BROADCASTED_FEATURES
+        + TOO_MANY_BROADCASTED_FEATURES,
+    )
     def test_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
         """Checks exception if the number of features is wrong and
         no automatic padding is chosen."""
@@ -288,7 +294,15 @@ def circuit_decomposed(features):
     return qml.state()
 
 
-all_features = [[0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0], [[0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],[0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],[0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0]]]
+all_features = [
+    [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+    [
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+    ],
+]
+
 
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces."""

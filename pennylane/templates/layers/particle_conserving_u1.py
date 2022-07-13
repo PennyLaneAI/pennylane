@@ -325,7 +325,9 @@ class ParticleConservingU1(Operation):
 
         for l in range(n_layers):
             for i, wires_ in enumerate(nm_wires):
-                op_list.extend(u1_ex_gate(weights[..., l, i, 0], weights[..., l, i, 1], wires=wires_))
+                op_list.extend(
+                    u1_ex_gate(weights[..., l, i, 0], weights[..., l, i, 1], wires=wires_)
+                )
 
         return op_list
 

@@ -258,10 +258,9 @@ class GateFabric(Operation):
         num_wires = len(wires)
         op_list = []
         n_layers = qml.math.shape(weights)[0]
-        wire_pattern = (
-            [wires[i - 4 : i] for i in range(4, num_wires+1, 4)]
-            + [wires[i - 4: i] for i in range(6, num_wires+1, 4)]
-        )
+        wire_pattern = [wires[i - 4 : i] for i in range(4, num_wires + 1, 4)] + [
+            wires[i - 4 : i] for i in range(6, num_wires + 1, 4)
+        ]
 
         op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
