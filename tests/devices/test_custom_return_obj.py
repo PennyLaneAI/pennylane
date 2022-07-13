@@ -2,6 +2,8 @@ import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
+import pennylane.numpy as np
+
 
 class TestObservableWithObjectReturnType:
     """Unit tests for differentiation of observables returning an object"""
@@ -82,3 +84,4 @@ class TestObservableWithObjectReturnType:
             return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode(0.2), SpecialObject)
+        assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
