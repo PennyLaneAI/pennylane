@@ -310,7 +310,7 @@ class QubitDevice(Device):
                 elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
                     try:
-                        # experimental feature: if type cannot be cast to float then we can still allow it as an output
+                        # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
                         results = self._asarray(results, dtype=self.R_DTYPE)
                     except TypeError:
                         pass
