@@ -59,7 +59,7 @@ class TestObservableWithObjectReturnType:
 
         class DeviceSupporingSpecialObservable(DefaultQubit):
             name = "Device supporting SpecialObservable"
-            short_name = "default.qibit.specialobservable"
+            short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             def expval(self, observable, **kwargs):
