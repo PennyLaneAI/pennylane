@@ -16,10 +16,11 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from functools import reduce
+from typing import List
 
 import numpy as np
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 
@@ -130,7 +131,7 @@ class Sum(Operator):
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
-        self.summands = []
+        self.summands: List[Operator] = []
         for summand in summands:
             if isinstance(summand, Sum):
                 self.summands.extend(summand.summands)
