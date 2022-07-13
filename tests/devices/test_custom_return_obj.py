@@ -58,7 +58,7 @@ class TestObservableWithObjectReturnType:
                 return []
 
         class DeviceSupporingSpecialObservable(DefaultQubit):
-            name = "Device supporing SpecialObservable"
+            name = "Device supporting SpecialObservable"
             short_name = "default.qibit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
