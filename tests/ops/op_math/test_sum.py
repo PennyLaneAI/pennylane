@@ -14,19 +14,21 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-import pytest
-import numpy as np
+import itertools
 from copy import copy
-import pennylane as qml
-from pennylane import math
-import pennylane.numpy as qnp
+from typing import Tuple
 
-from pennylane.wires import Wires
-from pennylane import QuantumFunctionError
+import gate_data as gd  # a file containing matrix rep of each gate
+import numpy as np
+import pytest
+
+import pennylane as qml
+import pennylane.numpy as qnp
+from pennylane import QuantumFunctionError, math
+from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Sum, op_sum
 from pennylane.ops.op_math.sum import _sum  # pylint: disable=protected-access
-from pennylane.operation import MatrixUndefinedError, DecompositionUndefinedError
-import gate_data as gd  # a file containing matrix rep of each gate
+from pennylane.wires import Wires
 
 no_mat_ops = (
     qml.Barrier,
@@ -121,6 +123,17 @@ class TestInitialization:
         assert sum_op.parameters == [[], [0.23]]
         assert sum_op.num_params == 1
 
+    def test_init_sum_op_with_sum_summands(self):
+        sum_op = Sum(qml.PauliX(wires=0), qml.RZ(0.23, wires="a")) + qml.RX(9.87, wires=0)
+        assert sum_op.wires == Wires((0, "a"))
+        assert sum_op.num_wires == 2
+        assert sum_op.name == "Sum"
+        assert sum_op.id is None
+
+        assert sum_op.data == [[], [0.23], [9.87]]
+        assert sum_op.parameters == [[], [0.23], [9.87]]
+        assert sum_op.num_params == 2
+
     def test_raise_error_fewer_then_2_summands(self):
         with pytest.raises(ValueError, match="Require at least two operators to sum;"):
             sum_op = op_sum(qml.PauliX(0))
@@ -174,42 +187,60 @@ class TestInitialization:
 class TestMscMethods:
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep):
-        sum_op = Sum(*ops_lst)
-        assert ops_rep == sum_op.__repr__()
+        sum_op_0 = Sum(*ops_lst)
+        assert ops_rep == repr(sum_op_0)
+        sum_op_1 = sum(ops_lst)
+        if isinstance(sum_op_1, Sum):
+            assert ops_rep == repr(sum_op_1)
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_copy(self, ops_lst):
-        sum_op = Sum(*ops_lst)
-        copied_op = copy(sum_op)
+    @pytest.mark.parametrize(
+        "sum_op", list(itertools.chain.from_iterable((Sum(*op), sum(op)) for op in ops))
+    )
+    def test_copy(self, sum_op: Sum):
+        if isinstance(sum_op, Sum):
+            copied_op = copy(sum_op)
 
-        assert sum_op.id == copied_op.id
-        assert sum_op.data == copied_op.data
-        assert sum_op.wires == copied_op.wires
+            assert sum_op.id == copied_op.id
+            assert sum_op.data == copied_op.data
+            assert sum_op.wires == copied_op.wires
 
-        for s1, s2 in zip(sum_op.summands, copied_op.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
+            for s1, s2 in zip(sum_op.summands, copied_op.summands):
+                assert s1.name == s2.name
+                assert s1.wires == s2.wires
+                assert s1.data == s2.data
 
 
 class TestMatrix:
     @pytest.mark.parametrize("op_and_mat1", non_param_ops)
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
-    def test_non_parametric_ops_two_terms(self, op_and_mat1, op_and_mat2):
+    def test_non_parametric_ops_two_terms(
+        self,
+        op_and_mat1: Tuple[Operator, np.ndarray],
+        op_and_mat2: Tuple[Operator, np.ndarray],
+    ):
         """Test matrix method for a sum of non_parametric ops"""
         op1, mat1 = op_and_mat1
         op2, mat2 = op_and_mat2
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
-
-        sum_op = Sum(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
-        sum_mat = sum_op.matrix()
-
         true_mat = mat1 + mat2
-        assert np.allclose(sum_mat, true_mat)
+
+        sum_op_0 = Sum(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
+        sum_mat_0 = sum_op_0.matrix()
+
+        assert np.allclose(sum_mat_0, true_mat)
+
+        sum_op_1 = op1(wires=range(op1.num_wires)) + op2(wires=range(op2.num_wires))
+        if isinstance(sum_op_1, Sum):
+            sum_mat_1 = sum_op_1.matrix()
+            assert np.allclose(sum_mat_1, true_mat)
 
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
-    def test_parametric_ops_two_terms(self, op_mat1, op_mat2):
+    def test_parametric_ops_two_terms(
+        self,
+        op_mat1: Tuple[Operator, np.ndarray],
+        op_mat2: Tuple[Operator, np.ndarray],
+    ):
         """Test matrix method for a sum of parametric ops"""
         op1, mat1 = op_mat1
         op2, mat2 = op_mat2
@@ -218,22 +249,35 @@ class TestMatrix:
         par2 = tuple(range(op2.num_params))
         mat1, mat2 = compare_and_expand_mat(mat1(*par1), mat2(*par2))
 
-        sum_op = Sum(op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires)))
-        sum_mat = sum_op.matrix()
+        sum_op_0 = Sum(
+            op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires))
+        )
+        sum_op_1 = op1(*par1, wires=range(op1.num_wires)) + op2(*par2, wires=range(op2.num_wires))
+        sum_mat_0 = sum_op_0.matrix()
+        sum_mat_1 = sum_op_1.matrix()
 
         true_mat = mat1 + mat2
-        assert np.allclose(sum_mat, true_mat)
+        assert np.allclose(sum_mat_0, true_mat)
+        assert np.allclose(sum_mat_1, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
-    def test_error_no_mat(self, op):
+    def test_error_no_mat(self, op: Operator):
         """Test that an error is raised if one of the summands doesn't
         have its matrix method defined."""
         sum_op = Sum(op(wires=0), qml.PauliX(wires=2), qml.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
             sum_op.matrix()
 
+    @pytest.mark.parametrize("op", no_mat_ops)
+    def test_error_no_mat_with_add_operator(self, op: Operator):
+        """Test that an error is raised if one of the summands doesn't
+        have its matrix method defined using the + operator."""
+        sum_op = op(wires=0) + qml.PauliX(wires=2)
+        with pytest.raises(MatrixUndefinedError):
+            sum_op.matrix()
+
     def test_sum_ops_multi_terms(self):
-        """Test matrix is correct for a sum of more then two terms."""
+        """Test matrix is correct for a sum of more than two terms."""
         sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliZ(wires=0))
         mat = sum_op.matrix()
 
@@ -241,6 +285,23 @@ class TestMatrix:
             [
                 [1 / math.sqrt(2) + 1, 1 / math.sqrt(2) + 1],
                 [1 / math.sqrt(2) + 1, -1 / math.sqrt(2) - 1],
+            ]
+        )
+        assert np.allclose(mat, true_mat)
+
+    def test_sum_ops_multi_terms_with_add_operator(self):
+        """Test matrix is correct for a sum of more than two terms using the + operator."""
+        # Need to add a non-hamiltonian operator in the first element of the sum to avoig getting a Hamiltonian,
+        # which doesn't have a defined matrix() method.
+        sum_op = (
+            qml.RX(0, wires=0) + qml.PauliX(wires=0) + qml.Hadamard(wires=0) + qml.PauliZ(wires=0)
+        )
+        mat = sum_op.matrix()
+
+        true_mat = math.array(
+            [
+                [1 + 1 / math.sqrt(2) + 1, 1 / math.sqrt(2) + 1],
+                [1 / math.sqrt(2) + 1, 1 + -1 / math.sqrt(2) - 1],
             ]
         )
         assert np.allclose(mat, true_mat)
@@ -256,6 +317,26 @@ class TestMatrix:
 
         true_mat = (
             math.kron(x, math.eye(4))
+            + math.kron(math.kron(math.eye(2), h), math.eye(2))
+            + math.kron(math.eye(4), z)
+        )
+
+        assert np.allclose(mat, true_mat)
+
+    def test_sum_ops_multi_wires_with_add_operator(self):
+        """Test matrix is correct when multiple wires are used in the sum using the + operator."""
+        sum_op = (
+            qml.RX(0, wires=0) + qml.PauliX(wires=0) + qml.Hadamard(wires=1) + qml.PauliZ(wires=2)
+        )
+
+        mat = sum_op.matrix()
+
+        wire_0 = math.array([[1, 1], [1, 1]])
+        h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
+        z = math.array([[1, 0], [0, -1]])
+
+        true_mat = (
+            math.kron(wire_0, math.eye(4))
             + math.kron(math.kron(math.eye(2), h), math.eye(2))
             + math.kron(math.eye(4), z)
         )
