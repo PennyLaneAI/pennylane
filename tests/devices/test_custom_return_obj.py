@@ -83,5 +83,11 @@ class TestObservableWithObjectReturnType:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        assert isinstance(qnode(0.2), SpecialObject)
-        assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
+        out = qnode(0.2)
+        assert isinstance(out, np.ndarray)
+        assert isinstance(out.item(), SpecialObject)
+        assert np.isclose(out.item().val, reference_qnode(0.2))
+        assert np.isclose(
+            qml.jacobian(qnode)(np.array(0.2, requires_grad=True)).item().val,
+            qml.jacobian(reference_qnode)(np.array(0.2, requires_grad=True)),
+        )
