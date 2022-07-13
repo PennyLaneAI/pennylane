@@ -94,7 +94,9 @@ class AngleEmbedding(Operation):
     def num_params(self):
         return 1
 
-    ndim_params = (1,)
+    @property
+    def ndim_params(self):
+        return (1,)
 
     @staticmethod
     def compute_decomposition(features, wires, rotation):  # pylint: disable=arguments-differ
@@ -126,4 +128,4 @@ class AngleEmbedding(Operation):
         # If the leading dimension is a batch dimension, exchange the wire and batching axes.
         features = features.T if batched else features
 
-        return [rotation(feature, wires=wire) for feature, wire in zip(features, wires)]
+        return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]

@@ -189,7 +189,9 @@ class IQPEmbedding(Operation):
     def num_params(self):
         return 1
 
-    ndim_params = (1,)
+    @property
+    def ndim_params(self):
+        return (1,)
 
     @staticmethod
     def compute_decomposition(
