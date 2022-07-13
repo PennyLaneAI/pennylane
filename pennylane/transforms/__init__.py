@@ -37,8 +37,6 @@ that compute the desired quantity.
     ~adjoint_metric_tensor
     ~specs
     ~transforms.split_non_commuting
-    ~transforms.mitigate_with_zne
-    ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,6 +171,17 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.expand_multipar
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
+
+Transforms for error mitigation
+-------------------------------
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.mitigate_with_zne
+    ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.richardson_extrapolate
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -192,7 +201,7 @@ from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
-from .mitigate import mitigate_with_zne
+from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
     cancel_inverses,
     commute_controlled,
