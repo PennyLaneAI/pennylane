@@ -6,7 +6,7 @@ import pennylane.numpy as np
 
 
 class TestObservableWithObjectReturnType:
-    """Unit tests for differentiation of observables returning an object"""
+    """Unit tests for qnode returning a custom object"""
 
     def test_custom_return_type(self):
         """Test differentiation of a QNode on a device supporting a
