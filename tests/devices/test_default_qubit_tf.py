@@ -1268,20 +1268,20 @@ class TestPassthruIntegration:
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = qml.device("default.qubit.tf", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.RY(a, wires=wires[0])
+            return qml.state()
 
         a = tf.Variable(0.54)
 
         with tf.GradientTape() as tape:
-            circuit(a)
-            res = tf.abs(dev.state) ** 2
+            res = tf.abs(circuit(a)) ** 2
             res = res[1] - res[0]
 
         grad = tape.gradient(res, a)

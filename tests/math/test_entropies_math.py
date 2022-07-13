@@ -162,3 +162,65 @@ class TestMutualInformation:
             ValueError, match="The state is not a state vector or a density matrix."
         ):
             qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
+
+class TestRelativeEntropy:
+    """Tests for the relative entropy qml.math function"""
+
+    bases = [None, 2]
+    check_states = [True, False]
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state0, state1, expected",
+        [([1, 0], [0, 1], np.inf), ([1, 0], [1, 1] / np.sqrt(2), np.inf), ([0, 1], [0, 1], 0)],
+    )
+    @pytest.mark.parametrize("base", bases)
+    @pytest.mark.parametrize("check_state", check_states)
+    def test_state(self, interface, state0, state1, expected, base, check_state):
+        """Test that mutual information works for states"""
+        state0 = qml.math.asarray(state0, like=interface)
+        state1 = qml.math.asarray(state1, like=interface)
+        actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
+
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state0, state1, expected",
+        [
+            ([[1, 0], [0, 0]], [[0, 0], [0, 1]], np.inf),
+            ([[1, 0], [0, 0]], np.ones((2, 2)) / 2, np.inf),
+            ([[0, 0], [0, 1]], [[0, 0], [0, 1]], 0),
+            ([[1, 0], [0, 0]], np.eye(2) / 2, np.log(2)),
+        ],
+    )
+    @pytest.mark.parametrize("base", bases)
+    @pytest.mark.parametrize("check_state", check_states)
+    def test_density_matrix(self, interface, state0, state1, expected, base, check_state):
+        """Test that mutual information works for density matrices"""
+        state0 = qml.math.asarray(state0, like=interface)
+        state1 = qml.math.asarray(state1, like=interface)
+        actual = qml.math.relative_entropy(state0, state1, base=base, check_state=check_state)
+
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize(
+        "state0, state1",
+        [
+            (np.array([1, 0, 0, 0]), np.array([1, 0])),
+            (np.array([[1, 0], [0, 0]]), np.array([0, 1, 0, 0])),
+            (
+                np.array([[1, 0], [0, 0]]),
+                np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
+            ),
+        ],
+    )
+    def test_size_mismatch(self, state0, state1):
+        """Test that an error is raised when the dimensions do not match"""
+        msg = "The two states must have the same number of wires"
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            qml.math.relative_entropy(state0, state1)

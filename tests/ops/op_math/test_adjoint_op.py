@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
-from email.mime import base
 import pytest
 
 import pennylane as qml
@@ -607,6 +606,18 @@ class TestDecompositionExpand:
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             Adjoint(base).decomposition()
+
+    def test_adjoint_of_adjoint(self):
+        """Test that the adjoint an adjoint returns the base operator through both decomposition and expand."""
+
+        base = qml.PauliX(0)
+        adj1 = Adjoint(base)
+        adj2 = Adjoint(adj1)
+
+        assert adj2.decomposition()[0] is base
+
+        tape = adj2.expand()
+        assert tape.circuit[0] is base
 
 
 class TestIntegration:
