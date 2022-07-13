@@ -1202,6 +1202,8 @@ class Operator(abc.ABC):
             return qml.Sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
+    __radd__ = __add__
+
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
@@ -1674,7 +1676,7 @@ class Observable(Operator):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        raise ValueError(f"Cannot add Observable and {type(other)}")
+        return super().__add__(other=other)
 
     __radd__ = __add__
 
