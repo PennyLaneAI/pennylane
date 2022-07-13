@@ -1,12 +1,12 @@
-qml.resources
+qml.resource
 =============
 
 Overview
 --------
 
-.. currentmodule:: pennylane.resources
+.. currentmodule:: pennylane.resource
 
-.. automodapi:: pennylane.resources
+.. automodapi:: pennylane.resource
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:

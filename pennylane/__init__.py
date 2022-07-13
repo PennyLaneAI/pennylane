@@ -30,7 +30,7 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
-import pennylane.resources
+import pennylane.resource
 import pennylane.templates
 import pennylane.hf
 import pennylane.qchem
