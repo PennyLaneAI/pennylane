@@ -109,6 +109,7 @@ def _execute(
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
+    print("Result now: ", res, type(res))
     for i, r in enumerate(res):
 
         if isinstance(r, np.ndarray):
@@ -125,6 +126,8 @@ def _execute(
 
         elif isinstance(res[i], tuple):
             res[i] = tuple(np.tensor(r) for r in res[i])
+        elif tapes[i]._qfunc_output.return_type is qml.measurements.Counts:
+            continue
 
         else:
             res[i] = qml.math.toarray(res[i])
