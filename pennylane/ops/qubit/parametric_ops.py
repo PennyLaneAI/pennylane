@@ -2414,18 +2414,20 @@ class IsingXX(Operation):
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
+        eye = qml.math.eye(4, like=phi)
+        rev_eye = qml.math.convert_like(np.eye(4)[::-1].copy(), phi)
         if qml.math.get_interface(phi) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
+            eye = qml.math.cast_like(eye, 1j)
+            rev_eye = qml.math.cast_like(rev_eye, 1j)
 
         # The following avoids casting an imaginary quantity to reals when backpropagating
         js = -1j * s
         if qml.math.ndim(phi) == 0:
-            return c * np.eye(4) + js * np.eye(4)[::-1]
+            return c * eye + js * rev_eye
 
-        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(
-            js, np.eye(4)[::-1], axes=0
-        )
+        return qml.math.tensordot(c, eye, axes=0) + qml.math.tensordot(js, rev_eye, axes=0)
 
     @staticmethod
     def compute_decomposition(phi, wires):
