@@ -254,7 +254,7 @@
 
 * Fixes a bug where custom implementations of devices' `states_to_binary`
   method was not used.
-  [(#27xx)](https://github.com/PennyLaneAI/pennylane/pull/27xx)
+  [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
   
 * `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
@@ -267,5 +267,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
-Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
+Ixchel Meza Chavez, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
+Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
