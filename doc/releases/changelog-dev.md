@@ -159,7 +159,7 @@
 
 <h3>Improvements</h3>
 
-* A small performance and readability upgrade to the `compute_matrix` method
+* A small performance upgrade to the `compute_matrix` method
   of broadcastable parametric operations.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
 
