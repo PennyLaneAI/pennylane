@@ -60,7 +60,9 @@ def _process_argnum(argnum, tape):
                     f"trainable tape parameters ({tape.num_params})."
                 )
             # ...and translate it to Boolean 1D iterable
-            argnum = [i in argnum for i in range(tape.num_params)]
+            print("here")
+            argnum = [i in argnum for i in range(len(tape.get_parameters(trainable_only=False)))]
+            print("there", argnum)
         elif len(argnum) != tape.num_params:
             # If the 1D iterable already is Boolean, check its length
             raise ValueError(
@@ -495,9 +497,11 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
     # Find all argument indices that appear in at least one derivative that was requested
     choose_argnum = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]
+    print("c", choose_argnum)
+    print("d", diff_methods)
     # If any of these argument indices correspond to a finite difference
     # derivative (diff_methods[idx]="F"), raise an error.
-    unsupported_params = {idx for idx in choose_argnum if diff_methods[idx] == "F"}
+    unsupported_params = {idx for i, idx in enumerate(choose_argnum) if diff_methods[i] == "F"}
     if unsupported_params:
         raise ValueError(
             "The parameter-shift Hessian currently does not support the operations "
