@@ -13,7 +13,6 @@ pygments-github-lexers
 semantic_version==2.10
 scipy
 docutils==0.16
-setuptools==63.2.0; python_version == "3.7"
 sphinx==3.5.3; python_version < "3.10"
 sphinx==5.0.2; python_version == "3.10"
 sphinx-automodapi==0.13
