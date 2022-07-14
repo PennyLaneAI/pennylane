@@ -250,7 +250,7 @@ class Hamiltonian(Observable):
             ops (list[.Operator]): operators
 
         Returns:
-            tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
+            tuple[list[tensor_like or float], list[.Operator]]: coefficients and operations
 
         **Example**
 
@@ -264,7 +264,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return coeffs, ops
+        return list(coeffs), ops
 
     @property
     def wires(self):

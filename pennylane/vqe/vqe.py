@@ -15,9 +15,10 @@
 This submodule contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
+import warnings
+
 # pylint: disable=too-many-arguments, too-few-public-methods
 from collections.abc import Sequence
-import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -187,7 +188,10 @@ class ExpvalCost:
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
-            obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
+            obs_groupings, coeffs_groupings = qml.grouping.group_observables(
+                observables,
+                tuple(coeffs),  # need to cast to tuple to avoig changing the coeffs_groupings type
+            )
             d = device[0] if self._multiple_devices else device
             w = d.wires.tolist()
 
@@ -216,7 +220,7 @@ class ExpvalCost:
                     total = 0
                     for o, c in zip(obs_groupings, coeffs_groupings):
                         res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-                        total += sum([r * c_ for r, c_ in zip(res, c)])
+                        total += sum(r * c_ for r, c_ in zip(res, c))
                 return total
 
             self.cost_fn = cost_fn
