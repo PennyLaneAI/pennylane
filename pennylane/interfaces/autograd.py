@@ -118,7 +118,7 @@ def _execute(
                 if isinstance(r[0][0], dict):
                     # This happens when measurement type is Counts and shot vector is passed
                     continue
-            except (IndexError, KeyError):
+            except (TypeError, IndexError, KeyError):
                 pass
             r = np.hstack(r) if r.dtype == np.dtype("object") else r
             res[i] = np.tensor(r)
