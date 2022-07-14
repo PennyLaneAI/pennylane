@@ -46,6 +46,7 @@ class ObservableReturnTypes(Enum):
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
+    Shadow = "shadow"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -84,6 +85,10 @@ VnEntropy = ObservableReturnTypes.VnEntropy
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
 
+Shadow = ObservableReturnTypes.Shadow
+"""Enum: An enumeration which represents returning the bitstrings and recipes from
+the classical shadow protocol"""
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -110,18 +115,13 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
 
     def __init__(
-        self,
-        return_type,
-        obs=None,
-        wires=None,
-        eigvals=None,
-        id=None,
-        log_base=None,
+        self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None, n_shots=None
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
         self.log_base = log_base
+        self.n_shots = n_shots
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -168,6 +168,9 @@ class MeasurementProcess:
 
         if self.return_type is State:
             return complex
+
+        if self.return_type is Shadow:
+            return int
 
         if self.return_type is Sample:
 
@@ -225,6 +228,9 @@ class MeasurementProcess:
         # device
         if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
             shape = (1,)
+
+        if self.return_type is Shadow:
+            shape = (2, self.n_shots, len(self.wires))
 
         density_matrix_return = self.return_type == State and self.wires
 
@@ -991,6 +997,14 @@ def mutual_info(wires0, wires1, log_base=None):
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+
+
+def classical_shadow(wires, n_snapshots=None):
+    """
+    TODO: docs
+    """
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(Shadow, wires=wires, n_shots=n_snapshots)
 
 
 T = TypeVar("T")
