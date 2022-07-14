@@ -186,7 +186,7 @@ class AmplitudeEmbedding(Operation):
 
         new_features_batch = []
         # apply pre-processing to each features tensor in the batch
-        for i, feature_set in enumerate(features_batch):
+        for feature_set in features_batch:
             shape = qml.math.shape(feature_set)
 
             # check shape
