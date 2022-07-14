@@ -46,15 +46,21 @@ def test_value_error():
 
     dev = qml.device("default.qubit", wires=2)
 
+    class Embedding(qml.AngleEmbedding):
+        @property
+        def ndim_params(self):
+            return self._ndim_params
+
     @qml.batch_input(argnum=[0, 1])
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(input1, input2, weights):
-        qml.AngleEmbedding(input1, wires=range(2), rotation="Y")
+        Embedding(input1, wires=range(2), rotation="Y")
         qml.RY(input2[0], wires=0)
         qml.RY(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
 
+    np.random.seed(42)
     batch_size = 5
     input1 = np.random.uniform(0, np.pi, (batch_size, 2))
     input1.requires_grad = False
