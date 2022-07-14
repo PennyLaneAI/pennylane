@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
-from email.mime import base
 import pytest
 
 import pennylane as qml
@@ -222,6 +221,33 @@ class TestProperties:
         wire1 = qml.wires.Wires(0)
         op._wires = wire1
         assert op._wires == base._wires == wire1
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_is_hermitian(self, value):
+        """Test `is_hermitian` property mirrors that of the base."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            is_hermitian = value
+
+        op = Adjoint(DummyOp(0))
+        assert op.is_hermitian == value
+
+    def test_batching_properties(self):
+        """Test that Adjoint batching behavior mirrors that of the base."""
+
+        class DummyOp(qml.operation.Operator):
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        param1 = [0.3] * 3
+        param2 = [[[0.3, 1.2]]] * 3
+
+        base = DummyOp(param1, param2, wires=0)
+        op = Adjoint(base)
+
+        assert op.ndim_params == (0, 2)
+        assert op.batch_size == 3
 
 
 class TestMiscMethods:
@@ -580,6 +606,18 @@ class TestDecompositionExpand:
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             Adjoint(base).decomposition()
+
+    def test_adjoint_of_adjoint(self):
+        """Test that the adjoint an adjoint returns the base operator through both decomposition and expand."""
+
+        base = qml.PauliX(0)
+        adj1 = Adjoint(base)
+        adj2 = Adjoint(adj1)
+
+        assert adj2.decomposition()[0] is base
+
+        tape = adj2.expand()
+        assert tape.circuit[0] is base
 
 
 class TestIntegration:

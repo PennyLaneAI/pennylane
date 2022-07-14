@@ -36,7 +36,6 @@ that compute the desired quantity.
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
-    ~transforms.mitigate_with_zne
     ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
@@ -48,7 +47,6 @@ containing quantum operations) that are used to construct QNodes.
 .. autosummary::
     :toctree: api
 
-    ~ctrl
     ~transforms.cond
     ~defer_measurements
     ~apply_controlled_Q
@@ -173,6 +171,17 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.expand_multipar
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
+
+Transforms for error mitigation
+-------------------------------
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.mitigate_with_zne
+    ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.richardson_extrapolate
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -184,7 +193,6 @@ from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
-from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand
@@ -193,7 +201,7 @@ from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
-from .mitigate import mitigate_with_zne
+from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
     cancel_inverses,
     commute_controlled,

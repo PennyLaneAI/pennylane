@@ -97,6 +97,7 @@ import abc
 import copy
 import itertools
 import functools
+import numbers
 import warnings
 from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
@@ -127,11 +128,6 @@ def __getattr__(name):
 def expand_matrix(base_matrix, wires, wire_order):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
-
-    .. note::
-
-        This function has essentially the same behaviour as :func:`.utils.expand` but is fully
-        differentiable.
 
     Args:
         base_matrix (tensor_like): base matrix to expand
@@ -187,7 +183,6 @@ def expand_matrix(base_matrix, wires, wire_order):
     >>> res.requires_grad
     True
     """
-    # TODO[Maria]: In future we should consider making ``utils.expand`` differentiable and calling it here.
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
@@ -1659,11 +1654,15 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
         raise ValueError(f"Cannot add Observable and {type(other)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
@@ -1861,12 +1860,14 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if qml.QueuingContext.recording():
-            owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
+        if (
+            qml.QueuingContext.recording()
+            and self not in qml.QueuingContext.active_context()._queue
+        ):
+            qml.QueuingContext.append(self)
 
-            # update the annotated queue information
-            qml.QueuingContext.safe_update_info(self, owns=owning_info)
-            qml.QueuingContext.safe_update_info(other, owner=self)
+        qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
+        qml.QueuingContext.safe_update_info(other, owner=self)
 
         return self
 

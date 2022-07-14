@@ -9,7 +9,7 @@ mistune==0.8.4
 m2r2
 numpy
 pygments-github-lexers
-semantic_version==2.6
+semantic_version==2.10
 scipy
 docutils==0.16
 sphinx==3.5.3
