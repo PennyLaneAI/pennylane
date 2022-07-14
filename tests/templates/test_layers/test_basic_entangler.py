@@ -161,8 +161,8 @@ class TestAttributes:
     )
     def test_shape(self, n_layers, n_wires, n_rotations, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
-
-        shape = qml.BasicEntanglerLayers.shape(n_layers, n_wires, n_rotations)
+        n_tot = n_wires * n_rotations
+        shape = qml.BasicEntanglerLayers.shape(n_layers, n_tot)
         assert shape == expected_shape
 
 

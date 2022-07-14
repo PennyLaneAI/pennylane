@@ -243,7 +243,7 @@ class BasicEntanglerLayers(Operation):
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires, n_rotations):
+    def shape(n_layers, n_wires):
         r"""Returns the shape of the weight tensor required for this template.
 
         Args:
@@ -254,4 +254,4 @@ class BasicEntanglerLayers(Operation):
             tuple[int]: shape
         """
 
-        return n_layers, n_wires * n_rotations
+        return n_layers, n_wires
