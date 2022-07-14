@@ -132,7 +132,7 @@ class BasicEntanglerLayers(Operation):
         weights = qml.math.asarray(weights, like=interface)
 
         shape = qml.math.shape(weights)
-        if len(shape) not in {2, 3}:  # 3 is when batching, 2 is no batching
+        if not (len(shape) == 3 or len(shape) == 2):  # 3 is when batching, 2 is no batching
             raise ValueError(
                 f"Weights tensor must be 2-dimensional "
                 f"or 3-dimensional if batching; got shape {shape}"
@@ -150,8 +150,6 @@ class BasicEntanglerLayers(Operation):
     @property
     def num_params(self):
         return 1
-
-    ndim_params = (2,)
 
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ

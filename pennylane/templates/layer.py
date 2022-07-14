@@ -21,7 +21,7 @@ from pennylane.math import shape
 def _preprocess(args, depth):
     """Validate and pre-process inputs as follows:
 
-    * Check that the dimension of the arguments equals the depth
+    * Check that the dimension of the arguments corresponds to the depth
 
     Args:
         args (tensor_like): trainable parameters of the template
@@ -208,6 +208,6 @@ def layer(template, depth, *args, **kwargs):
 
     _preprocess(args, depth)
 
-    for i in range(int(depth)):
+    for i in range(0, int(depth)):
         arg_params = [k[i] for k in args]
         template(*arg_params, **kwargs)

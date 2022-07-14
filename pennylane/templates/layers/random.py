@@ -181,11 +181,8 @@ class RandomLayers(Operation):
     ):
 
         shape = qml.math.shape(weights)
-        if len(shape) not in {2, 3}:
-            raise ValueError(
-                "Weights tensor must be 2-dimensional or 3-dimensional when broadcasted;"
-                f" got shape {shape}"
-            )
+        if len(shape) != 2:
+            raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         self._hyperparameters = {
             "ratio_imprimitive": ratio_imprim,
@@ -199,8 +196,6 @@ class RandomLayers(Operation):
     @property
     def num_params(self):
         return 1
-
-    ndim_params = (2,)
 
     @staticmethod
     def compute_decomposition(
@@ -242,18 +237,18 @@ class RandomLayers(Operation):
             np.random.seed(seed)
 
         shape = qml.math.shape(weights)
-        n_layers = shape[-2]
+        n_layers = qml.math.shape(weights)[0]
         op_list = []
 
         for l in range(n_layers):
 
             i = 0
-            while i < shape[-1]:
+            while i < shape[1]:
                 if np.random.random() > ratio_imprimitive:
                     # apply a random rotation gate to a random wire
                     gate = np.random.choice(rotations)
                     rnd_wire = wires.select_random(1)
-                    op_list.append(gate(weights[..., l, i], wires=rnd_wire))
+                    op_list.append(gate(weights[l][i], wires=rnd_wire))
                     i += 1
 
                 else:
@@ -264,19 +259,15 @@ class RandomLayers(Operation):
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_rotations, n_broadcast=None):
+    def shape(n_layers, n_rotations):
         r"""Returns the expected shape of the weights tensor.
 
         Args:
             n_layers (int): number of layers
             n_rotations (int): number of rotations
-            n_broadcast (int): Optional broadcasting dimension
 
         Returns:
             tuple[int]: shape
         """
 
-        if n_broadcast is None:
-            return n_layers, n_rotations
-
-        return n_broadcast, n_layers, n_rotations
+        return n_layers, n_rotations

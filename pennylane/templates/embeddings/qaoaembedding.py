@@ -210,8 +210,10 @@ class QAOAEmbedding(Operation):
     def num_params(self):
         return 2
 
-    # The feature vector has one dimension, the weights tensor has two.
-    ndim_params = (1, 2)
+    @property
+    def ndim_params(self):
+        # The feature vector has one dimension, the weights tensor has two.
+        return (1, 2)
 
     @staticmethod
     def compute_decomposition(

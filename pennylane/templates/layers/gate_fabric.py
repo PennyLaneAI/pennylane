@@ -178,33 +178,27 @@ class GateFabric(Operation):
 
     def __init__(self, weights, wires, init_state, include_pi=False, do_queue=True, id=None):
 
-        num_wires = len(wires)
-        if num_wires < 4:
+        if len(wires) < 4:
             raise ValueError(
-                "This template requires the number of wires to be greater than or equal to four;"
-                f" got wires {wires}"
+                f"This template requires the number of qubits to be greater than four; got wires {wires}"
             )
-        if num_wires % 2:
+        if len(wires) % 2:
             raise ValueError(
-                f"This template requires an even number of wires; got {num_wires} wires"
+                f"This template requires an even number of qubits; got {len(wires)} wires"
             )
 
         shape = qml.math.shape(weights)
 
-        if len(shape) not in {3, 4}:
+        if len(shape) != 3:
+            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
+
+        len_wire_pattern = int((len(wires) / 2) - 1)
+        if shape[1] != len_wire_pattern:
             raise ValueError(
-                "Weights tensor must be 3-dimensional or 4-dimensional when broadcasted;"
-                f" got shape {shape}"
+                f"Weights tensor must have second dimension of length {len_wire_pattern}; got {shape[1]}"
             )
 
-        len_wire_pattern = len(wires) // 2 - 1
-        if shape[-2] != len_wire_pattern:
-            raise ValueError(
-                f"Weights tensor must have second dimension of length {len_wire_pattern};"
-                f" got {shape[1]}"
-            )
-
-        if shape[-1] != 2:
+        if shape[2] != 2:
             raise ValueError(
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
@@ -219,8 +213,6 @@ class GateFabric(Operation):
     @property
     def num_params(self):
         return 1
-
-    ndim_params = (3,)
 
     @staticmethod
     def compute_decomposition(
@@ -255,12 +247,15 @@ class GateFabric(Operation):
         DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']),
         OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
         """
-        num_wires = len(wires)
         op_list = []
         n_layers = qml.math.shape(weights)[0]
-        wire_pattern = [wires[i - 4 : i] for i in range(4, num_wires + 1, 4)] + [
-            wires[i - 4 : i] for i in range(6, num_wires + 1, 4)
+        wire_pattern = [
+            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
+        if len(wires) > 4:
+            wire_pattern += [
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+            ]
 
         op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
@@ -270,13 +265,13 @@ class GateFabric(Operation):
                 if include_pi:
                     op_list.append(qml.OrbitalRotation(np.pi, wires=wires_))
 
-                op_list.append(qml.DoubleExcitation(weights[..., layer, idx, 0], wires=wires_))
-                op_list.append(qml.OrbitalRotation(weights[..., layer, idx, 1], wires=wires_))
+                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires_))
+                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires_))
 
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires, n_broadcast=None):
+    def shape(n_layers, n_wires):
         r"""Returns the shape of the weight tensor required for this template.
 
         Args:
@@ -289,8 +284,7 @@ class GateFabric(Operation):
 
         if n_wires < 4:
             raise ValueError(
-                "This template requires the number of qubits to be greater than four;"
-                f" got 'n_wires' = {n_wires}"
+                f"This template requires the number of qubits to be greater than four; got 'n_wires' = {n_wires}"
             )
 
         if n_wires % 2:
@@ -298,7 +292,4 @@ class GateFabric(Operation):
                 f"This template requires an even number of qubits; got 'n_wires' = {n_wires}"
             )
 
-        if n_broadcast is None:
-            return n_layers, n_wires // 2 - 1, 2
-
-        return n_broadcast, n_layers, n_wires // 2 - 1, 2
+        return n_layers, n_wires // 2 - 1, 2
