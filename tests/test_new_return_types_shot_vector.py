@@ -31,8 +31,16 @@ from pennylane.operation import Tensor
 
 single_scalar_output_measurements = [qml.expval(qml.PauliZ(wires=1)), qml.var(qml.PauliZ(wires=1))]
 
-# Note: mutual info
+# Note: mutual info and vn_entropy do not support some shot vectors
 # qml.mutual_info(wires0=[0], wires1=[1]), qml.vn_entropy(wires=[0])]
+
+herm = np.diag([1, 2, 3, 4])
+probs_data = [
+    (None, [0]),
+    (None, [0, 1]),
+    (qml.PauliZ(0), None),
+    (qml.Hermitian(herm, wires=[1, 0]), None),
+]
 
 
 @pytest.mark.parametrize("shot_vector", [[1, 10, 10, 1000], [1, (10, 2), 1000]])
@@ -57,6 +65,26 @@ class TestShotVectorsAutograd:
         assert isinstance(res, tuple)
         assert len(res) == all_shots
         assert all(r.shape == () for r in res)
+
+    @pytest.mark.parametrize("op,wires", probs_data)
+    def test_probs(self, shot_vector, op, wires):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=2, shots=shot_vector)
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.probs(op=op, wires=wires)
+
+        res = circuit(0.5)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res, tuple)
+        assert len(res) == all_shots
+        wires_to_use = wires if wires else op.wires
+        assert all(r.shape == (2 ** len(wires_to_use),) for r in res)
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
     @pytest.mark.xfail
