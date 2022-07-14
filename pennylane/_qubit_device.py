@@ -605,7 +605,6 @@ class QubitDevice(Device):
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
 
-    # @staticmethod
     def generate_basis_states(self, num_wires, dtype=np.uint32):
         """
         Generates basis states in binary representation according to the number

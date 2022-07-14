@@ -254,7 +254,7 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where custom implementations of devices' `states_to_binary`
+* Fixes a bug where the custom implementation of the `states_to_binary` device
   method was not used.
   [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
   
