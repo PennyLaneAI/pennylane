@@ -251,7 +251,12 @@ class TestInputs:
 
     @pytest.mark.parametrize(
         "weights, n_wires",
-        [(np.zeros(shape=(1, 2)), 1), (np.zeros(shape=(1, 4)), 2), (np.zeros(shape=(1, 3)), 3)],
+        [
+            (np.zeros(shape=(1, 2)), 1),
+            (np.zeros(shape=(1, 2)), 1),
+            (np.zeros(shape=(1, 4)), 2),
+            (np.zeros(shape=(1, 3)), 3),
+        ],
     )
     def test_exception_wrong_weight_shape(self, weights, n_wires):
         """Verifies that exception is raised if the shape of weights is incorrect."""
@@ -267,17 +272,20 @@ class TestInputs:
             circuit()
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected_shape",
+        "n_layers, n_wires, n_broadcast, expected_shape",
         [
-            (2, 3, (2, 6)),
-            (2, 1, (2, 1)),
-            (2, 2, (2, 3)),
+            (2, 3, None, (2, 6)),
+            (2, 1, None, (2, 1)),
+            (2, 2, None, (2, 3)),
+            (2, 3, 5, (5, 2, 6)),
+            (2, 1, 5, (5, 2, 1)),
+            (2, 2, 5, (5, 2, 3)),
         ],
     )
-    def test_shape(self, n_layers, n_wires, expected_shape):
+    def test_shape(self, n_layers, n_wires, n_broadcast, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.QAOAEmbedding.shape(n_layers, n_wires)
+        shape = qml.QAOAEmbedding.shape(n_layers, n_wires, n_broadcast)
         assert shape == expected_shape
 
     def test_id(self):
