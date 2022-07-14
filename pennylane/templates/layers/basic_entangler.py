@@ -254,4 +254,4 @@ class BasicEntanglerLayers(Operation):
             tuple[int]: shape
         """
 
-        return n_layers, n_wires*n_rotations
+        return n_layers, n_wires * n_rotations

@@ -81,6 +81,28 @@ class TestDecomposition:
         expectations = circuit(weights)
         np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "weights, n_wires, target",
+        [
+            ([[np.pi, np.pi]], 1, [1]),
+            ([[np.pi, -np.pi]], 1, [1]),
+            ([[np.pi / 2, -np.pi]], 1, [0]),
+            ([[np.pi, 0]], 1, [-1]),
+        ],
+    )
+    def test_two_rotations_outputs(self, weights, n_wires, target, tol):
+        """Tests the result of the template for simple cases."""
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.BasicEntanglerLayers(weights, wires=range(n_wires), rotation=[qml.RX, qml.RY])
+            return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
+
+        expectations = circuit(weights)
+        np.testing.assert_allclose(expectations, target, atol=tol, rtol=0)
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         weights = np.random.random(size=(1, 3))
@@ -135,11 +157,7 @@ class TestAttributes:
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, n_rotations, expected_shape",
-        [
-            (2, 3, 2, (2, 4)),
-            (2, 1, 3, (2, 6)),
-            (2, 2, 1, (2, 2)),
-        ],
+        [(2, 3, 2, (2, 6)), (2, 1, 3, (2, 3)), (2, 2, 1, (2, 2)),],
     )
     def test_shape(self, n_layers, n_wires, n_rotations, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
