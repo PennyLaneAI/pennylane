@@ -157,7 +157,11 @@ class TestAttributes:
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, n_rotations, expected_shape",
-        [(2, 3, 2, (2, 6)), (2, 1, 3, (2, 3)), (2, 2, 1, (2, 2)),],
+        [
+            (2, 3, 2, (2, 6)),
+            (2, 1, 3, (2, 3)),
+            (2, 2, 1, (2, 2)),
+        ],
     )
     def test_shape(self, n_layers, n_wires, n_rotations, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
