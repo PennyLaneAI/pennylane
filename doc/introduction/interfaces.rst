@@ -168,7 +168,8 @@ the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/
 JAX
 ~~~
 
-Check out the `JAXopt package <https://github.com/google/jaxopt>`_ to find optimizers for the
+Check out the `JAXopt <https://github.com/google/jaxopt>`_ and the `Optax
+<https://optax.readthedocs.io/en/latest/>`_ packages to find optimizers for the
 :ref:`PennyLane JAX framework <jax_interf>`.
 
 Gradients
@@ -383,7 +384,6 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"finite-diff"``            |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-
 
 1. Not supported. Gradients are not computed even though ``diff_method`` is provided. Fails with error.
 2. Not supported. Gradients are not computed even though ``diff_method`` is provided. Warns that no auto-differentiation framework is being used, but does not fail.
