@@ -642,7 +642,7 @@ class TestPrivateSum:
 
 @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestIntegration:
-    """Test Node integration."""
+    """Integration tests for the Sum class."""
 
     def test_measurement_process_expval(self, sum_method):
         """Test Sum class instance in expval measurement process."""
