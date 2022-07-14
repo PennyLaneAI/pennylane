@@ -116,8 +116,11 @@ def compare_and_expand_mat(mat1, mat2):
 
 @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestInitialization:
+    """Test the initialization."""
+
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
+        """Test the initialization of a Sum operator."""
         sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True, id=id)
 
         assert sum_op.wires == Wires((0, "a"))
@@ -131,6 +134,8 @@ class TestInitialization:
         assert sum_op.num_params == 1
 
     def test_init_sum_op_with_sum_summands(self, sum_method):
+        """Test the initialization of a Sum operator which contains a summand that is another
+        Sum operator."""
         sum_op = sum_method(
             Sum(qml.PauliX(wires=0), qml.RZ(0.23, wires="a")), qml.RX(9.87, wires=0)
         )
@@ -144,34 +149,40 @@ class TestInitialization:
         assert sum_op.num_params == 2
 
     def test_raise_error_fewer_then_2_summands(self, sum_method):
+        """Test that initializing a Sum operator with less than 2 summands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to sum;"):
             Sum(qml.PauliX(0))
 
     def test_queue_idx(self, sum_method):
+        """Test that queue_idx is None."""
         sum_op = sum_method(qml.PauliX(0), qml.Identity(1))
         assert sum_op.queue_idx is None
 
     def test_parameters(self, sum_method):
+        """Test that parameters are initialized correctly."""
         sum_op = sum_method(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
         assert sum_op.parameters == [[9.87], [1.23, 4.0, 5.67]]
 
     def test_data(self, sum_method):
+        """Test that data is initialized correctly."""
         sum_op = sum_method(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
         assert sum_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst, sum_method):
+        """Test that terms are initialized correctly."""
         sum_op = sum_method(*ops_lst)
-        coeff, ops = sum_op.terms()
+        coeff, sum_ops = sum_op.terms()
 
         assert coeff == [1.0, 1.0, 1.0]
 
-        for op1, op2 in zip(ops, ops_lst):
+        for op1, op2 in zip(sum_ops, ops_lst):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
 
     def test_ndim_params_raises_error(self, sum_method):
+        """Test that calling ndim_params raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
         with pytest.raises(
@@ -181,12 +192,14 @@ class TestInitialization:
             _ = sum_op.ndim_params
 
     def test_batch_size_raises_error(self, sum_method):
+        """Test that calling batch_size raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
         with pytest.raises(ValueError, match="Batch size is not defined for Sum operators."):
             _ = sum_op.batch_size
 
     def test_decomposition_raises_error(self, sum_method):
+        """Test that calling decomposition() raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
         with pytest.raises(DecompositionUndefinedError):
@@ -195,14 +208,18 @@ class TestInitialization:
 
 @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestMscMethods:
+    """Test dunder methods."""
+
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep, sum_method):
+        """Test __repr__ method."""
         sum_op = sum_method(*ops_lst)
         if isinstance(sum_op, Sum):
             assert ops_rep == repr(sum_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_copy(self, ops_lst, sum_method):
+        """Test __copy__ method."""
         sum_op = sum_method(*ops_lst)
         if isinstance(sum_op, Sum):
             copied_op = copy(sum_op)
@@ -219,6 +236,8 @@ class TestMscMethods:
 
 @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestMatrix:
+    """Test matrix-related methods."""
+
     @pytest.mark.parametrize("op_and_mat1", non_param_ops)
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
@@ -467,6 +486,8 @@ class TestMatrix:
 
 @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestProperties:
+    """Test class properties."""
+
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_params(self, ops_lst, sum_method):
         """Test num_params property updates correctly."""
@@ -565,6 +586,8 @@ class TestProperties:
 
 
 class TestWrapperFunc:
+    """Test wrapper function."""
+
     def test_op_sum_top_level(self):
         """Test that the top level function constructs an identical instance to one
         created using the class."""
@@ -584,6 +607,8 @@ class TestWrapperFunc:
 
 
 class TestPrivateSum:
+    """Test private _sum() method."""
+
     def test_sum_private(self):
         """Test the sum private method generates expected matrices."""
         mats_gen = (qnp.eye(2) for _ in range(3))
@@ -617,6 +642,8 @@ class TestPrivateSum:
 
 @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestIntegration:
+    """Test Node integration."""
+
     def test_measurement_process_expval(self, sum_method):
         """Test Sum class instance in expval measurement process."""
         dev = qml.device("default.qubit", wires=2)

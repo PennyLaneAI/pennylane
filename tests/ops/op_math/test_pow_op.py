@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the Pow arithmetic class of qubit operations
+"""
 from copy import copy
 
 import pytest
@@ -23,6 +25,8 @@ from pennylane.ops.op_math.pow_class import Pow, PowOperation
 
 
 class TempOperator(qml.operation.Operator):
+    """Dummy operator"""
+
     num_wires = 1
 
 
@@ -117,7 +121,7 @@ class TestInitialization:
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
         assert op.name == "PauliX**-4.2"
-        if power_method == pow_using_class:
+        if power_method.__name__ == pow_using_class.__name__:
             assert op.id == "something"
 
         assert op.num_params == 0
