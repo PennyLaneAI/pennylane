@@ -36,7 +36,7 @@ from pennylane.measurements import (
     State,
     VnEntropy,
     MutualInfo,
-    Shadow
+    Shadow,
 )
 
 from pennylane import Device
@@ -344,12 +344,17 @@ class QubitDevice(Device):
         rotations = []
         samples = []
         for obs in [qml.PauliX, qml.PauliY, qml.PauliZ]:
-            rotations = [rot for wire in shadow_observable.wires
-                         for rot in obs.compute_diagonalizing_gates(wires=wire)]
+            rotations = [
+                rot
+                for wire in shadow_observable.wires
+                for rot in obs.compute_diagonalizing_gates(wires=wire)
+            ]
 
             # apply all circuit operations
             self.reset()
-            self.apply(circuit.operations + rotations, rotations=circuit.diagonalizing_gates, **kwargs)
+            self.apply(
+                circuit.operations + rotations, rotations=circuit.diagonalizing_gates, **kwargs
+            )
 
             # generate computational basis samples
             samples.append(self.generate_samples())
@@ -563,7 +568,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Shadow:
                 results.append(
-                    self.classical_shadow(wires=obs.wires, n_snapshots=obs.n_shots)
+                    self.classical_shadow(wires=obs.wires, n_snapshots=obs.n_shots or self.shots)
                 )
 
             elif obs.return_type is not None:
@@ -802,7 +807,7 @@ class QubitDevice(Device):
 
         # sample random Pauli measurements uniformly, where 0,1,2 = X,Y,Z
         recipes = np.random.randint(0, 3, size=(n_snapshots, num_qubits))
-        outcomes = np.zeros((n_snapshots, num_qubits))
+        outcomes = np.zeros((n_snapshots, num_qubits), dtype=recipes.dtype)
 
         for snapshot in range(n_snapshots):
             # for each snapshot, add a random Pauli observable at each location

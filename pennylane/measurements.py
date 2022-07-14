@@ -115,14 +115,7 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
 
     def __init__(
-        self,
-        return_type,
-        obs=None,
-        wires=None,
-        eigvals=None,
-        id=None,
-        log_base=None,
-        n_shots=None
+        self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None, n_shots=None
     ):
         self.return_type = return_type
         self.obs = obs
@@ -1006,7 +999,7 @@ def mutual_info(wires0, wires1, log_base=None):
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
 
 
-def classical_shadow(wires, n_snapshots):
+def classical_shadow(wires, n_snapshots=None):
     """
     TODO: docs
     """
