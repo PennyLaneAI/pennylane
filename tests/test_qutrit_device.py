@@ -134,10 +134,10 @@ class TestOperations:
     def test_op_queue_accessed_outside_execution_context(self, mock_qutrit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
+        dev = mock_qutrit_device()
         with pytest.raises(
             ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
-            dev = mock_qutrit_device()
             dev.op_queue
 
     def test_op_queue_is_filled_during_execution(self, mock_qutrit_device, monkeypatch):
@@ -183,8 +183,8 @@ class TestOperations:
             ]
             observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
 
+        dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
-            dev = mock_qutrit_device()
             dev.execute(tape)
 
     unitaries = [unitary_group.rvs(3, random_state=1967) for _ in range(3)]
@@ -230,11 +230,11 @@ class TestObservables:
     def test_obs_queue_accessed_outside_execution_context(self, mock_qutrit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
+        dev = mock_qutrit_device()
         with pytest.raises(
             ValueError,
             match="Cannot access the observable value queue outside of the execution context!",
         ):
-            dev = mock_qutrit_device()
             dev.obs_queue
 
     def test_unsupported_observables_raise_error(self, mock_qutrit_device):
@@ -261,10 +261,10 @@ class TestObservables:
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
+            dev = mock_qutrit_device()
             with pytest.raises(
                 qml.QuantumFunctionError, match="Unsupported return type specified for observable"
             ):
-                dev = mock_qutrit_device()
                 dev.execute(tape)
 
 
@@ -274,11 +274,11 @@ class TestParameters:
     def test_parameters_accessed_outside_execution_context(self, mock_qutrit_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
+        dev = mock_qutrit_device()
         with pytest.raises(
             ValueError,
             match="Cannot access the free parameter mapping outside of the execution context!",
         ):
-            dev = mock_qutrit_device()
             dev.parameters
 
 
@@ -302,10 +302,10 @@ class TestExtractStatistics:
     def test_results_no_state(self, mock_qutrit_device_extract_stats, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QutritDevice does not have a state attribute"""
-        with monkeypatch.context():
+        with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
-            delattr(dev.__class__, "state")
-            del QubitDevice.state
+            m.delattr(dev.__class__, "state")
+            m.delattr(QubitDevice, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
@@ -457,7 +457,7 @@ class TestGenerateSamples:
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
             m.setattr(QutritDevice, "sample_basis_states", lambda self, wires, b: wires)
-            m.setattr(QutritDevice, "states_to_ternary", lambda a, b: (a, b))
+            m.setattr(QutritDevice, "states_to_ternary", staticmethod(lambda a, b: (a, b)))
             m.setattr(QutritDevice, "analytic_probability", lambda *args: None)
             m.setattr(QutritDevice, "shots", 1000)
             dev._samples = dev.generate_samples()
@@ -488,8 +488,8 @@ class TestSampleBasisStates:
         assert res[1] == shots
         assert res[2] == state_probs
 
-    def test_raises_deprecation_warning(self, mock_qutrit_device, monkeypatch):
-        """Test that sampling basis states on a device with shots=None produces a warning."""
+    def test_raises_deprecation_error(self, mock_qutrit_device, monkeypatch):
+        """Test that sampling basis states on a device with shots=None produces an error."""
 
         dev = mock_qutrit_device()
         number_of_states = 9
@@ -507,8 +507,8 @@ class TestSampleBasisStates:
 class TestStatesToTernary:
     """Test the states_to_ternary method"""
 
-    def test_correct_conversion_two_states(self, mock_qutrit_device):
-        """Tests that the sample_basis_states method converts samples to binary correctly"""
+    def test_correct_conversion_three_states(self, mock_qutrit_device):
+        """Tests that the sample_basis_states method converts samples to ternary correctly"""
         wires = 4
         samples = [10, 31, 80, 65, 44, 2]
 
@@ -581,7 +581,7 @@ class TestStatesToTernary:
 
     @pytest.mark.parametrize("samples, ternary_states", test_ternary_conversion_data)
     def test_correct_conversion(self, mock_qutrit_device, samples, ternary_states, tol):
-        """Tests that the states_to_binary method converts samples to ternary correctly"""
+        """Tests that the states_to_ternary method converts samples to ternary correctly"""
         dev = mock_qutrit_device()
         dev.shots = 5
         wires = ternary_states.shape[1]

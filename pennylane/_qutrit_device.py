@@ -15,9 +15,9 @@
 This module contains the :class:`QutritDevice` abstract base class.
 """
 
-# For now, arguments may be different from the signatures provided in Device
+# For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import itertools
 
 import numpy as np
@@ -36,7 +36,7 @@ from pennylane.wires import Wires
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
-    """Abstract base class for Pennylane qutrit devices.
+    """Abstract base class for PennyLane qutrit devices.
 
     The following abstract method **must** be defined:
 
@@ -166,16 +166,14 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return QutritDevice.states_to_ternary(samples, self.num_wires)
+        return self.states_to_ternary(samples, self.num_wires)
 
-    @staticmethod
-    def generate_basis_states(num_wires, dtype=np.uint32):
-        """
-        Generates basis states in ternary representation according to the number
+    def generate_basis_states(self, num_wires, dtype=np.uint32):
+        """Generates basis states in ternary representation according to the number
         of wires specified.
 
         Args:
-            num_wires (int): the number wires
+            num_wires (int): the number of wires
             dtype=np.uint32 (type): the data type of the arrays to use
 
         Returns:
@@ -335,7 +333,8 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
                 \mathbb{P}^{(2, 0)}
                             = \left[
-                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                               |00\rangle, |10\rangle, |20\rangle, |01\rangle, |11\rangle,
+                               |21\rangle, |02\rangle, |12\rangle, |22\rangle
                               \right]
 
         Args:
@@ -383,7 +382,10 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         perm = basis_states @ powers_of_three
         return self._gather(prob, perm)
 
-    def sample(self, observable, shot_range=None, bin_size=None):
+    # TODO: Update in next PR to add counts capability for binning
+    def sample(
+        self, observable, shot_range=None, bin_size=None
+    ):  # pylint: disable=arguments-differ
 
         # TODO: Add special cases for any observables that require them once list of
         # observables is updated.
@@ -426,7 +428,8 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
         return samples.reshape((bin_size, -1))
 
-    # TODO: Implement function
+    # TODO: Implement function. Currently unimplemented due to lack of decompositions available
+    # for existing operations and lack of non-parametrized observables.
     def adjoint_jacobian(
         self, tape, starting_state=None, use_device_state=False
     ):  # pylint: disable=missing-function-docstring
