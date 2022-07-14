@@ -275,29 +275,14 @@ class QubitDevice(Device):
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
 
-                counts_shot_vector = isinstance(r[0], list) and isinstance(r[0][0], dict)
-
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
                 elif not isinstance(r[0], dict):
-                    # TODO: what if multi-measure and dict is not the first?
+                    # Measurement types except for Counts
+                    r = qml.math.squeeze(r)
 
-                    if counts_shot_vector:
-                        r = r
-                    else:
-                        # Measurement types except for Counts
-                        r = qml.math.squeeze(r)
-
-                r_is_seq = (isinstance(r, np.ndarray) and r.shape or isinstance(r, list))
-                has_dict = r_is_seq and (isinstance(r[0], dict) or (isinstance(r[0], list) and isinstance(r[0][0], dict)))
-
-                #if ((isinstance(r, np.ndarray) and r.shape) or isinstance(r, list)) and isinstance(r[0], dict):
-                if isinstance(r, (np.ndarray)) and r.shape and isinstance(r[0], dict):
+                if isinstance(r, list) and isinstance(r[0], dict):
                     # This happens when measurement type is Counts
-                    results.append(r)
-
-                elif counts_shot_vector:
-                    # TODO: if shot vector: good that we extend?
                     results.extend(r)
 
                 elif shot_tuple.copies > 1:
@@ -306,7 +291,6 @@ class QubitDevice(Device):
                     results.append(r.T)
 
                 s1 = s2
-            print('final results after appending', results, type(results))
 
         else:
             results = self.statistics(circuit.observables)
@@ -347,7 +331,6 @@ class QubitDevice(Device):
             results = self._asarray(results)
         else:
             results = tuple(r for r in results)
-        print('still: final results after appending?', results, type(results))
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -510,8 +493,11 @@ class QubitDevice(Device):
 
             elif obs.return_type is Counts:
                 r = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
-                print("raw result: ", r)
-                results.append(r)
+                if isinstance(r, list):
+                    # Shot vector
+                    results.extend(r)
+                else:
+                    results.append(r)
 
             elif obs.return_type is Probability:
                 results.append(
@@ -1012,7 +998,7 @@ class QubitDevice(Device):
                 # into string (it's hashable and good-looking).
                 # Before converting to str, we need to extract elements from arrays
                 # to satisfy the case of jax interface, as jax arrays do not support str.
-                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+                samples = [f"{str(s.item())}" for s in samples]
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
 
@@ -1057,7 +1043,8 @@ class QubitDevice(Device):
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
         if counts:
-            shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
+            print(samples)
+            shape = (-1, bin_size) if no_observable_provided else (-1, bin_size)
             return [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)

@@ -109,7 +109,6 @@ def _execute(
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-    print("Result now: ", res, type(res))
     for i, r in enumerate(res):
 
         if isinstance(r, np.ndarray):
