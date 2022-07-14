@@ -616,7 +616,7 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        if qml.math.ndim(state_probability) == 2:
+        if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
@@ -1107,7 +1107,7 @@ class QubitDevice(Device):
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * sub_samples[..., device_wires[0]]
 
-        elif no_observable_provided:  # if no observable was provided then return the raw samples
+        elif no_observable_provided:
             # if no observable was provided then return the raw samples
             if len(observable.wires) != 0:
                 # if wires are provided, then we only return samples from those wires
