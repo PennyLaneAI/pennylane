@@ -781,3 +781,37 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob
+
+    def classical_shadow(self, wires, n_snapshots, circuit):
+        """TODO: docs"""
+        if circuit is None:
+            raise ValueError("Circuit must be provided when measuring classical shadows")
+
+        # samples have already been generated for PauliZ
+        samples = [self._samples]
+
+        rotations = []
+        for obs in [qml.PauliY, qml.PauliZ]:
+            rotations = [
+                rot for wire in wires for rot in obs.compute_diagonalizing_gates(wires=wire)
+            ]
+
+            # apply all circuit operations
+            self.reset()
+            self.apply(circuit.operations + rotations, rotations=circuit.diagonalizing_gates)
+
+            # generate computational basis samples
+            samples.append(self.generate_samples())
+
+        samples = self._stack(samples[::-1])
+
+        # sample random Pauli measurements uniformly, where 0,1,2 = X,Y,Z
+        n_qubits = len(wires)
+        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        outcomes = samples[
+            recipes,
+            np.tile(np.arange(n_snapshots), (n_qubits, 1)).T,
+            np.tile(np.arange(n_qubits), (n_snapshots, 1)),
+        ]
+
+        return self._stack([outcomes, recipes])

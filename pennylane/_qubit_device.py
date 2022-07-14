@@ -767,7 +767,7 @@ class QubitDevice(Device):
         samples = [self._samples]
 
         rotations = []
-        for obs in [qml.PauliY, qml.PauliZ]:
+        for obs in [qml.PauliY, qml.PauliX]:
             rotations = [
                 rot for wire in wires for rot in obs.compute_diagonalizing_gates(wires=wire)
             ]
