@@ -4,28 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Added new feature `qml.ops.op_math.Product.py` that was created using Sum.py as a template. This new 
-  feature allows for the creation of a product operation between operators. The product of rotation operatiors is 
-  commutative so the order of the products does not matter. 
-  **Example**
-    The product of qml.PauliX and qml.PauliZ must be equal to -i*qml.PauliY. Which means that the matrix must be equal to 
-    -i*array([[0,-i],[i,0]])
-    >>> product_op = op_product(qml.PauliX(0), qml.PauliZ(0))
-    >>> product_op
-    PauliX(wires=[0]) * PauliZ(wires=[0])
-    >>> prouct_op.matrix()
-    array([[ 0,  -1],
-           [ 1, 0]])
-    >>> summed_op.terms()
-    ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
-
-    .. details::
-        :title: Usage Details
-
-        We can have products of operators in the same Hilbert Space. 
-        For example, multiplying operators whose matrices have the same dimensions. 
-        Support for operators with different dimensions is not available yet.
-    """
 * Changed the definition of qml.BasicEntanglerLayers to take in multiple single qubit rotations as parameters instead of just 1 
   If the parameter rotation is set as a single qubit rotation, the class still works as usual, if it passes as parameter a 
   list of single wubit rotations, the class wil automatically check for the correct format for the weights parameter that represent the rotation angle of each operator.

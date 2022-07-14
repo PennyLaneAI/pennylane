@@ -134,17 +134,17 @@ class TestAttributes:
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected_shape",
+        "n_layers, n_wires, n_rotations, expected_shape",
         [
-            (2, 3, (2, 3)),
-            (2, 1, (2, 1)),
-            (2, 2, (2, 2)),
+            (2, 3, 2, (2, 4)),
+            (2, 1, 3, (2, 6)),
+            (2, 2, 1, (2, 2)),
         ],
     )
-    def test_shape(self, n_layers, n_wires, expected_shape):
+    def test_shape(self, n_layers, n_wires, n_rotations, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.BasicEntanglerLayers.shape(n_layers, n_wires)
+        shape = qml.BasicEntanglerLayers.shape(n_layers, n_wires, n_rotations)
         assert shape == expected_shape
 
 

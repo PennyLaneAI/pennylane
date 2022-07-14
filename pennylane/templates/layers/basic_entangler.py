@@ -17,7 +17,6 @@ Contains the BasicEntanglerLayers template.
 # pylint: disable=consider-using-enumerate,too-many-arguments
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops.op_math.product import Product
 
 
 class BasicEntanglerLayers(Operation):
@@ -122,25 +121,21 @@ class BasicEntanglerLayers(Operation):
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
 
-        !!! Update for more than one single-qubit rotation gates !!! 
+        !!! Update for more than one single-qubit rotation gates !!!
         The basic entangler can now take more than one gate as parameter for repetition. The code works as follows: For a given list of operations, rotations = [RX,RY,RZ], the model takes in parameters in shape (num_layers,num_wires*num_rotations)
-         where num_rotations = len(rotations). Meaning that each rotation takes a parameter per layer per wire. 
+         where num_rotations = len(rotations). Meaning that each rotation takes a parameter per layer per wire.
         The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
-        For a list, it checks the length of the list, if the length is equal to 1, the code gets the element and works as usual. If the length of 
-        rotations list is more than 1, the code implements the operation product between the single-qubit operations. 
-        For more information refer to pennylane.ops.op_math.product.py
-        Example: 
-        For a two layer, 3 rotations and 4 wires system, the params have the form 
+        For a list, it adds the parameters in order.
+        Example:
+        For a two layer, 3 rotations and 4 wires system, the params have the form
         tensor([[0.98490185, 0.48615071, 0.65416114, 0.76073784, 0.4379965 ,
-         0.91467668, 0.37770095, 0.91138513, 0.14018763, 0.48878116,
-         0.94855556, 0.67714962],
-        [0.54151177, 0.05728717, 0.94766153, 0.43230254, 0.49035082,
-         0.50956715, 0.56727017, 0.57852111, 0.86937769, 0.03215202,
+         0.91467668, 0.37770095, 0.91138513, 0.14018763, 0.48878116, 0.94855556, 0.67714962],
+        [0.54151177, 0.05728717, 0.94766153, 0.43230254, 0.49035082, 0.50956715, 0.56727017, 0.57852111, 0.86937769, 0.03215202,
          0.78536781, 0.81338788]], requires_grad=True)
 
          Where the first index of the tensor indicates the layer, the second one indicates the position of the parameter. For a layer,
-         the first 4 parameters correspond to the parameters for the first rotation on each wire, the next 4 parameters correspond to the 
-         parameters for the second rotation on each wire, and so on. 
+         the first 4 parameters correspond to the parameters for the first rotation on each wire, the next 4 parameters correspond to the
+         parameters for the second rotation on each wire, and so on.
         ** Example Usage **
             >>> import pennylane as qml
             >>> from pennylane import numpy as np
@@ -219,34 +214,22 @@ class BasicEntanglerLayers(Operation):
         RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),
         CNOT(wires=['a', 'b'])]
         Update on more than one rotation: The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
-        For a list, it checks the length of the list, if the length is equal to 1, the code gets the element and works as usual. If the length of 
-        rotations list is more than 1, the code implements the operation product between the single-qubit operations. 
+        For a list, it adds the operation in the order of the list.
         """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
         repeat = qml.math.shape(weights)[-2]
-
         op_list = []
         for layer in range(repeat):
             for i in range(len(wires)):
                 try:
-                    op_prod_list = []
-                    if len(rotation) > 1:
+                    if len(rotation) != 0:
                         for j in range(len(rotation)):
-                            op_prod_list.append(
+                            op_list.append(
                                 rotation[j](
                                     weights[..., layer, i + j * len(wires)], wires=wires[i : i + 1]
                                 )
                             )
-                        if len(op_prod_list) > 2:
-                            prod1 = Product(op_prod_list[0], op_prod_list[1])
-                            for k in range(2, len(op_prod_list)):
-                                prod1 = Product(prod1, op_prod_list[k])
-                            op_list.append(prod1)
-                        else:
-                            op_list.append(Product(op_prod_list[0], op_prod_list[1]))
-                    else:
-                        op_list.append(rotation[0](weights[..., layer, i], wires=wires[i : i + 1]))
                 except TypeError:
                     op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
             if len(wires) == 2:
@@ -260,15 +243,15 @@ class BasicEntanglerLayers(Operation):
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires):
+    def shape(n_layers, n_wires, n_rotations):
         r"""Returns the shape of the weight tensor required for this template.
 
         Args:
             n_layers (int): number of layers
             n_wires (int): number of qubits
-
+            n_rotations (int): number of rotations
         Returns:
             tuple[int]: shape
         """
 
-        return n_layers, n_wires
+        return n_layers, n_wires*n_rotations
