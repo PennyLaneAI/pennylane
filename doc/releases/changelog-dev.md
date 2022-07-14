@@ -42,7 +42,7 @@
 
 * Differentiable zero-noise-extrapolation error mitigation via ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
-  
+
   When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
   ```python
@@ -65,7 +65,7 @@
   def qnode_mitigated(theta):
       qml.RY(theta, wires=0)
       return qml.expval(qml.PauliX(0))
-  
+
   theta = np.array(0.5, requires_grad=True)
   grad = qml.grad(qnode_mitigated)
   >>> grad(theta)
@@ -95,6 +95,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.state()
   ```
+
   ```pycon
   >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
   >>> x, y = np.array(0.4), np.array(0.6)
@@ -115,7 +116,6 @@
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
-
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
@@ -156,8 +156,8 @@
   >>> qml.grad(circuit)(weights)
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
-* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
+* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 <h3>Improvements</h3>
 
@@ -180,7 +180,7 @@
   ...     qml.Hadamard(wires=0)
   ...     qml.CNOT(wires=[0, 1])
   ...     # passing the counts flag
-  ...     return qml.sample(counts=True)   
+  ...     return qml.sample(counts=True)
   >>> result = circuit()
   >>> print(result)
   {'00': 495, '11': 505}
@@ -206,7 +206,7 @@
   labels.
   [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking 
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking
   into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
@@ -225,15 +225,16 @@
       qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```pycon
   >>> x = jnp.array([0.8, 1.0, 1.2])
   >>> jax.vmap(circuit)(x)
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
-* Added an `are_pauli_words_qwc` function which checks if certain 
-  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians 
-  with many commuting terms. 
+* Added an `are_pauli_words_qwc` function which checks if certain
+  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians
+  with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
 <h3>Breaking changes</h3>
@@ -265,5 +266,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez,
 Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
