@@ -42,7 +42,7 @@ def _process_argnum(argnum, tape):
         # All trainable tape parameters are considered
         argnum = tape.trainable_params
     elif isinstance(argnum, int):
-        if argnum >= tape.num_params:
+        if argnum >= len(tape.get_parameters(trainable_only=False)):
             raise ValueError(
                 f"The index {argnum} exceeds the number of "
                 f"trainable tape parameters ({tape.num_params})."
@@ -54,7 +54,7 @@ def _process_argnum(argnum, tape):
         # If the iterable is 1D, consider all combinations of all marked parameters
         if not qml.math.array(argnum).dtype == bool:
             # If the 1D iterable contains indices, make sure it contains valid indices...
-            if qml.math.max(argnum) >= tape.num_params:
+            if qml.math.max(argnum) >= len(tape.get_parameters(trainable_only=False)):
                 raise ValueError(
                     f"The index {qml.math.max(argnum)} exceeds the number of "
                     f"trainable tape parameters ({tape.num_params})."
