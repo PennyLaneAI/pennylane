@@ -84,6 +84,38 @@
   -1.1258709813834058
   ```
 
+* Differentiable zero-noise-extrapolation error mitigation via ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
+  [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
+  
+  When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
+
+  ```python
+  # Describe noise
+  noise_gate = qml.DepolarizingChannel
+  noise_strength = 0.1
+
+  # Load devices
+  dev_ideal = qml.device("default.mixed", wires=n_wires)
+  dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+
+  scale_factors = [1, 2, 3]
+  @mitigate_with_zne(
+    scale_factors,
+    qml.transforms.fold_global,
+    qml.transforms.poly_extrapolate,
+    extrapolate_kwargs={'order': 2}
+  )
+  @qml.qnode(dev_noisy)
+  def qnode_mitigated(theta):
+      qml.RY(theta, wires=0)
+      return qml.expval(qml.PauliX(0))
+  
+  theta = np.array(0.5, requires_grad=True)
+  grad = qml.grad(qnode_mitigated)
+  >>> grad(theta)
+  0.5712737447327619
+  ```
+
 * The quantum information module now supports computation of relative entropy.
   [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
 
@@ -114,10 +146,13 @@
   0.017750012490703237
   ```
 
-
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+* Added `QutritDevice` as an abstract base class for qutrit devices.
+  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
+  * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 **Operator Arithmetic:**
 
@@ -125,8 +160,6 @@
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
 
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
@@ -171,6 +204,10 @@
 
 
 <h3>Improvements</h3>
+
+* Jacobians are cached with the Autograd interface when using the
+  parameter-shift rule.
+  [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
 
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
@@ -272,6 +309,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
-Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
+Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
