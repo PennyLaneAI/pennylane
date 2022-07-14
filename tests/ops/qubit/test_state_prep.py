@@ -93,4 +93,3 @@ class TestDecomposition:
 
         op = qml.QubitStateVector(U, wires=wires)
         assert op.batch_size == 3
-
