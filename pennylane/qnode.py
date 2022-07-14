@@ -625,7 +625,6 @@ class QNode:
             override_shots=override_shots,
             **self.execute_kwargs,
         )
-        print("result of execute: ", res)
 
         if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             # If a device batch transform was applied, we need to 'unpack'
@@ -647,7 +646,11 @@ class QNode:
 
         self._update_original_device()
 
-        if isinstance(self._qfunc_output, Sequence) or self.device._has_partitioned_shots() or self._qfunc_output.return_type is qml.measurements.Counts:
+        if (
+            isinstance(self._qfunc_output, Sequence)
+            or self.device._has_partitioned_shots()
+            or self._qfunc_output.return_type is qml.measurements.Counts
+        ):
             # Shot vectors outputs are also sequences
             return res
 

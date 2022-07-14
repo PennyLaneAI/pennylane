@@ -111,11 +111,18 @@ def _execute(
 
     for i, r in enumerate(res):
 
+        if (
+            tapes[i]._qfunc_output.return_type  # pylint: disable=protected-access
+            is qml.measurements.Counts
+        ):
+            continue
+
         if isinstance(r, np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
             try:
-                if isinstance(r[0][0], dict):
+                # TODO: can remove due to prior continue in above if?
+                if isinstance(r[0], dict):
                     # This happens when measurement type is Counts and shot vector is passed
                     continue
             except (IndexError, KeyError):
@@ -125,8 +132,6 @@ def _execute(
 
         elif isinstance(res[i], tuple):
             res[i] = tuple(np.tensor(r) for r in res[i])
-        elif tapes[i]._qfunc_output.return_type is qml.measurements.Counts:
-            continue
 
         else:
             res[i] = qml.math.toarray(res[i])

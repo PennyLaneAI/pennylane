@@ -304,17 +304,22 @@ class QubitDevice(Device):
                     # State: assumed to only be allowed if it's the only measurement
 
                     if self._has_partitioned_shots():
-                        #TODO: revisit finite shots and State: do we disallow it?
-                        results = tuple([self._asarray(r, dtype=self.C_DTYPE) for r in results])
+                        # TODO: revisit finite shots and State: do we disallow it?
+                        results = tuple(self._asarray(r, dtype=self.C_DTYPE) for r in results)
                     else:
                         results = self._asarray(results, dtype=self.C_DTYPE)
 
                 elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
                     if self._has_partitioned_shots():
-                        results = tuple([self._asarray(r, dtype=self.R_DTYPE) for r in results])
+                        results = tuple(self._asarray(r, dtype=self.R_DTYPE) for r in results)
                     else:
                         results = self._asarray(results, dtype=self.R_DTYPE)
+                elif (
+                    circuit.measurements[0].return_type is qml.measurements.Counts
+                    and self._has_partitioned_shots()
+                ):
+                    results = tuple(results)
 
             elif all(
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
@@ -1043,14 +1048,13 @@ class QubitDevice(Device):
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
         if counts:
-            print(samples)
             shape = (-1, bin_size) if no_observable_provided else (-1, bin_size)
             return [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
         return (
-            samples.reshape((3, bin_size, -1))
+            samples.reshape((bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
