@@ -520,7 +520,7 @@ class DefaultQubit(QubitDevice):
 
             if backprop_mode:
                 # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-                if qml.math.ndim(self.state) == 2:
+                if self._ndim(self.state) == 2:
                     raise NotImplementedError(
                         "Expectation values of Hamiltonians for interface!=None are "
                         "not supported together with parameter broadcasting yet"
@@ -544,9 +544,9 @@ class DefaultQubit(QubitDevice):
                     Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
-                        qml.math.gather(qml.math.conj(self.state), coo.row)
+                        self._gather(self._conj(self.state), coo.row)
                         * Hmat
-                        * qml.math.gather(self.state, coo.col)
+                        * self._gather(self.state, coo.col)
                     )
                     c = qml.math.convert_like(coeff, product)
 
@@ -564,11 +564,11 @@ class DefaultQubit(QubitDevice):
                     Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
-                if qml.math.ndim(state) == 2:
+                if self._ndim(state) == 2:
                     res = qml.math.array(
                         [
                             csr_matrix.dot(
-                                csr_matrix(qml.math.conj(_state)),
+                                csr_matrix(self._conj(_state)),
                                 csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
                             ).toarray()[0]
                             for _state in state
@@ -576,14 +576,14 @@ class DefaultQubit(QubitDevice):
                     )
                 else:
                     res = csr_matrix.dot(
-                        csr_matrix(qml.math.conj(state)),
+                        csr_matrix(self._conj(state)),
                         csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
                     ).toarray()[0]
 
             if observable.name == "Hamiltonian":
                 res = qml.math.squeeze(res)
 
-            return qml.math.real(res)
+            return self._real(res)
 
         return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
