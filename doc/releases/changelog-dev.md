@@ -161,6 +161,28 @@
 
 <h3>Improvements</h3>
 
+* Embedding templates now support parameter broadcasting.
+  [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
+
+  Like more common parametrized operations, embedding templates
+  like `AmplitudeEmbedding` or `IQPEmbedding` now support parameter
+  broadcasting with a leading broadcasting dimension in their variational
+  parameters. `AmplitudeEmbedding`, for example, would usually use a 
+  one-dimensional input vector of features. We now also can do
+
+  ```pycon
+  >>> features = np.array([
+  ...     [0.5, 0.5, 0., 0., 0.5, 0., 0.5, 0.],
+  ...     [1., 0., 0., 0., 0., 0., 0., 0.],
+  ...     [0.5, 0.5, 0., 0., 0., 0., 0.5, 0.5],
+  ... ])
+  >>> op = qml.AmplitudeEmbedding(features, wires=[1, 5, 2])
+  >>> op.batch_size
+  3
+  ```
+
+  An exception is `BasisEmbedding`, which is not broadcastable yet.
+
 * Jacobians are cached with the Autograd interface when using the
   parameter-shift rule.
   [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
@@ -265,5 +287,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
-Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
+Ixchel Meza Chavez, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
+Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
