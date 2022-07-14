@@ -123,7 +123,8 @@ class TestInitialization:
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
-        assert sum_op.id in [id, None]
+        if sum_method.__name__ == op_sum.__name__:
+            assert sum_op.id in id
 
         assert sum_op.data == [[], [0.23]]
         assert sum_op.parameters == [[], [0.23]]
