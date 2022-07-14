@@ -36,12 +36,7 @@ def pow_using_dunder_method(base, z, do_queue=True, id=None):
     return base**z
 
 
-def pow_using_class(base, z, do_queue=True, id=None):
-    """Helper function which computes the base raised to the power using the Pow class."""
-    return Pow(base=base, z=z, do_queue=do_queue, id=id)
-
-
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestInheritanceMixins:
     """Test the inheritance structure and mixin addition through dynamic __new__ method."""
 
@@ -106,7 +101,7 @@ class TestInheritanceMixins:
         assert "grad_recipe" not in dir(ob)
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
@@ -121,7 +116,7 @@ class TestInitialization:
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
         assert op.name == "PauliX**-4.2"
-        if power_method.__name__ == pow_using_class.__name__:
+        if power_method.__name__ == Pow.__name__:
             assert op.id == "something"
 
         assert op.num_params == 0
@@ -143,7 +138,7 @@ class TestInitialization:
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
         assert op.name == "Rot**-0.766"
-        if power_method.__name__ == pow_using_class.__name__:
+        if power_method.__name__ == Pow.__name__:
             assert op.id == "id"
 
         assert op.num_params == 3
@@ -195,7 +190,7 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestProperties:
     """Test Pow properties."""
 
@@ -285,7 +280,7 @@ class TestProperties:
         assert op.batch_size == 3
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestMiscMethods:
     """Test miscellaneous minor Pow methods."""
 
@@ -344,7 +339,7 @@ class TestMiscMethods:
         assert base_gen_op.__class__ is op_gen_op.__class__
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestDiagonalizingGates:
     """Test Pow operators diagonalizing_gates method."""
 
@@ -374,7 +369,7 @@ class TestDiagonalizingGates:
             op.diagonalizing_gates()
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestQueueing:
     """Test that Pow operators queue and update base metadata"""
 
@@ -402,7 +397,7 @@ class TestQueueing:
 
     def test_do_queue_False(self, power_method):
         """Test that when `do_queue` is specified, the operation is not queued."""
-        if power_method.__name__ == pow_using_class:
+        if power_method.__name__ == Pow:
             base = qml.PauliX(0)
             with qml.tape.QuantumTape() as tape:
                 op: Pow = power_method(base, 4.5, do_queue=False)
@@ -410,7 +405,7 @@ class TestQueueing:
             assert len(tape) == 0
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestMatrix:
     """Test the matrix method for the power operator."""
 
@@ -481,7 +476,7 @@ class TestMatrix:
         assert qml.math.allclose(op_mat, compare_mat)
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestSparseMatrix:
     """Tests involving the sparse matrix method."""
 
@@ -526,7 +521,7 @@ class TestSparseMatrix:
             op.sparse_matrix()
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestDecompositionExpand:
     """Test the Pow Operator decomposition and expand methods."""
 
@@ -585,7 +580,7 @@ class TestDecompositionExpand:
             op.decomposition()
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestInverse:
     """Test the interaction between in-place inversion and the power operator."""
 
@@ -628,7 +623,7 @@ class TestInverse:
             op.inverse = True
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestOperationProperties:
     """Test Operation specific properties."""
 
@@ -648,7 +643,7 @@ class TestOperationProperties:
         assert base.control_wires == op.control_wires
 
 
-@pytest.mark.parametrize("power_method", [pow_using_class, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestIntegration:
     """Test the execution of power gates in a QNode."""
 
