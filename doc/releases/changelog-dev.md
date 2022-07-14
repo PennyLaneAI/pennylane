@@ -106,8 +106,9 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
-  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
+
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 **Operator Arithmetic:**
@@ -248,11 +249,18 @@
 
 <h3>Documentation</h3>
 
+* Added a dedicated docstring for the `QubitDevice.sample` method.
+  [(#2812)](https://github.com/PennyLaneAI/pennylane/pull/2812)
+
 * Optimization examples of using JAXopt and Optax with the JAX interface have
   been added.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the custom implementation of the `states_to_binary` device
+  method was not used.
+  [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
 
 * `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
@@ -265,5 +273,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez,
-Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
+David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
+Ixchel Meza Chavez, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
+Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
