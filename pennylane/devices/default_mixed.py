@@ -520,9 +520,9 @@ class DefaultMixed(QubitDevice):
 
         if self.readout_err:
             measured_wires = qml.wires.Wires.all_wires([obs.wires for obs in observables])
-            bitflips = [qml.BitFlip(self.readout_err,wires=k) for k in measured_wires]
-            for bf in bitflips:
-                self._apply_operation(bf)
+            for k in measured_wires:
+                bit_flip = qml.BitFlip(self.readout_err,wires=k)
+                self._apply_operation(bit_flip)
         return super().statistics(observables, shot_range, bin_size)
 
     def apply(self, operations, rotations=None, **kwargs):
