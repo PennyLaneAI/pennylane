@@ -2781,6 +2781,7 @@ class IsingXY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The XY operator satisfies a four-term parameter-shift rule
 
       .. math::
@@ -2804,6 +2805,9 @@ class IsingXY(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]

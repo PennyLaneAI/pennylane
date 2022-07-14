@@ -223,6 +223,7 @@ supports_broadcasting = Attribute(
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
     ]
 )
 """Attribute: Operations that support parameter broadcasting.

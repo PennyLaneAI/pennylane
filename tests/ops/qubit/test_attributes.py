@@ -100,6 +100,7 @@ single_scalar_multi_wire_ops = [
     "IsingXX",
     "IsingYY",
     "IsingZZ",
+    "IsingXY",
 ]
 
 two_scalar_single_wire_ops = [
