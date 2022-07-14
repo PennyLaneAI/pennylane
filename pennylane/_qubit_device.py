@@ -973,6 +973,27 @@ class QubitDevice(Device):
         return np.squeeze(np.var(samples, axis=0))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        """Return samples of an observable.
+
+        Args:
+            observable (Observable): the observable to sample
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+            counts (bool): whether counts (``True``) or raw samples (``False``)
+                should be returned
+
+        Raises:
+            EigvalsUndefinedError: if no information is available about the
+                eigenvalues of the observable
+
+        Returns:
+            Union[array[float], dict, list[dict]]: samples in an array of
+            dimension ``(shots,)`` or counts
+        """
+
         def _samples_to_counts(samples, no_observable_provided):
             """Group the obtained samples into a dictionary.
 
