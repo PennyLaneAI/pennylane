@@ -105,6 +105,10 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+* Added `QutritDevice` as an abstract base class for qutrit devices.
+  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
+  * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 **Operator Arithmetic:**
 
@@ -112,8 +116,6 @@
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
 
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
