@@ -335,72 +335,6 @@ class QubitDevice(Device):
             self.tracker.record()
         return results
 
-    def execute_new(self, circuit, **kwargs):
-        """Execute a queue of quantum operations on the device and then
-        measure the given observables.
-
-        For plugin developers: instead of overwriting this, consider
-        implementing a suitable subset of
-
-        * :meth:`apply`
-
-        * :meth:`~.generate_samples`
-
-        * :meth:`~.probability`
-
-        Additional keyword arguments may be passed to the this method
-        that can be utilised by :meth:`apply`. An example would be passing
-        the ``QNode`` hash that can be used later for parametric compilation.
-
-        Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
-
-        Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
-
-        Returns:
-            array[float]: measured value(s)
-        """
-        self.check_validity(circuit.operations, circuit.observables)
-
-        # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
-
-        results = self.statistics(circuit.observables)
-
-        if len(circuit.measurements) == 1:
-            if circuit.measurements[0].return_type is qml.measurements.State:
-                # State: assumed to only be allowed if it's the only measurement
-                results = self._asarray(results, dtype=self.C_DTYPE)
-            elif circuit.measurements[0].return_type is qml.measurements.Counts:
-                # Measurements with Counts
-                results = results[0]
-            else:
-                # Measurements with expval, var or probs
-                results = self._asarray(results, dtype=self.R_DTYPE)
-
-        else:
-            results_list = []
-            for i, mes in enumerate(circuit.measurements):
-                if mes.return_type is qml.measurements.State:
-                    # State: assumed to only be allowed if it's the only measurement
-                    results_list.append(self._asarray(results[i], dtype=self.C_DTYPE))
-                elif mes.return_type is qml.measurements.Counts:
-                    # Measurements with Counts
-                    results_list.append(results[i])
-                else:
-                    # Measurements with expval, var or probs
-                    results_list.append(self._asarray(results[i], dtype=self.R_DTYPE))
-            results = tuple(results_list)
-
-        # increment counter for number of executions of qubit device
-        self._num_executions += 1
-
-        if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots)
-            self.tracker.record()
-        return results
-
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
 
@@ -426,7 +360,7 @@ class QubitDevice(Device):
             self.reset()
 
             # Insert control on value here
-            res = self.execute_new(circuit)
+            res = self.execute(circuit)
             results.append(res)
 
         if self.tracker.active:

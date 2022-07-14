@@ -817,12 +817,15 @@ class TestHigherOrderDerivatives:
 
         def cost_fn(x):
             with qml.tape.QuantumTape() as tape1:
+                qml.RY(0.0, wires=[0])
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
             with qml.tape.QuantumTape() as tape2:
+                qml.RY(-1.0, wires=[1])
+                qml.RY(1.0, wires=[1])
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
