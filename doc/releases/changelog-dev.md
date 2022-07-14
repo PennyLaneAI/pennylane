@@ -151,13 +151,25 @@
         return qml.expval(sum_op)
   ```
 
-  ```
+  ```python
   >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
   >>> qml.grad(circuit)(weights)
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
+
+* Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
+  more naturally:
+
+  ```python
+  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> summed_op
+  RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
+  >>> exp_op = qml.RZ(1.0, wires=0) ** 2
+  >>> exp_op
+  RZ**2(1.0, wires=[0])
+  ```
 
 <h3>Improvements</h3>
 
