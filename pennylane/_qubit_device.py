@@ -281,6 +281,7 @@ class QubitDevice(Device):
                     # Measurement types except for Counts
                     r = qml.math.squeeze(r)
 
+                print("results just before the extension logic", r)
                 if isinstance(r, list) and isinstance(r[0], dict):
                     # This happens when measurement type is Counts
                     results.extend(r)
@@ -486,7 +487,9 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
-                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
+                res = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
+                print(res)
+                results.append(res)
 
             elif obs.return_type is Variance:
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))

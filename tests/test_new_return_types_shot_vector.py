@@ -29,9 +29,34 @@ from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
 
 
+single_scalar_output_measurements = [qml.expval(qml.PauliZ(wires=1)), qml.var(qml.PauliZ(wires=1))]
+
+# Note: mutual info
+# qml.mutual_info(wires0=[0], wires1=[1]), qml.vn_entropy(wires=[0])]
+
+
 @pytest.mark.parametrize("shot_vector", [[1, 10, 10, 1000], [1, (10, 2), 1000]])
 class TestShotVectorsAutograd:
     """TODO"""
+
+    @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
+    def test_expval(self, shot_vector, measurement):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=2, shots=shot_vector)
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        res = circuit(0.5)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res, tuple)
+        assert len(res) == all_shots
+        assert all(r.shape == () for r in res)
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
     @pytest.mark.xfail
