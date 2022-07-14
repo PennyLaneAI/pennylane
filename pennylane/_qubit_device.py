@@ -993,6 +993,7 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
+
         def _samples_to_counts(samples, no_observable_provided):
             """Group the obtained samples into a dictionary.
 
