@@ -923,7 +923,7 @@ class TestHamiltonian:
         ops = [qml.PauliX(0), qml.PauliZ(1)]
         h = qml.Hamiltonian(coeffs, ops)
         c, o = h.terms()
-        assert isinstance(c, list)
+        assert isinstance(c, tuple)
         assert isinstance(o, list)
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
