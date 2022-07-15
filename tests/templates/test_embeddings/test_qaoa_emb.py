@@ -287,7 +287,7 @@ class TestInputs:
             qml.QAOAEmbedding(features, weights, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Weights must be a two-dimensional or three"):
+        with pytest.raises(ValueError, match="Weights must be a two-dimensional tensor or three"):
             circuit()
 
     @pytest.mark.parametrize(
