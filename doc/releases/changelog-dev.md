@@ -270,12 +270,19 @@
 
 <h3>Documentation</h3>
 
+* Added a dedicated docstring for the `QubitDevice.sample` method.
+  [(#2812)](https://github.com/PennyLaneAI/pennylane/pull/2812)
+
 * Optimization examples of using JAXopt and Optax with the JAX interface have
   been added.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the custom implementation of the `states_to_binary` device
+  method was not used.
+  [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
+  
 * `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
