@@ -367,6 +367,7 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
         results = self.statistics(circuit.observables)
+        print(results)
 
         if len(circuit.measurements) == 1:
             if circuit.measurements[0].return_type is qml.measurements.State:
