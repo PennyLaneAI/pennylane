@@ -249,7 +249,7 @@ class Hamiltonian(Observable):
             ops (list[.Operator]): operators
 
         Returns:
-            tuple[list[tensor_like or float], list[.Operator]]: coefficients and operations
+            tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
 
         **Example**
 
