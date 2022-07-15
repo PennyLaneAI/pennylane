@@ -789,7 +789,7 @@ class QubitDevice(Device):
             np.tile(np.arange(n_qubits), (n_snapshots, 1)),
         ]
 
-        return self._stack([outcomes, recipes])
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
