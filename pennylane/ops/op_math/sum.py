@@ -131,13 +131,7 @@ class Sum(Operator):
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
-        self.summands: List[Operator] = []
-        for summand in summands:
-            if isinstance(summand, Sum):
-                self.summands.extend(summand.summands)
-                continue
-            self.summands.append(summand)
-
+        self.summands = summands
         self.data = [s.parameters for s in self.summands]
         self._wires = qml.wires.Wires.all_wires([s.wires for s in self.summands])
 
