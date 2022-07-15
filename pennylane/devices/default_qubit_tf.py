@@ -36,6 +36,7 @@ except ImportError as e:
 
 from . import DefaultQubit
 from .default_qubit import tolerance
+from pennylane.math.single_dispatch import _ndim_tf
 
 
 class DefaultQubitTF(DefaultQubit):
@@ -134,7 +135,7 @@ class DefaultQubitTF(DefaultQubit):
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
     _size = staticmethod(tf.size)
-    _ndim = staticmethod(qml.math.ndim)
+    _ndim = staticmethod(_ndim_tf)
 
     @staticmethod
     def _const_mul(constant, array):
