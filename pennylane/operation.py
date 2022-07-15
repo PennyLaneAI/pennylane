@@ -1199,7 +1199,7 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number) and other == 0:
             return self
         if isinstance(other, Operator):
-            return qml.Sum(self, other)
+            return qml.ops.Sum(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
@@ -1207,7 +1207,7 @@ class Operator(abc.ABC):
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
-            return qml.Pow(base=self, z=other)
+            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
         raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
