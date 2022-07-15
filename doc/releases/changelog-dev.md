@@ -40,6 +40,16 @@
   -1.1258709813834058
   ```
 
+* Added a new optimizer `qml.QNSPSAOptimizer` that implements the quantum natural simultaneous
+  perturbation stochastic approximation method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818). 
+
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
+  executions per optimization step, in comparison to the number of 3 from `qml.SPSAOptimizer`.
+  The additional circuit executions are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence. 
+
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
@@ -191,5 +201,5 @@
 This release contains contributions from (in alphabetical order):
 
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
-Antal Száva, Moritz Willmann
+Yiheng Duan, David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Ixchel Meza Chavez, 
+Bogdan Reznychenko, Mudit Pandey, Antal Száva, Moritz Willmann

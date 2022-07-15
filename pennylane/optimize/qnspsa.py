@@ -328,7 +328,8 @@ class QNSPSAOptimizer:
             qml.probs(wires=cost.tape.wires.labels)
         return tape
 
-    def _get_operations(self, cost, args, kwargs):
+    @staticmethod
+    def _get_operations(cost, args, kwargs):
         cost.construct(args, kwargs)
         return cost.tape.operations
 
