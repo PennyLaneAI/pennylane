@@ -257,6 +257,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the parameter-shift Hessian of circuits with untrainable
+  parameters might be computed with respect to the wrong parameters or
+  might raise an error.
+  [(#2822)](https://github.com/PennyLaneAI/pennylane/pull/2822)
+
 * Fixes a bug where the custom implementation of the `states_to_binary` device
   method was not used.
   [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
@@ -273,5 +278,5 @@
 This release contains contributions from (in alphabetical order):
 
 David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
-Ixchel Meza Chavez, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
+Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
 Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
