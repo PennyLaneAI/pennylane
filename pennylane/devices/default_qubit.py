@@ -27,6 +27,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane.ops.functions.generator import generator
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
@@ -146,6 +147,30 @@ class DefaultQubit(QubitDevice):
         "ECR",
     }
 
+    generators ={
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "PauliRot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "U1",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+        "IsingXY",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "OrbitalRotation",
+    }
+
     observables = {
         "PauliX",
         "PauliY",
@@ -203,6 +228,26 @@ class DefaultQubit(QubitDevice):
         consecutive_wires = range(self.num_wires)
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
+
+    def is_all_ops_supported(self):
+        ops_list =self.op_queue()
+        tmp = bool(True)
+        for index, operation in enumerate(ops_list):
+            if operation not in self.operations:
+                return bool(False)
+            else:
+                tmp*=bool(True)
+        return tmp 
+
+    def is_generator_all_supported(self):
+        ops_list =self.op_queue()
+        tmp = bool(True)
+        for index, generator in enumerate(ops_list):
+            if generator not in self.generators:
+                return bool(False)
+            else:
+                tmp*=bool(True)
+        return tmp 
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
