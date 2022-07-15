@@ -125,7 +125,7 @@ def __getattr__(name):
         raise AttributeError from e
 
 
-def expand_matrix(base_matrix, wires, wire_order = None):
+def expand_matrix(base_matrix, wires, wire_order=None):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -1426,7 +1426,6 @@ class Operation(Operator):
 
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
