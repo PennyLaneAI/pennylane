@@ -14,10 +14,10 @@
 """
 Tests for the Hamiltonian class.
 """
+from unittest.mock import patch
+
 import numpy as np
 import pytest
-
-from unittest.mock import patch
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -923,7 +923,7 @@ class TestHamiltonian:
         ops = [qml.PauliX(0), qml.PauliZ(1)]
         h = qml.Hamiltonian(coeffs, ops)
         c, o = h.terms()
-        assert isinstance(c, tuple)
+        assert isinstance(c, list)
         assert isinstance(o, list)
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
