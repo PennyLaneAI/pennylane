@@ -152,7 +152,7 @@ class TestInitialization:
     def test_raise_error_fewer_then_2_summands(self):
         """Test that initializing a Sum operator with less than 2 summands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to sum;"):
-            Sum(qml.PauliX(0))
+            op_sum(qml.PauliX(0))
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
     def test_queue_idx(self, sum_method):
@@ -561,7 +561,7 @@ class TestProperties:
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        diagonalizing_gates = qml.matrix(diag_sum_op.diagonalizing_gates()[0])
+        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
         true_diagonalizing_gates = qnp.array(
             (
                 [
@@ -591,7 +591,7 @@ class TestWrapperFunc:
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
         assert sum_class_op.summands == sum_func_op.summands
-        assert np.allclose(qml.matrix(sum_class_op), qml.matrix(sum_func_op))
+        assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
         assert sum_class_op.id == sum_func_op.id
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
