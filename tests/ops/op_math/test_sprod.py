@@ -113,7 +113,9 @@ class TestInitialization:
     def test_init_sprod_op(self, test_id):
         sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=True, id=test_id)
 
-        assert sprod_op.scalar == 3.14  # no need to test if op.base == RX since this is covered in SymbolicOp tests
+        assert (
+            sprod_op.scalar == 3.14
+        )  # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.wires == Wires(("a",))
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
@@ -367,11 +369,11 @@ class TestProperties:
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
-        coeff, op = (1.0+2j, qml.PauliX(wires=0))
+        coeff, op = (1.0 + 2j, qml.PauliX(wires=0))
         sprod_op = SProd(coeff, op)
         sprod_op_eigvals = sprod_op.eigvals()
 
-        x_eigvals = np.array([1., -1.])
+        x_eigvals = np.array([1.0, -1.0])
         true_eigvals = coeff * x_eigvals  # the true eigvals
         assert np.allclose(sprod_op_eigvals, true_eigvals)
 
@@ -510,14 +512,14 @@ class TestIntegration:
         weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
         grad = qml.grad(circuit)(weights)
 
-        true_grad = 100 * qnp.array([-7.05928859e-02,  1.38777878e-17,  2.77555756e-17])
+        true_grad = 100 * qnp.array([-7.05928859e-02, 1.38777878e-17, 2.77555756e-17])
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
         """Test that non-hermitian ops in a measurement process will raise an error."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
-        sprod_op = SProd(1.+2.j, qml.RX(1.23, wires=0))
+        sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
 
         @qml.qnode(dev)
         def my_circ():
