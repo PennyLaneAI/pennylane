@@ -174,7 +174,8 @@ class TestInitialization:
         sum_op = sum_method(*ops_lst)
         coeff, sum_ops = sum_op.terms()
 
-        assert coeff == [1.0, 1.0, 1.0]
+        if isinstance(sum_op, Sum):
+            assert coeff == [1.0, 1.0, 1.0]
 
         for op1, op2 in zip(sum_ops, ops_lst):
             assert op1.name == op2.name
