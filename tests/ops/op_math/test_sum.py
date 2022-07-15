@@ -234,7 +234,6 @@ class TestMscMethods:
                 assert s1.data == s2.data
 
 
-@pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
 class TestMatrix:
     """Test matrix-related methods."""
 
@@ -244,7 +243,6 @@ class TestMatrix:
         self,
         op_and_mat1: Tuple[Operator, np.ndarray],
         op_and_mat2: Tuple[Operator, np.ndarray],
-        sum_method,
     ):
         """Test matrix method for a sum of non_parametric ops"""
         op1, mat1 = op_and_mat1
@@ -252,15 +250,15 @@ class TestMatrix:
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
         true_mat = mat1 + mat2
 
-        sum_op = sum_method(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
-        sum_mat = qml.matrix(sum_op)
+        sum_op = Sum(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
+        sum_mat = sum_op.matrix()
 
         assert np.allclose(sum_mat, true_mat)
 
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
     def test_parametric_ops_two_terms(
-        self, op_mat1: Tuple[Operator, np.ndarray], op_mat2: Tuple[Operator, np.ndarray], sum_method
+        self, op_mat1: Tuple[Operator, np.ndarray], op_mat2: Tuple[Operator, np.ndarray]
     ):
         """Test matrix method for a sum of parametric ops"""
         op1, mat1 = op_mat1
@@ -270,25 +268,23 @@ class TestMatrix:
         par2 = tuple(range(op2.num_params))
         mat1, mat2 = compare_and_expand_mat(mat1(*par1), mat2(*par2))
 
-        sum_op = sum_method(
-            op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires))
-        )
-        sum_mat = qml.matrix(sum_op)
+        sum_op = Sum(op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires)))
+        sum_mat = sum_op.matrix()
         true_mat = mat1 + mat2
         assert np.allclose(sum_mat, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
-    def test_error_no_mat(self, op: Operator, sum_method):
+    def test_error_no_mat(self, op: Operator):
         """Test that an error is raised if one of the summands doesn't
         have its matrix method defined."""
-        sum_op = sum_method(op(wires=0), qml.PauliX(wires=2), qml.PauliZ(wires=1))
+        sum_op = Sum(op(wires=0), qml.PauliX(wires=2), qml.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
-            qml.matrix(sum_op)
+            sum_op.matrix()
 
-    def test_sum_ops_multi_terms(self, sum_method):
+    def test_sum_ops_multi_terms(self):
         """Test matrix is correct for a sum of more than two terms."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliZ(wires=0))
-        mat = qml.matrix(sum_op)
+        sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=0), qml.PauliZ(wires=0))
+        mat = sum_op.matrix()
 
         true_mat = math.array(
             [
@@ -298,10 +294,10 @@ class TestMatrix:
         )
         assert np.allclose(mat, true_mat)
 
-    def test_sum_ops_multi_wires(self, sum_method):
+    def test_sum_ops_multi_wires(self):
         """Test matrix is correct when multiple wires are used in the sum."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliZ(wires=2))
-        mat = qml.matrix(sum_op)
+        sum_op = Sum(qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliZ(wires=2))
+        mat = sum_op.matrix()
 
         x = math.array([[0, 1], [1, 0]])
         h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
@@ -315,11 +311,11 @@ class TestMatrix:
 
         assert np.allclose(mat, true_mat)
 
-    def test_sum_ops_wire_order(self, sum_method):
+    def test_sum_ops_wire_order(self):
         """Test correct matrix is returned when the wire_order arg is provided."""
-        sum_op = sum_method(qml.PauliZ(wires=2), qml.PauliX(wires=0), qml.Hadamard(wires=1))
+        sum_op = Sum(qml.PauliZ(wires=2), qml.PauliX(wires=0), qml.Hadamard(wires=1))
         wire_order = [0, 1, 2]
-        mat = qml.matrix(sum_op, wire_order=wire_order)
+        mat = sum_op.matrix(wire_order=wire_order)
 
         x = math.array([[0, 1], [1, 0]])
         h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
@@ -345,13 +341,11 @@ class TestMatrix:
 
         return 1 / math.sqrt(2**num_wires) * mat
 
-    def test_sum_templates(self, sum_method):
+    def test_sum_templates(self):
         """Test that we can sum templates and generated matrix is correct."""
         wires = [0, 1, 2]
-        sum_op = sum_method(
-            qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0)
-        )
-        mat = qml.matrix(sum_op)
+        sum_op = Sum(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
+        mat = sum_op.matrix()
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
         qft_mat = self.get_qft_mat(3)
@@ -361,15 +355,15 @@ class TestMatrix:
         true_mat = grov_mat + qft_mat + x_mat
         assert np.allclose(mat, true_mat)
 
-    def test_sum_qchem_ops(self, sum_method):
+    def test_sum_qchem_ops(self):
         """Test that qchem operations can be summed and the generated matrix is correct."""
         wires = [0, 1, 2, 3]
-        sum_op = sum_method(
+        sum_op = Sum(
             qml.OrbitalRotation(4.56, wires=wires),
             qml.SingleExcitation(1.23, wires=[0, 1]),
             qml.Identity(3),
         )
-        mat = qml.matrix(sum_op)
+        mat = sum_op.matrix()
 
         or_mat = gd.OrbitalRotation(4.56)
         se_mat = math.kron(gd.SingleExcitation(1.23), math.eye(4, dtype="complex128"))
@@ -378,14 +372,14 @@ class TestMatrix:
         true_mat = or_mat + se_mat + i_mat
         assert np.allclose(mat, true_mat)
 
-    def test_sum_observables(self, sum_method):
+    def test_sum_observables(self):
         """Test that observable objects can also be summed with correct matrix representation."""
         wires = [0, 1]
         sum_op = Sum(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
             qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
         )
-        mat = qml.matrix(sum_op)
+        mat = sum_op.matrix()
 
         her_mat = qnp.kron(qnp.array([[0.0, 1.0], [1.0, 0.0]]), qnp.eye(2))
         proj_mat = qnp.array(
@@ -395,13 +389,13 @@ class TestMatrix:
         true_mat = her_mat + proj_mat
         assert np.allclose(mat, true_mat)
 
-    def test_sum_qubit_unitary(self, sum_method):
+    def test_sum_qubit_unitary(self):
         """Test that an arbitrary QubitUnitary can be summed with correct matrix representation."""
         U = 1 / qnp.sqrt(2) * qnp.array([[1, 1], [1, -1]])  # Hadamard
         U_op = qml.QubitUnitary(U, wires=0)
 
         sum_op = Sum(U_op, qml.Identity(wires=1))
-        mat = qml.matrix(sum_op)
+        mat = sum_op.matrix()
 
         true_mat = qnp.kron(U, qnp.eye(2)) + qnp.eye(4)
         assert np.allclose(mat, true_mat)
@@ -409,7 +403,7 @@ class TestMatrix:
     # Add interface tests for each interface !
 
     @pytest.mark.jax
-    def test_sum_jax(self, sum_method):
+    def test_sum_jax(self):
         """Test matrix is cast correctly using jax parameters."""
         import jax
         import jax.numpy as jnp
@@ -422,7 +416,7 @@ class TestMatrix:
             qml.RX(theta, wires=1),
             qml.Identity(wires=0),
         )
-        mat = qml.matrix(sum_op)
+        mat = sum_op.matrix()
 
         true_mat = (
             jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
@@ -434,7 +428,7 @@ class TestMatrix:
         assert jnp.allclose(mat, true_mat)
 
     @pytest.mark.torch
-    def test_sum_torch(self, sum_method):
+    def test_sum_torch(self):
         """Test matrix is cast correctly using torch parameters."""
         import torch
 
@@ -446,7 +440,7 @@ class TestMatrix:
             qml.RX(theta, wires=1),
             qml.Identity(wires=0),
         )
-        mat = qml.matrix(sum_op)
+        mat = sum_op.matrix()
 
         true_mat = (
             qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
@@ -458,7 +452,7 @@ class TestMatrix:
         assert torch.allclose(mat, true_mat)
 
     @pytest.mark.tf
-    def test_sum_tf(self, sum_method):
+    def test_sum_tf(self):
         """Test matrix is cast correctly using tf parameters."""
         import tensorflow as tf
 
@@ -470,7 +464,7 @@ class TestMatrix:
             qml.RX(theta, wires=1),
             qml.Identity(wires=0),
         )
-        mat = qml.matrix(sum_op)
+        mat = sum_op.matrix()
 
         true_mat = (
             qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
