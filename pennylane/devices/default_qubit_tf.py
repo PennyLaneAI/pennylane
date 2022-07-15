@@ -34,9 +34,9 @@ except ImportError as e:
     raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
+from pennylane.math.single_dispatch import _ndim_tf
 from . import DefaultQubit
 from .default_qubit import tolerance
-from pennylane.math.single_dispatch import _ndim_tf
 
 
 class DefaultQubitTF(DefaultQubit):
