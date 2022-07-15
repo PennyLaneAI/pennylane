@@ -59,9 +59,9 @@ class SProd(SymbolicOp):
 
     @data.setter
     def data(self, new_data):
-        self.scalar = new_data[0]
+        self.scalar = new_data[0][0]
         if len(new_data) > 1:
-            self.base.data = new_data[1:]
+            self.base.data = new_data[1]
 
     @property
     def parameters(self):

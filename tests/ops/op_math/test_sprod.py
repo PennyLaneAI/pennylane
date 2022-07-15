@@ -16,6 +16,9 @@
 import pytest
 import numpy as np
 from copy import copy
+
+from scipy.sparse import csr_matrix
+
 import pennylane as qml
 from pennylane import math
 import pennylane.numpy as qnp
@@ -109,6 +112,8 @@ def get_qft_mat(num_wires):
 
 
 class TestInitialization:
+    """Test initialization of ther SProd Class."""
+
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
         sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=True, id=test_id)
@@ -137,6 +142,20 @@ class TestInitialization:
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
         assert sprod_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
+    def test_data_setter(self):
+        """Test the setter method for"""
+        scalar, angles = (9.87, (1.23, 4.0, 5.67))
+        old_data = [[9.87], [1.23, 4.0, 5.67]]
+
+        sprod_op = s_prod(scalar, qml.Rot(*angles, wires=1))
+        assert sprod_op.data == old_data
+
+        new_data = [[1.23], [0.0, -1.0, -2.0]]
+        sprod_op.data = new_data
+        assert sprod_op.data == new_data
+        assert sprod_op.scalar == new_data[0][0]
+        assert sprod_op.base.data == new_data[1]
+
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
         sprod_op = SProd(scalar, op)
@@ -156,15 +175,18 @@ class TestInitialization:
 
 
 class TestMscMethods:
+    """Test miscellaneous methods of the SProd class."""
+
     @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, op_scalar_tup, op_rep):
+        """Test the repr dunder method."""
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-
         assert op_rep == sprod_op.__repr__()
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):
+        """Test the copy dunder method properly copies the operator."""
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
         copied_op = copy(sprod_op)
@@ -293,6 +315,19 @@ class TestMatrix:
 
         true_mat = 42 * U
         assert np.allclose(mat, true_mat)
+
+    # TODO[Jay]: remove xfail once there is support for sparse matrices for most operations
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("scalar, op", ops)
+    def test_sparse_matrix(self, op, scalar):
+        """Test the sparse_matrix representation of scaled ops."""
+        sprod_op = SProd(scalar, op)
+        sparse_matrix = sprod_op.sparse_matrix()
+
+        expected_sparse_matrix = scalar * op.matrix()
+        expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+
+        assert np.allclose(sparse_matrix, expected_sparse_matrix)
 
     # Add interface tests for each interface !
 
