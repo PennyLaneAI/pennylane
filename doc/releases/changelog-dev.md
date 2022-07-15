@@ -95,6 +95,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.state()
   ```
+
   ```pycon
   >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
   >>> x, y = np.array(0.4), np.array(0.6)
@@ -116,7 +117,6 @@
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
-
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
@@ -152,13 +152,25 @@
         return qml.expval(sum_op)
   ```
 
-  ```
+  ```pycon
   >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
   >>> qml.grad(circuit)(weights)
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
-* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
+* Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
+  more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
+
+  ```python
+  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> summed_op
+  RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
+  >>> exp_op = qml.RZ(1.0, wires=0) ** 2
+  >>> exp_op
+  RZ**2(1.0, wires=[0])
+  ```
+
+* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 <h3>Improvements</h3>
 
@@ -226,6 +238,7 @@
       qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```pycon
   >>> x = jnp.array([0.8, 1.0, 1.2])
   >>> jax.vmap(circuit)(x)
@@ -258,6 +271,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the parameter-shift Hessian of circuits with untrainable
+  parameters might be computed with respect to the wrong parameters or
+  might raise an error.
+  [(#2822)](https://github.com/PennyLaneAI/pennylane/pull/2822)
+
 * Fixes a bug where the custom implementation of the `states_to_binary` device
   method was not used.
   [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
@@ -274,5 +292,5 @@
 This release contains contributions from (in alphabetical order):
 
 David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
-Ixchel Meza Chavez, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
-Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Mudit Pandey,
+Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
