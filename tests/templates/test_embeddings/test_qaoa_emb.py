@@ -253,7 +253,6 @@ class TestInputs:
         "weights, n_wires",
         [
             (np.zeros(shape=(1, 2)), 1),
-            (np.zeros(shape=(1, 2)), 1),
             (np.zeros(shape=(1, 4)), 2),
             (np.zeros(shape=(1, 3)), 3),
         ],
@@ -269,6 +268,26 @@ class TestInputs:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
+            circuit()
+
+    @pytest.mark.parametrize(
+        "weights, n_wires",
+        [
+            (np.zeros(shape=(2, 3, 1, 2)), 1),
+            (np.zeros(shape=(4,)), 2),
+        ],
+    )
+    def test_exception_wrong_weight_ndim(self, weights, n_wires):
+        """Verifies that exception is raised if the shape of weights is incorrect."""
+        features = np.zeros(shape=(n_wires,))
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QAOAEmbedding(features, weights, wires=range(n_wires))
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Weights must be a two-dimensional or three"):
             circuit()
 
     @pytest.mark.parametrize(
