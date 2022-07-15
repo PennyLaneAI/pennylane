@@ -263,9 +263,6 @@ class TestParameterShiftHessian:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print(expected)
-        print(hessian)
-
         assert np.allclose(expected, hessian)
 
     def test_gate_without_impact(self):

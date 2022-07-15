@@ -38,14 +38,18 @@ from .general_shift_rules import (
 def _process_argnum(argnum, tape):
     """Process the argnum keyword argument to ``param_shift_hessian`` from any of ``None``,
     ``int``, ``Sequence[int]``, ``array_like[bool]`` to an ``array_like[bool]``."""
+    _trainability_note = (
+        "This may be caused by attempting to differentiate with respect to parameters "
+        "that are not marked as trainable."
+    )
     if argnum is None:
         # All trainable tape parameters are considered
-        argnum = tape.trainable_params
+        argnum = list(range(tape.num_params))
     elif isinstance(argnum, int):
-        if argnum >= len(tape.get_parameters(trainable_only=False)):
+        if argnum >= tape.num_params:
             raise ValueError(
-                f"The index {argnum} exceeds the number of "
-                f"trainable tape parameters ({tape.num_params})."
+                f"The index {argnum} exceeds the number of trainable tape parameters "
+                f"({tape.num_params}). " + _trainability_note
             )
         # Make single marked parameter an iterable
         argnum = [argnum]
@@ -54,20 +58,19 @@ def _process_argnum(argnum, tape):
         # If the iterable is 1D, consider all combinations of all marked parameters
         if not qml.math.array(argnum).dtype == bool:
             # If the 1D iterable contains indices, make sure it contains valid indices...
-            if qml.math.max(argnum) >= len(tape.get_parameters(trainable_only=False)):
+            if qml.math.max(argnum) >= tape.num_params:
                 raise ValueError(
                     f"The index {qml.math.max(argnum)} exceeds the number of "
-                    f"trainable tape parameters ({tape.num_params})."
+                    f"trainable tape parameters ({tape.num_params})." + _trainability_note
                 )
             # ...and translate it to Boolean 1D iterable
-            print("here")
-            argnum = [i in argnum for i in range(len(tape.get_parameters(trainable_only=False)))]
-            print("there", argnum)
+            argnum = [i in argnum for i in range(tape.num_params)]
         elif len(argnum) != tape.num_params:
             # If the 1D iterable already is Boolean, check its length
             raise ValueError(
                 "One-dimensional Boolean array argnum is expected to have as many entries as the "
                 f"tape has trainable parameters ({tape.num_params}), but got {len(argnum)}."
+                + _trainability_note
             )
         # Finally mark all combinations using the outer product
         argnum = qml.math.tensordot(argnum, argnum, axes=0)
@@ -80,7 +83,7 @@ def _process_argnum(argnum, tape):
         # If the iterable is 2D, make sure it is Boolean, symmetric and of the correct size
         raise ValueError(
             f"Expected a symmetric 2D Boolean array with shape {(tape.num_params,) * 2} "
-            f"for argnum, but received {argnum}."
+            f"for argnum, but received {argnum}." + _trainability_note
         )
     return argnum
 
@@ -497,11 +500,9 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
     # Find all argument indices that appear in at least one derivative that was requested
     choose_argnum = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]
-    print("c", choose_argnum)
-    print("d", diff_methods)
     # If any of these argument indices correspond to a finite difference
     # derivative (diff_methods[idx]="F"), raise an error.
-    unsupported_params = {idx for i, idx in enumerate(choose_argnum) if diff_methods[i] == "F"}
+    unsupported_params = {idx for idx in choose_argnum if diff_methods[idx] == "F"}
     if unsupported_params:
         raise ValueError(
             "The parameter-shift Hessian currently does not support the operations "
