@@ -157,8 +157,6 @@
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
 
-* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
-
 * Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
   more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
 
@@ -170,6 +168,8 @@
   >>> exp_op
   RZ**2(1.0, wires=[0])
   ```
+
+* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 <h3>Improvements</h3>
 
