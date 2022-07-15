@@ -228,6 +228,8 @@ class QubitDevice(Device):
         """
         self._samples = None
 
+    # TODO: revisit if we can refactor to not need the following linting silence
+    # pylint: disable=too-many-statements
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
@@ -277,18 +279,34 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                elif not isinstance(r[0], dict):
-                    # Measurement types except for Counts
-                    r = qml.math.squeeze(r)
-
-                if isinstance(r, list) and isinstance(r[0], dict):
-                    # This happens when measurement type is Counts
-                    results.extend(r)
-
-                elif shot_tuple.copies > 1:
-                    results.extend(r.T)
+                # elif not isinstance(r[0], dict):
+                elif len(r) == 1:
+                    if not isinstance(r[0], dict):
+                        # Measurement types except for Counts
+                        r = qml.math.squeeze(r)
+                    else:
+                        r = r[0]
                 else:
-                    results.append(r.T)
+                    r = tuple(
+                        qml.math.squeeze(r_) if isinstance(r_, qml.numpy.ndarray) else r_
+                        for r_ in r
+                    )
+
+                if isinstance(r, qml.numpy.ndarray):
+                    if shot_tuple.copies > 1:
+                        results.extend(r.T)
+                    else:
+                        results.append(r.T)
+                # TODO: need list and tuple both?
+                elif isinstance(r, (list, tuple)):
+                    if any(isinstance(r_, dict) for r_ in r):
+                        results.extend(r)
+                    elif not self._has_partitioned_shots():
+                        results.extend(r)
+                    else:
+                        results.append(r)
+                else:
+                    results.append(r)
 
                 s1 = s2
 
@@ -315,10 +333,7 @@ class QubitDevice(Device):
                         results = tuple(self._asarray(r, dtype=self.R_DTYPE) for r in results)
                     else:
                         results = self._asarray(results, dtype=self.R_DTYPE)
-                elif (
-                    circuit.measurements[0].return_type is qml.measurements.Counts
-                    and self._has_partitioned_shots()
-                ):
+                else:
                     results = tuple(results)
 
             elif all(
@@ -327,9 +342,10 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            elif any(ret is not qml.measurements.Counts for ret in ret_types):
+            # elif any(ret is not qml.measurements.Counts for ret in ret_types):
+            else:
                 # all the other cases except all counts
-                results = self._asarray(results)
+                results = tuple(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
 
@@ -1071,10 +1087,11 @@ class QubitDevice(Device):
             return samples
         if counts:
             shape = (-1, bin_size) if no_observable_provided else (-1, bin_size)
-            return [
+            res = [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
+            return res
         return (
             samples.reshape((bin_size, -1))
             if no_observable_provided

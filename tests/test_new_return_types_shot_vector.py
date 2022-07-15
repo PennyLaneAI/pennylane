@@ -153,3 +153,26 @@ class TestShotVectorsAutograd:
         assert isinstance(res, tuple)
         assert len(res) == all_shots
         assert all(isinstance(r, dict) for r in res)
+
+
+@pytest.mark.parametrize("shot_vector", [[1, 10, 10, 1000], [1, (10, 2), 1000]])
+class TestShotVectorsAutogradMultiMeasure:
+    """TODO"""
+
+    def test_counts(self, shot_vector):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=2, shots=shot_vector)
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=1)), qml.probs(wires=[0, 1])
+
+        res = circuit(0.5)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res, tuple)
+        assert len(res) == all_shots
+        assert all(isinstance(r, np.ndarray) for r in res)
