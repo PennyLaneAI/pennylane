@@ -18,12 +18,11 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import numbers
-from copy import copy
 from collections.abc import Iterable
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -250,7 +249,7 @@ class Hamiltonian(Observable):
             ops (list[.Operator]): operators
 
         Returns:
-            tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
+            tuple[list[tensor_like or float], list[.Operator]]: coefficients and operations
 
         **Example**
 
@@ -264,7 +263,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return coeffs, ops
+        return list(coeffs), ops
 
     @property
     def wires(self):
