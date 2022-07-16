@@ -279,7 +279,6 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                # elif not isinstance(r[0], dict):
                 elif len(r) == 1:
                     if not isinstance(r[0], dict):
                         # Measurement types except for Counts
@@ -287,10 +286,15 @@ class QubitDevice(Device):
                     else:
                         r = r[0]
                 else:
-                    r = tuple(
-                        qml.math.squeeze(r_) if isinstance(r_, qml.numpy.ndarray) else r_
-                        for r_ in r
-                    )
+                    if shot_tuple.copies > 1 and not isinstance(r[0], dict):
+                        r = [r_.T for r_ in r]
+                        length = len(r[0])
+                        r = [tuple(self._asarray(r_[idx]) for r_ in r) for idx in range(length)]
+                    else:
+                        r = tuple(
+                            qml.math.squeeze(r_) if isinstance(r_, qml.numpy.ndarray) else r_
+                            for r_ in r
+                        )
 
                 if isinstance(r, qml.numpy.ndarray):
                     if shot_tuple.copies > 1:
@@ -302,6 +306,8 @@ class QubitDevice(Device):
                     if any(isinstance(r_, dict) for r_ in r):
                         results.extend(r)
                     elif not self._has_partitioned_shots():
+                        results.extend(r)
+                    elif shot_tuple.copies > 1:
                         results.extend(r)
                     else:
                         results.append(r)
@@ -970,7 +976,8 @@ class QubitDevice(Device):
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.mean(samples, axis=0))
+        res = np.mean(samples, axis=0)
+        return res
 
     def var(self, observable, shot_range=None, bin_size=None):
 

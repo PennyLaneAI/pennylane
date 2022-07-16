@@ -155,19 +155,39 @@ class TestShotVectorsAutograd:
         assert all(isinstance(r, dict) for r in res)
 
 
+expval_probs_multi = [
+    (qml.expval(qml.PauliZ(wires=2)), qml.probs(wires=[2, 0])),
+    (qml.expval(qml.PauliZ(wires=2)), qml.probs(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.var(qml.PauliZ(wires=1)), qml.probs(wires=[0, 1])),
+]
+
+expval_sample_multi = [
+    # TODO:
+    # For copy=1, the wires syntax has a bug
+    # (qml.expval(qml.PauliZ(wires=2)), qml.sample(wires=[2,0])),
+    # (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
+    # -----
+    (qml.expval(qml.PauliZ(wires=2)), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.var(qml.PauliZ(wires=2)), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+]
+
+# TODO: test Projector expval/var!
+
+
 @pytest.mark.parametrize("shot_vector", [[1, 10, 10, 1000], [1, (10, 2), 1000]])
 class TestShotVectorsAutogradMultiMeasure:
     """TODO"""
 
-    def test_counts(self, shot_vector):
+    @pytest.mark.parametrize("meas1,meas2", expval_probs_multi)
+    def test_expval_probs(self, shot_vector, meas1, meas2):
         """TODO"""
-        dev = qml.device("default.qubit", wires=2, shots=shot_vector)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=1)), qml.probs(wires=[0, 1])
+            return qml.apply(meas1), qml.apply(meas2)
 
         res = circuit(0.5)
 
@@ -175,4 +195,41 @@ class TestShotVectorsAutogradMultiMeasure:
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
-        assert all(isinstance(r, np.ndarray) for r in res)
+        assert all(isinstance(r, tuple) for r in res)
+        assert all(isinstance(m, np.ndarray) for measurement_res in res for m in measurement_res)
+        for meas_res in res:
+            for i, r in enumerate(meas_res):
+                if i % 2 == 0:
+                    assert r.shape == ()
+                else:
+                    assert r.shape == (2**2,)
+
+    @pytest.mark.parametrize("meas1,meas2", expval_sample_multi)
+    def test_expval_sample(self, shot_vector, meas1, meas2):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(meas1), qml.apply(meas2)
+
+        res = circuit(0.5)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res, tuple)
+        assert len(res) == all_shots
+        assert all(isinstance(r, tuple) for r in res)
+        assert all(isinstance(m, np.ndarray) for measurement_res in res for m in measurement_res)
+
+        idx = 0
+        for shot_tuple in dev.shot_vector:
+            for _ in range(shot_tuple.copies):
+                for i, r in enumerate(res[idx]):
+                    if i % 2 == 0 or idx == 0:
+                        assert r.shape == ()
+                    else:
+                        assert r.shape == (shot_tuple.shots,)
+                idx += 1
