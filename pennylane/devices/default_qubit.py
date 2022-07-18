@@ -27,9 +27,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
-from pennylane.operation import (
-    Operation
-)
+from pennylane.operation import Operation
 from pennylane.ops.functions.generator import generator
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
@@ -150,7 +148,7 @@ class DefaultQubit(QubitDevice):
         "ECR",
     }
 
-    generators ={
+    generators = {
         "RX",
         "RY",
         "RZ",
@@ -232,44 +230,25 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    #def is_all_ops_supported(self):
-    #    ops_list =self.op_queue()
-    #    tmp = bool(True)
-    #    for index, operation in enumerate(ops_list):
-    #        if operation not in self.operations:
-    #            return bool(False)
-    #        else:
-    #            tmp*=bool(True)
-    #    return tmp 
-
     @staticmethod
     def supports_operation_backward(self, operation):
         if isinstance(operation, type) and issubclass(operation, Operation):
-            return operation.__name__ in self.generators
+            return operation.__name__ in DefaultQubit.generators
         if isinstance(operation, str):
-            
-            if operation.endswith(".inv"):
-                in_ops = operation[:-4] in self.operations
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                return in_ops and supports_inv
 
-            return operation in self.generators
+            # if operation.endswith(".inv"):
+            #    in_ops = operation[:-4] in self.operations
+            # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+            #    supports_inv = self.capabilities().get(
+            #        "supports_inverse_operations", False
+            #    ) or self.capabilities().get("inverse_operations", False)
+            #    return in_ops and supports_inv
+
+            return operation in DefaultQubit.generators
 
         raise ValueError(
             "The given operation must either be a pennylane.Operation class or a string."
         )
-
-        #ops_list =self.op_queue()
-        #tmp = bool(True)
-        #for index, generator in enumerate(ops_list):
-        #    if generator not in self.generators:
-        #        return bool(False)
-        #    else:
-        #        tmp*=bool(True)
-        #return tmp 
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
@@ -659,7 +638,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(2**self.num_wires, dtype=np.complex128)
+        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
@@ -706,7 +685,7 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
@@ -846,5 +825,5 @@ class DefaultQubit(QubitDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
+        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
         return prob
