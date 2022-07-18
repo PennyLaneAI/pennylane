@@ -20,11 +20,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import OperationRecorder
 from pennylane.operation import Tensor
-from pennylane.wires import Wires
 from pennylane.grouping.utils import (
-    pauli_to_binary,
     are_identical_pauli_words,
-    is_qwc,
+    are_pauli_words_qwc,
     is_pauli_word,
 )
 
@@ -137,39 +135,9 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
       PauliZ(wires=[0]) @ PauliZ(wires=[3]),
       PauliZ(wires=[1]) @ PauliZ(wires=[3])])
     """
-    # If all Paulis are the same kind they are naturally QWC and we
-    # don't need to do the expensive quadratic scaling check
-    first_pauli_name = qwc_grouping[0].name
-    if isinstance(first_pauli_name, list):
-        first_pauli_name = first_pauli_name[0]
-    all_paulis_same_kind = all(
-        all(first_pauli_name == sub_word_name for sub_word_name in pauli_word.name)
-        if isinstance(pauli_word.name, list)
-        else first_pauli_name == pauli_word.name
-        for pauli_word in qwc_grouping
-    )
 
-    if not all_paulis_same_kind:
-        m_paulis = len(qwc_grouping)
-        all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
-        wire_map = {label: ind for ind, label in enumerate(all_wires)}
-        pauli_binaries = [
-            pauli_to_binary(
-                qwc_grouping[i],
-                wire_map=wire_map,
-                check_is_pauli_word=False,
-            )
-            for i in range(m_paulis)
-        ]
-        for i in range(m_paulis):
-            for j in range(i + 1, m_paulis):
-                if not is_qwc(
-                    pauli_binaries[i],
-                    pauli_binaries[j],
-                ):
-                    raise ValueError(
-                        f"{qwc_grouping[i]} and {qwc_grouping[j]} are not qubit-wise commuting."
-                    )
+    if not are_pauli_words_qwc(qwc_grouping):
+        raise ValueError("The list of Pauli words are not qubit-wise commuting.")
 
     pauli_operators = []
     diag_terms = []
