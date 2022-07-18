@@ -42,7 +42,7 @@
 
 * Differentiable zero-noise-extrapolation error mitigation via ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
-  
+
   When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
   ```python
@@ -65,7 +65,7 @@
   def qnode_mitigated(theta):
       qml.RY(theta, wires=0)
       return qml.expval(qml.PauliX(0))
-  
+
   theta = np.array(0.5, requires_grad=True)
   grad = qml.grad(qnode_mitigated)
   >>> grad(theta)
@@ -180,7 +180,7 @@
   ...     qml.Hadamard(wires=0)
   ...     qml.CNOT(wires=[0, 1])
   ...     # passing the counts flag
-  ...     return qml.sample(counts=True)   
+  ...     return qml.sample(counts=True)
   >>> result = circuit()
   >>> print(result)
   {'00': 495, '11': 505}
@@ -206,7 +206,7 @@
   labels.
   [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking 
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking
   into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
@@ -231,9 +231,9 @@
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
-* Added an `are_pauli_words_qwc` function which checks if certain 
-  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians 
-  with many commuting terms. 
+* Added an `are_pauli_words_qwc` function which checks if certain
+  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians
+  with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
 <h3>Breaking changes</h3>
@@ -260,13 +260,16 @@
 * Fixes a bug where the custom implementation of the `states_to_binary` device
   method was not used.
   [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
-  
+
 * `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
 
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
+
+* The WireCut operator now raises an error when instantiating it with an empty list.
+  [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
 <h3>Contributors</h3>
 
