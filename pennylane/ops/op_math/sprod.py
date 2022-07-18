@@ -109,9 +109,7 @@ class SProd(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""
-        scalar_val = f"{self.scalar}"
-        if decimals is not None:
-            scalar_val = format(qml.math.toarray(self.scalar), f".{decimals}f")
+        scalar_val = f"{self.scalar}" if decimals is None else format(qml.math.toarray(self.scalar), f".{decimals}f")
 
         return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
 
