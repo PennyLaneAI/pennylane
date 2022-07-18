@@ -21,10 +21,22 @@ on:
 jobs:
   sphinx:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config:
+          - python-version: [3.7, 3.8, 3.9, "3.10"]
+
     steps:
     - uses: actions/checkout@v1
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.config.python-version }}
+
     - uses: josh146/sphinx-action@master
       with:
         docs-folder: "doc/"
         pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf"
         build-command: "sphinx-build -b html . _build -W --keep-going"
+        python-version: ${{ matrix.config.python-version }}
