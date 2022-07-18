@@ -412,6 +412,29 @@ class TestProperties:
         true_eigvals = coeff * x_eigvals  # the true eigvals
         assert np.allclose(sprod_op_eigvals, true_eigvals)
 
+    ops_labels = (
+        (qml.PauliX(wires=0), 1.23, 2, "1.23*X"),
+        (qml.RX(1.23, wires=0), 4.56, 1, "4.6*RX\n(1.2)"),
+        (qml.RY(1.234, wires=0), 4.56, 3, "4.560*RY\n(1.234)"),
+        (qml.Rot(1.0, 2.12, 3.1416, wires=0), 1, 2, "1.00*Rot\n(1.00,\n2.12,\n3.14)"),
+    )
+
+    @pytest.mark.parametrize("op, scalar, decimal, label", ops_labels)
+    def test_label(self, op, scalar, decimal, label):
+        """Testing that the label method works well with SProd objects."""
+        sprod_op = s_prod(scalar, op)
+        op_label = sprod_op.label(decimals=decimal)
+        assert label == op_label
+
+    def test_label_cache(self):
+        """Test label method with cache keyword arg."""
+        base = qml.QubitUnitary(np.eye(2), wires=0)
+        op = s_prod(-1.2, base)
+
+        cache = {"matrices": []}
+        assert op.label(decimals=2, cache=cache) == "-1.20*U(M0)"
+        assert len(cache["matrices"]) == 1
+
 
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)
