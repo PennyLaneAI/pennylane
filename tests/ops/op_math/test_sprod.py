@@ -413,9 +413,9 @@ class TestProperties:
         assert np.allclose(sprod_op_eigvals, true_eigvals)
 
     ops_are_hermitian = (
-        (qml.PauliX(wires=0), 1.23+0.j, True),    # Op is hermitian, scalar is real
-        (qml.RX(1.23, wires=0), 1.0+0.j, False),  # Op not hermitian
-        (qml.PauliZ(wires=0), 2.0+1.j, False),    # Scalar not real
+        (qml.PauliX(wires=0), 1.23 + 0.0j, True),  # Op is hermitian, scalar is real
+        (qml.RX(1.23, wires=0), 1.0 + 0.0j, False),  # Op not hermitian
+        (qml.PauliZ(wires=0), 2.0 + 1.0j, False),  # Scalar not real
     )
 
     @pytest.mark.parametrize("op, scalar, hermitian_status", ops_are_hermitian)
