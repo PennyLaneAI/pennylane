@@ -36,4 +36,5 @@ jobs:
     - name: Install dependencies
       run: |
         pip3 install -r doc/requirements.txt
-        make docs
+        sudo apt install -y graphviz
+        make
