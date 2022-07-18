@@ -125,7 +125,7 @@ def __getattr__(name):
         raise AttributeError from e
 
 
-def expand_matrix(base_matrix, wires, wire_order):
+def expand_matrix(base_matrix, wires, wire_order=None):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -182,7 +182,18 @@ def expand_matrix(base_matrix, wires, wire_order):
     torch.Tensor
     >>> res.requires_grad
     True
+
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+
     """
+
+    if (wire_order is None) or (wire_order == wires):
+        return base_matrix
+
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
@@ -1431,9 +1442,6 @@ class Operation(Operator):
 
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 

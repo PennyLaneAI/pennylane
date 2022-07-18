@@ -218,6 +218,9 @@
   labels.
   [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
+* Add trivial behaviour logic to `qml.operation.expand_matrix`.
+  [(#2785)](https://github.com/PennyLaneAI/pennylane/issues/2785)
+
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking
   into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
