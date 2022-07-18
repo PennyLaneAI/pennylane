@@ -53,7 +53,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        assert res[0].shape == (1, 4, 4)
+        assert res[0].shape == (4, 4)
         assert isinstance(res[0], np.ndarray)
 
     def test_density_matrix_default(self):
@@ -67,7 +67,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        assert res[0].shape == (1, 2, 2)
+        assert res[0].shape == (2, 2)
         assert isinstance(res[0], np.ndarray)
 
     def test_density_matrix_mixed(self):
@@ -81,7 +81,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        assert res[0].shape == (1, 2, 2)
+        assert res[0].shape == (2, 2)
         assert isinstance(res[0], np.ndarray)
 
     def test_expval(self):
@@ -97,7 +97,7 @@ class TestSingleReturnExecute:
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (1,)
+        assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
     def test_var(self):
@@ -113,7 +113,7 @@ class TestSingleReturnExecute:
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (1,)
+        assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
     def test_mutual_info(self):
@@ -129,7 +129,7 @@ class TestSingleReturnExecute:
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (1,)
+        assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
     def test_probs(self):
@@ -145,7 +145,7 @@ class TestSingleReturnExecute:
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (1, 4)
+        assert res[0].shape == (4, )
         assert isinstance(res[0], np.ndarray)
 
     # Samples and counts
@@ -169,7 +169,101 @@ class TestMultipleReturns:
         assert len(res[0]) == 2
 
         assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == (1,)
+        assert res[0][0].shape == ()
 
-        assert isinstance(res[1][1], np.ndarray)
-        assert res[1][1].shape == (1,)
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == ()
+
+    def test_multiple_var(self):
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == ()
+
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == ()
+
+    def test_multiple_prob(self):
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=[0, 1])
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == (2, )
+
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == (4, )
+
+    def test_mix_probs_vn(self):
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.probs(wires=[0, 1]), qml.vn_entropy(wires=0), qml.probs(wires=[1])
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 3
+
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == (4, )
+
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == ()
+
+        assert isinstance(res[0][2], np.ndarray)
+        assert res[0][2].shape == (2,)
+
+    def test_list_multiple_expval(self):
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, 3)]
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 3
+
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == ()
+
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == ()
+
+        assert isinstance(res[0][2], np.ndarray)
+        assert res[0][1].shape == ()

@@ -654,7 +654,7 @@ class QNode:
             # return a dictionary with counts not as a single-element array
             return res[0]
 
-        return res
+        return qml.math.squeeze(res)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)

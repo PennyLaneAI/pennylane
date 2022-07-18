@@ -371,25 +371,22 @@ class QubitDevice(Device):
         if len(circuit.measurements) == 1:
             if circuit.measurements[0].return_type is qml.measurements.State:
                 # State: assumed to only be allowed if it's the only measurement
-                results = self._asarray(results, dtype=self.C_DTYPE)
+                results = self._asarray(results[0], dtype=self.C_DTYPE)
             elif circuit.measurements[0].return_type is qml.measurements.Counts:
                 # Measurements with Counts
                 results = results[0]
             else:
                 # Measurements with expval, var or probs
-                results = self._asarray(results, dtype=self.R_DTYPE)
+                results = self._asarray(results[0], dtype=self.R_DTYPE)
 
         else:
             results_list = []
             for i, mes in enumerate(circuit.measurements):
-                if mes.return_type is qml.measurements.State:
-                    # State: assumed to only be allowed if it's the only measurement
-                    results_list.append(self._asarray(results[i], dtype=self.C_DTYPE))
-                elif mes.return_type is qml.measurements.Counts:
+                if mes.return_type is qml.measurements.Counts:
                     # Measurements with Counts
                     results_list.append(results[i])
                 else:
-                    # Measurements with expval, var or probs
+                    # All other measurements
                     results_list.append(self._asarray(results[i], dtype=self.R_DTYPE))
             results = tuple(results_list)
 
