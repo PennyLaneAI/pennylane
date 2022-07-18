@@ -254,6 +254,10 @@
 
 <h3>Breaking changes</h3>
 
+* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
+  `qml.qchem`.
+  [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
+
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
   which provides an updated API that is incompatible which versions of the package prior to 2.7.
   If you run into issues relating to this package, please reinstall PennyLane.
@@ -296,6 +300,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
-Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Mudit Pandey,
-Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
+Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
+Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
