@@ -289,6 +289,9 @@
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* The WireCut operator now raises an error when instantiating it with an empty list.
+  [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
