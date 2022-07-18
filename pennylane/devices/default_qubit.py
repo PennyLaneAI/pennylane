@@ -27,6 +27,9 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane.operation import (
+    Operation
+)
 from pennylane.ops.functions.generator import generator
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
