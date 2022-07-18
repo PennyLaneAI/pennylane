@@ -62,12 +62,27 @@ class TestObservableWithObjectReturnType:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    provides_jacobian=True,
+                )
+                return capabilities
+
             def expval(self, observable, **kwargs):
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
 
                 return super().expval(observable, **kwargs)
+
+            def jacobian(self, tape):
+                # we actually let pennylane do the work of computing the
+                # jacobian for us but return it as a device jacobian
+                gradient_tapes, fn = qml.gradients.param_shift(tape)
+                tape_jacobian = fn(qml.execute(gradient_tapes, self, None))
+                return tape_jacobian
 
         dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
@@ -87,7 +102,20 @@ class TestObservableWithObjectReturnType:
         assert isinstance(out, np.ndarray)
         assert isinstance(out.item(), SpecialObject)
         assert np.isclose(out.item().val, reference_qnode(0.2))
+        reference_jac = qml.jacobian(reference_qnode)(np.array(0.2, requires_grad=True)),
+
         assert np.isclose(
+            reference_jac,
             qml.jacobian(qnode)(np.array(0.2, requires_grad=True)).item().val,
-            qml.jacobian(reference_qnode)(np.array(0.2, requires_grad=True)),
+        )
+
+        # now check that also the device jacobian works with a custom return type
+        @qml.qnode(dev, diff_method="device")
+        def device_gradient_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
+
+        assert np.isclose(
+            reference_jac,
+            qml.jacobian(device_gradient_qnode)(np.array(0.2, requires_grad=True)).item().val,
         )
