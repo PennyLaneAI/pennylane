@@ -2027,6 +2027,11 @@ class TestExpandMatrix:
         res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
         assert np.allclose(self.base_matrix_2, res)
 
+    def test_no_wire_order_returns_base_matrix(self):
+        """Test the case where the wire_order is None it returns the original matrix"""
+        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2])
+        assert np.allclose(self.base_matrix_2, res)
+
     def test_no_expansion_broadcasted(self):
         """Tests the case where the broadcasted original matrix is not changed"""
         res = qml.operation.expand_matrix(
