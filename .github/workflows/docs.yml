@@ -37,9 +37,3 @@ jobs:
       run: |
         pip3 install -r doc/requirements.txt
         make docs
-
-    - uses: josh146/sphinx-action@master
-      with:
-        docs-folder: "doc/"
-        pre-build: apt install -y graphviz
-        build-command: "sphinx-build -b html . _build -W --keep-going"
