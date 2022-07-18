@@ -802,16 +802,14 @@ def iscomplex(tensor, like=None):
         import tensorflow as tf
 
         imag_tensor = tf.math.imag(tensor)
-        val_complex = True if tf.math.count_nonzero(imag_tensor) > 0 else False
-        return val_complex
+        return tf.math.count_nonzero(imag_tensor) > 0
 
     if like == "torch":
         import torch
 
         if torch.is_complex(tensor):
             imag_tensor = torch.imag(tensor)
-            val_complex = True if torch.count_nonzero(imag_tensor) > 0 else False
-            return val_complex
+            return torch.count_nonzero(imag_tensor) > 0
         return False
 
     return np.iscomplex(tensor)
