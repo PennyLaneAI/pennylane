@@ -412,6 +412,18 @@ class TestProperties:
         true_eigvals = coeff * x_eigvals  # the true eigvals
         assert np.allclose(sprod_op_eigvals, true_eigvals)
 
+    ops_are_hermitian = (
+        (qml.PauliX(wires=0), 1.23+0.j, True),    # Op is hermitian, scalar is real
+        (qml.RX(1.23, wires=0), 1.0+0.j, False),  # Op not hermitian
+        (qml.PauliZ(wires=0), 2.0+1.j, False),    # Scalar not real
+    )
+
+    @pytest.mark.parametrize("op, scalar, hermitian_status", ops_are_hermitian)
+    def test_is_hermitian(self, op, scalar, hermitian_status):
+        """Test that scalar product ops are correctly classified as hermitian or not."""
+        sprod_op = s_prod(scalar, op)
+        assert sprod_op.is_hermitian == hermitian_status
+
     ops_labels = (
         (qml.PauliX(wires=0), 1.23, 2, "1.23*X"),
         (qml.RX(1.23, wires=0), 4.56, 1, "4.6*RX\n(1.2)"),
