@@ -346,22 +346,6 @@ class TestExtractStatistics:
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.statistics([obs])
 
-    def test_return_state_with_custom_wire_labels(self, mock_qutrit_device_extract_stats):
-        """Checks that an error is raised if return type is state and custom wire labels are used"""
-        U = unitary_group.rvs(3, random_state=10)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QutritUnitary(U, wires="a")
-            qml.state()
-
-        dev = mock_qutrit_device_extract_stats(wires=["a"])
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Returning the state is not supported when using custom wire labels",
-        ):
-            dev.execute(tape)
-
     def test_return_state_with_multiple_observables(self, mock_qutrit_device_extract_stats):
         """Checks that an error is raised if multiple observables are being returned
         and one of them is state
@@ -1020,26 +1004,19 @@ class TestUnimplemented:
         """Test that density_matrix is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.density_matrix(wires=0)
-
-    def test_state(self, mock_qutrit_device):
-        """Test that state is unimplemented"""
-        dev = mock_qutrit_device()
-
-        with pytest.raises(NotImplementedError):
-            dev.state()
 
     def test_vn_entropy(self, mock_qutrit_device):
         """Test that vn_entropy is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.vn_entropy(wires=0, log_base=3)
 
     def test_mutual_info(self, mock_qutrit_device):
         """Test that mutual_info is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.mutual_info(0, 1, log_base=3)
