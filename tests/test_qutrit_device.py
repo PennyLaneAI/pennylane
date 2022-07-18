@@ -340,7 +340,7 @@ class TestGenerateSamples:
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
             m.setattr(QutritDevice, "sample_basis_states", lambda self, wires, b: wires)
-            m.setattr(QutritDevice, "states_to_ternary", lambda a, b: (a, b))
+            m.setattr(QutritDevice, "states_to_ternary", staticmethod(lambda a, b: (a, b)))
             m.setattr(QutritDevice, "analytic_probability", lambda *args: None)
             m.setattr(QutritDevice, "shots", 1000)
             dev._samples = dev.generate_samples()
