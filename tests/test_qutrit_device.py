@@ -328,7 +328,7 @@ class TestExtractStatistics:
         assert results == []
 
     @pytest.mark.parametrize("returntype", ["not None"])
-    def test_error_return_type_none(
+    def test_error_return_type_not_none(
         self, mock_qutrit_device_extract_stats, monkeypatch, returntype
     ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
