@@ -517,7 +517,7 @@ class FirstQuantization(Operation):
 
     @staticmethod
     def qubit_cost(n, eta, omega, error, br=7, charge=0):
-        r"""Return the number of ancilla qubits needed to implement the first quantization
+        r"""Return the number of qubits needed to implement the first quantization
         algorithm.
 
         The expression for computing the cost is taken from Eq. (101) of

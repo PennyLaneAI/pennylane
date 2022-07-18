@@ -395,7 +395,7 @@ class DoubleFactorization(Operation):
 
     @staticmethod
     def qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
-        r"""Return the number of ancilla qubits needed to implement the double factorization method.
+        r"""Return the number of qubits needed to implement the double factorization method.
 
         The expression for computing the cost is taken from Eq. (C40) of
         [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
@@ -412,7 +412,7 @@ class DoubleFactorization(Operation):
             beta (int): number of bits for the rotation angles
 
         Returns:
-            int: number of ancilla qubits for the double factorization method
+            int: number of qubits for the double factorization method
 
         **Example**
 
@@ -480,8 +480,8 @@ class DoubleFactorization(Operation):
         r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals
         and eigenvalues of the factorized two-electron integral tensor.
 
-        The 1-norm of a double-factorized molecular Hamiltonian is computed as
-        [`arXiv:2007.14460 <https://arxiv.org/abs/2007.14460>`_]
+        The 1-norm of a double-factorized molecular Hamiltonian is computed using Eqs. (15-17) of
+        [`Phys. Rev. Research 3, 033055 (2021) <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.033055>`_]
 
         .. math::
 
