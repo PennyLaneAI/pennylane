@@ -35,7 +35,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf"
+        apt install -y graphviz
+        pip3 install -r doc/requirements.txt
+        make docs
 
     - uses: josh146/sphinx-action@master
       with:
