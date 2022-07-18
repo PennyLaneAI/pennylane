@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import QutritDevice, DeviceError, QuantumFunctionError, QubitDevice
 from pennylane.devices import DefaultQubit
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State, Counts
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
@@ -283,6 +283,8 @@ class TestParameters:
 
 
 class TestExtractStatistics:
+    """Test the statistics method"""
+
     @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State])
     def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
@@ -299,12 +301,11 @@ class TestExtractStatistics:
 
         assert results == [0]
 
-    def test_results_no_state(self, mock_qutrit_device_extract_stats, monkeypatch):
+    def test_results_no_state(self, mock_qutrit_device, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QutritDevice does not have a state attribute"""
         with monkeypatch.context() as m:
-            dev = mock_qutrit_device_extract_stats()
-            m.delattr(dev.__class__, "state")
+            dev = mock_qutrit_device()
             m.delattr(QubitDevice, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
@@ -333,7 +334,7 @@ class TestExtractStatistics:
     ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
+        assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
 
         class SomeObservable(qml.operation.Observable):
             num_wires = 1
@@ -341,8 +342,8 @@ class TestExtractStatistics:
 
         obs = SomeObservable(wires=0)
 
+        dev = mock_qutrit_device_extract_stats()
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
-            dev = mock_qutrit_device_extract_stats()
             dev.statistics([obs])
 
     def test_return_state_with_custom_wire_labels(self, mock_qutrit_device_extract_stats):
