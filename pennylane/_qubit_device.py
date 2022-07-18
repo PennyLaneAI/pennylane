@@ -427,7 +427,6 @@ class QubitDevice(Device):
             results = self.statistics(circuit.observables)
 
         if not circuit.is_sampled:
-
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement

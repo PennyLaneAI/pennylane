@@ -52,39 +52,45 @@ class TestShotVectorsAutograd:
         """TODO"""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
-        assert all(r.shape == () for r in res)
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(r.shape == () for r in res[0])
 
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, shot_vector, op, wires):
         """TODO"""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
         wires_to_use = wires if wires else op.wires
-        assert all(r.shape == (2 ** len(wires_to_use),) for r in res)
+        assert all(r.shape == (2 ** len(wires_to_use),) for r in res[0])
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
     @pytest.mark.xfail
@@ -92,40 +98,46 @@ class TestShotVectorsAutograd:
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=wires)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
         dim = 2 ** len(wires)
-        assert all(r.shape == (dim, dim) for r in res)
+        assert all(r.shape == (dim, dim) for r in res[0])
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_samples(self, shot_vector, measurement):
         """TODO"""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shot_copies = [
             shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
         ]
 
-        assert len(res) == len(all_shot_copies)
-        for r, shots in zip(res, all_shot_copies):
+        assert len(res[0]) == len(all_shot_copies)
+        for r, shots in zip(res[0], all_shot_copies):
 
             if shots == 1:
                 # Scalar tensors
@@ -140,19 +152,22 @@ class TestShotVectorsAutograd:
         """TODO"""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
-        assert all(isinstance(r, dict) for r in res)
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, dict) for r in res[0])
 
 
 expval_probs_multi = [
@@ -183,21 +198,24 @@ class TestShotVectorsAutogradMultiMeasure:
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
-        assert all(isinstance(r, tuple) for r in res)
-        assert all(isinstance(m, np.ndarray) for measurement_res in res for m in measurement_res)
-        for meas_res in res:
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
+        for meas_res in res[0]:
             for i, r in enumerate(meas_res):
                 if i % 2 == 0:
                     assert r.shape == ()
@@ -209,25 +227,28 @@ class TestShotVectorsAutogradMultiMeasure:
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
-        @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        res = circuit(0.5)
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
-        assert isinstance(res, tuple)
-        assert len(res) == all_shots
-        assert all(isinstance(r, tuple) for r in res)
-        assert all(isinstance(m, np.ndarray) for measurement_res in res for m in measurement_res)
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
 
         idx = 0
         for shot_tuple in dev.shot_vector:
             for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[idx]):
+                for i, r in enumerate(res[0][idx]):
                     if i % 2 == 0 or idx == 0:
                         assert r.shape == ()
                     else:
