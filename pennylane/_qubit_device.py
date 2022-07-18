@@ -265,6 +265,113 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
+        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+
+        # compute the required statistics
+        if not self.analytic and self._shot_vector is not None:
+
+            results = []
+            s1 = 0
+
+            for shot_tuple in self._shot_vector:
+                s2 = s1 + np.prod(shot_tuple)
+                r = self.statistics(
+                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+                )
+
+                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                    r = r[0]
+                elif not isinstance(r[0], dict):
+                    # Measurement types except for Counts
+                    r = qml.math.squeeze(r)
+                if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
+                    # This happens when measurement type is Counts
+                    results.append(r)
+                elif shot_tuple.copies > 1:
+                    results.extend(r.T)
+                else:
+                    results.append(r.T)
+
+                s1 = s2
+
+            if not multiple_sampled_jobs:
+                # Can only stack single element outputs
+                results = qml.math.stack(results)
+
+        else:
+            results = self.statistics(circuit.observables)
+
+        if not circuit.is_sampled:
+
+            ret_types = [m.return_type for m in circuit.measurements]
+
+            if len(circuit.measurements) == 1:
+                if circuit.measurements[0].return_type is qml.measurements.State:
+                    # State: assumed to only be allowed if it's the only measurement
+                    results = self._asarray(results, dtype=self.C_DTYPE)
+                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
+                    # Measurements with expval, var or probs
+                    results = self._asarray(results, dtype=self.R_DTYPE)
+
+            elif all(
+                ret in (qml.measurements.Expectation, qml.measurements.Variance)
+                for ret in ret_types
+            ):
+                # Measurements with expval or var
+                results = self._asarray(results, dtype=self.R_DTYPE)
+            elif any(ret is not qml.measurements.Counts for ret in ret_types):
+                # all the other cases except all counts
+                results = self._asarray(results)
+
+        elif circuit.all_sampled and not self._has_partitioned_shots():
+
+            results = self._asarray(results)
+        else:
+            results = tuple(self._asarray(r) for r in results)
+
+        # increment counter for number of executions of qubit device
+        self._num_executions += 1
+
+        if self.tracker.active:
+            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.record()
+        return results
+
+    def execute_new(self, circuit, **kwargs):
+        """Execute a queue of quantum operations on the device and then
+        measure the given observables.
+
+        For plugin developers: instead of overwriting this, consider
+        implementing a suitable subset of
+
+        * :meth:`apply`
+
+        * :meth:`~.generate_samples`
+
+        * :meth:`~.probability`
+
+        Additional keyword arguments may be passed to the this method
+        that can be utilised by :meth:`apply`. An example would be passing
+        the ``QNode`` hash that can be used later for parametric compilation.
+
+        Args:
+            circuit (~.CircuitGraph): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            array[float]: measured value(s)
+        """
+        self.check_validity(circuit.operations, circuit.observables)
+
+        # apply all circuit operations
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+
+        # generate computational basis samples
+        if self.shots is not None or circuit.is_sampled:
+            self._samples = self.generate_samples()
+
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
 
@@ -321,106 +428,32 @@ class QubitDevice(Device):
 
         if not circuit.is_sampled:
 
-            ret_types = [m.return_type for m in circuit.measurements]
-
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
-
-                    if self._has_partitioned_shots():
-                        # TODO: revisit finite shots and State: do we disallow it?
-                        results = tuple(self._asarray(r, dtype=self.C_DTYPE) for r in results)
-                    else:
-                        results = self._asarray(results, dtype=self.C_DTYPE)
-
-                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
-                    # Measurements with expval, var or probs
-                    if self._has_partitioned_shots():
-                        results = tuple(self._asarray(r, dtype=self.R_DTYPE) for r in results)
-                    else:
-                        results = self._asarray(results, dtype=self.R_DTYPE)
+                    results = self._asarray(results[0], dtype=self.C_DTYPE)
+                elif circuit.measurements[0].return_type is qml.measurements.Counts:
+                    # Measurements with Counts
+                    results = results[0]
                 else:
-                    results = tuple(results)
+                    # Measurements with expval, var or probs
+                    results = self._asarray(results[0], dtype=self.R_DTYPE)
 
-            elif all(
-                ret in (qml.measurements.Expectation, qml.measurements.Variance)
-                for ret in ret_types
-            ):
-                # Measurements with expval or var
-                results = self._asarray(results, dtype=self.R_DTYPE)
-            # elif any(ret is not qml.measurements.Counts for ret in ret_types):
             else:
-                # all the other cases except all counts
-                results = tuple(results)
+                results_list = []
+                for i, mes in enumerate(circuit.measurements):
+                    if mes.return_type is qml.measurements.Counts:
+                        # Measurements with Counts
+                        results_list.append(results[i])
+                    else:
+                        # All other measurements
+                        results_list.append(self._asarray(results[i], dtype=self.R_DTYPE))
+                results = tuple(results_list)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
-
             results = self._asarray(results)
         else:
             results = tuple(r for r in results)
-
-        # increment counter for number of executions of qubit device
-        self._num_executions += 1
-
-        if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots)
-            self.tracker.record()
-        return results
-
-    def execute_new(self, circuit, **kwargs):
-        """Execute a queue of quantum operations on the device and then
-        measure the given observables.
-
-        For plugin developers: instead of overwriting this, consider
-        implementing a suitable subset of
-
-        * :meth:`apply`
-
-        * :meth:`~.generate_samples`
-
-        * :meth:`~.probability`
-
-        Additional keyword arguments may be passed to the this method
-        that can be utilised by :meth:`apply`. An example would be passing
-        the ``QNode`` hash that can be used later for parametric compilation.
-
-        Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
-
-        Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
-
-        Returns:
-            array[float]: measured value(s)
-        """
-        self.check_validity(circuit.operations, circuit.observables)
-
-        # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
-
-        results = self.statistics(circuit.observables)
-
-        if len(circuit.measurements) == 1:
-            if circuit.measurements[0].return_type is qml.measurements.State:
-                # State: assumed to only be allowed if it's the only measurement
-                results = self._asarray(results[0], dtype=self.C_DTYPE)
-            elif circuit.measurements[0].return_type is qml.measurements.Counts:
-                # Measurements with Counts
-                results = results[0]
-            else:
-                # Measurements with expval, var or probs
-                results = self._asarray(results[0], dtype=self.R_DTYPE)
-
-        else:
-            results_list = []
-            for i, mes in enumerate(circuit.measurements):
-                if mes.return_type is qml.measurements.Counts:
-                    # Measurements with Counts
-                    results_list.append(results[i])
-                else:
-                    # All other measurements
-                    results_list.append(self._asarray(results[i], dtype=self.R_DTYPE))
-            results = tuple(results_list)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
