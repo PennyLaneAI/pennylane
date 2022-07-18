@@ -37,4 +37,4 @@ jobs:
       run: |
         pip3 install -r doc/requirements.txt
         sudo apt install -y graphviz
-        make
+        make docs
