@@ -367,7 +367,6 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
         results = self.statistics(circuit.observables)
-        print(results)
 
         if len(circuit.measurements) == 1:
             if circuit.measurements[0].return_type is qml.measurements.State:
@@ -403,6 +402,40 @@ class QubitDevice(Device):
         return results
 
     def batch_execute(self, circuits):
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        # TODO: This method and the tests can be globally implemented by Device
+        # once it has the same signature in the execute() method
+
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            # Insert control on value here
+            res = self.execute(circuit)
+            results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
+
+        return results
+
+    def batch_execute_new(self, circuits):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
