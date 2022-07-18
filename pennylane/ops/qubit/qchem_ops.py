@@ -22,6 +22,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.operation import Operation
 
+I4 = np.eye(4)
 I16 = np.eye(16)
 
 
@@ -128,6 +129,48 @@ class SingleExcitation(Operation):
         diag = qml.math.einsum("...,ij->...ij", c, mask_c)
         off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
         return diag + off_diag + qml.math.cast_like(qml.math.eye(4, like=diag), diag)
+
+    @staticmethod
+    def compute_matrix_new(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitation.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.9689, -0.2474,  0.0000],
+                [ 0.0000,  0.2474,  0.9689,  0.0000],
+                [ 0.0000,  0.0000,  0.0000,  1.0000]])
+        """
+        c_minus_1 = qml.math.cos(phi / 2) - 1
+        s = qml.math.sin(phi / 2)
+
+        mask_c = np.diag([0, 1, 1, 0])
+        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+        eye = qml.math.eye(4, like=diag)
+        if qml.math.get_interface(phi) == "tensorflow":
+            eye = qml.math.cast_like(eye, phi)
+
+        if qml.math.ndim(c) == 0:
+            return c_minus_1 * mask_c + s * mask_s + eye
+
+        return (
+            qml.math.tensordot(c_minus_1, mask_c, axes=0)
+            + qml.math.tensordot(s, mask_s, axes=0)
+            + eye
+        )
 
     @staticmethod
     def compute_decomposition(phi, wires):
