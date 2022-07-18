@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import functools
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -25,6 +26,7 @@ from pennylane.operation import Operation
 I4 = np.eye(4)
 I16 = np.eye(16)
 
+stack_last = functools.partial(qml.math.stack, axis=-1)
 
 class SingleExcitation(Operation):
     r"""
@@ -121,54 +123,37 @@ class SingleExcitation(Operation):
                 [ 0.0000,  0.2474,  0.9689,  0.0000],
                 [ 0.0000,  0.0000,  0.0000,  1.0000]])
         """
-        c = qml.math.cos(phi / 2) - 1
-        s = qml.math.sin(phi / 2)
+        interface = qml.math.get_interface(phi)
+        if interface == "tensorflow":
+            c = qml.math.cos(phi / 2)
+            s = qml.math.sin(phi / 2)
+            ones = qml.math.ones_like(phi)
+            zeros = qml.math.zeros_like(phi)
+            rows = [
+                [ones, zeros, zeros, zeros],
+                [zeros, c, -s, zeros],
+                [zeros, s, c, zeros],
+                [zeros, zeros, zeros, ones],
+            ]
+            return qml.math.stack([stack_last(row) for row in rows], axis=-2)
 
-        mask_c = np.diag([0, 1, 1, 0])
-        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        diag = qml.math.einsum("...,ij->...ij", c, mask_c)
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
-        return diag + off_diag + qml.math.cast_like(qml.math.eye(4, like=diag), diag)
-
-    @staticmethod
-    def compute_matrix_new(phi):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.SingleExcitation.matrix`
-
-
-        Args:
-          phi (tensor_like or float): rotation angle
-
-        Returns:
-          tensor_like: canonical matrix
-
-        **Example**
-
-        >>> qml.SingleExcitation.compute_matrix(torch.tensor(0.5))
-        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
-                [ 0.0000,  0.9689, -0.2474,  0.0000],
-                [ 0.0000,  0.2474,  0.9689,  0.0000],
-                [ 0.0000,  0.0000,  0.0000,  1.0000]])
-        """
         c_minus_1 = qml.math.cos(phi / 2) - 1
         s = qml.math.sin(phi / 2)
 
         mask_c = np.diag([0, 1, 1, 0])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        eye = qml.math.eye(4, like=diag)
-        if qml.math.get_interface(phi) == "tensorflow":
-            eye = qml.math.cast_like(eye, phi)
+        eye = np.eye(4)
+        if interface == "torch":
+            mask_c = qml.math.convert_like(mask_c, phi)
+            mask_s = qml.math.convert_like(mask_s, phi)
+            eye = qml.math.convert_like(eye, phi)
 
-        if qml.math.ndim(c) == 0:
+        if qml.math.ndim(phi) == 0:
             return c_minus_1 * mask_c + s * mask_s + eye
 
         return (
-            qml.math.tensordot(c_minus_1, mask_c, axes=0)
-            + qml.math.tensordot(s, mask_s, axes=0)
+            qml.math.einsum("i,jk->ijk", c_minus_1, mask_c)
+            + qml.math.einsum("i,jk->ijk", s, mask_s)
             + eye
         )
 
@@ -290,26 +275,42 @@ class SingleExcitationMinus(Operation):
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
         interface = qml.math.get_interface(phi)
-
         if interface == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
+            c = qml.math.cos(phi / 2)
+            s = qml.math.sin(phi / 2)
+            e = qml.math.exp(-0.5j * phi)
+            ones = qml.math.ones_like(phi)
+            zeros = qml.math.zeros_like(phi)
+            rows = [
+                [e, zeros, zeros, zeros],
+                [zeros, c, -s, zeros],
+                [zeros, s, c, zeros],
+                [zeros, zeros, zeros, e],
+            ]
+            return qml.math.stack([stack_last(row) for row in rows], axis=-2)
 
-        e = qml.math.exp(-1j * phi / 2)
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        e = qml.math.exp(-0.5j * phi)
 
         mask_e = np.diag([1, 0, 0, 1])
         mask_c = np.diag([0, 1, 1, 0])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum(
-            "...,ij->...ij", e, mask_e
+
+        if qml.math.ndim(phi) == 0:
+            if interface == "torch":
+                mask_e = qml.math.convert_like(mask_e, phi)
+                mask_c = qml.math.convert_like(mask_c, phi)
+                mask_s = qml.math.convert_like(mask_s, phi)
+            return e * mask_e + c * mask_c + s * mask_s
+
+        return (
+            qml.math.einsum("i,jk->ijk", e, mask_e)
+            + qml.math.einsum("i,jk->ijk", c, mask_c)
+            + qml.math.einsum("i,jk->ijk", s, mask_s)
         )
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
-        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -440,26 +441,42 @@ class SingleExcitationPlus(Operation):
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689+0.2474j]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
         interface = qml.math.get_interface(phi)
-
         if interface == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
+            c = qml.math.cos(phi / 2)
+            s = qml.math.sin(phi / 2)
+            e = qml.math.exp(0.5j * phi)
+            ones = qml.math.ones_like(phi)
+            zeros = qml.math.zeros_like(phi)
+            rows = [
+                [e, zeros, zeros, zeros],
+                [zeros, c, -s, zeros],
+                [zeros, s, c, zeros],
+                [zeros, zeros, zeros, e],
+            ]
+            return qml.math.stack([stack_last(row) for row in rows], axis=-2)
 
-        e = qml.math.exp(1j * phi / 2)
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        e = qml.math.exp(0.5j * phi)
 
         mask_e = np.diag([1, 0, 0, 1])
         mask_c = np.diag([0, 1, 1, 0])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum(
-            "...,ij->...ij", e, mask_e
+
+        if qml.math.ndim(phi) == 0:
+            if interface == "torch":
+                mask_e = qml.math.convert_like(mask_e, phi)
+                mask_c = qml.math.convert_like(mask_c, phi)
+                mask_s = qml.math.convert_like(mask_s, phi)
+            return e * mask_e + c * mask_c + s * mask_s
+
+        return (
+            qml.math.einsum("i,jk->ijk", e, mask_e)
+            + qml.math.einsum("i,jk->ijk", c, mask_c)
+            + qml.math.einsum("i,jk->ijk", s, mask_s)
         )
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
-        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -622,10 +639,16 @@ class DoubleExcitation(Operation):
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
+        if qml.math.ndim(phi) == 0:
+            diag = qml.math.diag([1.] * 3 + [c] + [1.] * 8 + [c] + [1.] * 3)
+            if qml.math.get_interface(phi) == "torch":
+                return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
+            return diag + s * DoubleExcitation.mask_s
+
         ones = qml.math.ones_like(c)
         diag = qml.math.stack([ones] * 3 + [c] + [ones] * 8 + [c] + [ones] * 3, axis=-1)
-        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
-        off_diag = qml.math.einsum("...,ij->...ij", s, DoubleExcitation.mask_s)
+        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+        off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
         return diag + off_diag
 
     @staticmethod
@@ -806,9 +829,15 @@ class DoubleExcitationPlus(Operation):
         e = qml.math.exp(0.5j * phi)
         c = (1 + 0j) * c
 
+        if qml.math.ndim(phi) == 0:
+            diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
+            if qml.math.get_interface(phi) == "torch":
+                return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
+            return diag + s * DoubleExcitation.mask_s
+
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
-        off_diag = qml.math.einsum("...,ij->...ij", s, DoubleExcitation.mask_s)
+        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+        off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
         return diag + off_diag
 
     def adjoint(self):
@@ -901,9 +930,15 @@ class DoubleExcitationMinus(Operation):
         e = qml.math.exp(-0.5j * phi)
         c = (1 + 0j) * c
 
+        if qml.math.ndim(phi) == 0:
+            diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
+            if qml.math.get_interface(phi) == "torch":
+                return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
+            return diag + s * DoubleExcitation.mask_s
+
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
-        off_diag = qml.math.einsum("...,ij->...ij", s, DoubleExcitation.mask_s)
+        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+        off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
         return diag + off_diag
 
     def adjoint(self):
@@ -1031,17 +1066,26 @@ class OrbitalRotation(Operation):
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
+        if qml.math.ndim(phi) == 0:
+            diag = qml.math.diag([1., c, c, c**2, c, 1., c**2, c, c, c**2, 1., c, c**2, c, c, 1.])
+            if qml.math.get_interface(phi) == "torch":
+                mask_s = qml.math.convert_like(OrbitalRotation.mask_s, phi)
+                mask_cs = qml.math.convert_like(OrbitalRotation.mask_cs, phi)
+                mask_s2 = qml.math.convert_like(OrbitalRotation.mask_s2, phi)
+                return diag + s * mask_s + (c * s) * mask_cs + s**2 * mask_s2
+            return diag + s * OrbitalRotation.mask_s + (c * s) * OrbitalRotation.mask_cs + s**2 * OrbitalRotation.mask_s2
+
         ones = qml.math.ones_like(c)
         diag = qml.math.stack(
             [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
             axis=-1,
         )
 
-        diag = qml.math.einsum("...i,ij->...ij", diag, I16)
+        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
         off_diag = (
-            qml.math.einsum("...,ij->...ij", s, OrbitalRotation.mask_s)
-            + qml.math.einsum("...,ij->...ij", c * s, OrbitalRotation.mask_cs)
-            + qml.math.einsum("...,ij->...ij", s**2, OrbitalRotation.mask_s2)
+            qml.math.einsum("i,jk->ijk", s, OrbitalRotation.mask_s)
+            + qml.math.einsum("i,jk->ijk", c * s, OrbitalRotation.mask_cs)
+            + qml.math.einsum("i,jk->ijk", s**2, OrbitalRotation.mask_s2)
         )
 
         return diag + off_diag
