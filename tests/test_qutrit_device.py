@@ -742,21 +742,6 @@ class TestExecution:
             node_1(np.eye(3), np.eye(3), np.eye(9))
         assert dev_1.num_executions == num_evals_1
 
-        # test a second instance of a qutrit device
-        dev_2 = mock_qutrit_device_extract_stats(wires=2)
-
-        def circuit_2(U1, U2):
-            qml.QutritUnitary(U1, wires=[0])
-            qml.QutritUnitary(U2, wires=[1])
-            return qml.state()
-
-        node_2 = qml.QNode(circuit_2, dev_2)
-        num_evals_2 = 5
-
-        for _ in range(num_evals_2):
-            node_2(np.eye(3), np.eye(3))
-        assert dev_2.num_executions == num_evals_2
-
         # test a new circuit on an existing instance of a qutrit device
         def circuit_3(U1, U2):
             qml.QutritUnitary(U1, wires=[0])
