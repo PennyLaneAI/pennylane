@@ -28,6 +28,7 @@ I16 = np.eye(16)
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
+
 class SingleExcitation(Operation):
     r"""
     Single excitation rotation.
@@ -640,7 +641,7 @@ class DoubleExcitation(Operation):
         s = qml.math.sin(phi / 2)
 
         if qml.math.ndim(phi) == 0:
-            diag = qml.math.diag([1.] * 3 + [c] + [1.] * 8 + [c] + [1.] * 3)
+            diag = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
             if qml.math.get_interface(phi) == "torch":
                 return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
             return diag + s * DoubleExcitation.mask_s
@@ -1067,13 +1068,20 @@ class OrbitalRotation(Operation):
         s = qml.math.sin(phi / 2)
 
         if qml.math.ndim(phi) == 0:
-            diag = qml.math.diag([1., c, c, c**2, c, 1., c**2, c, c, c**2, 1., c, c**2, c, c, 1.])
+            diag = qml.math.diag(
+                [1.0, c, c, c**2, c, 1.0, c**2, c, c, c**2, 1.0, c, c**2, c, c, 1.0]
+            )
             if qml.math.get_interface(phi) == "torch":
                 mask_s = qml.math.convert_like(OrbitalRotation.mask_s, phi)
                 mask_cs = qml.math.convert_like(OrbitalRotation.mask_cs, phi)
                 mask_s2 = qml.math.convert_like(OrbitalRotation.mask_s2, phi)
                 return diag + s * mask_s + (c * s) * mask_cs + s**2 * mask_s2
-            return diag + s * OrbitalRotation.mask_s + (c * s) * OrbitalRotation.mask_cs + s**2 * OrbitalRotation.mask_s2
+            return (
+                diag
+                + s * OrbitalRotation.mask_s
+                + (c * s) * OrbitalRotation.mask_cs
+                + s**2 * OrbitalRotation.mask_s2
+            )
 
         ones = qml.math.ones_like(c)
         diag = qml.math.stack(
