@@ -245,8 +245,8 @@ class TestObservables:
             queue = [qml.QutritUnitary(U, wires=0)]
             observables = [qml.expval(qml.Hadamard(0))]
 
+        dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
-            dev = mock_qutrit_device()
             dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
