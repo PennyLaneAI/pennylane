@@ -63,7 +63,7 @@ def _sprod(mat, scalar, dtype=None, cast_like=None):
     Returns:
         res (Tensor): the tensor which is obtained from multiplying mat by scalar.
     """
-    res = qml.math.multiply(scalar, mat)
+    res = scalar * mat
 
     if dtype is not None:  # additional casting logic
         res = qml.math.cast(res, dtype)
@@ -109,7 +109,11 @@ class SProd(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""
-        scalar_val = f"{self.scalar}" if decimals is None else format(qml.math.toarray(self.scalar), f".{decimals}f")
+        scalar_val = (
+            f"{self.scalar}"
+            if decimals is None
+            else format(qml.math.toarray(self.scalar), f".{decimals}f")
+        )
 
         return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
 
