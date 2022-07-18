@@ -86,6 +86,72 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
+ops = {
+    "Identity": qml.Identity(wires=[0]),
+    "Snapshot": qml.Snapshot("label"),
+    "BasisState": qml.BasisState(np.array([0]), wires=[0]),
+    "CNOT": qml.CNOT(wires=[0, 1]),
+    "CRX": qml.CRX(0, wires=[0, 1]),
+    "CRY": qml.CRY(0, wires=[0, 1]),
+    "CRZ": qml.CRZ(0, wires=[0, 1]),
+    "CRot": qml.CRot(0, 0, 0, wires=[0, 1]),
+    "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
+    "CZ": qml.CZ(wires=[0, 1]),
+    "CY": qml.CY(wires=[0, 1]),
+    "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
+    "Hadamard": qml.Hadamard(wires=[0]),
+    "MultiRZ": qml.MultiRZ(0, wires=[0]),
+    "PauliX": qml.PauliX(wires=[0]),
+    "PauliY": qml.PauliY(wires=[0]),
+    "PauliZ": qml.PauliZ(wires=[0]),
+    "PhaseShift": qml.PhaseShift(0, wires=[0]),
+    "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
+    "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
+    "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
+    "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
+    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
+    "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
+    "RX": qml.RX(0, wires=[0]),
+    "RY": qml.RY(0, wires=[0]),
+    "RZ": qml.RZ(0, wires=[0]),
+    "Rot": qml.Rot(0, 0, 0, wires=[0]),
+    "S": qml.S(wires=[0]),
+    "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
+    "SWAP": qml.SWAP(wires=[0, 1]),
+    "ISWAP": qml.ISWAP(wires=[0, 1]),
+    "ECR": qml.ECR(wires=[0, 1]),
+    "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
+    "T": qml.T(wires=[0]),
+    "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
+    "SX": qml.SX(wires=[0]),
+    "Adjoint(SX)": qml.adjoint(qml.SX(wires=[0])),
+    "Barrier": qml.Barrier(wires=[0, 1, 2]),
+    "WireCut": qml.WireCut(wires=[0]),
+    "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
+    "QFT": qml.templates.QFT(wires=[0, 1, 2]),
+    "IsingXX": qml.IsingXX(0, wires=[0, 1]),
+    "IsingYY": qml.IsingYY(0, wires=[0, 1]),
+    "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
+    "IsingXY": qml.IsingXY(0, wires=[0, 1]),
+    "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
+    "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
+    "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
+    "DoubleExcitation": qml.DoubleExcitation(0, wires=[0, 1, 2, 3]),
+    "DoubleExcitationPlus": qml.DoubleExcitationPlus(0, wires=[0, 1, 2, 3]),
+    "DoubleExcitationMinus": qml.DoubleExcitationMinus(0, wires=[0, 1, 2, 3]),
+    "QubitCarry": qml.QubitCarry(wires=[0, 1, 2, 3]),
+    "QubitSum": qml.QubitSum(wires=[0, 1, 2]),
+    "PauliRot": qml.PauliRot(0, "XXYY", wires=[0, 1, 2, 3]),
+    "U1": qml.U1(0, wires=0),
+    "U2": qml.U2(0, 0, wires=0),
+    "U3": qml.U3(0, 0, 0, wires=0),
+    "SISWAP": qml.SISWAP(wires=[0, 1]),
+    "Adjoint(SISWAP)": qml.adjoint(qml.SISWAP(wires=[0, 1])),
+    "OrbitalRotation": qml.OrbitalRotation(0, wires=[0, 1, 2, 3]),
+}
+
+all_ops = ops.keys()
+
 def include_inverses_with_test_data(test_data):
     return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
@@ -111,6 +177,16 @@ def test_dtype_errors():
     ):
         qml.device("default.qubit", wires=1, c_dtype=np.float64)
 
+
+class TestSupportedGenerators:
+    """Test that the device can implement all gates that it claims to support."""
+
+    @pytest.mark.parametrize("operation", all_ops)
+    def test_supported_generators(self, device_kwargs, operation):
+        """Test that the device can implement all its supported gates."""
+        device_kwargs["wires"] = 4  # maximum size of current gates
+        dev = qml.device('default.qubit',**device_kwargs)
+        assert dev.supports_operation_backward(operation)
 
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
