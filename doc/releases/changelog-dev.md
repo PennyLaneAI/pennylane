@@ -219,6 +219,9 @@
   labels.
   [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
+* Add trivial behaviour logic to `qml.operation.expand_matrix`.
+  [(#2785)](https://github.com/PennyLaneAI/pennylane/issues/2785)
+
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking
   into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
@@ -251,6 +254,10 @@
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
 <h3>Breaking changes</h3>
+
+* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
+  `qml.qchem`.
+  [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
   which provides an updated API that is incompatible which versions of the package prior to 2.7.
@@ -287,10 +294,13 @@
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* The WireCut operator now raises an error when instantiating it with an empty list.
+  [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa,
-Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Mudit Pandey,
-Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
+Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
+Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
