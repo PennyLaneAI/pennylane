@@ -13,8 +13,7 @@ semantic_version==2.10
 scipy
 docutils==0.16
 protobuf==3.20.0; python_version == "3.10"
-sphinx==3.5.3; python_version < "3.10"
-sphinx==5.0.2; python_version == "3.10"
+sphinx==4.2
 sphinx-automodapi==0.13
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2; python_version < "3.10"
@@ -28,8 +27,10 @@ torch==1.9.0+cpu; sys_platform != "darwin" and python_version < "3.10"
 torchvision==0.10.0+cpu; sys_platform != "darwin" and python_version < "3.10"
 torch==1.11.0+cpu; sys_platform != "darwin" and python_version == "3.10"
 torchvision==0.12.0+cpu; sys_platform != "darwin" and python_version == "3.10"
-torch==1.9.0; sys_platform == "darwin"
-torchvision==0.10.0; sys_platform == "darwin"
+torch==1.9.0; sys_platform == "darwin" and python_version < "3.10"
+torchvision==0.10.0; sys_platform == "darwin" and python_version < "3.10"
+torch==1.11.0; sys_platform == "darwin" and python_version == "3.10"
+torchvision==0.12.0; sys_platform == "darwin" and python_version == "3.10"
 jinja2==3.0.3
 retworkx==0.11.0
 networkx==2.6
