@@ -5,7 +5,7 @@ from pennylane import math
 
 try:
     import torch
-except Expcetion as e:
+except Exception as e:
     pass
 
 # ========================================================
@@ -127,13 +127,16 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return qml.math.array(
-        [
-            [qml.math.cos(0.5 * theta), -qml.math.sin(0.5 * theta)],
-            [qml.math.sin(0.5 * theta), qml.math.cos(0.5 * theta)],
-        ],
-        like=theta,
-    ) + 0j
+    return (
+        qml.math.array(
+            [
+                [qml.math.cos(0.5 * theta), -qml.math.sin(0.5 * theta)],
+                [qml.math.sin(0.5 * theta), qml.math.cos(0.5 * theta)],
+            ],
+            like=theta,
+        )
+        + 0j
+    )
 
 
 def Rotz(theta):
