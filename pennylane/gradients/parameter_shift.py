@@ -262,7 +262,8 @@ def expval_param_shift(
         for i, (s, f, batch_size) in enumerate(zip(shapes, fns, batch_sizes)):
 
             if s == 0:
-                # parameter has zero gradient
+                # parameter has zero gradient. We don't know the output shape yet, so just memorize
+                # that this gradient will be set to zero, via grad = None
                 grads.append(None)
                 continue
 
