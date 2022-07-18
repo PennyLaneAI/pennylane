@@ -229,25 +229,44 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    def is_all_ops_supported(self):
-        ops_list =self.op_queue()
-        tmp = bool(True)
-        for index, operation in enumerate(ops_list):
-            if operation not in self.operations:
-                return bool(False)
-            else:
-                tmp*=bool(True)
-        return tmp 
+    #def is_all_ops_supported(self):
+    #    ops_list =self.op_queue()
+    #    tmp = bool(True)
+    #    for index, operation in enumerate(ops_list):
+    #        if operation not in self.operations:
+    #            return bool(False)
+    #        else:
+    #            tmp*=bool(True)
+    #    return tmp 
 
-    def is_generator_all_supported(self):
-        ops_list =self.op_queue()
-        tmp = bool(True)
-        for index, generator in enumerate(ops_list):
-            if generator not in self.generators:
-                return bool(False)
-            else:
-                tmp*=bool(True)
-        return tmp 
+    @staticmethod
+    def supports_operation_backward(self, operation):
+        if isinstance(operation, type) and issubclass(operation, Operation):
+            return operation.__name__ in self.generators
+        if isinstance(operation, str):
+            
+            if operation.endswith(".inv"):
+                in_ops = operation[:-4] in self.operations
+                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                supports_inv = self.capabilities().get(
+                    "supports_inverse_operations", False
+                ) or self.capabilities().get("inverse_operations", False)
+                return in_ops and supports_inv
+
+            return operation in self.generators
+
+        raise ValueError(
+            "The given operation must either be a pennylane.Operation class or a string."
+        )
+
+        #ops_list =self.op_queue()
+        #tmp = bool(True)
+        #for index, generator in enumerate(ops_list):
+        #    if generator not in self.generators:
+        #        return bool(False)
+        #    else:
+        #        tmp*=bool(True)
+        #return tmp 
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
