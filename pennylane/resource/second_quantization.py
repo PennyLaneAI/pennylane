@@ -43,13 +43,13 @@ class DoubleFactorization(Operation):
     smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
     average number of the retained eigenvalues, :math:`M`, determines the rank of the second
     factorization step. The 1-norm of the Hamiltonian can then be computed using the
-    :func:`~.pennylane.future.DoubleFactorization.norm` function from the electron integrals and
+    :func:`~.pennylane.resource.DoubleFactorization.norm` function from the electron integrals and
     the eigenvalues of the matrices :math:`L^{(r)}`.
 
     The total number of gates and qubits for implementing the quantum phase estimation algorithm
     for the given Hamiltonian can then be computed using the functions
-    :func:`~.pennylane.future.DoubleFactorization.gate_cost` and
-    :func:`~.pennylane.future.DoubleFactorization.qubit_cost` with a target error that has the
+    :func:`~.pennylane.resource.DoubleFactorization.gate_cost` and
+    :func:`~.pennylane.resource.DoubleFactorization.qubit_cost` with a target error that has the
     default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
     of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
@@ -64,6 +64,7 @@ class DoubleFactorization(Operation):
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
+        chemist_notation (bool): if True, the two-electron integrals need to be in chemist notation
 
     .. details::
         :title: Usage Details

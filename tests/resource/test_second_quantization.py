@@ -22,7 +22,7 @@ from pennylane import numpy as np
 
 one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
-two_h2 = np.array(
+two_h2 = np.array(  # in chemist notation
     [
         [
             [[6.74755872e-01, -4.00346423e-13], [-4.00290912e-13, 6.63711349e-01]],
@@ -31,6 +31,19 @@ two_h2 = np.array(
         [
             [[-4.00263156e-13, 1.81210478e-01], [1.81210478e-01, -3.69482223e-13]],
             [[6.63711349e-01, -3.69482223e-13], [-3.69260178e-13, 6.97651447e-01]],
+        ],
+    ]
+)
+
+two_h2_ph = np.array(  # in physicist notation
+    [
+        [
+            [[6.74755872e-01, 8.45989945e-14], [8.47655279e-14, 1.81210478e-01]],
+            [[8.48210391e-14, 1.81210478e-01], [6.63711349e-01, 7.84927678e-14]],
+        ],
+        [
+            [[8.46545056e-14, 6.63711349e-01], [1.81210478e-01, 7.82707232e-14]],
+            [[1.81210478e-01, 7.82707232e-14], [7.87148124e-14, 6.97651447e-01]],
         ],
     ]
 )
@@ -53,6 +66,18 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
     assert np.allclose(est.br, br)
     assert np.allclose(est.alpha, alpha)
     assert np.allclose(est.beta, beta)
+
+
+@pytest.mark.parametrize(
+    ("one", "two_phys", "two_chem"),
+    [
+        (one_h2, two_h2_ph, two_h2),
+    ],
+)
+def test_df_notation_conversion(one, two_phys, two_chem):
+    r"""Test that the DoubleFactorization class initiates correct two-electron integrals."""
+    est = qml.resource.DoubleFactorization(one, two_phys, chemist_notation=False)
+    assert np.allclose(est.two_electron, two_chem)
 
 
 @pytest.mark.parametrize(
