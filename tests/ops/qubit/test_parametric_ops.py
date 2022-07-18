@@ -65,7 +65,6 @@ BROADCASTED_OPERATIONS = [
     qml.IsingXX(np.array([0.142, -0.61, 2.3]), wires=[0, 1]),
     qml.IsingYY(np.array([0.142, -0.61, 2.3]), wires=[0, 1]),
     qml.IsingZZ(np.array([0.142, -0.61, 2.3]), wires=[0, 1]),
-    qml.IsingXY(np.array([0.142, -0.61, 2.3]), wires=[0, 1]),
     qml.Rot(np.array([0.142, -0.61, 2.3]), 0.456, 0.789, wires=0),
     qml.PhaseShift(np.array([2.12, 0.21, -6.2]), wires=0),
     qml.ControlledPhaseShift(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
@@ -511,6 +510,43 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    def test_isingxy_decomposition(self, tol):
+        """Tests that the decomposition of the IsingXY gate is correct"""
+        param = 0.1234
+        op = qml.IsingXY(param, wires=[3, 2])
+        res = op.decomposition()
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([3])
+        assert res[1].wires == Wires([3, 2])
+        assert res[2].wires == Wires([3])
+        assert res[3].wires == Wires([2])
+        assert res[4].wires == Wires([3, 2])
+        assert res[5].wires == Wires([3])
+
+        assert res[0].name == "Hadamard"
+        assert res[1].name == "CY"
+        assert res[2].name == "RY"
+        assert res[3].name == "RX"
+        assert res[4].name == "CY"
+        assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RY and Hadamard gate
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([2]):
+                # RX gate
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_isingxx_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
@@ -647,83 +683,6 @@ class TestDecompositions:
         for i in reversed(res):
             mat = i.matrix()
             if i.wires == Wires([2]):
-                # RX gate
-                I = np.eye(2)[np.newaxis] if len(mat.shape) == 3 else np.eye(2)
-                mats.append(np.kron(I, mat))
-            else:
-                mats.append(mat)
-
-        decomposed_matrix = multi_dot_broadcasted(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingxy_decomposition(self, tol):
-        """Tests that the decomposition of the IsingXY gate is correct"""
-        param = 0.1234
-        op = qml.IsingXY(param, wires=[3, 2])
-        res = op.decomposition()
-
-        assert len(res) == 6
-
-        assert res[0].wires == Wires([3])
-        assert res[1].wires == Wires([3, 2])
-        assert res[2].wires == Wires([3])
-        assert res[3].wires == Wires([2])
-        assert res[4].wires == Wires([3, 2])
-        assert res[5].wires == Wires([3])
-
-        assert res[0].name == "Hadamard"
-        assert res[1].name == "CY"
-        assert res[2].name == "RY"
-        assert res[3].name == "RX"
-        assert res[4].name == "CY"
-        assert res[5].name == "Hadamard"
-
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([3]):
-                # RY and Hadamard gate
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif i.wires == Wires([2]):
-                # RX gate
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
-
-    def test_isingxy_decomposition_broadcasted(self, tol):
-        """Tests that the decomposition of the broadcasted IsingXY gate is correct"""
-        param = np.array([-0.1, 0.2, 0.5])
-        op = qml.IsingXY(param, wires=[3, 2])
-        res = op.decomposition()
-
-        assert len(res) == 6
-
-        assert res[0].wires == Wires([3])
-        assert res[1].wires == Wires([3, 2])
-        assert res[2].wires == Wires([3])
-        assert res[3].wires == Wires([2])
-        assert res[4].wires == Wires([3, 2])
-        assert res[5].wires == Wires([3])
-
-        assert res[0].name == "Hadamard"
-        assert res[1].name == "CY"
-        assert res[2].name == "RY"
-        assert res[3].name == "RX"
-        assert res[4].name == "CY"
-        assert res[5].name == "Hadamard"
-
-        mats = []
-        for i in reversed(res):
-            mat = i.matrix()
-            if i.wires == Wires([3]):
-                # RY and Hadamard gate
-                I = np.eye(2)[np.newaxis] if len(mat.shape) == 3 else np.eye(2)
-                mats.append(np.kron(mat, I))
-            elif i.wires == Wires([2]):
                 # RX gate
                 I = np.eye(2)[np.newaxis] if len(mat.shape) == 3 else np.eye(2)
                 mats.append(np.kron(I, mat))
@@ -968,33 +927,6 @@ class TestMatrix:
             qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
-    def test_isingxy_broadcasted(self, tol):
-        """Test that the broadcasted IsingXY operation is correct"""
-        z = np.zeros(3)
-        assert np.allclose(qml.IsingXY.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingXY(z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
-
-        def get_expected(theta):
-            expected = np.array(
-                [np.diag([1, np.cos(t / 2), np.cos(t / 2), 1]) for t in theta], dtype=np.complex128
-            )
-            sin_coeff = 1j * np.sin(theta / 2)
-            expected[:, 2, 1] = sin_coeff
-            expected[:, 1, 2] = sin_coeff
-            return expected
-
-        param = np.array([np.pi / 2, np.pi])
-        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(
-            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
-        )
-
-        param = np.array([2.152, np.pi / 2, 0.213])
-        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(
-            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
-        )
-
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals(self, phi, tol):
         """Test eigenvalues computation for IsingXY"""
@@ -1006,16 +938,6 @@ class TestMatrix:
             1,
         ]
         assert qml.math.allclose(evs, evs_expected)
-
-    def test_isingxy_eigvals_broadcasted(self, tol):
-        """Test broadcasted eigenvalues computation for IsingXY"""
-        phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qml.IsingXY.compute_eigvals(phi)
-        c = np.cos(phi / 2)
-        s = np.sin(phi / 2)
-        ones = np.ones_like(c)
-        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
-        assert qml.math.allclose(evs, expected)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
@@ -1033,19 +955,6 @@ class TestMatrix:
         ]
         assert qml.math.allclose(evs, evs_expected)
 
-    @pytest.mark.tf
-    def test_isingxy_eigvals_tf_broadcasted(self, tol):
-        """Test broadcasted eigenvalues computation for IsingXY on TF"""
-        import tensorflow as tf
-
-        phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qml.IsingXY.compute_eigvals(tf.Variable(phi))
-        c = np.cos(phi / 2)
-        s = np.sin(phi / 2)
-        ones = np.ones_like(c)
-        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
-        assert qml.math.allclose(evs, expected)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_torch(self, phi, tol):
@@ -1062,19 +971,6 @@ class TestMatrix:
         ]
         assert qml.math.allclose(evs, evs_expected)
 
-    @pytest.mark.torch
-    def test_isingxy_eigvals_torch_broadcasted(self, tol):
-        """Test broadcasted eigenvalues computation for IsingXY with torch"""
-        import torch
-
-        phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qml.IsingXY.compute_eigvals(torch.tensor(phi, requires_grad=True))
-        c = np.cos(phi / 2)
-        s = np.sin(phi / 2)
-        ones = np.ones_like(c)
-        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
-        assert qml.math.allclose(evs.detach().numpy(), expected)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_jax(self, phi, tol):
@@ -1090,19 +986,6 @@ class TestMatrix:
             1,
         ]
         assert qml.math.allclose(evs, evs_expected)
-
-    @pytest.mark.jax
-    def test_isingxy_eigvals_jax_broadcasted(self, tol):
-        """Test broadcasted eigenvalues computation for IsingXY with jax"""
-        import jax
-
-        phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qml.IsingXY.compute_eigvals(jax.numpy.array(phi))
-        c = np.cos(phi / 2)
-        s = np.sin(phi / 2)
-        ones = np.ones_like(c)
-        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
-        assert qml.math.allclose(evs, expected)
 
     def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""

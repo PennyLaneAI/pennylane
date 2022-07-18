@@ -2749,7 +2749,6 @@ class IsingXY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The XY operator satisfies a four-term parameter-shift rule
 
       .. math::
@@ -2773,9 +2772,6 @@ class IsingXY(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
@@ -2843,20 +2839,16 @@ class IsingXY(Operation):
                [0.        +0.j        , 0.        +0.24740396j,        0.96891242+0.j        , 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,        0.        +0.j        , 1.        +0.j        ]])
         """
-        c = qml.math.cos(phi / 2) - 1
+        c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        I = qml.math.eye(4, like=c)
+        Y = qml.math.convert_like(np.diag([0, 1, 1, 0])[::-1].copy(), phi)
 
         if qml.math.get_interface(phi) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
-            I = qml.math.cast_like(I, 1j)
+            Y = qml.math.cast_like(Y, 1j)
 
-        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
-        mask_s = np.array([[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        diag = qml.math.einsum("...,ij->...ij", c, mask_c)
-        off_diag = qml.math.einsum("...,ij->...ij", 1j * s, mask_s)
-        return diag + off_diag + I
+        return qml.math.diag([1, c, c, 1]) + 1j * s * Y
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -2888,7 +2880,10 @@ class IsingXY(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * phi, [1, -1, 0, 0]))
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.stack([pos_phase, neg_phase, 1, 1])
 
     def adjoint(self):
         (phi,) = self.parameters

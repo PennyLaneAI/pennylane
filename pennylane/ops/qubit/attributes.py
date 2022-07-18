@@ -223,7 +223,6 @@ supports_broadcasting = Attribute(
         "IsingXX",
         "IsingYY",
         "IsingZZ",
-        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",

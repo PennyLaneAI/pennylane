@@ -100,7 +100,6 @@ single_scalar_multi_wire_ops = [
     "IsingXX",
     "IsingYY",
     "IsingZZ",
-    "IsingXY",
     "SingleExcitation",
     "SingleExcitationPlus",
     "SingleExcitationMinus",
