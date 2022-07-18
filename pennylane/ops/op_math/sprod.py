@@ -155,7 +155,7 @@ class SProd(SymbolicOp):
     def is_hermitian(self):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
-        return self.base.is_hermitian and (self.scalar.imag == 0)
+        return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.

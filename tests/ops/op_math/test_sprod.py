@@ -334,7 +334,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sprod_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax
         import jax.numpy as jnp
 
         coeff = jnp.array(1.23)
@@ -423,6 +422,42 @@ class TestProperties:
         """Test that scalar product ops are correctly classified as hermitian or not."""
         sprod_op = s_prod(scalar, op)
         assert sprod_op.is_hermitian == hermitian_status
+
+    @pytest.mark.tf
+    def test_is_hermitian_tf(self):
+        """Test that is_hermitian works when a tf type scalar is provided."""
+        import tensorflow as tf
+
+        coeffs = (tf.Variable(1.23), tf.Variable(1.23 + 1.2j))
+        true_hermitian_states = (True, False)
+
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
+            op = s_prod(scalar, qml.PauliX(wires=0))
+            assert op.is_hermitian == hermitian_state
+
+    @pytest.mark.jax
+    def test_is_hermitian_jax(self):
+        """Test that is_hermitian works when a jax type scalar is provided."""
+        import jax.numpy as jnp
+
+        coeffs = (jnp.array(1.23), jnp.array(1.23 + 1.2j))
+        true_hermitian_states = (True, False)
+
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
+            op = s_prod(scalar, qml.PauliX(wires=0))
+            assert op.is_hermitian == hermitian_state
+
+    @pytest.mark.torch
+    def test_is_hermitian_torch(self):
+        """Test that is_hermitian works when a torch type scalar is provided."""
+        import torch
+
+        coeffs = (torch.tensor(1.23), torch.tensor(1.23 + 1.2j))
+        true_hermitian_states = (True, False)
+
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
+            op = s_prod(scalar, qml.PauliX(wires=0))
+            assert op.is_hermitian == hermitian_state
 
     ops_labels = (
         (qml.PauliX(wires=0), 1.23, 2, "1.23*X"),
