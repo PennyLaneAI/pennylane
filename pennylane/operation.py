@@ -95,15 +95,15 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 # pylint:disable=access-member-before-definition
 import abc
 import copy
-import itertools
 import functools
+import itertools
 import numbers
 import warnings
 from enum import IntEnum
-from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np
 from numpy.linalg import multi_dot
+from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -1135,7 +1135,7 @@ class Operator(abc.ABC):
         if z == 0:
             return []
         if z == 1:
-            return [self.__copy__()]
+            return [copy.copy(self)]
         raise PowUndefinedError
 
     def queue(self, context=qml.QueuingContext):
@@ -1193,6 +1193,22 @@ class Operator(abc.ABC):
             tape.inv()
 
         return tape
+
+    def __add__(self, other):
+        r"""The addition operation between Operator objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
+        if isinstance(other, Operator):
+            return qml.ops.Sum(self, other)  # pylint: disable=no-member
+        raise ValueError(f"Cannot add Operator and {type(other)}")
+
+    __radd__ = __add__
+
+    def __pow__(self, other):
+        r"""The power operation of an Operator object."""
+        if isinstance(other, numbers.Number):
+            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
+        raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
 # =============================================================================
@@ -1660,7 +1676,10 @@ class Observable(Operator):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        raise ValueError(f"Cannot add Observable and {type(other)}")
+        try:
+            return super().__add__(other=other)
+        except ValueError as e:
+            raise ValueError(f"Cannot add Observable and {type(other)}") from e
 
     __radd__ = __add__
 
