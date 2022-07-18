@@ -282,7 +282,6 @@ class SingleExcitationMinus(Operation):
             c = qml.math.cos(phi / 2)
             s = qml.math.sin(phi / 2)
             e = qml.math.exp(-0.5j * phi)
-            ones = qml.math.ones_like(phi)
             zeros = qml.math.zeros_like(phi)
             rows = [
                 [e, zeros, zeros, zeros],
@@ -448,7 +447,6 @@ class SingleExcitationPlus(Operation):
             c = qml.math.cos(phi / 2)
             s = qml.math.sin(phi / 2)
             e = qml.math.exp(0.5j * phi)
-            ones = qml.math.ones_like(phi)
             zeros = qml.math.zeros_like(phi)
             rows = [
                 [e, zeros, zeros, zeros],
