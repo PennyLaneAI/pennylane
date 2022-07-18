@@ -2920,10 +2920,11 @@ class IsingXY(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
+        signs = np.array([1, -1, 0, 0])
         if qml.math.ndim(phi) == 0:
-            return qml.math.exp(0.5j * phi * np.array([1, -1, 0, 0]))
+            return qml.math.exp(0.5j * phi * signs)
 
-        return qml.math.exp(qml.math.outer(0.5j * phi, [1, -1, 0, 0]))
+        return qml.math.exp(qml.math.tensordot(0.5j * phi, signs, axes=0))
 
     def adjoint(self):
         (phi,) = self.parameters

@@ -934,7 +934,7 @@ class TestMatrix:
         assert np.allclose(qml.IsingXY(z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
 
         def get_expected(theta):
-            expected = np.array([np.eye(4, dtype=np.complex128) for i in theta], dtype=complex)
+            expected = np.array([np.eye(4) for i in theta], dtype=complex)
             sin_coeff = 1j * np.sin(theta / 2)
             expected[:, 1, 1] = np.cos(theta / 2)
             expected[:, 2, 2] = np.cos(theta / 2)
@@ -991,6 +991,19 @@ class TestMatrix:
         ]
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.tf
+    def test_isingxy_eigvals_tf_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY on TF"""
+        import tensorflow as tf
+
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(tf.Variable(phi))
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
+        ones = np.ones_like(c)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
+        assert qml.math.allclose(evs, expected)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_torch(self, phi, tol):
@@ -1007,6 +1020,19 @@ class TestMatrix:
         ]
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.torch
+    def test_isingxy_eigvals_torch_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY with torch"""
+        import torch
+
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(torch.tensor(phi, requires_grad=True))
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
+        ones = np.ones_like(c)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
+        assert qml.math.allclose(evs.detach().numpy(), expected)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_jax(self, phi, tol):
@@ -1022,6 +1048,19 @@ class TestMatrix:
             1,
         ]
         assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.jax
+    def test_isingxy_eigvals_jax_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY with jax"""
+        import jax
+
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(jax.numpy.array(phi))
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
+        ones = np.ones_like(c)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
+        assert qml.math.allclose(evs, expected)
 
     def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""
