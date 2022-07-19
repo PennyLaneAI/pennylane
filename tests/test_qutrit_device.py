@@ -371,6 +371,8 @@ class TestSample:
 
     # TODO: Add tests for sampling with observables that have eigenvalues to sample from once
     # such observables are added for qutrits.
+    # TODO: Add tests for counts for observables with eigenvalues once such observables are
+    # added for qutrits.
 
     def test_sample_with_no_observable_and_no_wires(
         self, mock_qutrit_device_with_original_statistics, tol
@@ -425,9 +427,58 @@ class TestSample:
         bin_size = 3
 
         out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size)
-        expected_samples = samples.reshape(3, -1)
+        expected_samples = samples.reshape(-1, 3, 2)
 
         assert np.array_equal(out, expected_samples)
+
+    def test_counts(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 1], [2, 0], [2, 0], [0, 1], [2, 2], [1, 2]])
+        dev._samples = samples
+        obs = qml.measurements.sample(op=None, wires=[0, 1])
+
+        out = dev.sample(obs, counts=True)
+        expected_counts = {
+            "01": 2,
+            "20": 2,
+            "22": 1,
+            "12": 1,
+        }
+
+        assert out == expected_counts
+
+    def test_raw_counts_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array(
+            [
+                [0, 1],
+                [2, 0],
+                [2, 0],
+                [0, 1],
+                [2, 2],
+                [1, 2],
+                [0, 1],
+                [2, 0],
+                [2, 1],
+                [0, 2],
+                [2, 1],
+                [1, 2],
+            ]
+        )
+        dev._samples = samples
+        obs = qml.measurements.sample(op=None, wires=[0, 1])
+
+        shot_range = [0, 12]
+        bin_size = 4
+        out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+
+        expected_counts = [
+            {"01": 2, "20": 2},
+            {"22": 1, "12": 1, "01": 1, "20": 1},
+            {"21": 2, "02": 1, "12": 1},
+        ]
+
+        assert out == expected_counts
 
 
 class TestGenerateSamples:
