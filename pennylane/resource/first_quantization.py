@@ -179,7 +179,7 @@ class FirstQuantization(Operation):
             :title: Theory
 
             For numerical convenience, we use the following modified expressions for computing
-            parameters that contain a sum over :math`\frac{1}{\left \| \nu \right \|^k}` where
+            parameters that contain a sum over :math:`\frac{1}{\left \| \nu \right \|^k}` where
             :math:`\nu` denotes an element of the set of reciprocal lattice vectors, :math:`G_0`,
             and :math:`k \in \left \{ 1, 2 \right \}`.
 
@@ -281,7 +281,7 @@ class FirstQuantization(Operation):
         )
         # computed using Eq. (113) of PRX Quantum 2, 040332 (2021)
         lambda_nu_1 = lambda_nu + 4 / 2**n_m * (
-            7 * 2 ** (n_p + 1) + 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
+            7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
         )
 
         p_nu = 0.2398  # approximation from Eq. (29) in arxiv:1807.09802
@@ -419,7 +419,7 @@ class FirstQuantization(Operation):
 
         # taken from Eq. (125)
         cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
-        cost += 3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1)
+        cost += 3 * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
         cost += l_z + e_r + 2 * (2 * n_p + 2 * br - 7) + 12 * eta * n_p
         cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p * n_r + 18
         cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
@@ -584,9 +584,13 @@ class FirstQuantization(Operation):
             )
         )
 
+        alpha = 0.01
+        # qpe_error obtained to satisfy inequality (131) of PRX Quantum 2, 040332 (2021)
+        error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
+
         # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
         qubits = 3 * eta * n_p + 4 * n_m * n_p + 12 * n_p
-        qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error))))) + 5 * n_m
+        qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error_qpe))))) + 5 * n_m
         qubits += 2 * np.ceil(np.log2(eta)) + 3 * n_p**2 + np.ceil(np.log2(eta + 2 * l_z))
         qubits += np.maximum(5 * n_p + 1, 5 * n_r - 4) + np.maximum(n_t, n_r + 1) + 33
 
