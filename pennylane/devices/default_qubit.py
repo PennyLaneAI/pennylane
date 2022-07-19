@@ -148,30 +148,6 @@ class DefaultQubit(QubitDevice):
         "ECR",
     }
 
-    generators = {
-        "RX",
-        "RY",
-        "RZ",
-        "PhaseShift",
-        "ControlledPhaseShift",
-        "PauliRot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "U1",
-        "IsingXX",
-        "IsingYY",
-        "IsingZZ",
-        "IsingXY",
-        "SingleExcitation",
-        "SingleExcitationPlus",
-        "SingleExcitationMinus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "OrbitalRotation",
-    }
-
     observables = {
         "PauliX",
         "PauliY",
@@ -229,26 +205,6 @@ class DefaultQubit(QubitDevice):
         consecutive_wires = range(self.num_wires)
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
-
-    @staticmethod
-    def supports_operation_backward(self, operation):
-        if isinstance(operation, type) and issubclass(operation, Operation):
-            return operation.__name__ in DefaultQubit.generators
-        if isinstance(operation, str):
-
-            # if operation.endswith(".inv"):
-            #    in_ops = operation[:-4] in self.operations
-            # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-            #    supports_inv = self.capabilities().get(
-            #        "supports_inverse_operations", False
-            #    ) or self.capabilities().get("inverse_operations", False)
-            #    return in_ops and supports_inv
-
-            return operation in DefaultQubit.generators
-
-        raise ValueError(
-            "The given operation must either be a pennylane.Operation class or a string."
-        )
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):

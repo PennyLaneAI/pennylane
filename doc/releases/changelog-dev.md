@@ -3,6 +3,8 @@
 # Release 0.25.0-dev (development release)
 
 <h3>New features since last release</h3>
+* Operators now have a `has_generator` property denoting whether or not.
+  [(#2827)](https://github.com/PennyLaneAI/pennylane/pull/2827)
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on

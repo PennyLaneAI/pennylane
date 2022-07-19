@@ -40,6 +40,40 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
+ops_gntr = {
+    "CRX": qml.CRX,
+    "CRY": qml.CRY,
+    "CRZ": qml.CRZ,
+    "PhaseShift": qml.PhaseShift,
+    "ControlledPhaseShift": qml.ControlledPhaseShift,
+    "RX": qml.RX,
+    "RY": qml.RY,
+    "RZ": qml.RZ,
+    "IsingXX": qml.IsingXX,
+    "IsingYY": qml.IsingYY,
+    "IsingZZ": qml.IsingZZ,
+    "IsingXY": qml.IsingXY,
+    "SingleExcitation": qml.SingleExcitation,
+    "SingleExcitationPlus": qml.SingleExcitationPlus,
+    "SingleExcitationMinus": qml.SingleExcitationMinus,
+    "DoubleExcitation": qml.DoubleExcitation,
+    "DoubleExcitationPlus": qml.DoubleExcitationPlus,
+    "DoubleExcitationMinus": qml.DoubleExcitationMinus,
+    "PauliRot": qml.PauliRot,
+    "U1": qml.U1,
+    "OrbitalRotation": qml.OrbitalRotation,
+}
+
+ops_wo_gntr = {
+    "PauliX": qml.PauliX,
+    "PauliY": qml.PauliY,
+    "PauliZ": qml.PauliZ,
+}
+
+all_ops_gntr_str = ops_gntr.keys()
+all_ops_wo_gntr_str = ops_wo_gntr.keys()
+
+
 @pytest.mark.parametrize(
     "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
 )
@@ -368,6 +402,16 @@ class TestOperatorConstruction:
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
         assert not op.has_matrix
+
+    @pytest.mark.parametrize("operation", all_ops_gntr_str)
+    def test_has_generator_true(self, operation):
+        """Test has_generator property"""
+        assert ops_gntr[operation].has_generator
+    
+    @pytest.mark.parametrize("operation", all_ops_wo_gntr_str)
+    def test_supported_generators(self, operation):
+        """Test has_generator property"""
+        assert not ops_wo_gntr[operation].has_generator
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])

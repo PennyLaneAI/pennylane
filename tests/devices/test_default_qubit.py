@@ -86,33 +86,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-ops_gntr = {
-    "CRX": qml.CRX,
-    "CRY": qml.CRY,
-    "CRZ": qml.CRZ,
-    "PhaseShift": qml.PhaseShift,
-    "ControlledPhaseShift": qml.ControlledPhaseShift,
-    "RX": qml.RX,
-    "RY": qml.RY,
-    "RZ": qml.RZ,
-    "IsingXX": qml.IsingXX,
-    "IsingYY": qml.IsingYY,
-    "IsingZZ": qml.IsingZZ,
-    "IsingXY": qml.IsingXY,
-    "SingleExcitation": qml.SingleExcitation,
-    "SingleExcitationPlus": qml.SingleExcitationPlus,
-    "SingleExcitationMinus": qml.SingleExcitationMinus,
-    "DoubleExcitation": qml.DoubleExcitation,
-    "DoubleExcitationPlus": qml.DoubleExcitationPlus,
-    "DoubleExcitationMinus": qml.DoubleExcitationMinus,
-    "PauliRot": qml.PauliRot,
-    "U1": qml.U1,
-    "OrbitalRotation": qml.OrbitalRotation,
-}
-
-all_ops_gntr_str = ops_gntr.keys()
-
-
 def include_inverses_with_test_data(test_data):
     return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
@@ -137,18 +110,6 @@ def test_dtype_errors():
         DeviceError, match="Complex datatype must be a complex floating point type."
     ):
         qml.device("default.qubit", wires=1, c_dtype=np.float64)
-
-
-class TestSupportedGenerators:
-    """Test device generator query support."""
-
-    @pytest.mark.parametrize("operation", all_ops_gntr_str)
-    def test_supported_generators(self, operation):
-
-        dev = qml.device("default.qubit", wires=4)
-
-        assert dev.supports_operation_backward(self, operation)
-        assert dev.supports_operation_backward(self, ops_gntr[operation])
 
 
 class TestApply:
