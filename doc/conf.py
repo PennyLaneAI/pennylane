@@ -53,8 +53,6 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 
-bibtex_bibfiles = ["bibfile.bib"]
-
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
 
