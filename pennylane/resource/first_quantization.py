@@ -77,7 +77,7 @@ class FirstQuantization(Operation):
         649912.4801542697
 
         >>> algo.gates  # estimated number of non-Clifford gates
-        9.38e+12
+        1.10e+13
 
         >>> algo.qubits  # estimated number of qubits
         4416
@@ -366,7 +366,7 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> unitary_cost(n, eta, omega, error)
-        14635
+        17033
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
@@ -490,7 +490,7 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> gate_cost(n, eta, omega, error)
-        3158951256530
+        3676557345574
         """
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
