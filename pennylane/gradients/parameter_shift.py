@@ -72,6 +72,7 @@ def _square_observable(obs):
 
     return NONINVOLUTORY_OBS[obs.name](obs)
 
+
 def _process_op_recipe(op, p_idx, order):
     """Process an existing recipe of an operation."""
     recipe = op.grad_recipe[p_idx]
@@ -203,7 +204,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {op.return_type.value}"
                 )
-            
+
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
             # hamiltonian_grad always returns a list with a single tape
             gradient_tapes.extend(g_tapes)

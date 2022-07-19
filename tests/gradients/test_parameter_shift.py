@@ -300,13 +300,12 @@ class TestParamShift:
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = tuple(
-            [[-1e7, 1, 0], [1e7, 1, 1e7]] if i in ops_with_custom_recipe else None
-            for i in range(2)
+            [[-1e7, 1, 0], [1e7, 1, 1e7]] if i in ops_with_custom_recipe else None for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
         # two tapes per parameter that doesn't use a custom recipe,
-        # one tape per parameter that uses custom recipe, 
+        # one tape per parameter that uses custom recipe,
         # plus one global call if at least one uses the custom recipe
         assert len(tapes) == 2 * tape.num_params + 1 - len(ops_with_custom_recipe)
 
@@ -338,6 +337,7 @@ class TestParamShift:
 
         class RX(qml.RX):
             """RX operation with an additional (wrong) term in the grad recipe."""
+
             grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2], [0.2, 1, 0]],)
 
         x = np.array([-0.361, 0.654], requires_grad=True)
@@ -360,7 +360,9 @@ class TestParamShift:
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
         grad = fn(dev.batch_execute(tapes))
-        assert np.allclose(grad, [-np.sin(x[0]+x[1]), -np.sin(x[0]+x[1]) + 0.2 * np.cos(x[0]+x[1])])
+        assert np.allclose(
+            grad, [-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])]
+        )
 
     def test_independent_parameters_analytic(self):
         """Test the case where expectation values are independent of some parameters. For those
