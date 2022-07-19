@@ -77,7 +77,7 @@ def _process_op_recipe(op, p_idx, order):
     """Process an existing recipe of an operation."""
     recipe = op.grad_recipe[p_idx]
     if recipe is None:
-        return
+        return None
 
     recipe = qml.math.array(recipe)
     if order == 1:
@@ -113,7 +113,6 @@ def _choose_recipe(argnum, idx, gradient_recipes, shifts, tape):
 
 def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape):
     first_c, first_m, first_s = recipe[0]
-    coeffs, multipliers, op_shifts = recipe.T
     # Extract zero-shift term if present (if so, it will always be the first)
     if first_s == 0 and first_m == 1:
         # Gradient recipe includes a term with zero shift.
