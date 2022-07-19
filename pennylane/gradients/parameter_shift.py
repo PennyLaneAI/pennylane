@@ -182,23 +182,16 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
     argnum = argnum or tape.trainable_params
 
     gradient_tapes = []
-    # Each entry for gradient_data will be a tuple with (shape, gradient_coeffs, fn, unshifted_coeff)
+    # Each entry for gradient_data will be a tuple with content
+    # (num_tapes, coeffs, fn, unshifted_coeff)
     gradient_data = []
     at_least_one_unshifted = False
-
-    #gradient_coeffs = []
-    #shapes = []
-    #unshifted_coeffs = []
-    #fns = []
 
     for idx, _ in enumerate(tape.trainable_params):
 
         if idx not in argnum:
             # parameter has zero gradient
             gradient_data.append((0, [], None, None))
-            #shapes.append(0)
-            #gradient_coeffs.append([])
-            #fns.append(None)
             continue
 
         op, _ = tape.get_operation(idx)
@@ -215,9 +208,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             # hamiltonian_grad always returns a list with a single tape
             gradient_tapes.extend(g_tapes)
             gradient_data.append((1, np.array([1.0]), h_fn, None))
-            #shapes.append(1)
-            #gradient_coeffs.append(np.array([1.0]))
-            #fns.append(h_fn)
             continue
 
         # get the gradient recipe for the trainable parameter
@@ -229,33 +219,25 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
         coeffs, multipliers, op_shifts = recipe.T
-        #fns.append(None)
 
         # Extract zero-shift term if present (if so, it will always be the first)
         if op_shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
-
             if not at_least_one_unshifted and f0 is None:
-                # Ensure that the unshifted tape is appended
-                # to the gradient tapes, if not already.
-                gradient_tapes.append(tape)
+                # Append the unshifted tape to the gradient tapes, if not already present
+                gradient_tapes.insert(0, tape)
 
-            # Store the unshifted coefficient. We know that
-            # it will always be the first coefficient due to processing.
+            # Store the unshifted coefficient. It is always the first coefficient due to processing
             unshifted_coeff = coeffs[0]
             at_least_one_unshifted = True
-            #unshifted_coeffs.append(coeffs[0])
             coeffs, multipliers, op_shifts = recipe[1:].T
         else:
             unshifted_coeff = None
 
         # generate the gradient tapes
-        #gradient_coeffs.append(coeffs)
         g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
-
         gradient_tapes.extend(g_tapes)
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff))
-        #shapes.append(len(g_tapes))
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
@@ -264,45 +246,39 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             results = [qml.math.squeeze(res) for res in results]
 
         grads = []
-        #start = 1 if unshifted_coeffs and f0 is None else 0
         start = 1 if at_least_one_unshifted and f0 is None else 0
         r0 = f0 or results[0]
 
-        for s, coeffs, f, unshifted_coeff in gradient_data:
-        #for i, (s, f) in enumerate(zip(shapes, fns)):
+        for num_tapes, coeffs, fn, unshifted_coeff in gradient_data:
 
-            if s == 0:
+            if num_tapes == 0:
                 # parameter has zero gradient
-                #g = qml.math.zeros_like(results[0])
                 grads.append(qml.math.zeros_like(results[0]))
                 continue
 
-            res = results[start : start + s]
-            start = start + s
+            res = results[start : start + num_tapes]
+            start = start + num_tapes
 
-            if f is not None:
-                res = f(res)
+            # individual post-processing of e.g. Hamiltonian grad tapes
+            if fn is not None:
+                res = fn(res)
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            #g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
             g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
 
             if unshifted_coeff is not None:
-                # add on the unshifted term
+                # add the unshifted term
                 g = g + unshifted_coeff * r0
 
             grads.append(g)
 
-        # The following is for backwards compatibility; currently,
-        # the device stacks multiple measurement arrays, even if not the same
-        # size, resulting in a ragged array.
-        # In the future, we might want to change this so that only tuples
-        # of arrays are returned.
+        # The following is for backwards compatibility; currently, the device stacks multiple
+        # measurement arrays, even if not the same size, resulting in a ragged array.
+        # In the future, we might want to change this so that only tuples of arrays are returned.
         for i, g in enumerate(grads):
-            if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                if qml.math.ndim(g) > 0:
-                    grads[i] = qml.math.hstack(g)
+            if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
+                grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 
