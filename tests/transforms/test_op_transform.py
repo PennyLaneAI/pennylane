@@ -73,7 +73,7 @@ class TestValidation:
             return op.name
 
         def qfunc(x):
-            return x ** 2
+            return x**2
 
         with pytest.raises(
             OperationTransformError,
@@ -472,7 +472,7 @@ class TestExpansion:
         @matrix.tape_transform
         def matrix_tape(tape):
             n_wires = len(tape.wires)
-            unitary_matrix = np.eye(2 ** n_wires)
+            unitary_matrix = np.eye(2**n_wires)
 
             for op in tape.operations:
                 mat = qml.operation.expand_matrix(matrix(op), op.wires, tape.wires)
@@ -482,7 +482,7 @@ class TestExpansion:
 
         res = matrix(op)
         assert isinstance(res, np.ndarray)
-        assert res.shape == (2 ** 3, 2 ** 3)
+        assert res.shape == (2**3, 2**3)
 
 
 matrix = qml.op_transform(lambda op, wire_order=None: op.matrix(wire_order=wire_order))
@@ -491,7 +491,7 @@ matrix = qml.op_transform(lambda op, wire_order=None: op.matrix(wire_order=wire_
 @matrix.tape_transform
 def matrix_tape(tape, wire_order=None):
     n_wires = len(wire_order)
-    unitary_matrix = np.eye(2 ** n_wires)
+    unitary_matrix = np.eye(2**n_wires)
 
     for op in tape.operations:
         unitary_matrix = matrix(op, wire_order=wire_order) @ unitary_matrix

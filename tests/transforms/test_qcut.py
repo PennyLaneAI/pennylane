@@ -2590,7 +2590,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
-            qml.RY(x ** 2, wires=2)
+            qml.RY(x**2, wires=2)
             return qml.sample(wires=[0, 1])
 
         x = 0.4
@@ -2840,9 +2840,9 @@ class TestContractTensors:
             spy = mocker.spy(qml.math, "einsum")
 
         t = [
-            np.arange(4 ** 8).reshape((4,) * 8),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 2).reshape((4,) * 2),
+            np.arange(4**8).reshape((4,) * 8),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**2).reshape((4,) * 2),
         ]
         m = [
             [
@@ -2903,10 +2903,10 @@ class TestQCutProcessingFn:
         prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 4]
         measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 3]
         tensors = [
-            np.arange(4 ** 5).reshape((4,) * 5),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 7).reshape((4,) * 7),
+            np.arange(4**5).reshape((4,) * 5),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**7).reshape((4,) * 7),
         ]
         results = np.concatenate([t.flatten() for t in tensors])
 
@@ -2925,7 +2925,7 @@ class TestQCutProcessingFn:
         size that is incompatible with the prepare_nodes and measure_nodes arguments"""
         prepare_nodes = [[None] * 3]
         measure_nodes = [[None] * 2]
-        tensors = [np.arange(4 ** 5).reshape((4,) * 5), np.arange(4)]
+        tensors = [np.arange(4**5).reshape((4,) * 5), np.arange(4)]
         results = np.concatenate([t.flatten() for t in tensors])
 
         with pytest.raises(ValueError, match="should be a flat list of length 1024"):
@@ -2937,7 +2937,7 @@ class TestQCutProcessingFn:
         """Test if the tensor returned by _process_tensor is equal to the expected value"""
         lib = pytest.importorskip(interface)
 
-        U = unitary_group.rvs(2 ** n, random_state=1967)
+        U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
         basis = np.array([I, X, Y, Z]) / np.sqrt(2)
@@ -3041,7 +3041,7 @@ class TestQCutProcessingFn:
 
         def f(x):
             t1 = x * np.arange(4)
-            t2 = x ** 2 * np.arange(16).reshape((4, 4))
+            t2 = x**2 * np.arange(16).reshape((4, 4))
             t3 = np.sin(x * np.pi / 2) * np.arange(4)
 
             res = [t1, t2.flatten(), t3]
@@ -3058,7 +3058,7 @@ class TestQCutProcessingFn:
 
         grad = qml.grad(f)(x)
         expected_grad = (
-            3 * x ** 2 * np.sin(x * np.pi / 2) + x ** 3 * np.cos(x * np.pi / 2) * np.pi / 2
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
@@ -3076,7 +3076,7 @@ class TestQCutProcessingFn:
         def f(x):
             x = tf.cast(x, dtype=tf.float64)
             t1 = x * tf.range(4, dtype=tf.float64)
-            t2 = x ** 2 * tf.range(16, dtype=tf.float64)
+            t2 = x**2 * tf.range(16, dtype=tf.float64)
             t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
 
             res = [t1, t2, t3]
@@ -3096,7 +3096,7 @@ class TestQCutProcessingFn:
 
         grad = tape.gradient(res, x)
         expected_grad = (
-            3 * x ** 2 * np.sin(x * np.pi / 2) + x ** 3 * np.cos(x * np.pi / 2) * np.pi / 2
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
@@ -3113,7 +3113,7 @@ class TestQCutProcessingFn:
 
         def f(x):
             t1 = x * torch.arange(4)
-            t2 = x ** 2 * torch.arange(16)
+            t2 = x**2 * torch.arange(16)
             t3 = torch.sin(x * np.pi / 2) * torch.arange(4)
 
             res = [t1, t2, t3]
@@ -3135,7 +3135,7 @@ class TestQCutProcessingFn:
         x_ = x.detach().numpy()
         f1 = f(torch.tensor(1, dtype=torch.float64))
         expected_grad = (
-            3 * x_ ** 2 * np.sin(x_ * np.pi / 2) + x_ ** 3 * np.cos(x_ * np.pi / 2) * np.pi / 2
+            3 * x_**2 * np.sin(x_ * np.pi / 2) + x_**3 * np.cos(x_ * np.pi / 2) * np.pi / 2
         ) * f1
 
         assert np.allclose(grad.detach().numpy(), expected_grad)
@@ -3153,7 +3153,7 @@ class TestQCutProcessingFn:
 
         def f(x):
             t1 = x * jnp.arange(4)
-            t2 = x ** 2 * jnp.arange(16).reshape((4, 4))
+            t2 = x**2 * jnp.arange(16).reshape((4, 4))
             t3 = jnp.sin(x * np.pi / 2) * jnp.arange(4)
 
             res = [t1, t2.flatten(), t3]
@@ -3170,7 +3170,7 @@ class TestQCutProcessingFn:
 
         grad = jax.grad(f)(x)
         expected_grad = (
-            3 * x ** 2 * np.sin(x * np.pi / 2) + x ** 3 * np.cos(x * np.pi / 2) * np.pi / 2
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
@@ -3588,7 +3588,7 @@ class TestCutCircuitTransform:
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
-            qml.RY(x ** 2, wires=2)
+            qml.RY(x**2, wires=2)
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = 0.4
@@ -3704,7 +3704,7 @@ class TestCutCircuitTransform:
 
         # We need a 3-qubit device
         dev_cut = qml.device("default.qubit", wires=3, shots=shots)
-        us = [unitary_group.rvs(2 ** 2, random_state=i) for i in range(5)]
+        us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
             qml.QubitUnitary(us[0], wires=[0, 1])
@@ -4579,7 +4579,7 @@ class TestAutoCutCircuit:
 
         # We need a 3-qubit device
         dev_cut = qml.device("default.qubit", wires=3, shots=shots)
-        us = [unitary_group.rvs(2 ** 2, random_state=i) for i in range(5)]
+        us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
             qml.QubitUnitary(us[0], wires=[0, 1])
@@ -4617,7 +4617,7 @@ class TestAutoCutCircuit:
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            qml.RY(x ** 2, wires=2)
+            qml.RY(x**2, wires=2)
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = 0.4

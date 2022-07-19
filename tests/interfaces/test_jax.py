@@ -513,7 +513,7 @@ class TestJaxExecuteIntegration:
             with qml.tape.QuantumTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
+                qml.RX(c + c**2 + jnp.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             return execute([tape], device, interface=interface, **execute_kwargs)[0][0]
