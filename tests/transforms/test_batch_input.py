@@ -50,7 +50,7 @@ def test_value_error():
         """Variant of qml.AngleEmbedding that does not provide fixed
         ``ndim_params`` in order to allow for the detection of inconsistent
         batching in ``batch_input``."""
-        
+
         @property
         def ndim_params(self):
             return self._ndim_params
