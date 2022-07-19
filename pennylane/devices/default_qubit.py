@@ -781,3 +781,35 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob
+
+    def classical_shadow(self, wires, n_snapshots, circuit):
+        """TODO: docs"""
+
+        n_qubits = len(wires)
+        device_wires = self.map_wires(self.wires)
+
+        pauli_probs = np.zeros((3, len(wires)))
+
+        # density matrices for each individual qubit
+        stacked_states = self._stack(
+            [
+                self._einsum(
+                    f"{ABC[:n_qubits]},{ABC[:i]}{ABC[n_qubits]}{ABC[i + 1:n_qubits]}",
+                    self._state,
+                    self._conj(self._state),
+                )
+                for i in range(n_qubits)
+            ]
+        )
+
+        for i, op in enumerate([qml.PauliX, qml.PauliY, qml.PauliZ]):
+            pauli_probs[i] = np.real(
+                (np.einsum("ijk,kj->i", stacked_states, op.compute_matrix()) + 1) / 2
+            )
+
+        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+
+        probs = pauli_probs[recipes, np.tile(np.arange(n_qubits), (n_snapshots, 1))]
+        outcomes = np.random.uniform(0, 1, size=probs.shape) > probs
+
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
