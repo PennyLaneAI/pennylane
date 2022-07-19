@@ -530,10 +530,10 @@ class DoubleFactorization(Operation):
         >>> print(norm(one, two, eigvals))
         52.98762043980203
         """
-        lambda_one = 0.25 * np.sum([np.sum(abs(v)) ** 2 for v in eigvals])
-
         t_matrix = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
         t_eigvals, _ = np.linalg.eigh(t_matrix)
-        lambda_two = np.sum(abs(t_eigvals))
+        lambda_one = np.sum(abs(t_eigvals))
+
+        lambda_two = 0.25 * np.sum([np.sum(abs(v)) ** 2 for v in eigvals])
 
         return lambda_one + lambda_two
