@@ -79,7 +79,7 @@ class SProd(SymbolicOp):
 
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
-        operator (~.operation.Operator): the operator which will get scaled.
+        base (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
         do_queue (bool): determines if the scalar product operator will be queued
