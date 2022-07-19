@@ -226,9 +226,6 @@ class MeasurementProcess:
         if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
             shape = (1,)
 
-        if self.return_type is Shadow:
-            shape = (2, self.n_shots, len(self.wires))
-
         density_matrix_return = self.return_type == State and self.wires
 
         if density_matrix_return:
