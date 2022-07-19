@@ -187,7 +187,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
             raise qml.QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
-        if not np.allclose(qml.matrix(pattern), np.eye(2**pattern.num_wires)):
+        if not np.allclose(qml.matrix(pattern), np.eye(2 ** pattern.num_wires)):
             raise qml.QuantumFunctionError("Pattern is not valid, it does not implement identity.")
 
         # Verify that the pattern has less qubits or same number of qubits

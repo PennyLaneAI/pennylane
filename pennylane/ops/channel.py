@@ -584,7 +584,7 @@ class PauliError(Channel):
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p + np.eps) * np.eye(2**nq)
+        K0 = np.sqrt(1 - p + np.eps) * np.eye(2 ** nq)
 
         ops = {
             "X": np.array([[0, 1], [1, 0]]),
@@ -885,22 +885,22 @@ class ThermalRelaxationError(Channel):
             v1 = np.array([[0, 1], [0, 0]])
             K1 = np.sqrt(e1 + np.eps) * v1
             common_term = np.sqrt(
-                4 * eT2**2
-                + 4 * p_reset**2 * pe**2
-                - 4 * p_reset**2 * pe
-                + p_reset**2
+                4 * eT2 ** 2
+                + 4 * p_reset ** 2 * pe ** 2
+                - 4 * p_reset ** 2 * pe
+                + p_reset ** 2
                 + np.eps
             )
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
             v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
-                term2**2 + 1
+                term2 ** 2 + 1
             )
             K2 = np.sqrt(e2 + np.eps) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
             v3 = (term3 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
-                term3**2 + 1
+                term3 ** 2 + 1
             )
             K3 = np.sqrt(e3 + np.eps) * v3
             K4 = np.cast_like(np.zeros((2, 2)), K1)

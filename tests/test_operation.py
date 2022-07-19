@@ -404,7 +404,7 @@ class TestOperatorConstruction:
     def test_has_generator_true(self, operation):
         """Test has_generator property"""
         assert ops_gntr[operation].has_generator
-    
+
     @pytest.mark.parametrize("operation", all_ops_wo_gntr_str)
     def test_supported_generators(self, operation):
         """Test has_generator property"""

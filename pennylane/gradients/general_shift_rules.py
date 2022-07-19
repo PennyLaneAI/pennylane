@@ -124,7 +124,7 @@ def frequencies_to_period(frequencies, decimals=5):
 
     except TypeError:
         # np.gcd only support integer frequencies
-        exponent = 10**decimals
+        exponent = 10 ** decimals
         frequencies = np.round(frequencies, decimals) * exponent
         gcd = np.gcd.reduce(np.int64(frequencies)) / exponent
 

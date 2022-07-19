@@ -41,7 +41,7 @@ class TestAdamOptimizer:
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
         a1 = (1 - gamma) * grad
-        b1 = (1 - delta) * grad**2
+        b1 = (1 - delta) * grad ** 2
         a1_corrected = a1 / (1 - gamma)
         b1_corrected = b1 / (1 - delta)
         expected = args - stepsize * a1_corrected / (np.sqrt(b1_corrected) + eps)
@@ -53,9 +53,9 @@ class TestAdamOptimizer:
         args = expected
 
         a2 = gamma * a1 + (1 - gamma) * grad
-        b2 = delta * b1 + (1 - delta) * grad**2
-        a2_corrected = a2 / (1 - gamma**2)
-        b2_corrected = b2 / (1 - delta**2)
+        b2 = delta * b1 + (1 - delta) * grad ** 2
+        a2_corrected = a2 / (1 - gamma ** 2)
+        b2_corrected = b2 / (1 - delta ** 2)
         expected = args - stepsize * a2_corrected / (np.sqrt(b2_corrected) + eps)
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -67,7 +67,7 @@ class TestAdamOptimizer:
         stepsize, gamma, delta = 0.1, 0.5, 0.8
         adam_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
         grad_uni_fns = [
             lambda x: (np.cos(x),),
             lambda x: (np.exp(x / 10.0) / 10.0,),
@@ -87,7 +87,7 @@ class TestAdamOptimizer:
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = adam_opt.step(f, x_onestep)
-            adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+            adapted_stepsize = stepsize * np.sqrt(1 - delta ** 2) / (1 - gamma ** 2)
             firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
             secondmoment = (
                 delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
@@ -106,7 +106,7 @@ class TestAdamOptimizer:
         multivariate_funcs = [
             lambda x: np.sin(x[0]) + np.cos(x[1]),
             lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: np.sum([x_ ** 2 for x_ in x]),
         ]
         grad_multi_funcs = [
             lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
@@ -138,7 +138,7 @@ class TestAdamOptimizer:
                 assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = adam_opt.step(f, x_onestep)
-                adapted_stepsize = stepsize * np.sqrt(1 - delta**2) / (1 - gamma**2)
+                adapted_stepsize = stepsize * np.sqrt(1 - delta ** 2) / (1 - gamma ** 2)
                 firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
                 secondmoment = (
                     delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]

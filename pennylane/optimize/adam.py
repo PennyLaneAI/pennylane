@@ -110,7 +110,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # update second moment
         self.accumulation["sm"][index] = (
-            self.beta2 * self.accumulation["sm"][index] + (1 - self.beta2) * grad**2
+            self.beta2 * self.accumulation["sm"][index] + (1 - self.beta2) * grad ** 2
         )
 
     def reset(self):

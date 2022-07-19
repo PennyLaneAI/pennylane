@@ -101,7 +101,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(eigvals**2, p) - (dot(eigvals, p)) ** 2
+        res = dot(eigvals ** 2, p) - (dot(eigvals, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
@@ -278,7 +278,7 @@ def _partial_trace(density_matrix, indices):
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+        density_matrix, (2 ** number_wires_sub, 2 ** number_wires_sub)
     )
     return reduced_density_matrix
 
@@ -335,7 +335,7 @@ def _partial_trace_autograd(density_matrix, indices):
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
-        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+        density_matrix, (2 ** number_wires_sub, 2 ** number_wires_sub)
     )
     return reduced_density_matrix
 

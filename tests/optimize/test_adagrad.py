@@ -49,7 +49,7 @@ class TestAdagradOptimizer:
         stepsize = 0.1
         adag_opt = AdagradOptimizer(stepsize)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
         grad_uni_fns = [
             lambda x: np.cos(x),
             lambda x: np.exp(x / 10.0) / 10.0,
@@ -80,7 +80,7 @@ class TestAdagradOptimizer:
         multivariate_funcs = [
             lambda x: np.sin(x[0]) + np.cos(x[1]),
             lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: np.sum([x_ ** 2 for x_ in x]),
         ]
         grad_multi_funcs = [
             lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),

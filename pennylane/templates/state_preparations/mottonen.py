@@ -90,7 +90,7 @@ def compute_theta(alpha):
 
     theta = qml.math.dot(M_trans, alpha.T).T
 
-    return theta / 2**k
+    return theta / 2 ** k
 
 
 def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
@@ -197,7 +197,7 @@ def _get_alpha_y(a, n, k):
     numerator = qml.math.take(a, indices=indices_numerator, axis=-1)
     numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=-1)
 
-    indices_denominator = [[j * 2**k + l for l in range(2**k)] for j in range(2 ** (n - k))]
+    indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
     denominator = qml.math.take(a, indices=indices_denominator, axis=-1)
     denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=-1)
 

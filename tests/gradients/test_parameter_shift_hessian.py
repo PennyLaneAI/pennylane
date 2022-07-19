@@ -694,8 +694,8 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2**2 * 1  # 1 = (1+2-1)C(2)
-        assert hessian_qruns <= 3**1
+        assert hessian_qruns <= 2 ** 2 * 1  # 1 = (1+2-1)C(2)
+        assert hessian_qruns <= 3 ** 1
 
     def test_fewer_device_invocations_vector_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
@@ -720,8 +720,8 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2**2 * 3  # 3 = (2+2-1)C(2)
-        assert hessian_qruns <= 3**2
+        assert hessian_qruns <= 2 ** 2 * 3  # 3 = (2+2-1)C(2)
+        assert hessian_qruns <= 3 ** 2
 
     def test_fewer_device_invocations_vector_output(self):
         """Test that the hessian invokes less hardware executions than double differentiation
@@ -747,8 +747,8 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2**2 * 6  # 6 = (3+2-1)C(2)
-        assert hessian_qruns <= 3**3
+        assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
+        assert hessian_qruns <= 3 ** 3
 
     def test_error_unsupported_operation_without_argnum(self):
         """Test that the correct error is thrown for unsupported operations when

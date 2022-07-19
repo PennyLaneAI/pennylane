@@ -512,7 +512,7 @@ def photon_number(cov, mu, params, hbar=2.0):
     """
     # pylint: disable=unused-argument
     ex = (np.trace(cov) + mu.T @ mu) / (2 * hbar) - 1 / 2
-    var = (np.trace(cov @ cov) + 2 * mu.T @ cov @ mu) / (2 * hbar**2) - 1 / 4
+    var = (np.trace(cov @ cov) + 2 * mu.T @ cov @ mu) / (2 * hbar ** 2) - 1 / 4
     return ex, var
 
 
@@ -619,7 +619,7 @@ def fock_expectation(cov, mu, params, hbar=2.0):
     ex = fock_prob(cov, mu, params[0], hbar=hbar)
 
     # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
-    var = ex - ex**2
+    var = ex - ex ** 2
     return ex, var
 
 

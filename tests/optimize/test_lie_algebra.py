@@ -189,7 +189,7 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    phi_exact = expm(-0.1 * lie_algebra_np * 2**nqubits) @ phi
+    phi_exact = expm(-0.1 * lie_algebra_np * 2 ** nqubits) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
     opt = LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.1, exact=True)
     opt.step_and_cost()

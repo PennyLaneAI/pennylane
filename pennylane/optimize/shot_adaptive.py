@@ -452,15 +452,15 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # iteration of the optimizer
             s = np.ceil(
                 (2 * self.lipschitz * self.stepsize * xi)
-                / ((2 - self.lipschitz * self.stepsize) * (chi**2 + self.b * (self.mu**self.k)))
+                / ((2 - self.lipschitz * self.stepsize) * (chi ** 2 + self.b * (self.mu ** self.k)))
             )
 
             # apply an upper and lower bound on the new shot distributions,
             # to avoid the number of shots reducing below min(2, min_shots),
             # or growing too significantly.
             gamma = (
-                (self.stepsize - self.lipschitz * self.stepsize**2 / 2) * chi**2
-                - xi * self.lipschitz * self.stepsize**2 / (2 * s)
+                (self.stepsize - self.lipschitz * self.stepsize ** 2 / 2) * chi ** 2
+                - xi * self.lipschitz * self.stepsize ** 2 / (2 * s)
             ) / s
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)

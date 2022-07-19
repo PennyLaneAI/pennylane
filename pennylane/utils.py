@@ -85,7 +85,7 @@ def decompose_hamiltonian(H, hide_identity=False, wire_order=None):
     This Hamiltonian can then be used in defining VQE problems using :class:`~.ExpvalCost`.
     """
     n = int(np.log2(len(H)))
-    N = 2**n
+    N = 2 ** n
 
     if wire_order is None:
         wire_order = range(n)
@@ -165,7 +165,7 @@ def sparse_hamiltonian(H, wires=None):
         wires = qml.wires.Wires(wires)
 
     n = len(wires)
-    matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+    matrix = scipy.sparse.csr_matrix((2 ** n, 2 ** n), dtype="complex128")
 
     coeffs = qml.math.toarray(H.data)
 
@@ -189,7 +189,7 @@ def sparse_hamiltonian(H, wires=None):
         for wire_lab in wires:
             if wire_lab in op.wires:
                 if i_count > 0:
-                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                    mat.append(scipy.sparse.eye(2 ** i_count, format="coo"))
                 i_count = 0
                 idx = op.wires.index(wire_lab)
                 # obs is an array storing the single-wire observables which
@@ -200,7 +200,7 @@ def sparse_hamiltonian(H, wires=None):
                 i_count += 1
 
         if i_count > 0:
-            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+            mat.append(scipy.sparse.eye(2 ** i_count, format="coo"))
 
         red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
@@ -367,7 +367,7 @@ def expand_vector(vector, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(vector) != (2**N,):
+    if qml.math.shape(vector) != (2 ** N,):
         raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
@@ -375,7 +375,7 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     if D > 0:
         extra_dims = [2] * D
-        ones = qml.math.ones(2**D).reshape(extra_dims)
+        ones = qml.math.ones(2 ** D).reshape(extra_dims)
         expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
@@ -392,4 +392,4 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, 2**M)
+    return qml.math.reshape(expanded_tensor, 2 ** M)

@@ -574,7 +574,7 @@ class QubitDevice(Device):
         Returns:
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
-        number_of_states = 2**self.num_wires
+        number_of_states = 2 ** self.num_wires
 
         rotated_prob = self.analytic_probability()
 
@@ -632,7 +632,7 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if 2 < num_wires < 32:
-            states_base_ten = np.arange(2**num_wires, dtype=dtype)
+            states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
             return self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
@@ -965,7 +965,7 @@ class QubitDevice(Device):
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
-            return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
+            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)

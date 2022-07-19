@@ -57,7 +57,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
             [0.90932897, 0.95685561, 0.96605621, 1.        ]], requires_grad=True)
     """
     N = len(X)
-    matrix = [0] * N**2
+    matrix = [0] * N ** 2
 
     for i in range(N):
         for j in range(i, N):

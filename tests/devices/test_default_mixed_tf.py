@@ -161,7 +161,7 @@ class TestOps:
 
         res = tape.gradient(out, param)
 
-        assert np.allclose(res, np.zeros(wires**2))
+        assert np.allclose(res, np.zeros(wires ** 2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
