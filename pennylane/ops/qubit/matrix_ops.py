@@ -73,7 +73,6 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            print(U_shape)
             if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
