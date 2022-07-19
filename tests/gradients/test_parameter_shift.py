@@ -296,11 +296,11 @@ class TestParamShift:
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[0])
+            qml.RX(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = tuple(
-            [[-1e7, 1, 0], [1e7, 1, 1e7]] if i in ops_with_custom_recipe else None for i in range(2)
+            [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
@@ -308,6 +308,9 @@ class TestParamShift:
         # one tape per parameter that uses custom recipe,
         # plus one global call if at least one uses the custom recipe
         assert len(tapes) == 2 * tape.num_params + 1 - len(ops_with_custom_recipe)
+        # Test that executing the tapes and the postprocessing function works
+        grad = fn(qml.execute(tapes, dev, None))
+        assert qml.math.allclose(grad, -np.sin(0.543 - 0.654), atol=1e-5)
 
     def test_f0_provided(self):
         """Test that if the original tape output is provided, then
