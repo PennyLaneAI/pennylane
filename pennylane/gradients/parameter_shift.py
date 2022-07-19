@@ -99,6 +99,38 @@ def _process_op_recipe(op, p_idx, order):
     return process_shifts(_iterate_shift_rule(recipe, order, period))
 
 
+def _choose_recipe(argnum, idx, gradient_recipes, shifts, tape):
+    # get the gradient recipe for the trainable parameter
+    arg_idx = argnum.index(idx)
+    recipe = gradient_recipes[arg_idx]
+    if recipe is not None:
+        recipe = process_shifts(np.array(recipe))
+    else:
+        op_shifts = None if shifts is None else shifts[arg_idx]
+        recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
+    return recipe
+
+
+def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape):
+    first_c, first_m, first_s = recipe[0]
+    coeffs, multipliers, op_shifts = recipe.T
+    # Extract zero-shift term if present (if so, it will always be the first)
+    if first_s == 0 and first_m == 1:
+        # Gradient recipe includes a term with zero shift.
+        if not at_least_one_unshifted and f0 is None:
+            # Append the unshifted tape to the gradient tapes, if not already present
+            gradient_tapes.insert(0, tape)
+
+        # Store the unshifted coefficient. It is always the first coefficient due to processing
+        unshifted_coeff = first_c
+        at_least_one_unshifted = True
+        recipe = recipe[1:]
+    else:
+        unshifted_coeff = None
+
+    return recipe, at_least_one_unshifted, unshifted_coeff
+
+
 def _get_operation_recipe(tape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -211,29 +243,11 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             gradient_data.append((1, np.array([1.0]), h_fn, None))
             continue
 
-        # get the gradient recipe for the trainable parameter
-        arg_idx = argnum.index(idx)
-        recipe = gradient_recipes[arg_idx]
-        if recipe is not None:
-            recipe = process_shifts(np.array(recipe))
-        else:
-            op_shifts = None if shifts is None else shifts[arg_idx]
-            recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
+        recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
+        recipe, at_least_one_unshifted, unshifted_coeff = _extract_unshifted(
+            recipe, at_least_one_unshifted, f0, gradient_tapes, tape
+        )
         coeffs, multipliers, op_shifts = recipe.T
-
-        # Extract zero-shift term if present (if so, it will always be the first)
-        if op_shifts[0] == 0 and multipliers[0] == 1:
-            # Gradient recipe includes a term with zero shift.
-            if not at_least_one_unshifted and f0 is None:
-                # Append the unshifted tape to the gradient tapes, if not already present
-                gradient_tapes.insert(0, tape)
-
-            # Store the unshifted coefficient. It is always the first coefficient due to processing
-            unshifted_coeff = coeffs[0]
-            at_least_one_unshifted = True
-            coeffs, multipliers, op_shifts = recipe[1:].T
-        else:
-            unshifted_coeff = None
 
         # generate the gradient tapes
         g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
