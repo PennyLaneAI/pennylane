@@ -217,6 +217,8 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
     # Each entry for gradient_data will be a tuple with content
     # (num_tapes, coeffs, fn, unshifted_coeff)
     gradient_data = []
+    # Keep track of whether there is at least one unshifted
+    # term in the parameter-shift rules of all parameters
     at_least_one_unshifted = False
 
     for idx, _ in enumerate(tape.trainable_params):

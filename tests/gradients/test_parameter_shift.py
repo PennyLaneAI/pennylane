@@ -293,10 +293,11 @@ class TestParamShift:
         the tape is executed only once using the current parameter
         values."""
         dev = qml.device("default.qubit", wires=2)
+        x = [0.543, -0.654]
 
         with qml.tape.QuantumTape() as tape:
-            qml.RX(0.543, wires=[0])
-            qml.RX(-0.654, wires=[0])
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = tuple(
@@ -311,7 +312,7 @@ class TestParamShift:
         assert len(tapes) == 2 * tape.num_params + 1 - len(ops_with_custom_recipe)
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
-        assert qml.math.allclose(grad, -np.sin(0.543 - 0.654), atol=1e-5)
+        assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
     def test_f0_provided(self):
         """Test that if the original tape output is provided, then
@@ -338,11 +339,14 @@ class TestParamShift:
         its instantiated parameter values works correctly within the parameter
         shift rule. Also tests that grad_recipes supersedes paramter_frequencies.
         """
+        s = np.pi / 2
 
         class RX(qml.RX):
-            """RX operation with an additional (wrong) term in the grad recipe."""
-
-            grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2], [0.2, 1, 0]],)
+            """RX operation with an additional term in the grad recipe.
+            The grad_recipe no longer yields the derivative, but we account for this.
+            For this test, the presence of the unshifted term (with non-vanishing coefficient)
+            is essential."""
+            grad_recipe = ([[0.5, 1, s], [-0.5, 1, -s], [0.2, 1, 0]],)
 
         x = np.array([-0.361, 0.654], requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
@@ -356,7 +360,6 @@ class TestParamShift:
 
         # Unshifted tapes always are first within the tapes created for one operation;
         # They are not batched together because we trust operation recipes to be condensed already
-        s = np.pi / 2
         expected_shifts = [[0, 0], [s, 0], [-s, 0], [0, s], [0, -s]]
         assert len(tapes) == 5
         for tape, expected in zip(tapes, expected_shifts):
@@ -400,7 +403,7 @@ class TestParamShift:
     def test_grad_recipe_parameter_dependent(self, monkeypatch):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly within the parameter
-        shift rule. Also tests that grad_recipes supersedes paramter_frequencies.
+        shift rule. Also tests that `grad_recipe` supersedes `parameter_frequencies`.
         """
 
         class RX(qml.RX):
