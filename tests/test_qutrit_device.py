@@ -1036,6 +1036,13 @@ class TestUnimplemented:
         with pytest.raises(NotImplementedError):
             dev.adjoint_jacobian(tape)
 
+    def test_state(self, mock_qutrit_device):
+        """Test that state is unimplemented"""
+        dev = mock_qutrit_device()
+
+        with pytest.raises(NotImplementedError):
+            dev.state()
+
     def test_density_matrix(self, mock_qutrit_device):
         """Test that density_matrix is unimplemented"""
         dev = mock_qutrit_device()
