@@ -20,7 +20,6 @@ import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
@@ -108,26 +107,6 @@ def _execute(
     """
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
-
-    for i, r in enumerate(res):
-
-        if isinstance(r, np.ndarray):
-            # For backwards compatibility, we flatten ragged tape outputs
-            # when there is no sampling
-            try:
-                if isinstance(r[0][0], dict):
-                    # This happens when measurement type is Counts and shot vector is passed
-                    continue
-            except (IndexError, KeyError):
-                pass
-            r = np.hstack(r) if r.dtype == np.dtype("object") else r
-            res[i] = np.tensor(r)
-
-        elif isinstance(res[i], tuple):
-            res[i] = tuple(np.tensor(r) for r in res[i])
-
-        else:
-            res[i] = qml.math.toarray(res[i])
 
     return res, jacs
 

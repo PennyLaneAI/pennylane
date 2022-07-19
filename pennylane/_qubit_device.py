@@ -246,7 +246,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -353,7 +353,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -381,13 +381,8 @@ class QubitDevice(Device):
 
         else:
             results_list = []
-            for i, mes in enumerate(circuit.measurements):
-                if mes.return_type is qml.measurements.Counts:
-                    # Measurements with Counts
-                    results_list.append(results[i])
-                else:
-                    # All other measurements
-                    results_list.append(self._asarray(results[i], dtype=self.R_DTYPE))
+            for res in results:
+                results_list.append(self._asarray(res, dtype=self.R_DTYPE))
             results = tuple(results_list)
 
         # increment counter for number of executions of qubit device

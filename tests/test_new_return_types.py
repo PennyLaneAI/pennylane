@@ -145,7 +145,7 @@ class TestSingleReturnExecute:
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (4, )
+        assert res[0].shape == (4,)
         assert isinstance(res[0], np.ndarray)
 
     # Samples and counts
@@ -213,10 +213,10 @@ class TestMultipleReturns:
         assert len(res[0]) == 2
 
         assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == (2, )
+        assert res[0][0].shape == (2,)
 
         assert isinstance(res[0][1], np.ndarray)
-        assert res[0][1].shape == (4, )
+        assert res[0][1].shape == (4,)
 
     def test_mix_probs_vn(self):
         dev = qml.device("default.qubit", wires=2)
@@ -235,7 +235,7 @@ class TestMultipleReturns:
         assert len(res[0]) == 3
 
         assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == (4, )
+        assert res[0][0].shape == (4,)
 
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == ()
