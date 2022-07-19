@@ -277,6 +277,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the parameter-shift gradient breaks when using
+  custom `grad_recipe`'s that contain unshifted terms with those that do not.
+  [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
+
 * Fixes a bug where the parameter-shift Hessian of circuits with untrainable
   parameters might be computed with respect to the wrong parameters or
   might raise an error.
