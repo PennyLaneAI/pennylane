@@ -33,7 +33,7 @@ class TempOperator(qml.operation.Operator):
 def pow_using_dunder_method(base, z, do_queue=True, id=None):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
-    return base ** z
+    return base**z
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])

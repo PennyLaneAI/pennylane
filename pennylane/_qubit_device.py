@@ -632,7 +632,7 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if 2 < num_wires < 32:
-            states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
+            states_base_ten = np.arange(2**num_wires, dtype=dtype)
             return self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
