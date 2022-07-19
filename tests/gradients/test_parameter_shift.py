@@ -346,6 +346,7 @@ class TestParamShift:
             The grad_recipe no longer yields the derivative, but we account for this.
             For this test, the presence of the unshifted term (with non-vanishing coefficient)
             is essential."""
+
             grad_recipe = ([[0.5, 1, s], [-0.5, 1, -s], [0.2, 1, 0]],)
 
         x = np.array([-0.361, 0.654], requires_grad=True)
