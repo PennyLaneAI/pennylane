@@ -19,6 +19,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        brew install graphviz
         pip3 install -r doc/requirements.txt
-        sudo apt install -y graphviz
         make docs
