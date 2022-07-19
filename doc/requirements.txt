@@ -22,10 +22,10 @@ tensorflow==2.9.0; platform_machine == "x86_64"
 tensorflow_macos==2.9.0; platform_machine != "x86_64" and python_version > "3.8"
 tensornetwork==0.3
 toml
-torch==1.11.0+cpu; platform_machine == "x86_64"
-torchvision==0.12.0+cpu; platform_machine == "x86_64"
-torch==1.11.0; platform_machine != "x86_64"
-torchvision==0.12.0; platform_machine != "x86_64"
+torch==1.11.0+cpu; sys_platform != "darwin"
+torchvision==0.12.0+cpu; sys_platform != "darwin"
+torch==1.11.0; sys_platform == "darwin"
+torchvision==0.12.0; sys_platform == "darwin"
 jinja2==3.0.3
 retworkx==0.11.0
 networkx==2.6
