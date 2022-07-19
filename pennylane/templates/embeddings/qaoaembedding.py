@@ -254,8 +254,11 @@ class QAOAEmbedding(Operation):
         op_list = []
         n_features = qml.math.shape(features)[-1]
         if qml.math.ndim(features) > 1:
+            # If the features are broadcasted, move the broadcasting axis to the last place
+            # in order to propagate broadcasted parameters to the gates in the decomposition.
             features = features.T
         if qml.math.ndim(weights) > 2:
+            # If the weights are broadcasted, move the broadcasting axis to the last place
             weights = qml.math.moveaxis(weights, 0, -1)
 
         for l in range(repeat):
@@ -277,16 +280,16 @@ class QAOAEmbedding(Operation):
                 op_list.append(local_field(weights[l][2], wires=wires[1:2]))
 
             else:
-                op_list.extend(
-                    qml.MultiRZ(
-                        weights[l][i], wires=wires.subset([i, i + 1], periodic_boundary=True)
-                    )
+                multirz_gates = (
+                    qml.MultiRZ(weights[l][i], wires.subset([i, i + 1], periodic_boundary=True))
                     for i in range(len(wires))
                 )
-                op_list.extend(
+                op_list.extend(multirz_gates)
+                local_field_gates = (
                     local_field(weights[l][len(wires) + i], wires=wires[i])
                     for i in range(len(wires))
                 )
+                op_list.extend(local_field_gates)
 
         # repeat the feature encoding once more at the end
         for i in range(n_features):

@@ -171,7 +171,10 @@ class IQPEmbedding(Operation):
         shape = qml.math.shape(features)
 
         if len(shape) not in {1, 2}:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+            raise ValueError(
+                "Features must be a one-dimensional tensor, or two-dimensional "
+                f"when broadcasting; got shape {shape}."
+            )
 
         n_features = shape[-1]
         if n_features != len(wires):

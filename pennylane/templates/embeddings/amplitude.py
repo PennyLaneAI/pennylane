@@ -238,6 +238,4 @@ class AmplitudeEmbedding(Operation):
 
             new_features_batch.append(feature_set)
 
-        return qml.math.cast(
-            qml.math.stack(new_features_batch) if batched else new_features_batch[0], np.complex128
-        )
+        return qml.math.cast(qml.math.stack(new_features_batch) if batched else new_features_batch[0], np.complex128)

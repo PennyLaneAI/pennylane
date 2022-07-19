@@ -47,6 +47,10 @@ def test_value_error():
     dev = qml.device("default.qubit", wires=2)
 
     class Embedding(qml.AngleEmbedding):
+        """Variant of qml.AngleEmbedding that does not provide fixed
+        ``ndim_params`` in order to allow for the detection of inconsistent
+        batching in ``batch_input``."""
+        
         @property
         def ndim_params(self):
             return self._ndim_params

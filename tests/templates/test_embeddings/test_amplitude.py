@@ -116,6 +116,8 @@ class TestDecomposition:
 
         circuit(x=inpt)
         state = circuit.device.state.ravel()
+        # Make sure all padded values are the same constant
+        # by checking how many different values there are
         assert len(set(state[len(inpt) :])) == 1
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_BROADCASTED_FEATURES)
@@ -132,6 +134,8 @@ class TestDecomposition:
             return qml.state()
 
         state = circuit(x=inpt)
+        # Make sure all padded values are the same constant
+        # by checking how many different values there are
         assert len(np.unique(state[:, inpt.shape[1] :])) == 1
 
     def test_custom_wire_labels(self, tol):
