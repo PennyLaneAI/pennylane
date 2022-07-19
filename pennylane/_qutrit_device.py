@@ -158,7 +158,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # (see `qml.math.reduced_dm()`) so it needs to be updated to be able to handle calculations for qutrits
         # before this method can be implemented.
         raise qml.QuantumFunctionError(
-            f"Unsupported return type specified for observable density matrix"
+            "Unsupported return type specified for observable density matrix"
         )
 
     def vn_entropy(self, wires, log_base):
@@ -178,7 +178,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
         raise qml.QuantumFunctionError(
-            f"Unsupported return type specified for observable Von Neumann entropy"
+            "Unsupported return type specified for observable Von Neumann entropy"
         )
 
     def mutual_info(self, wires0, wires1, log_base):
@@ -202,7 +202,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
         raise qml.QuantumFunctionError(
-            f"Unsupported return type specified for observable mutual information"
+            "Unsupported return type specified for observable mutual information"
         )
 
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
