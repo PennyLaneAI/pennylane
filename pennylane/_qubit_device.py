@@ -527,9 +527,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Shadow:
                 results.append(
-                    self.classical_shadow(
-                        wires=obs.wires, n_snapshots=obs.n_shots or self.shots, circuit=circuit
-                    )
+                    self.classical_shadow(wires=obs.wires, n_snapshots=self.shots, circuit=circuit)
                 )
 
             elif obs.return_type is not None:

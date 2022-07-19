@@ -114,14 +114,11 @@ class MeasurementProcess:
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 
-    def __init__(
-        self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None, n_shots=None
-    ):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None):
         self.return_type = return_type
         self.obs = obs
         self.id = id
         self.log_base = log_base
-        self.n_shots = n_shots
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -247,7 +244,7 @@ class MeasurementProcess:
             return shape
 
         # Then: handle return types that require a device; no shot vector
-        if device is None and self.return_type in (Probability, State, Sample):
+        if device is None and self.return_type in (Probability, State, Sample, Shadow):
             raise MeasurementShapeError(
                 f"The device argument is required to obtain the shape of the measurement process; got return type {self.return_type}."
             )
@@ -273,6 +270,11 @@ class MeasurementProcess:
 
             # qml.sample() case
             return (1, device.shots, len_wires)
+
+        if self.return_type == Shadow:
+            # the first entry of tensor represents the measured bits,
+            # and the second indicate the indices of the unitaries used
+            return (2, device.shots, len(device.wires))
 
         raise qml.QuantumFunctionError(
             f"Cannot deduce the shape of the measurement process with unrecognized return_type {self.return_type}."
@@ -999,12 +1001,12 @@ def mutual_info(wires0, wires1, log_base=None):
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
 
 
-def classical_shadow(wires, n_snapshots=None):
+def classical_shadow(wires):
     """
     TODO: docs
     """
     wires = qml.wires.Wires(wires)
-    return MeasurementProcess(Shadow, wires=wires, n_shots=n_snapshots)
+    return MeasurementProcess(Shadow, wires=wires)
 
 
 T = TypeVar("T")
