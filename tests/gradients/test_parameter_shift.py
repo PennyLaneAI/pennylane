@@ -300,7 +300,8 @@ class TestParamShift:
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = tuple(
-            [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None for i in range(2)
+            [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
+            for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
