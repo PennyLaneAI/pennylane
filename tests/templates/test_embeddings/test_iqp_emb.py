@@ -47,7 +47,7 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
             if gate.name == "RZ":
-                gate.data[0] == features[j]
+                assert gate.data[0] == features[j]
                 j += 1
 
     @pytest.mark.parametrize("n_wires, expected_names, expected_wires", QUEUES)
@@ -66,7 +66,7 @@ class TestDecomposition:
             assert gate.wires.labels == tuple(expected_wires[i])
             if gate.name == "RZ":
                 assert gate.batch_size == 3
-                gate.data[0] == features[:, j]
+                assert gate.data[0] == features[:, j]
                 j += 1
 
     def test_repeat(self):
@@ -305,9 +305,6 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         grads = torch.autograd.functional.jacobian(circuit, features)
-        # res = circuit(features)
-        # res.backward()
-        # grads = [features.grad]
 
         grads2 = torch.autograd.functional.jacobian(circuit2, features)
 
