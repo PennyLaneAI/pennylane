@@ -1118,7 +1118,7 @@ class Operator(abc.ABC):
         no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
-   
+
     @classproperty
     def has_generator(cls):
         r"""Bool: Whether or not the Operator returns a defined generator.
@@ -1126,7 +1126,7 @@ class Operator(abc.ABC):
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.generator != Operator.generator
-    
+
     def pow(self, z):
         """A list of new operators equal to this one raised to the given power.
 
