@@ -423,10 +423,11 @@ class QubitDevice(Device):
 
                 s1 = s2
 
+            results = tuple(r for r in results)
+
         else:
             results = self.statistics(circuit.observables)
 
-        if not circuit.is_sampled:
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
@@ -448,11 +449,6 @@ class QubitDevice(Device):
                         # All other measurements
                         results_list.append(self._asarray(results[i], dtype=self.R_DTYPE))
                 results = tuple(results_list)
-
-        elif circuit.all_sampled and not self._has_partitioned_shots():
-            results = self._asarray(results)
-        else:
-            results = tuple(r for r in results)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
