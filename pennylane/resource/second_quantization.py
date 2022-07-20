@@ -53,6 +53,8 @@ class DoubleFactorization(Operation):
     default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
     of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
 
+    Atomic units are used throughout the class.
+
     Args:
         one_electron (array[array[float]]): one-electron integrals
         two_electron (tensor_like): two-electron integrals

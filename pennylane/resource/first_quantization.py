@@ -51,6 +51,8 @@ class FirstQuantization(Operation):
     Note that the user only needs to define the target algorithm error :math:`\epsilon`. The error
     distribution takes place inside the functions.
 
+    Atomic units are used throughout the class.
+
     Args:
         n (int): number of plane waves
         eta (int): number of electrons
@@ -178,10 +180,11 @@ class FirstQuantization(Operation):
         .. details::
             :title: Theory
 
-            For numerical convenience, we use the following modified expressions for computing
-            parameters that contain a sum over :math:`\frac{1}{\left \| \nu \right \|^k}` where
-            :math:`\nu` denotes an element of the set of reciprocal lattice vectors, :math:`G_0`,
-            and :math:`k \in \left \{ 1, 2 \right \}`.
+            To compute the norm, for numerical convenience, we use the following modified
+            expressions to obtain parameters that contain a sum over
+            :math:`\frac{1}{\left \| \nu \right \|^k}` where :math:`\nu` denotes an element of the
+            set of reciprocal lattice vectors, :math:`G_0`, and
+            :math:`k \in \left \{ 1, 2 \right \}`.
 
             For :math:`\lambda_{\nu}` defined in Eq. (25) of
             `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
