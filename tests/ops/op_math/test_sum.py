@@ -15,7 +15,7 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 from copy import copy
-from typing import Tuple, final
+from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
