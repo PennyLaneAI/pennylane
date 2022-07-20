@@ -50,10 +50,11 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
+    add,
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity
+from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity, relative_entropy
 
 from .utils import (
     allclose,
@@ -104,6 +105,7 @@ __all__ = [
     "mutual_info",
     "ones_like",
     "reduced_dm",
+    "relative_entropy",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",
@@ -112,4 +114,5 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "where",
+    "add",
 ]
