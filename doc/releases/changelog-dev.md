@@ -51,7 +51,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
    - `QueuingManager` is no longer an abstract base class.
    - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
    - `QueuingManager` is no longer a context manager.
-   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and 
+   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
      `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
    - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
       is now only available through `QueuingManager`.
@@ -60,11 +60,24 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
    - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
       `update_info`.
 
-* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
-  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
-  value is `false`.
-  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
-   
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...   qml.Hadamard(wires=0)
+  ...   qml.CNOT(wires=[0, 1])
+  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+  >>> result = circuit()
+  >>> print(result)
+  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
+   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ```
+
+* The `qml.state` and `qml.density_matrix` measurements now support custom wire
+  labels.
+  [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
+
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
