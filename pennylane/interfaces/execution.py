@@ -18,7 +18,7 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable,unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
 from functools import wraps
 import warnings
 import inspect
@@ -552,12 +552,12 @@ def execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    gradient_kwargs = gradient_kwargs or {}
+    # gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
         tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
     else:
-        batch_fn = lambda res: res
+        batch_fn = lambda res: res  # pragma: no cover
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -571,12 +571,12 @@ def execute_new(
 
     if gradient_fn is None:
         # don't unwrap if it's an interface device
-        if "passthru_interface" in device.capabilities():
-            return batch_fn(
-                qml.interfaces.cache_execute(
-                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-                )(tapes)
-            )
+        # if "passthru_interface" in device.capabilities():
+        #     return batch_fn(
+        #         qml.interfaces.cache_execute(
+        #             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        #         )(tapes)
+        #     )
         with qml.tape.Unwrap(*tapes):
             res = qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn
@@ -584,80 +584,80 @@ def execute_new(
 
         return batch_fn(res)
 
-    if gradient_fn == "backprop" or interface is None:
-        return batch_fn(
-            qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
-        )
+    # if gradient_fn == "backprop" or interface is None:
+    #     return batch_fn(
+    #         qml.interfaces.cache_execute(
+    #             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+    #         )(tapes)
+    #     )
+    #
+    # # the default execution function is batch_execute
+    # execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    # _mode = "backward"
+    #
+    # if gradient_fn == "device":
+    #     # gradient function is a device method
+    #
+    #     # Expand all tapes as per the device's expand function here.
+    #     # We must do this now, prior to the interface, to ensure that
+    #     # decompositions with parameter processing is tracked by the
+    #     # autodiff frameworks.
+    #     for i, tape in enumerate(tapes):
+    #         tapes[i] = expand_fn(tape)
+    #
+    #     if mode in ("forward", "best"):
+    #         # replace the forward execution function to return
+    #         # both results and gradients
+    #         execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
+    #         gradient_fn = None
+    #         _mode = "forward"
+    #
+    #     elif mode == "backward":
+    #         # disable caching on the forward pass
+    #         execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+    #
+    #         # replace the backward gradient computation
+    #         gradient_fn = qml.interfaces.cache_execute(
+    #             set_shots(device, override_shots)(device.gradients),
+    #             cache,
+    #             pass_kwargs=True,
+    #             return_tuple=False,
+    #         )
+    #
+    # elif mode == "forward":
+    #     # In "forward" mode, gradients are automatically handled
+    #     # within execute_and_gradients, so providing a gradient_fn
+    #     # in this case would have ambiguous behaviour.
+    #     raise ValueError("Gradient transforms cannot be used with mode='forward'")
+    #
+    # try:
+    #     mapped_interface = INTERFACE_MAP[interface]
+    # except KeyError as e:
+    #     raise ValueError(
+    #         f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
+    #     ) from e
+    # try:
+    #     if mapped_interface == "autograd":
+    #         from .autograd import execute as _execute
+    #     elif mapped_interface == "tf":
+    #         import tensorflow as tf
+    #
+    #         if not tf.executing_eagerly() or "autograph" in interface:
+    #             from .tensorflow_autograph import execute as _execute
+    #         else:
+    #             from .tensorflow import execute as _execute
+    #     elif mapped_interface == "torch":
+    #         from .torch import execute as _execute
+    #     else:  # is jax
+    #         _execute = _get_jax_execute_fn(interface, tapes)
+    # except ImportError as e:
+    #     raise qml.QuantumFunctionError(
+    #         f"{mapped_interface} not found. Please install the latest "
+    #         f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+    #     ) from e
+    #
+    # res = _execute(
+    #     tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
+    # )
 
-    # the default execution function is batch_execute
-    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
-    _mode = "backward"
-
-    if gradient_fn == "device":
-        # gradient function is a device method
-
-        # Expand all tapes as per the device's expand function here.
-        # We must do this now, prior to the interface, to ensure that
-        # decompositions with parameter processing is tracked by the
-        # autodiff frameworks.
-        for i, tape in enumerate(tapes):
-            tapes[i] = expand_fn(tape)
-
-        if mode in ("forward", "best"):
-            # replace the forward execution function to return
-            # both results and gradients
-            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
-            gradient_fn = None
-            _mode = "forward"
-
-        elif mode == "backward":
-            # disable caching on the forward pass
-            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
-
-            # replace the backward gradient computation
-            gradient_fn = qml.interfaces.cache_execute(
-                set_shots(device, override_shots)(device.gradients),
-                cache,
-                pass_kwargs=True,
-                return_tuple=False,
-            )
-
-    elif mode == "forward":
-        # In "forward" mode, gradients are automatically handled
-        # within execute_and_gradients, so providing a gradient_fn
-        # in this case would have ambiguous behaviour.
-        raise ValueError("Gradient transforms cannot be used with mode='forward'")
-
-    try:
-        mapped_interface = INTERFACE_MAP[interface]
-    except KeyError as e:
-        raise ValueError(
-            f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
-        ) from e
-    try:
-        if mapped_interface == "autograd":
-            from .autograd import execute as _execute
-        elif mapped_interface == "tf":
-            import tensorflow as tf
-
-            if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
-            else:
-                from .tensorflow import execute as _execute
-        elif mapped_interface == "torch":
-            from .torch import execute as _execute
-        else:  # is jax
-            _execute = _get_jax_execute_fn(interface, tapes)
-    except ImportError as e:
-        raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
-        ) from e
-
-    res = _execute(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
-    )
-
-    return batch_fn(res)
+    # return batch_fn(res)
