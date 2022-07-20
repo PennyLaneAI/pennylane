@@ -643,10 +643,10 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             res = qml.sample(qml.PauliZ(0), counts=True)
-            assert res.return_type is Counts
             return res
 
         circuit()
+        assert circuit._qfunc_output.return_type is Counts
 
     def test_providing_no_observable_and_no_wires_counts(self):
         """Test that we can provide no observable and no wires to sample function"""
@@ -679,191 +679,81 @@ class TestCounts:
 
         circuit()
 
-    def test_binned_counts_for_operator(self, tol):
-        """Test that the shape is correct with the shot vector."""
-        shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.PauliZ(0)
-            return qml.sample(qml.PauliZ(0), counts=True)
-
-        binned_samples = circuit()
-
-        assert isinstance(binned_samples, np.ndarray)
-        assert isinstance(binned_samples[0], dict)
-        assert len(binned_samples) == len(shot_vec)
-        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == sum(shot_vec)
-
-    def test_binned_counts_for_state_vector(self, tol):
-        """Test that the shape is correct with the shot vector and no observable too."""
-        shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.PauliZ(0)
-            return qml.sample(None, counts=True)
-
-        binned_samples = circuit()
-
-        assert isinstance(binned_samples, np.ndarray)
-        assert isinstance(binned_samples[0], dict)
-        assert len(binned_samples) == len(shot_vec)
-        assert sum(sum(v for v in bin.values()) for bin in binned_samples) == sum(shot_vec)
-
-    def test_counts_jax(self, tol):
-        """Check jax interface with computational basis state counts"""
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_counts_no_op_finite_shots(self, interface, wires, basis_state, tol):
+        """Check all interfaces with computational basis state counts and
+        finite shot"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit():
-            return qml.sample(counts=True)
+            qml.PauliX(1)
+            return qml.sample(wires=wires, counts=True)
 
         res = circuit()
-        assert res == {"000": n_shots}
+        assert res == {basis_state: n_shots}
 
-    def test_counts_operator_jax(self, tol):
-        """Check jax interface with observable measurement counts"""
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_counts_operator_finite_shots(self, interface):
+        """Check all interfaces with observable measurement counts and finite
+        shot"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
         res = circuit()
         assert res == {1: n_shots}
 
-    def test_counts_tf(self, tol):
-        """Check TensorFlow interface with computational basis state counts"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit():
-            return qml.sample(counts=True)
-
-        res = circuit()
-        assert res == {"000": n_shots}
-
-    def test_counts_operator_tf(self, tol):
-        """Check TensorFlow interface with observable measurement counts"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit():
-            return qml.sample(qml.PauliZ(0), counts=True)
-
-        res = circuit()
-        assert res == {1: n_shots}
-
-    def test_counts_torch(self, tol):
-        """Check pyTorch interface with computational basis state counts"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit():
-            return qml.sample(counts=True)
-
-        res = circuit()
-        assert res == {"000": n_shots}
-
-    def test_counts_operator_torch(self, tol):
-        """Check pyTorch interface with observable measurement counts"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit():
-            return qml.sample(qml.PauliZ(0), counts=True)
-
-        res = circuit()
-        assert res == {1: n_shots}
-
-    def test_counts_jax_binned(self, tol):
-        """Check jax interface with computational basis state counts"""
-        shot_vec = (10, 10)
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
+    @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_counts_binned(self, shot_vec, interface, wires, basis_state, tol):
+        """Check all interfaces with computational basis state counts and
+        different shot vectors"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit():
-            return qml.sample(counts=True)
+            qml.PauliX(1)
+            return qml.sample(wires=wires, counts=True)
 
         res = circuit()
-        assert res[0] == {"000": shot_vec[0]}
-        assert res[1] == {"000": shot_vec[1]}
 
-    def test_counts_operator_jax_binned(self, tol):
-        """Check jax interface with observable measurement counts"""
-        shot_vec = (10, 10)
+        assert isinstance(res, tuple)
+        assert res[0] == {basis_state: shot_vec[0]}
+        assert res[1] == {basis_state: shot_vec[1]}
+        assert res[2] == {basis_state: shot_vec[2]}
+        assert len(res) == len(shot_vec)
+        assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_counts_operator_binned(self, shot_vec, interface, tol):
+        """Check all interfaces with observable measurement counts and different
+        shot vectors"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
         res = circuit()
+
+        assert isinstance(res, tuple)
         assert res[0] == {1: shot_vec[0]}
         assert res[1] == {1: shot_vec[1]}
-
-    def test_counts_tf_binned(self, tol):
-        """Check TensorFlow interface with computational basis state counts"""
-        shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit():
-            return qml.sample(counts=True)
-
-        res = circuit()
-        assert res[0] == {"000": shot_vec[0]}
-        assert res[1] == {"000": shot_vec[1]}
-
-    def test_counts_operator_tf_binned(self, tol):
-        """Check TensorFlow interface with observable measurement counts"""
-        shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit():
-            return qml.sample(qml.PauliZ(0), counts=True)
-
-        res = circuit()
-        assert res[0] == {1: shot_vec[0]}
-        assert res[1] == {1: shot_vec[1]}
-
-    def test_counts_torch_binned(self, tol):
-        """Check pyTorch interface with computational basis state counts"""
-        shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit():
-            return qml.sample(counts=True)
-
-        res = circuit()
-        assert res[0] == {"000": shot_vec[0]}
-        assert res[1] == {"000": shot_vec[1]}
-
-    def test_counts_operator_torch_binned(self, tol):
-        """Check pyTorch interface with observable measurement counts"""
-        shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-
-        @qml.qnode(dev, interface="torch")
-        def circuit():
-            return qml.sample(qml.PauliZ(0), counts=True)
-
-        res = circuit()
-        assert res[0] == {1: shot_vec[0]}
-        assert res[1] == {1: shot_vec[1]}
+        assert res[2] == {1: shot_vec[2]}
+        assert len(res) == len(shot_vec)
+        assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
 
 class TestMeasure:
