@@ -154,6 +154,16 @@ class TestInitialization:
         with pytest.raises(DecompositionUndefinedError):
             sprod_op.decomposition()
 
+    def test_diagonalizing_gates(self):
+        """Test that the diagonalizing gates are correct."""
+        diag_sprod_op = SProd(1.23, qml.PauliX(wires=0))
+        diagonalizing_gates = diag_sprod_op.diagonalizing_gates()[0].matrix()
+        true_diagonalizing_gates = (
+            qml.PauliX(wires=0).diagonalizing_gates()[0].matrix()
+        )  # scaling doesn't change diagonalizing gates
+
+        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+
 
 class TestMscMethods:
     """Test miscellaneous methods of the SProd class."""
@@ -181,6 +191,7 @@ class TestMscMethods:
         assert sprod_op.base.name == copied_op.base.name
         assert sprod_op.base.wires == copied_op.base.wires
         assert sprod_op.base.data == copied_op.base.data
+        assert sprod_op.base.data is not copied_op.base.data  # we want different object with same content
 
 
 class TestMatrix:
@@ -299,7 +310,21 @@ class TestMatrix:
         expected_sparse_matrix = scalar * op.matrix()
         expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
 
-        assert np.allclose(sparse_matrix, expected_sparse_matrix)
+        assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
+
+    def test_sparse_matrix_sparse_hamiltonian(self):
+        """Test the sparse_matrix representation of scaled ops."""
+        scalar = 1.23
+        op = qml.Hadamard(wires=0)
+        sparse_ham = qml.SparseHamiltonian(csr_matrix(op.matrix()), wires=0)
+
+        sprod_op = SProd(scalar, sparse_ham)
+        sparse_matrix = sprod_op.sparse_matrix()
+
+        expected_sparse_matrix = scalar * op.matrix()
+        expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+
+        assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
 
     # Add interface tests for each interface !
 
@@ -362,16 +387,6 @@ class TestProperties:
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
         assert sprod_op._queue_category is None
-
-    def test_diagonalizing_gates(self):
-        """Test that the diagonalizing gates are correct."""
-        diag_sprod_op = SProd(1.23, qml.PauliX(wires=0))
-        diagonalizing_gates = diag_sprod_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = (
-            qml.PauliX(wires=0).diagonalizing_gates()[0].matrix()
-        )  # scaling doesn't change diagonalizing gates
-
-        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
@@ -537,23 +552,36 @@ class TestIntegration:
         ):
             my_circ()
 
+    def test_differentiable_scalar(self):
+        """Test that the gradient can be computed of the scalar when a SProd op
+        is used in the measurement process."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, grad_method="best")
+        def circuit(scalar):
+            qml.PauliX(wires=0)
+            return qml.expval(SProd(scalar, qml.Hadamard(wires=0)))
+
+        scalar = qnp.array([1.23], requires_grad=True)
+        grad = qml.grad(circuit)(scalar)
+
+        true_grad = -1/qnp.sqrt(2)
+        assert qnp.allclose(grad, true_grad)
+
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a SProd op in the measurement process."""
         sprod_op = SProd(100, qml.Hadamard(0))
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, grad_method="best")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(weights[2], wires=1)
             return qml.expval(sprod_op)
 
-        weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        weights = qnp.array([0.1], requires_grad=True)
         grad = qml.grad(circuit)(weights)
 
-        true_grad = 100 * qnp.array([-7.05928859e-02, 1.38777878e-17, 2.77555756e-17])
+        true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0]/2) * qnp.sin(weights[0]/2)
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
