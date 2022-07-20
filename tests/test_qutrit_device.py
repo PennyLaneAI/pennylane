@@ -285,7 +285,9 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State, Counts])
+    @pytest.mark.parametrize(
+        "returntype", [Expectation, Variance, Sample, Probability, State, Counts]
+    )
     def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
