@@ -785,6 +785,7 @@ class DefaultQubit(QubitDevice):
     def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
 
+        n_device = len(self.wires)
         n_qubits = len(wires)
         device_wires = np.array(self.map_wires(wires))
 
@@ -794,11 +795,11 @@ class DefaultQubit(QubitDevice):
         stacked_states = self._stack(
             [
                 self._einsum(
-                    f"{ABC[:n_qubits]},{ABC[:i]}{ABC[n_qubits]}{ABC[i + 1:n_qubits]}",
+                    f"{ABC[:n_device]},{ABC[:i]}{ABC[n_device]}{ABC[i + 1:n_device]}",
                     self._state,
                     self._conj(self._state),
                 )
-                for i in range(n_qubits)
+                for i in range(n_device)
             ]
         )
 
