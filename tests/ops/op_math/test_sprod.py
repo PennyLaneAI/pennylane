@@ -111,14 +111,11 @@ class TestInitialization:
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
         assert sprod_op.id == test_id
+        assert sprod_op.queue_idx is None
 
         assert sprod_op.data == [[3.14], [0.23]]
         assert sprod_op.parameters == [[3.14], [0.23]]
         assert sprod_op.num_params == 2
-
-    def test_queue_idx(self):
-        sprod_op = s_prod(3.14, qml.Identity(wires=1))
-        assert sprod_op.queue_idx is None
 
     def test_parameters(self):
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
@@ -190,26 +187,15 @@ class TestMatrix:
     """Tests of the matrix of a SProd class."""
 
     @pytest.mark.parametrize("scalar", scalars)
-    @pytest.mark.parametrize("op_and_mat", non_param_ops)
-    def test_non_parametric_ops(self, scalar, op_and_mat):
-        """Test matrix method for a scalar product of non_parametric ops"""
-        op, mat = op_and_mat
-        sprod_op = SProd(scalar, op(wires=range(op.num_wires)))
-
-        sprod_mat = sprod_op.matrix()
-        true_mat = scalar * mat
-        assert np.allclose(sprod_mat, true_mat)
-
-    @pytest.mark.parametrize("scalar", scalars)
-    @pytest.mark.parametrize("op_and_mat", param_ops)
-    def test_parametric_ops(self, scalar, op_and_mat):
+    @pytest.mark.parametrize("op, mat", param_ops + non_param_ops)
+    def test_various_ops(self, scalar, op, mat):
         """Test matrix method for a scalar product of parametric ops"""
-        op, mat = op_and_mat
         params = range(op.num_params)
-        sprod_op = SProd(scalar, op(*params, wires=range(op.num_wires)))
 
+        sprod_op = SProd(scalar, op(*params, wires=range(op.num_wires)))
         sprod_mat = sprod_op.matrix()
-        true_mat = scalar * mat(*params)
+
+        true_mat = scalar * mat(*params) if op.num_params > 0 else scalar * mat
         assert np.allclose(sprod_mat, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
