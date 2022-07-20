@@ -191,7 +191,9 @@ class TestMscMethods:
         assert sprod_op.base.name == copied_op.base.name
         assert sprod_op.base.wires == copied_op.base.wires
         assert sprod_op.base.data == copied_op.base.data
-        assert sprod_op.base.data is not copied_op.base.data  # we want different object with same content
+        assert (
+            sprod_op.base.data is not copied_op.base.data
+        )  # we want different object with same content
 
 
 class TestMatrix:
@@ -565,7 +567,7 @@ class TestIntegration:
         scalar = qnp.array([1.23], requires_grad=True)
         grad = qml.grad(circuit)(scalar)
 
-        true_grad = -1/qnp.sqrt(2)
+        true_grad = -1 / qnp.sqrt(2)
         assert qnp.allclose(grad, true_grad)
 
     def test_differentiable_measurement_process(self):
@@ -581,7 +583,7 @@ class TestIntegration:
         weights = qnp.array([0.1], requires_grad=True)
         grad = qml.grad(circuit)(weights)
 
-        true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0]/2) * qnp.sin(weights[0]/2)
+        true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
