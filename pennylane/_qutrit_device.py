@@ -80,7 +80,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         capabilities.update(model="qutrit")
         return capabilities
 
-    def statistics(self, observables, shot_range=None, bin_size=None):
+    def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
         # Overloading QubitDevice.statistics() as VnEntropy and MutualInfo not yet supported for QutritDevice
         raise NotImplementedError
 
@@ -104,10 +104,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return QutritDevice.states_to_ternary(samples, self.num_wires)
+        return self.states_to_ternary(samples, self.num_wires)
 
-    @staticmethod
-    def generate_basis_states(num_wires, dtype=np.uint32):
+    def generate_basis_states(self, num_wires, dtype=np.uint32):
         """Generates basis states in ternary representation according to the number
         of wires specified.
 

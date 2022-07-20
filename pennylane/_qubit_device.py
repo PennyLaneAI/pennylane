@@ -298,7 +298,7 @@ class QubitDevice(Device):
                 results = qml.math.stack(results)
 
         else:
-            results = self.statistics(circuit.observables)
+            results = self.statistics(circuit.observables, circuit=circuit)
 
         if not circuit.is_sampled:
 
@@ -336,43 +336,6 @@ class QubitDevice(Device):
             self.tracker.record()
         return results
 
-    def execute_shadows(self, circuit, **kwargs):
-        self.check_validity(circuit.operations, circuit.observables)
-
-        shadow_observable = circuit.observables[0]
-
-        rotations = []
-        samples = []
-        for obs in [qml.PauliX, qml.PauliY, qml.PauliZ]:
-            rotations = [
-                rot
-                for wire in shadow_observable.wires
-                for rot in obs.compute_diagonalizing_gates(wires=wire)
-            ]
-
-            # apply all circuit operations
-            self.reset()
-            self.apply(
-                circuit.operations + rotations, rotations=circuit.diagonalizing_gates, **kwargs
-            )
-
-            # generate computational basis samples
-            samples.append(self.generate_samples())
-
-        self._samples = self._stack(samples)
-
-        results = self.statistics(circuit.observables)
-        results = tuple(self._asarray(r) for r in results)
-
-        # increment counter for number of executions of qubit device
-        self._num_executions += 3
-
-        if self.tracker.active:
-            self.tracker.update(executions=3, shots=self._shots)
-            self.tracker.record()
-
-        return results
-
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
 
@@ -397,11 +360,7 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            if any(obs.return_type is Shadow for obs in circuit.observables):
-                res = self.execute_shadows(circuit)
-            else:
-                res = self.execute(circuit)
-
+            res = self.execute(circuit)
             results.append(res)
 
         if self.tracker.active:
@@ -467,7 +426,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables, shot_range=None, bin_size=None):
+    def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -568,7 +527,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Shadow:
                 results.append(
-                    self.classical_shadow(wires=obs.wires, n_snapshots=obs.n_shots or self.shots)
+                    self.classical_shadow(wires=obs.wires, n_snapshots=self.shots, circuit=circuit)
                 )
 
             elif obs.return_type is not None:
@@ -626,7 +585,7 @@ class QubitDevice(Device):
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return QubitDevice.states_to_binary(samples, self.num_wires)
+        return self.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -652,8 +611,7 @@ class QubitDevice(Device):
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
 
-    @staticmethod
-    def generate_basis_states(num_wires, dtype=np.uint32):
+    def generate_basis_states(self, num_wires, dtype=np.uint32):
         """
         Generates basis states in binary representation according to the number
         of wires specified.
@@ -681,7 +639,7 @@ class QubitDevice(Device):
         """
         if 2 < num_wires < 32:
             states_base_ten = np.arange(2**num_wires, dtype=dtype)
-            return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
+            return self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1), repeat=num_wires)
@@ -797,28 +755,39 @@ class QubitDevice(Device):
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
-    def classical_shadow(self, wires, n_snapshots):
+    def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
-        # default implementation: loop over the range of snapshots, choose
-        # a random unitary, and compute its expectation value
+        if circuit is None:
+            raise ValueError("Circuit must be provided when measuring classical shadows")
 
-        num_qubits = len(wires)
-        ensemble = [qml.PauliX, qml.PauliY, qml.PauliZ]
+        # samples have already been generated for PauliZ
+        samples = [self._samples]
+
+        rotations = []
+        for obs in [qml.PauliY, qml.PauliX]:
+            rotations = [
+                rot for wire in wires for rot in obs.compute_diagonalizing_gates(wires=wire)
+            ]
+
+            # apply all circuit operations
+            self.reset()
+            self.apply(circuit.operations + rotations, rotations=circuit.diagonalizing_gates)
+
+            # generate computational basis samples
+            samples.append(self.generate_samples())
+
+        samples = self._stack(samples[::-1])
 
         # sample random Pauli measurements uniformly, where 0,1,2 = X,Y,Z
-        recipes = np.random.randint(0, 3, size=(n_snapshots, num_qubits))
-        outcomes = np.zeros((n_snapshots, num_qubits), dtype=recipes.dtype)
+        n_qubits = len(wires)
+        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        outcomes = samples[
+            recipes,
+            np.tile(np.arange(n_snapshots), (n_qubits, 1)).T,
+            np.tile(np.arange(n_qubits), (n_snapshots, 1)),
+        ]
 
-        for snapshot in range(n_snapshots):
-            # for each snapshot, add a random Pauli observable at each location
-            for i, wire in enumerate(wires):
-                obs = ensemble[int(recipes[snapshot, i])](wire)
-
-                # outcomes[snapshot] = self.sample(obs, shot_range=(snapshot, snapshot + 1))
-                # outcomes[snapshot, i] = self.expval(obs, shot_range=(snapshot, snapshot + 1))
-                outcomes[snapshot, i] = self._samples[recipes[snapshot, i], snapshot, i]
-
-        return self._stack([outcomes, recipes])
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
