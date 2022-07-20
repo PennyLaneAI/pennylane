@@ -650,6 +650,9 @@ class QNode:
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
+        if self._qfunc_output.return_type is qml.measurements.Counts:
+            # return a dictionary with counts not as a single-element array
+            return res[0]
 
         return qml.math.squeeze(res)
 
