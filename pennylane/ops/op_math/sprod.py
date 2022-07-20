@@ -97,11 +97,11 @@ class SProd(SymbolicOp):
     >>> sprod_op.terms()
     ([1.23], [PauliX(wires=[0]])
     """
+    _name = "Sprod"
 
     def __init__(self, scalar, base, do_queue=True, id=None):
         self.scalar = scalar
         super().__init__(base=base, do_queue=do_queue, id=id)
-        self._name = "SProd"
 
     def __repr__(self):
         """Constructor-call-like representation."""
