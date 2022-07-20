@@ -18,7 +18,7 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable,unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements)
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable,unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
 from functools import wraps
 import warnings
 import inspect
