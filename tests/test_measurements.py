@@ -801,6 +801,43 @@ class TestCounts:
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
+    meas2 = [
+        qml.expval(qml.PauliZ(0)),
+        qml.var(qml.PauliZ(0)),
+        qml.probs(wires=[1, 0]),
+        qml.sample(wires=1),
+    ]
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("meas2", meas2)
+    @pytest.mark.parametrize("shots", [1000, (1, 10)])
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
+    def test_counts_operator_finite_shots(self, interface, meas2, shots):
+        """Check all interfaces with observable measurement counts and finite
+        shot"""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        if interface == "jax" and meas2.return_type in (
+            qml.measurements.Probability,
+            qml.measurements.Sample,
+        ):
+            reason = "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
+            pytest.skip(reason)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            qml.PauliX(0)
+            return qml.sample(wires=0, counts=True), qml.apply(meas2)
+
+        res = circuit()
+        assert isinstance(res, tuple)
+
+        num_shot_bins = 1 if isinstance(shots, int) else len(shots)
+        counts_term_indices = [i * 2 for i in range(num_shot_bins)]
+        for ind in counts_term_indices:
+            assert isinstance(res[ind], dict)
+
 
 class TestMeasure:
     """Tests for the measure function"""

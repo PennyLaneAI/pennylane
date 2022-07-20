@@ -334,7 +334,10 @@ class QubitDevice(Device):
 
             results = self._asarray(results)
         else:
-            results = tuple(self._asarray(r) if not isinstance(r, dict) else r for r in results)
+            results = tuple(
+                qml.math.squeeze(self._asarray(r)) if not isinstance(r, dict) else r
+                for r in results
+            )
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
