@@ -98,18 +98,6 @@ ops_rep = (
 )
 
 
-def get_qft_mat(num_wires):
-    """Helper function to generate the matrix of a qft protocol."""
-    omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-    mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-    for m in range(2**num_wires):
-        for n in range(2**num_wires):
-            mat[m, n] = omega ** (m * n)
-
-    return 1 / math.sqrt(2**num_wires) * mat
-
-
 class TestInitialization:
     """Test initialization of ther SProd Class."""
 
@@ -256,10 +244,10 @@ class TestMatrix:
         assert np.allclose(mat, true_mat)
 
     templates_and_mats = (
-        (qml.QFT(wires=[0, 1, 2]), get_qft_mat(3)),
+        (qml.QFT(wires=[0, 1, 2]), qml.QFT(wires=[0, 1, 2]).compute_matrix(3)),
         (
             qml.GroverOperator(wires=[0, 1, 2]),
-            (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128"),
+            qml.GroverOperator(wires=[0, 1, 2]).compute_matrix(3, range(3)),
         ),
     )
 
