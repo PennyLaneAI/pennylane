@@ -455,9 +455,9 @@ class QubitDevice(Device):
             res = self.execute_new(circuit)
             results.append(res)
 
-        if self.tracker.active:
-            self.tracker.update(batches=1, batch_len=len(circuits))
-            self.tracker.record()
+        # if self.tracker.active:
+        #     self.tracker.update(batches=1, batch_len=len(circuits))
+        #     self.tracker.record()
 
         return results
 

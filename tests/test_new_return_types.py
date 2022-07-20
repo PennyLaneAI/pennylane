@@ -164,7 +164,7 @@ class TestMultipleReturns:
         qnode.construct([0.5], {})
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        print(res)
+
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
 
