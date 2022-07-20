@@ -105,10 +105,6 @@ class SProd(SymbolicOp):
             self.base.data = new_data[1]
 
     @property
-    def parameters(self):
-        return self.data.copy()
-
-    @property
     def num_params(self):
         return 1 + self.base.num_params
 
