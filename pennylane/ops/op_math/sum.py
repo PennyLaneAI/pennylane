@@ -19,8 +19,8 @@ from functools import reduce
 from typing import List
 
 import numpy as np
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 
@@ -316,7 +316,7 @@ class Sum(Operator):
 
         return summands
 
-    def simplify(self, depth=-1) -> "Sum":
+    def simplify(self, depth=-1):
         """Reduces the depth of nested Sum operators.
 
         If ``depth`` is not provided or negative, then the operator is reduced to the maximum.

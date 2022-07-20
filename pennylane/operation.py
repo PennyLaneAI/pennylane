@@ -1195,7 +1195,7 @@ class Operator(abc.ABC):
 
         return tape
 
-    def simplify(self, depth=-1) -> "Operator":
+    def simplify(self, depth=-1):  # pylint: disable=unused-argument
         """Reduces the depth of nested operators.
 
         If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
