@@ -134,6 +134,8 @@
   ([#2842](https://github.com/PennyLaneAI/pennylane/pull/2842))
   * Added `qml.TSWAP` operation for qutrit devices, which swaps the state between two wires.
   ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
+  * Added `qml.ControlledQutritUnitary` operation for qutrit devices, which allows users to apply a controlled arbitrary unitary operation.
+  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 **Operator Arithmetic:**
 
