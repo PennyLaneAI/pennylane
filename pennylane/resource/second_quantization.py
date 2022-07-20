@@ -23,8 +23,8 @@ from pennylane.qchem import factorize
 
 
 class DoubleFactorization(Operation):
-    r"""Estimate the number of non-Clifford gates and logical qubits for quantum algorithms in
-    second quantization with a double-factorized Hamiltonian.
+    r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
+    algorithm in second quantization with a double-factorized Hamiltonian.
 
     To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to be
     factorized using the :func:`~.pennylane.qchem.factorize` function following
@@ -90,7 +90,7 @@ class DoubleFactorization(Operation):
         >>> algo.gates  # estimated number of non-Clifford gates
         105550609
 
-        >>> algo.qubits  # estimated number of qubits
+        >>> algo.qubits  # estimated number of logical qubits
         290
     """
     num_wires = AnyWires
@@ -395,7 +395,7 @@ class DoubleFactorization(Operation):
 
     @staticmethod
     def qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
-        r"""Return the number of qubits needed to implement the double factorization method.
+        r"""Return the number of logical qubits needed to implement the double factorization method.
 
         The expression for computing the cost is taken from Eq. (C40) of
         [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
@@ -412,7 +412,7 @@ class DoubleFactorization(Operation):
             beta (int): number of bits for the rotation angles
 
         Returns:
-            int: number of qubits for the double factorization method
+            int: number of logical qubits for the double factorization method
 
         **Example**
 

@@ -22,8 +22,8 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FirstQuantization(Operation):
-    r"""Estimate the number of non-Clifford gates and logical qubits for quantum algorithms in
-    first quantization using a plane-wave basis.
+    r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
+    algorithm in first quantization using a plane-wave basis.
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
     the number of electrons and the unit cell volume need to be defined. The costs can then be
@@ -79,7 +79,7 @@ class FirstQuantization(Operation):
         >>> algo.gates  # estimated number of non-Clifford gates
         1.10e+13
 
-        >>> algo.qubits  # estimated number of qubits
+        >>> algo.qubits  # estimated number of logical qubits
         4416
     """
 
@@ -517,7 +517,7 @@ class FirstQuantization(Operation):
 
     @staticmethod
     def qubit_cost(n, eta, omega, error, br=7, charge=0):
-        r"""Return the number of qubits needed to implement the first quantization
+        r"""Return the number of logical qubits needed to implement the first quantization
         algorithm.
 
         The expression for computing the cost is taken from Eq. (101) of
@@ -532,7 +532,7 @@ class FirstQuantization(Operation):
             charge (int): total electric charge of the system
 
         Returns:
-            int: number of qubits needed to implement the first quantization algorithm
+            int: number of logical qubits needed to implement the first quantization algorithm
 
         **Example**
 
