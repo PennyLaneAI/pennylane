@@ -117,9 +117,8 @@ class TestInitialization:
     def test_init_sprod_op(self, test_id):
         sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=True, id=test_id)
 
-        assert (
-            sprod_op.scalar == 3.14
-        )  # no need to test if op.base == RX since this is covered in SymbolicOp tests
+        # no need to test if op.base == RX since this is covered in SymbolicOp tests
+        assert sprod_op.scalar == 3.14
         assert sprod_op.wires == Wires(("a",))
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
@@ -162,9 +161,7 @@ class TestInitialization:
 
         assert coeff == [scalar]
         for op1, op2 in zip(ops, [op]):
-            assert op1.name == op2.name
-            assert op1.wires == op2.wires
-            assert op1.data == op2.data
+            assert qml.equal(op1, op2)
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
@@ -187,7 +184,7 @@ class TestMscMethods:
     def test_copy(self, op_scalar_tup):
         """Test the copy dunder method properly copies the operator."""
         scalar, op = op_scalar_tup
-        sprod_op = SProd(scalar, op)
+        sprod_op = SProd(scalar, op, id="something")
         copied_op = copy(sprod_op)
 
         assert sprod_op.scalar == copied_op.scalar
@@ -202,6 +199,8 @@ class TestMscMethods:
 
 
 class TestMatrix:
+    """Tests of the matrix of a SProd class."""
+
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op_and_mat", non_param_ops)
     def test_non_parametric_ops(self, scalar, op_and_mat):
