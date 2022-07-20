@@ -130,6 +130,8 @@
   ([#2840](https://github.com/PennyLaneAI/pennylane/pull/2840))
   * Added `qml.Clock` operation for qutrit devices, which is the generalized analog of the Pauli Z operation.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+  * Added `qml.TAdd` operation for qutrit devices, which is the generalized analog of the CX operation.
+  ([#2842](https://github.com/PennyLaneAI/pennylane/pull/2842))
 
 **Operator Arithmetic:**
 
