@@ -170,6 +170,9 @@ def _execute(
         return tc
 
     def array_if_not_counts(tape, r):
+        """Auxiliary function to convert the result of a tape to an array,
+        unless the tape had Counts measurements that are represented with
+        dictionaries. JAX NumPy arrays don't support dictionaries."""
         return (
             jnp.array(r)
             if not any(m.return_type is qml.measurements.Counts for m in tape.measurements)

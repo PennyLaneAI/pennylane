@@ -99,7 +99,8 @@ class ExecuteTapes(torch.autograd.Function):
 
             if any(m.return_type is qml.measurements.Counts for m in ctx.tapes[i].measurements):
                 continue
-            elif isinstance(r, (list, tuple)):
+
+            if isinstance(r, (list, tuple)):
                 res[i] = [torch.as_tensor(t) for t in r]
 
                 if isinstance(r, tuple):

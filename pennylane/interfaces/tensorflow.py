@@ -93,7 +93,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
         if any(m.return_type is qml.measurements.Counts for m in tape.measurements):
             continue
-        elif isinstance(res[i], np.ndarray):
+
+        if isinstance(res[i], np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
             r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
@@ -103,7 +104,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
 
         else:
-            print("in here")
             res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
 
     @tf.custom_gradient
@@ -178,7 +178,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
 
-        print(res)
         return res, grad_fn
 
     return _execute(*parameters)
