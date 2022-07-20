@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
-from typing import final
-
 import pytest
 
 import pennylane as qml
