@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
+from typing import final
+
 import pytest
 
 import pennylane as qml
@@ -248,6 +250,36 @@ class TestProperties:
 
         assert op.ndim_params == (0, 2)
         assert op.batch_size == 3
+
+
+class TestSimplify:
+    """Test Sum simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        adj_op = Adjoint(Adjoint(qml.RZ(1.32, wires=0)))
+        assert adj_op.depth == 2
+
+    def test_simplify_method_with_default_depth(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
+        final_op = Adjoint(qml.RZ(1.32, wires=0))
+        simplified_op = adj_op.simplify()
+        assert qml.equal(
+            op1=simplified_op.base, op2=final_op.base
+        )  # TODO: Remove `.base` when comparison between Adjoint operators is fixed
+        assert simplified_op.depth == 1
+
+    def test_simplify_method_with_depth_equal_to_2(self):
+        """Test the simplify method with depth equal to 2."""
+        sum_op = Adjoint(Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0)))))
+
+        final_op = Adjoint(Adjoint(qml.RZ(1.32, wires=0)))
+        simplified_op = sum_op.simplify(depth=2)
+        assert qml.equal(
+            op1=simplified_op.base.base, op2=final_op.base.base
+        )  # TODO: Remove `.base.base` when comparison between Adjoint operators is fixed
+        assert simplified_op.depth == 2
 
 
 class TestMiscMethods:

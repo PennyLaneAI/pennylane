@@ -26,7 +26,8 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, Tensor, operation_derivative
+from pennylane.operation import (Operation, Operator, Tensor,
+                                 operation_derivative)
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
@@ -740,6 +741,18 @@ class TestObservableConstruction:
 
         op = DummyObserv(wires=0)
         assert op.is_hermitian is True
+
+    def test_simplify_method(self):
+        """Test that simplify method returns the same instance."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyObserv(wires=0)
+        sim_op = op.simplify()
+        assert op is sim_op
 
 
 class TestOperatorIntegration:
