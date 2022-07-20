@@ -317,9 +317,7 @@ def execute(
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
 
-        # TODO: changed from qml.math.shape to len because shape converts to
-        # arrays under the hood -> may create ragged array (best solution?)
-        cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: len(x))
+        cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
 
     batch_execute = set_shots(device, override_shots)(device.batch_execute)
