@@ -199,6 +199,14 @@ class TestValidation:
         assert gradient_fn[0] is qml.gradients.param_shift_cv
         assert gradient_fn[1] == {"dev": dev}
 
+    @pytest.mark.autograd
+    def test_parameter_shift_qutrit_device(self):
+        """Test that the _validate_parameter_shift method
+        returns the correct gradient transform for cv devices."""
+        dev = qml.device("default.qutrit", wires=1)
+        gradient_fn = QNode._validate_parameter_shift(dev)
+        assert gradient_fn[0] is qml.gradients.param_shift
+
     def test_parameter_shift_tape_unknown_model(self, monkeypatch):
         """Test that an unknown model raises an exception"""
 
