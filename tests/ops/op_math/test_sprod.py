@@ -26,7 +26,6 @@ import pennylane.numpy as qnp
 from pennylane.wires import Wires
 from pennylane import QuantumFunctionError
 from pennylane.ops.op_math.sprod import s_prod, SProd
-from pennylane.ops.op_math.sprod import _sprod  # pylint: disable=protected-access
 from pennylane.operation import MatrixUndefinedError, DecompositionUndefinedError
 import gate_data as gd  # a file containing matrix rep of each gate
 
@@ -503,42 +502,6 @@ class TestWrapperFunc:
         assert sprod_class_op.id == sprod_func_op.id
         assert sprod_class_op.wires == sprod_func_op.wires
         assert sprod_class_op.parameters == sprod_func_op.parameters
-
-
-class TestPrivateSProd:
-    @pytest.mark.parametrize("op_scalar_tup", ops)
-    def test_sprod_private(self, op_scalar_tup):
-        """Test that the _sprod private method generates expected matrices."""
-        coeff, op = op_scalar_tup
-        op_mat = qml.matrix(op)
-
-        generated_mat = _sprod(op_mat, coeff)
-        expected_mat = coeff * op_mat
-        assert qnp.allclose(generated_mat, expected_mat)
-
-    def test_dtype(self):
-        """Test dtype keyword arg casts matrix correctly"""
-        dtype = "complex128"
-        mat = qnp.eye(2)
-        scalar = 1.23
-
-        generated_mat = _sprod(mat, scalar, dtype=dtype)
-        expected_mat = scalar * qnp.eye(2, dtype=dtype)
-
-        assert generated_mat.dtype == "complex128"
-        assert qnp.allclose(generated_mat, expected_mat)
-
-    def test_cast_like(self):
-        """Test cast_like keyword arg casts matrix correctly"""
-        cast_like = qnp.array(2, dtype="complex128")
-        mat = qnp.eye(2)
-        scalar = 1.23
-
-        generated_mat = _sprod(mat, scalar, cast_like=cast_like)
-        expected_mat = scalar * qnp.eye(2, dtype="complex128")
-
-        assert generated_mat.dtype == "complex128"
-        assert qnp.allclose(generated_mat, expected_mat)
 
 
 class TestIntegration:

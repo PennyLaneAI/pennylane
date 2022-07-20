@@ -49,30 +49,6 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     return SProd(scalar, operator, do_queue=do_queue, id=id)
 
 
-def _sprod(mat, scalar, dtype=None, cast_like=None):
-    r"""Private method to multiply matrix with scalar.
-
-    Args:
-        mat (Tensor): a tensor representing the matrix which will be scaled.
-        scalar (float or complex): the scale factor being multiplied to the given matrix.
-
-    Keyword Args:
-        dtype (str): a string representing the data type of the entries in the result.
-        cast_like (Tensor): a tensor with the desired data type in its entries.
-
-    Returns:
-        res (Tensor): the tensor which is obtained from multiplying mat by scalar.
-    """
-    res = scalar * mat
-
-    if dtype is not None:  # additional casting logic
-        res = qml.math.cast(res, dtype)
-    if cast_like is not None:
-        res = qml.math.cast_like(res, cast_like)
-
-    return res
-
-
 class SProd(SymbolicOp):
     r"""Arithmetic operator representing the scalar product of an
     operator with the given scalar.
@@ -188,7 +164,7 @@ class SProd(SymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
-        return _sprod(self.base.sparse_matrix(wire_order=wire_order), self.scalar)
+        return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -210,7 +186,7 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
-        return _sprod(self.base.matrix(wire_order=wire_order), self.scalar)
+        return self.scalar * self.base.matrix(wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
