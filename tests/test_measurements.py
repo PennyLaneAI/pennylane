@@ -755,6 +755,52 @@ class TestCounts:
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
+    @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
+    def test_counts_binned_4_wires(self, shot_vec, tol):
+        """Check the autograd interface with computational basis state counts and
+        different shot vectors on a device with 4 wires"""
+        dev = qml.device("default.qubit", wires=4, shots=shot_vec)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit():
+            qml.PauliX(1)
+            qml.PauliX(2)
+            qml.PauliX(3)
+            return qml.sample(counts=True)
+
+        res = circuit()
+        basis_state = "0111"
+
+        assert isinstance(res, tuple)
+        assert res[0] == {basis_state: shot_vec[0]}
+        assert res[1] == {basis_state: shot_vec[1]}
+        assert res[2] == {basis_state: shot_vec[2]}
+        assert len(res) == len(shot_vec)
+        assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
+
+    @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
+    def test_counts_operator_binned_4_wires(self, shot_vec, tol):
+        """Check the autograd interface with observable samples to obtain
+        counts from and different shot vectors on a device with 4 wires"""
+        dev = qml.device("default.qubit", wires=4, shots=shot_vec)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit():
+            qml.PauliX(1)
+            qml.PauliX(2)
+            qml.PauliX(3)
+            return qml.sample(qml.PauliZ(0), counts=True)
+
+        res = circuit()
+        sample = 1
+
+        assert isinstance(res, tuple)
+        assert res[0] == {sample: shot_vec[0]}
+        assert res[1] == {sample: shot_vec[1]}
+        assert res[2] == {sample: shot_vec[2]}
+        assert len(res) == len(shot_vec)
+        assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
+
 
 class TestMeasure:
     """Tests for the measure function"""

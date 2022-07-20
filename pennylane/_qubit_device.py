@@ -1076,16 +1076,16 @@ class QubitDevice(Device):
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
 
-        len_wires = len(observable.wires) if len(observable.wires) != 0 else self.num_wires
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if counts:
-            shape = (-1, bin_size, len_wires) if no_observable_provided else (-1, bin_size)
+            shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
 
         return (
-            samples.reshape((len_wires, bin_size, -1))
+            samples.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
