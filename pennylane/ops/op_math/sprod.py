@@ -73,7 +73,7 @@ class SProd(SymbolicOp):
     >>> sprod_op.terms()
     ([1.23], [PauliX(wires=[0]])
     """
-    _name = "Sprod"
+    _name = "SProd"
 
     def __init__(self, scalar, base, do_queue=True, id=None):
         self.scalar = scalar
