@@ -318,7 +318,7 @@ class Sum(Operator):
 
         return summands
 
-    def simplify(self, depth=-1):
+    def simplify(self, depth=-1) -> "Sum":
         """Reduces the depth of nested Sum operators.
 
         If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
@@ -330,4 +330,4 @@ class Sum(Operator):
             .Sum: simplified sum
         """
         summands = self.simplify_summands(depth=depth)
-        return Sum(*summands)
+        return Sum(*summands, id=self.id)

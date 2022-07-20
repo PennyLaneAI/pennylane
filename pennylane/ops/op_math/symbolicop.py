@@ -70,7 +70,7 @@ class SymbolicOp(Operator):
             self.queue()
 
     @property
-    def base(self):
+    def base(self) -> Operator:
         """The base operator."""
         return self.hyperparameters["base"]
 
