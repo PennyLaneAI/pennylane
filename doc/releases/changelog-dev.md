@@ -138,6 +138,8 @@
   ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
   * Added `TRX()` operation, which applies an X rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit basis states the operation applies to. Updated `pennylane/qnode.py` to support parameter shift differentiation on qutrit devices.
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
+  * Added `TRY()` operation, which applies an Y rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit basis states the operation applies to.
+  ([#2846](https://github.com/PennyLaneAI/pennylane/pull/2846))
 
 **Operator Arithmetic:**
 
