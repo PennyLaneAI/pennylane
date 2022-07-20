@@ -783,3 +783,13 @@ def unwrap(values, max_depth=None):
             res.append(a)
 
     return res
+
+
+def add(*args, **kwargs):
+    """Add arguments element-wise."""
+    try:
+        return np.add(*args, **kwargs)
+    except TypeError:
+        # catch arg1 = torch, arg2=numpy error
+        # works fine with opposite order
+        return np.add(args[1], args[0], *args[2:], **kwargs)
