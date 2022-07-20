@@ -95,15 +95,15 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 # pylint:disable=access-member-before-definition
 import abc
 import copy
-import itertools
 import functools
+import itertools
 import numbers
 import warnings
 from enum import IntEnum
-from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np
 from numpy.linalg import multi_dot
+from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -846,6 +846,7 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
+        self.depth = 0
 
         wires_from_args = False
         if wires is None:
@@ -1193,6 +1194,35 @@ class Operator(abc.ABC):
             tape.inv()
 
         return tape
+
+    def simplify(self, depth=-1) -> "Operator":
+        """Reduces the depth of nested operators.
+
+        If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
+
+        Args:
+            depth (int, optional): Reduced depth. Defaults to -1.
+
+        Returns:
+            .Operator: simplified operator
+        """
+        return self
+
+    def __add__(self, other):
+        r"""The addition operation between Operator objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
+        if isinstance(other, Operator):
+            return qml.ops.Sum(self, other)  # pylint: disable=no-member
+        raise ValueError(f"Cannot add Operator and {type(other)}")
+
+    __radd__ = __add__
+
+    def __pow__(self, other):
+        r"""The power operation of an Operator object."""
+        if isinstance(other, numbers.Number):
+            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
+        raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
 # =============================================================================
