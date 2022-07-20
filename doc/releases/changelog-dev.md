@@ -108,7 +108,6 @@
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
-
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 * Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
@@ -124,6 +123,17 @@
   >>> print(circuit(U))
   [0.5 0.5 0. ]
   ```
+
+  * Added `qml.THermitian` observable for using user-specified hermitian matrix as an observable for qutrit circuits.
+  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+  * Added `qml.TShift` operation for qutrit devices, which is the generalized analog of the Pauli X operation.
+  ([#2840](https://github.com/PennyLaneAI/pennylane/pull/2840))
+  * Added `qml.Clock` operation for qutrit devices, which is the generalized analog of the Pauli Z operation.
+  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+  * Added `qml.TAdd` operation for qutrit devices, which is the generalized analog of the CX operation.
+  ([#2842](https://github.com/PennyLaneAI/pennylane/pull/2842))
+  * Added `qml.TSWAP` operation for qutrit devices, which swaps the state between two wires.
+  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
 
 **Operator Arithmetic:**
 
