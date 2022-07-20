@@ -287,12 +287,15 @@ class QubitDevice(Device):
 
                 if not no_counts:
 
-                    # This happens when measurement type is Counts
-                    if self._has_partitioned_shots():
-                        for lst in r:
+                    # This happens when at least one measurement type is Counts
+                    for lst in r:
+                        if isinstance(lst, list):
+                            # List that contains one or more dictionaries
                             results.extend(lst)
-                    else:
-                        results.append(r)
+                        else:
+                            # Other measurement results
+                            results.append(lst.T)
+
                 elif shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
@@ -331,7 +334,7 @@ class QubitDevice(Device):
 
             results = self._asarray(results)
         else:
-            results = tuple(self._asarray(r) for r in results)
+            results = tuple(self._asarray(r) if not isinstance(r, dict) else r for r in results)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -1020,6 +1023,7 @@ class QubitDevice(Device):
                 if len(samples.shape) > 1:
                     samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
                 else:
+                    # TODO:
                     samples = [f"{str(s.item())}" for s in samples]
 
             states, counts = np.unique(samples, return_counts=True)
