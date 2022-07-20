@@ -6,7 +6,7 @@
 
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
-  
+
   Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
   parameter broadcasting with a leading broadcasting dimension in their variational
   parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
@@ -24,7 +24,7 @@
   ```
 
   An exception is `BasisEmbedding`, which is not broadcastable.
-  
+
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
@@ -51,6 +51,9 @@
 
 * Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+
+* Added `qml.ControlledQutritUnitary` operation for qutrit devices, which allows users to apply a controlled arbitrary unitary operation.
+  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 **Classical shadows**
 
