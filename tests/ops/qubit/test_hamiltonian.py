@@ -14,10 +14,10 @@
 """
 Tests for the Hamiltonian class.
 """
+from unittest.mock import patch
+
 import numpy as np
 import pytest
-
-from unittest.mock import patch
 
 import pennylane as qml
 from pennylane import numpy as pnp
