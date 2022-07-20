@@ -1022,12 +1022,7 @@ class QubitDevice(Device):
                 # into string (it's hashable and good-looking).
                 # Before converting to str, we need to extract elements from arrays
                 # to satisfy the case of jax interface, as jax arrays do not support str.
-
-                if len(samples.shape) > 1:
-                    samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-                else:
-                    # TODO:
-                    samples = [f"{str(s.item())}" for s in samples]
+                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
 
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
