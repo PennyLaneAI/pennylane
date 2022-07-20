@@ -380,7 +380,7 @@ class QubitDevice(Device):
 
             for shot_tuple in self._shot_vector:
                 s2 = s1 + np.prod(shot_tuple)
-                r = self.statistics(
+                r = self.statistics_new(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
 
@@ -426,7 +426,7 @@ class QubitDevice(Device):
             results = tuple(r for r in results)
 
         else:
-            results = self.statistics(circuit.observables)
+            results = self.statistics_new(circuit.observables)
 
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
@@ -573,6 +573,100 @@ class QubitDevice(Device):
         return Wires.all_wires(list_of_wires)
 
     def statistics(self, observables, shot_range=None, bin_size=None):
+        """Process measurement results from circuit execution and return statistics.
+        This includes returning expectation values, variance, samples, probabilities, states, and
+        density matrices.
+        Args:
+            observables (List[.Observable]): the observables to be measured
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+        Returns:
+            Union[float, List[float]]: the corresponding statistics
+        .. details::
+            :title: Usage Details
+            The ``shot_range`` and ``bin_size`` arguments allow for the statistics
+            to be performed on only a subset of device samples. This finer level
+            of control is accessible from the main UI by instantiating a device
+            with a batch of shots.
+            For example, consider the following device:
+            >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+            This device will execute QNodes using 135 shots, however
+            measurement statistics will be **course grained** across these 135
+            shots:
+            * All measurement statistics will first be computed using the
+              first 5 shots --- that is, ``shots_range=[0, 5]``, ``bin_size=5``.
+            * Next, the tuple ``(10, 3)`` indicates 10 shots, repeated 3 times. We will want to use
+              ``shot_range=[5, 35]``, performing the expectation value in bins of size 10
+              (``bin_size=10``).
+            * Finally, we repeat the measurement statistics for the final 100 shots,
+              ``shot_range=[35, 135]``, ``bin_size=100``.
+        """
+        results = []
+
+        for obs in observables:
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Variance:
+                results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Sample:
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                )
+
+            elif obs.return_type is Counts:
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+                )
+
+            elif obs.return_type is Probability:
+                results.append(
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                )
+
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                results.append(self.access_state(wires=obs.wires))
+
+            elif obs.return_type is VnEntropy:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the Von Neumann entropy is not supported when using custom wire labels"
+                    )
+                results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
+
+            elif obs.return_type is MutualInfo:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the mutual information is not supported when using custom wire labels"
+                    )
+                wires0, wires1 = obs.raw_wires
+                results.append(
+                    self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+                )
+
+            elif obs.return_type is not None:
+                raise qml.QuantumFunctionError(
+                    f"Unsupported return type specified for observable {obs.name}"
+                )
+
+        return results
+
+    def statistics_new(self, observables, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
