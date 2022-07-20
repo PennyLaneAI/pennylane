@@ -264,6 +264,8 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+        ret_types = [m.return_type for m in circuit.measurements]
+        no_counts = all(ret is not qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -276,15 +278,23 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
+                print("raw result: ", type(r[0]))
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                elif not isinstance(r[0], dict):
+                elif no_counts:
                     # Measurement types except for Counts
                     r = qml.math.squeeze(r)
-                if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
+
+                if not no_counts:
+
                     # This happens when measurement type is Counts
-                    results.append(r)
+                    if self._has_partitioned_shots():
+                        print(">>> Results extending: ", r)
+                        for lst in r:
+                            results.extend(lst)
+                    else:
+                        results.append(r)
                 elif shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
@@ -292,18 +302,19 @@ class QubitDevice(Device):
 
                 s1 = s2
 
-            if not multiple_sampled_jobs:
+            if not multiple_sampled_jobs and no_counts:
+                print("stacked")
                 # Can only stack single element outputs
                 results = qml.math.stack(results)
 
         else:
             results = self.statistics(circuit.observables)
 
+        print(">>> Results: ", results)
         if not circuit.is_sampled:
 
-            ret_types = [m.return_type for m in circuit.measurements]
-
             if len(circuit.measurements) == 1:
+                print("in here1", type(results), results)
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
@@ -315,16 +326,20 @@ class QubitDevice(Device):
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
                 for ret in ret_types
             ):
+                print("in here2", type(results), results)
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            elif any(ret is not qml.measurements.Counts for ret in ret_types):
-                # all the other cases except all counts
+            elif no_counts:
+                print("in here3", type(results), results)
+                # all the other cases except any counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
+            print("in here4")
 
             results = self._asarray(results)
         else:
+            print("in here5")
             results = tuple(self._asarray(r) for r in results)
 
         # increment counter for number of executions of qubit device
@@ -333,6 +348,7 @@ class QubitDevice(Device):
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
+        print("Returned by execute: ", type(results), results)
         return results
 
     def batch_execute(self, circuits):
@@ -1010,7 +1026,12 @@ class QubitDevice(Device):
                 # into string (it's hashable and good-looking).
                 # Before converting to str, we need to extract elements from arrays
                 # to satisfy the case of jax interface, as jax arrays do not support str.
-                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+
+                if len(samples.shape) > 1:
+                    samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+                else:
+                    samples = [f"{str(s.item())}" for s in samples]
+
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
 
@@ -1054,14 +1075,17 @@ class QubitDevice(Device):
             if counts:
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
+
+        len_wires = len(observable.wires) if len(observable.wires) != 0 else self.num_wires
         if counts:
-            shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
+            shape = (-1, bin_size, len_wires) if no_observable_provided else (-1, bin_size)
             return [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
+
         return (
-            samples.reshape((3, bin_size, -1))
+            samples.reshape((len_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )

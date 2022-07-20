@@ -111,7 +111,9 @@ def _execute(
 
     for i, r in enumerate(res):
 
-        if isinstance(r, np.ndarray):
+        if any(m.return_type is qml.measurements.Counts for m in tapes[i].measurements):
+            continue
+        elif isinstance(r, np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
             try:

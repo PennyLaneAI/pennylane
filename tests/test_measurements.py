@@ -434,6 +434,29 @@ class TestSample:
 
         circuit()
 
+    def test_providing_no_observable_and_no_wires_shot_vector(self):
+        """Test that we can provide no observable and no wires to sample
+        function when using a shot vector"""
+        num_wires = 2
+
+        shots1 = 1
+        shots2 = 10
+        shots3 = 1000
+        dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.sample()
+
+        res = circuit()
+
+        assert isinstance(res, tuple)
+
+        expected_shapes = [(num_wires,), (num_wires, shots2), (num_wires, shots3)]
+        assert len(res) == len(expected_shapes)
+        assert (r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
+
     def test_providing_no_observable_and_wires(self):
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
@@ -548,7 +571,7 @@ class TestCounts:
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,))
+        assert len(sample) == 2
         assert np.all([sum(s.values()) == n_sample for s in sample])
 
     def test_counts_combination(self, tol):
@@ -570,9 +593,7 @@ class TestCounts:
         result = circuit()
 
         assert len(result) == 3
-        assert sum(result[0].unwrap().values()) == n_sample
-        assert isinstance(result[1], np.ndarray)
-        assert isinstance(result[2], np.ndarray)
+        assert sum(result[0].values()) == n_sample
 
     def test_single_wire_counts(self, tol):
         """Test the return type and shape of sampling counts from a single wire"""
@@ -609,8 +630,8 @@ class TestCounts:
         result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
-        assert isinstance(result, np.ndarray)
-        assert result.shape[0] == 3
+        assert isinstance(result, tuple)
+        assert len(result) == 3
         assert all(sum(r.values()) == n_sample for r in result)
         assert all(all(v.dtype == np.dtype("int") for v in r.values()) for r in result)
 
@@ -661,7 +682,7 @@ class TestCounts:
     def test_binned_counts_for_operator(self, tol):
         """Test that the shape is correct with the shot vector."""
         shot_vec = (10, 10)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         @qml.qnode(dev)
         def circuit():
@@ -699,7 +720,7 @@ class TestCounts:
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, inteface="jax")
+        @qml.qnode(dev, interface="jax")
         def circuit():
             return qml.sample(counts=True)
 
@@ -711,7 +732,7 @@ class TestCounts:
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, inteface="jax")
+        @qml.qnode(dev, interface="jax")
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
@@ -723,7 +744,7 @@ class TestCounts:
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, inteface="tf")
+        @qml.qnode(dev, interface="tf")
         def circuit():
             return qml.sample(counts=True)
 
@@ -735,7 +756,7 @@ class TestCounts:
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, inteface="tf")
+        @qml.qnode(dev, interface="tf")
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
@@ -747,7 +768,7 @@ class TestCounts:
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, inteface="torch")
+        @qml.qnode(dev, interface="torch")
         def circuit():
             return qml.sample(counts=True)
 
@@ -759,7 +780,7 @@ class TestCounts:
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
 
-        @qml.qnode(dev, inteface="torch")
+        @qml.qnode(dev, interface="torch")
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
@@ -771,7 +792,7 @@ class TestCounts:
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, inteface="jax")
+        @qml.qnode(dev, interface="jax")
         def circuit():
             return qml.sample(counts=True)
 
@@ -784,7 +805,7 @@ class TestCounts:
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, inteface="jax")
+        @qml.qnode(dev, interface="jax")
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
@@ -797,7 +818,7 @@ class TestCounts:
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, inteface="tf")
+        @qml.qnode(dev, interface="tf")
         def circuit():
             return qml.sample(counts=True)
 
@@ -810,7 +831,7 @@ class TestCounts:
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, inteface="tf")
+        @qml.qnode(dev, interface="tf")
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
@@ -823,7 +844,7 @@ class TestCounts:
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, inteface="torch")
+        @qml.qnode(dev, interface="torch")
         def circuit():
             return qml.sample(counts=True)
 
@@ -836,7 +857,7 @@ class TestCounts:
         shot_vec = (10, 10)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
-        @qml.qnode(dev, inteface="torch")
+        @qml.qnode(dev, interface="torch")
         def circuit():
             return qml.sample(qml.PauliZ(0), counts=True)
 
