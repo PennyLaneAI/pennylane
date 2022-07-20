@@ -278,7 +278,6 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                print("raw result: ", type(r[0]))
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
@@ -290,7 +289,6 @@ class QubitDevice(Device):
 
                     # This happens when measurement type is Counts
                     if self._has_partitioned_shots():
-                        print(">>> Results extending: ", r)
                         for lst in r:
                             results.extend(lst)
                     else:
@@ -303,18 +301,15 @@ class QubitDevice(Device):
                 s1 = s2
 
             if not multiple_sampled_jobs and no_counts:
-                print("stacked")
                 # Can only stack single element outputs
                 results = qml.math.stack(results)
 
         else:
             results = self.statistics(circuit.observables)
 
-        print(">>> Results: ", results)
         if not circuit.is_sampled:
 
             if len(circuit.measurements) == 1:
-                print("in here1", type(results), results)
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
@@ -326,20 +321,16 @@ class QubitDevice(Device):
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
                 for ret in ret_types
             ):
-                print("in here2", type(results), results)
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
             elif no_counts:
-                print("in here3", type(results), results)
                 # all the other cases except any counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
-            print("in here4")
 
             results = self._asarray(results)
         else:
-            print("in here5")
             results = tuple(self._asarray(r) for r in results)
 
         # increment counter for number of executions of qubit device
@@ -348,7 +339,6 @@ class QubitDevice(Device):
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
-        print("Returned by execute: ", type(results), results)
         return results
 
     def batch_execute(self, circuits):
