@@ -786,7 +786,7 @@ class DefaultQubit(QubitDevice):
         """TODO: docs"""
 
         n_qubits = len(wires)
-        device_wires = self.map_wires(self.wires)
+        device_wires = np.array(self.map_wires(wires))
 
         pauli_probs = np.zeros((3, len(wires)))
 
@@ -803,9 +803,8 @@ class DefaultQubit(QubitDevice):
         )
 
         for i, op in enumerate([qml.PauliX, qml.PauliY, qml.PauliZ]):
-            pauli_probs[i] = np.real(
-                (np.einsum("ijk,kj->i", stacked_states, op.compute_matrix()) + 1) / 2
-            )
+            probs = np.real((np.einsum("ijk,kj->i", stacked_states, op.compute_matrix()) + 1) / 2)
+            pauli_probs[i] = probs[device_wires]
 
         recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
 
