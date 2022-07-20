@@ -126,6 +126,8 @@
 
   * Added `qml.THermitian` observable for using user-specified hermitian matrix as an observable for qutrit circuits.
   ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+  * Added `qml.TShift` operation for qutrit devices, which is the generalized analog of the Pauli X operation.
+  ([#2840](https://github.com/PennyLaneAI/pennylane/pull/2840))
 
 **Operator Arithmetic:**
 
