@@ -140,6 +140,8 @@
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
   * Added `TRY()` operation, which applies an Y rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit basis states the operation applies to.
   ([#2846](https://github.com/PennyLaneAI/pennylane/pull/2846))
+  * Added `TRZ()` operation, which applies an Z rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit basis states the operation applies to.
+  ([#2847](https://github.com/PennyLaneAI/pennylane/pull/2847))
 
 **Operator Arithmetic:**
 
