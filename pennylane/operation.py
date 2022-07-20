@@ -125,7 +125,7 @@ def __getattr__(name):
         raise AttributeError from e
 
 
-def expand_matrix(base_matrix, wires, wire_order):
+def expand_matrix(base_matrix, wires, wire_order=None):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -182,7 +182,18 @@ def expand_matrix(base_matrix, wires, wire_order):
     torch.Tensor
     >>> res.requires_grad
     True
+
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+
     """
+
+    if (wire_order is None) or (wire_order == wires):
+        return base_matrix
+
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
@@ -1136,7 +1147,7 @@ class Operator(abc.ABC):
         if z == 0:
             return []
         if z == 1:
-            return [self.__copy__()]
+            return [copy.copy(self)]
         raise PowUndefinedError
 
     def queue(self, context=qml.QueuingContext):
@@ -1446,9 +1457,6 @@ class Operation(Operator):
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
 
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     def eigvals(self):
@@ -1690,7 +1698,10 @@ class Observable(Operator):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        raise ValueError(f"Cannot add Observable and {type(other)}")
+        try:
+            return super().__add__(other=other)
+        except ValueError as e:
+            raise ValueError(f"Cannot add Observable and {type(other)}") from e
 
     __radd__ = __add__
 

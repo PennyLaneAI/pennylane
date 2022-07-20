@@ -19,8 +19,8 @@ from functools import reduce
 from typing import List
 
 import numpy as np
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 
@@ -120,7 +120,9 @@ class Sum(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *summands, do_queue=True, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *summands: Operator, do_queue=True, id=None
+    ):  # pylint: disable=super-init-not-called
         """Initialize a Symbolic Operator class corresponding to the Sum of operations."""
         self._name = "Sum"
         self._id = id
@@ -131,8 +133,8 @@ class Sum(Operator):
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
         self.summands = summands
-        self.data = [s.parameters for s in summands]
-        self._wires = qml.wires.Wires.all_wires([s.wires for s in summands])
+        self.data = [s.parameters for s in self.summands]
+        self._wires = qml.wires.Wires.all_wires([s.wires for s in self.summands])
 
         if do_queue:
             self.queue()

@@ -15,9 +15,10 @@
 This submodule contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
+import warnings
+
 # pylint: disable=too-many-arguments, too-few-public-methods
 from collections.abc import Sequence
-import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -200,10 +201,7 @@ class ExpvalCost:
             def cost_fn(*qnode_args, **qnode_kwargs):
                 """Combine results from grouped QNode executions with grouped coefficients"""
                 if device.shot_vector:
-                    shots_batch = 0
-
-                    for i in device.shot_vector:
-                        shots_batch += i[1]
+                    shots_batch = sum(i[1] for i in device.shot_vector)
 
                     total = [0] * shots_batch
 
@@ -216,7 +214,7 @@ class ExpvalCost:
                     total = 0
                     for o, c in zip(obs_groupings, coeffs_groupings):
                         res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-                        total += sum([r * c_ for r, c_ in zip(res, c)])
+                        total += sum(r * c_ for r, c_ in zip(res, c))
                 return total
 
             self.cost_fn = cost_fn
