@@ -26,8 +26,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import (Operation, Operator, Tensor,
-                                 operation_derivative)
+from pennylane.operation import Operation, Operator, Tensor, operation_derivative
 from pennylane.ops import cv
 from pennylane.wires import Wires
 
