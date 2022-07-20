@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.utils` module.
+Unit tests for the new return types.
 """
-# pylint: disable=no-self-use,too-many-arguments,protected-access
-import functools
-import itertools
-
 import numpy as np
-
 import pennylane.numpy as pnp
+
 import pytest
 
 import pennylane as qml
 
 
 class TestSingleReturnExecute:
+    """Test that single measurements return behavior does not change."""
+
     def test_state_default(self):
+        """Return state with default.qubit."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -43,6 +42,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     def test_state_mixed(self):
+        """Return state with default.mixed."""
         dev = qml.device("default.mixed", wires=2)
 
         def circuit(x):
@@ -57,6 +57,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     def test_density_matrix_default(self):
+        """Return density matrix with default.qubit."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -71,6 +72,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     def test_density_matrix_mixed(self):
+        """Return density matrix with default.mixed."""
         dev = qml.device("default.mixed", wires=2)
 
         def circuit(x):
@@ -85,6 +87,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     def test_expval(self):
+        """Return a single expval."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -101,6 +104,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     def test_var(self):
+        """Return a single var."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -116,7 +120,25 @@ class TestSingleReturnExecute:
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
+    def test_vn_entropy(self):
+        """Return a single vn entropy."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=0)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert res[0].shape == ()
+        assert isinstance(res[0], np.ndarray)
+
     def test_mutual_info(self):
+        """Return a single mutual information."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -133,6 +155,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     def test_probs(self):
+        """Return a single prob."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -152,7 +175,12 @@ class TestSingleReturnExecute:
 
 
 class TestMultipleReturns:
+    """Test the new return types for multiple measurements, it should always return a tuple containing the single
+    measurements.
+    """
+
     def test_multiple_expval(self):
+        """Return multiple expvals."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -175,6 +203,7 @@ class TestMultipleReturns:
         assert res[0][1].shape == ()
 
     def test_multiple_var(self):
+        """Return multiple vars."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -197,6 +226,7 @@ class TestMultipleReturns:
         assert res[0][1].shape == ()
 
     def test_multiple_prob(self):
+        """Return multiple probs."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -219,6 +249,7 @@ class TestMultipleReturns:
         assert res[0][1].shape == (4,)
 
     def test_mix_probs_vn(self):
+        """Return multiple different measurements."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -244,6 +275,7 @@ class TestMultipleReturns:
         assert res[0][2].shape == (2,)
 
     def test_list_multiple_expval(self):
+        """Return a comprehension list of multiple expvals."""
         dev = qml.device("default.qubit", wires=3)
 
         def circuit(x):

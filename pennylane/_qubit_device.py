@@ -372,25 +372,19 @@ class QubitDevice(Device):
             if circuit.measurements[0].return_type is qml.measurements.State:
                 # State: assumed to only be allowed if it's the only measurement
                 results = self._asarray(results[0], dtype=self.C_DTYPE)
-            elif circuit.measurements[0].return_type is qml.measurements.Counts:
-                # Measurements with Counts
-                results = results[0]
             else:
-                # Measurements with expval, var or probs
+                # All other measurements are real
                 results = self._asarray(results[0], dtype=self.R_DTYPE)
 
         else:
-            results_list = []
-            for res in results:
-                results_list.append(self._asarray(res, dtype=self.R_DTYPE))
-            results = tuple(results_list)
+            results = tuple(self._asarray(res, dtype=self.R_DTYPE) for res in results)
 
         # increment counter for number of executions of qubit device
-        self._num_executions += 1
+        # self._num_executions += 1
 
-        if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots)
-            self.tracker.record()
+        # if self.tracker.active:
+        #     self.tracker.update(executions=1, shots=self._shots)
+        #     self.tracker.record()
         return results
 
     def batch_execute(self, circuits):
