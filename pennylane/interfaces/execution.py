@@ -18,7 +18,7 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable,unused-argument,unnecessary-lambda-assignment
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable,unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements)
 from functools import wraps
 import warnings
 import inspect
@@ -554,7 +554,7 @@ def execute_new(
     if device_batch_transform:
         tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
     else:
-        batch_fn = lambda res: res
+        batch_fn = lambda res: res  # pragma: no cover
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -657,4 +657,4 @@ def execute_new(
     #     tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
     # )
 
-    return batch_fn(res)
+    # return batch_fn(res)
