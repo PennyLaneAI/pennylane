@@ -784,6 +784,7 @@ class DefaultQubit(QubitDevice):
 
     def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
+        # return super().classical_shadow(wires, n_snapshots, circuit)
 
         n_qubits = len(wires)
         device_wires = np.array(self.map_wires(wires))
