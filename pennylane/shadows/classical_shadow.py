@@ -31,7 +31,7 @@ class ClassicalShadow:
 
         self.unitaries = [
             qml.matrix(qml.Hadamard(0)),
-            qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
+            (qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0))).conj().T,
             qml.matrix(qml.Identity(0)),
         ]
 
@@ -101,4 +101,72 @@ class ClassicalShadow:
             global_snapshots.append(tensor_product)
 
         return np.array(global_snapshots)
+    
+    def compute_snapshot_expval(self, observable, k):
+        """Compute expectation value of a Pauli string observable with respect to a single snapshot """
+        map_name_to_int = {"PauliX": 0, "PauliY": 1, "PauliZ": 2}
 
+        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ)):
+            target_obs, target_locs = np.array(
+                [map_name_to_int[observable.name]]
+            ), np.array([observable.wires[0]])
+        else:
+            target_obs, target_locs = np.array(
+                [map_name_to_int[o.name] for o in observable.obs]
+            ), np.array([o.wires[0] for o in observable.obs])
+
+        # We dont actually need to compute any traces to compute the expectation values.
+        # Instead, we make use of some Pauli matrix algebra facts to simplify the computation:
+        # the goal is to compute tr(rho O), where rho = \Otimes_j (3 U_j^\dagger |b_j x b_j| U_j - 1) and O = \Otimes_j P_j a Pauli string
+        # This simplifies to \prod_{j \in matches} tr(3 P_j U_j^\dagger |b_j x b_j| U_j) where matches are those instances 
+        # where the observable matches those of the non-trivial Pauli measurements in the shadow recipe. 
+        # 
+        # Each single snapshot evaluation, in case the measurements all match, is equal to 3^(#non-id P_js) * (-1)^(sum_j b_i^j).
+
+        # means data container
+        means = []
+        step = self.snapshots//k
+
+        for i in range(0, self.snapshots, step):
+            
+            bitstrings, recipes = self.bitstrings[i : i + step], self.recipes[i : i + step]
+            #print(bitstrings.shape)
+            indices = np.where(np.all(recipes[:, target_locs] == target_obs, axis=1))
+            #print(bitstrings[indices][:, target_locs])
+            mean = np.prod(bitstrings[indices][:, target_locs], axis=1)# / len(indices[0])
+            means.append(mean)
+        print(len(means))
+        return np.median(means)
+    
+    def expval_observable_global(self, observable, k):
+        """redundant method but keep for comparison, very slow because it unnecessarily computes the full density matrix for each snapshot"""
+        global_snapshots = self.global_snapshots(wires=observable.wires)
+
+        step = len(global_snapshots) // k
+        if isinstance(observable, qml.operation.Observable):
+            obs_m = qml.matrix(observable)
+        
+        return np.median([np.mean(np.tensordot(global_snapshots[i : i + step], obs_m, axes=([1,2], [0,1]))) for i in range(0, len(global_snapshots), step)])
+    
+    def expval_observable(self, observable, k):
+        """Compute expectation values of Pauli-string type observables"""
+        os = np.asarray([qml.matrix(o) for o in observable.obs])
+        
+        # Picking only the wires with non-trivial Pauli strings avoids computing unnecessary tr(rho_i 1)=1
+        local_snapshots = self.local_snapshots(wires=observable.wires)
+
+        means = []
+        step = self.snapshots//k
+
+        for i in range(0, self.snapshots, step):
+            # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
+            # res_i^t = tr(rho_i P_i)
+            res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)
+            # res^t = prod_i res_i^t
+            res = np.prod(res, axis=-1)
+            # res = sum_t res^t / T
+            means.append(np.mean(res))
+        return np.median(means)
+    
+    def expval(self, H, k):
+        return np.sum([self.expval_observable(observable, k) for observable in H.ops])

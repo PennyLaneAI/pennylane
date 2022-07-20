@@ -22,9 +22,11 @@ def test_pauli_string_expval():
     """Testing the output of expectation values match those of exact evaluation"""
     wires = range(3)
 
-    dev = qml.device("default.qubit", wires=wires, shots=1000)
+    dev = qml.device("default.qubit", wires=wires, shots=10000)
     @qml.qnode(dev)
     def qnode():
+        qml.Hadamard(0)
+        qml.Hadamard(1)
         return qml.classical_shadow(wires=wires)
 
     bitstrings, recipes = qnode()
