@@ -150,7 +150,10 @@ class ClassicalShadow:
     
     def expval_observable(self, observable, k):
         """Compute expectation values of Pauli-string type observables"""
-        os = np.asarray([qml.matrix(o) for o in observable.obs])
+        if isinstance(observable, qml.operation.Tensor):
+            os = np.asarray([qml.matrix(o) for o in observable.obs])
+        else:
+            os = np.asarray(qml.matrix(observable))[np.newaxis] # wont work with other interfaces
         
         # Picking only the wires with non-trivial Pauli strings avoids computing unnecessary tr(rho_i 1)=1
         local_snapshots = self.local_snapshots(wires=observable.wires)

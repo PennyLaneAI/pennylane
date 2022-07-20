@@ -13,4 +13,4 @@
 # limitations under the License.
 """Differentiable quantum information module"""
 
-from .classical_shadows import *
+from .classical_shadow import *
