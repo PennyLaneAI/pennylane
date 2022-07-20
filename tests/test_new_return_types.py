@@ -14,20 +14,29 @@
 """
 Unit tests for the new return types.
 """
-import numpy as np
-import pennylane.numpy as pnp
-
 import pytest
 
+import numpy as np
 import pennylane as qml
+
+herm = np.diag([1, 2, 3, 4])
+probs_data = [
+    (None, [0]),
+    (None, [0, 1]),
+    (qml.PauliZ(0), None),
+    (qml.Hermitian(herm, wires=[1, 0]), None),
+]
+
+wires = [2, 3, 4]
 
 
 class TestSingleReturnExecute:
     """Test that single measurements return behavior does not change."""
 
-    def test_state_default(self):
+    @pytest.mark.parametrize("wires", wires)
+    def test_state_default(self, wires):
         """Return state with default.qubit."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -38,12 +47,13 @@ class TestSingleReturnExecute:
         qnode.construct([0.5], {})
         res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (1, 4)
+        assert res[0].shape == (1, 2**wires)
         assert isinstance(res[0], np.ndarray)
 
-    def test_state_mixed(self):
+    @pytest.mark.parametrize("wires", wires)
+    def test_state_mixed(self, wires):
         """Return state with default.mixed."""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -52,38 +62,44 @@ class TestSingleReturnExecute:
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
+
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        assert res[0].shape == (4, 4)
+
+        assert res[0].shape == (2**wires, 2**wires)
         assert isinstance(res[0], np.ndarray)
 
-    def test_density_matrix_default(self):
+    @pytest.mark.parametrize("d_wires", wires)
+    def test_density_matrix_default(self, d_wires):
         """Return density matrix with default.qubit."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.density_matrix(wires=0)
+            return qml.density_matrix(wires=range(0, d_wires))
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
+
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        assert res[0].shape == (2, 2)
+
+        assert res[0].shape == (2**d_wires, 2**d_wires)
         assert isinstance(res[0], np.ndarray)
 
-    def test_density_matrix_mixed(self):
+    @pytest.mark.parametrize("d_wires", wires)
+    def test_density_matrix_mixed(self, d_wires):
         """Return density matrix with default.mixed."""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed", wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.density_matrix(wires=0)
+            return qml.density_matrix(wires=range(0, d_wires))
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        assert res[0].shape == (2, 2)
+        assert res[0].shape == (2**d_wires, 2**d_wires)
         assert isinstance(res[0], np.ndarray)
 
     def test_expval(self):
@@ -154,24 +170,43 @@ class TestSingleReturnExecute:
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
 
-    def test_probs(self):
+    @pytest.mark.parametrize("op,wires", probs_data)
+    def test_probs(self, op, wires):
         """Return a single prob."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(wires=[0, 1])
+            return qml.probs(op=op, wires=wires)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
-        assert res[0].shape == (4,)
+        if wires is None:
+            wires = op.wires
+
+        assert res[0].shape == (2 ** len(wires),)
         assert isinstance(res[0], np.ndarray)
 
     # Samples and counts
+
+
+# op1, wires1, op2, wires2
+multi_probs_data = [
+    (None, [0], None, [0]),
+    (None, [0], None, [0, 1]),
+    (None, [0, 1], None, [0]),
+    (None, [0, 1], None, [0, 1]),
+    (qml.PauliZ(0), None, qml.PauliZ(1), None),
+    (None, [0], qml.PauliZ(1), None),
+    (qml.PauliZ(0), None, None, [0]),
+    (qml.PauliZ(1), None, qml.PauliZ(0), None),
+]
+
+wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
 
 class TestMultipleReturns:
@@ -225,14 +260,15 @@ class TestMultipleReturns:
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == ()
 
-    def test_multiple_prob(self):
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
+    def test_multiple_prob(self, op1, op2, wires1, wires2):
         """Return multiple probs."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(wires=0), qml.probs(wires=[0, 1])
+            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -242,46 +278,71 @@ class TestMultipleReturns:
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
 
+        if wires1 is None:
+            wires1 = op1.wires
+
+        if wires2 is None:
+            wires2 = op2.wires
+
         assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == (2,)
+        assert res[0][0].shape == (2 ** len(wires1),)
 
         assert isinstance(res[0][1], np.ndarray)
-        assert res[0][1].shape == (4,)
+        assert res[0][1].shape == (2 ** len(wires2),)
 
-    def test_mix_probs_vn(self):
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
+    @pytest.mark.parametrize("wires3, wires4", wires)
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4):
         """Return multiple different measurements."""
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(wires=[0, 1]), qml.vn_entropy(wires=0), qml.probs(wires=[1])
+            return (
+                qml.probs(op=op1, wires=wires1),
+                qml.vn_entropy(wires=wires3),
+                qml.probs(op=op2, wires=wires2),
+                qml.expval(qml.PauliZ(wires=wires4)),
+            )
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
+        if wires1 is None:
+            wires1 = op1.wires
+
+        if wires2 is None:
+            wires2 = op2.wires
+
         assert isinstance(res[0], tuple)
-        assert len(res[0]) == 3
+        assert len(res[0]) == 4
 
         assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == (4,)
+        assert res[0][0].shape == (2 ** len(wires1),)
 
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == ()
 
         assert isinstance(res[0][2], np.ndarray)
-        assert res[0][2].shape == (2,)
+        assert res[0][2].shape == (2 ** len(wires2),)
 
-    def test_list_multiple_expval(self):
+        assert isinstance(res[0][3], np.ndarray)
+        assert res[0][3].shape == ()
+
+    wires = [2, 3, 4, 5]
+
+    @pytest.mark.parametrize("wires", wires)
+    def test_list_multiple_expval(self, wires):
         """Return a comprehension list of multiple expvals."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, 3)]
+            return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -289,13 +350,8 @@ class TestMultipleReturns:
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         assert isinstance(res[0], tuple)
-        assert len(res[0]) == 3
+        assert len(res[0]) == wires
 
-        assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == ()
-
-        assert isinstance(res[0][1], np.ndarray)
-        assert res[0][1].shape == ()
-
-        assert isinstance(res[0][2], np.ndarray)
-        assert res[0][1].shape == ()
+        for i in range(0, wires):
+            assert isinstance(res[0][i], np.ndarray)
+            assert res[0][i].shape == ()
