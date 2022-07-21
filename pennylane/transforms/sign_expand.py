@@ -182,7 +182,6 @@ def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
         raise ValueError("Passed hamiltonian must be jointly measurable")
 
     wires = hamiltonian.wires
-    print(hamiltonian)
 
     #TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
