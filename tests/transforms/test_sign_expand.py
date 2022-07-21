@@ -90,7 +90,6 @@ TAPES_var = [tape1_var, tape2_var]
 OUTPUTS_var = [0, 2]
 
 
-
 class TestSignExpand:
     """Tests for the hamiltonian_expand transform"""
 
