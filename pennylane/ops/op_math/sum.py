@@ -305,8 +305,8 @@ class Sum(Operator):
 
         If ``depth`` is not provided or negative, then the summands list is completely flattenned.
 
-        Args:
-            depth (int, optional): Reduced depth. Defaults to -1.
+        Keyword Args:
+            depth (int): Reduced depth. Default is -1.
 
         Returns:
             List[~.operation.Operator]: reduced summands list
@@ -327,8 +327,8 @@ class Sum(Operator):
 
         If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
 
-        Args:
-            depth (int, optional): Reduced depth. Defaults to -1.
+        Keyword Args:
+            depth (int): Reduced depth. Default is -1.
 
         Returns:
             .Sum: simplified sum

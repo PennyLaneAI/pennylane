@@ -242,8 +242,8 @@ class Adjoint(SymbolicOp):
 
         If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
 
-        Args:
-            depth (int, optional): Reduced depth. Defaults to -1.
+        Keyword Args:
+            depth (int): Reduced depth. Default is -1.
 
         Returns:
             .Adjoint: simplified operator
