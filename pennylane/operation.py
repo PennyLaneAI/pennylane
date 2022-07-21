@@ -1207,8 +1207,12 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         r"""The addition operation between Operator objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
+        if isinstance(other, numbers.Number):
+            if other == 0:
+                return self
+            return qml.ops.Sum(  # pylint: disable=no-member
+                self, other * qml.Identity(wires=self.wires)
+            )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot add Operator and {type(other)}")
@@ -1678,8 +1682,6 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):

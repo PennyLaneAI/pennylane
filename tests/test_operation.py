@@ -777,6 +777,12 @@ class TestOperatorIntegration:
         with pytest.raises(ValueError, match="Cannot raise an Operator"):
             _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
 
+    def test_sum_with_scalar(self):
+        """Test the __sum__ dunder method with a scalar value."""
+        sum_op = 5 + qml.PauliX(0)
+        final_op = qml.ops.Sum(5 * qml.Identity(0), qml.PauliX(0))
+        assert qml.equal(sum_op, final_op)
+
 
 class TestInverse:
     """Test inverse of operations"""
