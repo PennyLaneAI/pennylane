@@ -256,7 +256,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
-def overlap_integral(basis_a, basis_b):
+def overlap_integral(basis_a, basis_b, normalize=True):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
@@ -291,7 +291,7 @@ def overlap_integral(basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad:
+        if basis_a.params[1].requires_grad or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -428,7 +428,7 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
     return s
 
 
-def moment_integral(basis_a, basis_b, order, idx):
+def moment_integral(basis_a, basis_b, order, idx, normalize=True):
     r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
 
     The multipole moment integral for two primitive Gaussian functions is computed as
@@ -486,7 +486,7 @@ def moment_integral(basis_a, basis_b, order, idx):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad:
+        if basis_a.params[1].requires_grad or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -618,7 +618,7 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     return -0.5 * (t1 + t2 + t3)
 
 
-def kinetic_integral(basis_a, basis_b):
+def kinetic_integral(basis_a, basis_b, normalize=True):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
@@ -654,7 +654,7 @@ def kinetic_integral(basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad:
+        if basis_a.params[1].requires_grad or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -821,7 +821,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     return a
 
 
-def attraction_integral(r, basis_a, basis_b):
+def attraction_integral(r, basis_a, basis_b, normalize=True):
     r"""Return a function that computes the nuclear attraction integral for two contracted Gaussian
     functions.
 
@@ -868,7 +868,7 @@ def attraction_integral(r, basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if basis_a.params[1].requires_grad:
+        if basis_a.params[1].requires_grad or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -964,7 +964,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     return g
 
 
-def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
+def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
     r"""Return a function that computes the electron-electron repulsion integral for four contracted
     Gaussian functions.
 
@@ -1011,7 +1011,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
         gamma, cc, rc = _generate_params(basis_c.params, args_c)
         delta, cd, rd = _generate_params(basis_d.params, args_d)
 
-        if basis_a.params[1].requires_grad:
+        if basis_a.params[1].requires_grad or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             cc = cc * primitive_norm(basis_c.l, gamma)
