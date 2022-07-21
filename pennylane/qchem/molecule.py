@@ -19,8 +19,6 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
 
-import pennylane as qml
-
 from pennylane import numpy as np
 
 from .basis_data import atomic_numbers
@@ -97,7 +95,7 @@ class Molecule:
             coeff = [np.array(i[2], requires_grad=False) for i in self.basis_data]
             if normalize:
                 coeff = [
-                    np.array(c * qml.qchem.primitive_norm(l[i], alpha[i]), requires_grad=False)
+                    np.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
                     for i, c in enumerate(coeff)
                 ]
 
