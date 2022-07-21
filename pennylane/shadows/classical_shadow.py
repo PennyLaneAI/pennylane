@@ -18,7 +18,6 @@ import pennylane.numpy as np
 import pennylane as qml
 
 
-
 class ClassicalShadow:
     """TODO: docstring"""
 
@@ -74,10 +73,9 @@ class ClassicalShadow:
         state[np.where(bitstrings == 0)] = zero
         state[np.where(bitstrings == 1)] = one
 
-        return (
-            3 * qml.math.transpose(qml.math.conj(U), axes=(0, 1, 3, 2)) @ state @ U
-            - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
-        )
+        return 3 * qml.math.transpose(
+            qml.math.conj(U), axes=(0, 1, 3, 2)
+        ) @ state @ U - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
 
     def global_snapshots(self, wires=None, snapshots=None):
         """Compute the T x 2**n x 2**n global snapshots"""
@@ -155,7 +153,7 @@ class ClassicalShadow:
         if isinstance(observable, qml.operation.Tensor):
             os = np.asarray([qml.matrix(o) for o in observable.obs])
         else:
-            os = np.asarray([qml.matrix(observable)])# wont work with other interfaces
+            os = np.asarray([qml.matrix(observable)])  # wont work with other interfaces
 
         # Picking only the wires with non-trivial Pauli strings avoids computing unnecessary tr(rho_i 1)=1
         local_snapshots = self.local_snapshots(wires=observable.wires)
