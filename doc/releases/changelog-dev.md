@@ -283,6 +283,9 @@
   do not contains any unshifted terms.
   [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
 
+* Fixes mixed CPU-GPU data-locality issues for Torch interface.
+  [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
+
 * Fixes a bug where the parameter-shift Hessian of circuits with untrainable
   parameters might be computed with respect to the wrong parameters or
   might raise an error.
