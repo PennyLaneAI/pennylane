@@ -234,20 +234,9 @@ class Adjoint(SymbolicOp):
 
     @property
     def arithmetic_depth(self) -> int:
-        """Arithmetic depth of the operator."""
         return 1 + self.base.arithmetic_depth
 
     def simplify(self, depth=-1):
-        """Reduces the depth of nested operators.
-
-        If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
-
-        Keyword Args:
-            depth (int): Reduced depth. Default is -1.
-
-        Returns:
-            .Adjoint: simplified operator
-        """
         # TODO: Should we add a self.do_queue attribute and instantiate the simplified class
         # with the same value?
         # TODO: Should we do: Adj(AB).simplify() = Adj(B) Ajd(A) ?

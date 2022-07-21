@@ -297,7 +297,6 @@ class Sum(Operator):
 
     @property
     def arithmetic_depth(self) -> int:
-        """Arithmetic depth of the operator."""
         return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
     def simplify_summands(self, depth=-1) -> List[Operator]:
@@ -323,15 +322,5 @@ class Sum(Operator):
         return summands
 
     def simplify(self, depth=-1) -> "Sum":
-        """Reduces the depth of nested Sum operators.
-
-        If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
-
-        Keyword Args:
-            depth (int): Reduced depth. Default is -1.
-
-        Returns:
-            .Sum: simplified sum
-        """
         summands = self.simplify_summands(depth=depth)
         return Sum(*summands, id=self.id)
