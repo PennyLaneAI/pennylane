@@ -65,7 +65,7 @@ def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
     return ops
 
 
-def MultiCRZ(theta, wires, control, **kwargs):
+def MultiCRZ(theta, wires, control):
     """
     Implements a controlled decomposition of qml.MultiRZ
 
@@ -195,10 +195,10 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
     if len(hamiltonian.grouping_indices) != 1:
         raise ValueError("Passed hamiltonian must be jointly measurable")
 
-    wires = hamiltonian.wires
 
     # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
+    wires = hamiltonian.wires
     size = len(mat)
     eigs, eigvecs = np.linalg.eigh(mat)
     norm = eigs[-1]
@@ -223,6 +223,7 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
             last_i = index + 1
 
         projs.append(proj.copy() * dE)
+
 
     if (
         not isinstance(hamiltonian, qml.Hamiltonian)
