@@ -88,8 +88,8 @@ class Controlled(SymbolicOp):
                 with 6 stored elements in Compressed Sparse Row format>
 
     If the provided base matrix is an :class:`~.operation.Operation`, then the created
-    object will be of type :class:`~.ops.op_math.ControlledOp`. This class adds some additional methods
-    and properties to the basic :class:`~.ops.op_math.Controlled` class.
+    object will be of type :class:`~.ops.op_math.ControlledOp`. This class adds some additional
+    methods and properties to the basic :class:`~.ops.op_math.Controlled` class.
 
     >>> type(op)
     pennylane.ops.op_math.controlled_class.ControlledOp
@@ -148,7 +148,8 @@ class Controlled(SymbolicOp):
     # Properties on the control values ######################
     @property
     def control_values(self):
-        """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or ``False``."""
+        """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or 
+        ``False``."""
         return self.hyperparameters["control_values"]
 
     @property
@@ -196,7 +197,7 @@ class Controlled(SymbolicOp):
             f" {len(new_wires)} provided."
         )
 
-        self.hyperparameters["control_wires"] = new_wires[0:num_control]
+        self.hyperparameters["control_wires"] = new_wires[:num_control]
 
         self.base._wires = new_wires[num_control:num_control_and_base]
 
@@ -376,5 +377,6 @@ class ControlledOp(Controlled, operation.Operation):
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
         raise operation.ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one parameter."
+            "and parameter frequencies can not be computed via generator for more than one 
+            parameter."
         )
