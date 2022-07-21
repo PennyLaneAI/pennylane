@@ -578,7 +578,7 @@ class TestStepAndCost:
         when using a QNode as the cost function"""
         dev = qml.device("default.qubit", wires=1, shots=10)
 
-        @qml.qnode(dev, cache=False)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -588,7 +588,7 @@ class TestStepAndCost:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(100):
+        for i in range(10):
             params, res = opt.step_and_cost(circuit, params)
 
         assert np.allclose(res, -1, atol=tol, rtol=0)
