@@ -35,13 +35,6 @@ def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
     Returns:
         list[Operator]: decomposition that make up the controlled evolution
     """
-    if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
-        wires = [wires]
-
-    # Check for identity and do nothing
-    if set(pauli_word) == {"I"}:
-        return []
-
     active_wires, active_gates = zip(
         *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
     )

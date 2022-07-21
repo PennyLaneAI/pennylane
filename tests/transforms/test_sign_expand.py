@@ -123,6 +123,14 @@ class TestSignExpand:
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             tapes, fn = qml.transforms.sign_expand(tape)
 
+    def test_hamiltonian_error_not_jointly_measurable(self):
+        with pennylane.tape.QuantumTape() as tape:
+            H_mult = 1.5 * qml.PauliZ(0) + 2 * qml.PauliZ(1) + 0.3 * qml.PauliX(0)
+            qml.expval(H_mult)
+
+        with pytest.raises(ValueError, match=r"Passed hamiltonian"):
+            tapes, fn = qml.transforms.sign_expand(tape)
+
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
     def test_hamiltonians_vars(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""
