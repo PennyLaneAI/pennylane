@@ -161,14 +161,26 @@
 * Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
   more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
 
-  ```python
-  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
-  >>> summed_op
+  ```pycon
+  >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> sum_op
   RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
   RZ**2(1.0, wires=[0])
   ```
+
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum` and `Adjoint`
+operators so that users can reduce the depth of nested operators.
+
+```pycon
+>>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
+>>> sum_op.arithmetic_depth
+2
+>>> simplified_op = sum_op.simplify()
+>>> simplified_op.arithmetic_depth
+1
+```
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
