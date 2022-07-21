@@ -588,7 +588,7 @@ class TestStepAndCost:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
-        for i in range(10):
+        for i in range(100):
             params, res = opt.step_and_cost(circuit, params)
 
         assert np.allclose(res, -1, atol=tol, rtol=0)

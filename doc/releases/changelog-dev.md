@@ -312,6 +312,11 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the parameter-shift gradient breaks when using both
+  custom `grad_recipe`s that contain unshifted terms and recipes that
+  do not contains any unshifted terms.
+  [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
+
 * Fixes mixed CPU-GPU data-locality issues for Torch interface.
   [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
 
