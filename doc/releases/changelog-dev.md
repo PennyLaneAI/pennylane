@@ -168,6 +168,14 @@
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
   RZ**2(1.0, wires=[0])
+
+* Add support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
   ```
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
