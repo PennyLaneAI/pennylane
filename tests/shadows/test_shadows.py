@@ -21,7 +21,7 @@ from pennylane.shadows import ClassicalShadow
 
 np.random.seed(777)
 
-wires = range(5)
+wires = range(3)
 shots = 10000
 dev = qml.device("default.qubit", wires=wires, shots=shots)
 @qml.qnode(dev)
@@ -30,24 +30,19 @@ def qnode(n_wires):
         qml.Hadamard(i)
     return qml.classical_shadow(wires=range(n_wires))
 
-shadows = [ClassicalShadow(*qnode(n_wires)) for n_wires in range(2, 5)]
+shadows = [ClassicalShadow(*qnode(n_wires)) for n_wires in range(2, 3)]
 
 class TestUnitTestClassicalShadows:
     """Unit Tests for ClassicalShadow class"""
 
     @pytest.mark.parametrize("shadow", shadows)
-    def test_unittest_local_snapshots(self, shadow):
-        """Test the output shape of local_snapshots method"""
+    def test_unittest_snapshots(self, shadow):
+        """Test the output shape of snapshots method"""
         T, n = shadow.bitstrings.shape
         assert (T, n) == shadow.recipes.shape
         assert shadow.local_snapshots().shape == (T, n, 2, 2)
-
-    @pytest.mark.parametrize("shadow", shadows)
-    def test_unittest_global_snapshots(self, shadow):
-        """Test the output shape of global_snapshots method"""
-        T, n = shadow.bitstrings.shape
-        assert (T, n) == shadow.recipes.shape
         assert shadow.global_snapshots().shape == (T, 2**n, 2**n)
+        
 
 
 @pytest.mark.parametrize("shadow", shadows)
@@ -55,14 +50,25 @@ def test_pauli_string_expval(shadow):
     """Testing the output of expectation values match those of exact evaluation"""
 
     o1 = qml.PauliX(0)
-    res1 = shadow.expval_observable(o1, k=2)
+    res1 = shadow._expval_observable(o1, k=2)
 
     o2 = qml.PauliX(0) @ qml.PauliX(1)
-    res2 = shadow.expval_observable(o1, k=2)
+    res2 = shadow._expval_observable(o1, k=2)
 
     res_exact = 1.
     assert qml.math.allclose(res1, res_exact, atol=1e-1)
     assert qml.math.allclose(res2, res_exact, atol=1e-1)
 
-# def test_expval_H():
-#     """Testing the output of expectation values match those of exact evaluation"""
+Hs = [
+    qml.PauliX(0),
+    qml.PauliX(0)@qml.PauliX(1),
+    1.*qml.PauliX(0),
+    0.5*qml.PauliX(1) + 0.5*qml.PauliX(1),
+    qml.Hamiltonian([1.], [qml.PauliX(0)@qml.PauliX(1)])
+]
+
+@pytest.mark.parametrize("H", Hs)
+@pytest.mark.parametrize("shadow", shadows)
+def test_expval_input_types(shadow, H):
+    """Test ClassicalShadow.expval can handle different inputs"""
+    assert qml.math.allclose(shadow.expval(H, k=2), 1., atol=1e-1)

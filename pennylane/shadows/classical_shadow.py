@@ -33,7 +33,7 @@ class ClassicalShadow:
 
         self.unitaries = [
             qml.matrix(qml.Hadamard(0)),
-            (qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0))).conj().T,
+            (qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0))), #.conj().T,
             qml.matrix(qml.Identity(0)),
         ]
 
@@ -99,41 +99,41 @@ class ClassicalShadow:
 
         return np.array(global_snapshots)
     
-    def compute_snapshot_expval(self, observable, k):
-        """Compute expectation value of a Pauli string observable with respect to a single snapshot """
-        map_name_to_int = {"PauliX": 0, "PauliY": 1, "PauliZ": 2}
+    # def compute_snapshot_expval(self, observable, k):
+    #     """Compute expectation value of a Pauli string observable with respect to a single snapshot """
+    #     map_name_to_int = {"PauliX": 0, "PauliY": 1, "PauliZ": 2}
 
-        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ)):
-            target_obs, target_locs = np.array(
-                [map_name_to_int[observable.name]]
-            ), np.array([observable.wires[0]])
-        else:
-            target_obs, target_locs = np.array(
-                [map_name_to_int[o.name] for o in observable.obs]
-            ), np.array([o.wires[0] for o in observable.obs])
+    #     if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ)):
+    #         target_obs, target_locs = np.array(
+    #             [map_name_to_int[observable.name]]
+    #         ), np.array([observable.wires[0]])
+    #     else:
+    #         target_obs, target_locs = np.array(
+    #             [map_name_to_int[o.name] for o in observable.obs]
+    #         ), np.array([o.wires[0] for o in observable.obs])
 
-        # We dont actually need to compute any traces to compute the expectation values.
-        # Instead, we make use of some Pauli matrix algebra facts to simplify the computation:
-        # the goal is to compute tr(rho O), where rho = \Otimes_j (3 U_j^\dagger |b_j x b_j| U_j - 1) and O = \Otimes_j P_j a Pauli string
-        # This simplifies to \prod_{j \in matches} tr(3 P_j U_j^\dagger |b_j x b_j| U_j) where matches are those instances 
-        # where the observable matches those of the non-trivial Pauli measurements in the shadow recipe. 
-        # 
-        # Each single snapshot evaluation, in case the measurements all match, is equal to 3^(#non-id P_js) * (-1)^(sum_j b_i^j).
+    #     # We dont actually need to compute any traces to compute the expectation values.
+    #     # Instead, we make use of some Pauli matrix algebra facts to simplify the computation:
+    #     # the goal is to compute tr(rho O), where rho = \Otimes_j (3 U_j^\dagger |b_j x b_j| U_j - 1) and O = \Otimes_j P_j a Pauli string
+    #     # This simplifies to \prod_{j \in matches} tr(3 P_j U_j^\dagger |b_j x b_j| U_j) where matches are those instances 
+    #     # where the observable matches those of the non-trivial Pauli measurements in the shadow recipe. 
+    #     # 
+    #     # Each single snapshot evaluation, in case the measurements all match, is equal to 3^(#non-id P_js) * (-1)^(sum_j b_i^j).
 
-        # means data container
-        means = []
-        step = self.snapshots//k
+    #     # means data container
+    #     means = []
+    #     step = self.snapshots//k
 
-        for i in range(0, self.snapshots, step):
+    #     for i in range(0, self.snapshots, step):
             
-            bitstrings, recipes = self.bitstrings[i : i + step], self.recipes[i : i + step]
-            #print(bitstrings.shape)
-            indices = np.where(np.all(recipes[:, target_locs] == target_obs, axis=1))
-            #print(bitstrings[indices][:, target_locs])
-            mean = np.prod(bitstrings[indices][:, target_locs], axis=1)# / len(indices[0])
-            means.append(mean)
-        print(len(means))
-        return np.median(means)
+    #         bitstrings, recipes = self.bitstrings[i : i + step], self.recipes[i : i + step]
+    #         #print(bitstrings.shape)
+    #         indices = np.where(np.all(recipes[:, target_locs] == target_obs, axis=1))
+    #         #print(bitstrings[indices][:, target_locs])
+    #         mean = np.prod(bitstrings[indices][:, target_locs], axis=1)# / len(indices[0])
+    #         means.append(mean)
+    #     print(len(means))
+    #     return np.median(means)
     
     def expval_observable_global(self, observable, k):
         """redundant method but keep for comparison, very slow because it unnecessarily computes the full density matrix for each snapshot"""
@@ -145,7 +145,7 @@ class ClassicalShadow:
         
         return np.median([np.mean(np.tensordot(global_snapshots[i : i + step], obs_m, axes=([1,2], [0,1]))) for i in range(0, len(global_snapshots), step)])
     
-    def expval_observable(self, observable, k):
+    def _expval_observable(self, observable, k):
         """Compute expectation values of Pauli-string type observables"""
         if isinstance(observable, qml.operation.Tensor):
             os = np.asarray([qml.matrix(o) for o in observable.obs])
@@ -171,11 +171,11 @@ class ClassicalShadow:
     def expval(self, H, k):
         """Compute expectation values of Observables"""
         if isinstance(H, qml.Hamiltonian):
-            return np.sum([self.expval_observable(observable, k) for observable in H.ops])
+            return np.sum([self._expval_observable(observable, k) for observable in H.ops])
         
         if isinstance(H, Iterable):
-            return [self.expval_observable(observable, k) for observable in H]
+            return [self._expval_observable(observable, k) for observable in H]
         
         if isinstance(H, qml.operation.Observable):
-            return self.expval_observable(H, k)
+            return self._expval_observable(H, k)
         
