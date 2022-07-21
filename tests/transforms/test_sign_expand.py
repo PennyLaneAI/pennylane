@@ -67,6 +67,29 @@ with qml.tape.QuantumTape() as tape4:
 TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [-1.5, -1, -1.5, -7]
 
+with pennylane.tape.QuantumTape() as tape1_var:
+    qml.PauliX(0)
+    H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
+    qml.var(H1)
+
+with pennylane.tape.QuantumTape() as tape2_var:
+    qml.Hadamard(0)
+    qml.Hadamard(1)
+    qml.PauliZ(1)
+    qml.PauliX(2)
+    H2 = qml.Hamiltonian(
+        [1, 1],
+        [
+            qml.PauliX(0) @ qml.PauliZ(2),
+            qml.PauliZ(1),
+        ],
+    )
+    qml.var(H2)
+
+TAPES_var = [tape1_var, tape2_var]
+OUTPUTS_var = [0, 2]
+
+
 
 class TestSignExpand:
     """Tests for the hamiltonian_expand transform"""
@@ -100,6 +123,27 @@ class TestSignExpand:
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             tapes, fn = qml.transforms.sign_expand(tape)
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
+    def test_hamiltonians_vars(self, tape, output):
+        """Tests that the hamiltonian_expand transform returns the correct value"""
+
+        tapes, fn = qml.transforms.sign_expand(tape)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
+    def test_hamiltonians_vars_circuit_impl(self, tape, output):
+        """Tests that the hamiltonian_expand transform returns the correct value
+        if we do not calculate analytical expectation values of groups but rely on their circuit approximations"""
+
+        tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval, 1e-1)
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
