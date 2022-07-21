@@ -16,7 +16,10 @@ Tests for classical shadows
 """
 import pytest
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
+
+np.random.seed(777)
 
 wires = range(5)
 shots = 10000
@@ -27,31 +30,39 @@ def qnode(n_wires):
         qml.Hadamard(i)
     return qml.classical_shadow(wires=range(n_wires))
 
-shadows = [ClassicalShadow(*qnode(n_wires)) for n_wires in range(1, 5)]
+shadows = [ClassicalShadow(*qnode(n_wires)) for n_wires in range(2, 5)]
+
+class TestUnitTestClassicalShadows:
+    """Unit Tests for ClassicalShadow class"""
+
+    @pytest.mark.parametrize("shadow", shadows)
+    def test_unittest_local_snapshots(self, shadow):
+        """Test the output shape of local_snapshots method"""
+        T, n = shadow.bitstrings.shape
+        assert (T, n) == shadow.recipes.shape
+        assert shadow.local_snapshots().shape == (T, n, 2, 2)
+
+    @pytest.mark.parametrize("shadow", shadows)
+    def test_unittest_global_snapshots(self, shadow):
+        """Test the output shape of global_snapshots method"""
+        T, n = shadow.bitstrings.shape
+        assert (T, n) == shadow.recipes.shape
+        assert shadow.global_snapshots().shape == (T, 2**n, 2**n)
 
 
-def test_unittest_local_snapshots(shadow):
-    """Test the output shape of local_snapshots method"""
-    T, n = shadow.bitstrings.shape
-    assert all((T, n) == shadow.recipes.shape)
-    assert all(shadow.local_snapshots().shape == (T, n, 2, 2))
-
-def test_unittest_global_snapshots(shadow):
-    """Test the output shape of global_snapshots method"""
-    T, n = shadow.bitstrings.shape
-    assert all((T, n) == shadow.recipes.shape)
-    assert all(shadow.global_snapshots().shape == (T, 2**n, 2**n))
-
-
-
+@pytest.mark.parametrize("shadow", shadows)
 def test_pauli_string_expval(shadow):
     """Testing the output of expectation values match those of exact evaluation"""
 
-    observable = qml.PauliZ(0) @ qml.PauliZ(1)
-    res = shadow.expval_observable(observable, 2)
+    o1 = qml.PauliX(0)
+    res1 = shadow.expval_observable(o1, k=2)
+
+    o2 = qml.PauliX(0) @ qml.PauliX(1)
+    res2 = shadow.expval_observable(o1, k=2)
 
     res_exact = 1.
-    assert qml.math.allclose(res, res_exact, atol=1e-1)
+    assert qml.math.allclose(res1, res_exact, atol=1e-1)
+    assert qml.math.allclose(res2, res_exact, atol=1e-1)
 
-def test_expval_H():
-    """Testing the output of expectation values match those of exact evaluation"""
+# def test_expval_H():
+#     """Testing the output of expectation values match those of exact evaluation"""

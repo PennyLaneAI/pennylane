@@ -18,6 +18,8 @@ import pennylane.numpy as np
 import pennylane as qml
 import warnings
 
+from collections.abc import Iterable
+
 
 class ClassicalShadow:
     """TODO: docstring"""
@@ -34,11 +36,6 @@ class ClassicalShadow:
             (qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0))).conj().T,
             qml.matrix(qml.Identity(0)),
         ]
-
-    def expval(self, H, snapshots=None):
-        if snapshots is None:
-            snapshots = self.snapshots
-        return None
 
     def local_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x n x 2 x 2 local snapshots
@@ -172,4 +169,13 @@ class ClassicalShadow:
         return np.median(means)
     
     def expval(self, H, k):
-        return np.sum([self.expval_observable(observable, k) for observable in H.ops])
+        """Compute expectation values of Observables"""
+        if isinstance(H, qml.Hamiltonian):
+            return np.sum([self.expval_observable(observable, k) for observable in H.ops])
+        
+        if isinstance(H, Iterable):
+            return [self.expval_observable(observable, k) for observable in H]
+        
+        if isinstance(H, qml.operation.Observable):
+            return self.expval_observable(H, k)
+        
