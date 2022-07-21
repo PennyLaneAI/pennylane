@@ -566,7 +566,7 @@ class QubitDevice(Device):
 
         return state
 
-    def generate_samples(self, num_samples=None):
+    def generate_samples(self):
         r"""Returns the computational basis samples generated for all wires.
 
         Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
@@ -585,10 +585,10 @@ class QubitDevice(Device):
 
         rotated_prob = self.analytic_probability()
 
-        samples = self.sample_basis_states(number_of_states, rotated_prob, num_samples=num_samples)
+        samples = self.sample_basis_states(number_of_states, rotated_prob)
         return self.states_to_binary(samples, self.num_wires)
 
-    def sample_basis_states(self, number_of_states, state_probability, num_samples=None):
+    def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -607,7 +607,7 @@ class QubitDevice(Device):
                 "when using sample-based measurements."
             )
 
-        shots = num_samples or self.shots
+        shots = self.shots
 
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
@@ -762,59 +762,34 @@ class QubitDevice(Device):
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
         # slow implementation but works for all devices
+        try:
+            self.shots = 1
 
-        n_qubits = len(self.wires)
-        device_wires = np.array(self.map_wires(wires))
+            n_qubits = len(self.wires)
+            device_wires = np.array(self.map_wires(wires))
 
-        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-        obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
 
-        outcomes = np.zeros((n_snapshots, n_qubits))
+            outcomes = np.zeros((n_snapshots, n_qubits))
 
-        for t in range(n_snapshots):
-            rotations = [
-                rot
-                for wire in wires
-                for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
-                    wires=wire
-                )
-            ]
+            for t in range(n_snapshots):
+                rotations = [
+                    rot
+                    for wire in wires
+                    for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
+                        wires=wire
+                    )
+                ]
 
-            self.reset()
-            self.apply(circuit.operations + rotations)
+                self.reset()
+                self.apply(circuit.operations + rotations)
 
-            outcomes[t] = self.generate_samples(num_samples=1)[0]
+                outcomes[t] = self.generate_samples(num_samples=1)[0]
 
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-
-        # samples have already been generated for PauliZ
-        samples = [self._samples]
-
-        rotations = []
-        for obs in [qml.PauliY, qml.PauliX]:
-            rotations = [
-                rot for wire in wires for rot in obs.compute_diagonalizing_gates(wires=wire)
-            ]
-
-            # apply all circuit operations
-            self.reset()
-            self.apply(circuit.operations + rotations, rotations=circuit.diagonalizing_gates)
-
-            # generate computational basis samples
-            samples.append(self.generate_samples())
-
-        samples = self._stack(samples[::-1])
-
-        # sample random Pauli measurements uniformly, where 0,1,2 = X,Y,Z
-        n_qubits = len(wires)
-        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-        outcomes = samples[
-            recipes,
-            np.tile(np.arange(n_snapshots), (n_qubits, 1)).T,
-            np.tile(np.arange(n_qubits), (n_snapshots, 1)),
-        ]
-
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+            return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        finally:
+            self.shots = n_snapshots
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
