@@ -106,6 +106,9 @@ class DefaultQutrit(QutritDevice):
         rotations = rotations or []
 
         # apply the circuit operations
+        # Operations are enumerated so that the order of operations can eventually be used
+        # for correctly applying basis state / state vector / snapshot operations which will
+        # be added later.
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
             self._state = self._apply_operation(self._state, operation)
 

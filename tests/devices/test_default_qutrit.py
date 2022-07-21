@@ -97,9 +97,6 @@ def test_dtype_errors():
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
 
-dev = qml.device("default.qutrit", wires=1, shots=100000)
-
-
 # TODO: Add tests for expval, var, sample and tensor observables after addition of observables
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
 # TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added

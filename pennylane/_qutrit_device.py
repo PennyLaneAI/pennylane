@@ -154,12 +154,29 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Raises:
             QuantumFunctionError: density matrix is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add density matrix support. Currently, qml.math is hard-coded to work only with qubit states,
-        # (see `qml.math.reduced_dm()`) so it needs to be updated to be able to handle calculations for qutrits
-        # before this method can be implemented.
-        raise qml.QuantumFunctionError(
-            "Unsupported return type specified for observable density matrix"
+        # TODO: Update once `qml.math.reduced_dm` supports arbitrary dimensions. Currently it is
+        # hardcoded for qubit states.
+
+        state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
+        dim = self.num_wires
+
+        # Return the full density matrix by using numpy tensor product
+        if wires == self.wires:
+            density_matrix = self._tensordot(state, self._conj(state), axes=0)
+            density_matrix = self._reshape(density_matrix, (3 ** len(wires), 3 ** len(wires)))
+            return density_matrix
+
+        complete_system = list(range(0, dim))
+        traced_system = [x for x in complete_system if x not in wires.labels]
+
+        # Return the reduced density matrix by using numpy tensor product
+        density_matrix = self._tensordot(
+            state, self._conj(state), axes=(traced_system, traced_system)
         )
+        density_matrix = self._reshape(density_matrix, (3 ** len(wires), 3 ** len(wires)))
+
+        return density_matrix
 
     def vn_entropy(self, wires, log_base):
         r"""Returns the Von Neumann entropy prior to measurement.
