@@ -102,6 +102,91 @@ def evolve_under(ops, coeffs, time):
         )
 
 
+def calculate_Xi_decomposition(hamiltonian):
+    """
+    Evolves under the given Hamiltonian deconstructed into its pauliwords
+
+    Args:
+      hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
+
+    Returns:
+      dEs: The step separating the two eigenvalues (E_1-E-2)/2 of the spectrum
+      mus: The average between the two eigenvalues (E_1+E-2)/2
+      times: The time for this term group to be evaluated/evolved at
+      projs: The analytical observables associated with these groups, to be measured by qml.Hermitian
+    """
+    mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
+    size = len(mat)
+    eigs, eigvecs = np.linalg.eigh(mat)
+    norm = eigs[-1]
+    proj = np.identity(size, dtype="complex64")
+    proj += -2 * np.outer(np.conjugate(eigvecs[:, 0]), eigvecs[:, 0])
+    last_i = 1
+
+    dEs, mus, projs, times = [], [], [], []
+
+    for index in range(len(eigs) - 1):
+        dE = (eigs[index + 1] - eigs[index]) / 2
+        if np.isclose(dE, 0):
+            continue
+        dEs.append(dE)
+        mu = (eigs[index + 1] + eigs[index]) / 2
+        mus.append(mu)
+        time = np.pi / (2 * (norm + abs(mu)))
+        times.append(time)
+
+        for j in range(last_i, index + 1):
+            proj += -2 * np.outer(np.conjugate(eigvecs[:, j]), eigvecs[:, j])
+            last_i = index + 1
+
+        projs.append(proj.copy() * dE)
+
+    return dEs, mus, times, projs
+
+
+# pylint: disable=too-many-function-args)
+def construct_sgn_circuit(hamiltonian, tape, mus, times, phis):
+    """
+    Evolves under the given Hamiltonian deconstructed into its pauliwords
+
+    Args:
+      hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
+      tape (qml.QuantumTape: Tape containing the circuit to be expanded into the new circuits
+      mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
+      times (List[float]): The time for this term group to be evaluated/evolved at
+      phis (List(float)): Optimal phi values for the QSP part associated with the respective delta and J
+
+    Returns:
+      tapes: Expanded tapes from the original tape that measures the terms via the approximate sgn decomposition
+    """
+    coeffs = hamiltonian.data
+    tapes = []
+    for mu, time in zip(mus, times):
+        with tape.__class__() as new_tape:
+            # Put state prep and ansatz on tape in the 'old' register
+            for op in tape.operations:
+                op.queue()
+
+            # Put QSP and Hadamard test on the two ancillas Target and Control
+            qml.Hadamard("Hadamard")
+            for i, phi in enumerate(phis):
+                qml.CRX(phi, wires=["Hadamard", "Target"])
+                if i == len(phis) - 1:
+                    qml.CRY(np.pi, wires=["Hadamard", "Target"])
+                else:
+                    evolve_under(hamiltonian.ops, coeffs, 2 * time)
+                    qml.CRZ(-2 * mu * time, wires=["Hadamard", "Target"])
+            qml.Hadamard("Hadamard")
+
+            if tape.measurements[0].return_type == qml.measurements.Expectation:
+                qml.expval(-1 * qml.PauliZ("Hadamard"))
+            else:
+                qml.var(qml.PauliZ("Hadamard"))
+
+        tapes.append(new_tape)
+    return tapes
+
+
 def sign_expand(tape, circuit=False, J=10, delta=0.0):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of the Xi or sgn decomposition,
@@ -183,48 +268,22 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
         res = dev.batch_execute(tapes)
     """
     path = os.path.dirname(__file__)
-    with open(path + "/sign_expand_data.json", "r") as f:
+    with open(path + "/sign_expand_data.json", "r", encoding="utf-8") as f:
         data = json.load(f)
     phis = list(filter(lambda data: data["delta"] == delta and data["order"] == J, data))[0][
         "opt_params"
     ]
 
     hamiltonian = tape.measurements[0].obs
+    wires = hamiltonian.wires
 
     hamiltonian.compute_grouping()
     if len(hamiltonian.grouping_indices) != 1:
         raise ValueError("Passed hamiltonian must be jointly measurable")
 
+    dEs, mus, times, projs = calculate_Xi_decomposition(hamiltonian)
 
     # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
-    mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
-    wires = hamiltonian.wires
-    size = len(mat)
-    eigs, eigvecs = np.linalg.eigh(mat)
-    norm = eigs[-1]
-    proj = np.identity(size, dtype="complex64")
-    proj += -2 * np.outer(np.conjugate(eigvecs[:, 0]), eigvecs[:, 0])
-    last_i = 1
-
-    dEs, mus, projs, times = [], [], [], []
-
-    for index in range(len(eigs) - 1):
-        dE = (eigs[index + 1] - eigs[index]) / 2
-        if np.isclose(dE, 0):
-            continue
-        dEs.append(dE)
-        mu = (eigs[index + 1] + eigs[index]) / 2
-        mus.append(mu)
-        time = np.pi / (2 * (norm + abs(mu)))
-        times.append(time)
-
-        for j in range(last_i, index + 1):
-            proj += -2 * np.outer(np.conjugate(eigvecs[:, j]), eigvecs[:, j])
-            last_i = index + 1
-
-        projs.append(proj.copy() * dE)
-
-
     if (
         not isinstance(hamiltonian, qml.Hamiltonian)
         or len(tape.measurements) > 1
@@ -236,32 +295,7 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
         )
 
     if circuit:
-        coeffs = hamiltonian.data
-        tapes = []
-        for mu, time in zip(mus, times):
-            with tape.__class__() as new_tape:
-                # Put state prep and ansatz on tape in the 'old' register
-                for op in tape.operations:
-                    op.queue()
-
-                # Put QSP and Hadamard test on the two ancillas Target and Control
-                qml.Hadamard("Hadamard")
-                for i, phi in enumerate(phis):
-                    qml.CRX(phi, wires=["Hadamard", "Target"])
-                    if i == len(phis) - 1:
-                        qml.CRY(np.pi, wires=["Hadamard", "Target"])
-                    else:
-                        evolve_under(hamiltonian.ops, coeffs, 2 * time)
-                        qml.CRZ(-2 * mu * time, wires=["Hadamard", "Target"])
-                qml.Hadamard("Hadamard")
-
-                if tape.measurements[0].return_type == qml.measurements.Expectation:
-                    qml.expval(-1 * qml.PauliZ("Hadamard"))
-                else:
-                    qml.var(qml.PauliZ("Hadamard"))
-
-            tapes.append(new_tape)
-
+        tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis)
         if tape.measurements[0].return_type == qml.measurements.Expectation:
             # pylint: disable=function-redefined
             def processing_fn(res):
@@ -276,8 +310,6 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
 
         return tapes, processing_fn
 
-    coeffs = hamiltonian.data
-
     # make one tape per observable
     tapes = []
     for proj in projs:
@@ -291,14 +323,8 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
 
         tapes.append(new_tape)
 
-    if tape.measurements[0].return_type == qml.measurements.Expectation:
-        # pylint: disable=function-redefined
-        def processing_fn(res):
-            return qml.math.sum(res)
-
-    else:
-        # pylint: disable=function-redefined
-        def processing_fn(res):
-            return qml.math.sum(res) * len(res)
+    # pylint: disable=function-redefined
+    def processing_fn(res):
+        return qml.math.sum(res) if tape.measurements[0].return_type == qml.measurements.Expectation else qml.math.sum(res) * len(res)
 
     return tapes, processing_fn
