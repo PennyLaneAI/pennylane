@@ -288,13 +288,13 @@ class QubitDevice(Device):
                 if not no_counts:
 
                     # This happens when at least one measurement type is Counts
-                    for lst in r:
-                        if isinstance(lst, list):
+                    for result_group in r:
+                        if isinstance(result_group, list):
                             # List that contains one or more dictionaries
-                            results.extend(lst)
+                            results.extend(result_group)
                         else:
                             # Other measurement results
-                            results.append(lst.T)
+                            results.append(result_group.T)
 
                 elif shot_tuple.copies > 1:
                     results.extend(r.T)
