@@ -251,7 +251,7 @@ class TestProperties:
 
 
 class TestSimplify:
-    """Test Sum simplify method and depth property."""
+    """Test Adjoint simplify method and depth property."""
 
     def test_depth_property(self):
         """Test depth property."""
