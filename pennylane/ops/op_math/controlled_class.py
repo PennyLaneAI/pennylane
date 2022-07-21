@@ -148,7 +148,7 @@ class Controlled(SymbolicOp):
     # Properties on the control values ######################
     @property
     def control_values(self):
-        """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or 
+        """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or
         ``False``."""
         return self.hyperparameters["control_values"]
 
@@ -377,6 +377,6 @@ class ControlledOp(Controlled, operation.Operation):
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
         raise operation.ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one 
-            parameter."
+            "and parameter frequencies can not be computed via generator for more than one"
+            "parameter."
         )
