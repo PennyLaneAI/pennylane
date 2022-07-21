@@ -310,10 +310,10 @@ def repulsion_tensor(basis_functions):
         """
         n = len(basis_functions)
         tensor = anp.zeros((n, n, n, n))
-        e_calc = []
+        e_calc = anp.full((n, n, n, n), anp.nan)
 
         for (i, a), (j, b), (k, c), (l, d) in it.product(enumerate(basis_functions), repeat=4):
-            if (i, j, k, l) not in e_calc:
+            if anp.isnan(e_calc[(i, j, k, l)]):
                 args_abcd = []
                 if args:
                     args_abcd.extend(arg[[i, j, k, l]] for arg in args)
@@ -333,8 +333,8 @@ def repulsion_tensor(basis_functions):
                 o = anp.zeros((n, n, n, n))
                 for perm in permutations:
                     o[perm] = 1.0
+                    e_calc[perm] = 1.0
                 tensor = tensor + integral * o
-                e_calc = e_calc + permutations
         return tensor
 
     return repulsion
