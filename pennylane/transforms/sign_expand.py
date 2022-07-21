@@ -182,15 +182,11 @@ def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
     size = len(mat)
     eigs, eigvecs = np.linalg.eigh(mat)
     norm = eigs[-1]
-
-    offset = 0.0
-    dEs, mus, projs, times = [], [], [], []
-
     proj = np.identity(size, dtype="complex64")
     proj += -2 * np.outer(np.conjugate(eigvecs[:, 0]), eigvecs[:, 0])
     last_i = 1
-    offset_add = 0
-    offset_add += (eigs[-1] + eigs[0]) / 2
+
+    dEs, mus, projs, times = [], [], [], []
 
     for index in range(len(eigs) - 1):
         dE = (eigs[index + 1] - eigs[index]) / 2
@@ -198,9 +194,9 @@ def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
             continue
         dEs.append(dE)
         mu = (eigs[index + 1] + eigs[index]) / 2
+        mus.append(mu)
         time = np.pi / (2 * (norm + abs(mu)))
         times.append(time)
-        mus.append(mu)
 
         for j in range(last_i, index + 1):
             proj += -2 * np.outer(np.conjugate(eigvecs[:, j]), eigvecs[:, j])

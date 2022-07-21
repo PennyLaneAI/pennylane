@@ -45,6 +45,9 @@
 
   When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
+  Implementation of the Xi-decomposition (and its sgn approximation from  arXiv:2207.09479 that constructs the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement setting used e.g. in the Echo-Verification error mitigation setting, see __
+
+
   ```python
   # Describe noise
   noise_gate = qml.DepolarizingChannel
