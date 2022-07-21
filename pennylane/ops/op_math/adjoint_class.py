@@ -198,7 +198,6 @@ class Adjoint(SymbolicOp):
 
     def __init__(self, base=None, do_queue=True, id=None):
         self._name = f"Adjoint({base.name})"
-        self.depth = 1 + base.depth
         super().__init__(base, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -232,6 +231,11 @@ class Adjoint(SymbolicOp):
 
     def adjoint(self):
         return self.base.queue()
+
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 1 + self.base.arithmetic_depth
 
     def simplify(self, depth=-1):
         """Reduces the depth of nested operators.

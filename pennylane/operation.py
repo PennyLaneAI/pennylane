@@ -857,7 +857,6 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self.depth = 0
 
         wires_from_args = False
         if wires is None:
@@ -1205,6 +1204,11 @@ class Operator(abc.ABC):
             tape.inv()
 
         return tape
+
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 0
 
     def simplify(self, depth=-1) -> "Operator":  # pylint: disable=unused-argument
         """Reduces the depth of nested operators.

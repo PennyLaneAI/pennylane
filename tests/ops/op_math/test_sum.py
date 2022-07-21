@@ -584,7 +584,7 @@ class TestSimplify:
         sum_op = (
             qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1) + qml.PauliX(0)
         )
-        assert sum_op.depth == 3
+        assert sum_op.arithmetic_depth == 3
 
     def test_simplify_method_with_default_depth(self):
         """Test that the simplify method reduces complexity to the minimum."""
@@ -592,7 +592,7 @@ class TestSimplify:
         final_op = Sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
         simplified_op = sum_op.simplify()
         assert qml.equal(op1=simplified_op, op2=final_op)
-        assert simplified_op.depth == 1
+        assert simplified_op.arithmetic_depth == 1
 
     def test_simplify_method_with_depth_equal_to_1(self):
         """Test the simplify method with depth equal to 1."""
@@ -608,7 +608,7 @@ class TestSimplify:
         )
         simplified_op = sum_op.simplify(depth=1)
         assert qml.equal(op1=simplified_op, op2=final_op)
-        assert simplified_op.depth == sum_op.depth - 1
+        assert simplified_op.arithmetic_depth == sum_op.arithmetic_depth - 1
 
 
 class TestWrapperFunc:

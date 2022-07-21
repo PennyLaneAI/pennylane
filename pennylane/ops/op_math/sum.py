@@ -127,7 +127,6 @@ class Sum(Operator):
         self._name = "Sum"
         self._id = id
         self.queue_idx = None
-        self.depth = 1 + max(summand.depth for summand in summands)
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
@@ -295,6 +294,11 @@ class Sum(Operator):
         for op in self.summands:
             context.safe_update_info(op, owner=self)
         return self
+
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
     def simplify_summands(self, depth=-1) -> List[Operator]:
         """Reduces the depth of nested summands.
