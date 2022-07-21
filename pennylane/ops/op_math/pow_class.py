@@ -245,4 +245,4 @@ class Pow(SymbolicOp):
         return 1 + self.base.arithmetic_depth
 
     def simplify(self, depth=-1) -> "Pow":
-        return Pow(base=self.base.simplify(depth=depth - 1), z=self.z, id=self.id)
+        return Pow(base=self.base.simplify(depth=depth), z=self.z, id=self.id)

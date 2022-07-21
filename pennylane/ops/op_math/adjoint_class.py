@@ -242,4 +242,4 @@ class Adjoint(SymbolicOp):
         # TODO: Should we do: Adj(AB).simplify() = Adj(B) Ajd(A) ?
         if isinstance(self.base, Adjoint) and (depth > 1 or depth < 0):  # Adj(Adj(A)) = A
             return self.base.base.simplify(depth=depth - 2)
-        return Adjoint(base=self.base.simplify(depth=depth - 1), id=self.id)
+        return Adjoint(base=self.base.simplify(depth=depth), id=self.id)
