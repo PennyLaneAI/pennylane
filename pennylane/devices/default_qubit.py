@@ -785,8 +785,7 @@ class DefaultQubit(QubitDevice):
     def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
 
-        n_device = len(self.wires)
-        n_qubits = len(wires)
+        n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
         recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
@@ -810,12 +809,12 @@ class DefaultQubit(QubitDevice):
         outcomes = np.zeros((n_snapshots, n_qubits))
         stacked_state = self._stack([self._state for _ in range(n_snapshots)])
 
-        for i in range(n_device):
+        for i in range(n_qubits):
 
             # trace out every qubit except the first
             first_qubit_state = self._einsum(
-                f"{ABC[n_device - i + 1]}{ABC[:n_device - i]},{ABC[n_device - i + 1]}{ABC[n_device - i]}{ABC[1:n_device - i]}"
-                f"->{ABC[n_device - i + 1]}a{ABC[n_device - i]}",
+                f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
+                f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
                 stacked_state,
                 self._conj(stacked_state),
             )
@@ -831,8 +830,11 @@ class DefaultQubit(QubitDevice):
 
             # normalize the state
             norms = np.sqrt(
-                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_device - i)), keepdims=True)
+                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
             )
             stacked_state /= norms
+
+        outcomes = outcomes[:, device_wires]
+        recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
