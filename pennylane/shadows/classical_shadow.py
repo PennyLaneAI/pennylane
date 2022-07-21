@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows baseclass with processing functions"""
-
+import warnings
 from collections.abc import Iterable
 import pennylane.numpy as np
 import pennylane as qml
-import warnings
 
-from collections.abc import Iterable
 
 
 class ClassicalShadow:
@@ -69,7 +67,7 @@ class ClassicalShadow:
         # This vectorized approach is relying on clever broadcasting and might need some rework to make it compatible with all interfaces
 
         U = np.empty((T, n, 2, 2), dtype="complex")
-        for i in range(len(unitaries)):
+        for i, _ in enumerate(unitaries):
             U[np.where(recipes == i)] = unitaries[i]
 
         state = np.empty((T, n, 2, 2), dtype="complex")
@@ -78,7 +76,7 @@ class ClassicalShadow:
 
         return (
             3 * qml.math.transpose(qml.math.conj(U), axes=(0, 1, 3, 2)) @ state @ U
-            - np.eye(2)[np.newaxis, np.newaxis]
+            - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
         )
 
     def global_snapshots(self, wires=None, snapshots=None):
@@ -157,7 +155,7 @@ class ClassicalShadow:
         if isinstance(observable, qml.operation.Tensor):
             os = np.asarray([qml.matrix(o) for o in observable.obs])
         else:
-            os = np.asarray(qml.matrix(observable))[np.newaxis]  # wont work with other interfaces
+            os = np.asarray([qml.matrix(observable)])# wont work with other interfaces
 
         # Picking only the wires with non-trivial Pauli strings avoids computing unnecessary tr(rho_i 1)=1
         local_snapshots = self.local_snapshots(wires=observable.wires)
@@ -183,5 +181,4 @@ class ClassicalShadow:
         if isinstance(H, Iterable):
             return [self._expval_observable(observable, k) for observable in H]
 
-        if isinstance(H, qml.operation.Observable):
-            return self._expval_observable(H, k)
+        return self._expval_observable(H, k)
