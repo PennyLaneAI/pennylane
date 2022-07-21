@@ -13,15 +13,16 @@
 Contains the sign (and xi) decomposition tape transform, implementation of ideas from arXiv:2207.09479
 """
 # pylint: disable=protected-access
-import pennylane as qml
-from pennylane import numpy as np
 import json
 import os
+import pennylane as qml
+from pennylane import numpy as np
 
-#TODO: This part up here (ControlledPauliEvolution and MultiCRZ) probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
+# TODO: This part up here (ControlledPauliEvolution and MultiCRZ) probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
+
 
 def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
-    r"""Controlled Evolution under generic pauli words, adapted from qml.PauliRot to suit our needs
+    r"""Controlled Evolution under generic pauli words, adapted from the decomposition of qml.PauliRot to suit our needs
 
 
     Args:
@@ -65,6 +66,17 @@ def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
 
 
 def MultiCRZ(theta, wires, control, **kwargs):
+    """
+    Implements a controlled decomposition of qml.MultiRZ
+
+    Args:
+        theta (float): rotation angle :math:`\theta`
+        wires (Iterable, Wires): the wires the operation acts on
+        control (Wire): The additional ancilla to control the RZ rotation on
+
+    Returns:
+        list[Operator]: decomposition that make up the controlled evolution
+    """
     ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
     ops.append(qml.CRZ(theta, wires=[control, wires[0]]))
     ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
@@ -73,6 +85,14 @@ def MultiCRZ(theta, wires, control, **kwargs):
 
 
 def evolve_under(ops, coeffs, time):
+    """
+    Evolves under the given Hamiltonian deconstructed into its pauliwords
+
+    Args:
+        ops (List[Observables]): List of Pauliwords that comprise the Hamiltonian
+        coeffs (List[int]): List of the respective coefficients of the Pauliwords of the Hamiltonian
+        time (float): At what time to evaluate these Pauliwords
+    """
     for op, coeff in zip(ops, coeffs):
         ControlledPauliEvolution(
             coeff * time,
@@ -82,7 +102,7 @@ def evolve_under(ops, coeffs, time):
         )
 
 
-def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
+def sign_expand(tape, circuit=False, J=10, delta=0.0):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of the Xi or sgn decomposition,
     and provides a function to recombine the results.
@@ -177,7 +197,7 @@ def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
 
     wires = hamiltonian.wires
 
-    #TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
+    # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
     size = len(mat)
     eigs, eigvecs = np.linalg.eigh(mat)
@@ -240,11 +260,6 @@ def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
                     qml.var(qml.PauliZ("Hadamard"))
 
             tapes.append(new_tape)
-
-        # pylint: disable=function-redefined
-        def processing_fn(res):
-            products = [a * b for a, b in zip(res, dEs)]
-            return qml.math.sum(products)
 
         if tape.measurements[0].return_type == qml.measurements.Expectation:
             # pylint: disable=function-redefined
