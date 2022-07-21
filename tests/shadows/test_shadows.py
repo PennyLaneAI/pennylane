@@ -105,7 +105,7 @@ class TestIntegrationShadows:
         # reduced state should yield maximally mixed state
 
         local_snapshots = shadow.local_snapshots(wires=[0])
-        assert qml.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5*np.eye(2), atol=1e-1)
+        assert qml.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5 * np.eye(2), atol=1e-1)
 
         # alternative computation
         bitstrings, recipes = qnode(1)
@@ -115,4 +115,3 @@ class TestIntegrationShadows:
 
         state = np.sum(global_snapshots, axis=0) / shadow.snapshots
         assert qml.math.allclose(state, 0.5 * np.eye(2), atol=1e-1)
-
