@@ -800,6 +800,8 @@ class DefaultQubit(QubitDevice):
 
         def apply_phase(state, wire, phase):
             z = np.array([1, phase])
+            # z = np.expand_dims(z, tuple(range(1, n_device - wire)))
+            # return state * z
             return self._einsum(f"{ABC[:n_device]},{ABC[wire]}->{ABC[:n_device]}", state, z)
 
         def apply_hadamard(state, wire):
@@ -846,21 +848,20 @@ class DefaultQubit(QubitDevice):
         for t in range(n_snapshots):
 
             state = self._state
-            for i in range(n_device):
+            for i in range(n_qubits):
                 if recipes[t][i] == 0:
-                    state = apply_hadamard(state, i)
+                    state = apply_hadamard(state, device_wires[i])
                 elif recipes[t][i] == 1:
-                    state = apply_phase(state, i, -1j)
-                    state = apply_hadamard(state, i)
+                    state = apply_phase(state, device_wires[i], -1j)
+                    state = apply_hadamard(state, device_wires[i])
 
             probs = np.abs(state) ** 2
 
-            sample = np.random.choice(np.arange(2**n_qubits), 1, p=self._flatten(probs))
-
+            sample = np.random.choice(np.arange(2**n_device), 1, p=self._flatten(probs))
             powers_of_two = 1 << np.arange(n_device)
             states_sampled_base_ten = sample[:, None] & powers_of_two
 
-            outcomes[t] = (states_sampled_base_ten > 0)[:, ::-1]
+            outcomes[t] = (states_sampled_base_ten > 0)[0, ::-1][device_wires]
 
         # stacked_state = self._stack([self._state for _ in range(n_snapshots)])
         # for i in range(n_device):
