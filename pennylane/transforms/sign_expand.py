@@ -131,11 +131,7 @@ def sign_expand(tape, group=True, circuit=False, J=10, delta=0.0):
 
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
     >>> res = dev.batch_execute(tapes)
-
-    Applying the processing function results in the expectation value of the Hamiltonian:
-
     >>> fn(res)
-    -0.5
 
     To evaluate the circuit approximation of the decomposition one can construct the sgn-decomposition by changing the kwarg circuit to True:
 
