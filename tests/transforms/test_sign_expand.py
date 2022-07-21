@@ -93,46 +93,13 @@ class TestSignExpand:
         assert np.isclose(output, expval, 1e-2)
         # as these are approximations, these are only correct up to finite precision
 
-    def test_grouping_is_used(self):
-        """Test that the grouping in a Hamiltonian is used"""
-        H = qml.Hamiltonian(
-            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type="qwc"
-        )
-        assert H.grouping_indices is not None
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(H)
-
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-        assert len(tapes) == 2
-
-    def test_number_of_tapes(self):
-        """Tests that the the correct number of tapes is produced"""
-
-        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(H)
-
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-        assert len(tapes) == 3
-
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=True)
-        assert len(tapes) == 2
-
     def test_hamiltonian_error(self):
 
         with pennylane.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+            tapes, fn = qml.transforms.sign_expand(tape)
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):

@@ -277,12 +277,6 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
     hamiltonian = tape.measurements[0].obs
     wires = hamiltonian.wires
 
-    hamiltonian.compute_grouping()
-    if len(hamiltonian.grouping_indices) != 1:
-        raise ValueError("Passed hamiltonian must be jointly measurable")
-
-    dEs, mus, times, projs = calculate_Xi_decomposition(hamiltonian)
-
     # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     if (
         not isinstance(hamiltonian, qml.Hamiltonian)
@@ -293,6 +287,12 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.Hamiltonian`"
         )
+
+    hamiltonian.compute_grouping()
+    if len(hamiltonian.grouping_indices) != 1:
+        raise ValueError("Passed hamiltonian must be jointly measurable")
+
+    dEs, mus, times, projs = calculate_Xi_decomposition(hamiltonian)
 
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis)
@@ -325,6 +325,10 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
 
     # pylint: disable=function-redefined
     def processing_fn(res):
-        return qml.math.sum(res) if tape.measurements[0].return_type == qml.measurements.Expectation else qml.math.sum(res) * len(res)
+        return (
+            qml.math.sum(res)
+            if tape.measurements[0].return_type == qml.measurements.Expectation
+            else qml.math.sum(res) * len(res)
+        )
 
     return tapes, processing_fn
