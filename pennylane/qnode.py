@@ -653,7 +653,7 @@ class QNode:
         if self._qfunc_output.return_type is qml.measurements.Counts:
             # return a dictionary with counts not as a single-element array
             return res[0]
-        elif self._qfunc_output.return_type is qml.measurements.Shadow:
+        if self._qfunc_output.return_type is qml.measurements.Shadow:
             # don't squeeze the last axis
             return qml.math.squeeze(res, axis=0)
 
