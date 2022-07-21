@@ -1211,7 +1211,7 @@ class Operator(abc.ABC):
             if other == 0:
                 return self
             return qml.ops.Sum(  # pylint: disable=no-member
-                self, other * qml.Identity(wires=self.wires)
+                self, other * qml.Identity(wires=self.wires)  # TODO: Use ScalarProd when available
             )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
