@@ -20,7 +20,7 @@ from pennylane import numpy as np
 import json
 import os
 
-#TODO: This part up here probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
+#TODO: This part up here (ControlledPauliEvolution and MultiCRZ) probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
 
 def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
     r"""Controlled Evolution under generic pauli words, adapted from qml.PauliRot to suit our needs
