@@ -136,7 +136,7 @@ class TestSignExpand:
 
         assert np.isclose(cost(var), cost_trad(var), 0.05)
 
-        #TODO: This does not work yet due to qml.utils.sparse_hamiltonian does not allow autograd to push gradients through
+        # TODO: This does not work yet due to qml.utils.sparse_hamiltonian does not allow autograd to push gradients through
         # grad = qml.grad(cost)(var)
         # assert len(grad) == len(output2)
         # for g, o in zip(grad, output2):
