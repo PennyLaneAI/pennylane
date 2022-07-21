@@ -786,96 +786,56 @@ class DefaultQubit(QubitDevice):
         """TODO: docs"""
         # return super().classical_shadow(wires, n_snapshots, circuit)
 
-        # return super().classical_shadow(wires, n_snapshots, circuit)
-
-        def apply_x(state, wire):
-            return state[
-                tuple(
-                    [
-                        slice(None, None) if i != wire else slice(None, None, -1)
-                        for i in range(n_device)
-                    ]
-                )
-            ]
-
-        def apply_phase(state, wire, phase):
-            z = np.array([1, phase])
-            # z = np.expand_dims(z, tuple(range(1, n_device - wire)))
-            # return state * z
-            return self._einsum(f"{ABC[:n_device]},{ABC[wire]}->{ABC[:n_device]}", state, z)
-
-        def apply_hadamard(state, wire):
-            return self._const_mul(SQRT2INV, apply_x(state, wire) + apply_phase(state, wire, -1))
-
-        n_device = len(self.wires)
-        n_qubits = len(wires)
+        n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
         recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-
         obs_list = self._stack(
+            [
+                qml.PauliX.compute_matrix(),
+                qml.PauliY.compute_matrix(),
+                qml.PauliZ.compute_matrix(),
+            ]
+        )
+        uni_list = self._stack(
             [
                 qml.Hadamard.compute_matrix(),
                 qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
                 qml.Identity.compute_matrix(),
             ]
         )
-        # obs_list = self._stack([
-        #     qml.PauliX.compute_matrix(),
-        #     qml.PauliY.compute_matrix(),
-        #     qml.PauliZ.compute_matrix(),
-        # ])
         obs = obs_list[recipes]
-
-        # outcomes = np.zeros((n_snapshots, n_qubits))
-        #
-        # state = self._state
-        # for i in range(n_device):
-        #
-        #     first_qubit_density = self._einsum(
-        #         f"{ABC[:n_device]},{ABC[n_device]}{ABC[1:n_device]}",
-        #         self._state,
-        #         self._conj(self._state),
-        #     )
-        #
-        #     stacked_density = np.stack([first_qubit_density] * n_snapshots)
-        #
-        #     probs = (self._einsum('abc,acb->a', obs[:, i], stacked_density) + 1) / 2
-        #     samples = np.random.uniform(0, 1, size=probs.shape) > probs
+        uni = uni_list[recipes]
 
         outcomes = np.zeros((n_snapshots, n_qubits))
+        stacked_state = self._stack([self._state for _ in range(n_snapshots)])
 
-        for t in range(n_snapshots):
+        for i in range(n_qubits):
 
-            state = self._state
-            for i in range(n_qubits):
-                if recipes[t][i] == 0:
-                    state = apply_hadamard(state, device_wires[i])
-                elif recipes[t][i] == 1:
-                    state = apply_phase(state, device_wires[i], -1j)
-                    state = apply_hadamard(state, device_wires[i])
+            # trace out every qubit except the first
+            first_qubit_state = self._einsum(
+                f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
+                f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
+                stacked_state,
+                self._conj(stacked_state),
+            )
 
-            probs = np.abs(state) ** 2
+            # sample the observables on the first qubit
+            probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
+            samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
+            outcomes[:, i] = samples
 
-            sample = np.random.choice(np.arange(2**n_device), 1, p=self._flatten(probs))
-            powers_of_two = 1 << np.arange(n_device)
-            states_sampled_base_ten = sample[:, None] & powers_of_two
+            # collapse the state
+            rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
+            stacked_state = rotated_state[np.arange(n_snapshots), samples]
 
-            outcomes[t] = (states_sampled_base_ten > 0)[0, ::-1][device_wires]
+            # normalize the state
+            norms = np.sqrt(
+                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
+            )
+            stacked_state /= norms
 
-        # stacked_state = self._stack([self._state for _ in range(n_snapshots)])
-        # for i in range(n_device):
-        #     stacked_state = self._einsum(f'abc,a{ABC[3:3 + i]}c{ABC[4 + i:3 + n_qubits]}->a{ABC[3:3 + i]}b{ABC[4 + i:3 + n_qubits]}',
-        #                                  obs[:, i], stacked_state)
-        #
-        # probs = np.abs(stacked_state) ** 2
-        #
-        # cum_probs = np.cumsum(np.reshape(probs, [n_snapshots, 2 ** n_device]), axis=1)
-        # sample = np.argmax(cum_probs >= np.expand_dims(np.random.uniform(0, 1, size=n_snapshots), 1), axis=1)
-        #
-        # powers_of_two = 1 << np.arange(n_device)
-        # states_sampled_base_ten = sample[:, None] & powers_of_two
-        #
-        # outcomes = (states_sampled_base_ten > 0)[:, ::-1]
+        outcomes = outcomes[:, device_wires]
+        recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)

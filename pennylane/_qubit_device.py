@@ -334,6 +334,7 @@ class QubitDevice(Device):
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
+
         return results
 
     def batch_execute(self, circuits):
