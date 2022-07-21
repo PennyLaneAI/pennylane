@@ -566,7 +566,7 @@ class QubitDevice(Device):
 
         return state
 
-    def generate_samples(self):
+    def generate_samples(self, num_samples=None):
         r"""Returns the computational basis samples generated for all wires.
 
         Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
@@ -585,10 +585,10 @@ class QubitDevice(Device):
 
         rotated_prob = self.analytic_probability()
 
-        samples = self.sample_basis_states(number_of_states, rotated_prob)
+        samples = self.sample_basis_states(number_of_states, rotated_prob, num_samples=num_samples)
         return self.states_to_binary(samples, self.num_wires)
 
-    def sample_basis_states(self, number_of_states, state_probability):
+    def sample_basis_states(self, number_of_states, state_probability, num_samples=None):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -607,7 +607,7 @@ class QubitDevice(Device):
                 "when using sample-based measurements."
             )
 
-        shots = self.shots
+        shots = num_samples or self.shots
 
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
@@ -760,6 +760,32 @@ class QubitDevice(Device):
         """TODO: docs"""
         if circuit is None:
             raise ValueError("Circuit must be provided when measuring classical shadows")
+
+        # slow implementation but works for all devices
+
+        n_qubits = len(self.wires)
+        device_wires = np.array(self.map_wires(wires))
+
+        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+
+        outcomes = np.zeros((n_snapshots, n_qubits))
+
+        for t in range(n_snapshots):
+            rotations = [
+                rot
+                for wire in wires
+                for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
+                    wires=wire
+                )
+            ]
+
+            self.reset()
+            self.apply(circuit.operations + rotations)
+
+            outcomes[t] = self.generate_samples(num_samples=1)[0]
+
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
         # samples have already been generated for PauliZ
         samples = [self._samples]
