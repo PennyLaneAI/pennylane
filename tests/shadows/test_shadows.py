@@ -44,31 +44,60 @@ class TestUnitTestClassicalShadows:
         assert shadow.global_snapshots().shape == (T, 2**n, 2**n)
         
 
+class TestIntegrationShadows:
+    """Integration tests for classical shadows class"""
+    @pytest.mark.parametrize("shadow", shadows)
+    def test_pauli_string_expval(self, shadow):
+        """Testing the output of expectation values match those of exact evaluation"""
 
-@pytest.mark.parametrize("shadow", shadows)
-def test_pauli_string_expval(shadow):
-    """Testing the output of expectation values match those of exact evaluation"""
+        o1 = qml.PauliX(0)
+        res1 = shadow._expval_observable(o1, k=2)
 
-    o1 = qml.PauliX(0)
-    res1 = shadow._expval_observable(o1, k=2)
+        o2 = qml.PauliX(0) @ qml.PauliX(1)
+        res2 = shadow._expval_observable(o1, k=2)
 
-    o2 = qml.PauliX(0) @ qml.PauliX(1)
-    res2 = shadow._expval_observable(o1, k=2)
+        res_exact = 1.
+        assert qml.math.allclose(res1, res_exact, atol=1e-1)
+        assert qml.math.allclose(res2, res_exact, atol=1e-1)
 
-    res_exact = 1.
-    assert qml.math.allclose(res1, res_exact, atol=1e-1)
-    assert qml.math.allclose(res2, res_exact, atol=1e-1)
+    Hs = [
+        qml.PauliX(0),
+        qml.PauliX(0)@qml.PauliX(1),
+        1.*qml.PauliX(0),
+        0.5*qml.PauliX(1) + 0.5*qml.PauliX(1),
+        qml.Hamiltonian([1.], [qml.PauliX(0)@qml.PauliX(1)])
+    ]
 
-Hs = [
-    qml.PauliX(0),
-    qml.PauliX(0)@qml.PauliX(1),
-    1.*qml.PauliX(0),
-    0.5*qml.PauliX(1) + 0.5*qml.PauliX(1),
-    qml.Hamiltonian([1.], [qml.PauliX(0)@qml.PauliX(1)])
-]
+    @pytest.mark.parametrize("H", Hs)
+    @pytest.mark.parametrize("shadow", shadows)
+    def test_expval_input_types(self, shadow, H):
+        """Test ClassicalShadow.expval can handle different inputs"""
+        assert qml.math.allclose(shadow.expval(H, k=2), 1., atol=1e-1)
 
-@pytest.mark.parametrize("H", Hs)
-@pytest.mark.parametrize("shadow", shadows)
-def test_expval_input_types(shadow, H):
-    """Test ClassicalShadow.expval can handle different inputs"""
-    assert qml.math.allclose(shadow.expval(H, k=2), 1., atol=1e-1)
+    def test_reconstruct_bell_state(self,):
+        """Test that a bell state can be faithfully reconstructed"""
+        wires = range(2)
+
+        dev = qml.device("default.qubit", wires=wires, shots=10000)
+        @qml.qnode(dev)
+        def qnode(n_wires):
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.classical_shadow(wires=range(n_wires))
+
+        # should prepare the bell state
+        bitstrings, recipes = qnode(2)
+        shadow = ClassicalShadow(bitstrings, recipes)
+        global_snapshots = shadow.global_snapshots()
+
+        state = np.sum(global_snapshots, axis=0)/shadow.snapshots
+        bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
+        assert qml.math.allclose(state, bell_state, atol=1e-1)
+
+        # reduced state should yield maximally mixed state
+        bitstrings, recipes = qnode(1)
+        shadow = ClassicalShadow(bitstrings, recipes)
+        global_snapshots = shadow.global_snapshots()
+
+        state = np.sum(global_snapshots, axis=0)/shadow.snapshots
+        assert qml.math.allclose(state, 0.5*np.eye(2), atol=1e-1)
