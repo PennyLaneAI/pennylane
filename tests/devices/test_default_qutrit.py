@@ -334,7 +334,7 @@ class TestDefaultQutritIntegration:
 
 
 class TestProbabilityIntegration:
-    """Test probability method for when analytic is True/False"""
+    """Test probability method for when computation is/is not analytic"""
 
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
