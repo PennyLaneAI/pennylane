@@ -260,9 +260,6 @@
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
-* Pure state qutrit simulation can now be performed using the `default.qutrit` device.
-  [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
-
 * Added an `are_pauli_words_qwc` function which checks if certain
   Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians
   with many commuting terms.
