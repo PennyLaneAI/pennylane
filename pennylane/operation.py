@@ -100,6 +100,7 @@ import itertools
 import numbers
 import warnings
 from enum import IntEnum
+from typing import List
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -1752,7 +1753,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
-        self.obs = []
+        self.obs: List[Observable] = []
         self._args = args
         self.queue(init=True)
 

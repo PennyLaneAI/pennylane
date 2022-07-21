@@ -342,7 +342,7 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def simplify(self):
+    def simplify(self):  # pylint: disable=arguments-differ
         r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
@@ -371,12 +371,7 @@ class Hamiltonian(Observable):
             c = self.coeffs[i]
             op = op if isinstance(op, Tensor) else Tensor(op)
 
-            ind = None
-            for j, o in enumerate(new_ops):
-                if op.compare(o):
-                    ind = j
-                    break
-
+            ind = next((j for j, o in enumerate(new_ops) if op.compare(o)), None)
             if ind is not None:
                 new_coeffs[ind] += c
                 if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
@@ -401,7 +396,8 @@ class Hamiltonian(Observable):
 
     def __str__(self):
         # Lambda function that formats the wires
-        wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
+        def wires_print(ob: Observable):
+            return ",".join(map(str, ob.wires.tolist()))
 
         list_of_coeffs = self.data  # list of scalar tensors
         paired_coeff_obs = list(zip(list_of_coeffs, self.ops))
