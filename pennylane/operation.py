@@ -1719,7 +1719,10 @@ class Observable(Operator):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(other)} from Observable")
+        try:
+            return super().__sub__(other=other)
+        except ValueError as e:
+            raise ValueError(f"Cannot subtract {type(other)} from Observable") from e
 
 
 class Tensor(Observable):
