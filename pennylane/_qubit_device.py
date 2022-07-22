@@ -336,8 +336,9 @@ class QubitDevice(Device):
         return results
 
     def execute_new(self, circuit, **kwargs):
-        """Execute a queue of quantum operations on the device and then
-        measure the given observables.
+        """New execute (update of return type) function, it executes a queue of quantum operations on the device and
+        then measure the given observables. More case will be added in future PRs, for the moment it only supports
+        measurements without shots.
 
         For plugin developers: instead of overwriting this, consider
         implementing a suitable subset of
@@ -422,7 +423,8 @@ class QubitDevice(Device):
         return results
 
     def batch_execute_new(self, circuits):
-        """Execute a batch of quantum circuits on the device.
+        """Temporary batch execute function, waiting for QNode execution of the new return types. Execute a batch of
+        quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
         device's ``execute`` method. The results are collected in a list.
