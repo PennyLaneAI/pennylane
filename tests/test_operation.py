@@ -783,6 +783,12 @@ class TestOperatorIntegration:
         final_op = qml.ops.Sum(5 * qml.Identity(0), qml.PauliX(0))
         assert qml.equal(sum_op, final_op)
 
+    def test_dunder_methods(self):
+        """Test the __sub__, __rsub__ and __neg__ dunder methods."""
+        sum_op = qml.PauliX(0) - 5
+        sum_op2 = 5 - qml.PauliX(0)
+        assert qml.equal(op1=sum_op, op2=-sum_op2)
+
 
 class TestInverse:
     """Test inverse of operations"""
