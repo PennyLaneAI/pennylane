@@ -106,6 +106,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.ops import SProd, Sum
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -1210,11 +1211,9 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
-            return qml.ops.Sum(  # pylint: disable=no-member
-                self, qml.s_prod(scalar=other, operator=qml.Identity(wires=self.wires))
-            )
+            return Sum(self, SProd(scalar=other, base=qml.Identity(wires=self.wires)))
         if isinstance(other, Operator):
-            return qml.ops.Sum(self, other)  # pylint: disable=no-member
+            return Sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
@@ -1231,7 +1230,7 @@ class Operator(abc.ABC):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.s_prod(scalar=-1, operator=self)
+        return SProd(scalar=-1, base=self)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
