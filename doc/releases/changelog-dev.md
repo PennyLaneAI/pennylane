@@ -3,6 +3,8 @@
 # Release 0.25.0-dev (development release)
 
 <h3>New features since last release</h3>
+* Fixed error of IsingXY gate definition in latex.
+  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
@@ -345,4 +347,4 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
 Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
-Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
