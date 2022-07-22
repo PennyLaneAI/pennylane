@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 """
 from pennylane.math import conj, transpose
 from pennylane.operation import AdjointUndefinedError, Observable, Operation
+from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
 
@@ -242,4 +243,8 @@ class Adjoint(SymbolicOp):
         # TODO: Should we do: Adj(AB).simplify() = Adj(B) Ajd(A) ?
         if isinstance(self.base, Adjoint) and (depth > 1 or depth < 0):  # Adj(Adj(A)) = A
             return self.base.base.simplify(depth=depth - 2)
+        if isinstance(self.base, Sum):  # Adj(A + B) = Adj(A) + Adj(B)
+            sim_sum = self.base.simplify(depth=depth)
+            return Sum((Adjoint(summand) for summand in sim_sum.summands), id=self.base.id)
+
         return Adjoint(base=self.base.simplify(depth=depth), id=self.id)
