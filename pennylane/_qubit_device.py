@@ -265,7 +265,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
-        ret_types = [m.return_type for m in circuit.measurements]
+        ret_types = (m.return_type for m in circuit.measurements)
         no_counts = all(ret is not qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
