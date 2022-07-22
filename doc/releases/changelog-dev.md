@@ -253,6 +253,8 @@
   with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
+* Adjoint differention now uses the adjoint symbolic wrapper instead of in-place inversion.
+
 <h3>Breaking changes</h3>
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
