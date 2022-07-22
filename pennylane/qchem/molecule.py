@@ -47,6 +47,7 @@ class Molecule:
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
+        normalize (bool): if True, the basis functions get normalized
 
     **Example**
 

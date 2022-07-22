@@ -262,6 +262,7 @@ def overlap_integral(basis_a, basis_b, normalize=True):
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the overlap integral
@@ -453,6 +454,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the multipole moment integral
@@ -624,6 +626,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the kinetic integral
@@ -829,6 +832,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         r (array[float]): position vector of nucleus
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -973,6 +977,8 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         basis_c (~qchem.basis_set.BasisFunction): third basis function
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
+        normalize (bool): if True, the basis functions get normalized
+
     Returns:
         function: function that computes the electron repulsion integral
 
