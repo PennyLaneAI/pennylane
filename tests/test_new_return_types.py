@@ -45,7 +45,7 @@ class TestSingleReturnExecute:
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         assert res[0].shape == (1, 2**wires)
         assert isinstance(res[0], np.ndarray)
