@@ -793,3 +793,23 @@ def add(*args, **kwargs):
         # catch arg1 = torch, arg2=numpy error
         # works fine with opposite order
         return np.add(args[1], args[0], *args[2:], **kwargs)
+
+
+@multi_dispatch()
+def iscomplex(tensor, like=None):
+    """Return True if the tensor has a non-zero complex component."""
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        imag_tensor = tf.math.imag(tensor)
+        return tf.math.count_nonzero(imag_tensor) > 0
+
+    if like == "torch":
+        import torch
+
+        if torch.is_complex(tensor):
+            imag_tensor = torch.imag(tensor)
+            return torch.count_nonzero(imag_tensor) > 0
+        return False
+
+    return np.iscomplex(tensor)
