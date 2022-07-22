@@ -266,7 +266,7 @@ class QubitDevice(Device):
 
         multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
         ret_types = (m.return_type for m in circuit.measurements)
-        no_counts = all(ret is not qml.measurements.Counts for ret in ret_types)
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:

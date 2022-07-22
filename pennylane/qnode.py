@@ -651,9 +651,10 @@ class QNode:
 
             return tuple(res)
 
-        if isinstance(self._qfunc_output, Sequence) and qml.measurements.Counts in set(
-            out.return_type for out in self._qfunc_output
+        if isinstance(self._qfunc_output, Sequence) and any(m.return_type is qml.measurements.Counts
+            for m in self._qfunc_output
         ):
+
             # If Counts was returned with other measurements, then apply the
             # data structure used in the qfunc
             qfunc_output_type = type(self._qfunc_output)
