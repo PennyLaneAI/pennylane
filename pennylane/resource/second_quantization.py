@@ -23,11 +23,11 @@ from pennylane.qchem import factorize
 
 
 class DoubleFactorization(Operation):
-    r"""Estimate the number of non-Clifford gates and logical qubits for quantum algorithms in
-    second quantization with a double-factorized Hamiltonian.
+    r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
+    algorithm in second quantization with a double-factorized Hamiltonian.
 
     To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to be
-    factorized using the :func:`~.pennylane.resources.factorize` function following
+    factorized using the :func:`~.pennylane.qchem.factorize` function following
     [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
     such that the two-electron integral tensor in
@@ -42,31 +42,18 @@ class DoubleFactorization(Operation):
     matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
     smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
     average number of the retained eigenvalues, :math:`M`, determines the rank of the second
-    factorization step. The 1-norm of the Hamiltonian can then be computed using the :func:`~.norm`
-    function from the electron integrals and the eigenvalues of the matrices :math:`L^{(r)}` as
-
-    .. math::
-
-        \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
-
-    where the Schatten 1-norm, :math:`\left \| \cdot \right \|`, for a given matrix :math:`T` is
-    defined as
-
-    .. math::
-
-        ||T|| = \sum_k |\text{eigvals}[T]_k|,
-
-    and matrix :math:`T` is constructed from the one- and two-electron integrals
-
-    .. math::
-
-        T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
+    factorization step. The 1-norm of the Hamiltonian can then be computed using the
+    :func:`~.pennylane.resource.DoubleFactorization.norm` function from the electron integrals and
+    the eigenvalues of the matrices :math:`L^{(r)}`.
 
     The total number of gates and qubits for implementing the quantum phase estimation algorithm
-    for the given Hamiltonian can then be computed using the functions :func:`~.gate_cost` and
-    :func:`~.qubit_cost` with a target error that has the default value of chemical accuracy
-    (0.0016 Ha) here. The costs are computed using Eqs. (C39-C40) of
-    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+    for the given Hamiltonian can then be computed using the functions
+    :func:`~.pennylane.resource.DoubleFactorization.gate_cost` and
+    :func:`~.pennylane.resource.DoubleFactorization.qubit_cost` with a target error that has the
+    default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
+    of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+
+    Atomic units are used throughout the class.
 
     Args:
         one_electron (array[array[float]]): one-electron integrals
@@ -79,6 +66,7 @@ class DoubleFactorization(Operation):
         br (int): number of bits for ancilla qubit rotation
         alpha (int): number of bits for the keep register
         beta (int): number of bits for the rotation angles
+        chemist_notation (bool): if True, the two-electron integrals need to be in chemist notation
 
     .. details::
         :title: Usage Details
@@ -95,8 +83,7 @@ class DoubleFactorization(Operation):
 
             mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
 
-            core_, one, two_ph = qml.qchem.electron_integrals(mol)()
-            two = np.swapaxes(two_ph, 1, 3) # convert to chemist notation
+            core_, one, two = qml.qchem.electron_integrals(mol)()
             algo = DoubleFactorization(one, two)
 
         >>> algo.lamb  # the 1-Norm of the Hamiltonian
@@ -105,7 +92,7 @@ class DoubleFactorization(Operation):
         >>> algo.gates  # estimated number of non-Clifford gates
         105550609
 
-        >>> algo.qubits  # estimated number of qubits
+        >>> algo.qubits  # estimated number of logical qubits
         290
     """
     num_wires = AnyWires
@@ -124,10 +111,14 @@ class DoubleFactorization(Operation):
         br=7,
         alpha=10,
         beta=20,
+        chemist_notation=False,
     ):
 
         self.one_electron = one_electron
-        self.two_electron = two_electron
+        if chemist_notation:
+            self.two_electron = two_electron
+        else:
+            self.two_electron = np.swapaxes(two_electron, 1, 3)
         self.error = error
         self.rank_r = rank_r
         self.rank_m = rank_m
@@ -178,7 +169,8 @@ class DoubleFactorization(Operation):
 
         super().__init__(wires=range(self.qubits))
 
-    def estimation_cost(self, lamb, error):
+    @staticmethod
+    def estimation_cost(lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -194,8 +186,9 @@ class DoubleFactorization(Operation):
 
         **Example**
 
-        >>> cost = estimation_cost(72.49779513025341, 0.001)
-        >>> print(cost)
+        >>> lamb = 72.49779513025341
+        >>> error = 0.001
+        >>> estimation_cost(lamb, error)
         113880
         """
         if error <= 0.0:
@@ -206,7 +199,8 @@ class DoubleFactorization(Operation):
 
         return int(np.ceil(np.pi * lamb / (2 * error)))
 
-    def _qrom_cost(self, constants):
+    @staticmethod
+    def _qrom_cost(constants):
         r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM
         for the double factorization method.
 
@@ -239,7 +233,7 @@ class DoubleFactorization(Operation):
         **Example**
 
         >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
-        >>> cost_qrom(constants)
+        >>> _qrom_cost(constants)
         168, 4
         """
         a, b, c, d, e = constants
@@ -249,7 +243,8 @@ class DoubleFactorization(Operation):
 
         return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
 
-    def unitary_cost(self, n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+    @staticmethod
+    def unitary_cost(n, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator
         for the double factorization algorithm.
 
@@ -273,7 +268,7 @@ class DoubleFactorization(Operation):
         >>> n = 14
         >>> rank_r = 26
         >>> rank_m = 5.5
-        >>> rank_m = 7
+        >>> rank_max = 7
         >>> br = 7
         >>> alpha = 10
         >>> beta = 20
@@ -321,16 +316,17 @@ class DoubleFactorization(Operation):
         cost = (
             9 * nl - 6 * eta + 12 * br + 34 * nxi + 8 * nlxi + 9 * alpha + 3 * n * beta - 6 * n - 43
         )
-        cost += self._qrom_cost((rank_r, 1, 0, bp1, -1))[0]
-        cost += self._qrom_cost((rank_r, 1, 0, bo, -1))[0]
-        cost += self._qrom_cost((rank_r, 1, 0, 1, 0))[0] * 2
-        cost += self._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[0]
-        cost += self._qrom_cost((rank_rm, n / 2, rank_rm, 2, 0))[0] * 2
-        cost += self._qrom_cost((rank_rm, n / 2, rank_rm, 2 * bp2, -1))[0]
+        cost += DoubleFactorization._qrom_cost((rank_r, 1, 0, bp1, -1))[0]
+        cost += DoubleFactorization._qrom_cost((rank_r, 1, 0, bo, -1))[0]
+        cost += DoubleFactorization._qrom_cost((rank_r, 1, 0, 1, 0))[0] * 2
+        cost += DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[0]
+        cost += DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, 2, 0))[0] * 2
+        cost += DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, 2 * bp2, -1))[0]
 
         return int(cost)
 
-    def gate_cost(self, n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+    @staticmethod
+    def gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
         r"""Return the total number of Toffoli gates needed to implement the double factorization
         algorithm.
 
@@ -394,13 +390,14 @@ class DoubleFactorization(Operation):
         if beta <= 0 or not isinstance(beta, int):
             raise ValueError("beta must be a positive integer.")
 
-        e_cost = self.estimation_cost(lamb, error)
-        u_cost = self.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
+        e_cost = DoubleFactorization.estimation_cost(lamb, error)
+        u_cost = DoubleFactorization.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
 
         return int(e_cost * u_cost)
 
-    def qubit_cost(self, n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
-        r"""Return the number of ancilla qubits needed to implement the double factorization method.
+    @staticmethod
+    def qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br=7, alpha=10, beta=20):
+        r"""Return the number of logical qubits needed to implement the double factorization method.
 
         The expression for computing the cost is taken from Eq. (C40) of
         [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
@@ -417,7 +414,7 @@ class DoubleFactorization(Operation):
             beta (int): number of bits for the rotation angles
 
         Returns:
-            int: number of ancilla qubits for the double factorization method
+            int: number of logical qubits for the double factorization method
 
         **Example**
 
@@ -430,7 +427,7 @@ class DoubleFactorization(Operation):
         >>> br = 7
         >>> alpha = 10
         >>> beta = 20
-        >>> qubit_cost(n, lamb, error, rank_r, rank_m, br, alpha, beta)
+        >>> qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         292
         """
         if n <= 0 or not isinstance(n, int) or n % 2 != 0:
@@ -471,21 +468,22 @@ class DoubleFactorization(Operation):
         bo = nxi + nlxi + br + 1  # Eq. (C29) of PRX Quantum 2, 030305 (2021)
         bp2 = nxi + alpha + 2  # Eq. (C31) of PRX Quantum 2, 030305 (2021)
         # kr is taken from Eq. (C39) of PRX Quantum 2, 030305 (2021)
-        kr = self._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
+        kr = DoubleFactorization._qrom_cost((rank_rm, n / 2, rank_rm, n * beta, 0))[1]
 
         # the cost is computed using Eq. (C40) of PRX Quantum 2, 030305 (2021)
-        e_cost = self.estimation_cost(lamb, error)
+        e_cost = DoubleFactorization.estimation_cost(lamb, error)
         cost = n + 2 * nl + nxi + 3 * alpha + beta + bo + bp2
         cost += kr * n * beta / 2 + 2 * np.ceil(np.log2(e_cost + 1)) + 7
 
         return int(cost)
 
-    def norm(self, one, two, eigvals):
+    @staticmethod
+    def norm(one, two, eigvals):
         r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals
         and eigenvalues of the factorized two-electron integral tensor.
 
-        The 1-norm of a double-factorized molecular Hamiltonian is computed as
-        [`arXiv:2007.14460 <https://arxiv.org/abs/2007.14460>`_]
+        The 1-norm of a double-factorized molecular Hamiltonian is computed using Eqs. (15-17) of
+        [`Phys. Rev. Research 3, 033055 (2021) <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.033055>`_]
 
         .. math::
 
@@ -530,14 +528,14 @@ class DoubleFactorization(Operation):
         >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         >>> core, one, two = qml.qchem.electron_integrals(mol)()
         >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
-        >>> _, eigvals, _ = factorize(two, 1e-5)
+        >>> _, eigvals, _ = qml.qchem.factorize(two, 1e-5)
         >>> print(norm(one, two, eigvals))
         52.98762043980203
         """
-        lambda_one = 0.25 * np.sum([np.sum(abs(v)) ** 2 for v in eigvals])
-
         t_matrix = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
         t_eigvals, _ = np.linalg.eigh(t_matrix)
-        lambda_two = np.sum(abs(t_eigvals))
+        lambda_one = np.sum(abs(t_eigvals))
+
+        lambda_two = 0.25 * np.sum([np.sum(abs(v)) ** 2 for v in eigvals])
 
         return lambda_one + lambda_two

@@ -22,13 +22,14 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FirstQuantization(Operation):
-    r"""Estimate the number of non-Clifford gates and logical qubits for quantum algorithms in
-    first quantization using a plane-wave basis.
+    r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
+    algorithm in first quantization using a plane-wave basis.
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
     the number of electrons and the unit cell volume need to be defined. The costs can then be
-    computed using the functions :func:`~.gate_cost` and :func:`~.qubit_cost` with a target error
-    that has the default value of chemical accuracy (0.0016 Ha).
+    computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
+    :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
+    value of 0.0016 Ha (chemical accuracy).
 
     Following `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
     , the target algorithm error, :math:`\epsilon`, is distributed among four different sources of
@@ -49,6 +50,8 @@ class FirstQuantization(Operation):
 
     Note that the user only needs to define the target algorithm error :math:`\epsilon`. The error
     distribution takes place inside the functions.
+
+    Atomic units are used throughout the class.
 
     Args:
         n (int): number of plane waves
@@ -76,9 +79,9 @@ class FirstQuantization(Operation):
         649912.4801542697
 
         >>> algo.gates  # estimated number of non-Clifford gates
-        9.38e+12
+        1.10e+13
 
-        >>> algo.qubits  # estimated number of qubits
+        >>> algo.qubits  # estimated number of logical qubits
         4416
     """
 
@@ -104,11 +107,14 @@ class FirstQuantization(Operation):
         self.lamb = self.norm(self.n, self.eta, self.omega, self.error, self.br, self.charge)
 
         self.gates = self.gate_cost(self.n, self.eta, self.omega, self.error, self.br, self.charge)
-        self.qubits = self.qubit_cost(self.n, self.eta, self.omega, self.error, self.charge)
+        self.qubits = self.qubit_cost(
+            self.n, self.eta, self.omega, self.error, self.br, self.charge
+        )
 
         super().__init__(wires=range(self.qubits))
 
-    def success_prob(self, n, br):
+    @staticmethod
+    def success_prob(n, br):
         r"""Return the probability of success for state preparation.
 
         The expression for computing the probability of success is taken from Eqs. (59, 60) of
@@ -123,11 +129,13 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> success_prob(10000, 7)
-        0.9998814293823286
+        >>> n = 3
+        >>> br = 8
+        >>> success_prob(n, br)
+        0.9999928850303523
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
@@ -141,7 +149,8 @@ class FirstQuantization(Operation):
 
         return p
 
-    def norm(self, n, eta, omega, error, br=7, charge=0):
+    @staticmethod
+    def norm(n, eta, omega, error, br=7, charge=0):
         r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
         The expressions needed for computing the norm are taken from
@@ -166,15 +175,16 @@ class FirstQuantization(Operation):
         >>> omega = 1145.166
         >>> error = 0.001
         >>> norm(n, eta, omega, error)
-        1254385.059691027
+        281053.75612801575
 
         .. details::
             :title: Theory
 
-            For numerical convenience, we use the following modified expressions for computing
-            parameters that contain a sum over :math`\frac{1}{\left \| \nu \right \|^k}` where
-            :math:`\nu` denotes an element of the set of reciprocal lattice vectors, :math:`G_0`,
-            and :math:`k \in \left \{ 1, 2 \right \}`.
+            To compute the norm, for numerical convenience, we use the following modified
+            expressions to obtain parameters that contain a sum over
+            :math:`\frac{1}{\left \| \nu \right \|^k}` where :math:`\nu` denotes an element of the
+            set of reciprocal lattice vectors, :math:`G_0`, and
+            :math:`k \in \left \{ 1, 2 \right \}`.
 
             For :math:`\lambda_{\nu}` defined in Eq. (25) of
             `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
@@ -232,7 +242,7 @@ class FirstQuantization(Operation):
             :math:`p_{\nu} = 0.2398`.
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -274,7 +284,7 @@ class FirstQuantization(Operation):
         )
         # computed using Eq. (113) of PRX Quantum 2, 040332 (2021)
         lambda_nu_1 = lambda_nu + 4 / 2**n_m * (
-            7 * 2 ** (n_p + 1) + 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
+            7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
         )
 
         p_nu = 0.2398  # approximation from Eq. (29) in arxiv:1807.09802
@@ -295,9 +305,9 @@ class FirstQuantization(Operation):
 
         # taken from Eq. (63) of PRX Quantum 2, 040332 (2021)
         p_eq = (
-            self.success_prob(3, 8)
-            * self.success_prob(3 * eta + 2 * charge, br)
-            * self.success_prob(eta, br) ** 2
+            FirstQuantization.success_prob(3, 8)
+            * FirstQuantization.success_prob(3 * eta + 2 * charge, br)
+            * FirstQuantization.success_prob(eta, br) ** 2
         )
 
         # final lambda value is computed from Eq. (126) of PRX Quantum 2, 040332 (2021)
@@ -306,7 +316,8 @@ class FirstQuantization(Operation):
 
         return np.maximum(lambda_a, lambda_b) / p_eq
 
-    def _cost_qrom(self, lz):
+    @staticmethod
+    def _cost_qrom(lz):
         r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
 
         Args:
@@ -317,7 +328,8 @@ class FirstQuantization(Operation):
 
         **Example**
 
-        >>> _cost_qrom_min(100)
+        >>> lz = 100
+        >>> _cost_qrom(lz)
         21
         """
         if lz <= 0 or not isinstance(lz, int):
@@ -331,7 +343,8 @@ class FirstQuantization(Operation):
 
         return min(cost_f, cost_c)
 
-    def unitary_cost(self, n, eta, omega, error, br=7, charge=0):
+    @staticmethod
+    def unitary_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary
         operator.
 
@@ -356,10 +369,10 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> unitary_cost(n, eta, omega, error)
-        12819
+        17033
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -376,7 +389,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        lamb = self.lamb
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=7, charge=charge)
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
@@ -405,18 +418,19 @@ class FirstQuantization(Operation):
             )
         )
 
-        e_r = self._cost_qrom(l_z)
+        e_r = FirstQuantization._cost_qrom(l_z)
 
         # taken from Eq. (125)
         cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
-        cost += 3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1)
+        cost += 3 * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
         cost += l_z + e_r + 2 * (2 * n_p + 2 * br - 7) + 12 * eta * n_p
         cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p * n_r + 18
         cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
 
         return int(np.ceil(cost))
 
-    def estimation_cost(self, error):
+    @staticmethod
+    def estimation_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -424,28 +438,37 @@ class FirstQuantization(Operation):
         [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
 
         Args:
+            n (int): number of plane waves
+            eta (int): number of electrons
+            omega (float): unit cell volume
             error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
+            charge (int): total electric charge of the system
 
         Returns:
             int: number of calls to unitary
 
         **Example**
 
-        >>> cost = estimation_cost(0.001)
-        >>> print(cost)
-        113880
+        >>> n = 100000
+        >>> eta = 156
+        >>> omega = 1145.166
+        >>> error = 0.01
+        >>> estimation_cost(n, eta, omega, error)
+        102133985
         """
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        lamb = self.lamb
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=br, charge=charge)
         alpha = 0.01
         # qpe_error obtained to satisfy inequality (131)
         error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
 
         return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
-    def gate_cost(self, n, eta, omega, error, br=7, charge=0):
+    @staticmethod
+    def gate_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the total number of Toffoli gates needed to implement the first quantization
         algorithm.
 
@@ -470,10 +493,10 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> gate_cost(n, eta, omega, error)
-        10327614069516
+        3676557345574
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -490,13 +513,14 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        e_cost = self.estimation_cost(error)
-        u_cost = self.unitary_cost(n, eta, omega, error, br, charge)
+        e_cost = FirstQuantization.estimation_cost(n, eta, omega, error, br=br, charge=charge)
+        u_cost = FirstQuantization.unitary_cost(n, eta, omega, error, br, charge)
 
         return e_cost * u_cost
 
-    def qubit_cost(self, n, eta, omega, error, charge=0):
-        r"""Return the number of ancilla qubits needed to implement the first quantization
+    @staticmethod
+    def qubit_cost(n, eta, omega, error, br=7, charge=0):
+        r"""Return the number of logical qubits needed to implement the first quantization
         algorithm.
 
         The expression for computing the cost is taken from Eq. (101) of
@@ -507,10 +531,11 @@ class FirstQuantization(Operation):
             eta (int): number of electrons
             omega (float): unit cell volume
             error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
 
         Returns:
-            int: number of qubits needed to implement the first quantization algorithm
+            int: number of logical qubits needed to implement the first quantization algorithm
 
         **Example**
 
@@ -519,10 +544,10 @@ class FirstQuantization(Operation):
         >>> omega = 169.69608
         >>> error = 0.01
         >>> qubit_cost(n, eta, omega, error)
-        4238
+        4377
         """
         if n <= 0:
-            raise ValueError("The number of planewaves must be a positive number.")
+            raise ValueError("The number of plane waves must be a positive number.")
 
         if eta <= 0 or not isinstance(eta, int):
             raise ValueError("The number of electrons must be a positive integer.")
@@ -536,7 +561,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        lamb = self.lamb
+        lamb = FirstQuantization.norm(n, eta, omega, error, br=br, charge=charge)
         alpha = 0.01
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
@@ -562,9 +587,13 @@ class FirstQuantization(Operation):
             )
         )
 
+        alpha = 0.01
+        # qpe_error obtained to satisfy inequality (131) of PRX Quantum 2, 040332 (2021)
+        error_qpe = np.sqrt(error**2 * (1 - (3 * alpha) ** 2))
+
         # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
         qubits = 3 * eta * n_p + 4 * n_m * n_p + 12 * n_p
-        qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error))))) + 5 * n_m
+        qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error_qpe))))) + 5 * n_m
         qubits += 2 * np.ceil(np.log2(eta)) + 3 * n_p**2 + np.ceil(np.log2(eta + 2 * l_z))
         qubits += np.maximum(5 * n_p + 1, 5 * n_r - 4) + np.maximum(n_t, n_r + 1) + 33
 
