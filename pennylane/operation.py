@@ -1206,18 +1206,30 @@ class Operator(abc.ABC):
         return tape
 
     def __add__(self, other):
-        r"""The addition operation between Operator objects."""
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
             return qml.ops.Sum(  # pylint: disable=no-member
-                self, other * qml.Identity(wires=self.wires)  # TODO: Use ScalarProd when available
+                self, other * qml.Identity(wires=self.wires)  # TODO: Use SProd when available
             )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
+
+    def __sub__(self, other):
+        """The substraction operation of Operator-Operator objects and Operator-scalar."""
+        return self + (-other)
+
+    def __rsub__(self, other):
+        """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self):
+        """The negation operation of an Operator object."""
+        return -1 * self  # TODO: Use SProd when available
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
