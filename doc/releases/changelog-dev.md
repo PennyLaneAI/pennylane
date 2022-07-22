@@ -85,7 +85,7 @@
   ```
 
   In addition to the number of non-Clifford gates and logical qubits, some other quantities such as
-  the 1-Norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
+  the 1-norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
   obtained either by initiating the classes or by directly calling the functions.
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
