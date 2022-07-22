@@ -287,6 +287,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
+* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
+  [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
+
 <h3>Breaking changes</h3>
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
