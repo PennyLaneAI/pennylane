@@ -19,9 +19,10 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+
 one_h2 = np.array([[-1.25330961e00, 3.46833673e-13], [3.46944695e-13, -4.75069041e-01]])
 
-two_h2 = np.array(
+two_h2 = np.array(  # in chemist notation
     [
         [
             [[6.74755872e-01, -4.00346423e-13], [-4.00290912e-13, 6.63711349e-01]],
@@ -34,7 +35,18 @@ two_h2 = np.array(
     ]
 )
 
-df = qml.resource.DoubleFactorization(one_h2, two_h2)
+two_h2_ph = np.array(  # in physicist notation
+    [
+        [
+            [[6.74755872e-01, 8.45989945e-14], [8.47655279e-14, 1.81210478e-01]],
+            [[8.48210391e-14, 1.81210478e-01], [6.63711349e-01, 7.84927678e-14]],
+        ],
+        [
+            [[8.46545056e-14, 6.63711349e-01], [1.81210478e-01, 7.82707232e-14]],
+            [[1.81210478e-01, 7.82707232e-14], [7.87148124e-14, 6.97651447e-01]],
+        ],
+    ]
+)
 
 
 @pytest.mark.parametrize(
@@ -45,7 +57,7 @@ df = qml.resource.DoubleFactorization(one_h2, two_h2)
 )
 def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
     r"""Test that the DoubleFactorization class initiates correct parameters."""
-    est = qml.resource.DoubleFactorization(one, two)
+    est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
     assert np.allclose(est.one_electron, one)
     assert np.allclose(est.two_electron, two)
     assert np.allclose(est.error, error)
@@ -54,6 +66,18 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
     assert np.allclose(est.br, br)
     assert np.allclose(est.alpha, alpha)
     assert np.allclose(est.beta, beta)
+
+
+@pytest.mark.parametrize(
+    ("one", "two_phys", "two_chem"),
+    [
+        (one_h2, two_h2_ph, two_h2),
+    ],
+)
+def test_df_notation_conversion(one, two_phys, two_chem):
+    r"""Test that the DoubleFactorization class initiates correct two-electron integrals."""
+    est = qml.resource.DoubleFactorization(one, two_phys, chemist_notation=False)
+    assert np.allclose(est.two_electron, two_chem)
 
 
 @pytest.mark.parametrize(
@@ -86,9 +110,9 @@ def test_df_params(one, two, error, tol_factor, tol_eigval, br, alpha, beta):
         ),
     ],
 )
-def test_df_fac(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m, rank_max):
+def test_df_factorization(one, two, n, factors, eigvals, eigvecs, rank_r, rank_m, rank_max):
     r"""Test that DoubleFactorization class returns correct factorization values."""
-    est = qml.resource.DoubleFactorization(one, two)
+    est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
 
     assert np.allclose(est.n, n)
     assert np.allclose(est.factors, factors)
@@ -120,7 +144,7 @@ def test_df_norm(one, two, lamb):
 )
 def test_df_costs(one, two, g_cost, q_cost):
     r"""Test that DoubleFactorization class returns correct costs."""
-    est = qml.resource.DoubleFactorization(one, two)
+    est = qml.resource.DoubleFactorization(one, two, chemist_notation=True)
 
     assert np.allclose(est.gates, g_cost)
     assert np.allclose(est.qubits, q_cost)
@@ -134,7 +158,7 @@ def test_df_costs(one, two, g_cost, q_cost):
 )
 def test_estimation_cost(norm, error, cost_ref):
     r"""Test that estimation_cost returns the correct values."""
-    cost = qml.resource.DoubleFactorization.estimation_cost(df, norm, error)
+    cost = qml.resource.DoubleFactorization.estimation_cost(norm, error)
 
     assert cost == cost_ref
 
@@ -151,7 +175,7 @@ def test_estimation_cost(norm, error, cost_ref):
 def test_estimation_cost_error(norm, error):
     r"""Test that estimation_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be greater than zero"):
-        qml.resource.DoubleFactorization.estimation_cost(df, norm, error)
+        qml.resource.DoubleFactorization.estimation_cost(norm, error)
 
 
 @pytest.mark.parametrize(
@@ -187,7 +211,7 @@ def test_estimation_cost_error(norm, error):
 )
 def test_qrom_cost(constants, cost_ref, k_ref):
     r"""Test that _qrom_cost returns the correct values."""
-    cost, k = qml.resource.DoubleFactorization._qrom_cost(df, constants)
+    cost, k = qml.resource.DoubleFactorization._qrom_cost(constants)
 
     assert cost == cost_ref
     assert k == k_ref
@@ -202,7 +226,7 @@ def test_qrom_cost(constants, cost_ref, k_ref):
 def test_unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that unitary_cost returns the correct value."""
     cost = qml.resource.DoubleFactorization.unitary_cost(
-        df, n, rank_r, rank_m, rank_max, br, alpha, beta
+        n, rank_r, rank_m, rank_max, br, alpha, beta
     )
 
     assert cost == cost_ref
@@ -230,9 +254,7 @@ def test_unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
 def test_unitary_cost_error(n, rank_r, rank_m, rank_max, br, alpha, beta):
     r"""Test that unitary_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be a positive"):
-        qml.resource.DoubleFactorization.unitary_cost(
-            df, n, rank_r, rank_m, rank_max, br, alpha, beta
-        )
+        qml.resource.DoubleFactorization.unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
 
 
 @pytest.mark.parametrize(
@@ -244,7 +266,7 @@ def test_unitary_cost_error(n, rank_r, rank_m, rank_max, br, alpha, beta):
 def test_gate_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that gate_cost returns the correct value."""
     cost = qml.resource.DoubleFactorization.gate_cost(
-        df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
+        n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
     )
 
     assert cost == cost_ref
@@ -277,7 +299,7 @@ def test_gate_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, be
     r"""Test that gate_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
         qml.resource.DoubleFactorization.gate_cost(
-            df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
+            n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
         )
 
 
@@ -290,7 +312,7 @@ def test_gate_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, be
 def test_qubit_cost(n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta, cost_ref):
     r"""Test that qubit_cost returns the correct value."""
     cost = qml.resource.DoubleFactorization.qubit_cost(
-        df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
+        n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
     )
 
     assert cost == cost_ref
@@ -323,7 +345,7 @@ def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, b
     r"""Test that qubit_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
         qml.resource.DoubleFactorization.qubit_cost(
-            df, n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
+            n, norm, error, rank_r, rank_m, rank_max, br, alpha, beta
         )
 
 
@@ -354,6 +376,6 @@ def test_qubit_cost_error(n, norm, error, rank_r, rank_m, rank_max, br, alpha, b
 )
 def test_df_norm(one, two, eigvals, lamb_ref):
     r"""Test that the norm function returns the correct 1-norm."""
-    lamb = qml.resource.DoubleFactorization.norm(df, one, two, eigvals)
+    lamb = qml.resource.DoubleFactorization.norm(one, two, eigvals)
 
     assert np.allclose(lamb, lamb_ref)

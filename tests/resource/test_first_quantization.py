@@ -19,12 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-n_fq = 10000
-eta_fq = 156
-omega_fq = 1145.166
-
-fq = qml.resource.FirstQuantization(n_fq, eta_fq, omega_fq)
-
 
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "charge", "br"),
@@ -47,7 +41,7 @@ def test_fq_params(n, eta, omega, error, charge, br):
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "lamb", "g_cost", "q_cost"),
     [
-        (10000, 156, 1145.166, 281053.7561247674, 3386558458840, 3716),
+        (10000, 156, 1145.166, 281053.7561247674, 3942519392660, 3716),
     ],
 )
 def test_fq_vals(n, eta, omega, lamb, g_cost, q_cost):
@@ -71,7 +65,7 @@ def test_fq_vals(n, eta, omega, lamb, g_cost, q_cost):
 )
 def test_cost_qrom(lz, cost_ref):
     r"""Test that _cost_qrom returns the correct value."""
-    cost = qml.resource.FirstQuantization._cost_qrom(fq, lz)
+    cost = qml.resource.FirstQuantization._cost_qrom(lz)
 
     assert cost == cost_ref
 
@@ -86,18 +80,18 @@ def test_cost_qrom(lz, cost_ref):
 def test_cost_qrom_error(lz):
     r"""Test that _cost_qrom raises an error with incorrect input."""
     with pytest.raises(ValueError, match="sum of the atomic numbers must be a positive integer"):
-        qml.resource.FirstQuantization._cost_qrom(fq, lz)
+        qml.resource.FirstQuantization._cost_qrom(lz)
 
 
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 7, 0, 12325),
+        (10000, 156, 1145.166, 0.001, 7, 0, 14387),
     ],
 )
 def test_unitary_cost(n, eta, omega, error, br, charge, cost_ref):
     r"""Test that unitary_cost returns the correct value."""
-    cost = qml.resource.FirstQuantization.unitary_cost(fq, n, eta, omega, error, br, charge)
+    cost = qml.resource.FirstQuantization.unitary_cost(n, eta, omega, error, br, charge)
 
     assert cost == cost_ref
 
@@ -118,45 +112,45 @@ def test_unitary_cost(n, eta, omega, error, br, charge, cost_ref):
 def test_unitary_cost_error(n, eta, omega, error, br, charge):
     r"""Test that unitary_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resource.FirstQuantization.unitary_cost(fq, n, eta, omega, error, br, charge)
+        qml.resource.FirstQuantization.unitary_cost(n, eta, omega, error, br, charge)
 
 
 @pytest.mark.parametrize(
-    ("error", "cost_ref"),
+    ("n", "eta", "omega", "error", "cost_ref"),
     [
         # the reference cost is computed manually
-        (0.001, 441677008),
+        (10000, 156, 1145.166, 0.001, 441677008),
     ],
 )
-def test_estimation_cost(error, cost_ref):
+def test_estimation_cost(n, eta, omega, error, cost_ref):
     r"""Test that estimation_cost returns the correct values."""
-    cost = qml.resource.FirstQuantization.estimation_cost(fq, error)
+    cost = qml.resource.FirstQuantization.estimation_cost(n, eta, omega, error)
 
     assert cost == cost_ref
 
 
 @pytest.mark.parametrize(
-    "error",
+    ("n", "eta", "omega", "error"),
     [
-        0.0,
-        -1.0,
+        (10000, 156, 1145.166, 0.0),
+        (10000, 156, 1145.166, -1.0),
     ],
 )
-def test_estimation_cost_error(error):
+def test_estimation_cost_error(n, eta, omega, error):
     r"""Test that estimation_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be greater than zero"):
-        qml.resource.FirstQuantization.estimation_cost(fq, error)
+        qml.resource.FirstQuantization.estimation_cost(n, eta, omega, error)
 
 
 @pytest.mark.parametrize(
     ("n", "eta", "omega", "error", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 7, 0, 5443669123600),
+        (10000, 156, 1145.166, 0.001, 7, 0, 6354407114096),
     ],
 )
 def test_gate_cost(n, eta, omega, error, br, charge, cost_ref):
     r"""Test that gate_cost returns the correct value."""
-    cost = qml.resource.FirstQuantization.gate_cost(fq, n, eta, omega, error, br, charge)
+    cost = qml.resource.FirstQuantization.gate_cost(n, eta, omega, error, br, charge)
 
     assert cost == cost_ref
 
@@ -177,18 +171,18 @@ def test_gate_cost(n, eta, omega, error, br, charge, cost_ref):
 def test_gate_cost_error(n, eta, omega, error, br, charge):
     r"""Test that gate_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resource.FirstQuantization.gate_cost(fq, n, eta, omega, error, br, charge)
+        qml.resource.FirstQuantization.gate_cost(n, eta, omega, error, br, charge)
 
 
 @pytest.mark.parametrize(
-    ("n", "eta", "omega", "error", "charge", "cost_ref"),
+    ("n", "eta", "omega", "error", "br", "charge", "cost_ref"),
     [
-        (10000, 156, 1145.166, 0.001, 0, 3747),
+        (10000, 156, 1145.166, 0.001, 7, 0, 3747),
     ],
 )
-def test_qubit_cost(n, eta, omega, error, charge, cost_ref):
+def test_qubit_cost(n, eta, omega, error, br, charge, cost_ref):
     r"""Test that qubit_cost returns the correct value."""
-    cost = qml.resource.FirstQuantization.qubit_cost(fq, n, eta, omega, error, charge)
+    cost = qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error, br, charge)
 
     assert cost == cost_ref
 
@@ -207,7 +201,7 @@ def test_qubit_cost(n, eta, omega, error, charge, cost_ref):
 def test_qubit_cost_error(n, eta, omega, error, charge):
     r"""Test that qubit_cost raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resource.FirstQuantization.qubit_cost(fq, n, eta, omega, error, charge)
+        qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error, charge)
 
 
 @pytest.mark.parametrize(
@@ -220,7 +214,7 @@ def test_qubit_cost_error(n, eta, omega, error, charge):
 )
 def test_success_prob(n_basis, br, prob_ref):
     r"""Test that success_prob returns the correct value."""
-    prob = qml.resource.FirstQuantization.success_prob(fq, n_basis, br)
+    prob = qml.resource.FirstQuantization.success_prob(n_basis, br)
 
     assert prob == prob_ref
 
@@ -236,7 +230,7 @@ def test_success_prob(n_basis, br, prob_ref):
 def test_success_prob_error(n_basis, br):
     r"""Test that success_prob raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be a positive"):
-        qml.resource.FirstQuantization.success_prob(fq, n_basis, br)
+        qml.resource.FirstQuantization.success_prob(n_basis, br)
 
 
 @pytest.mark.parametrize(
@@ -247,7 +241,7 @@ def test_success_prob_error(n_basis, br):
 )
 def test_norm(n, eta, omega, error, br, charge, norm_ref):
     r"""Test that norm returns the correct value."""
-    norm = qml.resource.FirstQuantization.norm(fq, n, eta, omega, error, br, charge)
+    norm = qml.resource.FirstQuantization.norm(n, eta, omega, error, br, charge)
 
     assert np.allclose(norm, norm_ref)
 
@@ -268,4 +262,4 @@ def test_norm(n, eta, omega, error, br, charge, norm_ref):
 def test_norm_error(n, eta, omega, error, br, charge):
     r"""Test that norm raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
-        qml.resource.FirstQuantization.norm(fq, n, eta, omega, error, br, charge)
+        qml.resource.FirstQuantization.norm(n, eta, omega, error, br, charge)
