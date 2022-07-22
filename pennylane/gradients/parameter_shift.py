@@ -139,6 +139,7 @@ def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape)
 
     return recipe, at_least_one_unshifted, unshifted_coeff
 
+
 def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
     """Use shifted tape evaluations and parameter-shift rule coefficients
     to evaluate a gradient result."""
@@ -161,15 +162,14 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
         # (index 1) needs to be contracted. For Torch, this is not true because the
         # output of the broadcasted tape is flattened.
         axis = 1
-    g = qml.math.tensordot(
-        res, qml.math.convert_like(coeffs, res), [[axis], [0]]
-    )
+    g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
 
     if unshifted_coeff is not None:
         # add the unshifted term
         g = g + unshifted_coeff * r0
 
     return g
+
 
 def _get_operation_recipe(tape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
