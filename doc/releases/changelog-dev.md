@@ -3,8 +3,6 @@
 # Release 0.25.0-dev (development release)
 
 <h3>New features since last release</h3>
-* Fixed error of IsingXY gate definition in latex.
-  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
@@ -313,6 +311,8 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes</h3>
+* Updated IsingXY gate doc-string.
+  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
 * Fixes a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
