@@ -242,6 +242,24 @@ class TestMatrix:
         true_mat = scalar * ccnot
         assert np.allclose(mat, true_mat)
 
+    templates_and_mats = (
+        (qml.QFT(wires=[0, 1, 2]), qml.QFT(wires=[0, 1, 2]).compute_matrix(3)),
+        (
+            qml.GroverOperator(wires=[0, 1, 2]),
+            qml.GroverOperator(wires=[0, 1, 2]).compute_matrix(3, range(3)),
+        ),
+    )
+
+    @pytest.mark.parametrize("template, mat", templates_and_mats)
+    def test_sprod_templates(self, template, mat):
+        """Test that we can scale templates and the generated matrix is correct."""
+        scalar = 3.14
+        sprod_op = SProd(scalar, template)
+
+        expected_mat = sprod_op.matrix()
+        true_mat = scalar * mat
+        assert np.allclose(expected_mat, true_mat)
+
     def test_sprod_qchem_ops(self):
         """Test that we can scale qchem operations and the generated matrix is correct."""
         wires = [0, 1, 2, 3]
