@@ -1211,7 +1211,7 @@ class Operator(abc.ABC):
             if other == 0:
                 return self
             return qml.ops.Sum(  # pylint: disable=no-member
-                self, other * qml.Identity(wires=self.wires)  # TODO: Use SProd when available
+                self, qml.s_prod(scalar=other, operator=qml.Identity(wires=self.wires))
             )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
@@ -1231,7 +1231,7 @@ class Operator(abc.ABC):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return -1 * self  # TODO: Use SProd when available
+        return qml.s_prod(scalar=-1, operator=self)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""

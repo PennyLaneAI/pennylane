@@ -179,7 +179,7 @@
          [1., 5.]])
   ```
 
-* A `SProd` symbolic class is added that allows users to represent the scalar product 
+* A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
   We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
