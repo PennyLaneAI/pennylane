@@ -616,15 +616,14 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        if qml.math.ndim(state_probability) == 2:
+        if self._ndim(state_probability) == 2:
             # np.random.choice does not support broadcasting as needed here.
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
         return np.random.choice(basis_states, shots, p=state_probability)
 
-    @staticmethod
-    def generate_basis_states(num_wires, dtype=np.uint32):
+    def generate_basis_states(self, num_wires, dtype=np.uint32):
         """
         Generates basis states in binary representation according to the number
         of wires specified.
@@ -652,7 +651,7 @@ class QubitDevice(Device):
         """
         if 2 < num_wires < 32:
             states_base_ten = np.arange(2**num_wires, dtype=dtype)
-            return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
+            return self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1), repeat=num_wires)
@@ -1068,6 +1067,27 @@ class QubitDevice(Device):
         return np.squeeze(np.var(samples, axis=axis))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        """Return samples of an observable.
+
+        Args:
+            observable (Observable): the observable to sample
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+            counts (bool): whether counts (``True``) or raw samples (``False``)
+                should be returned
+
+        Raises:
+            EigvalsUndefinedError: if no information is available about the
+                eigenvalues of the observable
+
+        Returns:
+            Union[array[float], dict, list[dict]]: samples in an array of
+            dimension ``(shots,)`` or counts
+        """
+
         def _samples_to_counts(samples, no_observable_provided):
             """Group the obtained samples into a dictionary.
 
@@ -1107,7 +1127,7 @@ class QubitDevice(Device):
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * sub_samples[..., device_wires[0]]
 
-        elif no_observable_provided:  # if no observable was provided then return the raw samples
+        elif no_observable_provided:
             # if no observable was provided then return the raw samples
             if len(observable.wires) != 0:
                 # if wires are provided, then we only return samples from those wires

@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device when using broadcasting.
 """
+from itertools import product
 import cmath
 
 # pylint: disable=protected-access,cell-var-from-loop
@@ -24,11 +25,7 @@ import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
 from pennylane.wires import Wires, WireError
-
-U_toffoli = np.diag([1 for i in range(8)])
-U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
-
-H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+from gate_data import *
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -38,42 +35,49 @@ INVSQ2 = 1 / math.sqrt(2)
 T_PHASE = np.exp(1j * np.pi / 4)
 T_PHASE_C = np.exp(-1j * np.pi / 4)
 
+# Variant of diag that does not take the diagonal of a 2d array, but broadcasts diag.
+diag = lambda x: np.array([np.diag(_x) for _x in x]) if np.ndim(x) == 2 else np.diag(x)
+
+
+def mat_vec(mat, vec, par=None, inv=False):
+    if par is not None:
+        scalar = [np.isscalar(p) for p in par]
+        if not all(scalar):
+            batch_size = len(par[scalar.index(False)])
+            par = [tuple(p if s else p[i] for p, s in zip(par, scalar)) for i in range(batch_size)]
+            mat = np.array([mat(*_par) for _par in par])
+        else:
+            mat = mat(*par)
+
+    if inv:
+        mat = np.moveaxis(mat.conj(), -2, -1)
+
+    return np.einsum("...ij,...j->...i", mat, vec)
+
 
 class TestApplyBroadcasted:
     """Tests that operations and inverses of certain operations are applied to a broadcasted
     state/with broadcasted parameters (or both) correctly, or that the proper errors are raised.
     """
 
-    triple_state = [[1, 0], [INVSQ2, INVSQ2], [0, 1]]
+    triple_state = np.array([[1, 0], [INVSQ2, INVSQ2], [0, 1]])
     test_data_no_parameters = [
-        (qml.PauliX, triple_state, np.array([[0, 1], [INVSQ2, INVSQ2], [1, 0]])),
-        (qml.PauliY, triple_state, np.array([[0, 1j], [-1j * INVSQ2, 1j * INVSQ2], [-1j, 0]])),
-        (qml.PauliZ, triple_state, np.array([[1, 0], [INVSQ2, -1 * INVSQ2], [0, -1]])),
-        (qml.S, triple_state, np.array([[1, 0], [INVSQ2, 1j * INVSQ2], [0, 1j]])),
-        (qml.T, triple_state, np.array([[1, 0], [INVSQ2, T_PHASE * INVSQ2], [0, T_PHASE]])),
-        (
-            qml.Hadamard,
-            triple_state,
-            np.array([[INVSQ2, INVSQ2], [1, 0], [INVSQ2, -1 * INVSQ2]]),
-        ),
+        (qml.PauliX, triple_state, mat_vec(X, triple_state)),
+        (qml.PauliY, triple_state, mat_vec(Y, triple_state)),
+        (qml.PauliZ, triple_state, mat_vec(Z, triple_state)),
+        (qml.S, triple_state, mat_vec(S, triple_state)),
+        (qml.T, triple_state, mat_vec(T, triple_state)),
+        (qml.Hadamard, triple_state, mat_vec(H, triple_state)),
         (qml.Identity, triple_state, triple_state),
     ]
 
     test_data_no_parameters_inverses = [
-        (qml.PauliX, triple_state, np.array([[0, 1], [INVSQ2, INVSQ2], [1, 0]])),
-        (qml.PauliY, triple_state, np.array([[0, 1j], [-1j * INVSQ2, 1j * INVSQ2], [-1j, 0]])),
-        (qml.PauliZ, triple_state, np.array([[1, 0], [INVSQ2, -1 * INVSQ2], [0, -1]])),
-        (qml.S, triple_state, np.array([[1, 0], [INVSQ2, -1j * INVSQ2], [0, -1j]])),
-        (
-            qml.T,
-            triple_state,
-            np.array([[1, 0], [INVSQ2, T_PHASE_C * INVSQ2], [0, T_PHASE_C]]),
-        ),
-        (
-            qml.Hadamard,
-            triple_state,
-            np.array([[INVSQ2, INVSQ2], [1, 0], [INVSQ2, -1 * INVSQ2]]),
-        ),
+        (qml.PauliX, triple_state, mat_vec(X, triple_state, inv=True)),
+        (qml.PauliY, triple_state, mat_vec(Y, triple_state, inv=True)),
+        (qml.PauliZ, triple_state, mat_vec(Z, triple_state, inv=True)),
+        (qml.S, triple_state, mat_vec(S, triple_state, inv=True)),
+        (qml.T, triple_state, mat_vec(T, triple_state, inv=True)),
+        (qml.Hadamard, triple_state, mat_vec(H, triple_state, inv=True)),
         (qml.Identity, triple_state, triple_state),
     ]
 
@@ -103,86 +107,21 @@ class TestApplyBroadcasted:
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
-    test_data_two_wires_no_parameters = [
-        (qml.CNOT, [[0, 0.6, 0, 0.8]], [[0, 0.6, 0.8, 0]]),
-        (
-            qml.CNOT,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, 0, -INVSQ2, INVSQ2], [0, 0.6, 0.8, 0]],
-        ),
-        (qml.SWAP, [[0, 0.6, 0, 0.8]], [[0, 0, 0.6, 0.8]]),
-        (
-            qml.SWAP,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, INVSQ2, 0, -INVSQ2], [0, 0, 0.6, 0.8]],
-        ),
-        (qml.CZ, [[0, 0.6, 0, 0.8]], [[0, 0.6, 0, -0.8]]),
-        (
-            qml.CZ,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, 0, INVSQ2, INVSQ2], [0, 0.6, 0, -0.8]],
-        ),
+    single_state = np.array([[0, 0.6, 0, 0.8]])
+    triple_state = np.array([[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]])
+
+    test_data_two_wires_no_param = [
+        (qml_op, state, mat_vec(mat_op, state))
+        for (qml_op, mat_op), state in product(
+            zip(
+                [qml.CNOT, qml.SWAP, qml.CZ, qml.ISWAP, qml.SISWAP, qml.SQISW],
+                [CNOT, SWAP, CZ, ISWAP, SISWAP, SISWAP],
+            ),
+            [single_state, triple_state],
+        )
     ]
 
-    test_data_iswap = [
-        (qml.ISWAP, [[0, 0.6, 0, 0.8]], [[0, 0, 0.6j, 0.8]]),
-        (
-            qml.ISWAP,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, 1j * INVSQ2, 0, -INVSQ2], [0, 0, 0.6j, 0.8]],
-        ),
-    ]
-
-    test_data_iswap_inv = [
-        (qml.ISWAP, [[0, 0.6, 0, 0.8]], [[0, 0, -0.6j, 0.8]]),
-        (
-            qml.ISWAP,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, -1j * INVSQ2, 0, -INVSQ2], [0, 0, -0.6j, 0.8]],
-        ),
-    ]
-
-    test_data_siswap = [
-        (qml.SISWAP, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQ2, 0.6j * INVSQ2, 0.8]]),
-        (
-            qml.SISWAP,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, 0.5j, 0.5, -INVSQ2], [0, 0.6 * INVSQ2, 0.6j * INVSQ2, 0.8]],
-        ),
-    ]
-
-    test_data_sqisw = [
-        (qml.SQISW, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQ2, 0.6j * INVSQ2, 0.8]]),
-        (
-            qml.SQISW,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, 0.5j, 0.5, -INVSQ2], [0, 0.6 * INVSQ2, 0.6j * INVSQ2, 0.8]],
-        ),
-    ]
-
-    test_data_siswap_inv = [
-        (qml.SISWAP, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQ2, -0.6j * INVSQ2, 0.8]]),
-        (
-            qml.SISWAP,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, -0.5j, 0.5, -INVSQ2], [0, 0.6 * INVSQ2, -0.6j * INVSQ2, 0.8]],
-        ),
-    ]
-
-    test_data_sqisw_inv = [
-        (qml.SQISW, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQ2, -0.6j * INVSQ2, 0.8]]),
-        (
-            qml.SQISW,
-            [[1, 0, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0.6, 0, 0.8]],
-            [[1, 0, 0, 0], [0, -0.5j, 0.5, -INVSQ2], [0, 0.6 * INVSQ2, -0.6j * INVSQ2, 0.8]],
-        ),
-    ]
-
-    all_two_wires_no_parameters = (
-        test_data_two_wires_no_parameters + test_data_iswap + test_data_siswap + test_data_sqisw
-    )
-
-    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
+    @pytest.mark.parametrize("operation,input,expected_output", test_data_two_wires_no_param)
     def test_apply_operation_two_wires_no_parameters_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
@@ -202,14 +141,18 @@ class TestApplyBroadcasted:
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
-    all_two_wires_no_parameters_inv = (
-        test_data_two_wires_no_parameters
-        + test_data_iswap_inv
-        + test_data_siswap_inv
-        + test_data_sqisw_inv
-    )
+    test_data_two_wires_no_param_inv = [
+        (qml_op, state, mat_vec(mat_op, state, inv=True))
+        for (qml_op, mat_op), state in product(
+            zip(
+                [qml.CNOT, qml.SWAP, qml.CZ, qml.ISWAP, qml.SISWAP, qml.SQISW],
+                [CNOT, SWAP, CZ, ISWAP, SISWAP, SISWAP],
+            ),
+            [single_state, triple_state],
+        )
+    ]
 
-    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
+    @pytest.mark.parametrize("operation,input,expected_output", test_data_two_wires_no_param_inv)
     def test_apply_operation_two_wires_no_parameters_inverse_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
@@ -229,23 +172,15 @@ class TestApplyBroadcasted:
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
-    test_data_three_wires_no_parameters = [
-        (
-            qml.CSWAP,
-            [
-                [0.6, 0, 0, 0, 0, 0, 0.8, 0],
-                [-INVSQ2, INVSQ2, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0.5, 0.5, 0.5, -0.5, 0, 0],
-                [0, 0, 0.5, 0, 0.5, -0.5, 0, 0.5],
-            ],
-            [
-                [0.6, 0, 0, 0, 0, 0.8, 0, 0],
-                [-INVSQ2, INVSQ2, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0.5, 0.5, 0.5, 0, -0.5, 0],
-                [0, 0, 0.5, 0, 0.5, 0, -0.5, 0.5],
-            ],
-        ),
-    ]
+    quad_state = np.array(
+        [
+            [0.6, 0, 0, 0, 0, 0, 0.8, 0],
+            [-INVSQ2, INVSQ2, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0.5, 0.5, 0.5, -0.5, 0, 0],
+            [0, 0, 0.5, 0, 0.5, -0.5, 0, 0.5],
+        ]
+    )
+    test_data_three_wires_no_parameters = [(qml.CSWAP, quad_state, mat_vec(CSWAP, quad_state))]
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
     def test_apply_operation_three_wires_no_parameters_broadcasted(
@@ -267,7 +202,11 @@ class TestApplyBroadcasted:
         )
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
-    @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
+    test_data_three_wires_no_param_inv = [
+        (qml.CSWAP, quad_state, mat_vec(CSWAP, quad_state, inv=True))
+    ]
+
+    @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_param_inv)
     def test_apply_operation_three_wires_no_parameters_inverse_broadcasted(
         self, qubit_device_3_wires, tol, operation, input, expected_output
     ):
@@ -287,25 +226,19 @@ class TestApplyBroadcasted:
         )
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
+    single_state = np.array([[0, 0, 1, 0]])
+    triple_state = np.array(
+        [
+            [0, 0, 1, 0],
+            [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
+            [0.5, -0.5, 0.5j, -0.5j],
+        ]
+    )
+
     # TODO[dwierichs]: add tests with qml.BaisState once `_apply_basis_state` supports broadcasting
     @pytest.mark.parametrize(
         "operation,expected_output,par",
-        [
-            (qml.QubitStateVector, [[0, 0, 1, 0]], [[0, 0, 1, 0]]),
-            (
-                qml.QubitStateVector,
-                [
-                    [0, 0, 1, 0],
-                    [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
-                    [0.5, -0.5, 0.5j, -0.5j],
-                ],
-                [
-                    [0, 0, 1, 0],
-                    [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
-                    [0.5, -0.5, 0.5j, -0.5j],
-                ],
-            ),
-        ],
+        [(qml.QubitStateVector, s, s) for s in [single_state, triple_state]],
     )
     def test_apply_operation_state_preparation_broadcasted(
         self, qubit_device_2_wires, tol, operation, expected_output, par
@@ -324,552 +257,110 @@ class TestApplyBroadcasted:
             rtol=0,
         )
 
+    # Collect test cases for single-scalar-parameter single-wire operations and their inverses
+    # For each operation, we choose broadcasted state, broadcasted params, or both
+    state_1 = np.array([0.6, 0.8j])
+    state_5 = np.array([[INVSQ2, INVSQ2], [0.6, 0.8], [0, 1j], [-1, 0], [-INVSQ2, INVSQ2]])
+    scalar_par_1 = [np.pi / 2]
+    scalar_par_5 = [[np.pi / 3, np.pi, 0.5, -1.2, -3 * np.pi / 2]]
     test_data_single_wire_with_parameters = [
-        (  # broadcasted parameters
-            qml.PhaseShift,
-            [INVSQ2, INVSQ2],
-            [[INVSQ2, np.exp(1j * np.pi / 2 * i) * INVSQ2] for i in range(4)],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.PhaseShift,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1j]],
-            [np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.PhaseShift,
-            [[INVSQ2, INVSQ2], [0.6, 0.8], [0, 1]],
-            [[INVSQ2, 1j * INVSQ2], [0.6, -0.8], [0, -1j]],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.RX,
-            [1, 0],
-            [[1, 0], [INVSQ2, -1j * INVSQ2], [0, -1j], [-INVSQ2, -1j * INVSQ2]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.RX,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, T_PHASE * INVSQ2],
-                [INVSQ2, 1j * INVSQ2],
-                [1j * INVSQ2, INVSQ2],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.RX,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -T_PHASE * INVSQ2],
-                [-0.8j, -0.6j],
-                [-1j * INVSQ2, -INVSQ2],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.RY,
-            [1, 0],
-            [[1, 0], [INVSQ2, INVSQ2], [0, 1], [-INVSQ2, INVSQ2]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.RY,
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, 1j * T_PHASE * INVSQ2],
-                [INVSQ2, -1 * INVSQ2],
-                [INVSQ2, INVSQ2],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.RY,
-            [[INVSQ2, -1j * INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -1j * T_PHASE * INVSQ2],
-                [-0.8, 0.6],
-                [-INVSQ2, -INVSQ2],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.RZ,
-            [1, 0],
-            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.RZ,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
-                [T_PHASE, 0],
-                [0, T_PHASE_C],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.RZ,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
-                [-0.6j, 0.8j],
-                [0, -T_PHASE_C],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.MultiRZ,
-            [1, 0],
-            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.MultiRZ,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
-                [T_PHASE, 0],
-                [0, T_PHASE_C],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.MultiRZ,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
-                [-0.6j, 0.8j],
-                [0, -T_PHASE_C],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters acting like RZ with first par
-            qml.Rot,
-            [1, 0],
-            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
-            [[np.pi / 2 * i for i in range(4)], 0, 0],
-        ),
-        (  # broadcasted state acting like RZ with first par
-            qml.Rot,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
-                [T_PHASE, 0],
-                [0, T_PHASE_C],
-            ],
-            [-np.pi / 2, 0, 0],
-        ),
-        (  # broadcasted state and parameters acting like RZ with first par
-            qml.Rot,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
-                [-0.6j, 0.8j],
-                [0, -T_PHASE_C],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)], 0, 0],
-        ),
-        (  # broadcasted parameters acting like RZ with last par
-            qml.Rot,
-            [1, 0],
-            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
-            [0, 0, [np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state acting like RZ with last par
-            qml.Rot,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
-                [T_PHASE, 0],
-                [0, T_PHASE_C],
-            ],
-            [0, 0, -np.pi / 2],
-        ),
-        (  # broadcasted state and parameters acting like RZ with last par
-            qml.Rot,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
-                [-0.6j, 0.8j],
-                [0, -T_PHASE_C],
-            ],
-            [0, 0, [np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters acting like RY
-            qml.Rot,
-            [1, 0],
-            [[1, 0], [INVSQ2, INVSQ2], [0, 1], [-INVSQ2, INVSQ2]],
-            [0, [np.pi / 2 * i for i in range(4)], 0],
-        ),
-        (  # broadcasted state acting like RY
-            qml.Rot,
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, 1j * T_PHASE * INVSQ2],
-                [INVSQ2, -1 * INVSQ2],
-                [INVSQ2, INVSQ2],
-            ],
-            [0, -np.pi / 2, 0],
-        ),
-        (  # broadcasted state and parameters acting like RY
-            qml.Rot,
-            [[INVSQ2, -1j * INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -1j * T_PHASE * INVSQ2],
-                [-0.8, 0.6],
-                [-INVSQ2, -INVSQ2],
-            ],
-            [0, [np.pi / 2 * i for i in range(1, 4)], 0],
-        ),
-        (  # broadcasted parameters mixed rotations
-            qml.Rot,
-            [1, 0],
-            [
-                [-1j, 0],
-                [-1j * T_PHASE_C * INVSQ2, 1j * T_PHASE_C * INVSQ2],
-                [0, 1],
-                [-1j * T_PHASE * INVSQ2, -1j * T_PHASE * INVSQ2],
-            ],
-            [[np.pi / 2 * i for i in range(4)], [np.pi / 2 * i for i in range(4)], np.pi],
-        ),
-        (  # broadcasted state mixed rotations
-            qml.Rot,
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
-            [
-                [0, -1],
-                [-1j * INVSQ2, -1 * INVSQ2],
-                [INVSQ2, 1j * INVSQ2],
-            ],
-            [np.pi / 2, -np.pi / 2, np.pi / 2],
-        ),
-        (  # broadcasted parameters
-            qml.QubitUnitary,
-            [0.6, 0.8],
-            [
-                np.array([0.6 - 0.8j, -0.6j + 0.8]) * INVSQ2,
-                np.array([0.6 - 0.8, 0.6 + 0.8]) * INVSQ2,
-                np.array([0.6 - 0.6j, 0.8 + 0.8j]) * INVSQ2,
-            ],
-            [
-                [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
-                    np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
-                ]
-            ],
-        ),
-        (  # broadcasted state
-            qml.QubitUnitary,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, T_PHASE * INVSQ2],
-                [INVSQ2, 1j * INVSQ2],
-                [1j * INVSQ2, INVSQ2],
-            ],
-            [np.array([[1, 1j], [1j, 1]]) * INVSQ2],
-        ),
-        (  # broadcasted state and parameters
-            qml.QubitUnitary,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -T_PHASE * INVSQ2],
-                [-0.2 * INVSQ2, 1.4 * INVSQ2],
-                [0, T_PHASE],
-            ],
-            [
-                [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
-                    np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
-                ]
-            ],
-        ),
-        (  # broadcasted parameters
-            qml.DiagonalQubitUnitary,
-            [0.6, 0.8],
-            [[0.6, -0.8j], [np.exp(1j * 0.4) * 0.6, np.exp(1j * -0.4) * 0.8]],
-            [[[1, -1j], [np.exp(1j * 0.4), np.exp(1j * -0.4)]]],
-        ),
-        (  # broadcasted state
-            qml.DiagonalQubitUnitary,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [[INVSQ2, -1j * INVSQ2], [1, 0], [0, -1j]],
-            [[1, -1j]],
-        ),
-        (  # broadcasted state and parameters
-            qml.DiagonalQubitUnitary,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [[-1j * INVSQ2, -1j * INVSQ2], [-0.6, -0.8], [0, -T_PHASE]],
-            [[[-1j, 1j], [-1, -1], [T_PHASE, -T_PHASE]]],
-        ),
+        (qml_op, state, mat_vec(mat_op, state, par=par), par)
+        for (qml_op, mat_op), (state, par) in product(
+            zip(
+                [qml.PhaseShift, qml.RX, qml.RY, qml.RZ, qml.MultiRZ],
+                [Rphi, Rotx, Roty, Rotz, MultiRZ1],
+            ),
+            [(state_1, scalar_par_5), (state_5, scalar_par_1), (state_5, scalar_par_5)],
+        )
+    ]
+    test_data_single_wire_with_param_inv = [
+        (qml_op, state, mat_vec(mat_op, state, par=par, inv=True), par)
+        for (qml_op, mat_op), (state, par) in product(
+            zip(
+                [qml.PhaseShift, qml.RX, qml.RY, qml.RZ, qml.MultiRZ],
+                [Rphi, Rotx, Roty, Rotz, MultiRZ1],
+            ),
+            [(state_1, scalar_par_5), (state_5, scalar_par_1), (state_5, scalar_par_5)],
+        )
     ]
 
-    test_data_single_wire_with_parameters_inverses = [
-        (  # broadcasted parameters
-            qml.PhaseShift,
-            [INVSQ2, INVSQ2],
-            [[INVSQ2, np.exp(-1j * np.pi / 2 * i) * INVSQ2] for i in range(4)],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.PhaseShift,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [[INVSQ2, -1j * INVSQ2], [1, 0], [0, -1j]],
-            [np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.PhaseShift,
-            [[INVSQ2, INVSQ2], [0.6, 0.8], [0, 1]],
-            [[INVSQ2, -1j * INVSQ2], [0.6, -0.8], [0, 1j]],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.RX,
-            [1, 0],
-            [[1, 0], [INVSQ2, 1j * INVSQ2], [0, 1j], [-INVSQ2, 1j * INVSQ2]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.RX,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
+    # Add qml.QubitUnitary test cases
+    matrix_1_par_1 = [np.array([[1, 1j], [1j, 1]]) * INVSQ2]
+    matrix_1_par_5 = [
+        np.array(
             [
-                [T_PHASE_C * INVSQ2, T_PHASE_C * INVSQ2],
-                [INVSQ2, -1j * INVSQ2],
-                [-1j * INVSQ2, INVSQ2],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.RX,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -T_PHASE_C * INVSQ2],
-                [0.8j, 0.6j],
-                [1j * INVSQ2, -INVSQ2],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.RY,
-            [1, 0],
-            [[1, 0], [INVSQ2, -INVSQ2], [0, -1], [-INVSQ2, -INVSQ2]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.RY,
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, 1j * T_PHASE_C * INVSQ2],
-                [INVSQ2, INVSQ2],
-                [-INVSQ2, INVSQ2],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.RY,
-            [[INVSQ2, -1j * INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -1j * T_PHASE_C * INVSQ2],
-                [0.8, -0.6],
-                [INVSQ2, -INVSQ2],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.RZ,
-            [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.RZ,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
-                [T_PHASE_C, 0],
-                [0, T_PHASE],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.RZ,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
-                [0.6j, -0.8j],
-                [0, -T_PHASE],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.MultiRZ,
-            [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
-            [[np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state
-            qml.MultiRZ,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
-                [T_PHASE_C, 0],
-                [0, T_PHASE],
-            ],
-            [-np.pi / 2],
-        ),
-        (  # broadcasted state and parameters
-            qml.MultiRZ,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
-                [0.6j, -0.8j],
-                [0, -T_PHASE],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters acting like RZ with first par
-            qml.Rot,
-            [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
-            [[np.pi / 2 * i for i in range(4)], 0, 0],
-        ),
-        (  # broadcasted state acting like RZ with first par
-            qml.Rot,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
-                [T_PHASE_C, 0],
-                [0, T_PHASE],
-            ],
-            [-np.pi / 2, 0, 0],
-        ),
-        (  # broadcasted state and parameters acting like RZ with first par
-            qml.Rot,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
-                [0.6j, -0.8j],
-                [0, -T_PHASE],
-            ],
-            [[np.pi / 2 * i for i in range(1, 4)], 0, 0],
-        ),
-        (  # broadcasted parameters acting like RZ with last par
-            qml.Rot,
-            [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
-            [0, 0, [np.pi / 2 * i for i in range(4)]],
-        ),
-        (  # broadcasted state acting like RZ with last par
-            qml.Rot,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
-                [T_PHASE_C, 0],
-                [0, T_PHASE],
-            ],
-            [0, 0, -np.pi / 2],
-        ),
-        (  # broadcasted state and parameters acting like RZ with last par
-            qml.Rot,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
-                [0.6j, -0.8j],
-                [0, -T_PHASE],
-            ],
-            [0, 0, [np.pi / 2 * i for i in range(1, 4)]],
-        ),
-        (  # broadcasted parameters
-            qml.Rot,
-            [1, 0],
-            [[1, 0], [INVSQ2, -INVSQ2], [0, -1], [-INVSQ2, -INVSQ2]],
-            [0, [np.pi / 2 * i for i in range(4)], 0],
-        ),
-        (  # broadcasted state
-            qml.Rot,
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, 1j * T_PHASE_C * INVSQ2],
-                [INVSQ2, INVSQ2],
-                [-INVSQ2, INVSQ2],
-            ],
-            [0, -np.pi / 2, 0],
-        ),
-        (  # broadcasted state and parameters
-            qml.Rot,
-            [[INVSQ2, -1j * INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -1j * T_PHASE_C * INVSQ2],
-                [0.8, -0.6],
-                [INVSQ2, -INVSQ2],
-            ],
-            [0, [np.pi / 2 * i for i in range(1, 4)], 0],
-        ),
-        (  # broadcasted parameters
-            qml.QubitUnitary,
-            [0.6, 0.8],
-            [
-                np.array([0.6 + 0.8j, 0.6j + 0.8]) * INVSQ2,
-                np.array([1.4, 0.2]) * INVSQ2,
-                np.array([0.6 + 0.6j, 0.8 - 0.8j]) * INVSQ2,
-            ],
-            [
-                [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
-                    np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
-                ]
-            ],
-        ),
-        (  # broadcasted state
-            qml.QubitUnitary,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, T_PHASE_C * INVSQ2],
-                [INVSQ2, -1j * INVSQ2],
-                [-1j * INVSQ2, INVSQ2],
-            ],
-            [np.array([[1, 1j], [1j, 1]]) * INVSQ2],
-        ),
-        (  # broadcasted state and parameters
-            qml.QubitUnitary,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [
-                [T_PHASE_C * INVSQ2, -T_PHASE_C * INVSQ2],
-                [1.4 * INVSQ2, 0.2 * INVSQ2],
-                [0, T_PHASE_C],
-            ],
-            [
-                [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
-                    np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
-                ]
-            ],
-        ),
-        (  # broadcasted parameters
-            qml.DiagonalQubitUnitary,
-            [0.6, 0.8],
-            [[0.6, 0.8j], [np.exp(-1j * 0.4) * 0.6, np.exp(1j * 0.4) * 0.8]],
-            [[[1, -1j], [np.exp(1j * 0.4), np.exp(1j * -0.4)]]],
-        ),
-        (  # broadcasted state
-            qml.DiagonalQubitUnitary,
-            [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
-            [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1j]],
-            [[1, -1j]],
-        ),
-        (  # broadcasted state and parameters
-            qml.DiagonalQubitUnitary,
-            [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [[1j * INVSQ2, 1j * INVSQ2], [-0.6, -0.8], [0, -T_PHASE_C]],
-            [[[-1j, 1j], [-1, -1], [T_PHASE, -T_PHASE]]],
-        ),
+                np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
+                np.array([[1, -1], [1, 1]]) * INVSQ2,
+                np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
+                np.array([[1, 0], [0, -1]]),
+                T,
+            ]
+        )
     ]
+    test_data_single_wire_with_parameters += [
+        (qml.QubitUnitary, s, mat_vec(par[0], s), par)
+        for s, par in [
+            (state_1, matrix_1_par_5),
+            (state_5, matrix_1_par_1),
+            (state_5, matrix_1_par_5),
+        ]
+    ]
+    test_data_single_wire_with_param_inv += [
+        (qml.QubitUnitary, s, mat_vec(par[0], s, inv=True), par)
+        for s, par in [
+            (state_1, matrix_1_par_5),
+            (state_5, matrix_1_par_1),
+            (state_5, matrix_1_par_5),
+        ]
+    ]
+
+    # Add qml.DiagonalQubitUnitary test cases
+    diag_par_1 = [[np.exp(1j * 0.1), np.exp(1j * np.pi)]]
+    diag_par_5 = [
+        np.array(
+            [
+                [1, -1j],
+                [np.exp(1j * 0.4), np.exp(1j * -0.4)],
+                [np.exp(1j * 0.1), np.exp(1j * np.pi)],
+                [1.0, np.exp(1j * np.pi / 2)],
+                [1, 1],
+            ]
+        )
+    ]
+    test_data_single_wire_with_parameters += [
+        (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s), par)
+        for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
+    ]
+    test_data_single_wire_with_param_inv += [
+        (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s, inv=True), par)
+        for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
+    ]
+
+    # Add qml.Rot test cases
+    multi_par_1 = {
+        "rz_0": [0.632, 0, 0],
+        "ry": [0, 0.632, 0],
+        "rz_1": [0, 0, 0.632],
+        "mixed": [0.12, -2.468, 0.812],
+    }
+    multi_par_5 = {
+        "rz_0": [[np.pi / 2 * i for i in range(5)], 0, 0],
+        "ry": [0, [np.pi / 2 * i for i in range(5)], 0],
+        "rz_1": [0, 0, [np.pi / 2 * i for i in range(5)]],
+        "mixed": [[np.pi / 2 * i for i in range(5)], [np.pi / 2 * i for i in range(5)], np.pi],
+    }
+    for like in ["rz_0", "ry", "rz_1", "mixed"]:
+        states_and_pars = [
+            (state_1, multi_par_5[like]),
+            (state_5, multi_par_1[like]),
+            (state_5, multi_par_5[like]),
+        ]
+        test_data_single_wire_with_parameters += [
+            (qml.Rot, s, mat_vec(Rot3, s, par=par), par) for s, par in states_and_pars
+        ]
+        test_data_single_wire_with_param_inv += [
+            (qml.Rot, s, mat_vec(Rot3, s, par=par, inv=True), par) for s, par in states_and_pars
+        ]
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_single_wire_with_parameters
@@ -889,7 +380,7 @@ class TestApplyBroadcasted:
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par", test_data_single_wire_with_parameters_inverses
+        "operation,input,expected_output,par", test_data_single_wire_with_param_inv
     )
     def test_apply_operation_single_wire_with_parameters_inverse_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
@@ -905,424 +396,121 @@ class TestApplyBroadcasted:
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
+    # Collect test cases for single-scalar-parameter two-wires operations and their inverses
+    # For each operation, we choose broadcasted state, broadcasted params, or both
+    state_1 = np.array([0.6, 0.8j, -0.6, -0.8j]) * INVSQ2
+    state_5 = np.array(
+        [
+            [0, 1, 0, 0],
+            [0, 0, 0, 1],
+            [0, INVSQ2, INVSQ2, 0],
+            [0.5, 0.5j, -0.5, 0.5],
+            [0.6, 0, -0.8j, 0],
+        ]
+    )
+    scalar_par_1 = [np.pi / 2]
+    scalar_par_5 = [[np.pi / 3, np.pi, 0.5, -1.2, -3 * np.pi / 2]]
+    two_wires_scalar_par_ops = [
+        qml.CRX,
+        qml.CRY,
+        qml.CRZ,
+        qml.MultiRZ,
+        qml.IsingXX,
+        qml.IsingYY,
+        qml.IsingZZ,
+    ]
+    two_wires_scalar_par_mats = [CRotx, CRoty, CRotz, MultiRZ2, IsingXX, IsingYY, IsingZZ]
     test_data_two_wires_with_parameters = [
-        (  # broadcasted state
-            qml.CRX,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0, 1, 0, 0], [0, 0, -1j * INVSQ2, INVSQ2], [0, INVSQ2, 0.5, -0.5j]],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.CRX,
-            [0.5, 0.5, INVSQ2, 0],
-            [[0.5, 0.5, 0.5, -0.5j], [0.5, 0.5, 0, -1j * INVSQ2], [0.5, 0.5, -0.5, -0.5j]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.CRX,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0.5, 0.5, -0.5j, 0.5], [0, 0, -1j, 0], [0, INVSQ2, -0.5, -0.5j]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.CRY,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0, 1, 0, 0], [0, 0, -INVSQ2, INVSQ2], [0, INVSQ2, 0.5, 0.5]],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.CRY,
-            [0.5, 0.5, INVSQ2, 0],
-            [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0, INVSQ2], [0.5, 0.5, -0.5, 0.5]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.CRY,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0.5, 0.5, -0.5, 0.5], [0, 0, -1, 0], [0, INVSQ2, -0.5, 0.5]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.CRZ,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0, 1, 0, 0], [0, 0, 0, T_PHASE], [0, INVSQ2, INVSQ2 * T_PHASE_C, 0]],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.CRZ,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [0.5, 0.5, INVSQ2 * T_PHASE_C, 0],
-                [0.5, 0.5, -1j * INVSQ2, 0],
-                [0.5, 0.5, -T_PHASE * INVSQ2, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.CRZ,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0.5, 0.5, 0, INVSQ2 * T_PHASE], [0, 0, 0, 1j], [0, INVSQ2, -INVSQ2 * T_PHASE, 0]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.MultiRZ,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [INVSQ2, 0, INVSQ2, 0]],
-            [
-                [0, T_PHASE, 0, 0],
-                [0, 0, 0, T_PHASE_C],
-                [T_PHASE_C * INVSQ2, 0, T_PHASE * INVSQ2, 0],
-            ],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.MultiRZ,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [T_PHASE_C * 0.5, T_PHASE * 0.5, INVSQ2 * T_PHASE, 0],
-                [-0.5j, 0.5j, 1j * INVSQ2, 0],
-                [-0.5 * T_PHASE, -0.5 * T_PHASE_C, -T_PHASE_C * INVSQ2, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.MultiRZ,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [T_PHASE_C * 0.5, T_PHASE * 0.5, 0, INVSQ2 * T_PHASE_C],
-                [0, 0, 0, -1j],
-                [0, -T_PHASE_C * INVSQ2, -INVSQ2 * T_PHASE_C, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state - like CRY
-            qml.CRot,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0, 1, 0, 0], [0, 0, -INVSQ2, INVSQ2], [0, INVSQ2, 0.5, 0.5]],
-            (0, [np.pi / 2], 0),
-        ),
-        (  # broadcasted parameter - like CRY
-            qml.CRot,
-            [0.5, 0.5, INVSQ2, 0],
-            [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0, INVSQ2], [0.5, 0.5, -0.5, 0.5]],
-            (0, [np.pi / 2, np.pi, 3 * np.pi / 2], [0] * 3),
-        ),
-        (  # broadcasted state and parameter - like CRY
-            qml.CRot,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0.5, 0.5, -0.5, 0.5], [0, 0, -1, 0], [0, INVSQ2, -0.5, 0.5]],
-            ([0] * 3, [np.pi / 2, np.pi, 3 * np.pi / 2], 0),
-        ),
-        (  # broadcasted state - like CRZ
-            qml.CRot,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0, 1, 0, 0], [0, 0, 0, T_PHASE], [0, INVSQ2, INVSQ2 * T_PHASE_C, 0]],
-            ([np.pi / 2], 0, 0),
-        ),
-        (  # broadcasted parameter - like CRZ
-            qml.CRot,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [0.5, 0.5, INVSQ2 * T_PHASE_C, 0],
-                [0.5, 0.5, -1j * INVSQ2, 0],
-                [0.5, 0.5, -T_PHASE * INVSQ2, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2], 0, [0] * 3),
-        ),
-        (  # broadcasted state and parameter - like CRZ
-            qml.CRot,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0.5, 0.5, 0, INVSQ2 * T_PHASE], [0, 0, 0, 1j], [0, INVSQ2, -INVSQ2 * T_PHASE, 0]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2], [0] * 3, 0),
-        ),
-        (  # broadcasted state
-            qml.QubitUnitary,
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0.5, 0.5, -0.5, 0.5]],
-            [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0.5, 0, INVSQ2, 0.5]],
-            [
-                np.array(
-                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]]
-                )
-            ],
-        ),
-        (  # broadcasted parameter
-            qml.QubitUnitary,
-            [0.5, 0.5, -0.5, 0.5j],
-            [
-                [0.5, 0, INVSQ2, 0.5j],
-                [0.5, 0.5, -(0.5 + 0.5j) * INVSQ2, (-0.5 + 0.5j) * INVSQ2],
-                [0.5, 0.5, 0, 1j * INVSQ2],
-            ],
-            (
-                [
-                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
-                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0, INVSQ2, INVSQ2]],
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, INVSQ2, -1j * INVSQ2],
-                        [0, 0, -1j * INVSQ2, INVSQ2],
-                    ],
-                ],
-            ),
-        ),
-        (  # broadcasted state and parameter
-            qml.QubitUnitary,
-            [[0.5, 0.5, -0.5, 0.5j], [0, 0, 1j, 0], [INVSQ2, 0, 0, 1j * INVSQ2]],
-            [
-                [0.5, 0, INVSQ2, 0.5j],
-                [0, 0, 1j * INVSQ2, 1j * INVSQ2],
-                [INVSQ2, 0, 0.5, 0.5j],
-            ],
-            (
-                [
-                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
-                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0, INVSQ2, INVSQ2]],
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, INVSQ2, -1j * INVSQ2],
-                        [0, 0, -1j * INVSQ2, INVSQ2],
-                    ],
-                ],
-            ),
-        ),
-        (  # broadcasted state
-            qml.DiagonalQubitUnitary,
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0.5, 0.5, -0.5, 0.5]],
-            [[1j, 0, 0, 0], [0, -1j, 0, 0], [0.5j, -0.5j, 0.5, 0.5]],
-            [[1j, -1j, -1, 1]],
-        ),
-        (  # broadcasted parameter
-            qml.DiagonalQubitUnitary,
-            [0.5, 0.5, -0.5, 0.5j],
-            [[-0.5j, -0.5, -0.5, -0.5], [0.5, 0.5, -0.5, 0.5j], [-0.5, 0.5, 0.5, -0.5j]],
-            ([[-1j, -1, 1, 1j], [1, 1, 1, 1], [-1, 1, -1, -1]],),
-        ),
-        (  # broadcasted state and parameter
-            qml.DiagonalQubitUnitary,
-            [[0.5, 0.5, -0.5, 0.5j], [0, 0, 1j, 0], [INVSQ2, 0, 0, 1j * INVSQ2]],
-            [[-0.5j, -0.5, -0.5, -0.5], [0, 0, 1j, 0], [-INVSQ2, 0, 0, -1j * INVSQ2]],
-            ([[-1j, -1, 1, 1j], [1, 1, 1, 1], [-1, 1, -1, -1]],),
-        ),
-        (  # broadcasted state
-            qml.IsingXX,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [0, INVSQ2, -1j * INVSQ2, 0],
-                [-1j * INVSQ2, 0, 0, INVSQ2],
-                [0, 0.5 - 0.5j, 0.5 - 0.5j, 0],
-            ],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.IsingXX,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [0.5 * INVSQ2, 0.5 * INVSQ2 - 1j * 0.5, 0.5 - 0.5j * INVSQ2, -0.5j * INVSQ2],
-                [0, -1j * INVSQ2, -0.5j, -0.5j],
-                [-0.5 * INVSQ2, -0.5j - 0.5 * INVSQ2, -0.5j * INVSQ2 - 0.5, -0.5j * INVSQ2],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.IsingXX,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [0.5 * INVSQ2 - 0.5j, 0.5 * INVSQ2, -0.5j * INVSQ2, 0.5 - 0.5j * INVSQ2],
-                [-1j, 0, 0, 0],
-                [0, -0.5 - 0.5j, -0.5 - 0.5j, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.IsingYY,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [0, INVSQ2, -1j * INVSQ2, 0],
-                [1j * INVSQ2, 0, 0, INVSQ2],
-                [0, 0.5 - 0.5j, 0.5 - 0.5j, 0],
-            ],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.IsingYY,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [0.5 * INVSQ2, 0.5 * INVSQ2 - 1j * 0.5, 0.5 - 0.5j * INVSQ2, 0.5j * INVSQ2],
-                [0, -1j * INVSQ2, -0.5j, 0.5j],
-                [-0.5 * INVSQ2, -0.5j - 0.5 * INVSQ2, -0.5j * INVSQ2 - 0.5, 0.5j * INVSQ2],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.IsingYY,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [0.5 * INVSQ2 + 0.5j, 0.5 * INVSQ2, -0.5j * INVSQ2, 0.5 + 0.5j * INVSQ2],
-                [1j, 0, 0, 0],
-                [0, -0.5 - 0.5j, -0.5 - 0.5j, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.IsingZZ,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [INVSQ2, 0, INVSQ2, 0]],
-            [
-                [0, T_PHASE, 0, 0],
-                [0, 0, 0, T_PHASE_C],
-                [INVSQ2 * T_PHASE_C, 0, INVSQ2 * T_PHASE, 0],
-            ],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.IsingZZ,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [T_PHASE_C * 0.5, T_PHASE * 0.5, INVSQ2 * T_PHASE, 0],
-                [-0.5j, 0.5j, 1j * INVSQ2, 0],
-                [-0.5 * T_PHASE, -0.5 * T_PHASE_C, -T_PHASE_C * INVSQ2, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.IsingZZ,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [T_PHASE_C * 0.5, T_PHASE * 0.5, 0, INVSQ2 * T_PHASE_C],
-                [0, 0, 0, -1j],
-                [0, -T_PHASE_C * INVSQ2, -INVSQ2 * T_PHASE_C, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
+        (qml_op, state, mat_vec(mat_op, state, par=par), par)
+        for (qml_op, mat_op), (state, par) in product(
+            zip(two_wires_scalar_par_ops, two_wires_scalar_par_mats),
+            [(state_1, scalar_par_5), (state_5, scalar_par_1), (state_5, scalar_par_5)],
+        )
+    ]
+    test_data_two_wires_with_param_inv = [
+        (qml_op, state, mat_vec(mat_op, state, par=par, inv=True), par)
+        for (qml_op, mat_op), (state, par) in product(
+            zip(two_wires_scalar_par_ops, two_wires_scalar_par_mats),
+            [(state_1, scalar_par_5), (state_5, scalar_par_1), (state_5, scalar_par_5)],
+        )
     ]
 
-    test_data_two_wires_with_parameters_inverses = [
-        (  # broadcasted state
-            qml.CRX,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0, 1, 0, 0], [0, 0, 1j * INVSQ2, INVSQ2], [0, INVSQ2, 0.5, 0.5j]],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.CRX,
-            [0.5, 0.5, INVSQ2, 0],
-            [[0.5, 0.5, 0.5, 0.5j], [0.5, 0.5, 0, 1j * INVSQ2], [0.5, 0.5, -0.5, 0.5j]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.CRX,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [[0.5, 0.5, 0.5j, 0.5], [0, 0, 1j, 0], [0, INVSQ2, -0.5, 0.5j]],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.IsingYY,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+    # Add qml.CRot test cases
+    multi_par_1 = {
+        "rz_0": [0.632, 0, 0],
+        "ry": [0, 0.632, 0],
+        "rz_1": [0, 0, 0.632],
+        "mixed": [0.12, -2.468, 0.812],
+    }
+    multi_par_5 = {
+        "rz_0": [[np.pi / 2 * i for i in range(5)], 0, 0],
+        "ry": [0, [np.pi / 2 * i for i in range(5)], 0],
+        "rz_1": [0, 0, [np.pi / 2 * i for i in range(5)]],
+        "mixed": [[np.pi / 2 * i for i in range(5)], [np.pi / 2 * i for i in range(5)], np.pi],
+    }
+    for like in ["rz_0", "ry", "rz_1", "mixed"]:
+        states_and_pars = [
+            (state_1, multi_par_5[like]),
+            (state_5, multi_par_1[like]),
+            (state_5, multi_par_5[like]),
+        ]
+        test_data_two_wires_with_parameters += [
+            (qml.CRot, s, mat_vec(CRot3, s, par=par), par) for s, par in states_and_pars
+        ]
+        test_data_two_wires_with_param_inv += [
+            (qml.CRot, s, mat_vec(CRot3, s, par=par, inv=True), par) for s, par in states_and_pars
+        ]
+
+    # Add qml.QubitUnitary test cases
+    matrix_2_par_1 = [SISWAP]
+    matrix_2_par_5 = [
+        np.array(
             [
-                [0, INVSQ2, 1j * INVSQ2, 0],
-                [-1j * INVSQ2, 0, 0, INVSQ2],
-                [0, 0.5 + 0.5j, 0.5 + 0.5j, 0],
-            ],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.IsingYY,
-            [0.5, 0.5, INVSQ2, 0],
+                np.eye(4),
+                np.array([[1, -1j, 0, 0], [-1j, 1, 0, 0], [0, 0, 1, -1j], [0, 0, -1j, 1]]) * INVSQ2,
+                np.array([[1, -1, 0, 0], [1, 1, 0, 0], [0, 0, 1, -1j], [0, 0, 1j, -1]]) * INVSQ2,
+                np.array([[T_PHASE_C, 0, 0, 0], [0, T_PHASE, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1j]]),
+                SISWAP,
+            ]
+        )
+    ]
+    test_data_two_wires_with_parameters += [
+        (qml.QubitUnitary, s, mat_vec(par[0], s), par)
+        for s, par in [
+            (state_1, matrix_2_par_5),
+            (state_5, matrix_2_par_1),
+            (state_5, matrix_2_par_5),
+        ]
+    ]
+    test_data_two_wires_with_param_inv += [
+        (qml.QubitUnitary, s, mat_vec(par[0], s, inv=True), par)
+        for s, par in [
+            (state_1, matrix_2_par_5),
+            (state_5, matrix_2_par_1),
+            (state_5, matrix_2_par_5),
+        ]
+    ]
+
+    # Add qml.DiagonalQubitUnitary test cases
+    diag_par_1 = [np.exp(1j * np.array([0.1, np.pi, 0.2, -2.4]))]
+    diag_par_5 = [
+        np.array(
             [
-                [0.5 * INVSQ2, 0.5 * INVSQ2 + 1j * 0.5, 0.5 + 0.5j * INVSQ2, -0.5j * INVSQ2],
-                [0, 1j * INVSQ2, 0.5j, -0.5j],
-                [-0.5 * INVSQ2, 0.5j - 0.5 * INVSQ2, 0.5j * INVSQ2 - 0.5, -0.5j * INVSQ2],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.IsingYY,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [0.5 * INVSQ2 - 0.5j, 0.5 * INVSQ2, 0.5j * INVSQ2, 0.5 - 0.5j * INVSQ2],
-                [-1j, 0, 0, 0],
-                [0, -0.5 + 0.5j, -0.5 + 0.5j, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.MultiRZ,
-            [[0, 1, 0, 0], [0, 0, 0, 1], [INVSQ2, 0, INVSQ2, 0]],
-            [
-                [0, T_PHASE_C, 0, 0],
-                [0, 0, 0, T_PHASE],
-                [T_PHASE * INVSQ2, 0, T_PHASE_C * INVSQ2, 0],
-            ],
-            ([np.pi / 2],),
-        ),
-        (  # broadcasted parameter
-            qml.MultiRZ,
-            [0.5, 0.5, INVSQ2, 0],
-            [
-                [T_PHASE * 0.5, T_PHASE_C * 0.5, INVSQ2 * T_PHASE_C, 0],
-                [0.5j, -0.5j, -1j * INVSQ2, 0],
-                [-0.5 * T_PHASE_C, -0.5 * T_PHASE, -T_PHASE * INVSQ2, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state and parameter
-            qml.MultiRZ,
-            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
-            [
-                [T_PHASE * 0.5, T_PHASE_C * 0.5, 0, INVSQ2 * T_PHASE],
-                [0, 0, 0, 1j],
-                [0, -T_PHASE * INVSQ2, -INVSQ2 * T_PHASE, 0],
-            ],
-            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
-        ),
-        (  # broadcasted state
-            qml.QubitUnitary,
-            [[1, 0, 0, 0], [0, 1, 0, 0], [0.5, 0.5, -0.5, 0.5]],
-            [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0.5, 0, INVSQ2, 0.5]],
-            [
-                np.array(
-                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]]
-                )
-            ],
-        ),
-        (  # broadcasted parameter
-            qml.QubitUnitary,
-            [0.5, 0.5, -0.5, 0.5j],
-            [
-                [0.5, 0, INVSQ2, 0.5j],
-                [0.5, 0.5, -(0.5 + 0.5j) * INVSQ2, (-0.5 + 0.5j) * INVSQ2],
-                [0.5, 0.5, 0, 1j * INVSQ2],
-            ],
-            (
-                [
-                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
-                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, INVSQ2], [0, 0, -INVSQ2, INVSQ2]],
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, INVSQ2, 1j * INVSQ2],
-                        [0, 0, 1j * INVSQ2, INVSQ2],
-                    ],
-                ],
-            ),
-        ),
-        (  # broadcasted state and parameter
-            qml.QubitUnitary,
-            [[0.5, 0.5, -0.5, 0.5j], [0, 0, 1j, 0], [INVSQ2, 0, 0, 1j * INVSQ2]],
-            [[0.5, 0, INVSQ2, 0.5j], [0, 0, 1j * INVSQ2, 1j * INVSQ2], [INVSQ2, 0, 0.5, 0.5j]],
-            (
-                [
-                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
-                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, INVSQ2], [0, 0, -INVSQ2, INVSQ2]],
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, INVSQ2, 1j * INVSQ2],
-                        [0, 0, 1j * INVSQ2, INVSQ2],
-                    ],
-                ],
-            ),
-        ),
+                np.ones(4),
+                [1, -1j, 1, 1j],
+                [np.exp(1j * 0.4), np.exp(1j * -0.4), 1j, 1],
+                [np.exp(1j * 0.1), np.exp(1j * np.pi), INVSQ2 * (1 + 1j), INVSQ2 * (1 - 1j)],
+                [1.0, np.exp(1j * np.pi / 2), 1, 1],
+            ]
+        )
+    ]
+    test_data_two_wires_with_parameters += [
+        (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s), par)
+        for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
+    ]
+    test_data_two_wires_with_param_inv += [
+        (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s, inv=True), par)
+        for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
     ]
 
     @pytest.mark.parametrize(
@@ -1334,19 +522,19 @@ class TestApplyBroadcasted:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        shape = (3, 2, 2) if np.array(input).size == 12 else (2, 2)
+        shape = (5, 2, 2) if np.array(input).size == 20 else (2, 2)
         dtype = qubit_device_2_wires.C_DTYPE
         qubit_device_2_wires._state = np.array(input, dtype=dtype).reshape(shape)
         par = tuple(np.array(p) for p in par)
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.reshape((3, 4)), expected_output, atol=tol, rtol=0
+            qubit_device_2_wires._state.reshape((5, 4)), expected_output, atol=tol, rtol=0
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par", test_data_two_wires_with_parameters_inverses
+        "operation,input,expected_output,par", test_data_two_wires_with_param_inv
     )
     def test_apply_operation_two_wires_with_parameters_inverse_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output, par
@@ -1354,14 +542,14 @@ class TestApplyBroadcasted:
         """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        shape = (3, 2, 2) if np.array(input).size == 12 else (2, 2)
+        shape = (5, 2, 2) if np.array(input).size == 20 else (2, 2)
         dtype = qubit_device_2_wires.C_DTYPE
         qubit_device_2_wires._state = np.array(input, dtype=dtype).reshape(shape)
         par = tuple(np.array(p) for p in par)
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.reshape((3, 4)), expected_output, atol=tol, rtol=0
+            qubit_device_2_wires._state.reshape((5, 4)), expected_output, atol=tol, rtol=0
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
@@ -1426,6 +614,14 @@ class TestApplyBroadcasted:
             qubit_device_2_wires.apply([vec])
 
 
+zero = [1, 0]
+one = [0, 1]
+plus = [INVSQ2, INVSQ2]
+minus = [INVSQ2, -INVSQ2]
+y_plus = [INVSQ2, 1j * INVSQ2]
+y_minus = [INVSQ2, -1j * INVSQ2]
+
+
 class TestExpvalBroadcasted:
     """Tests that expectation values are properly calculated for broadcasted states
     or that the proper errors are raised."""
@@ -1433,11 +629,11 @@ class TestExpvalBroadcasted:
     @pytest.mark.parametrize(
         "operation,input,expected_output",
         [
-            (qml.PauliX, [[INVSQ2, INVSQ2], [1, 0], [INVSQ2, -INVSQ2]], [1, 0, -1]),
-            (qml.PauliY, [[INVSQ2, 1j * INVSQ2], [1, 0], [INVSQ2, -1j * INVSQ2]], [1, 0, -1]),
-            (qml.PauliZ, [[INVSQ2, INVSQ2], [1, 0], [0, 1]], [0, 1, -1]),
-            (qml.Hadamard, [[INVSQ2, INVSQ2], [1, 0], [0, 1]], [INVSQ2, INVSQ2, -INVSQ2]),
-            (qml.Identity, [[INVSQ2, -INVSQ2], [1, 0], [0, 1]], [1, 1, 1]),
+            (qml.PauliX, np.array([plus, zero, minus]), [1, 0, -1]),
+            (qml.PauliY, np.array([y_plus, zero, y_minus]), [1, 0, -1]),
+            (qml.PauliZ, np.array([plus, zero, one]), [0, 1, -1]),
+            (qml.Hadamard, np.array([plus, zero, one]), [INVSQ2, INVSQ2, -INVSQ2]),
+            (qml.Identity, np.array([minus, zero, one]), [1, 1, 1]),
         ],
     )
     def test_expval_single_wire_no_parameters_broadcasted(
@@ -1457,9 +653,7 @@ class TestExpvalBroadcasted:
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
-        [
-            (qml.Hermitian, [[1, 0], [0, 1], [INVSQ2, -INVSQ2]], [1, 1, 1], [[1, 1j], [-1j, 1]]),
-        ],
+        [(qml.Hermitian, [zero, one, minus, y_plus], [1, 1, 1, 0], I - Y)],
     )
     def test_expval_single_wire_with_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
@@ -1535,11 +729,11 @@ class TestVarBroadcasted:
     @pytest.mark.parametrize(
         "operation,input,expected_output",
         [
-            (qml.PauliX, [[INVSQ2, INVSQ2], [1, 0], [INVSQ2, -INVSQ2]], [0, 1, 0]),
-            (qml.PauliY, [[INVSQ2, 1j * INVSQ2], [1, 0], [INVSQ2, -1j * INVSQ2]], [0, 1, 0]),
-            (qml.PauliZ, [[INVSQ2, INVSQ2], [1, 0], [0, 1]], [1, 0, 0]),
-            (qml.Hadamard, [[INVSQ2, INVSQ2], [1, 0], [0, 1]], [0.5, 0.5, 0.5]),
-            (qml.Identity, [[INVSQ2, -INVSQ2], [1, 0], [0, 1]], [0, 0, 0]),
+            (qml.PauliX, [plus, zero, minus], [0, 1, 0]),
+            (qml.PauliY, [y_plus, zero, y_minus], [0, 1, 0]),
+            (qml.PauliZ, [plus, zero, one], [1, 0, 0]),
+            (qml.Hadamard, [plus, zero, one], [0.5, 0.5, 0.5]),
+            (qml.Identity, [minus, zero, one], [0, 0, 0]),
         ],
     )
     def test_var_single_wire_no_parameters_broadcasted(
@@ -1559,9 +753,7 @@ class TestVarBroadcasted:
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
-        [
-            (qml.Hermitian, [[1, 0], [0, 1], [INVSQ2, -INVSQ2]], [1, 1, 1], [[1, 1j], [-1j, 1]]),
-        ],
+        [(qml.Hermitian, [zero, one, minus, y_plus], [1, 1, 1, 0], I - Y)],
     )
     def test_var_single_wire_with_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
@@ -1751,10 +943,10 @@ class TestDefaultQubitIntegrationBroadcasted:
     @pytest.mark.parametrize(
         "name,state,expected_output",
         [
-            ("PauliX", [[INVSQ2, INVSQ2], [INVSQ2, -INVSQ2], [1, 0]], [1, -1, 0]),
-            ("PauliY", [[INVSQ2, 1j * INVSQ2], [INVSQ2, -1j * INVSQ2], [1, 0]], [1, -1, 0]),
-            ("PauliZ", [[INVSQ2, INVSQ2], [0, 1], [1, 0]], [0, -1, 1]),
-            ("Hadamard", [[INVSQ2, INVSQ2], [0, 1], [1, 0]], [INVSQ2, -INVSQ2, INVSQ2]),
+            ("PauliX", [plus, minus, zero], [1, -1, 0]),
+            ("PauliY", [y_plus, y_minus, zero], [1, -1, 0]),
+            ("PauliZ", [plus, one, zero], [0, -1, 1]),
+            ("Hadamard", [plus, one, zero], [INVSQ2, -INVSQ2, INVSQ2]),
         ],
     )
     def test_supported_observable_single_wire_no_parameters_broadcasted(
@@ -1776,13 +968,8 @@ class TestDefaultQubitIntegrationBroadcasted:
     @pytest.mark.parametrize(
         "name,state,expected_output,par",
         [
-            ("Identity", [[1, 0], [0, 1], [INVSQ2, INVSQ2]], [1, 1, 1], []),
-            (
-                "Hermitian",
-                [[1, 0], [0, 1], [INVSQ2, -INVSQ2]],
-                [1, 1, 1],
-                [np.array([[1, 1j], [-1j, 1]])],
-            ),
+            ("Identity", [zero, one, plus], [1, 1, 1], []),
+            ("Hermitian", [zero, one, minus], [1, 1, 1], [I - Y]),
         ],
     )
     def test_supported_observable_single_wire_with_parameters_broadcasted(
@@ -2773,7 +1960,7 @@ class TestApplyOperationBroadcasted:
 
             @staticmethod
             def compute_matrix(*params, **hyperparams):
-                return U_toffoli
+                return Toffoli
 
         dev.operations.add("TestToffoli")
         op = TestToffoli(wires=wires)

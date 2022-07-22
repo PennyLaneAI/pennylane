@@ -171,7 +171,6 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
 
     return g
 
-
 def _get_operation_recipe(tape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
@@ -284,6 +283,7 @@ def expval_param_shift(
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
+            # hamiltonian_grad always returns a list with a single tape
             gradient_tapes.extend(g_tapes)
             # hamiltonian_grad always returns a list with a single tape!
             gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))

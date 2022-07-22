@@ -152,7 +152,7 @@ class DefaultQubitTorch(DefaultQubit):
     _flatten = staticmethod(torch.flatten)
     _const_mul = staticmethod(torch.mul)
     _size = staticmethod(torch.numel)
-    _ndim = staticmethod(lambda tensor: tensor.dim())
+    _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 

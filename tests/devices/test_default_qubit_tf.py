@@ -2365,8 +2365,6 @@ class TestGetBatchSize:
         dev = qml.device("default.qubit.tf", wires=2)
         tensor0 = np.ones(shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
-        tensor1 = np.arange(np.prod(shape)).reshape(shape)
-        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) is None
 
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
     @pytest.mark.parametrize("batch_size", [1, 3])
@@ -2376,8 +2374,6 @@ class TestGetBatchSize:
         full_shape = (batch_size,) + shape
         tensor0 = np.ones(full_shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
-        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
-        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
 
     def test_invalid_tensor(self):
         """Test that an error is raised if a tensor is provided that does not
