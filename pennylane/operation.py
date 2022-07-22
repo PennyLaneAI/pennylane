@@ -1221,7 +1221,9 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
-        return self + (-other)
+        if isinstance(other, (Operator, numbers.Number)):
+            return self + (-other)
+        raise ValueError(f"Cannot substract {type(other)} from Operator.")
 
     def __rsub__(self, other):
         """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
