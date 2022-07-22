@@ -15,6 +15,7 @@
 This module contains functions that act on operators and tapes.
 """
 from .eigvals import eigvals
+from .equal import equal
 from .generator import generator
 from .matrix import matrix
-from .equal import equal
+from .simplify import simplify
