@@ -83,7 +83,7 @@ class DoubleFactorization(Operation):
 
             mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
 
-            core_, one, two = qml.qchem.electron_integrals(mol)()
+            core, one, two = qml.qchem.electron_integrals(mol)()
             algo = DoubleFactorization(one, two)
 
         >>> algo.lamb  # the 1-Norm of the Hamiltonian

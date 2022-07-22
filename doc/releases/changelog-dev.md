@@ -35,7 +35,8 @@
   
   algo = FirstQuantization(n, eta, omega)
   
-  print(algo.gates, algo.qubits)  # print the number of non-Clifford gates and logical qubits
+  # print the number of non-Clifford gates and logical qubits
+  print(algo.gates, algo.qubits)
   ```
   
   ```pycon
@@ -59,7 +60,8 @@
   core, one, two = qml.qchem.electron_integrals(mol)()
   algo = DoubleFactorization(one, two)
   
-  print(algo.gates, algo.qubits)  # print the number of non-Clifford gates and logical qubits
+  # print the number of non-Clifford gates and logical qubits
+  print(algo.gates, algo.qubits)
   ```
 
   ```pycon
