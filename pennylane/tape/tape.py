@@ -148,23 +148,23 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        try:
-            rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-        except (TypeError, ValueError) as e:
-            raise qml.QuantumFunctionError(
-                "Only observables that are qubit-wise commuting "
-                "Pauli words can be returned on the same wire"
-            ) from e
+        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+            try:
+                rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+            except (TypeError, ValueError) as e:
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire"
+                ) from e
 
-        tape._ops.extend(rotations)
+            tape._ops.extend(rotations)
 
-        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-            new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
-            tape._measurements[i] = new_m
+            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+                new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+                tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
-
             stop = stop_at(obj)
 
             if not expand_measurements:
