@@ -651,8 +651,8 @@ class QNode:
 
             return tuple(res)
 
-        if isinstance(self._qfunc_output, Sequence) and any(m.return_type is qml.measurements.Counts
-            for m in self._qfunc_output
+        if isinstance(self._qfunc_output, Sequence) and any(
+            m.return_type is qml.measurements.Counts for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
