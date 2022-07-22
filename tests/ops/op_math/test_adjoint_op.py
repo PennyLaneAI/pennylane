@@ -270,14 +270,20 @@ class TestSimplify:
 
     def test_simplify_method_with_depth_equal_to_2(self):
         """Test the simplify method with depth equal to 2."""
-        sum_op = Adjoint(Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0)))))
+        adj_op = Adjoint(Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0)))))
 
         final_op = Adjoint(Adjoint(qml.RZ(1.32, wires=0)))
-        simplified_op = sum_op.simplify(depth=2)
+        simplified_op = adj_op.simplify(depth=2)
         assert qml.equal(
             op1=simplified_op.base.base, op2=final_op.base.base
         )  # TODO: Remove `.base.base` when comparison between Adjoint operators is fixed
         assert simplified_op.arithmetic_depth == 2
+
+    def test_simplify_adj_of_sums(self):
+        """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
+        adj_op = Adjoint(qml.op_sum(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)))
+        sum_op = qml.op_sum(Adjoint(qml.PauliX(0)), Adjoint(qml.PauliY(0)), Adjoint(qml.PauliZ(0)))
+        assert qml.equal(adj_op.simplify(), sum_op)
 
 
 class TestMiscMethods:
