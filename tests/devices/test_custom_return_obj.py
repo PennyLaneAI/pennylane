@@ -102,7 +102,7 @@ class TestObservableWithObjectReturnType:
         assert isinstance(out, np.ndarray)
         assert isinstance(out.item(), SpecialObject)
         assert np.isclose(out.item().val, reference_qnode(0.2))
-        reference_jac = qml.jacobian(reference_qnode)(np.array(0.2, requires_grad=True)),
+        reference_jac = (qml.jacobian(reference_qnode)(np.array(0.2, requires_grad=True)),)
 
         assert np.isclose(
             reference_jac,
