@@ -311,6 +311,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes</h3>
+
 * Updated IsingXY gate doc-string.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
