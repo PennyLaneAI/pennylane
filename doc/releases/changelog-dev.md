@@ -253,7 +253,8 @@
   with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
-* Adjoint differention now uses the adjoint symbolic wrapper instead of in-place inversion.
+* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
+  [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
 
 <h3>Breaking changes</h3>
 
