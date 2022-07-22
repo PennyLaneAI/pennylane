@@ -339,6 +339,10 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
+* Allow hamiltonians with grouped observables to be measured on devices
+  which were transformed using `qml.transform.insert()`.
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857) 
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
