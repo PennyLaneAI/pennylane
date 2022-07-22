@@ -225,6 +225,7 @@ class Hamiltonian(Observable):
         Returns:
             Iterable[float]): coefficients in the Hamiltonian expression
         """
+        self.data = [c for c in self._coeffs]
         return self._coeffs
 
     @property
