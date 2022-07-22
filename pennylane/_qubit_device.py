@@ -265,7 +265,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
-        ret_types = (m.return_type for m in circuit.measurements)
+        ret_types = [m.return_type for m in circuit.measurements]
         counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
@@ -282,11 +282,11 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                elif no_counts:
+                elif not counts_exist:
                     # Measurement types except for Counts
                     r = qml.math.squeeze(r)
 
-                if not no_counts:
+                if counts_exist:
 
                     # This happens when at least one measurement type is Counts
                     for result_group in r:
@@ -304,7 +304,7 @@ class QubitDevice(Device):
 
                 s1 = s2
 
-            if not multiple_sampled_jobs and no_counts:
+            if not multiple_sampled_jobs and not counts_exist:
                 # Can only stack single element outputs
                 results = qml.math.stack(results)
 
@@ -327,7 +327,7 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            elif no_counts:
+            elif not counts_exist:
                 # all the other cases except any counts
                 results = self._asarray(results)
 
