@@ -851,9 +851,7 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor(
-            [CRot3(_a, b, _c) for _a, _c in zip(a, c)], dtype=torch.complex128, device=torch_device
-        )
+        op_mat = torch.stack([CRot3(_a, b, _c) for _a, _c in zip(a, c)])
         expected = qml.math.einsum("lij,j->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -873,9 +871,7 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor(
-            [CRot3(_a, b, _c) for _a, _c in zip(a, c)], dtype=torch.complex128, device=torch_device
-        )
+        op_mat = torch.stack([CRot3(_a, b, _c) for _a, _c in zip(a, c)])
         expected = qml.math.einsum("lij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
