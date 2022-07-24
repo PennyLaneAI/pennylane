@@ -244,6 +244,27 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, hessian)
 
+    def test_fixed_params(self):
+        """Test that the correct hessian is calculated for a QNode with single RX operator
+        and single expectation value output (0d -> 0d) where some fixed parameters gate are added"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.RZ(0.1, wires=0)
+            qml.RZ(-0.1, wires=0)
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.1, requires_grad=True)
+
+        expected = qml.jacobian(qml.grad(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        assert np.allclose(expected, hessian)
+
     def test_gate_without_impact(self):
         """Test that the correct hessian is calculated for a QNode with an operator
         that does not have any impact on the QNode output."""
