@@ -120,23 +120,10 @@ class BasicEntanglerLayers(Operation):
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
-
-        !!! Update for more than one single-qubit rotation gates !!!
         The basic entangler can now take more than one gate as parameter for repetition. The code works as follows: For a given list of operations, rotations = [RX,RY,RZ], the model takes in parameters in shape (num_layers,num_wires*num_rotations)
-         where num_rotations = len(rotations). Meaning that each rotation takes a parameter per layer per wire.
-        The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
-        For a list, it adds the parameters in order.
-        Example:
-        For a two layer, 3 rotations and 4 wires system, the params have the form
-        tensor([[0.98490185, 0.48615071, 0.65416114, 0.76073784, 0.4379965 ,
-         0.91467668, 0.37770095, 0.91138513, 0.14018763, 0.48878116, 0.94855556, 0.67714962],
-        [0.54151177, 0.05728717, 0.94766153, 0.43230254, 0.49035082, 0.50956715, 0.56727017, 0.57852111, 0.86937769, 0.03215202,
-         0.78536781, 0.81338788]], requires_grad=True)
+        where num_rotations = len(rotations). 
 
-         Where the first index of the tensor indicates the layer, the second one indicates the position of the parameter. For a layer,
-         the first 4 parameters correspond to the parameters for the first rotation on each wire, the next 4 parameters correspond to the
-         parameters for the second rotation on each wire, and so on.
-        ** Example Usage **
+         .. code-block:: python
             >>> import pennylane as qml
             >>> from pennylane import numpy as np
 
