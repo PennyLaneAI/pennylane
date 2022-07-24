@@ -176,32 +176,22 @@ class BasicEntanglerLayers(Operation):
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
-
         .. math:: O = O_1 O_2 \dots O_n.
-
-
-
         .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
-
         Args:
             weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                 for the rotation.
             wires (Any or Iterable[Any]): wires that the operator acts on
-            rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
-
+            rotations (pennylane.ops.Operation): one or more one-parameter single-qubit gates to use
         Returns:
             list[.Operator]: decomposition of the operator
-
         **Example**
-
         >>> weights = torch.tensor([[1.2, -0.4], [0.3, -0.2]])
         >>> qml.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qml.RX)
         [RX(tensor(1.2000), wires=['a']), RX(tensor(-0.4000), wires=['b']),
         CNOT(wires=['a', 'b']),
         RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),
         CNOT(wires=['a', 'b'])]
-        Update on more than one rotation: The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
-        For a list, it adds the operation in the order of the list.
         """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
