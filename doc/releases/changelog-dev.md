@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added feature of more than one qubit gate to `qml.basic_entangler` that allows for
+  multiple single-qubit rotations. 
+
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
