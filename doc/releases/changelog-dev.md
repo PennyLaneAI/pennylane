@@ -4,8 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Added feature of more than one single qubit rotations for basic_entangler.py
-
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -354,4 +352,4 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
 Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
-Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann, Miguel Esteban Villalobos
