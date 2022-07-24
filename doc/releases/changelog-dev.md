@@ -44,7 +44,7 @@
 
 * Differentiable zero-noise-extrapolation error mitigation via ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
-  
+
   When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
   ```python
@@ -67,7 +67,7 @@
   def qnode_mitigated(theta):
       qml.RY(theta, wires=0)
       return qml.expval(qml.PauliX(0))
-  
+
   theta = np.array(0.5, requires_grad=True)
   grad = qml.grad(qnode_mitigated)
   >>> grad(theta)
@@ -97,6 +97,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.state()
   ```
+
   ```pycon
   >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
   >>> x, y = np.array(0.4), np.array(0.6)
@@ -108,8 +109,9 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
-  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
+
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 **Operator Arithmetic:**
@@ -117,7 +119,6 @@
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
-
 
 * A `Sum` symbolic class is added that allows users to represent the sum of operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
@@ -153,13 +154,59 @@
         return qml.expval(sum_op)
   ```
 
-  ```
+  ```pycon
   >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
   >>> qml.grad(circuit)(weights)
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
-* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
+* Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
+  more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
+
+  ```python
+  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> summed_op
+  RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
+  >>> exp_op = qml.RZ(1.0, wires=0) ** 2
+  >>> exp_op
+  RZ**2(1.0, wires=[0])
+  ```
+
+* A `SProd` symbolic class is added that allows users to represent the scalar product 
+of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
+
+  We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> sprod_op = qml.s_prod(2.0, qml.PauliX(0))
+  >>> sprod_op
+  2.0*(PauliX(wires=[0]))
+  >>> sprod_op.matrix()
+  array([[ 0., 2.],
+         [ 2., 0.]])
+  >>> sprod_op.terms()
+  ([2.0], [PauliX(wires=[0])])
+  ```
+
+  The `sprod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the observable.
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev, grad_method="best")
+  def circuit(scalar, theta):
+        qml.RX(theta, wires=0)
+        return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
+  ```
+
+  ```pycon
+  >>> scalar, theta = (1.2, 3.4)
+  >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+  (array(-0.68362956), array(0.21683382))
+  ```
+
+* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 <h3>Improvements</h3>
 
@@ -182,7 +229,7 @@
   ...     qml.Hadamard(wires=0)
   ...     qml.CNOT(wires=[0, 1])
   ...     # passing the counts flag
-  ...     return qml.sample(counts=True)   
+  ...     return qml.sample(counts=True)
   >>> result = circuit()
   >>> print(result)
   {'00': 495, '11': 505}
@@ -208,7 +255,10 @@
   labels.
   [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
 
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking 
+* Add trivial behaviour logic to `qml.operation.expand_matrix`.
+  [(#2785)](https://github.com/PennyLaneAI/pennylane/issues/2785)
+
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking
   into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
@@ -227,18 +277,26 @@
       qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```pycon
   >>> x = jnp.array([0.8, 1.0, 1.2])
   >>> jax.vmap(circuit)(x)
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
-* Added an `are_pauli_words_qwc` function which checks if certain 
-  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians 
-  with many commuting terms. 
+* Added an `are_pauli_words_qwc` function which checks if certain
+  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians
+  with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
+* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
+  [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
+
 <h3>Breaking changes</h3>
+
+* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
+  `qml.qchem`.
+  [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
   which provides an updated API that is incompatible which versions of the package prior to 2.7.
@@ -250,11 +308,31 @@
 
 <h3>Documentation</h3>
 
+* Added a dedicated docstring for the `QubitDevice.sample` method.
+  [(#2812)](https://github.com/PennyLaneAI/pennylane/pull/2812)
+
 * Optimization examples of using JAXopt and Optax with the JAX interface have
   been added.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the parameter-shift gradient breaks when using both
+  custom `grad_recipe`s that contain unshifted terms and recipes that
+  do not contains any unshifted terms.
+  [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
+
+* Fixes mixed CPU-GPU data-locality issues for Torch interface.
+  [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
+
+* Fixes a bug where the parameter-shift Hessian of circuits with untrainable
+  parameters might be computed with respect to the wrong parameters or
+  might raise an error.
+  [(#2822)](https://github.com/PennyLaneAI/pennylane/pull/2822)
+
+* Fixes a bug where the custom implementation of the `states_to_binary` device
+  method was not used.
+  [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
 
 * `qml.grouping.group_observables` now works when individual wire
   labels are iterable.
@@ -263,9 +341,17 @@
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* The WireCut operator now raises an error when instantiating it with an empty list.
+  [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
+
+* Allow hamiltonians with grouped observables to be measured on devices
+  which were transformed using `qml.transform.insert()`.
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857) 
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
-Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
+Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
+Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
+Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
