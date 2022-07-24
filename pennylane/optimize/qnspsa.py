@@ -223,7 +223,9 @@ class QNSPSAOptimizer:
 
     def _post_process_tensor(self, tensor_raw_results, tensor_dirs):
         tensor_raw_results = [result.squeeze() for result in tensor_raw_results]
-
+        # For each element of tensor_raw_results, the first dimension is the measured probability in
+        # the computational ket{0} state, which equals the state overlap between the perturbed and
+        # unperturbed circuits.
         tensor_finite_diff = (
             tensor_raw_results[0][0]
             - tensor_raw_results[1][0]
@@ -250,6 +252,9 @@ class QNSPSAOptimizer:
             if arg.shape == ():
                 arg = arg.reshape(-1)
             params.append(arg)
+
+        # params_vec and grad_vec group multiple inputs into the same vector to solve the
+        # linear equation
         params_vec = np.concatenate(params).reshape(-1)
         grad_vec = np.concatenate(gradient).reshape(-1)
 
@@ -257,7 +262,7 @@ class QNSPSAOptimizer:
             self.metric_tensor,
             (-self.stepsize * grad_vec + np.matmul(self.metric_tensor, params_vec)),
         )
-
+        # reshape single-vector new_params_vec into new_params, to match the input params
         params_split_indices = []
         tmp = 0
         for param in params:
@@ -326,6 +331,10 @@ class QNSPSAOptimizer:
         return tapes, dir_vecs
 
     def _get_overlap_tape(self, cost, args1, args2, kwargs):
+        # the returned tape effectively measure the fidelity between the two parametrized circuits
+        # with input args1 and args2. The measurement results of the tape are an array of probabilities
+        # in the computational basis. The first element of the array represents the probability in
+        # \ket{0}, which equals the fidelity.
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 

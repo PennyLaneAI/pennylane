@@ -20,6 +20,32 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+def get_single_input_qnode():
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def loss_fn(params):
+        qml.RX(params[0][0], wires=0)
+        qml.CRY(params[0][1], wires=[0, 1])
+        qml.RY(params[1][0], wires=0)
+        qml.CRX(params[1][1], wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    return loss_fn, (2, 2)  # returns the qnode and the input param shape
+
+
+def get_multi_input_qnode():
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def loss_fn(x1, x2):
+        qml.RX(x1, wires=0)
+        qml.CRY(x2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    return loss_fn
+
+
 class TestSPSAOptimizer:
     @pytest.mark.parametrize("seed", [1, 151, 1231])
     @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
@@ -35,7 +61,7 @@ class TestSPSAOptimizer:
             history_length=5,
             seed=seed,
         )
-        qnode, params_shape = self.get_single_input_qnode()
+        qnode, params_shape = get_single_input_qnode()
         params = np.random.rand(*params_shape)
 
         # gradient result from QNSPSAOptimizer
@@ -66,7 +92,7 @@ class TestSPSAOptimizer:
             seed=seed,
         )
 
-        qnode, params_shape = self.get_single_input_qnode()
+        qnode, params_shape = get_single_input_qnode()
         params = np.random.rand(*params_shape)
 
         # raw metric tensor result from QNSPSAOptimizer
@@ -125,7 +151,7 @@ class TestSPSAOptimizer:
 
     def test_step_with_multi_input(self):
         """Test that the optimizer works with multiple inputs with a hard coded loss-vs-step result."""
-        qnode = self.get_multi_input_qnode()
+        qnode = get_multi_input_qnode()
 
         params = [np.tensor(1.0) for _ in range(2)]
 
@@ -168,7 +194,7 @@ class TestSPSAOptimizer:
 
     def test_step_and_cost_with_single_input(self):
         """Test that the optimizer works with single input with a hard coded loss-vs-step result."""
-        qnode, shape = self.get_single_input_qnode()
+        qnode, shape = get_single_input_qnode()
 
         params = np.ones(shape)
 
@@ -208,29 +234,3 @@ class TestSPSAOptimizer:
             loss_res,
             loss_expected,
         ), "Loss curve over steps does not match hard-coded result"
-
-    @staticmethod
-    def get_single_input_qnode():
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def loss_fn(params):
-            qml.RX(params[0][0], wires=0)
-            qml.CRY(params[0][1], wires=[0, 1])
-            qml.RY(params[1][0], wires=0)
-            qml.CRX(params[1][1], wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        return loss_fn, (2, 2)  # returns the qnode and the input param shape
-
-    @staticmethod
-    def get_multi_input_qnode():
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def loss_fn(x1, x2):
-            qml.RX(x1, wires=0)
-            qml.CRY(x2, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        return loss_fn
