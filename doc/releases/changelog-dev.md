@@ -4,49 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Changed the definition of qml.BasicEntanglerLayers to take in multiple single qubit rotations as parameters instead of just 1 
-  If the parameter rotation is set as a single qubit rotation, the class still works as usual, if it passes as parameter a 
-  list of single wubit rotations, the class wil automatically check for the correct format for the weights parameter that represent the rotation angle of each operator.
-   !!! Update for more than one single-qubit rotation gates !!! 
-         - The basic entangler can now take more than one gate as parameter for repetition. The code works as follows:
-         For a given list of operations, rotations = [RX,RY,RZ], the model takes in parameters in shape (num_layers,num_wires*num_rotations)
-         where num_rotations = len(rotations). Meaning that each rotation takes a parameter per layer per wire. 
-        - The function compute decomposition checks the form of rotations, if it is a single roation element the code works as it is used to.
-        For a list, it checks the length of the list, if the length is equal to 1, the code gets the element and works as usual. If the length of 
-        rotations list is more than 1, the code implements the operation product between the single-qubit operations. 
-
-        For more information refer to pennylane.ops.op_math.product.py
-
-        Example: 
-        For a two layer, 3 rotations and 4 wires system, the params have the form 
-        
-        tensor([[0.98490185, 0.48615071, 0.65416114, 0.76073784, 0.4379965 ,
-         0.91467668, 0.37770095, 0.91138513, 0.14018763, 0.48878116,
-         0.94855556, 0.67714962],
-        [0.54151177, 0.05728717, 0.94766153, 0.43230254, 0.49035082,
-         0.50956715, 0.56727017, 0.57852111, 0.86937769, 0.03215202,
-         0.78536781, 0.81338788]], requires_grad=True)
-
-         Where the first index of the tensor indicates the layer, the second one indicates the position of the parameter. For a layer,
-         the first 4 parameters correspond to the parameters for the first rotation on each wire, the next 4 parameters correspond to the 
-         parameters for the second rotation on each wire, and so on. 
-
-        ** Example Usage **
-            >>> import pennylane as qml
-            >>> from pennylane import numpy as np
-
-            >>> n_wires = 4
-            ... dev = qml.device('default.qubit', wires=n_wires)
-            ... rotations = [qml.RX, qml.RZ,qml.RY]
-            ... n_layers = 2
-            ... @qml.qnode(dev)
-            ... def circuit(weights):
-            ...     qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation = rotations)
-            ...     return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
-            ... params = np.random.random(size=(n_layers, n_wires*len(rotations)))
-            >>> circuit(params)
-            tensor([1., 1., 1., 1.], requires_grad=True)
-
+* Added feature of more than one single qubit rotations for basic_entangler.py
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
