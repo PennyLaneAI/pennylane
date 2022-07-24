@@ -287,8 +287,17 @@ class QNSPSAOptimizer:
         return [tape_plus, tape_minus], dirs
 
     def _update_tensor(self, tensor_raw):
-        tensor_avg = self._get_tensor_moving_avg(tensor_raw)
-        tensor_regularized = self._regularize_tensor(tensor_avg)
+        def get_tensor_moving_avg(metric_tensor):
+            if self.metric_tensor is None:
+                self.metric_tensor = np.identity(metric_tensor.shape[0])
+            return self.k / (self.k + 1) * self.metric_tensor + 1 / (self.k + 1) * metric_tensor
+
+        def regularize_tensor(metric_tensor):
+            tensor_reg = np.real(sqrtm(np.matmul(metric_tensor, metric_tensor)))
+            return (tensor_reg + self.reg * np.identity(metric_tensor.shape[0])) / (1 + self.reg)
+
+        tensor_avg = get_tensor_moving_avg(tensor_raw)
+        tensor_regularized = regularize_tensor(tensor_avg)
         self.metric_tensor = tensor_regularized
         self.k += 1
 
@@ -332,15 +341,6 @@ class QNSPSAOptimizer:
     def _get_operations(cost, args, kwargs):
         cost.construct(args, kwargs)
         return cost.tape.operations
-
-    def _get_tensor_moving_avg(self, metric_tensor):
-        if self.metric_tensor is None:
-            self.metric_tensor = np.identity(metric_tensor.shape[0])
-        return self.k / (self.k + 1) * self.metric_tensor + 1 / (self.k + 1) * metric_tensor
-
-    def _regularize_tensor(self, metric_tensor):
-        tensor_reg = np.real(sqrtm(np.matmul(metric_tensor, metric_tensor)))
-        return (tensor_reg + self.reg * np.identity(metric_tensor.shape[0])) / (1 + self.reg)
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
         cost.construct(args, kwargs)
