@@ -121,7 +121,7 @@ class BasicEntanglerLayers(Operation):
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
         The basic entangler can now take more than one gate as parameter for repetition. The code works as follows: For a given list of operations, rotations = [RX,RY,RZ], the model takes in parameters in shape (num_layers,num_wires*num_rotations)
-        where num_rotations = len(rotations). 
+        where num_rotations = len(rotations).
 
          .. code-block:: python
             >>> import pennylane as qml
