@@ -214,7 +214,7 @@ class SProd(SymbolicOp):
             simplified_sum = self.base.simplify(depth=depth)
             return Sum(
                 *(  # TODO: Should we assign the same ID to all SProd classes?
-                    SProd(scalar=self.scalar, base=summand, id=self.id)
+                    SProd(scalar=self.scalar, base=summand, id=self.id).simplify(depth=depth - 1)
                     for summand in simplified_sum.summands
                 ),
                 id=self.base.id,
