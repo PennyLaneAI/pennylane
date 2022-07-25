@@ -355,5 +355,5 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
-Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Zeyue Niu
-Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
+Zeyue Niu, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
