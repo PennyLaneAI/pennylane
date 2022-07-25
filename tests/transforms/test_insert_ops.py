@@ -398,6 +398,7 @@ def test_insert_dev(mocker, monkeypatch):
         qml.RY(0.5, wires=0)
         qml.RX(0.6, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
 
     dev = qml.device("default.mixed", wires=2)
     res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
@@ -421,6 +422,7 @@ def test_insert_dev(mocker, monkeypatch):
         qml.RX(0.6, wires=1)
         qml.PhaseDamping(0.4, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
 
     assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
@@ -428,10 +430,13 @@ def test_insert_dev(mocker, monkeypatch):
         np.allclose(o1.parameters, o2.parameters)
         for o1, o2 in zip(tape.operations, tape_exp.operations)
     )
-    assert len(tape.measurements) == 1
+    assert len(tape.measurements) == 2
     assert tape.observables[0].name == ["PauliZ", "PauliZ"]
     assert tape.observables[0].wires.tolist() == [0, 1]
     assert tape.measurements[0].return_type is Expectation
+    assert tape.observables[1].name == "PauliZ"
+    assert tape.observables[1].wires.tolist() == [0]
+    assert tape.measurements[1].return_type is Expectation
 
     assert not np.allclose(res_without_noise, res_with_noise)
 

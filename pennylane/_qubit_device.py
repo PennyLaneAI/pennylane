@@ -1181,16 +1181,12 @@ class QubitDevice(Device):
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in trainable_params):
-                d_op_matrix = operation_derivative(op)
-
-            op.inv()
-            # Ideally use use op.adjoint() here
-            # then we don't have to re-invert the operation at the end
-            ket = self._apply_operation(ket, op)
+            adj_op = qml.adjoint(op)
+            ket = self._apply_operation(ket, adj_op)
 
             if op.grad_method is not None:
                 if param_number in trainable_params:
+                    d_op_matrix = operation_derivative(op)
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
@@ -1199,7 +1195,6 @@ class QubitDevice(Device):
                 param_number -= 1
 
             for kk in range(n_obs):
-                bras[kk, ...] = self._apply_operation(bras[kk, ...], op)
-            op.inv()
+                bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
         return jac
