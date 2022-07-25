@@ -522,7 +522,7 @@ hermitian = qml.Hermitian(np.diag([1, 2]), wires=0)
 tensor_product = qml.PauliY(wires=2) @ qml.PauliX(wires=1)
 
 # TODO: same & different wire dedicated tests
-expval_probs_multi = [
+single_scalar_probs_multi = [
     # Expval
     (qml.expval(pauliz_w2), qml.probs(wires=[2, 0])),
     (qml.expval(proj_w2), qml.probs(wires=[2, 0])),
@@ -533,7 +533,7 @@ expval_probs_multi = [
     (qml.var(tensor_product), qml.probs(wires=[2, 0])),
 ]
 
-expval_sample_multi = [
+single_scalar_sample_multi = [
     # Expval
     (qml.expval(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
     (qml.expval(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
@@ -544,22 +544,20 @@ expval_sample_multi = [
     (qml.var(tensor_product), qml.sample(op=qml.PauliZ(0))),
 ]
 
-expval_sample_no_obs_multi = [
+single_scalar_sample_no_obs_multi = [
     # TODO: for copy=1, the wires syntax has a bug
     # -----
     (qml.expval(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
     (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
 ]
 
-# TODO: test Projector expval/var!
-
 
 @pytest.mark.parametrize("shot_vector", [[1, 10, 10, 1000], [1, (10, 2), 1000]])
 class TestShotVectorsAutogradMultiMeasure:
     """TODO"""
 
-    @pytest.mark.parametrize("meas1,meas2", expval_probs_multi)
-    def test_expval_probs(self, shot_vector, meas1, meas2):
+    @pytest.mark.parametrize("meas1,meas2", single_scalar_probs_multi)
+    def test_single_scalar_probs(self, shot_vector, meas1, meas2):
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
@@ -587,8 +585,8 @@ class TestShotVectorsAutogradMultiMeasure:
                 else:
                     assert r.shape == (2**2,)
 
-    @pytest.mark.parametrize("meas1,meas2", expval_sample_multi)
-    def test_expval_sample_with_obs(self, shot_vector, meas1, meas2):
+    @pytest.mark.parametrize("meas1,meas2", single_scalar_sample_multi)
+    def test_single_scalar_sample_with_obs(self, shot_vector, meas1, meas2):
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
@@ -624,9 +622,9 @@ class TestShotVectorsAutogradMultiMeasure:
                         assert r.shape == (shot_tuple.shots,)
                 idx += 1
 
-    @pytest.mark.parametrize("meas1,meas2", expval_sample_no_obs_multi)
+    @pytest.mark.parametrize("meas1,meas2", single_scalar_sample_no_obs_multi)
     @pytest.mark.xfail
-    def test_expval_sample_no_obs(self, shot_vector, meas1, meas2):
+    def test_single_scalar_sample_no_obs(self, shot_vector, meas1, meas2):
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
