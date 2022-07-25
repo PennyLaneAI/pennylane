@@ -122,20 +122,18 @@ class Controlled(SymbolicOp):
                 )
                 control_values = [(x == "1") for x in control_values]
 
-            assert len(control_values) == len(
-                control_wires
-            ), "control_values should be the same length as control_wires"
-            assert set(control_values).issubset(
-                {False, True}
-            ), "control_values can only take on True or False"
+            if len(control_values) != len(control_wires):
+                raise ValueError("control_values should be the same length as control_wires")
+            if not set(control_values).issubset({False, True}):
+                raise ValueError("control_values can only take on True or False")
 
-        assert (
-            len(Wires.shared_wires([base.wires, control_wires])) == 0
-        ), "The control wires must be different from the base operation wires."
+        if len(Wires.shared_wires([base.wires, control_wires])) != 0:
+            raise ValueError("The control wires must be different from the base operation wires.")
 
-        assert (
-            len(Wires.shared_wires([work_wires, base.wires + control_wires])) == 0
-        ), "Work wires must be different the control_wires and base operation wires."
+        if len(Wires.shared_wires([work_wires, base.wires + control_wires])) != 0:
+            raise ValueError(
+                "Work wires must be different the control_wires and base operation wires."
+            )
 
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["control_values"] = control_values

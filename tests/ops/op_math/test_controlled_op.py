@@ -148,27 +148,27 @@ class TestInitialization:
 
     def test_non_boolean_control_values(self):
         """Test checking control_values are booleans."""
-        with pytest.raises(AssertionError, match="control_values can only take on"):
+        with pytest.raises(ValueError, match="control_values can only take on"):
             Controlled(self.temp_op, (0, 1), ["b", 2])
 
     def test_control_values_wrong_length(self):
         """Test checking control_values length error."""
-        with pytest.raises(AssertionError, match="control_values should be the same length"):
+        with pytest.raises(ValueError, match="control_values should be the same length"):
             Controlled(self.temp_op, (0, 1), [True])
 
     def test_target_control_wires_overlap(self):
         """Test checking overlap of target wires and control_wires"""
-        with pytest.raises(AssertionError, match="The control wires must be different"):
+        with pytest.raises(ValueError, match="The control wires must be different"):
             Controlled(self.temp_op, "a")
 
     def test_work_wires_overlap_target(self):
         """Test checking work wires are not in target wires."""
-        with pytest.raises(AssertionError, match="Work wires must be different"):
+        with pytest.raises(ValueError, match="Work wires must be different"):
             Controlled(self.temp_op, "b", work_wires="a")
 
     def test_work_wires_overlap_control(self):
         """Test checking work wires are not in contorl wires."""
-        with pytest.raises(AssertionError, match="Work wires must be different."):
+        with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
 
