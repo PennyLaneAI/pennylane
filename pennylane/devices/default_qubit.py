@@ -189,10 +189,8 @@ class DefaultQubit(QubitDevice):
     def stopping_condition(self):
         def accepts_obj(obj):
             if getattr(obj, "has_matrix", False):
-                # backpropgation doesnt work with matrix power or fractional matrix power
-                if "passthru_interface" in self.capabilities():
-                    if obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj):
-                        return False
+                if obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj):
+                    return False
                 return True
             if obj.name in self.operations:
                 return True
