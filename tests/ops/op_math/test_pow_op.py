@@ -314,7 +314,7 @@ class TestSimplify:
 
     def test_simplify_method_with_depth_equal_to_1(self):
         """Test the simplify method with depth equal to 1."""
-        sum_op = Pow(
+        pow_op = Pow(
             qml.ops.Sum(
                 qml.ops.Sum(
                     qml.ops.Sum(qml.PauliX(0), qml.Identity(wires=0)), qml.RX(1.9, wires=1)
@@ -330,11 +330,11 @@ class TestSimplify:
                 qml.RZ(1.32, wires=0),
             )
         )
-        simplified_op = sum_op.simplify(depth=1)
+        simplified_op = pow_op.simplify(depth=1)
         assert qml.equal(
             op1=simplified_op.base, op2=final_op.base
         )  # TODO: remove .base when qml.equal is fixed
-        assert simplified_op.arithmetic_depth == sum_op.arithmetic_depth - 1
+        assert simplified_op.arithmetic_depth == pow_op.arithmetic_depth - 1
 
 
 class TestMiscMethods:
