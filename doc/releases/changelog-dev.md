@@ -204,8 +204,8 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   (array(-0.68362956), array(0.21683382))
   ```
 
-* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum` and `Adjoint`
-operators so that users can reduce the depth of nested operators.
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
+and `SProd` operators so that users can reduce the depth of nested operators.
 
 ```pycon
 >>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
