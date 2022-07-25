@@ -297,7 +297,6 @@ class QNode:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
         if diff_method == "best":
             return QNode.get_best_method(device, interface)
 
@@ -626,6 +625,17 @@ class QNode:
                 override_shots=override_shots,
                 **self.execute_kwargs,
             )
+
+            if not isinstance(self._qfunc_output, tuple) and not isinstance(
+                self._qfunc_output, qml.measurements.MeasurementProcess
+            ):
+                if not self.device._shot_vector:
+                    res = type(self.tape._qfunc_output)(res[0])
+                else:
+                    res = tuple([type(self.tape._qfunc_output)(r) for r in res[0]])
+            else:
+                res = res[0]
+            return res
         else:
             res = qml.execute(
                 [self.tape],
@@ -637,36 +647,36 @@ class QNode:
                 **self.execute_kwargs,
             )
 
-        if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
-            # If a device batch transform was applied, we need to 'unpack'
-            # the returned tuple/list to a float.
-            #
-            # Note that we use autograd.isinstance, because on the backwards pass
-            # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
-            # autograd.isinstance is a 'safer' isinstance check that supports
-            # autograd backwards passes.
-            #
-            # TODO: find a more explicit way of determining that a batch transform
-            # was applied.
+            if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
+                # If a device batch transform was applied, we need to 'unpack'
+                # the returned tuple/list to a float.
+                #
+                # Note that we use autograd.isinstance, because on the backwards pass
+                # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
+                # autograd.isinstance is a 'safer' isinstance check that supports
+                # autograd backwards passes.
+                #
+                # TODO: find a more explicit way of determining that a batch transform
+                # was applied.
 
-            res = res[0]
+                res = res[0]
 
-        if override_shots is not False:
-            # restore the initialization gradient function
-            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+            if override_shots is not False:
+                # restore the initialization gradient function
+                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
-        self._update_original_device()
+            self._update_original_device()
 
-        if isinstance(self._qfunc_output, Sequence) or (
-            self.tape.is_sampled and self.device._has_partitioned_shots()
-        ):
-            return res
-        if self._qfunc_output.return_type is qml.measurements.Counts:
-            # return a dictionary with counts not as a single-element array
-            return res[0]
+            if isinstance(self._qfunc_output, Sequence) or (
+                self.tape.is_sampled and self.device._has_partitioned_shots()
+            ):
+                return res
+            if self._qfunc_output.return_type is qml.measurements.Counts:
+                # return a dictionary with counts not as a single-element array
+                return res[0]
 
-        # Squeeze arraylike outputs
-        return qml.math.squeeze(res)
+            # Squeeze arraylike outputs
+            return qml.math.squeeze(res)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
