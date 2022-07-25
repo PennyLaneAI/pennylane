@@ -17,6 +17,7 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
+from collections import namedtuple
 from collections.abc import Sequence
 
 import numpy as np
@@ -260,7 +261,7 @@ def expval_param_shift(
 
     gradient_tapes = []
     # Each entry for gradient_data will be a named tuple
-    GradData = NamedTuple("GradData", "num_tapes coeffs fn unshifted_coeff batch_size")
+    GradData = namedtuple("GradData", "num_tapes coeffs fn unshifted_coeff batch_size")
     # (num_tapes, coeffs, fn, unshifted_coeff, batch_size)
     gradient_data = []
     # Keep track of whether there is at least one unshifted term in all the parameter-shift rules
