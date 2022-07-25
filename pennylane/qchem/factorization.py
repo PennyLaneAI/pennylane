@@ -17,7 +17,7 @@ This module contains the functions needed for two-electron tensor factorization.
 from pennylane import numpy as np
 
 
-def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
+def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
     r"""Return the double-factorized form of a two-electron integral tensor.
 
     The two-electron tensor :math:`V`, in
@@ -28,8 +28,8 @@ def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
     corresponding eigenvectors) are truncated at a threshold error.
 
     Args:
-        two (array[array[float]]): two-electron integral tensor in the molecular orbital basis
-            arranged in chemist notation
+        two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
         tol_factor (float): threshold error value for discarding the negligible factors
         tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
 
@@ -132,13 +132,13 @@ def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         - Diagonalize the :math:`n \times n` matrices and for each matrix keep the eigenvalues (and
           their corresponding eigenvectors) that are larger than a threshold.
     """
-    shape = two.shape
+    shape = two_electron.shape
 
     if len(shape) != 4 or len(set(shape)) != 1:
         raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
 
     n = shape[0]
-    two = two.reshape(n * n, n * n)
+    two = two_electron.reshape(n * n, n * n)
 
     eigvals_r, eigvecs_r = np.linalg.eigh(two)
     eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_factor])
