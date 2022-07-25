@@ -288,6 +288,10 @@ class TestSimplify:
         sum_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
         assert sum_op.arithmetic_depth == 2
 
+    def test_simplify_zero_power(self):
+        """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
+        assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
+
     def test_simplify_method_with_default_depth(self):
         """Test that the simplify method reduces complexity to the minimum."""
         sum_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
