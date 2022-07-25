@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
+from pennylane.templates.layers import simplified_two_design
 
 
 class TempOperator(qml.operation.Operator):
@@ -285,18 +286,27 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        sum_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
-        assert sum_op.arithmetic_depth == 2
+        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
+        assert pow_op.arithmetic_depth == 2
 
     def test_simplify_zero_power(self):
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
         assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
 
+    def test_simplify_method_with_depth_equal_to_0(self):
+        """Test the simplify method with depth equal to 0."""
+        pow_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
+        simplified_op = pow_op.simplify(depth=0)
+        assert qml.equal(
+            op1=simplified_op.base, op2=pow_op.base
+        )  # TODO: Remove .base when qml.equal is fixed
+        assert simplified_op.arithmetic_depth == pow_op.arithmetic_depth
+
     def test_simplify_method_with_default_depth(self):
         """Test that the simplify method reduces complexity to the minimum."""
-        sum_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
+        pow_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
         final_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), 2)
-        simplified_op = sum_op.simplify()
+        simplified_op = pow_op.simplify()
         assert qml.equal(
             op1=simplified_op.base, op2=final_op.base
         )  # TODO: Remove .base when qml.equal is fixed

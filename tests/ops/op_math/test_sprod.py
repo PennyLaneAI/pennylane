@@ -493,8 +493,8 @@ class TestSimplify:
         assert np.allclose(a=simplified_op.matrix(), b=final_op.matrix(), rtol=0)
         assert simplified_op.arithmetic_depth == 2
 
-    def test_simplify_method_with_depth_equal_to_1(self):
-        """Test the simplify method with depth equal to 1."""
+    def test_simplify_method_with_given_depth(self):
+        """Test the simplify method with a given depth."""
         sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
 
         final_op = SProd(-1, qml.adjoint(qml.PauliX(0)))
@@ -504,6 +504,14 @@ class TestSimplify:
         assert (
             simplified_op.arithmetic_depth == sprod_op.arithmetic_depth - 2
         )  # cannot reduce depth by 3
+
+    def test_simplify_method_with_depth_equal_to_0(self):
+        """Test the simplify method with depth equal to 0."""
+        sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
+        simplified_op = sprod_op.simplify(depth=0)
+        # TODO: Use qml.equal when fixed
+        assert np.allclose(a=simplified_op.matrix(), b=sprod_op.matrix(), rtol=0)
+        assert simplified_op.arithmetic_depth == sprod_op.arithmetic_depth
 
 
 class TestWrapperFunc:
