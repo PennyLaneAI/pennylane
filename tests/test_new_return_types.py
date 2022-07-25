@@ -551,6 +551,24 @@ single_scalar_sample_no_obs_multi = [
     (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
 ]
 
+single_scalar_counts_multi = [
+    # Expval
+    (qml.expval(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
+    (qml.expval(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
+    (qml.expval(tensor_product), qml.sample(op=qml.PauliZ(0), counts=True)),
+    # Var
+    (qml.var(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
+    (qml.var(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
+    (qml.var(tensor_product), qml.sample(op=qml.PauliZ(0), counts=True)),
+]
+
+single_scalar_counts_no_obs_multi = [
+    # TODO: for copy=1, the wires syntax has a bug
+    # -----
+    (qml.expval(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1], counts=True)),
+    (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1], counts=True)),
+]
+
 
 @pytest.mark.parametrize("shot_vector", [[1, 10, 10, 1000], [1, (10, 2), 1000]])
 class TestShotVectorsAutogradMultiMeasure:
@@ -625,6 +643,87 @@ class TestShotVectorsAutogradMultiMeasure:
     @pytest.mark.parametrize("meas1,meas2", single_scalar_sample_no_obs_multi)
     @pytest.mark.xfail
     def test_single_scalar_sample_no_obs(self, shot_vector, meas1, meas2):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(meas1), qml.apply(meas2)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
+
+        idx = 0
+        for shot_tuple in dev.shot_vector:
+            for _ in range(shot_tuple.copies):
+                for i, r in enumerate(res[0][idx]):
+                    # First component of the shot vector is 1
+                    shots_is_one = idx == 0
+
+                    expected_sample_shape_item = len(meas2.wires)
+                    if i % 2 == 0 or shots_is_one:
+                        obs_provided = meas2.obs is not None
+                        expected_shape = ()
+                        assert r.shape == expected_shape
+                    else:
+                        assert r.shape == (shot_tuple.shots,)
+                idx += 1
+
+    @pytest.mark.parametrize("meas1,meas2", single_scalar_counts_multi)
+    def test_single_scalar_counts_with_obs(self, shot_vector, meas1, meas2):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(meas1), qml.apply(meas2)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+
+        for r in res[0]:
+            assert isinstance(r[0], np.ndarray)
+            assert isinstance(r[1], dict)
+
+        idx = 0
+        expected_outcomes = {-1, 1}
+        for shot_tuple in dev.shot_vector:
+            for _ in range(shot_tuple.copies):
+                for i, r in enumerate(res[0][idx]):
+                    if i % 2 == 0:
+                        obs_provided = meas2.obs is not None
+                        expected_shape = ()
+                        assert r.shape == expected_shape
+                    else:
+                        # Samples are either -1 or 1
+                        assert set(r.keys()).issubset(expected_outcomes)
+                        assert sum(r.values()) == shot_tuple.shots
+                idx += 1
+
+    @pytest.mark.parametrize("meas1,meas2", single_scalar_counts_no_obs_multi)
+    @pytest.mark.xfail
+    def test_single_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
