@@ -157,6 +157,7 @@ class DefaultQubit(QubitDevice):
         "SparseHamiltonian",
         "Hamiltonian",
         "Sum",
+        "SProd",
     }
 
     def __init__(
