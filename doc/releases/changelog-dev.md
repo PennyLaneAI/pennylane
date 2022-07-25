@@ -5,32 +5,29 @@
 <h3>New features since last release</h3>
 
 * The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
-  argument `broadcast`. If it is set to `True`, a single broadcasted
-  tape is created per trainable operation, containing all shifted evaluations for that operation.
+  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
 
   For example, for the circuit
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  x, y = np.array([0.4, 0.23], requires_grad=True)
 
-  @qml.qnode(dev)
-  def circuit(x, y):
+  with qml.tape.QuantumTape() as tape:
       qml.RX(x, wires=0)
-      qml.RY(y, wires=0)
-      return qml.expval(qml.PauliZ(0))
+      qml.CRY(y, wires=[0, 1])
+      qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
 
   we may compute the derivative via
 
   ```pycon
-  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
-  >>> circuit(x, y)
-  >>> tapes, fn = qml.gradients.param_shift(circuit.qtape, broadcast=True)
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
   >>> len(tapes)
   2
   >>> (tapes[0].batch_size, tapes[1].batch_size)
-  (2, 2)
+  (2, 4)
   ```
 
   For `broadcast=False` (the default), multiple unbroadcasted tapes are created as before.
@@ -38,26 +35,10 @@
   ```pycon
   >>> tapes, fn = qml.gradients.param_shift(circuit.qtape, broadcast=False)
   >>> len(tapes)
-  4
+  6
   >>> [t.batch_size for t in tapes]
-  [None, None, None, None]
+  [None, None, None, None, None, None]
   ```
-
-  An advantage of using `broadcast=True` is a speedup:
-
-  ```pycon
-  >>> number = 1000
-  >>> broadcasted_call = "qml.gradients.param_shift(circuit, broadcast=True)(x, y)"
-  >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
-  0.004547867801011307
-  >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(x, y)"
-  >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
-  0.006740601188008441
-  ```
-
-  This speedup grows with the number of shifts and qubits until all preprocessing and postprocessing
-  overhead becomes negligible. While it will depend strongly on many details, a wide range of
-  circuits will be differentiated significantly faster.
 
   Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
   yet and that the differentiated operations are required to support broadcasting when using

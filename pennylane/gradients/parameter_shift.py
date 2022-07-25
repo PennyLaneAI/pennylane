@@ -144,10 +144,9 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
     """Use shifted tape evaluations and parameter-shift rule coefficients
     to evaluate a gradient result."""
 
-    _, coeffs, fn, unshifted_coeff, batch_size = data
     # individual post-processing of e.g. Hamiltonian grad tapes
-    if fn is not None:
-        res = fn(res)
+    if data.fn is not None:
+        res = data.fn(res)
 
     # compute the linear combination of results and coefficients
     axis = 0
@@ -155,18 +154,18 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
         res = qml.math.stack(res)
     elif (
         qml.math.get_interface(res[0]) != "torch"
-        and batch_size is not None
+        and data.batch_size is not None
         and not scalar_qfunc_output
     ):
         # If the original output is not scalar and broadcasting is used, the second axis
         # (index 1) needs to be contracted. For Torch, this is not true because the
         # output of the broadcasted tape is flattened.
         axis = 1
-    g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
+    g = qml.math.tensordot(res, qml.math.convert_like(data.coeffs, res), [[axis], [0]])
 
-    if unshifted_coeff is not None:
+    if data.unshifted_coeff is not None:
         # add the unshifted term
-        g = g + unshifted_coeff * r0
+        g = g + data.unshifted_coeff * r0
 
     return g
 
@@ -259,7 +258,8 @@ def expval_param_shift(
     argnum = argnum or tape.trainable_params
 
     gradient_tapes = []
-    # Each entry for gradient_data will be a tuple with content
+    # Each entry for gradient_data will be a named tuple
+    GradData = NamedTuple("GradData", "num_tapes coeffs fn unshifted_coeff batch_size")
     # (num_tapes, coeffs, fn, unshifted_coeff, batch_size)
     gradient_data = []
     # Keep track of whether there is at least one unshifted term in all the parameter-shift rules
@@ -269,7 +269,7 @@ def expval_param_shift(
 
         if idx not in argnum:
             # parameter has zero gradient
-            gradient_data.append((0, [], None, None, 0))
+            gradient_data.append(GradData(0, [], None, None, 0))
             continue
 
         op, _ = tape.get_operation(idx)
@@ -286,7 +286,7 @@ def expval_param_shift(
             # hamiltonian_grad always returns a list with a single tape
             gradient_tapes.extend(g_tapes)
             # hamiltonian_grad always returns a list with a single tape!
-            gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
+            gradient_data.append(GradData(1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
             continue
 
         recipe = _choose_recipe(argnum, idx, gradient_recipes, shifts, tape)
@@ -299,7 +299,7 @@ def expval_param_shift(
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
-        gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
+        gradient_data.append(GradData(len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
@@ -316,15 +316,15 @@ def expval_param_shift(
 
         for data in gradient_data:
 
-            num_tapes, *_, batch_size = data
-            if num_tapes == 0:
+            #num_tapes, *_, batch_size = data
+            if data.num_tapes == 0:
                 # parameter has zero gradient. We don't know the output shape yet, so just memorize
                 # that this gradient will be set to zero, via grad = None
                 grads.append(None)
                 continue
 
-            res = results[start : start + num_tapes] if batch_size is None else results[start]
-            start = start + num_tapes
+            res = results[start : start + data.num_tapes] if data.batch_size is None else results[start]
+            start = start + data.num_tapes
 
             g = _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output)
 
@@ -645,6 +645,8 @@ def param_shift(
 
         Note that using parameter broadcasting via ``broadcast=True`` is not supported for tapes
         with multiple return values or for evaluations with shot vectors.
+        As the option ``broadcast=True`` adds a broadcasting dimension, it is not compatible
+        with circuits that already are broadcasted.
 
     .. details::
         :title: Usage Details
@@ -711,11 +713,34 @@ def param_shift(
         the results accordingly:
         >>> fn(qml.execute(gradient_tapes, dev, None))
         [-0.38751721 -0.18884787 -0.38355704]
-    """
+
+        An advantage of using ``broadcast=True`` is a speedup:
+
+        >>> number = 100
+        >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(x, y)"
+        >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
+        0.020183045039993887
+        >>> broadcasted_call = "qml.gradients.param_shift(circuit, broadcast=True)(x, y)"
+        >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
+        0.01244492811998498
+
+        This speedup grows with the number of shifts and qubits until all preprocessing and
+        postprocessing overhead becomes negligible. While it will depend strongly on the details
+        of the circuit, at least a small improvement can be expected in most cases.
+        Note that ``broadcast=True`` requires additional memory by a factor of the largest
+        batch_size of the created tapes.
+        """
 
     if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
+        )
+
+    print(broadcast)
+    if broadcast and len(tape.measurements) > 1:
+        raise NotImplementedError(
+            "Broadcasting with multiple measurements is not supported yet. "
+            f"Set broadcast to False instead. The tape measurements are {tape.measurements}"
         )
 
     if argnum is None and not tape.trainable_params:

@@ -1541,7 +1541,9 @@ class TestParameterShiftRuleBroadcast:
 
             return fn(dev.batch_execute(tapes))
 
-        res = cost_fn(params)
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            res = cost_fn(params)
+        """
         assert res.shape == (2, 2)
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
@@ -1551,6 +1553,7 @@ class TestParameterShiftRuleBroadcast:
         jac = qml.jacobian(cost_fn)(params)
         assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
         assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
+        """
 
     @pytest.mark.autograd
     def test_all_fallback(self, mocker, tol):
@@ -1627,7 +1630,9 @@ class TestParameterShiftRuleBroadcast:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        """
         assert len(tapes) == 2
         assert tapes[0].batch_size == tapes[1].batch_size == 2
 
@@ -1636,6 +1641,7 @@ class TestParameterShiftRuleBroadcast:
 
         expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        """
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -1651,7 +1657,9 @@ class TestParameterShiftRuleBroadcast:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        """
         assert len(tapes) == 3  # One unshifted, two broadcasted shifted tapes
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == tapes[2].batch_size == 2
@@ -1661,8 +1669,8 @@ class TestParameterShiftRuleBroadcast:
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        """
 
-    @pytest.mark.skip("Multiple return values are not supported with broadcasting yet.")
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -1679,7 +1687,9 @@ class TestParameterShiftRuleBroadcast:
 
         dev.execute(tape)
 
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        """
         assert len(tapes) == 2
         assert tapes[0].batch_size == tapes[1].batch_size == 2
 
@@ -1712,6 +1722,7 @@ class TestParameterShiftRuleBroadcast:
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        """
 
     def test_involutory_variance(self, tol):
         """Tests qubit observables that are involutory"""
@@ -1773,7 +1784,6 @@ class TestParameterShiftRuleBroadcast:
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.skip("Multiple return values are not supported with broadcasting yet.")
     def test_involutory_and_noninvolutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""
@@ -1794,7 +1804,9 @@ class TestParameterShiftRuleBroadcast:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        """
         gradA = fn(dev.batch_execute(tapes))
         assert len(tapes) == 1 + 2 * 4
 
@@ -1805,8 +1817,8 @@ class TestParameterShiftRuleBroadcast:
         expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
         assert np.diag(gradA) == pytest.approx(expected, abs=tol)
         assert np.diag(gradF) == pytest.approx(expected, abs=tol)
+        """
 
-    @pytest.mark.skip("Multiple return values are not supported with broadcasting yet.")
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
         values and variances"""
@@ -1837,7 +1849,9 @@ class TestParameterShiftRuleBroadcast:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
-        tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        """
         gradA = fn(dev.batch_execute(tapes))
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1856,6 +1870,7 @@ class TestParameterShiftRuleBroadcast:
         ).T
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+        """
 
     def test_projector_variance(self, tol):
         """Test that the variance of a projector is correctly returned"""
@@ -1893,7 +1908,6 @@ class TestParameterShiftRuleBroadcast:
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
 
-    @pytest.mark.skip("Multiple return values are not supported with broadcasting yet.")
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
         dev = qml.device("default.qubit", wires=4)
@@ -1925,9 +1939,11 @@ class TestParameterShiftRuleBroadcast:
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
-        transform = [
-            qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits
-        ]
+        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            transform = [
+                qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits
+            ]
+        """
         # The output shape of transforms for 2D qnode outputs (cost5 & cost6) is currently
         # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
         # TODO: fix qnode/expected once #2296 is resolved
@@ -1935,6 +1951,7 @@ class TestParameterShiftRuleBroadcast:
         expected = [(3,), (1, 3), (2, 3), (4, 3), (4, 1, 3), (4, 2, 3)]
 
         assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
+        """
 
 
 @pytest.mark.parametrize(
@@ -1976,7 +1993,6 @@ class TestParamShiftGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.slow
     def test_tf(self, tol, broadcast, expected):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
@@ -2175,7 +2191,6 @@ class TestParamShiftProbJacobians:
         assert np.allclose(res, self.expected_second_order, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.slow
     def test_tf(self, tol, broadcast, expected):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
@@ -2380,8 +2395,6 @@ class TestHamiltonianExpvalGradients:
 
     def test_multiple_hamiltonians(self, mocker, tol, broadcast):
         """Test multiple trainable Hamiltonian coefficients"""
-        if broadcast:
-            pytest.skip("Multiple return values are not supported with broadcasting yet.")
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
@@ -2411,7 +2424,11 @@ class TestHamiltonianExpvalGradients:
         expected = [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        tapes, fn = qml.gradients.param_shift(tape)
+        if broadcast:
+            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+                tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+            return
+        tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         # two shifts per rotation gate, one circuit per trainable H term
         assert len(tapes) == 2 * 2 + 3
         spy.assert_called()
@@ -2475,14 +2492,16 @@ class TestHamiltonianExpvalGradients:
     def test_autograd(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
-        if broadcast:
-            pytest.skip("Multiple return values are not supported with broadcasting yet.")
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
         dev = qml.device("default.qubit.autograd", wires=2)
 
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        if broadcast:
+            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+            return
+        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -2492,12 +2511,9 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.slow
     def test_tf(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
-        if broadcast:
-            pytest.skip("Multiple return values are not supported with broadcasting yet.")
         import tensorflow as tf
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
@@ -2506,8 +2522,13 @@ class TestHamiltonianExpvalGradients:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
+        if broadcast:
+            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+                with tf.GradientTape() as t:
+                    jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+            return
         with tf.GradientTape() as t:
-            jac = self.cost_fn(weights, coeffs1, coeffs2, dev=dev)
+            jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
         expected = self.cost_fn_expected(weights.numpy(), coeffs1.numpy(), coeffs2.numpy())
         assert np.allclose(jac, expected, atol=tol, rtol=0)
@@ -2521,8 +2542,6 @@ class TestHamiltonianExpvalGradients:
     def test_torch(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
-        if broadcast:
-            pytest.skip("Multiple return values are not supported with broadcasting yet.")
         import torch
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
@@ -2531,7 +2550,11 @@ class TestHamiltonianExpvalGradients:
 
         dev = qml.device("default.qubit.torch", wires=2)
 
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        if broadcast:
+            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+            return
+        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(
             weights.detach().numpy(), coeffs1.detach().numpy(), coeffs2.detach().numpy()
         )
@@ -2539,18 +2562,15 @@ class TestHamiltonianExpvalGradients:
 
         # second derivative wrt to Hamiltonian coefficients should be zero
         hess = torch.autograd.functional.jacobian(
-            lambda *args: self.cost_fn(*args, dev=dev), (weights, coeffs1, coeffs2)
+            lambda *args: self.cost_fn(*args, dev, broadcast), (weights, coeffs1, coeffs2)
         )
         assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.slow
     def test_jax(self, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
-        if broadcast:
-            pytest.skip("Multiple return values are not supported with broadcasting yet.")
         import jax
 
         jnp = jax.numpy
@@ -2560,13 +2580,17 @@ class TestHamiltonianExpvalGradients:
         weights = jnp.array([0.4, 0.5])
         dev = qml.device("default.qubit.jax", wires=2)
 
-        res = self.cost_fn(weights, coeffs1, coeffs2, dev=dev)
+        if broadcast:
+            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+                res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+            return
+        res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # second derivative wrt to Hamiltonian coefficients should be zero
-        res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev=dev)
+        res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
         assert np.allclose(res[:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
 
-        res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev=dev)
+        res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
         assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
