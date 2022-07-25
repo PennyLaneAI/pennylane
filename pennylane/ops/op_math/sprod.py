@@ -219,4 +219,4 @@ class SProd(SymbolicOp):
                 ),
                 id=self.base.id,
             )
-        return super().simplify(depth)
+        return SProd(scalar=self.scalar, base=self.base.simplify(depth=depth), id=self.id)
