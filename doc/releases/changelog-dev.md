@@ -170,6 +170,40 @@
   RZ**2(1.0, wires=[0])
   ```
 
+* A `SProd` symbolic class is added that allows users to represent the scalar product
+of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
+
+  We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> sprod_op = qml.s_prod(2.0, qml.PauliX(0))
+  >>> sprod_op
+  2.0*(PauliX(wires=[0]))
+  >>> sprod_op.matrix()
+  array([[ 0., 2.],
+         [ 2., 0.]])
+  >>> sprod_op.terms()
+  ([2.0], [PauliX(wires=[0])])
+  ```
+
+  The `sprod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the observable.
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev, grad_method="best")
+  def circuit(scalar, theta):
+        qml.RX(theta, wires=0)
+        return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
+  ```
+
+  ```pycon
+  >>> scalar, theta = (1.2, 3.4)
+  >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+  (array(-0.68362956), array(0.21683382))
+  ```
+
 * Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum` and `Adjoint`
 operators so that users can reduce the depth of nested operators.
 
@@ -265,6 +299,9 @@ operators so that users can reduce the depth of nested operators.
   with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
+* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
+  [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
+
 <h3>Breaking changes</h3>
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
@@ -290,6 +327,14 @@ operators so that users can reduce the depth of nested operators.
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the parameter-shift gradient breaks when using both
+  custom `grad_recipe`s that contain unshifted terms and recipes that
+  do not contains any unshifted terms.
+  [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
+
+* Fixes mixed CPU-GPU data-locality issues for Torch interface.
+  [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
+
 * Fixes a bug where the parameter-shift Hessian of circuits with untrainable
   parameters might be computed with respect to the wrong parameters or
   might raise an error.
@@ -308,6 +353,10 @@ operators so that users can reduce the depth of nested operators.
 
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
+
+* Allow hamiltonians with grouped observables to be measured on devices
+  which were transformed using `qml.transform.insert()`.
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 <h3>Contributors</h3>
 
