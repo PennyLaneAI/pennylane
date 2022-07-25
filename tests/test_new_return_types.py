@@ -357,10 +357,20 @@ class TestMultipleReturns:
             assert res[0][i].shape == ()
 
 
-single_scalar_output_measurements = [qml.expval(qml.PauliZ(wires=1)), qml.var(qml.PauliZ(wires=1))]
+pauliz = qml.PauliZ(wires=1)
+proj = qml.Projector([1], wires=1)
+hermitian = qml.Hermitian(np.diag([1, 2]), wires=0)
 
 # Note: mutual info and vn_entropy do not support some shot vectors
 # qml.mutual_info(wires0=[0], wires1=[1]), qml.vn_entropy(wires=[0])]
+single_scalar_output_measurements = [
+    qml.expval(pauliz),
+    qml.var(pauliz),
+    qml.expval(proj),
+    qml.var(proj),
+    qml.expval(hermitian),
+    qml.var(hermitian),
+]
 
 herm = np.diag([1, 2, 3, 4])
 probs_data = [
@@ -376,7 +386,7 @@ class TestShotVectorsAutograd:
     """TODO"""
 
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
-    def test_expval(self, shot_vector, measurement):
+    def test_single_scalar(self, shot_vector, measurement):
         """TODO"""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -498,20 +508,47 @@ class TestShotVectorsAutograd:
         assert all(isinstance(r, dict) for r in res[0])
 
 
+# 1. Expval/var with another measurement
+#
+# What else do we have:
+# a) Probs
+# b) i) Sample
+#    ii) Counts
+# c) Sample & density: no tests
+
+pauliz_w2 = qml.PauliZ(wires=2)
+proj_w2 = qml.Projector([1], wires=2)
+hermitian = qml.Hermitian(np.diag([1, 2]), wires=0)
+tensor_product = qml.PauliY(wires=2) @ qml.PauliX(wires=1)
+
+# TODO: same & different wire dedicated tests
 expval_probs_multi = [
-    (qml.expval(qml.PauliZ(wires=2)), qml.probs(wires=[2, 0])),
-    (qml.expval(qml.PauliZ(wires=2)), qml.probs(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    # Expval
+    (qml.expval(pauliz_w2), qml.probs(wires=[2, 0])),
+    (qml.expval(proj_w2), qml.probs(wires=[2, 0])),
+    (qml.expval(tensor_product), qml.probs(wires=[2, 0])),
+    # Var
     (qml.var(qml.PauliZ(wires=1)), qml.probs(wires=[0, 1])),
+    (qml.var(proj_w2), qml.probs(wires=[2, 0])),
+    (qml.var(tensor_product), qml.probs(wires=[2, 0])),
 ]
 
 expval_sample_multi = [
-    # TODO:
-    # For copy=1, the wires syntax has a bug
-    # (qml.expval(qml.PauliZ(wires=2)), qml.sample(wires=[2,0])),
-    # (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
+    # Expval
+    (qml.expval(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.expval(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.expval(tensor_product), qml.sample(op=qml.PauliZ(0))),
+    # Var
+    (qml.var(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.var(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.var(tensor_product), qml.sample(op=qml.PauliZ(0))),
+]
+
+expval_sample_no_obs_multi = [
+    # TODO: for copy=1, the wires syntax has a bug
     # -----
-    (qml.expval(qml.PauliZ(wires=2)), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
-    (qml.var(qml.PauliZ(wires=2)), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.expval(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
+    (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
 ]
 
 # TODO: test Projector expval/var!
@@ -551,7 +588,7 @@ class TestShotVectorsAutogradMultiMeasure:
                     assert r.shape == (2**2,)
 
     @pytest.mark.parametrize("meas1,meas2", expval_sample_multi)
-    def test_expval_sample(self, shot_vector, meas1, meas2):
+    def test_expval_sample_with_obs(self, shot_vector, meas1, meas2):
         """TODO"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
@@ -577,8 +614,52 @@ class TestShotVectorsAutogradMultiMeasure:
         for shot_tuple in dev.shot_vector:
             for _ in range(shot_tuple.copies):
                 for i, r in enumerate(res[0][idx]):
-                    if i % 2 == 0 or idx == 0:
-                        assert r.shape == ()
+                    # First component of the shot vector is 1
+                    shots_is_one = idx == 0
+                    if i % 2 == 0 or shots_is_one:
+                        obs_provided = meas2.obs is not None
+                        expected_shape = ()
+                        assert r.shape == expected_shape
+                    else:
+                        assert r.shape == (shot_tuple.shots,)
+                idx += 1
+
+    @pytest.mark.parametrize("meas1,meas2", expval_sample_no_obs_multi)
+    @pytest.mark.xfail
+    def test_expval_sample_no_obs(self, shot_vector, meas1, meas2):
+        """TODO"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(meas1), qml.apply(meas2)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        qnode.tape.is_sampled = True
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
+
+        idx = 0
+        for shot_tuple in dev.shot_vector:
+            for _ in range(shot_tuple.copies):
+                for i, r in enumerate(res[0][idx]):
+                    # First component of the shot vector is 1
+                    shots_is_one = idx == 0
+
+                    expected_sample_shape_item = len(meas2.wires)
+                    if i % 2 == 0 or shots_is_one:
+                        obs_provided = meas2.obs is not None
+                        expected_shape = ()
+                        assert r.shape == expected_shape
                     else:
                         assert r.shape == (shot_tuple.shots,)
                 idx += 1
