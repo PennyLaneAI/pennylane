@@ -786,8 +786,11 @@ class TestOperatorIntegration:
     def test_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
         sum_op = qml.PauliX(0) - 5
-        sum_op2 = 5 - qml.PauliX(0)
-        assert qml.equal(op1=sum_op, op2=-sum_op2)
+        sum_op_2 = -(5 - qml.PauliX(0))
+        assert np.allclose(a=sum_op.matrix(), b=np.array([[-5, 1], [1, -5]]), rtol=0)
+        assert np.allclose(a=sum_op.matrix(), b=sum_op_2.matrix(), rtol=0)
+        neg_op = -qml.PauliX(0)
+        assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
 
 
 class TestInverse:
