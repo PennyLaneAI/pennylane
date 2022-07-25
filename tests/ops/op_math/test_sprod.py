@@ -13,21 +13,19 @@
 # limitations under the License.
 """Tests for the SProd class representing the product of an operator by a scalar"""
 
-import pytest
-import numpy as np
 from copy import copy
 
+import gate_data as gd  # a file containing matrix rep of each gate
+import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import math
 import pennylane.numpy as qnp
-
+from pennylane import QuantumFunctionError, math
+from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
-from pennylane import QuantumFunctionError
-from pennylane.ops.op_math.sprod import s_prod, SProd
-from pennylane.operation import MatrixUndefinedError, DecompositionUndefinedError
-import gate_data as gd  # a file containing matrix rep of each gate
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
@@ -470,6 +468,35 @@ class TestProperties:
         cache = {"matrices": []}
         assert op.label(decimals=2, cache=cache) == "-1.20*U(M0)"
         assert len(cache["matrices"]) == 1
+
+
+class TestSimplify:
+    """Test SProd simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        sprod_op = s_prod(5, s_prod(3, s_prod(-1, qml.RZ(1.32, wires=0))))
+        assert sprod_op.arithmetic_depth == 3
+
+    def test_simplify_method_with_default_depth(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        sprod_op = s_prod(
+            0.5, s_prod(2, qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1))
+        )
+        final_op = qml.ops.Sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        simplified_op = sprod_op.simplify()
+        assert qml.equal(op1=simplified_op, op2=final_op)
+        assert simplified_op.arithmetic_depth == 1
+
+    def test_simplify_method_with_depth_equal_to_1(self):
+        """Test the simplify method with depth equal to 1."""
+        sprod_op = SProd(5, SProd(3, SProd(-1, qml.PauliX(0))))
+
+        final_op = SProd(15, SProd(-1, qml.PauliX(0)))
+        simplified_op = sprod_op.simplify(depth=1)
+        # TODO: Use qml.equal when fixed
+        assert np.allclose(a=simplified_op.matrix(), b=final_op.matrix(), rtol=0)
+        assert simplified_op.arithmetic_depth == sprod_op.arithmetic_depth - 1
 
 
 class TestWrapperFunc:
