@@ -370,7 +370,7 @@ class TestGenerateSamples:
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
             m.setattr(QubitDevice, "sample_basis_states", lambda self, wires, b: wires)
-            m.setattr(QubitDevice, "states_to_binary", lambda a, b: (a, b))
+            m.setattr(QubitDevice, "states_to_binary", staticmethod(lambda a, b: (a, b)))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
             m.setattr(QubitDevice, "shots", 1000)
             dev._samples = dev.generate_samples()
@@ -770,6 +770,7 @@ class TestCapabilities:
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "returns_probs": True,
+            "supports_broadcasting": False,
         }
         assert capabilities == QubitDevice.capabilities()
 

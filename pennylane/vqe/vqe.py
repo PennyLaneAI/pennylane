@@ -15,18 +15,33 @@
 This submodule contains functionality for running Variational Quantum Eigensolver (VQE)
 computations using PennyLane.
 """
+import warnings
+
 # pylint: disable=too-many-arguments, too-few-public-methods
 from collections.abc import Sequence
-import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
 
 
 class ExpvalCost:
-    """Create a cost function that gives the expectation value of an input Hamiltonian.
+    """
+    Create a cost function that gives the expectation value of an input Hamiltonian.
 
     This cost function is useful for a range of problems including VQE and QAOA.
+
+    .. warning::
+        ``ExpvalCost`` is deprecated. Instead, it is recommended to simply
+        pass Hamiltonians to the :func:`~.expval` function inside QNodes.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def ansatz(params):
+                some_qfunc(params)
+                return qml.expval(Hamiltonian)
+
+        In order to optimize the Hamiltonian evaluation taking into account commuting terms, use the ``grouping_type`` keyword in :class:`~.Hamiltonian`.
 
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
@@ -88,7 +103,7 @@ class ExpvalCost:
     tensor(-0.2316, dtype=torch.float64)
 
     The cost function can then be minimized using any gradient descent-based
-    :doc:`optimizer </introduction/optimizers>`.
+    :doc:`optimizer </introduction/interfaces>`.
 
     .. details::
         :title: Usage Details
@@ -136,6 +151,13 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
+        warnings.warn(
+            "ExpvalCost is deprecated, use qml.expval() instead. "
+            "For optimizing Hamiltonian measurements with measuring commuting "
+            "terms in parallel, use the grouping_type keyword in qml.Hamiltonian.",
+            UserWarning,
+        )
+
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
@@ -179,10 +201,7 @@ class ExpvalCost:
             def cost_fn(*qnode_args, **qnode_kwargs):
                 """Combine results from grouped QNode executions with grouped coefficients"""
                 if device.shot_vector:
-                    shots_batch = 0
-
-                    for i in device.shot_vector:
-                        shots_batch += i[1]
+                    shots_batch = sum(i[1] for i in device.shot_vector)
 
                     total = [0] * shots_batch
 
@@ -195,7 +214,7 @@ class ExpvalCost:
                     total = 0
                     for o, c in zip(obs_groupings, coeffs_groupings):
                         res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-                        total += sum([r * c_ for r, c_ in zip(res, c)])
+                        total += sum(r * c_ for r, c_ in zip(res, c))
                 return total
 
             self.cost_fn = cost_fn

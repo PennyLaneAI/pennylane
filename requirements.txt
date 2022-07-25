@@ -9,9 +9,8 @@ tensornetwork~=0.3
 autograd~=1.4
 toml~=0.10
 appdirs~=1.4
-semantic_version~=2.6
+semantic_version~=2.10
 dask[delayed]~=2022.4.1
 autoray==0.3.1
 matplotlib~=3.5
-black>=21
 opt_einsum~=3.3

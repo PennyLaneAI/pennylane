@@ -221,13 +221,13 @@ class TestConditionalOperations:
 
         # Check the two underlying ControlledOperation instance
         first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(first_ctrl_op, qml.ops.op_math.ControlledOperation)
         assert len(first_ctrl_op.subtape.operations) == 1
         assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
         assert first_ctrl_op.data == [first_par]
 
         sec_ctrl_op = tape.operations[1]
-        assert isinstance(sec_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(sec_ctrl_op, qml.ops.op_math.ControlledOperation)
         assert len(sec_ctrl_op.subtape.operations) == 1
         assert isinstance(sec_ctrl_op.subtape.operations[0], qml.RZ)
         assert sec_ctrl_op.data == [sec_par]
@@ -262,7 +262,7 @@ class TestConditionalOperations:
 
         # Check the two underlying ControlledOperation instance
         ctrl_op = tape.operations[1]
-        assert isinstance(ctrl_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(ctrl_op, qml.ops.op_math.ControlledOperation)
         assert len(ctrl_op.subtape.operations) == 1
         assert isinstance(ctrl_op.subtape.operations[0], qml.RY)
         assert ctrl_op.data == [first_par]
@@ -303,7 +303,7 @@ class TestConditionalOperations:
 
         # Check the underlying ControlledOperation instance
         ctrl_op = tape.operations[1]
-        assert isinstance(ctrl_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(ctrl_op, qml.ops.op_math.ControlledOperation)
         assert len(ctrl_op.subtape.operations) == 1
         assert isinstance(ctrl_op.subtape.operations[0], qml.RY)
         assert ctrl_op.data == [first_par]
@@ -376,14 +376,14 @@ class TestConditionalOperations:
 
         # Check the two underlying ControlledOperation instance
         ctrl_op1 = tape.operations[5]
-        assert isinstance(ctrl_op1, qml.transforms.control.ControlledOperation)
+        assert isinstance(ctrl_op1, qml.ops.op_math.ControlledOperation)
         assert len(ctrl_op1.subtape.operations) == 1
         assert isinstance(ctrl_op1.subtape.operations[0], qml.RX)
         assert ctrl_op1.data == [math.pi]
         assert ctrl_op1.wires == qml.wires.Wires([1, 2])
 
         ctrl_op2 = tape.operations[6]
-        assert isinstance(ctrl_op2, qml.transforms.control.ControlledOperation)
+        assert isinstance(ctrl_op2, qml.ops.op_math.ControlledOperation)
         assert len(ctrl_op2.subtape.operations) == 1
         assert isinstance(ctrl_op2.subtape.operations[0], qml.RZ)
         assert ctrl_op2.data == [math.pi]
@@ -441,7 +441,7 @@ class TestConditionalOperations:
 
         # Check the underlying ControlledOperation instance
         first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(first_ctrl_op, qml.ops.op_math.ControlledOperation)
         assert len(first_ctrl_op.subtape.operations) == 1
         assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
         assert first_ctrl_op.data == [rads]
@@ -473,7 +473,7 @@ class TestConditionalOperations:
 
         # Check the underlying ControlledOperation instance
         first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert isinstance(first_ctrl_op, qml.ops.op_math.ControlledOperation)
         assert len(first_ctrl_op.subtape.operations) == 1
         assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
         assert first_ctrl_op.data == [rads]
@@ -804,8 +804,8 @@ class TestDrawing:
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭C────────────────────────────────────────────────────┤     \n"
+            "0: ─╭●────────────────────────────────────────────────────┤     \n"
             "1: ─╰ControlledOperation(0.31)─╭ControlledOperation(0.31)─┤  <Z>\n"
-            "2: ────────────────────────────╰C─────────────────────────┤     "
+            "2: ────────────────────────────╰●─────────────────────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected

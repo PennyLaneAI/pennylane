@@ -148,23 +148,25 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        try:
-            rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-        except (TypeError, ValueError) as e:
-            raise qml.QuantumFunctionError(
-                "Only observables that are qubit-wise commuting "
-                "Pauli words can be returned on the same wire"
-            ) from e
+        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+            try:
+                rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
+                    tape._obs_sharing_wires
+                )
+            except (TypeError, ValueError) as e:
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire"
+                ) from e
 
-        tape._ops.extend(rotations)
+            tape._ops.extend(rotations)
 
-        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-            new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
-            tape._measurements[i] = new_m
+            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+                new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+                tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
-
             stop = stop_at(obj)
 
             if not expand_measurements:
@@ -178,7 +180,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operator, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -717,9 +719,8 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        new_tape = self.copy(copy_operations=True)
-
         with qml.tape.stop_recording():
+            new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 
         # the current implementation of the adjoint
@@ -1159,7 +1160,7 @@ class QuantumTape(AnnotatedQueue):
             for observable in self._measurements:
                 # Note: if one of the sample measurements contains outputs that
                 # are real, then the entire result will be real
-                if observable.numeric_type == float:
+                if observable.numeric_type is float:
                     return observable.numeric_type
 
             return int
@@ -1293,7 +1294,7 @@ class QuantumTape(AnnotatedQueue):
         .. seealso:: :attr:`~.Operator.batch_size` for details.
 
         Returns:
-            int: The batch size of the quantum tape.
+            int or None: The batch size of the quantum tape if present, else ``None``.
         """
         return self._batch_size
 

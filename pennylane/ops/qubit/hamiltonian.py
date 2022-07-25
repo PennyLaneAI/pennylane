@@ -17,12 +17,12 @@ arithmetic operations on their input states.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
-from copy import copy
+import numbers
 from collections.abc import Iterable
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -395,6 +395,7 @@ class Hamiltonian(Observable):
 
         self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
         self._ops = new_ops
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
 
@@ -425,6 +426,15 @@ class Hamiltonian(Observable):
     def __repr__(self):
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
+
+    def _ipython_display_(self):  # pragma: no-cover
+        """Displays __str__ in ipython instead of __repr__
+        See https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        if len(self.ops) < 15:
+            print(str(self))
+        else:  # pragma: no-cover
+            print(repr(self))
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
@@ -565,6 +575,9 @@ class Hamiltonian(Observable):
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
 
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
+
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
@@ -578,6 +591,8 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -598,6 +613,9 @@ class Hamiltonian(Observable):
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
+
         if isinstance(H, Hamiltonian):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
