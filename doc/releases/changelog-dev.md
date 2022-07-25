@@ -259,9 +259,12 @@
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* Allow allow custom return types from autograd qnode.
+  [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
+Samuel Banning, David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, 
 Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, Moritz Willmann
