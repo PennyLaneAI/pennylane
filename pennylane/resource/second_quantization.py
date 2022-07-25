@@ -76,7 +76,7 @@ class DoubleFactorization(Operation):
             import pennylane as qml
             from pennylane import numpy as np
 
-            symbols  = ['H', 'H', 'O']
+            symbols  = ['O', 'H', 'H']
             geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
                                  [0.00000000,  1.45278171, -1.00662237],
                                  [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
@@ -87,10 +87,10 @@ class DoubleFactorization(Operation):
             algo = DoubleFactorization(one, two)
 
         >>> algo.lamb  # the 1-Norm of the Hamiltonian
-        52.987620428985856
+        53.62085493277858
 
         >>> algo.gates  # estimated number of non-Clifford gates
-        105550609
+        103969925
 
         >>> algo.qubits  # estimated number of logical qubits
         290
