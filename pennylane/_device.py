@@ -675,11 +675,9 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         if self.custom_expand_fn is not None:
-            print("about to use custom expand fn")
             return self.custom_expand_fn(circuit, max_expansion=max_expansion)
 
         new_tape = self.default_expand_fn(circuit, max_expansion=max_expansion)
-        print(new_tape.circuit)
         return new_tape
 
     def batch_transform(self, circuit):
