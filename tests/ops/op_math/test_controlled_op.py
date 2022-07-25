@@ -523,6 +523,18 @@ class TestMatrix:
         op = Controlled(base, list(range(num_control)))
         assert qml.math.allclose(op.matrix(), mat)
 
+    def test_aux_wires_included(self):
+        """Test that matrix expands to have identity on work wires."""
+
+        base = qml.PauliX(1)
+        op = Controlled(
+            base,
+            0,
+            work_wires="aux",
+        )
+        mat = op.matrix()
+        assert mat.shape == (8, 8)
+
     def test_wire_order(self):
         """Test that the ``wire_order`` keyword argument alters the matrix as expected."""
         base = qml.RX(-4.432, wires=1)

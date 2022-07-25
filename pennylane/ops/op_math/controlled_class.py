@@ -226,10 +226,13 @@ class Controlled(SymbolicOp):
 
         canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
 
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
         active_wires = self.control_wires + self.target_wires
+
+        if wire_order is None or self.wires == Wires(wire_order):
+            return operation.expand_matrix(
+                canonical_matrix, wires=active_wires, wire_order=self.wires
+            )
+
         return operation.expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
