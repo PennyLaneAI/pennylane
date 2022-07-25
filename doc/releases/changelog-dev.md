@@ -60,11 +60,11 @@
   circuits will be differentiated significantly faster.
 
   Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
-  yet and that the differentiated operations are required to support broadcasting when using
+  yet and that the operations with trainable parameters are required to support broadcasting when using
   `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
 
   ```pycon
-  >>> qml.RX in qml.ops.qubit.attributes.suports_broadcasting
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
   True
   ```
 
