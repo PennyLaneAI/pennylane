@@ -107,8 +107,9 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
-  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
+
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 **Operator Arithmetic:**
@@ -276,6 +277,9 @@
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes</h3>
+
+* Fixes mixed CPU-GPU data-locality issues for Torch interface.
+  [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
 
 * Fixes a bug where the parameter-shift Hessian of circuits with untrainable
   parameters might be computed with respect to the wrong parameters or
