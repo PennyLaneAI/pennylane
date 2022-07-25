@@ -781,6 +781,7 @@ class TestOperatorIntegration:
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0)
         final_op = qml.ops.Sum(qml.ops.s_prod(5, qml.Identity(0)), qml.PauliX(0))
+        # TODO: Use qml.equal when fixed.
         assert np.allclose(sum_op.matrix(), final_op.matrix(), rtol=0)
 
     def test_dunder_methods(self):
