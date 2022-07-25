@@ -114,9 +114,10 @@ def _choose_recipe(argnum, idx, gradient_recipes, shifts, tape):
 
 def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape):
     """Exctract the unshifted term from a gradient recipe, if it is present.
+
     Returns:
-        array_like[float]: The reduced recipe without the unshifted term
-        bool: The updated flag whether an unshifted term was found for any of the recipes
+        array_like[float]: The reduced recipe without the unshifted term.
+        bool: The updated flag whether an unshifted term was found for any of the recipes.
         float or None: The coefficient of the unshifted term. None if no such term was present.
 
     This assumes that there will be at most one unshifted term in the recipe (others simply are
