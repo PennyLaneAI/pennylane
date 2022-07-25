@@ -1147,10 +1147,10 @@ class QubitDevice(Device):
         expanded_ops = []
         for op in reversed(tape.operations):
             if op.num_params > 1:
-                op_tape = op.expand().expand(stop_at=qml.operation.has_gen, depth=10)
-                print(op_tape.operations)
-                expanded_ops.extend(reversed(op_tape.operations))
-                if not all(qml.operation.has_gen(op) for op in op_tape.operations):
+                if isinstance(op, qml.Rot) and not op.inverse:
+                    ops = op.decomposition()
+                    expanded_ops.extend(reversed(ops))
+                else:
                     raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'

@@ -18,7 +18,7 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable, too-many-statements
 from functools import wraps
 import warnings
 import inspect
@@ -359,6 +359,13 @@ def execute(
         # autodiff frameworks.
         for i, tape in enumerate(tapes):
             tapes[i] = expand_fn(tape)
+
+        if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+            # adjoint jacobian needs further expansion
+            # this is a quick patch that should be cleaned up by later refactoring
+            stop_at = (not qml.operation.is_trainable) or qml.operation.has_gen
+            for i, tape in enumerate(tapes):
+                tapes[i] = tape.expand(stop_at=stop_at, depth=10)
 
         if mode in ("forward", "best"):
             # replace the forward execution function to return
