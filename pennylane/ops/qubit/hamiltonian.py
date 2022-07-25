@@ -18,12 +18,11 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import numbers
-from copy import copy
 from collections.abc import Iterable
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -396,6 +395,7 @@ class Hamiltonian(Observable):
 
         self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
         self._ops = new_ops
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
 

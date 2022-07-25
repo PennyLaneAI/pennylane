@@ -24,9 +24,8 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, expand_matrix
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.operation import expand_matrix
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -1125,6 +1124,9 @@ class PauliRot(Operation):
             iden = qml.math.eye(2 ** len(pauli_word), like=theta)
             if qml.math.get_interface(theta) == "tensorflow":
                 iden = qml.math.cast_like(iden, 1j)
+            if qml.math.get_interface(theta) == "torch":
+                td = exp.device
+                iden = iden.to(td)
 
             if qml.math.ndim(theta) == 0:
                 return exp * iden
@@ -2307,12 +2309,20 @@ class IsingXX(Operation):
     r"""
     Ising XX coupling gate
 
-    .. math:: XX(\phi) = \begin{bmatrix}
+    .. math:: XX(\phi) = \exp(-i \frac{\phi}{2} (X \otimes X)) =
+        \begin{bmatrix} =
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
             0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
             -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
         \end{bmatrix}.
+
+    .. note::
+
+        Special cases of using the :math:`XX` operator include:
+
+        * :math:`XX(0) = I`;
+        * :math:`XX(\pi) = i (X \otimes X)`.
 
     **Details:**
 
@@ -2430,12 +2440,20 @@ class IsingYY(Operation):
     r"""
     Ising YY coupling gate
 
-    .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
-        \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
-        0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
-        0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-        i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
+    .. math:: \mathtt{YY}(\phi) = \exp(-i \frac{\phi}{2} (Y \otimes Y)) =
+        \begin{bmatrix}
+            \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
+            0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
+            0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
         \end{bmatrix}.
+
+    .. note::
+
+        Special cases of using the :math:`YY` operator include:
+
+        * :math:`YY(0) = I`;
+        * :math:`YY(\pi) = i (Y \otimes Y)`.
 
     **Details:**
 
@@ -2552,12 +2570,21 @@ class IsingZZ(Operation):
     r"""
     Ising ZZ coupling gate
 
-    .. math:: ZZ(\phi) = \begin{bmatrix}
-        e^{-i \phi / 2} & 0 & 0 & 0 \\
-        0 & e^{i \phi / 2} & 0 & 0 \\
-        0 & 0 & e^{i \phi / 2} & 0 \\
-        0 & 0 & 0 & e^{-i \phi / 2}
+    .. math:: ZZ(\phi) = \exp(-i \frac{\phi}{2} (Z \otimes Z)) =
+        \begin{bmatrix}
+            e^{-i \phi / 2} & 0 & 0 & 0 \\
+            0 & e^{i \phi / 2} & 0 & 0 \\
+            0 & 0 & e^{i \phi / 2} & 0 \\
+            0 & 0 & 0 & e^{-i \phi / 2}
         \end{bmatrix}.
+
+    .. note::
+
+        Special cases of using the :math:`ZZ` operator include:
+
+        * :math:`ZZ(0) = I`;
+        * :math:`ZZ(\pi) = - (Z \otimes Z)`;
+        * :math:`ZZ(2\pi) = - I`;
 
     **Details:**
 
@@ -2703,14 +2730,23 @@ class IsingZZ(Operation):
 
 class IsingXY(Operation):
     r"""
-    Ising XY coupling gate
+    Ising (XX + YY) coupling gate
 
-    .. math:: \mathtt{XY}(\phi) = \begin{bmatrix}
+    .. math:: \mathtt{XY}(\phi) = \exp(-i \frac{\theta}{4} (X \otimes X + Y \otimes Y)) =
+        \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
             0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
             0 & 0 & 0 & 1
         \end{bmatrix}.
+
+    .. note::
+
+        Special cases of using the :math:`XY` operator include:
+
+        * :math:`XY(0) = I`;
+        * :math:`XY(\frac{\pi}{2}) = \sqrt{iSWAP}`;
+        * :math:`XY(\pi) = iSWAP`;
 
     **Details:**
 

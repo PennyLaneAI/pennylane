@@ -289,7 +289,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     An arbitrary labelling can be assigned by using ``wire_map``:
 
-    >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
+    >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
     >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
     Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
 
@@ -313,27 +313,27 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     n_qubits = len(binary_vector) // 2
 
-    if wire_map is not None:
+    if wire_map is None:
+        label_map = {i: i for i in range(n_qubits)}
+    else:
         if set(wire_map.values()) != set(range(n_qubits)):
             raise ValueError(
                 f"The values of wire_map must be integers 0 to N, for 2N-dimensional binary vector."
                 f" Instead got wire_map values: {wire_map.values()}"
             )
         label_map = {explicit_index: wire_label for wire_label, explicit_index in wire_map.items()}
-    else:
-        label_map = {i: Wires(i) for i in range(n_qubits)}
 
     pauli_word = None
     for i in range(n_qubits):
         operation = None
         if binary_vector[i] == 1 and binary_vector[n_qubits + i] == 0:
-            operation = PauliX(wires=label_map[i])
+            operation = PauliX(wires=Wires([label_map[i]]))
 
         elif binary_vector[i] == 1 and binary_vector[n_qubits + i] == 1:
-            operation = PauliY(wires=label_map[i])
+            operation = PauliY(wires=Wires([label_map[i]]))
 
         elif binary_vector[i] == 0 and binary_vector[n_qubits + i] == 1:
-            operation = PauliZ(wires=label_map[i])
+            operation = PauliZ(wires=Wires([label_map[i]]))
 
         if operation is not None:
             if pauli_word is None:
@@ -656,6 +656,38 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
             return False
 
     return True
+
+
+def are_pauli_words_qwc(lst_pauli_words):
+    """Given a list of observables assumed to be valid Pauli words, determine if they
+     are pairwise qubit-wise commuting.
+
+    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the number of distinct wire labels used to represent the Pauli words.
+
+    Args:
+        lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
+
+    Returns:
+        (bool): True if they are all qubit-wise commuting, false otherwise.
+    """
+    latest_op_name_per_wire = {}
+
+    for op in lst_pauli_words:  # iterate over the list of observables
+        op_names = [op.name] if not isinstance(op.name, list) else op.name
+        op_wires = op.wires.tolist()
+
+        for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
+            try:
+                if latest_op_name_per_wire[wire] != op_name and (
+                    op_name != "Identity" and latest_op_name_per_wire[wire] != "Identity"
+                ):
+                    return False
+                if latest_op_name_per_wire[wire] == "Identity":
+                    latest_op_name_per_wire[wire] = op_name  # update name
+            except KeyError:
+                latest_op_name_per_wire[wire] = op_name  # add wire and name for the first time
+
+    return True  # if we get through all ops, then they are qwc!
 
 
 def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):

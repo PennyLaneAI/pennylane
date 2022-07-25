@@ -192,24 +192,7 @@ class TestDecompositions:
         assert np.allclose(res[0].data[0], phi)
 
         decomposed_matrix = res[0].matrix()
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
-
-    def test_phase_decomposition(self, tol):
-        """Tests that the decomposition of the Phase gate is correct"""
-        phi = 0.3
-        op = qml.PhaseShift(phi, wires=0)
-        res = op.decomposition()
-
-        assert len(res) == 1
-
-        assert res[0].name == "RZ"
-
-        assert res[0].wires == Wires([0])
-        assert res[0].data[0] == 0.3
-
-        decomposed_matrix = res[0].matrix()
-        global_phase = (decomposed_matrix[op.matrix() != 0] / op.matrix()[op.matrix() != 0])[0]
-
+        global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
     def test_phase_decomposition_broadcasted(self, tol):
@@ -1636,7 +1619,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = npp.array(0.1, requires_grad=True)
+        phi = npp.array(phi, requires_grad=True)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -1664,7 +1647,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = npp.array(0.1, requires_grad=True)
+        phi = npp.array(phi, requires_grad=True)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
@@ -1702,7 +1685,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
@@ -1740,7 +1723,7 @@ class TestGrad:
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (
             0.5
@@ -1788,7 +1771,7 @@ class TestGrad:
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (
             0.5
@@ -1836,7 +1819,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = jnp.array(0.1)
+        phi = jnp.array(phi)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -1866,7 +1849,7 @@ class TestGrad:
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * tf.sin(phi)
 
@@ -1898,7 +1881,7 @@ class TestGrad:
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (
             0.5
@@ -1940,7 +1923,7 @@ class TestGrad:
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (
             0.5
@@ -1982,7 +1965,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = tf.Variable(0.1, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.complex128)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -2142,7 +2125,7 @@ class TestPauliRot:
         """Test PauliRot matrix correctly accounts for identities."""
 
         res = qml.PauliRot.compute_matrix(theta, pauli_word)
-        expected = qml.utils.expand(
+        expected = qml.operation.expand_matrix(
             qml.PauliRot.compute_matrix(theta, compressed_pauli_word), compressed_wires, wires
         )
 

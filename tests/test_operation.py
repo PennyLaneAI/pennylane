@@ -15,23 +15,20 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-from functools import reduce
 import warnings
-
-import pytest
-from scipy.sparse import csr_matrix
+from functools import reduce
 
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+from gate_data import CNOT, II, SWAP, I, Toffoli, X
 from numpy.linalg import multi_dot
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import Tensor, operation_derivative, Operator, Operation
-
-from gate_data import I, X, CNOT, Toffoli, SWAP, II
+from pennylane import numpy as pnp
+from pennylane.operation import Operation, Operator, Tensor, operation_derivative
 from pennylane.ops import cv
 from pennylane.wires import Wires
-
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
@@ -769,6 +766,17 @@ class TestOperatorIntegration:
         ):
             circuit()
 
+    def test_pow_method_with_non_numeric_power_raises_error(self):
+        """Test that when raising an Operator to a power that is not a number raises
+        a ValueError."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        with pytest.raises(ValueError, match="Cannot raise an Operator"):
+            _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
+
 
 class TestInverse:
     """Test inverse of operations"""
@@ -942,6 +950,22 @@ class TestTensor:
 
         assert tape._queue[t2] == {"owns": (op1, op2, op3)}
         assert tape._queue[op3] == {"owner": t2}
+
+    def test_queuing_tensor_matmul_components_outside(self):
+        """Tests the tensor-specific matmul method when components are defined outside the
+        queuing context."""
+
+        op1 = qml.PauliX(0)
+        op2 = qml.PauliY(1)
+        t1 = Tensor(op1, op2)
+
+        with qml.tape.QuantumTape() as tape:
+            op3 = qml.PauliZ(2)
+            t2 = t1 @ op3
+
+        assert len(tape._queue) == 2
+        assert tape._queue[op3] == {"owner": t2}
+        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
 
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
@@ -2001,6 +2025,11 @@ class TestExpandMatrix:
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
+        assert np.allclose(self.base_matrix_2, res)
+
+    def test_no_wire_order_returns_base_matrix(self):
+        """Test the case where the wire_order is None it returns the original matrix"""
+        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2])
         assert np.allclose(self.base_matrix_2, res)
 
     def test_no_expansion_broadcasted(self):

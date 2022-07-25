@@ -227,12 +227,15 @@ class TestCapabilities:
             return qml.state()
 
         if not cap.get("returns_state"):
+
+            # If the device is not defined to return state then the
+            # access_state method should raise
             with pytest.raises(qml.QuantumFunctionError):
-                circuit()
+                dev.access_state()
 
             try:
                 state = dev.state
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 state = None
 
             assert state is None
