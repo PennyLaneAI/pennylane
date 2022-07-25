@@ -616,15 +616,26 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        res = qml.execute(
-            [self.tape],
-            device=self.device,
-            gradient_fn=self.gradient_fn,
-            interface=self.interface,
-            gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
-            **self.execute_kwargs,
-        )
+        if qml.query_return():
+            res = qml.execute_new(
+                [self.tape],
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
+        else:
+            res = qml.execute(
+                [self.tape],
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
 
         if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             # If a device batch transform was applied, we need to 'unpack'
