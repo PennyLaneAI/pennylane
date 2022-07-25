@@ -1,15 +1,14 @@
-return_type = False
+class ReturnType:
+    activated = False
 
 
 def enable_return():
-    global return_type
-    return_type = True
+    ReturnType.activated = True
 
 
 def disable_return():
-    global return_type
-    return_type = False
+    ReturnType.activated = False
 
 
 def query_return():
-    return return_type
+    return ReturnType.activated
