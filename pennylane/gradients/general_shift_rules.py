@@ -420,12 +420,12 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         multipliers = np.ones_like(shifts)
 
     if broadcast:
-        return [_copy_and_shift_params(tape, params, index, shifts, multipliers)]
+        return (_copy_and_shift_params(tape, params, index, shifts, multipliers),)
 
-    return [
+    return tuple(
         _copy_and_shift_params(tape, params, index, shift, multiplier)
         for shift, multiplier in zip(shifts, multipliers)
-    ]
+    )
 
 
 def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
