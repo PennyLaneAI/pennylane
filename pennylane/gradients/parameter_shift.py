@@ -300,7 +300,9 @@ def expval_param_shift(
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
-        gradient_data.append(GradData(len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
+        gradient_data.append(
+            GradData(len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size)
+        )
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
@@ -317,14 +319,18 @@ def expval_param_shift(
 
         for data in gradient_data:
 
-            #num_tapes, *_, batch_size = data
+            # num_tapes, *_, batch_size = data
             if data.num_tapes == 0:
                 # parameter has zero gradient. We don't know the output shape yet, so just memorize
                 # that this gradient will be set to zero, via grad = None
                 grads.append(None)
                 continue
 
-            res = results[start : start + data.num_tapes] if data.batch_size is None else results[start]
+            res = (
+                results[start : start + data.num_tapes]
+                if data.batch_size is None
+                else results[start]
+            )
             start = start + data.num_tapes
 
             g = _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output)
@@ -730,7 +736,7 @@ def param_shift(
         of the circuit, at least a small improvement can be expected in most cases.
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
-        """
+    """
 
     if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
         raise ValueError(

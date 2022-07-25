@@ -2425,7 +2425,9 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         if broadcast:
-            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            with pytest.raises(
+                NotImplementedError, match="Broadcasting with multiple measurements"
+            ):
                 tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
             return
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
@@ -2498,7 +2500,9 @@ class TestHamiltonianExpvalGradients:
         dev = qml.device("default.qubit.autograd", wires=2)
 
         if broadcast:
-            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            with pytest.raises(
+                NotImplementedError, match="Broadcasting with multiple measurements"
+            ):
                 res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
@@ -2523,7 +2527,9 @@ class TestHamiltonianExpvalGradients:
         dev = qml.device("default.qubit.tf", wires=2)
 
         if broadcast:
-            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            with pytest.raises(
+                NotImplementedError, match="Broadcasting with multiple measurements"
+            ):
                 with tf.GradientTape() as t:
                     jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
@@ -2551,7 +2557,9 @@ class TestHamiltonianExpvalGradients:
         dev = qml.device("default.qubit.torch", wires=2)
 
         if broadcast:
-            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            with pytest.raises(
+                NotImplementedError, match="Broadcasting with multiple measurements"
+            ):
                 res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
@@ -2581,7 +2589,9 @@ class TestHamiltonianExpvalGradients:
         dev = qml.device("default.qubit.jax", wires=2)
 
         if broadcast:
-            with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
+            with pytest.raises(
+                NotImplementedError, match="Broadcasting with multiple measurements"
+            ):
                 res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)

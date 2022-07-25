@@ -402,6 +402,7 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             with all shifts distributed over the broadcasting dimension. In this case,
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
+
     def _copy_and_shift_params(tape, params, idx, shift, mult):
         """Create a copy of a tape and of parameters, and set the new tape to the parameters
         rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
