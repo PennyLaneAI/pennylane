@@ -785,7 +785,7 @@ class QubitDevice(Device):
                 self.reset()
                 self.apply(circuit.operations + rotations)
 
-                outcomes[t] = self.generate_samples(num_samples=1)[0]
+                outcomes[t] = self.generate_samples()[0]
 
             return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
         finally:
