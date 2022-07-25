@@ -274,7 +274,8 @@ class QuantumMonteCarlo(Operation):
         hardware-compatible gates, check out the :func:`~.quantum_monte_carlo` transformation for
         more details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider a standard normal distribution :math:`p(x)` and a function
         :math:`f(x) = \sin ^{2} (x)`. The expectation value of :math:`f(x)` is

@@ -2732,6 +2732,7 @@ class TestContractTensors:
     )
     expected_grad = np.array([expected_grad_0, expected_grad_1])
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_autograd(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the autograd interface"""
@@ -2750,7 +2751,7 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_torch(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the torch interface"""
@@ -2770,7 +2771,7 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.tf
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_tf(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the tf interface"""
@@ -2790,7 +2791,7 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.usefixtures("skip_if_no_jax_support")
+    @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_jax(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the jax interface"""

@@ -17,7 +17,9 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Optional
+from typing import Callable, Dict, Union, Any
+
+from pennylane.qnode import QNode
 
 try:
     import torch
@@ -45,9 +47,11 @@ class TorchLayer(Module):
         qnode (qml.QNode): the PennyLane QNode to be converted into a Torch layer
         weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
             their corresponding shapes
-        init_method (callable): a `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__
-            function for initializing the QNode weights. If not specified, weights are randomly
-            initialized using the uniform distribution over :math:`[0, 2 \pi]`.
+        init_method (Union[Callable, Dict[str, Union[Callable, torch.Tensor]], None]): Either a
+            `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__ function for
+            initializing all QNode weights or a dictionary specifying the callable/value used for
+            each weight. If not specified, weights are randomly initialized using the uniform
+            distribution over :math:`[0, 2 \pi]`.
 
     **Example**
 
@@ -82,7 +86,8 @@ class TorchLayer(Module):
     >>> clayer = torch.nn.Linear(2, 2)
     >>> model = torch.nn.Sequential(qlayer, clayer)
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **QNode signature**
 
@@ -99,7 +104,10 @@ class TorchLayer(Module):
 
         **Initializing weights**
 
-        The optional ``init_method`` argument of :class:`~.TorchLayer` allows for the initialization
+        If ``init_method`` is not specified, weights are randomly initialized from the uniform
+        distribution on the interval :math:`[0, 2 \pi]`.
+
+        Alternative a): The optional ``init_method`` argument of :class:`~.TorchLayer` allows for the initialization
         method of the QNode weights to be specified. The function passed to the argument must be
         from the `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__ module. For
         example, weights can be randomly initialized from the normal distribution by passing:
@@ -108,8 +116,39 @@ class TorchLayer(Module):
 
             init_method = torch.nn.init.normal_
 
-        If ``init_method`` is not specified, weights are randomly initialized from the uniform
-        distribution on the interval :math:`[0, 2 \pi]`.
+        Alternative b): Two dictionaries ``weight_shapes`` and ``init_method`` are passed, whose ``keys`` match the ``args`` of the qnode.
+
+        .. code-block::
+
+            @qml.qnode(dev)
+            def qnode(inputs, weights_0, weights_1, weights_2, weight_3, weight_4):
+                qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
+                qml.templates.StronglyEntanglingLayers(weights_0, wires=range(n_qubits))
+                qml.templates.BasicEntanglerLayers(weights_1, wires=range(n_qubits))
+                qml.Rot(*weights_2, wires=0)
+                qml.RY(weight_3, wires=1)
+                qml.RZ(weight_4, wires=1)
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+
+            weight_shapes = {
+                "weights_0": (3, n_qubits, 3),
+                "weights_1": (3, n_qubits),
+                "weights_2": 3,
+                "weight_3": 1,
+                "weight_4": (1,),
+            }
+
+            init_method = {
+                "weights_0": torch.nn.init.normal_,
+                "weights_1": torch.nn.init.uniform,
+                "weights_2": torch.tensor([1., 2., 3.]),
+                "weight_3": torch.tensor(1.),  # scalar when shape is not an iterable and is <= 1
+                "weight_4": torch.tensor([1.]),
+            }
+
+            qlayer = qml.qnn.TorchLayer(qnode, weight_shapes=weight_shapes, init_method=init_method)
 
         **Full code example**
 
@@ -196,7 +235,14 @@ class TorchLayer(Module):
             Average loss over epoch 8: 0.1528
     """
 
-    def __init__(self, qnode, weight_shapes: dict, init_method: Optional[Callable] = None):
+    def __init__(
+        self,
+        qnode: QNode,
+        weight_shapes: dict,
+        init_method: Union[Callable, Dict[str, Union[Callable, Any]]] = None,
+        # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
+        # tests that don't use torch module.
+    ):
         if not TORCH_IMPORTED:
             raise ImportError(
                 "TorchLayer requires PyTorch. PyTorch can be installed using:\n"
@@ -207,7 +253,7 @@ class TorchLayer(Module):
         super().__init__()
 
         weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
+            weight: (tuple(size) if isinstance(size, Iterable) else () if size == 1 else (size,))
             for weight, size in weight_shapes.items()
         }
 
@@ -217,20 +263,11 @@ class TorchLayer(Module):
         self.qnode = qnode
         self.qnode.interface = "torch"
 
-        if not init_method:
-            init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
+        self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
 
-        self.qnode_weights = {}
+        self._init_weights(init_method=init_method, weight_shapes=weight_shapes)
 
-        for name, size in weight_shapes.items():
-            if len(size) == 0:
-                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(1))[0])
-            else:
-                self.qnode_weights[name] = torch.nn.Parameter(init_method(torch.Tensor(*size)))
-
-            self.register_parameter(name, self.qnode_weights[name])
-
-    def _signature_validation(self, qnode, weight_shapes):
+    def _signature_validation(self, qnode: QNode, weight_shapes: dict):
         sig = inspect.signature(qnode.func).parameters
 
         if self.input_arg not in sig:
@@ -249,9 +286,10 @@ class TorchLayer(Module):
         if inspect.Parameter.VAR_POSITIONAL in param_kinds:
             raise TypeError("Cannot have a variable number of positional arguments")
 
-        if inspect.Parameter.VAR_KEYWORD not in param_kinds:
-            if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
-                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+        if inspect.Parameter.VAR_KEYWORD not in param_kinds and set(weight_shapes.keys()) | {
+            self.input_arg
+        } != set(sig.keys()):
+            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """Evaluates a forward pass through the QNode based upon input data and the initialized
@@ -265,11 +303,10 @@ class TorchLayer(Module):
         """
 
         if len(inputs.shape) > 1:
-            # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
-            # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
-            reconstructor = []
-            for x in torch.unbind(inputs):
-                reconstructor.append(self.forward(x))
+            # If the input size is not 1-dimensional, unstack the input along its first dimension,
+            # recursively call the forward pass on each of the yielded tensors, and then stack the
+            # outputs back into the correct shape
+            reconstructor = [self.forward(x) for x in torch.unbind(inputs)]
             return torch.stack(reconstructor)
 
         # If the input is 1-dimensional, calculate the forward pass as usual
@@ -289,6 +326,57 @@ class TorchLayer(Module):
             **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
         }
         return self.qnode(**kwargs).type(x.dtype)
+
+    def _init_weights(
+        self,
+        weight_shapes: Dict[str, tuple],
+        init_method: Union[Callable, Dict[str, Union[Callable, Any]], None],
+    ):
+        r"""Initialize and register the weights with the given init_method. If init_method is not
+        specified, weights are randomly initialized from the uniform distribution on the interval
+        [0, 2π].
+
+        Args:
+            weight_shapes (dict[str, tuple]): a dictionary mapping from all weights used in the QNode to
+                their corresponding shapes
+            init_method (Union[Callable, Dict[str, Union[Callable, torch.Tensor]], None]): Either a
+                `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__ function for
+                initializing the QNode weights or a dictionary specifying the callable/value used for
+                each weight. If not specified, weights are randomly initialized using the uniform
+                distribution over :math:`[0, 2 \pi]`.
+        """
+
+        def init_weight(weight_name: str, weight_size: tuple) -> torch.Tensor:
+            """Initialize weights.
+
+            Args:
+                weight_name (str): weight name
+                weight_size (tuple): size of the weight
+
+            Returns:
+                torch.Tensor: tensor containing the weights
+            """
+            if init_method is None:
+                init = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
+            elif callable(init_method):
+                init = init_method
+            elif isinstance(init_method, dict):
+                init = init_method[weight_name]
+                if isinstance(init, torch.Tensor):
+                    if tuple(init.shape) != weight_size:
+                        raise ValueError(
+                            f"The Tensor specified for weight '{weight_name}' doesn't have the "
+                            + "appropiate shape."
+                        )
+                    return init
+            return init(torch.Tensor(*weight_size)) if weight_size else init(torch.Tensor(1))[0]
+
+        for name, size in weight_shapes.items():
+            self.qnode_weights[name] = torch.nn.Parameter(
+                init_weight(weight_name=name, weight_size=size)
+            )
+
+            self.register_parameter(name, self.qnode_weights[name])
 
     def __str__(self):
         detail = "<Quantum Torch Layer: func={}>"

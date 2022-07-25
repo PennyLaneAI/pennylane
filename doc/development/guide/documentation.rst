@@ -189,7 +189,8 @@ Most functions or methods should have the following structure:
 
         Minimal example with 1 or 2 code blocks (required).
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             More complicated use cases, options, and larger code blocks (optional).
 
@@ -273,7 +274,8 @@ The class docstring is placed directly below the class definition:
 
         Minimal example with 1 or 2 code blocks (required).
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             More complicated use cases, options, and larger code blocks (optional).
 
@@ -439,8 +441,8 @@ introductory quickstarts:
 * **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
   located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
-* **Optimizers**: new optimizers should be added to the :doc:`/introduction/optimizers` quickstart,
-  located at ``doc/introduction/optimizers.rst``.
+* **Optimizers**: new optimizers should be added to the relevant quickstart section
+  in :doc:`/introduction/interfaces`, located at ``doc/introduction/interfaces.rst``.
 
 * **Measurement**: new measurement functions should be added to the :doc:`/introduction/measurements` quickstart,
   located at ``doc/introduction/measurements.rst``.

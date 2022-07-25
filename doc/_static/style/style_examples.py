@@ -25,28 +25,30 @@ import matplotlib.pyplot as plt
 
 folder = pathlib.Path(__file__).parent
 
+
 def make_imag(circuit, style):
     qml.drawer.use_style(style)
 
-    fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
-    fig.suptitle(style, fontsize='xx-large')
+    fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
+    fig.suptitle(style, fontsize="xx-large")
 
-    plt.savefig(folder / (style + "_style.png"))
+    plt.savefig(folder / (style + "_style.png"), transparent=False)
     plt.close()
-    qml.drawer.use_style('default')
+    qml.drawer.use_style("default")
+
 
 if __name__ == "__main__":
 
-    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+    dev = qml.device("lightning.qubit", wires=(0, 1, 2, 3))
+
     @qml.qnode(dev)
     def circuit(x, z):
-        qml.QFT(wires=(0,1,2,3))
-        qml.Toffoli(wires=(0,1,2))
-        qml.CSWAP(wires=(0,2,3))
+        qml.QFT(wires=(0, 1, 2, 3))
+        qml.Toffoli(wires=(0, 1, 2))
+        qml.CSWAP(wires=(0, 2, 3))
         qml.RX(x, wires=0)
-        qml.CRZ(z, wires=(3,0))
+        qml.CRZ(z, wires=(3, 0))
         return qml.expval(qml.PauliZ(0))
 
     for style in qml.drawer.available_styles():
         make_imag(circuit, style)
-

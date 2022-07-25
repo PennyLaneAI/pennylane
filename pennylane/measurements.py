@@ -20,7 +20,6 @@ and measurement samples using AnnotatedQueues.
 # pylint: disable=too-many-instance-attributes
 import copy
 import uuid
-import warnings
 import functools
 from enum import Enum
 from typing import Generic, TypeVar
@@ -39,11 +38,14 @@ class ObservableReturnTypes(Enum):
     """Enumeration class to represent the return types of an observable."""
 
     Sample = "sample"
+    Counts = "counts"
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
+    VnEntropy = "vnentropy"
+    MutualInfo = "mutualinfo"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -52,6 +54,10 @@ class ObservableReturnTypes(Enum):
 
 Sample = ObservableReturnTypes.Sample
 """Enum: An enumeration which represents sampling an observable."""
+
+Counts = ObservableReturnTypes.Counts
+"""Enum: An enumeration which represents returning the number of times
+ each sample was obtained."""
 
 Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
@@ -71,6 +77,12 @@ State = ObservableReturnTypes.State
 MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+MutualInfo = ObservableReturnTypes.MutualInfo
+"""Enum: An enumeration which represents returning the mutual information before measurements."""
 
 
 class MeasurementShapeError(ValueError):
@@ -92,16 +104,6 @@ class MeasurementProcess:
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        shape (tuple[int] or None): The output shape of the measurement proccess. For
-            some measurement processes a shape is not applicable or the shape
-            may depend on device options, in such cases ``shape=None``. The
-            shape is determined by the return type. For example, assuming a
-            device with ``shots=None``, expectation values and variances define
-            ``shape=(1,)``, whereas probabilities in the qubit define
-            ``shape=(1, 2**num_wires)`` where ``num_wires`` is the number of
-            wires the measurement acts on.
-        numeric_type (type): The expected Python numeric type of the result;
-            either ``int``, ``float`` or ``complex``.
     """
 
     # pylint: disable=too-few-public-methods
@@ -114,12 +116,12 @@ class MeasurementProcess:
         wires=None,
         eigvals=None,
         id=None,
-        shape=None,
-        numeric_type=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
+        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -132,14 +134,6 @@ class MeasurementProcess:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = np.array(eigvals)
-
-        self._shape = shape
-        """tuple[int] or None: The output shape of the measurement proccess. For some a
-        shape is not applicable or the shape may depend on device options, in
-        such cases ``shape=None``."""
-
-        self.numeric_type = numeric_type
-        """tuple[int]: The Python numeric type of the measurement result."""
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
@@ -157,6 +151,43 @@ class MeasurementProcess:
         # Queue the measurement process
         self.queue()
 
+    @property
+    @functools.lru_cache()
+    def numeric_type(self):
+        """The Python numeric type of the measurement result.
+
+        Returns:
+            type: The output numeric type; ``int``, ``float`` or ``complex``.
+
+        Raises:
+            QuantumFunctionError: the return type of the measurement process is
+                unrecognized and cannot deduce the numeric type
+        """
+        if self.return_type in (Expectation, MutualInfo, Probability, Variance, VnEntropy):
+            return float
+
+        if self.return_type is State:
+            return complex
+
+        if self.return_type is Sample:
+
+            # Note: we only assume an integer numeric type if the observable is a
+            # built-in observable with integer eigenvalues or a tensor product thereof
+            if self.obs is None:
+
+                # Computational basis samples
+                numeric_type = int
+            else:
+                int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+                tensor_terms = [self.obs] if not hasattr(self.obs, "obs") else self.obs.obs
+                every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
+                numeric_type = int if every_term_standard else float
+            return numeric_type
+
+        raise qml.QuantumFunctionError(
+            f"Cannot deduce the numeric type of the measurement process with unrecognized return_type {self.return_type}."
+        )
+
     @functools.lru_cache()
     def shape(self, device=None):
         """The expected output shape of the MeasurementProcess.
@@ -167,71 +198,97 @@ class MeasurementProcess:
           ``Sample``;
         * The shot vector was defined in the device.
 
+        For example, assuming a device with ``shots=None``, expectation values
+        and variances define ``shape=(1,)``, whereas probabilities in the qubit
+        model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
+        number of wires the measurement acts on.
+
+        Note that the shapes for vector-valued return types such as
+        ``Probability`` and ``State`` are adjusted to the output of
+        ``qml.execute`` and may have an extra first element that is squeezed
+        when using QNodes.
+
         Args:
             device (.Device): a PennyLane device to use for determining the
                 shape
 
         Returns:
             tuple: the output shape
+
+        Raises:
+            QuantumFunctionError: the return type of the measurement process is
+                unrecognized and cannot deduce the numeric type
         """
-        if device is None:
-            if self._shape is not None:
-                return self._shape
+        shape = None
 
-            if self.return_type in (Probability, State, Sample):
-                raise MeasurementShapeError(
-                    f"Return type {self.return_type} requires the device argument to be passed to obtain the shape."
-                )
+        # First: prepare the shape for return types that do not require a
+        # device
+        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
+            shape = (1,)
 
-        if device._shot_vector is None:
+        density_matrix_return = self.return_type == State and self.wires
 
-            # Device dependent shapes
-            if self.return_type == Probability:
-                len_wires = len(self.wires)
-                dim = self._get_num_basis_states(len_wires, device)
-                shape = (1, dim)
+        if density_matrix_return:
+            dim = 2 ** len(self.wires)
+            shape = (1, dim, dim)
 
-            elif self.return_type == State and self._shape is None:
+        # Determine shape if device with shot vector
+        if device is not None and device._shot_vector is not None:
+            shape = self._shot_vector_shape(device, main_shape=shape)
 
-                # Note: qml.density_matrix has its shape defined, so we're handling
-                # the qml.state case; acts on all device wires
-                dim = 2 ** len(device.wires)
-                shape = (1, dim)
-
-            elif self.return_type == Sample:
-                len_wires = len(device.wires)
-
-                if self.obs is not None:
-                    # qml.sample(some_observable) case
-                    shape = (1, device.shots)
-
-                else:
-                    # qml.sample() case
-                    shape = (1, device.shots, len_wires)
-            else:
-                shape = self._shape
-
-            # The other return types should have their shapes pre-defined
+        # If we have a shape, return it here
+        if shape is not None:
             return shape
 
-        return self._shot_vector_shape(device)
+        # Then: handle return types that require a device; no shot vector
+        if device is None and self.return_type in (Probability, State, Sample):
+            raise MeasurementShapeError(
+                f"The device argument is required to obtain the shape of the measurement process; got return type {self.return_type}."
+            )
+
+        if self.return_type == Probability:
+            len_wires = len(self.wires)
+            dim = self._get_num_basis_states(len_wires, device)
+            return (1, dim)
+
+        if self.return_type == State:
+
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            return (1, dim)
+
+        if self.return_type == Sample:
+            len_wires = len(device.wires)
+
+            if self.obs is not None:
+                # qml.sample(some_observable) case
+                return (1, device.shots)
+
+            # qml.sample() case
+            return (1, device.shots, len_wires)
+
+        raise qml.QuantumFunctionError(
+            f"Cannot deduce the shape of the measurement process with unrecognized return_type {self.return_type}."
+        )
 
     @functools.lru_cache()
-    def _shot_vector_shape(self, device):
+    def _shot_vector_shape(self, device, main_shape=None):
         """Auxiliary function for getting the output shape when the device has
         the shot vector defined.
 
-        The shape is device dependent even if the return type has a shape
+        The shape is device dependent even if the return type has a main shape
         pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
+        # pylint: disable=consider-using-generator
         num_shot_elements = sum([s.copies for s in shot_vector])
         shape = ()
 
-        if self._shape is not None:
+        if main_shape is not None:
 
             # Expval, var and density_matrix case
-            shape = list(self._shape)
+            shape = list(main_shape)
             shape[0] *= num_shot_elements
             shape = tuple(shape)
 
@@ -317,23 +374,38 @@ class MeasurementProcess:
         if self.obs is not None:
             return cls(self.return_type, obs=copy.copy(self.obs))
 
+        if self.log_base is not None:
+            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
+
         return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
     @property
     def wires(self):
-        r"""The wires the measurement process acts on."""
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
         if self.obs is not None:
             return self.obs.wires
-        return self._wires
+
+        if not isinstance(self._wires, list):
+            return self._wires
+
+        return Wires.all_wires(self._wires)
 
     @property
+    def raw_wires(self):
+        r"""The wires the measurement process acts on.
+
+        For measurements involving more than one set of wires (such as
+        mutual information), this is a list of the Wires objects. Otherwise,
+        this is the same as :func:`~.MeasurementProcess.wires`
+        """
+        return self._wires
+
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
-        .. warning::
-            The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
-
         If the measurement process has an associated observable,
         the eigenvalues will correspond to this observable. Otherwise,
         they will be the eigenvalues provided when the measurement
@@ -345,34 +417,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
-        array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
-            "Please use 'qml.eigvals' instead.",
-            UserWarning,
-        )
-        return self.get_eigvals()
-
-    def get_eigvals(self):
-        r"""Eigenvalues associated with the measurement process.
-
-        If the measurement process has an associated observable,
-        the eigenvalues will correspond to this observable. Otherwise,
-        they will be the eigenvalues provided when the measurement
-        process was instantiated.
-
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
-
-        **Example:**
-
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -380,7 +425,7 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.get_eigvals()
+                return self.obs.eigvals()
             except qml.operation.EigvalsUndefinedError:
                 pass
 
@@ -414,7 +459,7 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].get_eigvals())
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
@@ -424,21 +469,14 @@ class MeasurementProcess:
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(
-                self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
-            )
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
     def queue(self, context=qml.QueuingContext):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            try:
-                context.update_info(self.obs, owner=self)
-            except qml.queuing.QueuingError:
-                self.obs.queue(context=context)
-                context.update_info(self.obs, owner=self)
-
+            context.safe_update_info(self.obs, owner=self)
             context.append(self, owns=self.obs)
         else:
             context.append(self)
@@ -458,6 +496,7 @@ class MeasurementProcess:
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
+
         if self.obs is None:
             fingerprint = (
                 str(self.name),
@@ -503,12 +542,12 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, (qml.operation.Observable, qml.Hamiltonian)):
+    if not op.is_hermitian:
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with expval"
         )
 
-    return MeasurementProcess(Expectation, obs=op, shape=(1,), numeric_type=float)
+    return MeasurementProcess(Expectation, obs=op)
 
 
 def var(op):
@@ -538,15 +577,16 @@ def var(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, qml.operation.Observable):
+    if not op.is_hermitian:
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
-    return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
+    return MeasurementProcess(Variance, obs=op)
 
 
-def sample(op=None, wires=None):
+def sample(op=None, wires=None, counts=False):
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device.
+    determined from the ``dev.shots`` attribute of the corresponding device,
+    returning raw samples (counts=False) or the number of counts for each sample (counts=True).
     If no observable is provided then basis state samples are returned directly
     from the device.
 
@@ -556,6 +596,7 @@ def sample(op=None, wires=None):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
+        counts (bool): return the result as number of counts for each sample
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -608,6 +649,27 @@ def sample(op=None, wires=None):
            [1, 1],
            [0, 0]])
 
+    If specified counts=True, the function returns number of counts for each sample,
+    both for observables eigenvalues or the system eigenstates.
+
+    .. code-block:: python3
+
+        dev = qml.device('default.qubit', wires=3, shots=10)
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.PauliX(wires=2)
+            return qml.sample(qml.PauliZ(0), counts = True), qml.sample(counts=True)
+
+    Executing this QNode:
+
+    >>> my_circ()
+    tensor([tensor({-1: 5, 1: 5}, dtype=object, requires_grad=True),
+        tensor({'001': 5, '111': 5}, dtype=object, requires_grad=True)],
+       dtype=object, requires_grad=True)
+
     .. note::
 
         QNodes that return samples cannot, in general, be differentiated, since the derivative
@@ -616,26 +678,15 @@ def sample(op=None, wires=None):
         case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
         observable ``obs``.
     """
-    if (
-        not isinstance(op, qml.operation.Observable) and op is not None
-    ):  # None type is also allowed for op
+    if op is not None and not op.is_hermitian:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    # Note: we only assume an integer numeric type if the observable is a
-    # built-in observable with integer eigenvalues or a tensor product thereof
-    if op is None:
+    if isinstance(op, (qml.ops.Sum, qml.ops.SProd)):  # pylint: disable=no-member
+        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
 
-        # Computational basis samples
-        numeric_type = int
-    else:
-        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
-        tensor_terms = [op] if not hasattr(op, "obs") else op.obs
-        if not all(o.__class__ in int_eigval_obs for o in tensor_terms):
-            numeric_type = float
-        else:
-            numeric_type = int
+    sample_or_counts = Counts if counts else Sample
 
     if wires is not None:
         if op is not None:
@@ -643,12 +694,9 @@ def sample(op=None, wires=None):
                 "Cannot specify the wires to sample if an observable is "
                 "provided. The wires to sample will be determined directly from the observable."
             )
+        return MeasurementProcess(sample_or_counts, obs=op, wires=qml.wires.Wires(wires))
 
-        return MeasurementProcess(
-            Sample, obs=op, wires=qml.wires.Wires(wires), numeric_type=numeric_type
-        )
-
-    return MeasurementProcess(Sample, obs=op, numeric_type=numeric_type)
+    return MeasurementProcess(sample_or_counts, obs=op)
 
 
 def probs(wires=None, op=None):
@@ -723,12 +771,15 @@ def probs(wires=None, op=None):
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
+    if isinstance(op, (qml.ops.Sum, qml.ops.SProd)):  # pylint: disable=no-member
+        raise qml.QuantumFunctionError(
+            "Symbolic Operations are not supported for rotating probabilities yet."
+        )
+
     if op is not None and not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
-
-    numeric_type = float
 
     if wires is not None:
         if op is not None:
@@ -736,10 +787,8 @@ def probs(wires=None, op=None):
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        return MeasurementProcess(
-            Probability, wires=qml.wires.Wires(wires), numeric_type=numeric_type
-        )
-    return MeasurementProcess(Probability, obs=op, numeric_type=numeric_type)
+        return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+    return MeasurementProcess(Probability, obs=op)
 
 
 def state():
@@ -777,7 +826,8 @@ def state():
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         A QNode with the ``qml.state`` output can be used in a cost function with
         is then differentiated:
@@ -795,7 +845,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(State, numeric_type=complex)
+    return MeasurementProcess(State)
 
 
 def density_matrix(wires):
@@ -837,9 +887,110 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
-    dim = 2 ** len(wires)
-    shape = (1, dim, dim)
-    return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
+    return MeasurementProcess(State, wires=wires)
+
+
+def vn_entropy(wires, log_base=None):
+    r"""Von Neumann entropy of the system prior to measurement.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        wires (Sequence[int] or int): The wires of the subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+    Executing this QNode:
+
+    >>> circuit_entropy(np.pi/2)
+    0.6931472
+
+    It is also possible to get the gradient of the previous QNode:
+
+    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(circuit_entropy)(param)
+    0.6232252401402305
+
+    .. note::
+
+        Calculating the derivative of :func:`~.vn_entropy` is currently supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
+    """
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
+
+
+def mutual_info(wires0, wires1, log_base=None):
+    r"""Mutual information between the subsystems prior to measurement:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Args:
+        wires0 (Sequence[int] or int): the wires of the first subsystem
+        wires1 (Sequence[int] or int): the wires of the second subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_mutual(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+    Executing this QNode:
+
+    >>> circuit_mutual(np.pi/2)
+    1.3862943611198906
+
+    It is also possible to get the gradient of the previous QNode:
+
+    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(circuit_mutual)(param)
+    1.2464504802804612
+
+    .. note::
+
+        Calculating the derivative of :func:`~.mutual_info` is currently supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
+    """
+    # the subsystems cannot overlap
+    if len([wire for wire in wires0 if wire in wires1]) > 0:
+        raise qml.QuantumFunctionError(
+            "Subsystems for computing mutual information must not overlap."
+        )
+
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+    return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
 
 
 T = TypeVar("T")

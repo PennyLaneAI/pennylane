@@ -2,7 +2,7 @@
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code
-extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autograd.numpy.linalg,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag
+extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag
 
 [TYPECHECK]
 
@@ -10,12 +10,12 @@ extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autograd.numpy.linalg,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag,math
+ignored-modules=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag,math,pennylane.numpy
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set). This supports can work
 # with qualified names.
-ignored-classes=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autograd.numpy.linalg,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag,math,pennylane.numpy,pennylane.numpy.random,pennylane.numpy.linalg,pennylane.operation,retworkx,kahypar
+ignored-classes=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag,math,pennylane.numpy,pennylane.numpy.random,pennylane.numpy.linalg,pennylane.operation,retworkx,kahypar
 
 [MESSAGES CONTROL]
 
@@ -28,7 +28,9 @@ ignored-classes=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autogra
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
-disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code
+# Cyclical import checks are disabled for now as they are frequently used in
+# the code base, but this can be removed in the future once cycles are resolved.
+disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code,cyclic-import,import-error,bad-option-value
 
 [MISCELLANEOUS]
 

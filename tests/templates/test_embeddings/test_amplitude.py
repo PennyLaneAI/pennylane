@@ -50,8 +50,9 @@ class TestDecomposition:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "QubitStateVector"
 
+    @pytest.mark.parametrize("normalize", (True, False))
     @pytest.mark.parametrize("inpt", FEATURES)
-    def test_prepares_correct_state(self, inpt):
+    def test_prepares_correct_state(self, inpt, normalize):
         """Checks the state for real and complex inputs."""
 
         n_qubits = 2
@@ -59,7 +60,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=False)
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=normalize)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
@@ -258,6 +259,7 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests autograd tensors."""
 
@@ -273,10 +275,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests jax tensors."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
@@ -291,10 +294,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax_jit(self, tol):
         """Tests jax tensors when using JIT."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
@@ -309,10 +313,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests tf tensors."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
 
@@ -326,10 +331,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf_jit(self, tol):
         """Tests tf tensors when using JIT."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
 
@@ -343,10 +349,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests torch tensors."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         features = torch.tensor([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
 

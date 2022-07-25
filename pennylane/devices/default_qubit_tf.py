@@ -31,19 +31,6 @@ except ImportError as e:
     raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
-# With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while
-# the replacement tf.einsum introduced the bug. This try-except block
-# will dynamically patch TensorFlow versions where _einsum_v1 exists, to make it the
-# default einsum implementation.
-#
-# For more details, see https://github.com/tensorflow/tensorflow/issues/37307
-try:
-    from tensorflow.python.ops.special_math_ops import _einsum_v1
-
-    tf.einsum = _einsum_v1
-except ImportError:
-    pass
-
 from . import DefaultQubit
 
 
@@ -126,8 +113,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    C_DTYPE = tf.complex128
-    R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
     _dot = staticmethod(lambda x, y: tf.tensordot(x, y, axes=1))
     _abs = staticmethod(tf.abs)
@@ -146,9 +131,18 @@ class DefaultQubitTF(DefaultQubit):
     _stack = staticmethod(tf.stack)
 
     @staticmethod
+    def _const_mul(constant, array):
+        return constant * array
+
+    @staticmethod
     def _asarray(array, dtype=None):
+        if isinstance(array, tf.Tensor):
+            if dtype is None or dtype == array.dtype:
+                return array
+            return tf.cast(array, dtype)
+
         try:
-            res = tf.convert_to_tensor(array, dtype=dtype)
+            res = tf.convert_to_tensor(array, dtype)
         except InvalidArgumentError:
             axis = 0
             res = tf.concat([tf.reshape(i, [-1]) for i in array], axis)
@@ -159,7 +153,10 @@ class DefaultQubitTF(DefaultQubit):
         return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
-        super().__init__(wires, shots=shots, analytic=analytic)
+        r_dtype = tf.float64
+        c_dtype = tf.complex128
+
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]

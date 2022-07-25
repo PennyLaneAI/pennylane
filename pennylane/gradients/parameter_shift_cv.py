@@ -413,10 +413,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             )
 
         if not any(i is None for i in constants):
-            # Check if *all* transformed observables corresponds to a constant term.
-            # term. If this is the case for all transformed observables on the tape,
-            # then <psi|A|psi> = A<psi|psi> = A,
-            # and we can avoid the device execution.
+            # Check if *all* transformed observables corresponds to a constant
+            # term. If this is the case for all transformed observables on the
+            # tape, then <psi|A|psi> = A<psi|psi> = A, and we can avoid the
+            # device execution.
             shapes[-1] = 0
             obs_indices.append(transformed_obs_idx)
             gradient_values.append(constants)
@@ -615,7 +615,8 @@ def param_shift_cv(
     >>> qml.jacobian(circuit)(params)
     array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 

@@ -36,12 +36,51 @@ class TestCancelInverses:
 
         assert len(new_tape.operations) == 0
 
-    def test_one_qubit_cancel_adjacent_inverse(self):
+    def test_one_qubit_cancel_followed_inverse(self):
         """Test that a single-qubit circuit with adjacent inverse gate cancels."""
 
         def qfunc():
             qml.S(wires=0)
+            qml.S(wires=0).inv()
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_preceded_inverse(self):
+        """Test that a single-qubit circuit with adjacent inverse gate cancels."""
+
+        def qfunc():
+            qml.S(wires=0).inv()
+            qml.S(wires=0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_followed_adjoint(self):
+        """Test that a single-qubit circuit with adjacent adjoint gate cancels."""
+
+        def qfunc():
+            qml.S(wires=0)
             qml.adjoint(qml.S)(wires=0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_preceded_adjoint(self):
+        """Test that a single-qubit circuit with adjacent adjoint gate cancels."""
+
+        def qfunc():
+            qml.adjoint(qml.S)(wires=0)
+            qml.S(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 
@@ -206,6 +245,7 @@ expected_wires_list = [Wires(1), Wires([0, 1]), Wires(2), Wires(1), Wires(2)]
 class TestCancelInversesInterfaces:
     """Test that adjacent inverse gates are cancelled in all interfaces."""
 
+    @pytest.mark.autograd
     def test_cancel_inverses_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
@@ -226,9 +266,10 @@ class TestCancelInversesInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_cancel_inverses_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
@@ -252,9 +293,10 @@ class TestCancelInversesInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     def test_cancel_inverses_tf(self):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
@@ -283,9 +325,10 @@ class TestCancelInversesInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_cancel_inverses_jax(self):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         # Enable float64 support

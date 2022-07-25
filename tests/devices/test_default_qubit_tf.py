@@ -126,6 +126,7 @@ def init_state(scope="session"):
 #####################################################
 
 
+@pytest.mark.tf
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -143,6 +144,7 @@ def test_analytic_deprecation():
 #####################################################
 
 
+@pytest.mark.tf
 class TestTFMatrix:
     """Test special case of matrix construction in TensorFlow for
     cases where variables must be casted to complex."""
@@ -160,8 +162,8 @@ class TestTFMatrix:
     )
     def test_one_qubit_tf_matrix(self, op, params, wires):
         tf_params = [tf.Variable(x) for x in params]
-        expected_mat = op(*params, wires=wires).get_matrix()
-        obtained_mat = op(*tf_params, wires=wires).get_matrix()
+        expected_mat = op(*params, wires=wires).matrix()
+        obtained_mat = op(*tf_params, wires=wires).matrix()
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
 
@@ -176,12 +178,12 @@ class TestTFMatrix:
     )
     def test_pauli_rot_tf_(self, param, pauli, wires):
         op = qml.PauliRot(param, pauli, wires=wires)
-        expected_mat = op.get_matrix()
-        expected_eigvals = op.get_eigvals()
+        expected_mat = op.matrix()
+        expected_eigvals = op.eigvals()
 
         tf_op = qml.PauliRot(tf.Variable(param), pauli, wires=wires)
-        obtained_mat = tf_op.get_matrix()
-        obtained_eigvals = tf_op.get_eigvals()
+        obtained_mat = tf_op.matrix()
+        obtained_eigvals = tf_op.eigvals()
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.get_interface(obtained_eigvals) == "tensorflow"
@@ -199,15 +201,15 @@ class TestTFMatrix:
         ],
     )
     def test_expand_tf_matrix(self, op, param, wires):
-        reg_mat = op(param, wires=wires).get_matrix()
+        reg_mat = op(param, wires=wires).matrix()
 
         if len(wires) == 1:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, qml.math.kron(I, I)))
         else:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
 
-        tf_mat = op(tf.Variable(param), wires=wires).get_matrix()
-        obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
+        tf_mat = op(tf.Variable(param), wires=wires).matrix()
+        obtained_mat = qml.operation.expand_matrix(tf_mat, wires, list(range(4)))
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
@@ -218,6 +220,7 @@ class TestTFMatrix:
 #####################################################
 
 
+@pytest.mark.tf
 class TestApply:
     """Test application of PennyLane operations."""
 
@@ -519,12 +522,30 @@ class TestApply:
         queue = [qml.CNOT(wires=[1, 2])]
         dev.apply(queue)
 
+    def test_do_not_split_analytic_tf(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the tf device."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
     """Test expectation values"""
@@ -814,6 +835,7 @@ class TestExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
     """Tests for the variance"""
@@ -977,6 +999,7 @@ class TestVar:
 #####################################################
 
 
+@pytest.mark.tf
 class TestQNodeIntegration:
     """Integration tests for default.qubit.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
@@ -995,6 +1018,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_interface": "tf",
             "passthru_devices": {
                 "torch": "default.qubit.torch",
@@ -1140,6 +1164,7 @@ class TestQNodeIntegration:
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -1243,20 +1268,20 @@ class TestPassthruIntegration:
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = qml.device("default.qubit.tf", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
         def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.RY(a, wires=wires[0])
+            return qml.state()
 
         a = tf.Variable(0.54)
 
         with tf.GradientTape() as tape:
-            circuit(a)
-            res = tf.abs(dev.state) ** 2
+            res = tf.abs(circuit(a)) ** 2
             res = res[1] - res[0]
 
         grad = tape.gradient(res, a)
@@ -1444,6 +1469,7 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
+@pytest.mark.tf
 class TestSamples:
     """Tests for sampling outputs"""
 
@@ -1521,6 +1547,7 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -1550,6 +1577,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+@pytest.mark.tf
 def test_asarray_ragged_dtype_conversion(monkeypatch):
     """Test that the _asarray internal method handles ragged arrays well when
     the dtype argument was provided."""
