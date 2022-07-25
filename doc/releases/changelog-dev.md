@@ -259,7 +259,7 @@
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
-* Allow allow custom return types from autograd qnode.
+* Fix the ability to return custom objects as the expectation value of a QNode with the Autograd interface.
   [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
 
 <h3>Contributors</h3>
