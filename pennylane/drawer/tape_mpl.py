@@ -285,7 +285,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                 control_values = op.hyperparameters.get("control_values", None)
 
                 if control_values is None:
-                    control_values = [True for _ in range(control_wires)]
+                    control_values = [True for _ in control_wires]
                 elif isinstance(control_values[0], str):
                     control_values = [(i == "1") for i in control_values]
 
