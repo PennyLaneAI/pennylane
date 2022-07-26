@@ -1403,9 +1403,9 @@ class TestIntegrationShotVectorsMultiMeasure:
                         assert r.shape == (shot_tuple.shots,)
                 idx += 1
 
+
 class TestIntegrationJacobianBackpropMultipleReturns:
-    """Test the new return types for the Jacobian of multiple measurements, with backprop.
-    """
+    """Test the new return types for the Jacobian of multiple measurements, with backprop."""
 
     @pytest.mark.autograd
     def test_multiple_expval_autograd(self):
@@ -1505,7 +1505,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert len(res) == 2
         for elem in res:
             assert isinstance(elem, jax.numpy.ndarray)
-            assert elem.shape == (3, )
+            assert elem.shape == (3,)
 
     @pytest.mark.autograd
     def test_multiple_probs_autograd(self):
@@ -1621,7 +1621,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
         res = qml.jacobian(circuit)(x)
@@ -1645,7 +1645,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
 
         x = torch.tensor([0.1, 0.2, 0.3])
 
@@ -1656,12 +1656,11 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         for i, elem in enumerate(res):
             assert isinstance(elem, torch.Tensor)
             if i == 0:
-                assert elem.shape == (3, )
+                assert elem.shape == (3,)
             elif i == 1:
                 assert elem.shape == (4, 3)
             elif i == 2:
-                assert elem.shape == (3, )
-
+                assert elem.shape == (3,)
 
     @pytest.mark.tf
     def test_multiple_meas_tf(self):
@@ -1677,7 +1676,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
 
         x = tf.Variable([0.1, 0.2, 0.3])
 
@@ -1703,7 +1702,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
 
         x = jax.numpy.array([0.1, 0.2, 0.3])
 
@@ -1716,8 +1715,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         for i, elem in enumerate(res):
             assert isinstance(elem, jax.numpy.ndarray)
             if i == 0:
-                assert elem.shape == (3, )
+                assert elem.shape == (3,)
             elif i == 1:
                 assert elem.shape == (4, 3)
             elif i == 2:
-                assert elem.shape == (3, )
+                assert elem.shape == (3,)
