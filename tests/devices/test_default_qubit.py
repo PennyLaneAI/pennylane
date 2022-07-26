@@ -112,6 +112,34 @@ def test_dtype_errors():
         qml.device("default.qubit", wires=1, c_dtype=np.float64)
 
 
+def test_operations_warning():
+    """Test that a userwarning is raised when accessing the operations property."""
+
+    dev = qml.device("default.qubit", wires=1)
+
+    with pytest.warns(
+        UserWarning, match="default.qubit now supports all operations that have a matrix."
+    ):
+        dev.operations
+
+
+def test_custom_op_with_matrix():
+    """Test that a dummy op with a matrix is supported."""
+
+    class DummyOp(qml.operation.Operation):
+        num_wires = 1
+
+        def compute_matrix(self):
+            return np.eye(2)
+
+    with qml.tape.QuantumTape() as tape:
+        DummyOp(0)
+        qml.state()
+
+    dev = qml.device("default.qubit", wires=1)
+    assert qml.math.allclose(dev.execute(tape), np.array([1, 0]))
+
+
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
     errors are raised.

@@ -21,6 +21,7 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
+import warnings
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -87,64 +88,72 @@ class DefaultQubit(QubitDevice):
     version = __version__
     author = "Xanadu Inc."
 
-    operations = {
-        "Identity",
-        "Snapshot",
-        "BasisState",
-        "QubitStateVector",
-        "QubitUnitary",
-        "ControlledQubitUnitary",
-        "MultiControlledX",
-        "DiagonalQubitUnitary",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "MultiRZ",
-        "Hadamard",
-        "S",
-        "Adjoint(S)",
-        "T",
-        "Adjoint(T)",
-        "SX",
-        "Adjoint(SX)",
-        "CNOT",
-        "SWAP",
-        "ISWAP",
-        "Adjoint(ISWAP)",
-        "SISWAP",
-        "Adjoint(SISWAP)",
-        "SQISW",
-        "CSWAP",
-        "Toffoli",
-        "CY",
-        "CZ",
-        "PhaseShift",
-        "ControlledPhaseShift",
-        "CPhase",
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "IsingXX",
-        "IsingYY",
-        "IsingZZ",
-        "IsingXY",
-        "SingleExcitation",
-        "SingleExcitationPlus",
-        "SingleExcitationMinus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "QubitCarry",
-        "QubitSum",
-        "OrbitalRotation",
-        "QFT",
-        "ECR",
-    }
+    @property
+    def operations(self):
+        warnings.warn(
+            f"{self.short_name} now supports all operations"
+            " that have a matrix. Use stopping_condition instead to determine device support.",
+            UserWarning,
+        )
+        operations = {
+            "Identity",
+            "Snapshot",
+            "BasisState",
+            "QubitStateVector",
+            "QubitUnitary",
+            "ControlledQubitUnitary",
+            "MultiControlledX",
+            "DiagonalQubitUnitary",
+            "PauliX",
+            "PauliY",
+            "PauliZ",
+            "MultiRZ",
+            "Hadamard",
+            "S",
+            "Adjoint(S)",
+            "T",
+            "Adjoint(T)",
+            "SX",
+            "Adjoint(SX)",
+            "CNOT",
+            "SWAP",
+            "ISWAP",
+            "Adjoint(ISWAP)",
+            "SISWAP",
+            "Adjoint(SISWAP)",
+            "SQISW",
+            "CSWAP",
+            "Toffoli",
+            "CY",
+            "CZ",
+            "PhaseShift",
+            "ControlledPhaseShift",
+            "CPhase",
+            "RX",
+            "RY",
+            "RZ",
+            "Rot",
+            "CRX",
+            "CRY",
+            "CRZ",
+            "CRot",
+            "IsingXX",
+            "IsingYY",
+            "IsingZZ",
+            "IsingXY",
+            "SingleExcitation",
+            "SingleExcitationPlus",
+            "SingleExcitationMinus",
+            "DoubleExcitation",
+            "DoubleExcitationPlus",
+            "DoubleExcitationMinus",
+            "QubitCarry",
+            "QubitSum",
+            "OrbitalRotation",
+            "QFT",
+            "ECR",
+        }
+        return operations
 
     observables = {
         "PauliX",
@@ -189,12 +198,11 @@ class DefaultQubit(QubitDevice):
     def stopping_condition(self):
         def accepts_obj(obj):
             if getattr(obj, "has_matrix", False):
-                if obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj):
+                # pow operations dont work with backprop or adjoint without decomposition
+                if obj.name[0:3] == "Pow" and qml.operation.is_trainable(obj):
                     return False
                 return True
-            if obj.name in self.operations:
-                return True
-            if obj.name in self.observables:
+            if obj.name in self.observables:  # not all observables have matrices
                 return True
             return False
 

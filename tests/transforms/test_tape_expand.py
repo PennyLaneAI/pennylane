@@ -643,6 +643,30 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[2].name == "CNOT"
         assert decomp_ops[2].wires == Wires([0, 1])
 
+    def test_custom_decomp_with_adjoint(self):
+        """Test that applying an adjoint in the circuit results in the adjoint
+        undergoing the custom decomposition."""
+
+        def circuit():
+            # Adjoint is RX(-0.2), so expect RY(-0.2) H
+            qml.adjoint(qml.RX, lazy=False)(0.2, wires="a")
+            return qml.expval(qml.PauliZ("a"))
+
+        custom_decomps = {qml.RX: custom_rx}
+        decomp_dev = qml.device("default.qubit", wires="a", custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 2
+
+        assert decomp_ops[0].name == "RY"
+        assert decomp_ops[0].parameters[0] == -0.2
+        assert decomp_ops[0].wires == Wires("a")
+
+        assert decomp_ops[1].name == "Hadamard"
+        assert decomp_ops[1].wires == Wires("a")
+
     def test_custom_decomp_with_control(self):
         """Test that applying a controlled version of a gate results in the
         controlled version of a decomposition."""

@@ -114,6 +114,12 @@
 
 **Operator Arithmetic:**
 
+* `default.qubit` now will natively execute any operation that defines a matrix except
+  for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
+  `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
+  `Operator.has_matrix` property.
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
+
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
