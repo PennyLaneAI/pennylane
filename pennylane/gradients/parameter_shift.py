@@ -744,7 +744,6 @@ def param_shift(
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    print(broadcast)
     if broadcast and len(tape.measurements) > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "

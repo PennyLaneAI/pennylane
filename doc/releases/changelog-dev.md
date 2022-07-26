@@ -41,7 +41,7 @@
   ```
 
   Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
-  yet and that the operations with trainable parameters are required to support broadcasting when using
+  yet and the operations with trainable parameters are required to support broadcasting when using
   `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
 
   ```pycon
