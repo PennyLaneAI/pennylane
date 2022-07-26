@@ -14,11 +14,24 @@
 """
 This submodule contains the qutrit quantum observables.
 """
-from pennylane import numpy as np
+import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
+from pennylane.operation import Observable
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
+
+
+# Array containing all 8 Gell-Mann matrices
+gm_mats = np.zeros((8, 3, 3), dtype=np.complex128)
+gm_mats[0] = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+gm_mats[1] = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+gm_mats[2] = np.diag([1, -1, 0])
+gm_mats[3] = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
+gm_mats[4] = np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]])
+gm_mats[5] = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+gm_mats[6] = np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]])
+gm_mats[7] = np.diag([1, 1, -2]) / np.sqrt(3)
 
 
 class THermitian(Hermitian):
@@ -133,3 +146,136 @@ class THermitian(Hermitian):
 
         """
         return [QutritUnitary(eigenvectors.conj().T, wires=wires)]
+
+
+class GellMannObs(Observable):
+    r"""
+    The Gell-Mann observables for qutrits
+
+    The Gell-Mann matrices are a set of 8 linearly independent :math:`3x3` traceless, Hermitian matrices which
+    naturally generalize the Pauli matrices from :math:`SU(2)` to :math:`SU(3)`.
+
+    .. math::
+        \displaystyle \lambda_{1} = \left(\begin{array}{ccc} 0 & 1 & 0 \\ 1 & 0 & 0\\ 0 & 0 & 0\end{array}\right) \;\;\;\;\;\;\;\;\;\;
+        \lambda_{2} = \left(\begin{array}{ccc} 0 & -i & 0 \\ i & 0 & 0\\ 0 & 0 & 0\end{array}\right)\;\;\;\;\;\;\;\;\;\;
+        \lambda_{3} = \left(\begin{array}{ccc} 1 & 0 & 0 \\ 0 & -1 & 0\\ 0 & 0 & 0\end{array}\right)
+        \lambda_{4} = \left(\begin{array}{ccc} 0 & 0 & 1 \\ 0 & 0 & 0\\ 1 & 0 & 0\end{array}\right)\;\;\;\;\;\;\;\;\;\;
+        \displaystyle \lambda_{5} = \left(\begin{array}{ccc} 0 & 0 & -i \\ 0 & 0 & 0\\ i & 0 & 0\end{array}\right) \;\;\;\;\;\;\;\;\;\;
+        \lambda_{6} = \left(\begin{array}{ccc} 0 & 0 & 0 \\ 0 & 0 & 1\\ 0 & 1 & 0\end{array}\right)
+        \lambda_{7} = \left(\begin{array}{ccc} 0 & 0 & 0 \\ 0 & 0 & -i\\ 0 & i & 0\end{array}\right)\;\;\;\;\;\;\;\;\;\;
+        \lambda_{8} = \frac{1}{\sqrt{3}}\left(\begin{array}{ccc} 1 & 0 & 0 \\ 0 & 1 & 0\\ 0 & 0 & -2\end{array}\right)\\
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        index (int): The index of the Gell-Mann matrix to be used. Must be between 1
+            and 8 inclusive
+        wires (Sequence[int] or int): the wire(s) the observable acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+    """
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters the operator depends on"""
+
+    def __init__(self, index, wires, do_queue=True, id=None):
+        if not isinstance(index, int) or index < 1 or index > 8:
+            raise ValueError("The index must be an integer between 1 and 8 inclusive.")
+
+        super().__init__(index, wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_matrix(index):
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.GellMannObs.matrix`
+
+        Args:
+            index (int): The index of the Gell-Mann matrix to be used. Must be between 1
+            and 8 inclusive
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.GellMannObs.compute_matrix(8)
+        array([[ 0.57735027+0.j,  0.        +0.j,  0.        +0.j],
+               [ 0.        +0.j,  0.57735027+0.j,  0.        +0.j],
+               [ 0.        +0.j,  0.        +0.j, -1.15470054+0.j]])
+        """
+        return gm_mats[index - 1]
+
+    @staticmethod
+    def compute_eigvals(index):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.GellMannObs.eigvals`
+
+        Args:
+            index (int): The index of the Gell-Mann matrix to be used. Must be between 1
+            and 8 inclusive
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.GellMannObs.compute_eigvals(1)
+        [1. -1.  0.]
+        """
+        if index != 8:
+            return np.array([1, -1, 0])
+
+        return np.array([1, 1, -2]) / np.sqrt(3)
+
+    @staticmethod
+    def compute_diagonalizing_gates(
+        index, wires
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.GellMannObs.diagonalizing_gates`.
+
+        Args:
+            index (int): The index of the Gell-Mann matrix to be used. Must be between 1
+            and 8 inclusive
+            wires (Iterable[Any], Wires): wires that the operator acts on
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.GellMannObs.compute_diagonalizing_gates(3, wires=[0, 1])
+        []
+        """
+        if index in {3, 8}:
+            return []
+
+        _, v = np.linalg.eigh(gm_mats[index - 1])
+        v = np.roll(v, 1, axis=1)
+        return [QutritUnitary(v.conj().T, wires=wires)]
