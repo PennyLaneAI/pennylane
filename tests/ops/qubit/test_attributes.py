@@ -15,11 +15,12 @@
 Unit tests for the available qubit state preparation operations.
 """
 import itertools as it
-import pytest
-import numpy as np
-from scipy.stats import unitary_group
-import pennylane as qml
 
+import numpy as np
+import pytest
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane.ops.qubit.attributes import Attribute
 
 # Dummy attribute
@@ -70,18 +71,19 @@ class TestAttribute:
 
     def test_inclusion_after_addition(self):
         """Test that we can add operators to the set in multiple ways."""
-        new_attribute.add("RX")
-        new_attribute.add(qml.PhaseShift(0.5, wires=0))
-        new_attribute.add(qml.RY)
+        attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
+        attribute.add("RX")
+        attribute.add(qml.PhaseShift(0.5, wires=0))
+        attribute.add(qml.RY)
 
-        assert "RX" in new_attribute
-        assert "PhaseShift" in new_attribute
-        assert "RY" in new_attribute
-        assert len(new_attribute) == 8
+        assert "RX" in attribute
+        assert "PhaseShift" in attribute
+        assert "RY" in attribute
+        assert len(attribute) == 8
 
     def test_tensor_check(self):
         """Test that we can ask if a tensor is in the attribute."""
-        assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
+        assert qml.PauliX(wires=0) @ qml.PauliZ(wires=1) not in new_attribute
 
 
 single_scalar_single_wire_ops = [
