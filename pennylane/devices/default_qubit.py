@@ -204,6 +204,10 @@ class DefaultQubit(QubitDevice):
                 return True
             if obj.name in self.observables:  # not all observables have matrices
                 return True
+            with warnings.catch_warnings():  # state prep routines
+                warnings.simplefilter("ignore")
+                if obj.name in self.operations:
+                    return True
             return False
 
         return qml.BooleanFn(accepts_obj)
