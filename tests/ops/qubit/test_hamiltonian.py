@@ -14,6 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
+import copy
 from unittest.mock import patch
 
 import numpy as np
@@ -818,9 +819,10 @@ class TestHamiltonian:
     @pytest.mark.parametrize(("H1", "H2", "H"), add_hamiltonians)
     def test_hamiltonian_iadd(self, H1, H2, H):
         """Tests that Hamiltonians are added inline correctly"""
-        H1 += H2
-        assert H.compare(H1)
-        assert H.wires == H1.wires
+        H_tmp = copy.deepcopy(H1)
+        H_tmp += H2
+        assert H.compare(H_tmp)
+        assert H.wires == H_tmp.wires
 
     @pytest.mark.parametrize(("H1", "H2"), iadd_zero_hamiltonians)
     def test_hamiltonian_iadd_zero(self, H1, H2):
@@ -835,15 +837,17 @@ class TestHamiltonian:
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_imul(self, coeff, H, res):
         """Tests that scalars and Hamiltonians are multiplied inline correctly"""
-        H *= coeff
-        assert res.compare(H)
+        H_tmp = copy.deepcopy(H)
+        H_tmp *= coeff
+        assert res.compare(H_tmp)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
     def test_hamiltonian_isub(self, H1, H2, H):
         """Tests that Hamiltonians are subtracted inline correctly"""
-        H1 -= H2
-        assert H.compare(H1)
-        assert H.wires == H1.wires
+        H_tmp = copy.deepcopy(H1)
+        H_tmp -= H2
+        assert H.compare(H_tmp)
+        assert H.wires == H_tmp.wires
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
