@@ -250,5 +250,5 @@ class Pow(SymbolicOp):
         if depth == 0:
             return self
         if self.z == 0:
-            return Identity(wires=self.wires, id=self.id)
+            return Identity(wires=self.wires[0], id=self.id)
         return Pow(base=self.base.simplify(depth=depth), z=self.z, id=self.id)
