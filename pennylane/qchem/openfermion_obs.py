@@ -926,7 +926,7 @@ def molecular_hamiltonian(
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
         return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
 
-    elif method == "pyscf":
+    if method == "pyscf":
         openfermion, _ = _import_of()
 
         hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
