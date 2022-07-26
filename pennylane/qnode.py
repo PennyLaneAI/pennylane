@@ -23,8 +23,6 @@ import warnings
 import autograd
 import numpy
 
-from autograd.numpy.numpy_boxes import ArrayBox
-
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
@@ -636,16 +634,21 @@ class QNode:
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ):
                 if not self.device._shot_vector:
-                    # TODO: Ragged array when returning a ragged array with jacobian
-                    if isinstance(res[0][0], ArrayBox):
-                        res = self.device._asarray(res[0])
-                    else:
-                        res = type(self.tape._qfunc_output)(res[0])
+                    res = type(self.tape._qfunc_output)(res[0])
                 else:
                     res = [type(self.tape._qfunc_output)(r) for r in res[0]]
                     res = tuple(res)
             else:
-                res = res[0]
+                # Autograd or tensorflow: they do not support tuple return with backpropagation
+                if (
+                    self.interface == "tf"
+                    or self.interface == "autograd"
+                    and self.gradient_fn == "backprop"
+                    and qml.math.requires_grad(res[0][0])
+                ):
+                    res = self.device._asarray(res[0])
+                else:
+                    res = res[0]
             return res
 
         res = qml.execute(

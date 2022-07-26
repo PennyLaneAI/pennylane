@@ -14,6 +14,7 @@
 """
 Unit tests for the new return types.
 """
+import numpy
 import pytest
 
 import numpy as np
@@ -992,7 +993,7 @@ class TestIntegrationMultipleReturns:
 
         qnode = qml.QNode(circuit, dev)
         res = qnode(0.5)
-        print(res)
+
         qml.disable_return()
 
         assert isinstance(res, tuple)
@@ -1401,3 +1402,322 @@ class TestIntegrationShotVectorsMultiMeasure:
                     else:
                         assert r.shape == (shot_tuple.shots,)
                 idx += 1
+
+class TestIntegrationJacobianBackpropMultipleReturns:
+    """Test the new return types for the Jacobian of multiple measurements, with backprop.
+    """
+
+    @pytest.mark.autograd
+    def test_multiple_expval_autograd(self):
+        """Return Jacobian of multiple expvals."""
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        res = qml.jacobian(circuit)(x)
+
+        qml.disable_return()
+
+        assert isinstance(res, numpy.ndarray)
+        assert res.shape == (2, 3)
+
+    @pytest.mark.torch
+    def test_multiple_expval_torch(self):
+        """Return Jacobian of multiple expvals."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        x = torch.tensor([0.1, 0.2, 0.3])
+
+        res = torch.autograd.functional.jacobian(circuit, x)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for elem in res:
+            assert isinstance(elem, torch.Tensor)
+            assert elem.shape == (3,)
+
+    @pytest.mark.tf
+    def test_multiple_expval_tf(self):
+        """Return Jacobian of multiple expvals."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+
+        with tf.GradientTape() as tape:
+            out = circuit(x)
+
+        res = tape.jacobian(out, x)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (2, 3)
+
+    @pytest.mark.jax
+    def test_multiple_expval_jax(self):
+        """Return Jacobian of multiple expvals."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+        res = jax.jacobian(circuit)(x)
+        qml.disable_return()
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for elem in res:
+            assert isinstance(elem, jax.numpy.ndarray)
+            assert elem.shape == (3, )
+
+    @pytest.mark.autograd
+    def test_multiple_probs_autograd(self):
+        """Return Jacobian of multiple probs."""
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=1)
+
+        x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        res = qml.jacobian(circuit)(x)
+
+        qml.disable_return()
+
+        assert isinstance(res, numpy.ndarray)
+        assert res.shape == (2, 2, 3)
+
+    @pytest.mark.torch
+    def test_multiple_probs_torch(self):
+        """Return Jacobian of multiple probs."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=1)
+
+        x = torch.tensor([0.1, 0.2, 0.3])
+
+        res = torch.autograd.functional.jacobian(circuit, x)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for elem in res:
+            assert isinstance(elem, torch.Tensor)
+            assert elem.shape == (2, 3)
+
+    @pytest.mark.tf
+    def test_multiple_probs_tf(self):
+        """Return Jacobian of multiple probs."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=1)
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+
+        with tf.GradientTape() as tape:
+            out = circuit(x)
+
+        res = tape.jacobian(out, x)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (2, 2, 3)
+
+    @pytest.mark.jax
+    def test_multiple_probs_jax(self):
+        """Return Jacobian of multiple probs."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=1)
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+
+        res = jax.jacobian(circuit)(x)
+
+        qml.disable_return()
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for elem in res:
+            assert isinstance(elem, jax.numpy.ndarray)
+            assert elem.shape == (2, 3)
+
+    @pytest.mark.autograd
+    def test_multiple_meas_autograd(self):
+        """Return Jacobian of multiple measurements."""
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+
+        x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        res = qml.jacobian(circuit)(x)
+
+        qml.disable_return()
+
+        assert isinstance(res, numpy.ndarray)
+        assert res.shape == (6, 3)
+
+    @pytest.mark.torch
+    def test_multiple_meas_torch(self):
+        """Return Jacobian of multiple measurements."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+
+        x = torch.tensor([0.1, 0.2, 0.3])
+
+        res = torch.autograd.functional.jacobian(circuit, x)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+        for i, elem in enumerate(res):
+            assert isinstance(elem, torch.Tensor)
+            if i == 0:
+                assert elem.shape == (3, )
+            elif i == 1:
+                assert elem.shape == (4, 3)
+            elif i == 2:
+                assert elem.shape == (3, )
+
+
+    @pytest.mark.tf
+    def test_multiple_meas_tf(self):
+        """Return Jacobian of multiple measurements."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+
+        with tf.GradientTape() as tape:
+            out = circuit(x)
+
+        res = tape.jacobian(out, x)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (6, 3)
+
+    @pytest.mark.jax
+    def test_multiple_meas_jax(self):
+        """Return Jacobian of multiple measurements."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0,1]), qml.vn_entropy(wires=1)
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+
+        res = jax.jacobian(circuit)(x)
+
+        qml.disable_return()
+
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+        for i, elem in enumerate(res):
+            assert isinstance(elem, jax.numpy.ndarray)
+            if i == 0:
+                assert elem.shape == (3, )
+            elif i == 1:
+                assert elem.shape == (4, 3)
+            elif i == 2:
+                assert elem.shape == (3, )
