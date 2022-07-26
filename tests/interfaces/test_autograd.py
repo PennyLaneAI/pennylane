@@ -18,7 +18,8 @@ import sys
 
 import autograd
 import pytest
-from pennylane import numpy as np, Observable, AnyWires
+from pennylane import numpy as np
+from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
