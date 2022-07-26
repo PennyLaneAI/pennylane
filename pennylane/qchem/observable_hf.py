@@ -240,7 +240,7 @@ def simplify(h, cutoff=1.0e-12):
     except ValueError:
         pass
 
-    return qml.Hamiltonian(coeffs, ops)
+    return qml.Hamiltonian(np.array(coeffs), ops)
 
 
 def _pauli_mult(p1, p2):
