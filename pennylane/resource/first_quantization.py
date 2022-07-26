@@ -507,11 +507,11 @@ class FirstQuantization(Operation):
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
 
-        if br <= 0 or not isinstance(br, int):
-            raise ValueError("br must be a positive integer.")
-
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
+
+        if br <= 0 or not isinstance(br, int):
+            raise ValueError("br must be a positive integer.")
 
         e_cost = FirstQuantization.estimation_cost(n, eta, omega, error, br=br, charge=charge)
         u_cost = FirstQuantization.unitary_cost(n, eta, omega, error, br, charge)
