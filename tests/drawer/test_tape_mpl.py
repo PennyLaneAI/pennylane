@@ -435,7 +435,7 @@ class TestControlledGates:
         self.check_tape_controlled_qubit_unitary(tape)
 
     def check_tape_controlled_qubit_unitary(self, tape):
-        """Cheecks the control symbols for a tape with some version of a controlled qubit unitary."""
+        """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
         _, ax = tape_mpl(tape)
         layer = 0
 
