@@ -25,20 +25,19 @@ from scipy.special import factorial as fac
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.devices.default_gaussian import (
-    fock_prob,
-    rotation,
-    squeezing,
-    quadratic_phase,
     beamsplitter,
-    two_mode_squeezing,
+    coherent_state,
     controlled_addition,
     controlled_phase,
-    vacuum_state,
-    coherent_state,
-    squeezed_state,
     displaced_squeezed_state,
+    fock_prob,
+    quadratic_phase,
+    rotation,
+    squeezed_state,
+    squeezing,
     thermal_state,
-    DefaultGaussian,
+    two_mode_squeezing,
+    vacuum_state,
 )
 from pennylane.wires import Wires
 
@@ -106,8 +105,10 @@ gaussian_dev = gaussian_device_2_wires  # alias
 
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
+    msg = (
+        "The analytic argument has been replaced by shots=None. "
+        + "Please use shots=None instead of analytic=True."
+    )
 
     with pytest.raises(
         DeviceError,
@@ -412,6 +413,8 @@ class TestDefaultGaussianDevice:
         # verify the device is now in the expected state
         assert gaussian_dev._state[0] == pytest.approx(exp_cov, abs=tol)
         assert gaussian_dev._state[1] == pytest.approx(exp_mu, abs=tol)
+
+        del gaussian_dev._operation_map["DummyGate"]
 
     def test_apply_gaussianstate(self, tol):
         """Test the application of the GaussianState gate to a state, since it
