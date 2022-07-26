@@ -1216,6 +1216,7 @@ class SpecialObject:
     def __radd__(self, other):
         return self + other
 
+
 class SpecialObservable(Observable):
     """SpecialObservable"""
 
@@ -1226,6 +1227,7 @@ class SpecialObservable(Observable):
     def diagonalizing_gates(self):
         """Diagonalizing gates"""
         return []
+
 
 class DeviceSupportingSpecialObservable(DefaultQubit):
     name = "Device supporting SpecialObservable"
@@ -1281,8 +1283,6 @@ class TestObservableWithObjectReturnType:
         assert isinstance(out.item(), SpecialObject)
         assert np.isclose(out.item().val, reference_qnode(0.2))
 
-
-
     def test_jacobian_with_custom_return_type(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
@@ -1316,5 +1316,5 @@ class TestObservableWithObjectReturnType:
 
         assert np.isclose(
             reference_jac,
-            qml.jacobian(device_gradient_qnode)(np.array(0.2, requires_grad=True)).item().val
+            qml.jacobian(device_gradient_qnode)(np.array(0.2, requires_grad=True)).item().val,
         )
