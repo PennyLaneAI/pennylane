@@ -374,7 +374,7 @@ def execute(
                 )
             for i, tape in enumerate(tapes):
                 if any(not stop_at(op) for op in tape.operations):
-                    tapes[i] = tape.expand(stop_at=stop_at, depth=10)
+                    tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
 
         if mode in ("forward", "best"):
             # replace the forward execution function to return
