@@ -234,11 +234,9 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    def _collect_shotvector_results(self, observables):
+    def _collect_shotvector_results(self, circuit, counts_exist):
         """Obtain and process statistics when using a shot vector.
-        This routine is part of the ``execute()`` method and the ``observables``
-        argument corresponds to ``circuit.observables`` where ``circuit`` is
-        the argument passed to ``execute``."""
+        This routine is part of the ``execute()`` method."""
 
         if self._ndim(self._samples) == 3:
             raise NotImplementedError(
@@ -249,7 +247,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -275,6 +273,7 @@ class QubitDevice(Device):
 
             s1 = s2
 
+        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
         if not multiple_sampled_jobs and not counts_exist:
             # Can only stack single element outputs
             results = self._stack(results)
@@ -316,13 +315,12 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
-        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
         ret_types = [m.return_type for m in circuit.measurements]
         counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
-            results = self._collect_shotvector_results(circuit.observables)
+            results = self._collect_shotvector_results(circuit, counts_exist)
         else:
             results = self.statistics(circuit.observables)
 
