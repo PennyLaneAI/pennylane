@@ -578,7 +578,6 @@ class TestTensorFlowExecuteIntegration:
             qtape = qtape.expand()
             res = execute([qtape], dev, **execute_kwargs)[0]
 
-            assert qtape.trainable_params == [1, 2, 3, 4]
             assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
             assert np.all(qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
