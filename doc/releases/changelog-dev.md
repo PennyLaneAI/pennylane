@@ -112,6 +112,7 @@
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
+
 **Operator Arithmetic:**
 
 * `default.qubit` now will natively execute any operation that defines a matrix except
@@ -119,6 +120,10 @@
   `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
   `Operator.has_matrix` property.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
+
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
