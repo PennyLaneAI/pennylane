@@ -88,7 +88,8 @@ class DefaultQubit(QubitDevice):
     version = __version__
     author = "Xanadu Inc."
 
-    @property
+    # pylint: disable=invalid-overridden-method
+    @qml.operation.classproperty
     def operations(self):
         warnings.warn(
             f"{self.short_name} now supports all operations"
