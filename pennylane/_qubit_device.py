@@ -234,6 +234,53 @@ class QubitDevice(Device):
         """
         self._samples = None
 
+    def _collect_shotvector_results(self, observables):
+        """Obtain and process statistics when using a shot vector.
+        This routine is part of the ``execute()`` method and the ``observables``
+        argument corresponds to ``circuit.observables`` where ``circuit`` is
+        the argument passed to ``execute``."""
+
+        if self._ndim(self._samples) == 3:
+            raise NotImplementedError(
+                "Parameter broadcasting when using a shot vector is not supported yet."
+            )
+        results = []
+        s1 = 0
+
+        for shot_tuple in self._shot_vector:
+            s2 = s1 + np.prod(shot_tuple)
+            r = self.statistics(observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+
+            if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                r = r[0]
+            elif not counts_exist:
+                # Measurement types except for Counts
+                r = qml.math.squeeze(r)
+
+            if counts_exist:
+
+                # This happens when at least one measurement type is Counts
+                for result_group in r:
+                    if isinstance(result_group, list):
+                        # List that contains one or more dictionaries
+                        results.extend(result_group)
+                    else:
+                        # Other measurement results
+                        results.append(result_group.T)
+
+            elif shot_tuple.copies > 1:
+                results.extend(r.T)
+            else:
+                results.append(r.T)
+
+            s1 = s2
+
+        if not multiple_sampled_jobs and not counts_exist:
+            # Can only stack single element outputs
+            results = self._stack(results)
+
+        return results
+
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
@@ -275,48 +322,7 @@ class QubitDevice(Device):
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
-
-            if self._ndim(self._samples) == 3:
-                raise NotImplementedError(
-                    "Parameter broadcasting when using a shot vector is not supported yet."
-                )
-            results = []
-            s1 = 0
-
-            for shot_tuple in self._shot_vector:
-                s2 = s1 + np.prod(shot_tuple)
-                r = self.statistics(
-                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
-                )
-
-                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
-                    r = r[0]
-                elif not counts_exist:
-                    # Measurement types except for Counts
-                    r = qml.math.squeeze(r)
-
-                if counts_exist:
-
-                    # This happens when at least one measurement type is Counts
-                    for result_group in r:
-                        if isinstance(result_group, list):
-                            # List that contains one or more dictionaries
-                            results.extend(result_group)
-                        else:
-                            # Other measurement results
-                            results.append(result_group.T)
-
-                elif shot_tuple.copies > 1:
-                    results.extend(r.T)
-                else:
-                    results.append(r.T)
-
-                s1 = s2
-
-            if not multiple_sampled_jobs and not counts_exist:
-                # Can only stack single element outputs
-                results = self._stack(results)
-
+            results = self._collect_shotvector_results(circuit.observables)
         else:
             results = self.statistics(circuit.observables)
 
