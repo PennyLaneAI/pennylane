@@ -21,6 +21,9 @@ import inspect
 import warnings
 
 import autograd
+import numpy
+
+from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 from pennylane import Device
@@ -528,7 +531,10 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if not isinstance(self._qfunc_output, Sequence):
+        # Support array return to allow Jacobian with Autograd
+        if isinstance(self._qfunc_output, numpy.ndarray):
+            measurement_processes = tuple(self.tape.measurements)
+        elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
             measurement_processes = self._qfunc_output
@@ -584,7 +590,7 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
         override_shots = False
 
         if not self._qfunc_uses_shots_arg:
@@ -630,53 +636,58 @@ class QNode:
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ):
                 if not self.device._shot_vector:
-                    res = type(self.tape._qfunc_output)(res[0])
+                    # TODO: Ragged array when returning a ragged array with jacobian
+                    if isinstance(res[0][0], ArrayBox):
+                        res = self.device._asarray(res[0])
+                    else:
+                        res = type(self.tape._qfunc_output)(res[0])
                 else:
-                    res = tuple([type(self.tape._qfunc_output)(r) for r in res[0]])
+                    res = [type(self.tape._qfunc_output)(r) for r in res[0]]
+                    res = tuple(res)
             else:
                 res = res[0]
             return res
-        else:
-            res = qml.execute(
-                [self.tape],
-                device=self.device,
-                gradient_fn=self.gradient_fn,
-                interface=self.interface,
-                gradient_kwargs=self.gradient_kwargs,
-                override_shots=override_shots,
-                **self.execute_kwargs,
-            )
 
-            if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
-                # If a device batch transform was applied, we need to 'unpack'
-                # the returned tuple/list to a float.
-                #
-                # Note that we use autograd.isinstance, because on the backwards pass
-                # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
-                # autograd.isinstance is a 'safer' isinstance check that supports
-                # autograd backwards passes.
-                #
-                # TODO: find a more explicit way of determining that a batch transform
-                # was applied.
+        res = qml.execute(
+            [self.tape],
+            device=self.device,
+            gradient_fn=self.gradient_fn,
+            interface=self.interface,
+            gradient_kwargs=self.gradient_kwargs,
+            override_shots=override_shots,
+            **self.execute_kwargs,
+        )
 
-                res = res[0]
+        if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
+            # If a device batch transform was applied, we need to 'unpack'
+            # the returned tuple/list to a float.
+            #
+            # Note that we use autograd.isinstance, because on the backwards pass
+            # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
+            # autograd.isinstance is a 'safer' isinstance check that supports
+            # autograd backwards passes.
+            #
+            # TODO: find a more explicit way of determining that a batch transform
+            # was applied.
 
-            if override_shots is not False:
-                # restore the initialization gradient function
-                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+            res = res[0]
 
-            self._update_original_device()
+        if override_shots is not False:
+            # restore the initialization gradient function
+            self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
 
-            if isinstance(self._qfunc_output, Sequence) or (
-                self.tape.is_sampled and self.device._has_partitioned_shots()
-            ):
-                return res
-            if self._qfunc_output.return_type is qml.measurements.Counts:
-                # return a dictionary with counts not as a single-element array
-                return res[0]
+        self._update_original_device()
 
-            # Squeeze arraylike outputs
-            return qml.math.squeeze(res)
+        if isinstance(self._qfunc_output, Sequence) or (
+            self.tape.is_sampled and self.device._has_partitioned_shots()
+        ):
+            return res
+        if self._qfunc_output.return_type is qml.measurements.Counts:
+            # return a dictionary with counts not as a single-element array
+            return res[0]
+
+        # Squeeze arraylike outputs
+        return qml.math.squeeze(res)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
