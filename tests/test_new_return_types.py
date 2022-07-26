@@ -744,8 +744,9 @@ class TestShotVectorsAutogradMultiMeasure:
                         assert r.shape == (shot_tuple.shots,)
                 idx += 1
 
-    def test_probs_sample_with_obs(self, shot_vector):
-        """Test probs and arbitrary observable sample measurements."""
+    @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
+    def test_probs_sample(self, shot_vector, sample_obs):
+        """Test probs and sample measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
         meas1_wires = [0, 1]
@@ -755,7 +756,12 @@ class TestShotVectorsAutogradMultiMeasure:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(wires=meas1_wires), qml.sample(qml.PauliZ(meas2_wires))
+            if sample_obs is not None:
+                # Observable provided to sample
+                return qml.probs(wires=meas1_wires), qml.sample(sample_obs(meas2_wires))
+
+            # Only wires provided to sample
+            return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -780,5 +786,6 @@ class TestShotVectorsAutogradMultiMeasure:
                         if shot_tuple.shots == 1:
                             assert r.shape == ()
                         else:
-                            assert r.shape == (shot_tuple.shots,)
+                            expected = (shot_tuple.shots,)
+                            assert r.shape == expected
                 idx += 1

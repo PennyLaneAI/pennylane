@@ -456,18 +456,33 @@ class QubitDevice(Device):
 
                 # TODO: need list and tuple both?
                 elif isinstance(r, (list, tuple)):
-                    if any(isinstance(r_, dict) for r_ in r):
-                        if single_measurement:
+                    if single_measurement:
+                        if any(isinstance(r_, dict) for r_ in r):
+                            results.extend(r)
+
+                        elif not self._has_partitioned_shots():
+                            results.extend(r)
+                        elif shot_tuple.copies > 1:
+                            results.extend(r.T)
+                        else:
+                            results.append(r)
+                    else:
+                        if any(isinstance(r_, dict) for r_ in r):
+                            results.append(r)
+                        elif not self._has_partitioned_shots():
+                            results.extend(r)
+                        elif shot_tuple.copies > 1:
+                            # Some samples may still be transposed, fix their shapes
+                            r = [
+                                tuple(
+                                    qml.math.squeeze(elem.T) if not isinstance(elem, dict) else elem
+                                    for elem in r_
+                                )
+                                for r_ in r
+                            ]
                             results.extend(r)
                         else:
                             results.append(r)
-
-                    elif not self._has_partitioned_shots():
-                        results.extend(r)
-                    elif shot_tuple.copies > 1:
-                        results.extend(r)
-                    else:
-                        results.append(r)
                 else:
                     results.append(r)
 
