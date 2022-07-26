@@ -112,7 +112,12 @@
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
+
 **Operator Arithmetic:**
+
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
@@ -214,6 +219,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
 
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
@@ -245,8 +251,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
   >>> result = circuit()
   >>> print(result)
-  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
-   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
