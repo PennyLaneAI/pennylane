@@ -18,8 +18,8 @@ import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
-    has_gen,
     gen_is_multi_term_hamiltonian,
+    has_gen,
     has_grad_method,
     has_nopar,
     has_unitary_gen,
@@ -236,7 +236,7 @@ def _custom_decomp_context(custom_decomps):
             yield
 
         finally:
-            obj.compute_decomposition = original_decomp_method
+            obj.compute_decomposition = staticmethod(original_decomp_method)
 
     # Loop through the decomposition dictionary and create all the contexts
     try:
