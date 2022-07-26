@@ -18,7 +18,7 @@ from itertools import product
 
 import numpy as np
 import pytest
-import cmath
+from pennylane import math
 import math
 import functools
 
@@ -213,7 +213,7 @@ class TestApply:
         state = torch.tensor([-1.0 + 1j, 1.0 + 1j], dtype=torch.complex128, device=torch_device)
         assert torch.allclose(
             dev._conj(state),
-            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128),
+            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128, device=torch_device),
             atol=tol,
             rtol=0,
         )
@@ -1213,7 +1213,7 @@ class TestQNodeIntegration:
         circuit()
         state = dev.state
 
-        amplitude = cmath.exp(-1j * cmath.pi / 8) / cmath.sqrt(2)
+        amplitude = np.exp(-1j * math.pi / 8) / math.sqrt(2)
 
         expected = torch.tensor(
             [amplitude, 0, amplitude.conjugate(), 0], dtype=torch.complex128, device=torch_device

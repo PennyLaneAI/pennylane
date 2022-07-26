@@ -228,8 +228,6 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    # TODO: revisit if we can refactor to not need the following linting silence
-    # pylint: disable=too-many-statements
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
@@ -337,9 +335,12 @@ class QubitDevice(Device):
             self.tracker.record()
         return results
 
+    # TODO: consider refactoring to silence linting warning
+    # pylint: disable=too-many-statements
     def execute_new(self, circuit, **kwargs):
-        """Execute a queue of quantum operations on the device and then
-        measure the given observables.
+        """New execute (update of return type) function, it executes a queue of quantum operations on the device and
+        then measure the given observables. More case will be added in future PRs, for the moment it only supports
+        measurements without shots.
 
         For plugin developers: instead of overwriting this, consider
         implementing a suitable subset of
@@ -373,11 +374,14 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
+        # TODO: refactor
+        # pylint: disable=too-many-nested-blocks
         if not self.analytic and self._shot_vector is not None:
 
             results = []
             s1 = 0
 
+            single_measurement = len(circuit.measurements) == 1
             for shot_tuple in self._shot_vector:
                 s2 = s1 + np.prod(shot_tuple)
                 r = self.statistics_new(
@@ -386,20 +390,48 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                elif len(r) == 1:
-                    if not isinstance(r[0], dict):
+                elif single_measurement:
+                    if not circuit.observables[0].return_type is Counts:
                         # Measurement types except for Counts
                         r = qml.math.squeeze(r)
                     else:
                         r = r[0]
                 else:
-                    if shot_tuple.copies > 1 and not isinstance(r[0], dict):
-                        r = [r_.T for r_ in r]
-                        length = len(r[0])
-                        r = [tuple(self._asarray(r_[idx]) for r_ in r) for idx in range(length)]
+                    if shot_tuple.copies > 1:
+
+                        # Each item of r has copies length
+                        measurement_group_length = shot_tuple.copies
+                        if not any(obs.return_type is Counts for obs in circuit.observables):
+
+                            # r is a nested sequence, contains the results for multiple measurements
+                            r = [r_.T for r_ in r]
+                            r = [
+                                tuple(self._asarray(r_[idx]) for r_ in r)
+                                for idx in range(measurement_group_length)
+                            ]
+                        else:
+                            new_r = []
+
+                            # Multi-measurements with at least one Counts
+                            # First: iterate over each group of measurement results that contain copies many outcomes for a single measurement
+                            for idx in range(measurement_group_length):
+                                result_group = []
+                                for idx2, r_ in enumerate(r):
+                                    # Second: iterate over the
+                                    result = r_[idx]
+                                    if not circuit.observables[idx2].return_type is Counts:
+                                        result = self._asarray(result.T)
+
+                                    result_group.append(result)
+
+                                new_r.append(tuple(result_group))
+
+                            r = new_r
                     else:
                         r = tuple(
-                            qml.math.squeeze(r_) if isinstance(r_, qml.numpy.ndarray) else r_
+                            qml.math.squeeze(r_) if isinstance(r_, qml.numpy.ndarray)
+                            # shot_tuple.copies == 1, so we need to unwrap the single element list
+                            else r_[0]
                             for r_ in r
                         )
 
@@ -408,10 +440,15 @@ class QubitDevice(Device):
                         results.extend(r.T)
                     else:
                         results.append(r.T)
+
                 # TODO: need list and tuple both?
                 elif isinstance(r, (list, tuple)):
                     if any(isinstance(r_, dict) for r_ in r):
-                        results.extend(r)
+                        if single_measurement:
+                            results.extend(r)
+                        else:
+                            results.append(r)
+
                     elif not self._has_partitioned_shots():
                         results.extend(r)
                     elif shot_tuple.copies > 1:
@@ -471,7 +508,7 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            # Insert control on value here
+            # TODO: Insert control on value here
             res = self.execute(circuit)
             results.append(res)
 
@@ -482,7 +519,8 @@ class QubitDevice(Device):
         return results
 
     def batch_execute_new(self, circuits):
-        """Execute a batch of quantum circuits on the device.
+        """Temporary batch execute function, waiting for QNode execution of the new return types. Execute a batch of
+        quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
         device's ``execute`` method. The results are collected in a list.
@@ -730,11 +768,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Counts:
                 r = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
-                if isinstance(r, list):
-                    # Shot vector
-                    results.extend(r)
-                else:
-                    results.append(r)
+                results.append(r)
 
             elif obs.return_type is Probability:
                 results.append(
