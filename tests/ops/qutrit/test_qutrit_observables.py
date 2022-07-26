@@ -300,3 +300,63 @@ class TestTHermitian:
         )
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+
+GM_OBSERVABLES = [
+    (1, np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), [1, -1, 0]),
+    (2, np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]]), [1, -1, 0]),
+    (3, np.diag([1, -1, 0]), [1, -1, 0]),
+    (4, np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]]), [1, -1, 0]),
+    (5, np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]]), [1, -1, 0]),
+    (6, np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]]), [1, -1, 0]),
+    (7, np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]]), [1, -1, 0]),
+    (8, np.diag([1, 1, -2]) / np.sqrt(3), np.array([1, 1, -2]) / np.sqrt(3)),
+]
+
+
+class TestGellMannObservables:
+    """Tests for simple single-qutrit observables"""
+
+    @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
+    def test_diagonalization(self, index, mat, eigs, tol):
+        """Test the method transforms Gell-Mann observables appropriately."""
+        ob = qml.GellMannObs(index, wires=0)
+        A = ob.matrix()
+
+        diag_gates = ob.diagonalizing_gates()
+        U = np.eye(3)
+
+        if index in {3, 8}:
+            assert len(diag_gates) == 0
+        else:
+            assert len(diag_gates) == 1
+            assert diag_gates[0].__class__ == qml.QutritUnitary
+            mat = diag_gates[0].matrix()
+            U = np.dot(np.eye(3), mat)
+
+        res = U @ A @ U.conj().T
+        expected = np.diag(eigs)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("index", [0, 9, 1.0, 2.5, "c"])
+    def test_index_error(self, index):
+        with pytest.raises(
+            ValueError, match="The index must be an integer between 1 and 8 inclusive"
+        ):
+            qml.GellMannObs(index, wires=0)
+
+    @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
+    def test_matrix(self, index, mat, eigs, tol):
+        res_static = qml.GellMannObs.compute_matrix(index)
+        res_dynamic = qml.GellMannObs(index, wires=0).matrix()
+
+        assert np.allclose(res_static, mat)
+        assert np.allclose(res_dynamic, mat)
+
+    @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
+    def test_eigvals(self, index, mat, eigs, tol):
+        res_static = qml.GellMannObs.compute_eigvals(index)
+        res_dynamic = qml.GellMannObs(index, wires=0).eigvals()
+
+        assert np.allclose(res_static, eigs)
+        assert np.allclose(res_dynamic, eigs)
