@@ -112,7 +112,12 @@
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
+
 **Operator Arithmetic:**
+
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
