@@ -15,9 +15,9 @@
 Unit tests for the adjoint_metric_tensor function.
 """
 import pytest
-from pennylane import numpy as np
-import pennylane as qml
 
+import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.adjoint_metric_tensor import _apply_operations
 
 
@@ -25,13 +25,13 @@ class TestApplyOperations:
     """Tests the application of operations via the helper function
     _apply_operations used in the adjoint metric tensor."""
 
-    device = qml.device("default.qubit", wires=2)
     x = 0.5
 
     def test_simple_operation(self):
         """Test that an operation is applied correctly."""
+        device = qml.device("default.qubit", wires=2)
         op = qml.RX(self.x, wires=0)
-        out = _apply_operations(self.device._state, op, self.device)
+        out = _apply_operations(device._state, op, device)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -40,8 +40,9 @@ class TestApplyOperations:
     def test_simple_operation_inv(self):
         """Test that an operation is applied correctly when using invert=True
         but does not alter the operation (in particular its inverse flag) that is used."""
+        device = qml.device("default.qubit", wires=2)
         op = qml.RX(self.x, wires=0)
-        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = _apply_operations(device._state, op, device, invert=True)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -50,8 +51,9 @@ class TestApplyOperations:
     def test_inv_operation(self):
         """Test that an operation with inverse=True is applied correctly
         but does not alter the operation (in particular its inverse flag) that is used."""
+        device = qml.device("default.qubit", wires=2)
         op = qml.RX(self.x, wires=0).inv()
-        out = _apply_operations(self.device._state, op, self.device)
+        out = _apply_operations(device._state, op, device)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -60,8 +62,9 @@ class TestApplyOperations:
     def test_inv_operation_inv(self):
         """Test that an operation with inverse=True is applied correctly when using invert=True
         but does not alter the operation (in particular its inverse flag) that is used."""
+        device = qml.device("default.qubit", wires=2)
         op = qml.RX(self.x, wires=0).inv()
-        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = _apply_operations(device._state, op, device, invert=True)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -71,8 +74,9 @@ class TestApplyOperations:
         """Test that a group of operations with is applied correctly
         but does not alter the operations (in particular their order and
         inverse flags) that are used."""
+        device = qml.device("default.qubit", wires=2)
         op = [qml.RX(self.x, wires=0).inv(), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
-        out = _apply_operations(self.device._state, op, self.device)
+        out = _apply_operations(device._state, op, device)
         out = qml.math.reshape(out, 4)
         exp = np.array(
             [
@@ -91,8 +95,9 @@ class TestApplyOperations:
         """Test that a group of operations with is applied correctly when using invert=True
         but does not alter the operations (in particular their order and
         inverse flags) that are used."""
+        device = qml.device("default.qubit", wires=2)
         op = [qml.RX(self.x, wires=0).inv(), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
-        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = _apply_operations(device._state, op, device, invert=True)
         out = qml.math.reshape(out, 4)
         exp = np.array(
             [
@@ -109,35 +114,39 @@ class TestApplyOperations:
 
     def test_qubit_statevector(self):
         """Test that a statevector preparation is applied correctly."""
+        device = qml.device("default.qubit", wires=2)
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
-        op = qml.QubitStateVector(state, wires=self.device.wires)
-        out = _apply_operations(None, op, self.device, invert=False)
+        op = qml.QubitStateVector(state, wires=device.wires)
+        out = _apply_operations(None, op, device, invert=False)
         out = qml.math.reshape(out, 4)
         assert np.allclose(out, state)
 
     def test_error_qubit_statevector(self):
         """Test that an error is raised for a statevector preparation with invert=True."""
+        device = qml.device("default.qubit", wires=2)
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
-        op = qml.QubitStateVector(state, wires=self.device.wires)
+        op = qml.QubitStateVector(state, wires=device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
-            _apply_operations(None, op, self.device, invert=True)
+            _apply_operations(None, op, device, invert=True)
 
     def test_basisstate(self):
         """Test that a basis state preparation is applied correctly."""
-        op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
-        out = _apply_operations(None, op, self.device, invert=False)
+        device = qml.device("default.qubit", wires=2)
+        op = qml.BasisState(np.array([1, 0]), wires=device.wires)
+        out = _apply_operations(None, op, device, invert=False)
         out = qml.math.reshape(out, 4)
         exp = np.array([0.0, 0.0, 1.0, 0.0])
         assert np.allclose(out, exp)
 
     def test_error_basisstate(self):
         """Test that an error is raised for a basis state preparation with invert=True."""
-        op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
+        device = qml.device("default.qubit", wires=2)
+        op = qml.BasisState(np.array([1, 0]), wires=device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
-            _apply_operations(None, op, self.device, invert=True)
+            _apply_operations(None, op, device, invert=True)
 
 
 @pytest.mark.parametrize("invert", [False, True])
