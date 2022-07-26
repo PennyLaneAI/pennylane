@@ -638,3 +638,4 @@ def test_batch_input():
     conf = layer.get_config()
     layer.build((None, 2))
     assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
+    KerasLayer.set_input_argument()  # change input argument back to default
