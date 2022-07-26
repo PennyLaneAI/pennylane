@@ -265,6 +265,8 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -280,12 +282,21 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                elif not isinstance(r[0], dict):
+                elif not counts_exist:
                     # Measurement types except for Counts
                     r = qml.math.squeeze(r)
-                if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
-                    # This happens when measurement type is Counts
-                    results.append(r)
+
+                if counts_exist:
+
+                    # This happens when at least one measurement type is Counts
+                    for result_group in r:
+                        if isinstance(result_group, list):
+                            # List that contains one or more dictionaries
+                            results.extend(result_group)
+                        else:
+                            # Other measurement results
+                            results.append(result_group.T)
+
                 elif shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
@@ -293,7 +304,7 @@ class QubitDevice(Device):
 
                 s1 = s2
 
-            if not multiple_sampled_jobs:
+            if not multiple_sampled_jobs and not counts_exist:
                 # Can only stack single element outputs
                 results = qml.math.stack(results)
 
@@ -301,8 +312,6 @@ class QubitDevice(Device):
             results = self.statistics(circuit.observables)
 
         if not circuit.is_sampled:
-
-            ret_types = [m.return_type for m in circuit.measurements]
 
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
@@ -318,15 +327,18 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            elif any(ret is not qml.measurements.Counts for ret in ret_types):
-                # all the other cases except all counts
+            elif not counts_exist:
+                # all the other cases except any counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
 
             results = self._asarray(results)
         else:
-            results = tuple(self._asarray(r) for r in results)
+            results = tuple(
+                qml.math.squeeze(self._asarray(r)) if not isinstance(r, dict) else r
+                for r in results
+            )
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -1012,6 +1024,7 @@ class QubitDevice(Device):
                 # Before converting to str, we need to extract elements from arrays
                 # to satisfy the case of jax interface, as jax arrays do not support str.
                 samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
 
@@ -1055,14 +1068,17 @@ class QubitDevice(Device):
             if counts:
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
+
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if counts:
-            shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
+            shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
+
         return (
-            samples.reshape((3, bin_size, -1))
+            samples.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
