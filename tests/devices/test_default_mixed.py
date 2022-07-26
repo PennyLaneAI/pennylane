@@ -990,94 +990,103 @@ class TestApply:
 class TestReadoutError:
     """Tests for measurement readout error"""
 
+    prob_and_expected_expval = [(0, np.array([1, 1])), (0.5, np.array([0, 0])), (1, np.array([-1, -1]))]
+ 
+    @pytest.mark.parametrize("nr_wires", [2,3])
+    @pytest.mark.parametrize("prob, expected", prob_and_expected_expval)
+    def test_readout_expval_PauliZ(self,nr_wires, prob, expected):
+        """Tests the measurement results for expval of PauliZ"""
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        res=circuit()
+        assert np.allclose(res,expected)
+
+    @pytest.mark.parametrize("nr_wires", [2,3])
+    @pytest.mark.parametrize("prob, expected", prob_and_expected_expval)
+    def test_readout_expval_PauliX(self,nr_wires, prob, expected):
+        """Tests the measurement results for expval of PauliX"""
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
+        res=circuit()
+        assert np.allclose(res,expected)
+
     @pytest.mark.parametrize("prob", [0,0.5,1])
-    def test_state(self,prob):
+    @pytest.mark.parametrize("nr_wires, expected", [(1, np.array([[1.+0.j, 0.+0.j],[0.+0.j, 0.+0.j]]))])
+    def test_readout_state(self,nr_wires,prob,expected):
         """Tests the state output is not affected by readout error"""
-        dev = qml.device("default.mixed",wires=1,readout_prob=prob)
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
 
         @qml.qnode(dev)
         def circuit():
             return qml.state()
 
         res=circuit()
-        expected = np.array([[1.+0.j, 0.+0.j],[0.+0.j, 0.+0.j]])
         assert np.allclose(res,expected)
 
+    @pytest.mark.parametrize("nr_wires", [2,3])
     @pytest.mark.parametrize("prob", [0,0.5,1])
-    def test_density_matrix(self,prob):
+    def test_readout_density_matrix(self,nr_wires,prob):
         """Tests the density matrix output is not affected by readout error"""
-        dev = qml.device("default.mixed",wires=2,readout_prob=prob)
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.density_matrix(wires=0)
+            return qml.density_matrix(wires=1)
 
         res=circuit()
         expected = np.array([[1.+0.j, 0.+0.j],[0.+0.j, 0.+0.j]])
         assert np.allclose(res,expected)
 
     @pytest.mark.parametrize("nr_wires", [2,3])
-    def test_readout_prob_0(self,nr_wires):
-        """Tests the measurement results for readout error probability=0"""
-        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=0)
+    @pytest.mark.parametrize("prob, expected", [(0,[np.zeros(2), np.zeros(2)]) ,(1,[np.ones(2), np.ones(2)])])
+    def test_readout_sample(self,nr_wires,prob,expected):
+        """Tests the sample output with readout error"""
+        dev = qml.device("default.mixed",shots=2,wires=nr_wires,readout_prob=prob)
 
         @qml.qnode(dev)
-        def circuit1():
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+        def circuit():
+            return qml.sample(wires=[0,1])
 
-        res=circuit1()
-        expected = np.array([1, 1])
+        res=circuit()
         assert np.allclose(res,expected)
-
-        @qml.qnode(dev)
-        def circuit2():
-            return qml.probs(wires=0)
-
-        res=circuit2()
-        expected = np.array([1, 0])
-        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("nr_wires", [2,3])
-    def test_readout_prob_1(self,nr_wires):
-        """Tests the measurement results when readout error probability=1"""
-        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=1)
+    @pytest.mark.parametrize("prob, expected", [(0,{'00': 100}) ,(1,{'11': 100})])
+    def test_readout_counts(self,nr_wires,prob,expected):
+        """Tests the counts output with readout error"""
+        dev = qml.device("default.mixed",shots=100,wires=nr_wires,readout_prob=prob)
 
         @qml.qnode(dev)
-        def circuit1():
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+        def circuit():
+            return qml.sample(wires=[0,1],counts=True)
 
-        res=circuit1()
-        expected = np.array([-1,-1])
-        assert np.allclose(res,expected)
+        res=circuit()
+        assert res == expected
 
-        @qml.qnode(dev)
-        def circuit2():
-            return qml.probs(wires=0)
-
-        res=circuit2()
-        expected = np.array([0, 1])
-        assert np.allclose(res, expected)
-
+    prob_and_expected_probs =  [(0, np.array([1, 0])), (0.5, np.array([0.5, 0.5])), (1, np.array([0, 1]))]
 
     @pytest.mark.parametrize("nr_wires", [2,3])
-    def test_readout_prob_half(self,nr_wires):
-        """Tests the measurement results when readout error probability=0.5"""
-        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=0.5)
+    @pytest.mark.parametrize("prob, expected", prob_and_expected_probs)
+    def test_readout_probs(self,nr_wires,prob,expected):
+        """Tests the measurement results for probs"""
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
 
         @qml.qnode(dev)
-        def circuit1():
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        res=circuit1()
-        expected = np.array([0, 0])
-        assert np.allclose(res,expected)
-
-        @qml.qnode(dev)
-        def circuit2():
+        def circuit():
             return qml.probs(wires=0)
 
-        res=circuit2()
-        expected = np.array([0.5, 0.5])
+        res=circuit()
+        #expected = np.array([1, 0])
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("nr_wires", [2,3])

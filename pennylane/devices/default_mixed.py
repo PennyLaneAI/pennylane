@@ -30,6 +30,17 @@ from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, Qu
 from pennylane import Snapshot
 from pennylane.operation import Channel
 from pennylane.wires import Wires
+from pennylane.measurements import (
+    Sample,
+    Counts,
+    Variance,
+    Expectation,
+    Probability,
+    State,
+    VnEntropy,
+    MutualInfo,
+)
+
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from .._version import __version__
 
@@ -510,20 +521,50 @@ class DefaultMixed(QubitDevice):
 
     # pylint: disable=arguments-differ
 
-    def statistics(self, observables, shot_range=None, bin_size=None):
-        """Applies a readout error to the measurement outcomes of any observable if
-        readout_prob is non-zero. It applies to the following properties being
-        measured: Expectation, Variance, Sample, and Probability. This is done
-        by applying a BitFlip channel to the wires being measured after applying the
-        circuit rotations to the pre-rotated state. The results of state and density_matrix
-        are unaffected by the readout error because they correspond to the pre-rotated state."""
+    def execute(self, circuit, **kwargs):
+        """Execute a queue of quantum operations on the device and then
+        measure the given observables.
+
+        For plugin developers: instead of overwriting this, consider
+        implementing a suitable subset of
+
+        * :meth:`apply`
+
+        * :meth:`~.generate_samples`
+
+        * :meth:`~.probability`
+
+        Additional keyword arguments may be passed to the this method
+        that can be utilised by :meth:`apply`. An example would be passing
+        the ``QNode`` hash that can be used later for parametric compilation.
+
+        Applies a readout error to the measurement outcomes of any observable if
+        readout_prob is non-zero. This is done by finding the list of measured wires on which
+        BitFlip channels are applied in the :meth:`apply`.
+
+        Args:
+            circuit (~.CircuitGraph): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            array[float]: measured value(s)
+        """
 
         if self.readout_err:
-            measured_wires = qml.wires.Wires.all_wires([obs.wires for obs in observables])
-            for k in measured_wires:
-                bit_flip = qml.BitFlip(self.readout_err,wires=k)
-                self._apply_operation(bit_flip)
-        return super().statistics(observables, shot_range, bin_size)
+            wires_list = []
+            for obs in circuit.observables:
+                wires_list.append(obs.wires)
+                if obs.return_type in (State,VnEntropy,MutualInfo):
+                    self.measured_wires = []
+                    return super().execute(circuit, **kwargs)
+                elif obs.return_type in (Sample,Counts):
+                    if obs.name == "Identity" and obs.wires == qml.wires.Wires([]):
+                        self.measured_wires = self.wires
+                        return super().execute(circuit, **kwargs)
+            self.measured_wires = qml.wires.Wires.all_wires(wires_list)
+        return super().execute(circuit, **kwargs)
 
     def apply(self, operations, rotations=None, **kwargs):
 
@@ -547,3 +588,8 @@ class DefaultMixed(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._apply_operation(operation)
+
+        if self.readout_err:
+            for k in self.measured_wires:
+                bit_flip = qml.BitFlip(self.readout_err,wires=k)
+                self._apply_operation(bit_flip)
