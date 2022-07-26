@@ -258,7 +258,25 @@
   RZ**2(1.0, wires=[0])
   ```
 
-* A `SProd` symbolic class is added that allows users to represent the scalar product 
+* Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
+  ```
+
+  Added `__neg__` and `__sub__` dunder methods to the `qml.operation.Operator` class so that users
+  can negate and substract operators more naturally.
+
+  ```pycon
+  >>> -(-qml.PauliZ(0) + qml.PauliX(0)).matrix()
+  array([[ 1, -1],
+        [-1, -1]])
+  ```
+
+* A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
   We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
