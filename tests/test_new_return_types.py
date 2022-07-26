@@ -789,3 +789,51 @@ class TestShotVectorsAutogradMultiMeasure:
                             expected = (shot_tuple.shots,)
                             assert r.shape == expected
                 idx += 1
+
+    @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
+    def test_probs_counts(self, shot_vector, sample_obs):
+        """Test probs and counts measurements."""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+
+        meas1_wires = [0, 1]
+        meas2_wires = [2]
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            if sample_obs is not None:
+                # Observable provided to sample
+                return qml.probs(wires=meas1_wires), qml.sample(
+                    sample_obs(meas2_wires), counts=True
+                )
+
+            # Only wires provided to sample
+            return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires, counts=True)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
+        assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
+
+        expected_outcomes = {-1, 1}
+        idx = 0
+        for shot_tuple in dev.shot_vector:
+            for _ in range(shot_tuple.copies):
+                for i, r in enumerate(res[0][idx]):
+                    if i % 2 == 0:
+                        print(r)
+                        expected_shape = (len(meas1_wires) ** 2,)
+                        assert r.shape == expected_shape
+                    else:
+                        # Samples are either -1 or 1
+                        assert set(r.keys()).issubset(expected_outcomes)
+                        assert sum(r.values()) == shot_tuple.shots
+                idx += 1
