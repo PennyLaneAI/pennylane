@@ -19,8 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
-from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
 from pennylane import DeviceError
 
 
@@ -543,4 +541,3 @@ class TestOps:
 
         assert np.all(res == state)
         spy.assert_called()
-
