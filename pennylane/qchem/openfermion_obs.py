@@ -900,6 +900,10 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
+        if mapping != "jordan_wigner":
+            raise ValueError(
+                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
+            )
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
