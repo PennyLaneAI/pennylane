@@ -260,11 +260,14 @@ class TestCaching:
 
             return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
 
-        # Without caching, 9 evaluations are required to compute
+        # Without caching, 9 evaluations would be required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
+        #
+        # However, the jacobian is being cached in the interface by default,
+        # hence we do 5 evaluations
         params = np.array([0.1, 0.2])
         qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 9
+        assert dev.num_executions == 5
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
@@ -324,9 +327,18 @@ class TestCaching:
             assert np.allclose(expected, hess1, atol=tol, rtol=0)
 
         expected_runs = 1  # forward pass
-        expected_runs += 2 * N  # Jacobian
-        expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N**2  # Hessian off-diagonal
+
+        # Jacobian of an involutory observable:
+        # ------------------------------------
+        #
+        # 2 * N execs: evaluate the analytic derivative of <A>
+        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
+        num_shifted_evals = 2 * N
+        runs_for_jacobian = num_shifted_evals + 1
+        expected_runs += runs_for_jacobian
+
+        # Each tape used to compute the Jacobian is then shifted again
+        expected_runs += runs_for_jacobian * num_shifted_evals
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
@@ -797,7 +809,7 @@ class TestHigherOrderDerivatives:
             np.array([-2.0, 0], requires_grad=True),
         ],
     )
-    def test_parameter_shift_hessian(self, params, tol, recwarn):
+    def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -839,11 +851,7 @@ class TestHigherOrderDerivatives:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        # Check that no deprecation warnigns are emitted due to trainable
-        # parameters with the Autograd interface
-        assert len(recwarn) == 0
-
-    def test_adjoint_hessian(self, tol, recwarn):
+    def test_adjoint_hessian(self, tol):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -867,10 +875,6 @@ class TestHigherOrderDerivatives:
             res = qml.jacobian(qml.grad(cost_fn))(params)
 
         assert np.allclose(res, np.zeros([2, 2]), atol=tol, rtol=0)
-
-        # Check that no additional deprecation warnigns are emitted due to trainable
-        # parameters with the Autograd interface
-        assert len(recwarn) == 0
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order

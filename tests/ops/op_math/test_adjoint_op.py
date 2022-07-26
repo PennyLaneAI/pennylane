@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
-from email.mime import base
 import pytest
 
 import pennylane as qml
@@ -438,7 +437,7 @@ class TestQueueing:
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
-        """Test that base is added to queue even if it's defined outside the recording context."""
+        """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         with qml.tape.QuantumTape() as tape:
@@ -607,6 +606,18 @@ class TestDecompositionExpand:
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             Adjoint(base).decomposition()
+
+    def test_adjoint_of_adjoint(self):
+        """Test that the adjoint an adjoint returns the base operator through both decomposition and expand."""
+
+        base = qml.PauliX(0)
+        adj1 = Adjoint(base)
+        adj2 = Adjoint(adj1)
+
+        assert adj2.decomposition()[0] is base
+
+        tape = adj2.expand()
+        assert tape.circuit[0] is base
 
 
 class TestIntegration:

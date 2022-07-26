@@ -14,22 +14,22 @@
 """
 This submodule defines the symbolic operation that stands for the power of an operator.
 """
-from copy import copy
 from scipy.linalg import fractional_matrix_power
 
 from pennylane.operation import (
     DecompositionUndefinedError,
     SparseMatrixUndefinedError,
     PowUndefinedError,
-    Operator,
     Operation,
     Observable,
     expand_matrix,
 )
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
-
 from pennylane import math as qmlmath
+
+from .symbolicop import SymbolicOp
+
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -80,7 +80,7 @@ class PowOperation(Operation):
         return self.base.control_wires
 
 
-class Pow(Operator):
+class Pow(SymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
@@ -120,41 +120,24 @@ class Pow(Operator):
         if isinstance(base, Operation):
             if isinstance(base, Observable):
                 if cls._operation_observable_type is None:
-                    base_classes = (PowOperation, Pow, Observable, Operation)
+                    base_classes = (PowOperation, Pow, SymbolicOp, Observable, Operation)
                     cls._operation_observable_type = type("Pow", base_classes, dict(cls.__dict__))
                 return object.__new__(cls._operation_observable_type)
 
             # not an observable
             if cls._operation_type is None:
-                base_classes = (PowOperation, Pow, Operation)
+                base_classes = (PowOperation, Pow, SymbolicOp, Operation)
                 cls._operation_type = type("Pow", base_classes, dict(cls.__dict__))
             return object.__new__(cls._operation_type)
 
         if isinstance(base, Observable):
             if cls._observable_type is None:
-                base_classes = (Pow, Observable)
+                base_classes = (Pow, SymbolicOp, Observable)
                 cls._observable_type = type("Pow", base_classes, dict(cls.__dict__))
             return object.__new__(cls._observable_type)
 
         return object.__new__(Pow)
 
-    # pylint: disable=attribute-defined-outside-init
-    def __copy__(self):
-        # this method needs to be overwritten becuase the base must be copied too.
-        copied_op = object.__new__(type(self))
-        # copied_op must maintain inheritance structure of self
-        # For example, it must keep AdjointOperation if self has it
-        # this way preserves inheritance structure
-
-        for attr, value in vars(self).items():
-            if attr != "_hyperparameters":
-                setattr(copied_op, attr, value)
-        copied_op._hyperparameters = copy(self._hyperparameters)
-        copied_op._hyperparameters["base"] = copy(self.base)
-
-        return copied_op
-
-    # pylint: disable=super-init-not-called
     def __init__(self, base=None, z=1, do_queue=True, id=None):
 
         # incorporate base inverse attribute into the exponent
@@ -162,90 +145,19 @@ class Pow(Operator):
             base.inverse = False
             z *= -1
 
-        self.hyperparameters["base"] = base
         self.hyperparameters["z"] = z
-        self._id = id
-        self.queue_idx = None
+        self._name = f"{base.name}**{z}"
 
-        self._name = f"{self.base.name}**{z}"
-
-        if do_queue:
-            self.queue()
-
-    @property
-    def base(self):
-        """The operator that is raised to a power."""
-        return self.hyperparameters["base"]
+        super().__init__(base, do_queue=do_queue, id=id)
 
     @property
     def z(self):
         """The exponent."""
         return self.hyperparameters["z"]
 
-    @property
-    def data(self):
-        """Trainable parameters that the operator depends on."""
-        return self.base.data
-
-    @data.setter
-    def data(self, new_data):
-        """Allows us to set base operation parameters."""
-        self.base.data = new_data
-
-    @property
-    def parameters(self):
-        return self.base.parameters
-
-    @property
-    def num_params(self):
-        return self.base.num_params
-
-    @property
-    def wires(self):
-        return self.base.wires
-
-    # pylint: disable=protected-access
-    @property
-    def _wires(self):
-        return self.base._wires
-
-    # pylint: disable=protected-access
-    @_wires.setter
-    def _wires(self, new_wires):
-        # used in a couple places that want to update the wires of an operator
-        # we should create a better way to set new wires in the future
-        self.base._wires = new_wires
-
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
-
-    @property
-    def num_wires(self):
-        return len(self.wires)
-
-    def queue(self, context=QueuingContext):
-        context.safe_update_info(self.base, owner=self)
-        context.append(self, owns=self.base)
-
-        return self
-
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         return self.base.label(decimals, base_label, cache=cache) + z_string
-
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return self.base.has_matrix
-
-    @property
-    def is_hermitian(self):
-        return self.base.is_hermitian
 
     def matrix(self, wire_order=None):
         base_matrix = self.base.matrix()
@@ -325,20 +237,3 @@ class Pow(Operator):
         See also :func:`~.generator`
         """
         return self.z * self.base.generator()
-
-    @property
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Returns ``_queue_cateogory`` for base operator.
-
-        Options are:
-            * `"_prep"`
-            * `"_ops"`
-            * `"_measurements"`
-            * `None`
-        """
-        return self.base._queue_category  # pylint: disable=protected-access

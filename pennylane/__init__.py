@@ -20,7 +20,7 @@ import types
 import pkg_resources
 
 import numpy as _np
-from semantic_version import Spec, Version
+from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
@@ -31,12 +31,12 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
-import pennylane.hf
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
+from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
@@ -56,7 +56,7 @@ from pennylane.measurements import (
     mutual_info,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl
+from pennylane.ops import adjoint, ctrl, op_sum
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -306,7 +306,7 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
+        if Version(version()) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."

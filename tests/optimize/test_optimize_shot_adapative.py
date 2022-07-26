@@ -578,7 +578,7 @@ class TestStepAndCost:
         when using a QNode as the cost function"""
         dev = qml.device("default.qubit", wires=1, shots=10)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, cache=False)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)

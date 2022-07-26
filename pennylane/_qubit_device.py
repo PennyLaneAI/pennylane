@@ -29,6 +29,7 @@ from pennylane import DeviceError
 from pennylane.operation import operation_derivative
 from pennylane.measurements import (
     Sample,
+    Counts,
     Variance,
     Expectation,
     Probability,
@@ -36,6 +37,7 @@ from pennylane.measurements import (
     VnEntropy,
     MutualInfo,
 )
+
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -186,6 +188,8 @@ class QubitDevice(Device):
         "Hermitian",
         "Identity",
         "Projector",
+        "Sum",
+        "Sprod",
     }
 
     def __init__(
@@ -261,6 +265,8 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -276,17 +282,29 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                else:
+                elif not counts_exist:
+                    # Measurement types except for Counts
                     r = qml.math.squeeze(r)
 
-                if shot_tuple.copies > 1:
+                if counts_exist:
+
+                    # This happens when at least one measurement type is Counts
+                    for result_group in r:
+                        if isinstance(result_group, list):
+                            # List that contains one or more dictionaries
+                            results.extend(result_group)
+                        else:
+                            # Other measurement results
+                            results.append(result_group.T)
+
+                elif shot_tuple.copies > 1:
                     results.extend(r.T)
                 else:
                     results.append(r.T)
 
                 s1 = s2
 
-            if not multiple_sampled_jobs:
+            if not multiple_sampled_jobs and not counts_exist:
                 # Can only stack single element outputs
                 results = qml.math.stack(results)
 
@@ -295,13 +313,11 @@ class QubitDevice(Device):
 
         if not circuit.is_sampled:
 
-            ret_types = [m.return_type for m in circuit.measurements]
-
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                else:
+                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
                     results = self._asarray(results, dtype=self.R_DTYPE)
 
@@ -311,14 +327,18 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            else:
+            elif not counts_exist:
+                # all the other cases except any counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
 
             results = self._asarray(results)
         else:
-            results = tuple(self._asarray(r) for r in results)
+            results = tuple(
+                qml.math.squeeze(self._asarray(r)) if not isinstance(r, dict) else r
+                for r in results
+            )
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -475,7 +495,14 @@ class QubitDevice(Device):
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
-                results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                )
+
+            elif obs.return_type is Counts:
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+                )
 
             elif obs.return_type is Probability:
                 results.append(
@@ -488,10 +515,7 @@ class QubitDevice(Device):
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
                     )
-                if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
-                        "Returning the state is not supported when using custom wire labels"
-                    )
+
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
@@ -568,7 +592,7 @@ class QubitDevice(Device):
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return QubitDevice.states_to_binary(samples, self.num_wires)
+        return self.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -594,8 +618,7 @@ class QubitDevice(Device):
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
 
-    @staticmethod
-    def generate_basis_states(num_wires, dtype=np.uint32):
+    def generate_basis_states(self, num_wires, dtype=np.uint32):
         """
         Generates basis states in binary representation according to the number
         of wires specified.
@@ -623,7 +646,7 @@ class QubitDevice(Device):
         """
         if 2 < num_wires < 32:
             states_base_ten = np.arange(2**num_wires, dtype=dtype)
-            return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
+            return self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1), repeat=num_wires)
@@ -681,6 +704,7 @@ class QubitDevice(Device):
             representing the reduced density matrix of the state prior to measurement.
         """
         state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
         return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
@@ -960,20 +984,61 @@ class QubitDevice(Device):
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         return np.squeeze(np.var(samples, axis=0))
 
-    def sample(self, observable, shot_range=None, bin_size=None):
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        """Return samples of an observable.
+
+        Args:
+            observable (Observable): the observable to sample
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+            counts (bool): whether counts (``True``) or raw samples (``False``)
+                should be returned
+
+        Raises:
+            EigvalsUndefinedError: if no information is available about the
+                eigenvalues of the observable
+
+        Returns:
+            Union[array[float], dict, list[dict]]: samples in an array of
+            dimension ``(shots,)`` or counts
+        """
+
+        def _samples_to_counts(samples, no_observable_provided):
+            """Group the obtained samples into a dictionary.
+
+            **Example**
+
+                >>> samples
+                tensor([[0, 0, 1],
+                        [0, 0, 1],
+                        [1, 1, 1]], requires_grad=True)
+                >>> self._samples_to_counts(samples)
+                {'111':1, '001':2}
+            """
+            if no_observable_provided:
+                # If we describe a state vector, we need to convert its list representation
+                # into string (it's hashable and good-looking).
+                # Before converting to str, we need to extract elements from arrays
+                # to satisfy the case of jax interface, as jax arrays do not support str.
+                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+
+            states, counts = np.unique(samples, return_counts=True)
+            return dict(zip(states, counts))
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
-        elif isinstance(
-            observable, MeasurementProcess
-        ):  # if no observable was provided then return the raw samples
+        elif no_observable_provided:  # if no observable was provided then return the raw samples
             if (
                 len(observable.wires) != 0
             ):  # if wires are provided, then we only return samples from those wires
@@ -1000,9 +1065,23 @@ class QubitDevice(Device):
                 ) from e
 
         if bin_size is None:
+            if counts:
+                return _samples_to_counts(samples, no_observable_provided)
             return samples
 
-        return samples.reshape((bin_size, -1))
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
+        if counts:
+            shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
+            return [
+                _samples_to_counts(bin_sample, no_observable_provided)
+                for bin_sample in samples.reshape(shape)
+            ]
+
+        return (
+            samples.reshape((num_wires, bin_size, -1))
+            if no_observable_provided
+            else samples.reshape((bin_size, -1))
+        )
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
@@ -1118,16 +1197,12 @@ class QubitDevice(Device):
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in trainable_params):
-                d_op_matrix = operation_derivative(op)
-
-            op.inv()
-            # Ideally use use op.adjoint() here
-            # then we don't have to re-invert the operation at the end
-            ket = self._apply_operation(ket, op)
+            adj_op = qml.adjoint(op)
+            ket = self._apply_operation(ket, adj_op)
 
             if op.grad_method is not None:
                 if param_number in trainable_params:
+                    d_op_matrix = operation_derivative(op)
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
@@ -1136,7 +1211,6 @@ class QubitDevice(Device):
                 param_number -= 1
 
             for kk in range(n_obs):
-                bras[kk, ...] = self._apply_operation(bras[kk, ...], op)
-            op.inv()
+                bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
         return jac

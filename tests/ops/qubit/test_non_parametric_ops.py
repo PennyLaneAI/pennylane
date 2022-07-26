@@ -613,6 +613,13 @@ class TestWireCut:
 
         assert np.allclose(with_wirecut(), without_wirecut())
 
+    def test_wires_empty_list_raises_error(self):
+        """Test that the WireCut operator raises an error when instantiated with an empty list."""
+        with pytest.raises(
+            ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
+        ):
+            qml.WireCut(wires=[])
+
 
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""

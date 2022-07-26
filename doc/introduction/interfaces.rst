@@ -148,6 +148,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
     ~pennylane.ShotAdaptiveOptimizer
+    ~pennylane.SPSAOptimizer
 
 :html:`</div>`
 
@@ -167,7 +168,8 @@ the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/
 JAX
 ~~~
 
-Check out the `JAXopt package <https://github.com/google/jaxopt>`_ to find optimizers for the
+Check out the `JAXopt <https://github.com/google/jaxopt>`_ and the `Optax
+<https://optax.readthedocs.io/en/latest/>`_ packages to find optimizers for the
 :ref:`PennyLane JAX framework <jax_interf>`.
 
 Gradients
