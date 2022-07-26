@@ -517,6 +517,7 @@ proj_w2 = qml.Projector([1], wires=2)
 hermitian = qml.Hermitian(np.diag([1, 2]), wires=0)
 tensor_product = qml.PauliY(wires=2) @ qml.PauliX(wires=1)
 
+# TODO: test that probs add up to 1
 single_scalar_probs_multi = [
     # Expval
     (qml.expval(pauliz_w2), qml.probs(wires=[2, 0])),
@@ -597,6 +598,9 @@ class TestShotVectorsAutogradMultiMeasure:
                     assert r.shape == ()
                 else:
                     assert r.shape == (2**2,)
+
+                    # Probs add up to 1
+                    assert np.allclose(sum(r), 1)
 
     @pytest.mark.parametrize("meas1,meas2", single_scalar_sample_multi)
     def test_single_scalar_sample_with_obs(self, shot_vector, meas1, meas2):
@@ -782,6 +786,9 @@ class TestShotVectorsAutogradMultiMeasure:
                     if i % 2 == 0:
                         expected_shape = (len(meas1_wires) ** 2,)
                         assert r.shape == expected_shape
+
+                        # Probs add up to 1
+                        assert np.allclose(sum(r), 1)
                     else:
                         if shot_tuple.shots == 1:
                             assert r.shape == ()
@@ -823,17 +830,19 @@ class TestShotVectorsAutogradMultiMeasure:
         assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
         assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
 
-        expected_outcomes = {-1, 1}
+        expected_outcomes = {-1, 1} if sample_obs is not None else {"0", "1"}
         idx = 0
         for shot_tuple in dev.shot_vector:
             for _ in range(shot_tuple.copies):
                 for i, r in enumerate(res[0][idx]):
                     if i % 2 == 0:
-                        print(r)
                         expected_shape = (len(meas1_wires) ** 2,)
                         assert r.shape == expected_shape
+
+                        # Probs add up to 1
+                        assert np.allclose(sum(r), 1)
                     else:
-                        # Samples are either -1 or 1
+                        # Samples are -1 or 1
                         assert set(r.keys()).issubset(expected_outcomes)
                         assert sum(r.values()) == shot_tuple.shots
                 idx += 1

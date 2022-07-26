@@ -386,6 +386,9 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+
         # compute the required statistics
         # TODO: refactor
         # pylint: disable=too-many-nested-blocks
@@ -404,7 +407,7 @@ class QubitDevice(Device):
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
                 elif single_measurement:
-                    if not circuit.observables[0].return_type is Counts:
+                    if not counts_exist:
                         # Measurement types except for Counts
                         r = qml.math.squeeze(r)
                     else:
@@ -414,7 +417,7 @@ class QubitDevice(Device):
 
                         # Each item of r has copies length
                         measurement_group_length = shot_tuple.copies
-                        if not any(obs.return_type is Counts for obs in circuit.observables):
+                        if not counts_exist:
 
                             # r is a nested sequence, contains the results for multiple measurements
                             r = [r_.T for r_ in r]
@@ -429,9 +432,15 @@ class QubitDevice(Device):
                             # First: iterate over each group of measurement results that contain copies many outcomes for a single measurement
                             for idx in range(measurement_group_length):
                                 result_group = []
+
                                 for idx2, r_ in enumerate(r):
-                                    # Second: iterate over the
-                                    result = r_[idx]
+                                    if circuit.observables[idx2].return_type is Probability:
+                                        # The result has a shape of (num_basis_states, shot_tuple.copies)
+                                        # Extract a single row
+                                        result = r_[:, idx2]
+                                    else:
+                                        result = r_[idx]
+
                                     if not circuit.observables[idx2].return_type is Counts:
                                         result = self._asarray(result.T)
 
@@ -457,7 +466,7 @@ class QubitDevice(Device):
                 # TODO: need list and tuple both?
                 elif isinstance(r, (list, tuple)):
                     if single_measurement:
-                        if any(isinstance(r_, dict) for r_ in r):
+                        if counts_exist:
                             results.extend(r)
 
                         elif not self._has_partitioned_shots():
@@ -467,7 +476,7 @@ class QubitDevice(Device):
                         else:
                             results.append(r)
                     else:
-                        if any(isinstance(r_, dict) for r_ in r):
+                        if counts_exist and shot_tuple.copies == 1:
                             results.append(r)
                         elif not self._has_partitioned_shots():
                             results.extend(r)
