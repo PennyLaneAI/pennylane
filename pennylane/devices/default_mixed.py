@@ -172,6 +172,7 @@ class DefaultMixed(QubitDevice):
                 "autograd": "default.mixed",
                 "tf": "default.mixed",
                 "torch": "default.mixed",
+                "jax": "default.mixed",
             },
         )
         return capabilities
