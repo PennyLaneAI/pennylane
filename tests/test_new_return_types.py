@@ -632,9 +632,7 @@ class TestShotVectorsAutogradMultiMeasure:
         for shot_tuple in dev.shot_vector:
             for _ in range(shot_tuple.copies):
                 for i, r in enumerate(res[0][idx]):
-                    # First component of the shot vector is 1
-                    shots_is_one = idx == 0
-                    if i % 2 == 0 or shots_is_one:
+                    if i % 2 == 0 or shot_tuple.shots == 1:
                         obs_provided = meas2.obs is not None
                         expected_shape = ()
                         assert r.shape == expected_shape
@@ -666,21 +664,16 @@ class TestShotVectorsAutogradMultiMeasure:
         assert all(isinstance(r, tuple) for r in res[0])
         assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
 
-        idx = 0
         for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
+            for idx in range(shot_tuple.copies):
                 for i, r in enumerate(res[0][idx]):
-                    # First component of the shot vector is 1
-                    shots_is_one = idx == 0
-
                     expected_sample_shape_item = len(meas2.wires)
-                    if i % 2 == 0 or shots_is_one:
+                    if i % 2 == 0 or shot_tuple.shots == 1:
                         obs_provided = meas2.obs is not None
                         expected_shape = ()
                         assert r.shape == expected_shape
                     else:
                         assert r.shape == (shot_tuple.shots,)
-                idx += 1
 
     @pytest.mark.parametrize("meas1,meas2", single_scalar_counts_multi)
     def test_single_scalar_counts_with_obs(self, shot_vector, meas1, meas2):
