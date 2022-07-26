@@ -892,6 +892,10 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
+
+    if method not in ["dhf", "pyscf"]:
+        raise ValueError("Only 'dhf' and 'pyscf' backends are supported.")
+
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
@@ -926,17 +930,16 @@ def molecular_hamiltonian(
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
         return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
 
-    if method == "pyscf":
-        openfermion, _ = _import_of()
+    openfermion, _ = _import_of()
 
-        hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
+    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
 
-        molecule = openfermion.MolecularData(filename=hf_file)
+    molecule = openfermion.MolecularData(filename=hf_file)
 
-        core, active = qml.qchem.active_space(
-            molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
-        )
+    core, active = qml.qchem.active_space(
+        molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
+    )
 
-        h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
+    h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-        return qml.qchem.convert.import_operator(h_of, wires=wires), qubits
+    return qml.qchem.convert.import_operator(h_of, wires=wires), qubits
