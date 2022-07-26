@@ -33,9 +33,6 @@ from pennylane.wires import Wires
 from pennylane.measurements import (
     Sample,
     Counts,
-    Variance,
-    Expectation,
-    Probability,
     State,
     VnEntropy,
     MutualInfo,
@@ -175,6 +172,7 @@ class DefaultMixed(QubitDevice):
         # Create the initial state.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        self.measured_wires = []
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -559,7 +557,7 @@ class DefaultMixed(QubitDevice):
                 if obs.return_type in (State,VnEntropy,MutualInfo):
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
-                elif obs.return_type in (Sample,Counts):
+                if obs.return_type in (Sample,Counts):
                     if obs.name == "Identity" and obs.wires == qml.wires.Wires([]):
                         self.measured_wires = self.wires
                         return super().execute(circuit, **kwargs)

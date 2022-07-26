@@ -994,7 +994,7 @@ class TestReadoutError:
  
     @pytest.mark.parametrize("nr_wires", [2,3])
     @pytest.mark.parametrize("prob, expected", prob_and_expected_expval)
-    def test_readout_expval_PauliZ(self,nr_wires, prob, expected):
+    def test_readout_expval_pauliz(self,nr_wires, prob, expected):
         """Tests the measurement results for expval of PauliZ"""
         dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
 
@@ -1007,7 +1007,7 @@ class TestReadoutError:
 
     @pytest.mark.parametrize("nr_wires", [2,3])
     @pytest.mark.parametrize("prob, expected", prob_and_expected_expval)
-    def test_readout_expval_PauliX(self,nr_wires, prob, expected):
+    def test_readout_expval_paulix(self,nr_wires, prob, expected):
         """Tests the measurement results for expval of PauliX"""
         dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
 
