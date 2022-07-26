@@ -642,16 +642,7 @@ class TestTorchExecuteIntegration:
             U3(p[0], p[1], p[2], wires=0)
             qml.expval(qml.PauliX(0))
 
-        tape = tape.expand()
         res = execute([tape], dev, **execute_kwargs)[0]
-
-        assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
-
-        tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)
-        expected = torch.tensor(
-            [p_val[2], p_val[0], -p_val[2], p_val[1] + p_val[2]], device=torch_device
-        )
-        assert torch.allclose(tape_params, expected, atol=tol, rtol=0)
 
         expected = torch.tensor(
             np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0])
