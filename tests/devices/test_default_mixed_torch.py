@@ -286,13 +286,14 @@ class TestPassthruIntegration:
         grad = torch.autograd.functional.jacobian(circuit1, p_torch)
         assert qml.math.allclose(grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=0)
+            qml.RY(a, wires=wires[0])
             return qml.state()
 
         a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
@@ -321,15 +322,16 @@ class TestPassthruIntegration:
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_density_matrix_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
+    def test_density_matrix_differentiability(self, wires, tol):
         """Test that the density matrix can be differentiated"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.density_matrix(wires=1)
+            qml.RY(a, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            return qml.density_matrix(wires=wires[1])
 
         a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
 

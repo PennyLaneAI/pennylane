@@ -28,21 +28,24 @@ import pennylane as qml
 def eigvals(op, k=1, which="SA"):
     r"""The eigenvalues of one or more operations.
 
-    For a SparseHamiltonian object, the eigenvalues are computed with the efficient
-    ``scipy.sparse.linalg.eigsh`` method which returns `k` eigenvalues. The default value of `k` is
-    `1`. For an :math:`N \times N` sparse matrix, `k` must be smaller than `N - 1`, otherwise
-    ``scipy.sparse.linalg.eigsh`` fails. If the requested `k` is equal or larger than `N - 1`, the
-    regular ``qml.math.linalg.eigvalsh`` is applied on the dense matrix. The possible methods for
-    computing the `k` eigenvalues are `"LM"` (largest in magnitude), `"SM"` (smallest in magnitude),
-    `"LA"` (largest algebraic), `"SA"` (smallest algebraic) and `"BE"` (k/2 from each end of the
-    spectrum). For more details see
-    `here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
+    .. note::
+
+        For a :class:`~.SparseHamiltonian` object, the eigenvalues are computed with the efficient
+        ``scipy.sparse.linalg.eigsh`` method which returns :math:`k` eigenvalues. The default value
+        of :math:`k` is :math:`1`. For an :math:`N \times N` sparse matrix, :math:`k` must be
+        smaller than :math:`N - 1`, otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested
+        :math:`k` is equal or larger than :math:`N - 1`, the regular ``qml.math.linalg.eigvalsh``
+        is applied on the dense matrix. For more details see the ``scipy.sparse.linalg.eigsh``
+        `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
 
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
             or function that applies quantum operations.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
-        which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`.
+        which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
+            possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
+            ``'LA'`` (largest algebraic), ``'SA'`` (smallest algebraic) and ``'BE'`` (:math:`k/2`
+            from each end of the spectrum).
 
     Returns:
         tensor_like or function: If an operator is provided as input, the eigenvalues are returned

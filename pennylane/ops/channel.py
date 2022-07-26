@@ -79,7 +79,7 @@ class AmplitudeDamping(Channel):
         [array([[1., 0.], [0., 0.70710678]]),
          array([[0., 0.70710678], [0., 0.]])]
         """
-        if not 0.0 <= gamma <= 1.0:
+        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
@@ -160,10 +160,10 @@ class GeneralizedAmplitudeDamping(Channel):
          array([[0.52915026, 0.        ], [0.        , 0.63245553]]),
          array([[0.        , 0.        ], [0.34641016, 0.        ]])]
         """
-        if not 0.0 <= gamma <= 1.0:
+        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        if not 0.0 <= p <= 1.0:
+        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
         K0 = np.sqrt(p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
@@ -227,7 +227,7 @@ class PhaseDamping(Channel):
         [array([[1.        , 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.        ], [0.        , 0.70710678]])]
         """
-        if not 0.0 <= gamma <= 1.0:
+        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
@@ -317,7 +317,7 @@ class DepolarizingChannel(Channel):
          array([[0.+0.j        , 0.-0.40824829j], [0.+0.40824829j, 0.+0.j        ]]),
          array([[ 0.40824829,  0.        ], [ 0.        , -0.40824829]])]
         """
-        if not 0.0 <= p <= 1.0:
+        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
@@ -383,7 +383,7 @@ class BitFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
-        if not 0.0 <= p <= 1.0:
+        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
@@ -470,13 +470,13 @@ class ResetError(Channel):
          array([[0.        , 0.        ], [0.54772256, 0.        ]]),
          array([[0.        , 0.        ], [0.        , 0.54772256]])]
         """
-        if not 0.0 <= p_0 <= 1.0:
+        if not np.is_abstract(p_0) and not 0.0 <= p_0 <= 1.0:
             raise ValueError("p_0 must be in the interval [0,1]")
 
-        if not 0.0 <= p_1 <= 1.0:
+        if not np.is_abstract(p_1) and not 0.0 <= p_1 <= 1.0:
             raise ValueError("p_1 must be in the interval [0,1]")
 
-        if not 0.0 <= p_0 + p_1 <= 1.0:
+        if not np.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.eye(2)
@@ -550,7 +550,7 @@ class PauliError(Channel):
             raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
 
         # check if probabilities are legal
-        if not 0.0 <= p <= 1.0:
+        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         # check if the number of operators matches the number of wires
@@ -593,9 +593,9 @@ class PauliError(Channel):
         }
 
         # K1 is composed by Kraus matrices of operators
-        K1 = np.sqrt(p + np.eps) * np.array([1])
+        K1 = np.sqrt(p + np.eps) * np.array([[1]])
         for op in operators[::-1]:
-            K1 = np.kron(ops[op], K1)
+            K1 = np.multi_dispatch()(np.kron)(ops[op], K1)
 
         return [K0, K1]
 
@@ -656,7 +656,7 @@ class PhaseFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
         """
-        if not 0.0 <= p <= 1.0:
+        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
@@ -846,15 +846,15 @@ class ThermalRelaxationError(Channel):
          array([[-0.12718544,  0.        ], [ 0.        ,  0.13165421]]),
          array([[0.98784022, 0.        ], [0.        , 0.95430977]])]
         """
-        if not 0.0 <= pe <= 1.0:
+        if not np.is_abstract(pe) and not 0.0 <= pe <= 1.0:
             raise ValueError("pe must be between 0 and 1.")
-        if tg < 0:
+        if not np.is_abstract(tg) and tg < 0:
             raise ValueError(f"Invalid gate_time tg ({tg} < 0)")
-        if t1 <= 0:
+        if not np.is_abstract(t1) and t1 <= 0:
             raise ValueError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
-        if t2 <= 0:
+        if not np.is_abstract(t2) and t2 <= 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 <= 0.")
-        if t2 - 2 * t1 > 0:
+        if not np.is_abstract(t2 - 2 * t1) and t2 - 2 * t1 > 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
         # T1 relaxation rate
         eT1 = np.exp(-tg / t1)
@@ -862,7 +862,7 @@ class ThermalRelaxationError(Channel):
         # T2 dephasing rate
         eT2 = np.exp(-tg / t2)
 
-        if t2 <= t1:
+        def kraus_ops_small_t2():
             pz = (1 - p_reset) * (1 - eT2 / eT1) / 2
             pr0 = (1 - pe) * p_reset
             pr1 = pe * p_reset
@@ -875,8 +875,9 @@ class ThermalRelaxationError(Channel):
             K4 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [1, 0]])
             K5 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [0, 1]])
 
-            K = [K0, K1, K2, K3, K4, K5]
-        else:
+            return [K0, K1, K2, K3, K4, K5]
+
+        def kraus_ops_large_t2():
             e0 = p_reset * pe
             v0 = np.array([[0, 0], [1, 0]])
             K0 = np.sqrt(e0 + np.eps) * v0
@@ -892,14 +893,22 @@ class ThermalRelaxationError(Channel):
             )
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
-            v2 = np.array([[term2, 0], [0, 1]]) / np.sqrt(term2**2 + 1)
+            v2 = (term2 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
+                term2**2 + 1
+            )
             K2 = np.sqrt(e2 + np.eps) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
-            v3 = np.array([[term3, 0], [0, 1]]) / np.sqrt(term3**2 + 1)
+            v3 = (term3 * np.array([[1, 0], [0, 0]]) + np.array([[0, 0], [0, 1]])) / np.sqrt(
+                term3**2 + 1
+            )
             K3 = np.sqrt(e3 + np.eps) * v3
+            K4 = np.cast_like(np.zeros((2, 2)), K1)
+            K5 = np.cast_like(np.zeros((2, 2)), K1)
 
-            K = [K0, K1, K2, K3]
+            return [K0, K1, K2, K3, K4, K5]
+
+        K = np.cond(t2 <= t1, kraus_ops_small_t2, kraus_ops_large_t2, ())
         return K
 
 

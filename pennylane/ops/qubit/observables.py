@@ -173,7 +173,7 @@ class Hermitian(Observable):
 
 class SparseHamiltonian(Observable):
     r"""
-    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+    A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
     .. warning::
 
@@ -208,7 +208,7 @@ class SparseHamiltonian(Observable):
 
     >>> wires = 20
     >>> coeffs = [1 for _ in range(wires)]
-    >>> observables = [qml.PauliZ(i) for _ in range(wires)]
+    >>> observables = [qml.PauliZ(i) for i in range(wires)]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = qml.utils.sparse_hamiltonian(H)
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires=wires)

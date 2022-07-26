@@ -18,7 +18,7 @@ from itertools import product
 
 import numpy as np
 import pytest
-import cmath
+from pennylane import math
 import math
 import functools
 
@@ -213,7 +213,7 @@ class TestApply:
         state = torch.tensor([-1.0 + 1j, 1.0 + 1j], dtype=torch.complex128, device=torch_device)
         assert torch.allclose(
             dev._conj(state),
-            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128),
+            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128, device=torch_device),
             atol=tol,
             rtol=0,
         )
@@ -1213,7 +1213,7 @@ class TestQNodeIntegration:
         circuit()
         state = dev.state
 
-        amplitude = cmath.exp(-1j * cmath.pi / 8) / cmath.sqrt(2)
+        amplitude = np.exp(-1j * math.pi / 8) / math.sqrt(2)
 
         expected = torch.tensor(
             [amplitude, 0, amplitude.conjugate(), 0], dtype=torch.complex128, device=torch_device
@@ -1408,19 +1408,19 @@ class TestPassthruIntegration:
         p_grad = p_torch.grad
         assert qml.math.allclose(p_grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, device, torch_device, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, device, torch_device, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=wires, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            qml.RY(a, wires=wires[0])
+            return qml.state()
 
         a = torch.tensor(0.54, requires_grad=True, device=torch_device)
 
-        circuit(a)
-        res = torch.abs(dev.state) ** 2
+        res = torch.abs(circuit(a)) ** 2
         res = res[1] - res[0]
         res.backward()
 

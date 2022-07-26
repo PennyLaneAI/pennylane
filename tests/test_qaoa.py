@@ -1058,7 +1058,15 @@ class TestCostHamiltonians:
         cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
 
         assert mapping == m
-        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+
+        c1, t1, w1 = decompose_hamiltonian(cost_hamiltonian)
+        c2, t2, w2 = decompose_hamiltonian(cost_h)
+
+        # There may be a very small numeric difference in the coeffs
+        assert np.allclose(c1, c2)
+        assert t1 == t2
+        assert w1 == w2
+
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     @pytest.mark.parametrize("constrained", [True, False])
