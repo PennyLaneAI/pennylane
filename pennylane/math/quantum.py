@@ -439,6 +439,8 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.reduced_dm` and :func:`pennylane.density_matrix`
     """
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
@@ -490,6 +492,8 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> vn_entropy(x, indices=[0])
     0.6931472
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`
     """
     density_matrix = reduced_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)
@@ -579,9 +583,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
 
-    .. seealso::
-
-        :func:`~.math.vn_entropy`
+    .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.mutual_info`
     """
 
     # the subsystems cannot overlap
@@ -681,6 +683,8 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     >>> qml.math.fidelity(state0, state1)
     0.0
 
+    .. seealso:: :func:`pennylane.qinfo.transforms.fidelity`
+
     """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
@@ -767,6 +771,134 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     trace = (qml.math.sum(qml.math.sqrt(evs))) ** 2
 
     return trace
+
+
+def _compute_relative_entropy(rho, sigma, base=None):
+    r"""
+    Compute the quantum relative entropy of density matrix rho with respect to sigma.
+
+    .. math::
+        S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+        =\text{Tr}(\rho(\log\rho-\log\sigma))
+
+    where :math:`S` is the von Neumann entropy.
+    """
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    evs_rho, u_rho = qml.math.linalg.eigh(rho)
+    evs_sig, u_sig = qml.math.linalg.eigh(sigma)
+
+    # cast all eigenvalues to real
+    evs_rho, evs_sig = np.real(evs_rho), np.real(evs_sig)
+
+    # zero eigenvalues need to be treated very carefully here
+    # we use the convention that 0 * log(0) = 0
+    evs_sig = qml.math.where(evs_sig == 0, 0.0, evs_sig)
+    rho_nonzero_mask = qml.math.where(evs_rho == 0.0, False, True)
+
+    ent = qml.math.entr(qml.math.where(rho_nonzero_mask, evs_rho, 1.0))
+
+    # the matrix of inner products between eigenvectors of rho and eigenvectors
+    # of sigma; this is a doubly stochastic matrix
+    rel = np.abs(qml.math.dot(np.transpose(np.conj(u_rho)), u_sig)) ** 2
+
+    rel = qml.math.sum(qml.math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), axis=1)
+    rel = -qml.math.sum(qml.math.where(rho_nonzero_mask, evs_rho * rel, 0.0))
+
+    return (rel - ent) / div_base
+
+
+def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="complex128"):
+    r"""
+    Compute the quantum relative entropy of one state with respect to another.
+
+    .. math::
+        S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+        =\text{Tr}(\rho(\log\rho-\log\sigma))
+
+    Roughly speaking, quantum relative entropy is a measure of distinguishability between two
+    quantum states. It is the quantum mechanical analog of relative entropy.
+
+    Each state can be given as a state vector in the computational basis or
+    as a density matrix.
+
+    Args:
+        state0 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        state1 (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Quantum relative entropy of state0 with respect to state1
+
+    **Examples**
+
+    The relative entropy between two equal states is always zero:
+
+    >>> x = np.array([1, 0])
+    >>> qml.math.relative_entropy(x, x)
+    0.0
+
+    and the relative entropy between two non-equal pure states is always infinity:
+
+    >>> y = np.array([1, 1]) / np.sqrt(2)
+    >>> qml.math.relative_entropy(x, y)
+    inf
+
+    The quantum states can be provided as density matrices, allowing for computation
+    of relative entropy between mixed states:
+
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+    >>> qml.math.relative_entropy(rho, sigma)
+    tensor(0.08228288, requires_grad=True)
+
+    It is also possible to change the log base:
+
+    >>> qml.math.relative_entropy(rho, sigma, base=2)
+    tensor(0.1187091, requires_grad=True)
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.relative_entropy`
+    """
+    # Cast as a c_dtype array
+    state0 = cast(state0, dtype=c_dtype)
+    len_state0 = state0.shape[0]
+
+    # Cannot be cast_like if jit
+    if not is_abstract(state0):
+        state1 = cast_like(state1, state0)
+
+    len_state1 = state1.shape[0]
+
+    if check_state:
+        if state0.shape == (len_state0,):
+            _check_state_vector(state0)
+        else:
+            _check_density_matrix(state0)
+
+        if state1.shape == (len_state1,):
+            _check_state_vector(state1)
+        else:
+            _check_density_matrix(state1)
+
+    # Get dimension of the quantum system and reshape
+    num_indices0 = int(np.log2(len_state0))
+    num_indices1 = int(np.log2(len_state1))
+
+    if num_indices0 != num_indices1:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    if state0.shape == (len_state0,):
+        state0 = qml.math.outer(state0, np.conj(state0))
+
+    if state1.shape == (len_state1,):
+        state1 = qml.math.outer(state1, np.conj(state1))
+
+    return _compute_relative_entropy(state0, state1, base=base)
 
 
 def _check_density_matrix(density_matrix):

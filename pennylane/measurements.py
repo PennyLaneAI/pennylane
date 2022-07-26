@@ -38,6 +38,7 @@ class ObservableReturnTypes(Enum):
     """Enumeration class to represent the return types of an observable."""
 
     Sample = "sample"
+    Counts = "counts"
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
@@ -53,6 +54,10 @@ class ObservableReturnTypes(Enum):
 
 Sample = ObservableReturnTypes.Sample
 """Enum: An enumeration which represents sampling an observable."""
+
+Counts = ObservableReturnTypes.Counts
+"""Enum: An enumeration which represents returning the number of times
+ each sample was obtained."""
 
 Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
@@ -578,9 +583,10 @@ def var(op):
     return MeasurementProcess(Variance, obs=op)
 
 
-def sample(op=None, wires=None):
+def sample(op=None, wires=None, counts=False):
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device.
+    determined from the ``dev.shots`` attribute of the corresponding device,
+    returning raw samples (counts=False) or the number of counts for each sample (counts=True).
     If no observable is provided then basis state samples are returned directly
     from the device.
 
@@ -590,6 +596,7 @@ def sample(op=None, wires=None):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
+        counts (bool): return the result as number of counts for each sample
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -642,6 +649,26 @@ def sample(op=None, wires=None):
            [1, 1],
            [0, 0]])
 
+    If specified counts=True, the function returns number of counts for each sample,
+    both for observables eigenvalues or the system eigenstates.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=3, shots=10)
+
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            return qml.sample(qml.PauliZ(0), counts=True), qml.sample(counts=True)
+
+    Executing this QNode:
+
+    >>> my_circ()
+    ({-1: 3, 1: 7}, {'001': 7, '111': 3})
+
     .. note::
 
         QNodes that return samples cannot, in general, be differentiated, since the derivative
@@ -655,16 +682,20 @@ def sample(op=None, wires=None):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
+    if isinstance(op, (qml.ops.Sum, qml.ops.SProd)):  # pylint: disable=no-member
+        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+
+    sample_or_counts = Counts if counts else Sample
+
     if wires is not None:
         if op is not None:
             raise ValueError(
                 "Cannot specify the wires to sample if an observable is "
                 "provided. The wires to sample will be determined directly from the observable."
             )
+        return MeasurementProcess(sample_or_counts, obs=op, wires=qml.wires.Wires(wires))
 
-        return MeasurementProcess(Sample, obs=op, wires=qml.wires.Wires(wires))
-
-    return MeasurementProcess(Sample, obs=op)
+    return MeasurementProcess(sample_or_counts, obs=op)
 
 
 def probs(wires=None, op=None):
@@ -738,6 +769,11 @@ def probs(wires=None, op=None):
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
+
+    if isinstance(op, (qml.ops.Sum, qml.ops.SProd)):  # pylint: disable=no-member
+        raise qml.QuantumFunctionError(
+            "Symbolic Operations are not supported for rotating probabilities yet."
+        )
 
     if op is not None and not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
@@ -890,6 +926,8 @@ def vn_entropy(wires, log_base=None):
         Calculating the derivative of :func:`~.vn_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
@@ -941,9 +979,7 @@ def mutual_info(wires0, wires1, log_base=None):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso::
-
-        :func:`~.vn_entropy`
+    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
     # the subsystems cannot overlap
     if len([wire for wire in wires0 if wire in wires1]) > 0:
