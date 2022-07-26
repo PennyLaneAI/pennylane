@@ -15,6 +15,11 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+from functools import reduce
+import itertools
+
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, expand_matrix
@@ -25,9 +30,36 @@ def prod(op1, op2):
     return Prod(op1, op2)
 
 
+def _prod(mats_gen):
+    """Multiply matrices together"""
+    res = reduce(math.dot, mats_gen)   # Inefficient method (should group by wires like in tensor class)
+    return res
+
+
+def commutator(op1, op2):
+    """Compute the commutator of the given ops"""
+    return
+
+def check_hermitian():
+    return
+
+
+def wires_partial_overlap(operations):
+    r"""Tests whether any two operations in the Tensor have partially
+    overlapping wires.
+    """
+    for o1, o2 in itertools.combinations(operations, r=2):
+        shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
+        if shared:
+            return True
+    return False
+
+
 class Prod(Operator):
     """Arithmetic operator subclass representing the scalar product of an
     operator with the given scalar."""
+    _name = "Prod"
+    _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(self, *operators, do_queue=True, id=None):
 
@@ -38,18 +70,102 @@ class Prod(Operator):
         super().__init__(
             *combined_params, wires=combined_wires, do_queue=do_queue, id=id
         )
-        self._name = "Prod"
 
     def __repr__(self):
         """Constructor-call-like representation."""
         return " @ ".join([f"{f}" for f in self.operators])
 
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_op.data = self.data.copy()  # copies the combined parameters
+        copied_op.operators = tuple(s.__copy__() for s in self.operators)
+
+        for attr, value in vars(self).items():
+            if attr not in {"data", "operators"}:
+                setattr(copied_op, attr, value)
+
+        return copied_op
+
+    def terms(self):  # is this method necessary for this class?
+        return [1.0], [self]
+
+    @property
+    def ndim_params(self):
+        """ndim_params of input parameters."""
+        raise ValueError("Dimension of parameters is not currently implemented for Prod operators.")
+
+    @property
+    def num_params(self):
+        return sum(op.num_params for op in self.operators)
+
     @property
     def num_wires(self):
         return len(self.wires)
 
-    def terms(self):  # is this method necessary for this class?
-        return [1.0], [self]
+    @property
+    def is_hermitian(self, check=False):
+        """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
+
+
+        raise qml.operation.IsHermitianUndefinedError
+
+    def decomposition(self):
+        """decomposition of the operator into a product of operators. """
+        return list(self.operators)
+
+    @property
+    def eigendecomposition(self):
+        r"""Return the eigendecomposition of the matrix specified by the operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
+        """
+        Hmat = self.matrix()
+        Hmat = qml.math.to_numpy(Hmat)
+        Hkey = tuple(Hmat.flatten().tolist())
+        if Hkey not in self._eigs:
+            w, U = np.linalg.eigh(Hmat)
+            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+        return self._eigs[Hkey]
+
+    def diagonalizing_gates(self):
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+        """
+
+        eigen_vectors = self.eigendecomposition["eigvec"]
+        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+
+    def eigvals(self):
+        r"""Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        return self.eigendecomposition["eigval"]
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
@@ -64,16 +180,19 @@ class Prod(Operator):
 
         return self._prod(matrix_gen(self.operators, wire_order=wire_order))
 
-    @staticmethod
-    def _prod(mats_gen, dtype=None, cast_like=None):
-        """Multiply matrices together"""
-        res = None
-        for i, mat in enumerate(mats_gen):  # In efficient method (should group by wires like in tensor class)
-            res = mat if i == 0 else math.dot(res, mat)
+    @property
+    def _queue_category(self):  # don't queue Prod instances because it may not be unitary!
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
 
-        if dtype is not None:              # additional casting logic
-            res = math.cast(res, dtype)
-        if cast_like is not None:
-            res = math.cast_like(res, cast_like)
+        Returns: None
+        """
+        return None
 
-        return res
+    def queue(self, context=qml.QueuingContext):
+        """Updates each operator's owner to Prod, this ensures
+        that the operators are not applied to the circuit repeatedly."""
+        for op in self.operators:
+            context.safe_update_info(op, owner=self)
+        return self
