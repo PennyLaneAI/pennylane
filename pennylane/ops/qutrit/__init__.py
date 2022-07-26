@@ -36,9 +36,9 @@ ops = {
     "TSWAP",
 }
 
-# TODO: Remove QutritUnitary from obs list
 obs = {
-    "THermitian",  # Added here to prevent errors when using device
+    "THermitian",
+    "GellMannObs",
 }
 
 __all__ = list(ops | obs)
