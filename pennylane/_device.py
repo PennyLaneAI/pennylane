@@ -677,8 +677,7 @@ class Device(abc.ABC):
         if self.custom_expand_fn is not None:
             return self.custom_expand_fn(circuit, max_expansion=max_expansion)
 
-        new_tape = self.default_expand_fn(circuit, max_expansion=max_expansion)
-        return new_tape
+        return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
     def batch_transform(self, circuit):
         """Apply a differentiable batch transform for preprocessing a circuit
