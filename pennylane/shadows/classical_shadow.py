@@ -30,9 +30,7 @@ class ClassicalShadow:
 
         self.unitaries = [
             qml.matrix(qml.Hadamard(0)),
-            (
-                qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0))
-            ),  # .conj().T,
+            qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
             qml.matrix(qml.Identity(0)),
         ]
 

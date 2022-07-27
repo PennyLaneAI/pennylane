@@ -47,6 +47,7 @@ class ObservableReturnTypes(Enum):
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
+    ShadowExpval = "shadowexpval"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -88,6 +89,9 @@ MutualInfo = ObservableReturnTypes.MutualInfo
 Shadow = ObservableReturnTypes.Shadow
 """Enum: An enumeration which represents returning the bitstrings and recipes from
 the classical shadow protocol"""
+
+ShadowExpval = ObservableReturnTypes.ShadowExpval
+"""Enum: dummy hack test"""
 
 
 class MeasurementShapeError(ValueError):
@@ -168,6 +172,9 @@ class MeasurementProcess:
 
         if self.return_type is Shadow:
             return int
+        
+        if self.return_rtpe is ShadowExpval:
+            return float
 
         if self.return_type is Sample:
 
@@ -223,7 +230,7 @@ class MeasurementProcess:
 
         # First: prepare the shape for return types that do not require a
         # device
-        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
+        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy, ShadowExpval):
             shape = (1,)
 
         density_matrix_return = self.return_type == State and self.wires
@@ -1004,6 +1011,11 @@ def classical_shadow(wires):
     """
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(Shadow, wires=wires)
+
+def classical_shadow_expval(H, k, wires):
+    """TODO: docs"""
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(ShadowExpval, wires=wires, H=H, k=k)
 
 
 T = TypeVar("T")

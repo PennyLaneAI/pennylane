@@ -23,7 +23,7 @@ from threading import RLock
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.measurements import Sample, Shadow
+from pennylane.measurements import Sample, Shadow, ShadowExpval
 
 from .unwrap import UnwrapTape
 

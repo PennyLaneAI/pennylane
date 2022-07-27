@@ -784,60 +784,60 @@ class DefaultQubit(QubitDevice):
 
     def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
-        # return super().classical_shadow(wires, n_snapshots, circuit)
+        return super().classical_shadow(wires, n_snapshots, circuit)
 
-        n_qubits = len(self.wires)
-        device_wires = np.array(self.map_wires(wires))
+        # n_qubits = len(self.wires)
+        # device_wires = np.array(self.map_wires(wires))
 
-        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-        obs_list = self._stack(
-            [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
-            ]
-        )
-        uni_list = self._stack(
-            [
-                qml.Hadamard.compute_matrix(),
-                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-                qml.Identity.compute_matrix(),
-            ]
-        )
-        obs = obs_list[recipes]
-        uni = uni_list[recipes]
+        # recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        # obs_list = self._stack(
+        #     [
+        #         qml.PauliX.compute_matrix(),
+        #         qml.PauliY.compute_matrix(),
+        #         qml.PauliZ.compute_matrix(),
+        #     ]
+        # )
+        # uni_list = self._stack(
+        #     [
+        #         qml.Hadamard.compute_matrix(),
+        #         qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
+        #         qml.Identity.compute_matrix(),
+        #     ]
+        # )
+        # obs = obs_list[recipes]
+        # uni = uni_list[recipes]
 
-        outcomes = np.zeros((n_snapshots, n_qubits))
-        stacked_state = self._stack([self._state for _ in range(n_snapshots)])
+        # outcomes = np.zeros((n_snapshots, n_qubits))
+        # stacked_state = self._stack([self._state for _ in range(n_snapshots)])
 
-        for i in range(n_qubits):
+        # for i in range(n_qubits):
 
-            # trace out every qubit except the first
-            first_qubit_state = self._einsum(
-                f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
-                f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
-                stacked_state,
-                self._conj(stacked_state),
-            )
+        #     # trace out every qubit except the first
+        #     first_qubit_state = self._einsum(
+        #         f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
+        #         f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
+        #         stacked_state,
+        #         self._conj(stacked_state),
+        #     )
 
-            # sample the observables on the first qubit
-            probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
-            samples = np.random.uniform(0, 1, size=probs.shape) > probs
-            # samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
-            outcomes[:, i] = samples
+        #     # sample the observables on the first qubit
+        #     probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
+        #     samples = np.random.uniform(0, 1, size=probs.shape) > probs
+        #     # samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
+        #     outcomes[:, i] = samples
 
-            # collapse the state
-            rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
+        #     # collapse the state
+        #     rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
+        #     stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
 
-            # normalize the state
-            norms = np.sqrt(
-                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
-            )
-            stacked_state /= norms
+        #     # normalize the state
+        #     norms = np.sqrt(
+        #         np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
+        #     )
+        #     stacked_state /= norms
 
-        outcomes = outcomes[:, device_wires]
-        recipes = recipes[:, device_wires]
+        # outcomes = outcomes[:, device_wires]
+        # recipes = recipes[:, device_wires]
 
-        # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)
+        # # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        # return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)

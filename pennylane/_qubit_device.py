@@ -37,6 +37,7 @@ from pennylane.measurements import (
     VnEntropy,
     MutualInfo,
     Shadow,
+    ShadowExpval
 )
 
 from pennylane import Device
@@ -45,6 +46,8 @@ from pennylane.math import multiply as qmlmul
 from pennylane.wires import Wires
 
 from pennylane.measurements import MeasurementProcess
+
+from collections.abc import Iterable
 
 
 class QubitDevice(Device):
@@ -530,6 +533,11 @@ class QubitDevice(Device):
                 results.append(
                     self.classical_shadow(wires=obs.wires, n_snapshots=self.shots, circuit=circuit)
                 )
+            
+            elif obs.return_type is ShadowExpval:
+                results.append(
+                    self.classical_shadow_expval(wires=obs.wires, n_snapshots=self.shots, circuit=circuit, H=obs, k=10)
+                )
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -790,6 +798,93 @@ class QubitDevice(Device):
             return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
         finally:
             self.shots = n_snapshots
+    
+    def classical_shadow_expval(self, wires, n_snapshots, circuit, H, k):
+        """TODO: docs"""
+        if circuit is None:
+            raise ValueError("Circuit must be provided when measuring classical shadows")
+
+        # slow implementation but works for all devices
+        try:
+            self.shots = 1
+
+            n_qubits = len(self.wires)
+            device_wires = np.array(self.map_wires(wires))
+
+            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+
+            outcomes = np.zeros((n_snapshots, n_qubits))
+
+            for t in range(n_snapshots):
+                rotations = [
+                    rot
+                    for wire in wires
+                    for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
+                        wires=wire
+                    )
+                ]
+
+                self.reset()
+                self.apply(circuit.operations + rotations)
+
+                outcomes[t] = self.generate_samples()[0]
+
+            bitstrings, recipes = self._stack([outcomes, recipes]) #self._cast( .. , dtype=np.uint8)
+
+            # Generate local snapshots (density matrices)
+            zero = np.zeros((2, 2), dtype="complex")
+            zero[0, 0] = 1.0
+            one = np.zeros((2, 2), dtype="complex")
+            one[1, 1] = 1.0
+
+            T, n = bitstrings.shape
+
+            U = np.empty((T, n, 2, 2), dtype="complex")
+            for i, _ in enumerate(unitaries):
+                U[np.where(recipes == i)] = unitaries[i]
+
+            state = np.empty((T, n, 2, 2), dtype="complex")
+            state[np.where(bitstrings == 0)] = zero
+            state[np.where(bitstrings == 1)] = one
+
+            local_snapshots = 3 * qml.math.transpose(qml.math.conj(U), axes=(0, 1, 3, 2)) @ state @ U - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
+
+            # Compute Pauli string observable expectation value
+            def _expval_observable(observable, k):
+                """Compute expectation values of Pauli-string type observables"""
+                if isinstance(observable, qml.operation.Tensor):
+                    os = np.asarray([qml.matrix(o) for o in observable.obs])
+                else:
+                    os = np.asarray([qml.matrix(observable)])  # wont work with other interfaces
+
+                means = []
+                step = self.snapshots // k
+
+                for i in range(0, self.snapshots, step):
+                    # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
+                    # res_i^t = tr(rho_i P_i)
+                    res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)
+                    # res^t = prod_i res_i^t
+                    res = np.prod(res, axis=-1)
+                    # res = sum_t res^t / T
+                    means.append(np.mean(res))
+                return np.median(means)
+            
+            # expval(H):
+            if isinstance(H, qml.Hamiltonian):
+                return np.sum([_expval_observable(observable, k) for observable in H.ops])
+
+            if isinstance(H, Iterable):
+                return [_expval_observable(observable, k) for observable in H]
+
+            return _expval_observable(H, k)
+
+
+        finally:
+            self.shots = n_snapshots
+
+                        
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
