@@ -1272,8 +1272,7 @@ class QubitDevice(Device):
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        res = np.mean(samples, axis=0)
-        return res
+        return np.squeeze(np.mean(samples, axis=0))
 
     def var(self, observable, shot_range=None, bin_size=None):
 
