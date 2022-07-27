@@ -51,6 +51,7 @@ from .multi_dispatch import (
     unwrap,
     where,
     add,
+    iscomplex,
 )
 
 from .quantum import cov_matrix, marginal_prob
@@ -115,4 +116,5 @@ __all__ = [
     "vn_entropy",
     "where",
     "add",
+    "iscomplex",
 ]
