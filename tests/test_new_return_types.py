@@ -191,16 +191,32 @@ class TestSingleReturnExecute:
         assert res[0].shape == (2 ** len(wires),)
         assert isinstance(res[0], np.ndarray)
 
-    # Samples and counts
+    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    def test_sample(self, measurement):
+        """Test the sample measurement."""
+        shots = 1000
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == (shots,)
 
     @pytest.mark.parametrize(
         "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
     )
-    # TODO: need to unwrap the result, it is a list containing a dict atm
-    @pytest.mark.xfail
     def test_counts(self, measurement):
         """Test the counts measurement."""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        shots = 1000
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -377,6 +393,56 @@ class TestMultipleReturns:
         for i in range(0, wires):
             assert isinstance(res[0][i], np.ndarray)
             assert res[0][i].shape == ()
+
+    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    def test_expval_sample(self, measurement):
+        """Test the expval and sample measurements together."""
+        shots = 1000
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(1)), qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        # Expval
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == ()
+
+        # Sample
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == (shots,)
+
+    @pytest.mark.parametrize(
+        "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
+    )
+    def test_expval_counts(self, measurement):
+        """Test the expval and counts measurements together."""
+        shots = 1000
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(1)), qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        # Expval
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == ()
+
+        # Counts
+        assert isinstance(res[0][1], dict)
+        assert sum(res[0][1].values()) == shots
 
 
 pauliz = qml.PauliZ(wires=1)
@@ -645,13 +711,9 @@ class TestSameMeasurementShotVectorAutograd:
             assert all(isinstance(res_item, dict) for res_item in r)
 
 
-# 1. Expval/var with another measurement
-#
-# What else do we have:
-# a) Probs
-# b) i) Sample
-#    ii) Counts
-# c) Sample & density: no tests
+# -------------------------------------------------
+# Shot vector multi measurement tests - test data
+# -------------------------------------------------
 
 pauliz_w2 = qml.PauliZ(wires=2)
 proj_w2 = qml.Projector([1], wires=2)

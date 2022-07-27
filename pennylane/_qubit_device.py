@@ -384,91 +384,43 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
-        ret_types = [m.return_type for m in circuit.measurements]
-        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
-
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
 
-            results = []
-            s1 = 0
-
-            single_measurement = len(circuit.measurements) == 1
-            for shot_tuple in self._shot_vector:
-                s2 = s1 + np.prod(shot_tuple)
-                r = self.statistics_new(
-                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
-                )
-
-                # This will likely be required:
-                # if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
-                #     r = r[0]
-
-                if single_measurement:
-                    r = r[0] if counts_exist else qml.math.squeeze(r)
-                else:
-                    if shot_tuple.copies == 1:
-                        r = tuple(
-                            r_[0]
-                            if isinstance(r_, list)  # need to unwrap the single element
-                            else qml.math.squeeze(r_).T
-                            for idx, r_ in enumerate(r)
-                        )
-                    else:
-
-                        if counts_exist:
-                            r = self._multi_meas_with_counts_shot_vec(circuit, shot_tuple, r)
-                        else:
-                            # r is a nested sequence, contains the results for multiple measurements
-                            # Each item of r has copies length
-                            r = [
-                                tuple(self._asarray(r_.T[idx]) for r_ in r)
-                                for idx in range(shot_tuple.copies)
-                            ]
-
-                if isinstance(r, qml.numpy.ndarray):
-                    if shot_tuple.copies > 1:
-                        results.extend(r.T)
-                    else:
-                        results.append(r.T)
-
-                else:
-                    if single_measurement and counts_exist:
-                        # Results are nested in a sequence
-                        results.extend(r)
-                    elif not single_measurement and shot_tuple.copies > 1:
-                        # Some samples may still be transposed, fix their shapes
-                        # Leave dictionaries intact
-                        r = [
-                            tuple(
-                                qml.math.squeeze(elem.T) if not isinstance(elem, dict) else elem
-                                for elem in r_
-                            )
-                            for r_ in r
-                        ]
-                        results.extend(r)
-                    else:
-                        results.append(r)
-
-                s1 = s2
-
-            results = tuple(results)
+            results = self.shot_vec_statistics(circuit)
 
         else:
             results = self.statistics_new(circuit.observables)
 
-            if len(circuit.measurements) == 1:
+            ret_types = [m.return_type for m in circuit.measurements]
+            counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+            single_measurement = len(circuit.measurements) == 1
+
+            if single_measurement:
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results[0], dtype=self.C_DTYPE)
-                elif circuit.measurements[0].return_type is qml.measurements.Counts:
+                elif counts_exist:
                     results = results[0]
                 else:
                     # All other measurements are real
                     results = self._asarray(results[0], dtype=self.R_DTYPE)
 
+                if circuit.measurements[0].return_type is qml.measurements.Sample:
+                    results = qml.math.squeeze(results)
             else:
-                results = tuple(self._asarray(res, dtype=self.R_DTYPE) for res in results)
+
+                processed_results = []
+                for idx, res in enumerate(results):
+                    if not circuit.measurements[idx].return_type is qml.measurements.Counts:
+                        res = self._asarray(res, dtype=self.R_DTYPE)
+
+                    if circuit.measurements[idx].return_type is qml.measurements.Sample:
+                        res = qml.math.squeeze(res)
+
+                    processed_results.append(res)
+
+                results = tuple(processed_results)
 
         # increment counter for number of executions of qubit device
         # self._num_executions += 1
@@ -478,10 +430,92 @@ class QubitDevice(Device):
         #     self.tracker.record()
         return results
 
+    def shot_vec_statistics(self, circuit):
+        """Computes statistics for a shot vector.
+
+        This method is used by execute_new.
+
+        Args:
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            tuple: stastics for each shot item from the shot vector
+        """
+        results = []
+        s1 = 0
+
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        single_measurement = len(circuit.measurements) == 1
+
+        for shot_tuple in self._shot_vector:
+            s2 = s1 + np.prod(shot_tuple)
+            r = self.statistics_new(
+                circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+            )
+
+            # This will likely be required:
+            # if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+            #     r = r[0]
+
+            if single_measurement:
+                r = r[0] if counts_exist else qml.math.squeeze(r)
+            else:
+                if shot_tuple.copies == 1:
+                    r = tuple(
+                        r_[0]
+                        if isinstance(r_, list)  # need to unwrap the single element
+                        else qml.math.squeeze(r_).T
+                        for idx, r_ in enumerate(r)
+                    )
+                else:
+
+                    if counts_exist:
+                        r = self._multi_meas_with_counts_shot_vec(circuit, shot_tuple, r)
+                    else:
+                        # r is a nested sequence, contains the results for multiple measurements
+                        # Each item of r has copies length
+                        r = [
+                            tuple(self._asarray(r_.T[idx]) for r_ in r)
+                            for idx in range(shot_tuple.copies)
+                        ]
+
+            if isinstance(r, qml.numpy.ndarray):
+                if shot_tuple.copies > 1:
+                    results.extend(r.T)
+                else:
+                    results.append(r.T)
+
+            else:
+                if single_measurement and counts_exist:
+                    # Results are nested in a sequence
+                    results.extend(r)
+                elif not single_measurement and shot_tuple.copies > 1:
+                    # Some samples may still be transposed, fix their shapes
+                    # Leave dictionaries intact
+                    r = [
+                        tuple(
+                            qml.math.squeeze(elem.T) if not isinstance(elem, dict) else elem
+                            for elem in r_
+                        )
+                        for r_ in r
+                    ]
+                    results.extend(r)
+                else:
+                    results.append(r)
+
+            s1 = s2
+
+        results = tuple(results)
+        return results
+
     def _multi_meas_with_counts_shot_vec(self, circuit, shot_tuple, r):
-        """Auxiliary function of the execute_new function for post-processing
-        the results of multiple measurements at least one of which was a counts
-        measurement.
+        """Auxiliary function of the shot_vec_statistics and execute_new
+        functions for post-processing the results of multiple measurements at
+        least one of which was a counts measurement.
 
         The measurements were executed on a device that defines a shot vector.
         """
