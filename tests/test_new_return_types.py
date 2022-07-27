@@ -799,6 +799,7 @@ class TestMixMeasurementsShotVector:
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
         assert all(isinstance(r, tuple) for r in res[0])
+
         assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
         for meas_res in res[0]:
             for i, r in enumerate(meas_res):

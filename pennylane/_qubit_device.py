@@ -454,8 +454,18 @@ class QubitDevice(Device):
                     if counts_exist:
                         r = self._multi_meas_with_counts_shot_vec(circuit, shot_tuple, r)
                     else:
-                        # r is a nested sequence, contains the results for multiple measurements
-                        # Each item of r has copies length
+                        # r is a nested sequence, contains the results for
+                        # multiple measurements
+                        #
+                        # Each item of r has copies length, we need to extract
+                        # each measurement result from the arrays
+
+                        # 1. transpose: applied because measurements like probs
+                        # for multiple copies output results with shape (N,
+                        # copies) and we'd like to index straight to get rows
+                        # which requires a shape of (copies, N)
+                        # 2. asarray: done because indexing into a flat array produces a
+                        # scalar instead of a scalar shaped array
                         r = [
                             tuple(self._asarray(r_.T[idx]) for r_ in r)
                             for idx in range(shot_tuple.copies)
