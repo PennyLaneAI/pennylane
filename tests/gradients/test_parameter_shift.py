@@ -509,7 +509,7 @@ class TestParamShiftBroadcast:
     def test_with_gradient_recipes(self):
         """Test that the function behaves as expected"""
 
-        x, z0, y, z1 = 1., 2., 3., 4.
+        x, z0, y, z1 = 1.0, 2.0, 3.0, 4.0
         with qml.tape.QuantumTape() as tape:
             qml.PauliZ(0)
             qml.RX(x, wires=0)
