@@ -162,7 +162,7 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
     ):
         # If the original output is not scalar and broadcasting is used, the second axis
         # (index 1) needs to be contracted. For Torch, this is not true because the
-        # output of the broadcasted tape is flattened.
+        # output of the broadcasted tape is flat due to the behaviour of the Torch device.
         axis = 1
     g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
 

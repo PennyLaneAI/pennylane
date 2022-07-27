@@ -509,11 +509,12 @@ class TestParamShiftBroadcast:
     def test_with_gradient_recipes(self):
         """Test that the function behaves as expected"""
 
+        x, z0, y, z1 = 1., 2., 3., 4.
         with qml.tape.QuantumTape() as tape:
             qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
+            qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.Rot(z0, y, z1, wires=0)
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 2}
@@ -528,14 +529,14 @@ class TestParamShiftBroadcast:
             qml.math.allclose(p, exp)
             for p, exp in zip(
                 tapes[0].get_parameters(trainable_only=False),
-                [[0.2 * 1.0 + 0.3, 0.5 * 1.0 + 0.6], 2.0, 3.0, 4.0],
+                [[m * x + s for _, m, s in gradient_recipes[0]], z0, y, z1],
             )
         )
         assert all(
             qml.math.allclose(p, exp)
             for p, exp in zip(
                 tapes[1].get_parameters(trainable_only=False),
-                [1.0, 2.0, [1 * 3.0 + 1, 2 * 3.0 + 2, 3 * 3.0 + 3], 4.0],
+                [x, z0, [m * y + s for _, m, s in gradient_recipes[1]], z1],
             )
         )
 
