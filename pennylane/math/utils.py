@@ -421,4 +421,4 @@ def in_backprop(tensor, interface=None):
     if interface == "autograd":
         return isinstance(tensor, ArrayBox)
 
-    raise ValueError(f"Argument {tensor} is an unknown object")
+    return False
