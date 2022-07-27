@@ -922,8 +922,8 @@ class TestMixMeasurementsShotVectorAutograd:
                     if shots == 1:
                         assert r.shape == ()
                     else:
-                        assert r.shape == (shot_tuple.shots,)
-                idx += 1
+                        expected = (shots,)
+                        assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs):
