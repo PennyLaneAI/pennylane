@@ -472,7 +472,7 @@ shot_vectors = [[10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-class TestShotVector
+class TestShotVector:
     """Test the support for executing tapes with single measurements using a
     device with shot vectors."""
 
