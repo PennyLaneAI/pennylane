@@ -1124,6 +1124,9 @@ class PauliRot(Operation):
             iden = qml.math.eye(2 ** len(pauli_word), like=theta)
             if qml.math.get_interface(theta) == "tensorflow":
                 iden = qml.math.cast_like(iden, 1j)
+            if qml.math.get_interface(theta) == "torch":
+                td = exp.device
+                iden = iden.to(td)
 
             if qml.math.ndim(theta) == 0:
                 return exp * iden
