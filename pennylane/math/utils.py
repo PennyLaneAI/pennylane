@@ -400,3 +400,25 @@ def requires_grad(tensor, interface=None):
         return isinstance(tensor, jax.core.Tracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
+
+
+def in_backprop(tensor, interface=None):
+    """Returns True if the tensor is considered to be in a backpropagation environment."""
+    interface = interface or get_interface(tensor)
+
+    if interface == "tensorflow":
+        import tensorflow as tf
+
+        try:
+            from tensorflow.python.eager.tape import should_record_backprop
+        except ImportError:  # pragma: no cover
+            from tensorflow.python.eager.tape import (
+                should_record as should_record_backprop,
+            )
+
+        return should_record_backprop([tf.convert_to_tensor(tensor)])
+
+    if interface == "autograd":
+        return isinstance(tensor, ArrayBox)
+
+    raise ValueError(f"Argument {tensor} is an unknown object")

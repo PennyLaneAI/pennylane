@@ -1009,6 +1009,171 @@ class TestMixMeasurementsShotVector:
                         expected = (shots,)
                         assert r.shape == expected
 
+    @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
+    def test_probs_counts(self, shot_vector, sample_obs):
+        """Test probs and counts measurements."""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
+
+        meas1_wires = [0, 1]
+        meas2_wires = [2]
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            if sample_obs is not None:
+                # Observable provided to sample
+                return qml.probs(wires=meas1_wires), qml.sample(
+                    sample_obs(meas2_wires), counts=True
+                )
+
+            # Only wires provided to sample
+            return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires, counts=True)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
+        assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
+
+        expected_outcomes = {-1, 1} if sample_obs is not None else {"0", "1"}
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                if i % 2 == 0:
+                    expected_shape = (len(meas1_wires) ** 2,)
+                    assert r.shape == expected_shape
+
+                    # Probs add up to 1
+                    assert np.allclose(sum(r), 1)
+                else:
+                    # Samples are -1 or 1
+                    assert set(r.keys()).issubset(expected_outcomes)
+                    assert sum(r.values()) == shots
+
+    @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
+    @pytest.mark.parametrize("counts_wires", [[4], [3, 5]])
+    def test_sample_counts(self, shot_vector, sample_wires, counts_wires):
+        """Test sample and counts measurements, each measurement with custom
+        samples or computational basis state samples."""
+        dev = qml.device("default.qubit", wires=6, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+
+            # 1. Sample obs and Counts obs
+            if len(sample_wires) == 1 and len(counts_wires) == 1:
+                return qml.sample(qml.PauliY(sample_wires)), qml.sample(
+                    qml.PauliX(counts_wires), counts=True
+                )
+
+            # 2. Sample no obs and Counts obs
+            if len(sample_wires) > 1 and len(counts_wires) == 1:
+                return qml.sample(wires=sample_wires), qml.sample(
+                    qml.PauliX(counts_wires), counts=True
+                )
+
+            # 3. Sample obs and Counts no obs
+            if len(sample_wires) == 1 and len(counts_wires) > 1:
+                return qml.sample(qml.PauliY(sample_wires)), qml.sample(
+                    wires=counts_wires, counts=True
+                )
+
+            # 4. Sample no obs and Counts no obs
+            return qml.sample(wires=sample_wires), qml.sample(wires=counts_wires, counts=True)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+        assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
+        assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
+
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                num_wires = len(sample_wires)
+                if shots == 1 and i % 2 == 0:
+                    expected_shape = () if num_wires == 1 else (num_wires,)
+                    assert r.shape == expected_shape
+                elif i % 2 == 0:
+                    expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
+                    assert r.shape == expected_shape
+                else:
+                    assert isinstance(r, dict)
+
+    @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
+    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
+        """Test scalar-valued, probability, sample and counts measurements all
+        in a single qfunc."""
+        dev = qml.device("default.qubit", wires=5, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return (
+                qml.apply(meas1),
+                qml.apply(meas2),
+                qml.sample(qml.PauliX(4)),
+                qml.sample(qml.PauliX(3), counts=True),
+            )
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == all_shots
+        assert all(isinstance(r, tuple) for r in res[0])
+
+        for res_idx, meas_res in enumerate(res[0]):
+            for i, r in enumerate(meas_res):
+                num_meas = i % 4
+                expval_or_var = num_meas == 0
+                probs = num_meas == 1
+                sample = num_meas == 2
+
+                if expval_or_var:
+                    assert r.shape == ()
+                elif probs:
+                    assert r.shape == (2**2,)
+
+                    # Probs add up to 1
+                    assert np.allclose(sum(r), 1)
+                elif sample:
+                    shots = raw_shot_vector[res_idx]
+                    if shots == 1:
+                        assert r.shape == ()
+                    else:
+                        expected = (shots,)
+                        assert r.shape == expected
+                else:
+                    # Return is Counts
+                    assert isinstance(r, dict)
+
 
 herm = np.diag([1, 2, 3, 4])
 probs_data = [
@@ -1693,6 +1858,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         res = torch.autograd.functional.jacobian(circuit, x)
 
+        qml.disable_return()
+
         assert isinstance(res, tuple)
         assert len(res) == 2
         for elem in res:
@@ -1722,6 +1889,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         res = tape.jacobian(out, x)
 
+        qml.disable_return()
+
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 3)
 
@@ -1743,6 +1912,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         x = jax.numpy.array([0.1, 0.2, 0.3])
         res = jax.jacobian(circuit)(x)
+
         qml.disable_return()
 
         assert isinstance(res, tuple)
@@ -1793,6 +1963,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         res = torch.autograd.functional.jacobian(circuit, x)
 
+        qml.disable_return()
+
         assert isinstance(res, tuple)
         assert len(res) == 2
         for elem in res:
@@ -1821,6 +1993,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             out = circuit(x)
 
         res = tape.jacobian(out, x)
+
+        qml.disable_return()
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 2, 3)
@@ -1895,6 +2069,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         res = torch.autograd.functional.jacobian(circuit, x)
 
+        qml.disable_return()
+
         assert isinstance(res, tuple)
         assert len(res) == 3
         for i, elem in enumerate(res):
@@ -1928,6 +2104,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             out = circuit(x)
 
         res = tape.jacobian(out, x)
+
+        qml.disable_return()
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (6, 3)
@@ -1964,171 +2142,6 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (4, 3)
             elif i == 2:
                 assert elem.shape == (3,)
-
-    @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
-    def test_probs_counts(self, shot_vector, sample_obs):
-        """Test probs and counts measurements."""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
-
-        meas1_wires = [0, 1]
-        meas2_wires = [2]
-
-        @qml.qnode(device=dev)
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            if sample_obs is not None:
-                # Observable provided to sample
-                return qml.probs(wires=meas1_wires), qml.sample(
-                    sample_obs(meas2_wires), counts=True
-                )
-
-            # Only wires provided to sample
-            return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires, counts=True)
-
-        qnode = qml.QNode(circuit, dev)
-        qnode.construct([0.5], {})
-        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
-
-        assert isinstance(res[0], tuple)
-        assert len(res[0]) == all_shots
-        assert all(isinstance(r, tuple) for r in res[0])
-        assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
-        assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
-
-        expected_outcomes = {-1, 1} if sample_obs is not None else {"0", "1"}
-        for idx, shots in enumerate(raw_shot_vector):
-            for i, r in enumerate(res[0][idx]):
-                if i % 2 == 0:
-                    expected_shape = (len(meas1_wires) ** 2,)
-                    assert r.shape == expected_shape
-
-                    # Probs add up to 1
-                    assert np.allclose(sum(r), 1)
-                else:
-                    # Samples are -1 or 1
-                    assert set(r.keys()).issubset(expected_outcomes)
-                    assert sum(r.values()) == shots
-
-    @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
-    @pytest.mark.parametrize("counts_wires", [[4], [3, 5]])
-    def test_sample_counts(self, shot_vector, sample_wires, counts_wires):
-        """Test sample and counts measurements, each measurement with custom
-        samples or computational basis state samples."""
-        dev = qml.device("default.qubit", wires=6, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
-
-        @qml.qnode(device=dev)
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-
-            # 1. Sample obs and Counts obs
-            if len(sample_wires) == 1 and len(counts_wires) == 1:
-                return qml.sample(qml.PauliY(sample_wires)), qml.sample(
-                    qml.PauliX(counts_wires), counts=True
-                )
-
-            # 2. Sample no obs and Counts obs
-            if len(sample_wires) > 1 and len(counts_wires) == 1:
-                return qml.sample(wires=sample_wires), qml.sample(
-                    qml.PauliX(counts_wires), counts=True
-                )
-
-            # 3. Sample obs and Counts no obs
-            if len(sample_wires) == 1 and len(counts_wires) > 1:
-                return qml.sample(qml.PauliY(sample_wires)), qml.sample(
-                    wires=counts_wires, counts=True
-                )
-
-            # 4. Sample no obs and Counts no obs
-            return qml.sample(wires=sample_wires), qml.sample(wires=counts_wires, counts=True)
-
-        qnode = qml.QNode(circuit, dev)
-        qnode.construct([0.5], {})
-        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
-
-        assert isinstance(res[0], tuple)
-        assert len(res[0]) == all_shots
-        assert all(isinstance(r, tuple) for r in res[0])
-        assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
-        assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
-
-        for idx, shots in enumerate(raw_shot_vector):
-            for i, r in enumerate(res[0][idx]):
-                num_wires = len(sample_wires)
-                if shots == 1 and i % 2 == 0:
-                    expected_shape = () if num_wires == 1 else (num_wires,)
-                    assert r.shape == expected_shape
-                elif i % 2 == 0:
-                    expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
-                    assert r.shape == expected_shape
-                else:
-                    assert isinstance(r, dict)
-
-    @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
-        """Test scalar-valued, probability, sample and counts measurements all
-        in a single qfunc."""
-        dev = qml.device("default.qubit", wires=5, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return (
-                qml.apply(meas1),
-                qml.apply(meas2),
-                qml.sample(qml.PauliX(4)),
-                qml.sample(qml.PauliX(3), counts=True),
-            )
-
-        qnode = qml.QNode(circuit, dev)
-        qnode.construct([0.5], {})
-
-        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
-
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
-
-        assert isinstance(res[0], tuple)
-        assert len(res[0]) == all_shots
-        assert all(isinstance(r, tuple) for r in res[0])
-
-        for res_idx, meas_res in enumerate(res[0]):
-            for i, r in enumerate(meas_res):
-                num_meas = i % 4
-                expval_or_var = num_meas == 0
-                probs = num_meas == 1
-                sample = num_meas == 2
-
-                if expval_or_var:
-                    assert r.shape == ()
-                elif probs:
-                    assert r.shape == (2**2,)
-
-                    # Probs add up to 1
-                    assert np.allclose(sum(r), 1)
-                elif sample:
-                    shots = raw_shot_vector[res_idx]
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
-                else:
-                    # Return is Counts
-                    assert isinstance(r, dict)
 
 
 class TestQubitDeviceNewUnits:
