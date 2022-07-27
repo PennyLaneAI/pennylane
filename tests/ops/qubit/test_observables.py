@@ -13,17 +13,13 @@
 # limitations under the License.
 """Unit tests for qubit observables."""
 import functools
-import pytest
-import pennylane as qml
-import numpy as np
+from unittest.mock import PropertyMock, patch
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-)
+import numpy as np
+import pytest
+from gate_data import H, I, X, Y, Z
+
+import pennylane as qml
 
 # Standard observables, their matrix representation, and eigenvalues
 OBSERVABLES = [
@@ -144,9 +140,19 @@ class TestSimpleObservables:
 # run all tests in this class in the same thread.
 # Prevents multiple threads from updating Hermitian._eigs at the same time
 @pytest.mark.xdist_group(name="hermitian_cache_group")
-@pytest.mark.usefixtures("tear_down_hermitian")
 class TestHermitian:
     """Test the Hermitian observable"""
+
+    def setup_method(self):
+        """Patch the _eigs class attribute of the Hermitian class before every test."""
+        self.patched_eigs = patch(
+            "pennylane.ops.qubit.observables.Hermitian._eigs", PropertyMock(return_value={})
+        )
+        self.patched_eigs.start()
+
+    def tear_down_method(self):
+        """Stop patch after every test."""
+        self.patched_eigs.stop()
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
