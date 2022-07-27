@@ -693,7 +693,6 @@ class TestTensorExpval:
         assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO: Add tests for tensor non-parametrized observables
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
