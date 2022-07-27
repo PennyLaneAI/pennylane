@@ -391,36 +391,12 @@ class QubitDevice(Device):
 
         else:
             results = self.statistics_new(circuit.observables)
-
-            ret_types = [m.return_type for m in circuit.measurements]
-            counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
             single_measurement = len(circuit.measurements) == 1
 
             if single_measurement:
-                if circuit.measurements[0].return_type is qml.measurements.State:
-                    # State: assumed to only be allowed if it's the only measurement
-                    results = self._asarray(results[0], dtype=self.C_DTYPE)
-                elif counts_exist:
-                    results = results[0]
-                else:
-                    # All other measurements are real
-                    results = self._asarray(results[0], dtype=self.R_DTYPE)
-
-                if circuit.measurements[0].return_type is qml.measurements.Sample:
-                    results = qml.math.squeeze(results)
+                results = results[0]
             else:
-
-                processed_results = []
-                for idx, res in enumerate(results):
-                    if not circuit.measurements[idx].return_type is qml.measurements.Counts:
-                        res = self._asarray(res, dtype=self.R_DTYPE)
-
-                    if circuit.measurements[idx].return_type is qml.measurements.Sample:
-                        res = qml.math.squeeze(res)
-
-                    processed_results.append(res)
-
-                results = tuple(processed_results)
+                results = tuple(results)
 
         # increment counter for number of executions of qubit device
         # self._num_executions += 1
@@ -534,11 +510,7 @@ class QubitDevice(Device):
                     measurement_proc.return_type is Sample and measurement_proc.obs
                 ):
 
-                    # Here, the result has a shape of (1, num_basis_states, shot_tuple.copies)
-
-                    # Squeeze -> shape (num_basis_states, shot_tuple.copies)
-                    r_ = qml.math.squeeze(r_)
-
+                    # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
                     # Extract a single row -> shape (num_basis_states,)
                     result = r_[:, idx]
                 else:
@@ -836,25 +808,20 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
-                res = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
-                results.append(res)
+                result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is Variance:
-                results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
+                result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is Sample:
-                results.append(
-                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                )
+                samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                result = qml.math.squeeze(samples)
 
             elif obs.return_type is Counts:
-                r = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
-                results.append(r)
+                result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif obs.return_type is Probability:
-                results.append(
-                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
-                )
+                result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is State:
                 if len(observables) > 1:
@@ -865,14 +832,15 @@ class QubitDevice(Device):
 
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
-                results.append(self.access_state(wires=obs.wires))
+                state = self.access_state(wires=obs.wires)
+                result = self._asarray(state, dtype=self.C_DTYPE)
 
             elif obs.return_type is VnEntropy:
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
-                results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
+                result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
             elif obs.return_type is MutualInfo:
                 if self.wires.labels != tuple(range(self.num_wires)):
@@ -880,14 +848,19 @@ class QubitDevice(Device):
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
                 wires0, wires1 = obs.raw_wires
-                results.append(
-                    self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
-                )
+                result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
+
+            float_return_types = {Expectation, Variance, Probability, VnEntropy, MutualInfo}
+
+            if obs.return_type in float_return_types:
+                result = self._asarray(result, dtype=self.R_DTYPE)
+
+            results.append(result)
 
         return results
 
