@@ -348,8 +348,6 @@ class QubitDevice(Device):
             self.tracker.record()
         return results
 
-    # TODO: consider refactoring to silence linting warning
-    # pylint: disable=too-many-statements
     def execute_new(self, circuit, **kwargs):
         """New execute (update of return type) function, it executes a queue of quantum operations on the device and
         then measure the given observables. More case will be added in future PRs, for the moment it only supports
@@ -390,8 +388,6 @@ class QubitDevice(Device):
         counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
-        # TODO: refactor
-        # pylint: disable=too-many-nested-blocks
         if not self.analytic and self._shot_vector is not None:
 
             results = []
@@ -406,69 +402,28 @@ class QubitDevice(Device):
 
                 if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
                     r = r[0]
-                elif single_measurement:
-                    if not counts_exist:
-                        # Measurement types except for Counts
-                        r = qml.math.squeeze(r)
-                    else:
-                        r = r[0]
+
+                if single_measurement:
+                    r = r[0] if counts_exist else qml.math.squeeze(r)
                 else:
-                    if shot_tuple.copies > 1:
-
-                        if not counts_exist:
-
-                            # r is a nested sequence, contains the results for multiple measurements
-                            # Each item of r has copies length
-                            r = [r_.T for r_ in r]
-                            r = [
-                                tuple(self._asarray(r_[idx]) for r_ in r)
-                                for idx in range(shot_tuple.copies)
-                            ]
-                        else:
-                            new_r = []
-
-                            # Multi-measurements with at least one Counts
-                            # First: iterate over each group of measurement results that contain copies many outcomes for a single measurement
-
-                            # Each item of r has copies length
-                            for idx in range(shot_tuple.copies):
-                                result_group = []
-
-                                for idx2, r_ in enumerate(r):
-                                    measurement_proc = circuit.measurements[idx2]
-                                    if measurement_proc.return_type is Probability or (
-                                        measurement_proc.return_type is Sample
-                                        and measurement_proc.obs
-                                    ):
-
-                                        # Here, the result has a shape of (1, num_basis_states, shot_tuple.copies)
-
-                                        # Squeeze -> shape (num_basis_states, shot_tuple.copies)
-                                        r_ = qml.math.squeeze(r_)
-
-                                        # Extract a single row -> shape (num_basis_states,)
-                                        result = r_[:, idx]
-                                    else:
-                                        result = r_[idx]
-
-                                    if not circuit.observables[idx2].return_type is Counts:
-                                        result = self._asarray(result.T)
-
-                                    result_group.append(result)
-
-                                new_r.append(tuple(result_group))
-
-                            r = new_r
-                    else:
-                        # TODO: what if ML framework and not qml.numpy.ndarray
-                        # TODO: refactor r_ name
-
+                    if shot_tuple.copies == 1:
                         r = tuple(
-                            qml.math.squeeze(r_).T if isinstance(r_, np.ndarray)
-                            # shot_tuple.copies == 1, so we need to unwrap the single element list
-                            else r_[0]
+                            r_[0]
+                            if isinstance(r_, list)  # need to unwrap the single element
+                            else qml.math.squeeze(r_).T
                             for idx, r_ in enumerate(r)
                         )
+                    else:
+
+                        if counts_exist:
+                            r = self._multi_meas_with_counts_shot_vec(circuit, shot_tuple, r)
+                        else:
+                            # r is a nested sequence, contains the results for multiple measurements
+                            # Each item of r has copies length
+                            r = [
+                                tuple(self._asarray(r_.T[idx]) for r_ in r)
+                                for idx in range(shot_tuple.copies)
+                            ]
 
                 if isinstance(r, qml.numpy.ndarray):
                     if shot_tuple.copies > 1:
@@ -476,35 +431,22 @@ class QubitDevice(Device):
                     else:
                         results.append(r.T)
 
-                # TODO: need list and tuple both?
                 elif isinstance(r, (list, tuple)):
-                    if single_measurement:
-                        if counts_exist:
-                            results.extend(r)
-
-                        elif not self._has_partitioned_shots():
-                            results.extend(r)
-                        elif shot_tuple.copies > 1:
-                            results.extend(r.T)
-                        else:
-                            results.append(r)
+                    if single_measurement and counts_exist:
+                        results.extend(r)
+                    elif not single_measurement and shot_tuple.copies > 1:
+                        # Some samples may still be transposed, fix their shapes
+                        # Leave dictionaries intact
+                        r = [
+                            tuple(
+                                qml.math.squeeze(elem.T) if not isinstance(elem, dict) else elem
+                                for elem in r_
+                            )
+                            for r_ in r
+                        ]
+                        results.extend(r)
                     else:
-                        if counts_exist and shot_tuple.copies == 1:
-                            results.append(r)
-                        elif not self._has_partitioned_shots():
-                            results.extend(r)
-                        elif shot_tuple.copies > 1:
-                            # Some samples may still be transposed, fix their shapes
-                            r = [
-                                tuple(
-                                    qml.math.squeeze(elem.T) if not isinstance(elem, dict) else elem
-                                    for elem in r_
-                                )
-                                for r_ in r
-                            ]
-                            results.extend(r)
-                        else:
-                            results.append(r)
+                        results.append(r)
                 else:
                     results.append(r)
 
@@ -533,6 +475,47 @@ class QubitDevice(Device):
         #     self.tracker.update(executions=1, shots=self._shots)
         #     self.tracker.record()
         return results
+
+    def _multi_meas_with_counts_shot_vec(self, circuit, shot_tuple, r):
+        """Auxiliary function of the execute_new function for post-processing
+        the results of multiple measurements at least one of which was a counts
+        measurement.
+
+        The measurements were executed on a device that defines a shot vector.
+        """
+        # First: iterate over each group of measurement
+        # results that contain copies many outcomes for a
+        # single measurement
+        new_r = []
+
+        # Each item of r has copies length
+        for idx in range(shot_tuple.copies):
+            result_group = []
+
+            for idx2, r_ in enumerate(r):
+                measurement_proc = circuit.measurements[idx2]
+                if measurement_proc.return_type is Probability or (
+                    measurement_proc.return_type is Sample and measurement_proc.obs
+                ):
+
+                    # Here, the result has a shape of (1, num_basis_states, shot_tuple.copies)
+
+                    # Squeeze -> shape (num_basis_states, shot_tuple.copies)
+                    r_ = qml.math.squeeze(r_)
+
+                    # Extract a single row -> shape (num_basis_states,)
+                    result = r_[:, idx]
+                else:
+                    result = r_[idx]
+
+                if not circuit.observables[idx2].return_type is Counts:
+                    result = self._asarray(result.T)
+
+                result_group.append(result)
+
+            new_r.append(tuple(result_group))
+
+        return new_r
 
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.

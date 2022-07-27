@@ -695,8 +695,6 @@ class TestMixMeasurementsShotVectorAutograd:
     """Test the support for executing tapes with multiple different
     measurements using a device with shot vectors"""
 
-    # TODO: one test case with all four/five types
-
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
     def test_scalar_probs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and probability measurements"""
@@ -974,10 +972,6 @@ class TestMixMeasurementsShotVectorAutograd:
                 idx += 1
 
     # TODO: refactor tests: can they be shorter?
-    # TODO: probs: what if observable provided?
-
-    # TODO: test_sample_counts
-    # TODO: check that the underlying data structure is correct that is returned
     # TODO: reduce the speed of test runs
 
     @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
