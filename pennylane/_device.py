@@ -30,7 +30,7 @@ from pennylane.operation import (
     Observable,
     Tensor,
 )
-from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
+from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure, ShadowExpval
 from pennylane.wires import Wires, WireError
 
 
@@ -717,7 +717,9 @@ class Device(abc.ABC):
 
         return_types = [m.return_type for m in circuit.observables]
 
-        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
+        is_shadow = ShadowExpval in return_types
+
+        if hamiltonian_in_obs and ((not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
