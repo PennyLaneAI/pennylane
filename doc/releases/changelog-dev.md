@@ -4,6 +4,43 @@
 
 <h3>New features since last release</h3>
 
+* `DefaultQubit` devices now natively support parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
+  devices now are able to directly execute broadcasted circuits, providing
+  a faster way of executing the same circuit at varied parameter positions.
+
+  Given a standard `QNode`,
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  we can call it with broadcasted parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
+  >>> circuit(x, y)
+  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
+  ```
+
+  It's also possible to broadcast only some parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array(0.23, requires_grad=True)
+  >>> circuit(x, y)
+  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+  
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -107,11 +144,17 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
-  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+  ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
+
+* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
+
 **Operator Arithmetic:**
+
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
@@ -169,6 +212,58 @@
   RZ**2(1.0, wires=[0])
   ```
 
+* Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
+  ```
+
+  Added `__neg__` and `__sub__` dunder methods to the `qml.operation.Operator` class so that users
+  can negate and substract operators more naturally.
+
+  ```pycon
+  >>> -(-qml.PauliZ(0) + qml.PauliX(0)).matrix()
+  array([[ 1, -1],
+        [-1, -1]])
+  ```
+
+* A `SProd` symbolic class is added that allows users to represent the scalar product
+of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
+
+  We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> sprod_op = qml.s_prod(2.0, qml.PauliX(0))
+  >>> sprod_op
+  2.0*(PauliX(wires=[0]))
+  >>> sprod_op.matrix()
+  array([[ 0., 2.],
+         [ 2., 0.]])
+  >>> sprod_op.terms()
+  ([2.0], [PauliX(wires=[0])])
+  ```
+
+  The `sprod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the observable.
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev, grad_method="best")
+  def circuit(scalar, theta):
+        qml.RX(theta, wires=0)
+        return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
+  ```
+
+  ```pycon
+  >>> scalar, theta = (1.2, 3.4)
+  >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+  (array(-0.68362956), array(0.21683382))
+  ```
+
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 <h3>Improvements</h3>
@@ -179,6 +274,7 @@
 
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
 
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
@@ -210,8 +306,7 @@
   ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
   >>> result = circuit()
   >>> print(result)
-  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
-   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
@@ -252,6 +347,9 @@
   with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
+* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
+  [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
+
 <h3>Breaking changes</h3>
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
@@ -277,6 +375,14 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the parameter-shift gradient breaks when using both
+  custom `grad_recipe`s that contain unshifted terms and recipes that
+  do not contains any unshifted terms.
+  [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
+
+* Fixes mixed CPU-GPU data-locality issues for Torch interface.
+  [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
+
 * Fixes a bug where the parameter-shift Hessian of circuits with untrainable
   parameters might be computed with respect to the wrong parameters or
   might raise an error.
@@ -295,6 +401,10 @@
 
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
+
+* Allow hamiltonians with grouped observables to be measured on devices
+  which were transformed using `qml.transform.insert()`.
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857) 
 
 <h3>Contributors</h3>
 
