@@ -591,8 +591,15 @@ class TestSimplify:
         sum_op = qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
         final_op = Sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
         simplified_op = sum_op.simplify()
-        assert qml.equal(op1=simplified_op, op2=final_op)
-        assert simplified_op.arithmetic_depth == 1
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_method_with_depth_equal_to_1(self):
         """Test the simplify method with depth equal to 1."""
@@ -607,8 +614,15 @@ class TestSimplify:
             qml.RZ(1.32, wires=0),
         )
         simplified_op = sum_op.simplify(depth=1)
-        assert qml.equal(op1=simplified_op, op2=final_op)
-        assert simplified_op.arithmetic_depth == sum_op.arithmetic_depth - 1
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
 
 class TestWrapperFunc:

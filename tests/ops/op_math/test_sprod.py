@@ -489,9 +489,16 @@ class TestSimplify:
             SProd(2, qml.RX(1.9, wires=1)),
         )
         simplified_op = sprod_op.simplify()
-        # TODO: Use qml.equal when fixed
-        assert np.allclose(a=simplified_op.matrix(), b=final_op.matrix(), rtol=0)
-        assert simplified_op.arithmetic_depth == 2
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert isinstance(s2, SProd)
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_method_with_given_depth(self):
         """Test the simplify method with a given depth."""
@@ -499,19 +506,28 @@ class TestSimplify:
 
         final_op = SProd(-1, qml.adjoint(qml.PauliX(0)))
         simplified_op = sprod_op.simplify(depth=3)
-        # TODO: Use qml.equal when fixed
-        assert np.allclose(a=simplified_op.matrix(), b=final_op.matrix(), rtol=0)
-        assert (
-            simplified_op.arithmetic_depth == sprod_op.arithmetic_depth - 2
-        )  # cannot reduce depth by 3
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, SProd)
+        assert final_op.id == simplified_op.id
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_with_depth_equal_to_0(self):
         """Test the simplify method with depth equal to 0."""
         sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
+        final_op = sprod_op
         simplified_op = sprod_op.simplify(depth=0)
-        # TODO: Use qml.equal when fixed
-        assert np.allclose(a=simplified_op.matrix(), b=sprod_op.matrix(), rtol=0)
-        assert simplified_op.arithmetic_depth == sprod_op.arithmetic_depth
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, SProd)
+        assert final_op.id == simplified_op.id
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
 
 class TestWrapperFunc:
