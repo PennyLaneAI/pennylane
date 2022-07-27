@@ -352,7 +352,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Breaking changes</h3>
 
-* Custom devices inheriting from `DefaultQubit` can break due to the introduction
+* Custom devices inheriting from `DefaultQubit` or `QubitDevice` can break due to the introduction
   of parameter broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
 
@@ -368,6 +368,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   Typically, the easiest fix will be to change the `capabilities["supports_broadcasting"]` flag
   to `False` and/or to include a call to `broadcast_expand` in `CustomDevice.batch_transform`,
   similar to how `Device.batch_transform` calls it.
+
+  Separately from the above, custom devices that inherit from `QubitDevice` and implement a
+  custom `_gather` method need to allow for the kwarg `axis` to be passed to this `_gather` method.
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
   `qml.qchem`.
