@@ -30,6 +30,7 @@ from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Sn
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
+from collections.abc import Iterable
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -890,60 +891,120 @@ class DefaultQubit(QubitDevice):
 
     def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
-        return super().classical_shadow(wires, n_snapshots, circuit)
+        # return super().classical_shadow(wires, n_snapshots, circuit)
 
-        # n_qubits = len(self.wires)
-        # device_wires = np.array(self.map_wires(wires))
+        n_qubits = len(self.wires)
+        device_wires = np.array(self.map_wires(wires))
 
-        # recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-        # obs_list = self._stack(
-        #     [
-        #         qml.PauliX.compute_matrix(),
-        #         qml.PauliY.compute_matrix(),
-        #         qml.PauliZ.compute_matrix(),
-        #     ]
-        # )
-        # uni_list = self._stack(
-        #     [
-        #         qml.Hadamard.compute_matrix(),
-        #         qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-        #         qml.Identity.compute_matrix(),
-        #     ]
-        # )
-        # obs = obs_list[recipes]
-        # uni = uni_list[recipes]
+        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        obs_list = self._stack(
+            [
+                qml.PauliX.compute_matrix(),
+                qml.PauliY.compute_matrix(),
+                qml.PauliZ.compute_matrix(),
+            ]
+        )
+        uni_list = self._stack(
+            [
+                qml.Hadamard.compute_matrix(),
+                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
+                qml.Identity.compute_matrix(),
+            ]
+        )
+        obs = obs_list[recipes]
+        uni = uni_list[recipes]
 
-        # outcomes = np.zeros((n_snapshots, n_qubits))
-        # stacked_state = self._stack([self._state for _ in range(n_snapshots)])
+        outcomes = np.zeros((n_snapshots, n_qubits))
+        stacked_state = self._stack([self._state for _ in range(n_snapshots)])
 
-        # for i in range(n_qubits):
+        for i in range(n_qubits):
 
-        #     # trace out every qubit except the first
-        #     first_qubit_state = self._einsum(
-        #         f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
-        #         f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
-        #         stacked_state,
-        #         self._conj(stacked_state),
-        #     )
+            # trace out every qubit except the first
+            first_qubit_state = self._einsum(
+                f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
+                f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
+                stacked_state,
+                self._conj(stacked_state),
+            )
 
-        #     # sample the observables on the first qubit
-        #     probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
-        #     samples = np.random.uniform(0, 1, size=probs.shape) > probs
-        #     # samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
-        #     outcomes[:, i] = samples
+            # sample the observables on the first qubit
+            probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
+            samples = np.random.uniform(0, 1, size=probs.shape) > probs
+            # samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
+            outcomes[:, i] = samples
 
-        #     # collapse the state
-        #     rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-        #     stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
+            # collapse the state
+            rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
+            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
 
-        #     # normalize the state
-        #     norms = np.sqrt(
-        #         np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
-        #     )
-        #     stacked_state /= norms
+            # normalize the state
+            norms = np.sqrt(
+                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
+            )
+            stacked_state /= norms
 
-        # outcomes = outcomes[:, device_wires]
-        # recipes = recipes[:, device_wires]
+        outcomes = outcomes[:, device_wires]
+        recipes = recipes[:, device_wires]
 
-        # # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        # return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)
+        # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)
+    
+    def classical_shadow_expval(self, wires, n_snapshots, circuit, H):
+        """TODO: docs"""
+        k=10
+
+        bitstrings, recipes = self.classical_shadow(wires, n_snapshots, circuit)
+
+        unitaries = [
+                qml.matrix(qml.Hadamard(0)),
+                qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
+                qml.matrix(qml.Identity(0)),
+            ]
+
+        # Generate local snapshots (density matrices)
+        zero = np.zeros((2, 2), dtype="complex")
+        zero[0, 0] = 1.0
+        one = np.zeros((2, 2), dtype="complex")
+        one[1, 1] = 1.0
+
+        T, n = bitstrings.shape
+
+        U = np.empty((T, n, 2, 2), dtype="complex")
+        for i, _ in enumerate(unitaries):
+            U[np.where(recipes == i)] = unitaries[i]
+
+        state = np.empty((T, n, 2, 2), dtype="complex")
+        state[np.where(bitstrings == 0)] = zero
+        state[np.where(bitstrings == 1)] = one
+
+        local_snapshots = 3 * qml.math.transpose(qml.math.conj(U), axes=(0, 1, 3, 2)) @ state @ U - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
+
+        # Compute Pauli string observable expectation value
+        def _expval_observable(observable, k):
+            """Compute expectation values of Pauli-string type observables"""
+            if isinstance(observable, qml.operation.Tensor):
+                os = np.asarray([qml.matrix(o) for o in observable.obs])
+            else:
+                os = np.asarray([qml.matrix(observable)])  # wont work with other interfaces
+
+            means = []
+            step = len(bitstrings) // k
+
+            for i in range(0, len(bitstrings), step):
+                # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
+                # res_i^t = tr(rho_i P_i)
+                res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)
+                # res^t = prod_i res_i^t
+                res = np.prod(res, axis=-1)
+                # res = sum_t res^t / T
+                means.append(np.mean(res))
+            return np.median(means)
+        
+        # expval(H):
+        if isinstance(H, qml.Hamiltonian):
+            return np.sum([_expval_observable(observable, k) for observable in H.ops])
+
+        if isinstance(H, Iterable):
+            return [_expval_observable(observable, k) for observable in H]
+
+        return _expval_observable(H, k)
