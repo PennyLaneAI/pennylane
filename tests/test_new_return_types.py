@@ -472,7 +472,7 @@ shot_vectors = [[10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-class TestShotVectorAutograd:
+class TestShotVector
     """Test the support for executing tapes with single measurements using a
     device with shot vectors."""
 
@@ -595,7 +595,7 @@ class TestShotVectorAutograd:
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-class TestSameMeasurementShotVectorAutograd:
+class TestSameMeasurementShotVector:
     """Test the support for executing tapes with the same type of measurement
     multiple times using a device with shot vectors"""
 
@@ -775,7 +775,7 @@ scalar_counts_no_obs_multi = [
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
-class TestMixMeasurementsShotVectorAutograd:
+class TestMixMeasurementsShotVector:
     """Test the support for executing tapes with multiple different
     measurements using a device with shot vectors"""
 

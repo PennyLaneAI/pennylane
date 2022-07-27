@@ -385,7 +385,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        if not self.analytic and self._shot_vector is not None:
+        if self._shot_vector is not None:
 
             results = self.shot_vec_statistics(circuit)
 
