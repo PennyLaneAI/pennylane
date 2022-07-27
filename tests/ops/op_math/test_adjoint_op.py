@@ -437,7 +437,7 @@ class TestQueueing:
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
-        """Test that base is added to queue even if it's defined outside the recording context."""
+        """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         with qml.tape.QuantumTape() as tape:

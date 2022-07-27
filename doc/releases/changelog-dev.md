@@ -4,6 +4,43 @@
 
 <h3>New features since last release</h3>
 
+* `DefaultQubit` devices now natively support parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
+  devices now are able to directly execute broadcasted circuits, providing
+  a faster way of executing the same circuit at varied parameter positions.
+
+  Given a standard `QNode`,
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  we can call it with broadcasted parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
+  >>> circuit(x, y)
+  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
+  ```
+
+  It's also possible to broadcast only some parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array(0.23, requires_grad=True)
+  >>> circuit(x, y)
+  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+  
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -112,7 +149,12 @@
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
+
 **Operator Arithmetic:**
+
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
@@ -170,7 +212,25 @@
   RZ**2(1.0, wires=[0])
   ```
 
-* A `SProd` symbolic class is added that allows users to represent the scalar product 
+* Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
+  ```
+
+  Added `__neg__` and `__sub__` dunder methods to the `qml.operation.Operator` class so that users
+  can negate and substract operators more naturally.
+
+  ```pycon
+  >>> -(-qml.PauliZ(0) + qml.PauliX(0)).matrix()
+  array([[ 1, -1],
+        [-1, -1]])
+  ```
+
+* A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
   We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
@@ -218,6 +278,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
 
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
@@ -249,8 +310,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
   >>> result = circuit()
   >>> print(result)
-  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
-   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire

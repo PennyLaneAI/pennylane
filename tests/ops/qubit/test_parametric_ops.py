@@ -3064,7 +3064,7 @@ pow_parametric_ops = (
     qml.IsingZZ(1.789, wires=("a", "b")),
     # broadcasted ops
     qml.RX(np.array([1.234, 4.129]), wires=0),
-    qml.RY(np.array([2.345, 6, 789]), wires=0),
+    qml.RY(np.array([2.345, 6.789]), wires=0),
     qml.RZ(np.array([3.456]), wires=0),
     qml.PhaseShift(np.array([6.0, 7.0, 8.0]), wires=0),
     qml.ControlledPhaseShift(np.array([0.234]), wires=(0, 1)),

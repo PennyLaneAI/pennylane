@@ -654,21 +654,20 @@ def sample(op=None, wires=None, counts=False):
 
     .. code-block:: python3
 
-        dev = qml.device('default.qubit', wires=3, shots=10)
+        dev = qml.device("default.qubit", wires=3, shots=10)
+
 
         @qml.qnode(dev)
         def my_circ():
             qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0,1])
+            qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
-            return qml.sample(qml.PauliZ(0), counts = True), qml.sample(counts=True)
+            return qml.sample(qml.PauliZ(0), counts=True), qml.sample(counts=True)
 
     Executing this QNode:
 
     >>> my_circ()
-    tensor([tensor({-1: 5, 1: 5}, dtype=object, requires_grad=True),
-        tensor({'001': 5, '111': 5}, dtype=object, requires_grad=True)],
-       dtype=object, requires_grad=True)
+    ({-1: 3, 1: 7}, {'001': 7, '111': 3})
 
     .. note::
 
