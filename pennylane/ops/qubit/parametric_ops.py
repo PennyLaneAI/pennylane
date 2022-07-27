@@ -2031,12 +2031,15 @@ class U1(Operation):
         """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
+            fac = qml.math.cast_like([0, 1], 1j)
+        else:
+            fac = np.array([0, 1])
 
         arg = 1j * phi
         if qml.math.ndim(arg) == 0:
-            return qml.math.diag(qml.math.exp(arg * np.array([0, 1])))
+            return qml.math.diag(qml.math.exp(arg * fac))
 
-        diags = qml.math.exp(qml.math.outer(arg, [0, 1]))
+        diags = qml.math.exp(qml.math.outer(arg, fac))
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
 
     @staticmethod
