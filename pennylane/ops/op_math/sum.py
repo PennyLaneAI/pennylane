@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+from copy import copy
 from functools import reduce
 
 import numpy as np
@@ -131,7 +132,6 @@ class Sum(Operator):
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
         self.summands = summands
-        self.data = [s.parameters for s in self.summands]
         self._wires = qml.wires.Wires.all_wires([s.wires for s in self.summands])
 
         if do_queue:
@@ -144,14 +144,25 @@ class Sum(Operator):
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()  # copies the combined parameters
         copied_op.summands = tuple(s.__copy__() for s in self.summands)
+        copied_op.data = self.data.copy()  # copies the combined parameters
 
         for attr, value in vars(self).items():
             if attr not in {"data", "summands"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
+
+    @property
+    def data(self):
+        """Create data property"""
+        return [s.parameters for s in self.summands]
+
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for new_entry, op in zip(new_data, self.summands):
+            op.data = copy(new_entry)
 
     @property
     def batch_size(self):

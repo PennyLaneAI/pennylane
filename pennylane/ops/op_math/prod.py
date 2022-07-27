@@ -15,8 +15,8 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+from copy import copy
 from functools import reduce, cached_property
-from itertools import combinations
 
 import numpy as np
 
@@ -25,9 +25,9 @@ from pennylane import math
 from pennylane.operation import Operator, expand_matrix
 
 
-def prod(op1, op2):
+def prod(*ops, do_queue=True, id=None):
     """Represent the tensor product (or matrix product) between operators."""
-    return Prod(op1, op2)
+    return Prod(*ops, do_queue=do_queue, id=id)
 
 
 def _prod(mats_gen):
@@ -42,30 +42,32 @@ class Prod(Operator):
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *operators, do_queue=True, id=None):
+    def __init__(self, *factors, do_queue=True, id=None):
         """Initialize a Prod instance """
         self._id = id
         self.queue_idx = None
 
-        self.operators = operators
-        self.data = [s.parameters for s in self.operators]
-        self._wires = qml.wires.Wires.all_wires([s.wires for s in self.operators])
+        if len(factors) < 2:
+            raise ValueError(f"Require at least two operators to multiply; got {len(factors)}")
+
+        self.factors = factors
+        self._wires = qml.wires.Wires.all_wires([s.wires for s in self.factors])
 
         if do_queue:
             self.queue()
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return " @ ".join([f"{f}" for f in self.operators])
+        return " @ ".join([f"{f}" for f in self.factors])
 
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
+        copied_op.factors = tuple(f.__copy__() for f in self.factors)
         copied_op.data = self.data.copy()  # copies the combined parameters
-        copied_op.operators = tuple(s.__copy__() for s in self.operators)
 
         for attr, value in vars(self).items():
-            if attr not in {"data", "operators"}:
+            if attr not in {"data", "factors"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -74,13 +76,29 @@ class Prod(Operator):
         return [1.0], [self]
 
     @property
+    def data(self):
+        """Create data property"""
+        return [f.parameters for f in self.factors]
+
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for new_entry, op in zip(new_data, self.factors):
+            op.data = copy(new_entry)
+
+    @property
+    def batch_size(self):
+        """Batch size of input parameters."""
+        raise ValueError("Batch size is not defined for Prod operators.")
+
+    @property
     def ndim_params(self):
         """ndim_params of input parameters."""
         raise ValueError("Dimension of parameters is not currently implemented for Prod operators.")
 
     @property
     def num_params(self):
-        return sum(op.num_params for op in self.operators)
+        return sum(op.num_params for op in self.factors)
 
     @property
     def num_wires(self):
@@ -99,7 +117,7 @@ class Prod(Operator):
 
     def decomposition(self):
         """decomposition of the operator into a product of operators. """
-        return list(self.operators)
+        return list(self.factors)
 
     @property
     def eigendecomposition(self):
@@ -165,7 +183,7 @@ class Prod(Operator):
         if wire_order is None:
             wire_order = self.wires
 
-        return _prod(matrix_gen(self.operators, wire_order=wire_order))
+        return _prod(matrix_gen(self.factors, wire_order=wire_order))
 
     @property
     def _queue_category(self):  # don't queue Prod instances because it may not be unitary!
@@ -180,6 +198,6 @@ class Prod(Operator):
     def queue(self, context=qml.QueuingContext):
         """Updates each operator's owner to Prod, this ensures
         that the operators are not applied to the circuit repeatedly."""
-        for op in self.operators:
+        for op in self.factors:
             context.safe_update_info(op, owner=self)
         return self
