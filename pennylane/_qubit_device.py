@@ -442,13 +442,11 @@ class QubitDevice(Device):
             #     r = r[0]
 
             if single_measurement:
-                r = r[0] if counts_exist else qml.math.squeeze(r)
+                r = r[0]  # if counts_exist else qml.math.squeeze(r)
             else:
                 if shot_tuple.copies == 1:
                     r = tuple(
-                        r_[0]
-                        if isinstance(r_, list)  # need to unwrap the single element
-                        else qml.math.squeeze(r_).T
+                        r_[0] if isinstance(r_, list) else r_.T  # need to unwrap the single element
                         for idx, r_ in enumerate(r)
                     )
                 else:
@@ -477,10 +475,7 @@ class QubitDevice(Device):
                     # Some samples may still be transposed, fix their shapes
                     # Leave dictionaries intact
                     r = [
-                        tuple(
-                            qml.math.squeeze(elem.T) if not isinstance(elem, dict) else elem
-                            for elem in r_
-                        )
+                        tuple(elem.T if not isinstance(elem, dict) else elem for elem in r_)
                         for r_ in r
                     ]
                     results.extend(r)
@@ -863,6 +858,20 @@ class QubitDevice(Device):
 
             if obs.return_type in float_return_types:
                 result = self._asarray(result, dtype=self.R_DTYPE)
+
+            if self._shot_vector is not None and isinstance(result, np.ndarray):
+                # In the shot vector case, measurement results may be of shape (N, 1) instead of (N,)
+                # Squeeze the result to transform the results
+                #
+                # E.g.,
+                # before:
+                # [[0.489]
+                #  [0.511]
+                #  [0.   ]
+                #  [0.   ]]
+                #
+                # after: [0.489 0.511 0.    0.   ]
+                result = qml.math.squeeze(result)
 
             results.append(result)
 
@@ -1276,6 +1285,8 @@ class QubitDevice(Device):
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+
+        # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.mean(samples, axis=0))
 
     def var(self, observable, shot_range=None, bin_size=None):
@@ -1306,6 +1317,8 @@ class QubitDevice(Device):
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+
+        # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=0))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
