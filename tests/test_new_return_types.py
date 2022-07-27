@@ -24,11 +24,12 @@ wires = [2, 3, 4]
 devices = ["default.qubit", "default.mixed"]
 
 
+@pytest.mark.parametrize("shots", [None, 100])
 class TestSingleReturnExecute:
     """Test that single measurements return behavior does not change."""
 
     @pytest.mark.parametrize("wires", wires)
-    def test_state_default(self, wires):
+    def test_state_default(self, wires, shots):
         """Return state with default.qubit."""
         dev = qml.device("default.qubit", wires=wires)
 
@@ -45,7 +46,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("wires", wires)
-    def test_state_mixed(self, wires):
+    def test_state_mixed(self, wires, shots):
         """Return state with default.mixed."""
         dev = qml.device("default.mixed", wires=wires)
 
@@ -64,7 +65,7 @@ class TestSingleReturnExecute:
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", wires)
-    def test_density_matrix_default(self, d_wires, device):
+    def test_density_matrix_default(self, d_wires, device, shots):
         """Return density matrix."""
         dev = qml.device(device, wires=4)
 
@@ -82,7 +83,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    def test_expval(self, device):
+    def test_expval(self, device, shots):
         """Return a single expval."""
         dev = qml.device(device, wires=2)
 
@@ -100,7 +101,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    def test_var(self, device):
+    def test_var(self, device, shots):
         """Return a single var."""
         dev = qml.device(device, wires=2)
 
@@ -118,7 +119,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    def test_vn_entropy(self, device):
+    def test_vn_entropy(self, device, shots):
         """Return a single vn entropy."""
         dev = qml.device(device, wires=2)
 
@@ -136,9 +137,9 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    def test_mutual_info(self, device):
+    def test_mutual_info(self, device, shots):
         """Return a single mutual information."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -163,7 +164,7 @@ class TestSingleReturnExecute:
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, op, wires, device):
+    def test_probs(self, op, wires, device, shots):
         """Return a single prob."""
         dev = qml.device(device, wires=3)
 
@@ -184,9 +185,11 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
-    def test_sample(self, measurement):
+    def test_sample(self, measurement, shots):
         """Test the sample measurement."""
-        shots = 1000
+        if shots is None:
+            pytest.skip("Sample requires finite shots.")
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         def circuit(x):
@@ -205,9 +208,11 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize(
         "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
     )
-    def test_counts(self, measurement):
+    def test_counts(self, measurement, shots):
         """Test the counts measurement."""
-        shots = 1000
+        if shots is None:
+            pytest.skip("Counts requires finite shots.")
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         def circuit(x):
@@ -227,15 +232,16 @@ class TestSingleReturnExecute:
 wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
 
+@pytest.mark.parametrize("shots", [None, 100])
 class TestMultipleReturns:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
     """
 
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval(self, device):
+    def test_multiple_expval(self, device, shots):
         """Return multiple expvals."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -257,9 +263,9 @@ class TestMultipleReturns:
         assert res[0][1].shape == ()
 
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_var(self, device):
+    def test_multiple_var(self, device, shots):
         """Return multiple vars."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -294,9 +300,9 @@ class TestMultipleReturns:
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device):
+    def test_multiple_prob(self, op1, op2, wires1, wires2, device, shots):
         """Return multiple probs."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -326,9 +332,9 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", wires)
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device, shots):
         """Return multiple different measurements."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -370,9 +376,9 @@ class TestMultipleReturns:
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
-    def test_list_multiple_expval(self, wires, device):
+    def test_list_multiple_expval(self, wires, device, shots):
         """Return a comprehension list of multiple expvals."""
-        dev = qml.device(device, wires=wires)
+        dev = qml.device(device, wires=wires, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -392,8 +398,11 @@ class TestMultipleReturns:
             assert res[0][i].shape == ()
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
-    def test_expval_sample(self, measurement):
+    def test_expval_sample(self, measurement, shots):
         """Test the expval and sample measurements together."""
+        if shots is None:
+            pytest.skip("Sample requires finite shots.")
+
         shots = 1000
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
@@ -418,8 +427,11 @@ class TestMultipleReturns:
     @pytest.mark.parametrize(
         "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
     )
-    def test_expval_counts(self, measurement):
+    def test_expval_counts(self, measurement, shots):
         """Test the expval and counts measurements together."""
+        if shots is None:
+            pytest.skip("Counts requires finite shots.")
+
         shots = 1000
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
