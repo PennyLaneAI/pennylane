@@ -49,6 +49,8 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    _queue_category = "_ops"
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
 
@@ -183,6 +185,8 @@ class PauliX(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    _queue_category = "_ops"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -327,6 +331,8 @@ class PauliY(Observable, Operation):
 
     basis = "Y"
 
+    _queue_category = "_ops"
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
@@ -466,6 +472,8 @@ class PauliZ(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    _queue_category = "_ops"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -2207,7 +2215,7 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
+    def __init__(self, wires=Wires([]), only_visual=False, do_queue=True, id=None):
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
@@ -2271,6 +2279,14 @@ class WireCut(Operation):
     num_params = 0
     num_wires = AnyWires
     grad_method = None
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        if wires == []:
+            raise ValueError(
+                f"{self.__class__.__name__}: wrong number of wires. "
+                f"At least one wire has to be given."
+            )
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=unused-argument

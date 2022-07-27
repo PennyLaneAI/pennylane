@@ -39,6 +39,8 @@ class Identity(CVObservable, Operation):
     grad_method = None
     """Gradient computation method."""
 
+    _queue_category = "_ops"
+
     ev_order = 1
 
     def label(self, decimals=None, base_label=None, cache=None):

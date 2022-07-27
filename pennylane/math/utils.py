@@ -135,7 +135,10 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    dtype = ar.to_numpy(tensor2).dtype.type
+    if not is_abstract(tensor2):
+        dtype = ar.to_numpy(tensor2).dtype.type
+    else:
+        dtype = tensor2.dtype
     return cast(tensor1, dtype)
 
 

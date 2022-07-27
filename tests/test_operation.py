@@ -15,23 +15,20 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-from functools import reduce
 import warnings
-
-import pytest
-from scipy.sparse import csr_matrix
+from functools import reduce
 
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+from gate_data import CNOT, II, SWAP, I, Toffoli, X
 from numpy.linalg import multi_dot
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import Tensor, operation_derivative, Operator, Operation
-
-from gate_data import I, X, CNOT, Toffoli, SWAP, II
+from pennylane import numpy as pnp
+from pennylane.operation import Operation, Operator, Tensor, operation_derivative
 from pennylane.ops import cv
 from pennylane.wires import Wires
-
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
@@ -768,6 +765,33 @@ class TestOperatorIntegration:
             match=f"Operator {DummyOp.__name__} must act on all wires",
         ):
             circuit()
+
+    def test_pow_method_with_non_numeric_power_raises_error(self):
+        """Test that when raising an Operator to a power that is not a number raises
+        a ValueError."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        with pytest.raises(ValueError, match="Cannot raise an Operator"):
+            _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
+
+    def test_sum_with_scalar(self):
+        """Test the __sum__ dunder method with a scalar value."""
+        sum_op = 5 + qml.PauliX(0)
+        final_op = qml.ops.Sum(qml.ops.s_prod(5, qml.Identity(0)), qml.PauliX(0))
+        # TODO: Use qml.equal when fixed.
+        assert np.allclose(sum_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_dunder_methods(self):
+        """Test the __sub__, __rsub__ and __neg__ dunder methods."""
+        sum_op = qml.PauliX(0) - 5
+        sum_op_2 = -(5 - qml.PauliX(0))
+        assert np.allclose(a=sum_op.matrix(), b=np.array([[-5, 1], [1, -5]]), rtol=0)
+        assert np.allclose(a=sum_op.matrix(), b=sum_op_2.matrix(), rtol=0)
+        neg_op = -qml.PauliX(0)
+        assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
 
 
 class TestInverse:
@@ -2017,6 +2041,11 @@ class TestExpandMatrix:
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
+        assert np.allclose(self.base_matrix_2, res)
+
+    def test_no_wire_order_returns_base_matrix(self):
+        """Test the case where the wire_order is None it returns the original matrix"""
+        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2])
         assert np.allclose(self.base_matrix_2, res)
 
     def test_no_expansion_broadcasted(self):

@@ -31,12 +31,12 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
-import pennylane.hf
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
+from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
@@ -56,7 +56,7 @@ from pennylane.measurements import (
     mutual_info,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl
+from pennylane.ops import adjoint, ctrl, op_sum
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *

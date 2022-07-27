@@ -298,15 +298,16 @@ class TestPassthruIntegration:
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
-    def test_state_differentiability(self, decorator, interface, tol):
+    def test_state_differentiability(self, decorator, interface, wires, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = qml.device("default.mixed", wires=wires)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(a):
-            qml.RY(a, wires=0)
+            qml.RY(a, wires=wires[0])
             return qml.state()
 
         a = tf.Variable(0.54, trainable=True)
@@ -343,16 +344,17 @@ class TestPassthruIntegration:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
-    def test_density_matrix_differentiability(self, decorator, interface, tol):
+    @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
+    def test_density_matrix_differentiability(self, decorator, interface, wires, tol):
         """Test that the density matrix can be differentiated"""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device("default.mixed", wires=wires)
 
         @decorator
         @qml.qnode(dev, diff_method="backprop", interface=interface)
         def circuit(a):
-            qml.RY(a, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.density_matrix(wires=1)
+            qml.RY(a, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[1]])
+            return qml.density_matrix(wires=wires[1])
 
         a = tf.Variable(0.54, trainable=True)
 
@@ -468,6 +470,7 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, decorator, interface, x, shift):
@@ -677,3 +680,28 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
+
+    def test_tf_function_channel_ops(self):
+        """Test that tf.function works for a QNode with channel ops"""
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(p):
+            qml.AmplitudeDamping(p, wires=0)
+            qml.GeneralizedAmplitudeDamping(p, p, wires=0)
+            qml.PhaseDamping(p, wires=0)
+            qml.DepolarizingChannel(p, wires=0)
+            qml.BitFlip(p, wires=0)
+            qml.ResetError(p, p, wires=0)
+            qml.PauliError("X", p, wires=0)
+            qml.PhaseFlip(p, wires=0)
+            qml.ThermalRelaxationError(p, p, p, 0.0001, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        vcircuit = tf.function(circuit)
+
+        x = tf.Variable(0.005)
+        res = vcircuit(x)
+
+        # compare results to results of non-decorated circuit
+        assert np.allclose(circuit(x), res)
