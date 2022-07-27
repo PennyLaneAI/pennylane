@@ -400,8 +400,9 @@ class QubitDevice(Device):
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
 
-                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
-                    r = r[0]
+                # This will likely be required:
+                # if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                #     r = r[0]
 
                 if single_measurement:
                     r = r[0] if counts_exist else qml.math.squeeze(r)
@@ -431,8 +432,9 @@ class QubitDevice(Device):
                     else:
                         results.append(r.T)
 
-                elif isinstance(r, (list, tuple)):
+                else:
                     if single_measurement and counts_exist:
+                        # Results are nested in a sequence
                         results.extend(r)
                     elif not single_measurement and shot_tuple.copies > 1:
                         # Some samples may still be transposed, fix their shapes
@@ -447,8 +449,6 @@ class QubitDevice(Device):
                         results.extend(r)
                     else:
                         results.append(r)
-                else:
-                    results.append(r)
 
                 s1 = s2
 
@@ -461,7 +461,7 @@ class QubitDevice(Device):
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results[0], dtype=self.C_DTYPE)
-                else:
+                elif not circuit.measurements[0].return_type is qml.measurements.Counts:
                     # All other measurements are real
                     results = self._asarray(results[0], dtype=self.R_DTYPE)
 

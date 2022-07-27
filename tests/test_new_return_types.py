@@ -193,6 +193,28 @@ class TestSingleReturnExecute:
 
     # Samples and counts
 
+    @pytest.mark.parametrize(
+        "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
+    )
+    # TODO: need to unwrap the result, it is a list containing a dict atm
+    @pytest.mark.xfail
+    def test_counts(self, measurement):
+        """Test the counts measurement."""
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode.construct([0.5], {})
+
+        res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
+
+        assert isinstance(res[0], dict)
+        assert sum(res[0].values()) == shots
+
 
 # op1, wires1, op2, wires2
 multi_probs_data = [
