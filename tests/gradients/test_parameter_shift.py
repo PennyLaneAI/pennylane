@@ -405,7 +405,8 @@ class TestParamShift:
         tapes, fn = qml.gradients.param_shift(tape1)
         j1 = fn(dev.batch_execute(tapes))
 
-        # We should only be executing the device to differentiate 1 parameter
+        # We should only be executing the device twice: Two shifted evaluations to differentiate
+        # one parameter overall, as the other parameter does not impact the returned measurement.
         assert dev.num_executions == 2
 
         tapes, fn = qml.gradients.param_shift(tape2)
