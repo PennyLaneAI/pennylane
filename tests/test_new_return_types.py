@@ -719,6 +719,8 @@ class TestMixMeasurementsShotVectorAutograd:
         for meas_res in res[0]:
             for i, r in enumerate(meas_res):
                 if i % 2 == 0:
+
+                    # Scalar-val meas
                     assert r.shape == ()
                 else:
                     assert r.shape == (2**2,)
@@ -731,6 +733,9 @@ class TestMixMeasurementsShotVectorAutograd:
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -749,17 +754,14 @@ class TestMixMeasurementsShotVectorAutograd:
         assert all(isinstance(r, tuple) for r in res[0])
         assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
 
-        idx = 0
-        for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    if i % 2 == 0 or shot_tuple.shots == 1:
-                        obs_provided = meas2.obs is not None
-                        expected_shape = ()
-                        assert r.shape == expected_shape
-                    else:
-                        assert r.shape == (shot_tuple.shots,)
-                idx += 1
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                if i % 2 == 0 or shots == 1:
+                    obs_provided = meas2.obs is not None
+                    expected_shape = ()
+                    assert r.shape == expected_shape
+                else:
+                    assert r.shape == (shots,)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_no_obs_multi)
     @pytest.mark.xfail
@@ -800,6 +802,9 @@ class TestMixMeasurementsShotVectorAutograd:
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -821,26 +826,27 @@ class TestMixMeasurementsShotVectorAutograd:
             assert isinstance(r[0], np.ndarray)
             assert isinstance(r[1], dict)
 
-        idx = 0
         expected_outcomes = {-1, 1}
-        for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    if i % 2 == 0:
-                        obs_provided = meas2.obs is not None
-                        expected_shape = ()
-                        assert r.shape == expected_shape
-                    else:
-                        # Samples are either -1 or 1
-                        assert set(r.keys()).issubset(expected_outcomes)
-                        assert sum(r.values()) == shot_tuple.shots
-                idx += 1
+
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                if i % 2 == 0:
+                    obs_provided = meas2.obs is not None
+                    expected_shape = ()
+                    assert r.shape == expected_shape
+                else:
+                    # Samples are either -1 or 1
+                    assert set(r.keys()).issubset(expected_outcomes)
+                    assert sum(r.values()) == shots
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
     @pytest.mark.xfail
     def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis counts measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -859,23 +865,23 @@ class TestMixMeasurementsShotVectorAutograd:
         assert all(isinstance(r, tuple) for r in res[0])
         assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
 
-        idx = 0
-        for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    expected_sample_shape_item = len(meas2.wires)
-                    if i % 2 == 0 or shot_tuple.shots == 1:
-                        obs_provided = meas2.obs is not None
-                        expected_shape = ()
-                        assert r.shape == expected_shape
-                    else:
-                        assert r.shape == (shot_tuple.shots,)
-                idx += 1
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                expected_sample_shape_item = len(meas2.wires)
+                if i % 2 == 0 or shots == 1:
+                    obs_provided = meas2.obs is not None
+                    expected_shape = ()
+                    assert r.shape == expected_shape
+                else:
+                    assert r.shape == (shots,)
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_sample(self, shot_vector, sample_obs):
         """Test probs and sample measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -902,29 +908,29 @@ class TestMixMeasurementsShotVectorAutograd:
         assert all(isinstance(r, tuple) for r in res[0])
         assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
 
-        idx = 0
-        for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    expected_sample_shape_item = len(meas2_wires)
-                    if i % 2 == 0:
-                        expected_shape = (len(meas1_wires) ** 2,)
-                        assert r.shape == expected_shape
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                expected_sample_shape_item = len(meas2_wires)
+                if i % 2 == 0:
+                    expected_shape = (len(meas1_wires) ** 2,)
+                    assert r.shape == expected_shape
 
-                        # Probs add up to 1
-                        assert np.allclose(sum(r), 1)
+                    # Probs add up to 1
+                    assert np.allclose(sum(r), 1)
+                else:
+                    if shots == 1:
+                        assert r.shape == ()
                     else:
-                        if shot_tuple.shots == 1:
-                            assert r.shape == ()
-                        else:
-                            expected = (shot_tuple.shots,)
-                            assert r.shape == expected
-                idx += 1
+                        expected = (shots,)
+                        assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs):
         """Test probs and counts measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -955,24 +961,18 @@ class TestMixMeasurementsShotVectorAutograd:
         assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
 
         expected_outcomes = {-1, 1} if sample_obs is not None else {"0", "1"}
-        idx = 0
-        for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    if i % 2 == 0:
-                        expected_shape = (len(meas1_wires) ** 2,)
-                        assert r.shape == expected_shape
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                if i % 2 == 0:
+                    expected_shape = (len(meas1_wires) ** 2,)
+                    assert r.shape == expected_shape
 
-                        # Probs add up to 1
-                        assert np.allclose(sum(r), 1)
-                    else:
-                        # Samples are -1 or 1
-                        assert set(r.keys()).issubset(expected_outcomes)
-                        assert sum(r.values()) == shot_tuple.shots
-                idx += 1
-
-    # TODO: refactor tests: can they be shorter?
-    # TODO: reduce the speed of test runs
+                    # Probs add up to 1
+                    assert np.allclose(sum(r), 1)
+                else:
+                    # Samples are -1 or 1
+                    assert set(r.keys()).issubset(expected_outcomes)
+                    assert sum(r.values()) == shots
 
     @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
     @pytest.mark.parametrize("counts_wires", [[4], [3, 5]])
@@ -980,6 +980,9 @@ class TestMixMeasurementsShotVectorAutograd:
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
         dev = qml.device("default.qubit", wires=6, shots=shot_vector)
+        raw_shot_vector = [
+            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
+        ]
 
         @qml.qnode(device=dev)
         def circuit(x):
@@ -1019,23 +1022,17 @@ class TestMixMeasurementsShotVectorAutograd:
         assert all(isinstance(measurement_res[0], np.ndarray) for measurement_res in res[0])
         assert all(isinstance(measurement_res[1], dict) for measurement_res in res[0])
 
-        idx = 0
-        for shot_tuple in dev.shot_vector:
-            for _ in range(shot_tuple.copies):
-                for i, r in enumerate(res[0][idx]):
-                    num_wires = len(sample_wires)
-                    if shot_tuple.shots == 1 and i % 2 == 0:
-                        expected_shape = () if num_wires == 1 else (num_wires,)
-                        assert r.shape == expected_shape
-                    elif i % 2 == 0:
-                        expected_shape = (
-                            (shot_tuple.shots,) if num_wires == 1 else (shot_tuple.shots, num_wires)
-                        )
-                        assert r.shape == expected_shape
-                    else:
-                        assert isinstance(r, dict)
-
-                idx += 1
+        for idx, shots in enumerate(raw_shot_vector):
+            for i, r in enumerate(res[0][idx]):
+                num_wires = len(sample_wires)
+                if shots == 1 and i % 2 == 0:
+                    expected_shape = () if num_wires == 1 else (num_wires,)
+                    assert r.shape == expected_shape
+                elif i % 2 == 0:
+                    expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
+                    assert r.shape == expected_shape
+                else:
+                    assert isinstance(r, dict)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
     def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
@@ -1070,14 +1067,18 @@ class TestMixMeasurementsShotVectorAutograd:
         for res_idx, meas_res in enumerate(res[0]):
             for i, r in enumerate(meas_res):
                 num_meas = i % 4
-                if num_meas == 0:
+                expval_or_var = num_meas == 0
+                probs = num_meas == 1
+                sample = num_meas == 2
+
+                if expval_or_var:
                     assert r.shape == ()
-                elif num_meas == 1:
+                elif probs:
                     assert r.shape == (2**2,)
 
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
-                elif num_meas == 2:
+                elif sample:
                     shots = raw_shot_vector[res_idx]
                     if shots == 1:
                         assert r.shape == ()
@@ -1085,4 +1086,5 @@ class TestMixMeasurementsShotVectorAutograd:
                         expected = (shots,)
                         assert r.shape == expected
                 else:
+                    # Return is Counts
                     assert isinstance(r, dict)
