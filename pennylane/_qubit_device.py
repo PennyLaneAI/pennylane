@@ -461,7 +461,9 @@ class QubitDevice(Device):
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results[0], dtype=self.C_DTYPE)
-                elif not circuit.measurements[0].return_type is qml.measurements.Counts:
+                elif circuit.measurements[0].return_type is qml.measurements.Counts:
+                    results = results[0]
+                else:
                     # All other measurements are real
                     results = self._asarray(results[0], dtype=self.R_DTYPE)
 
