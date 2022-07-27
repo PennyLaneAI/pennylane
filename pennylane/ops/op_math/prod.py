@@ -15,8 +15,8 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
-from functools import reduce
-import itertools
+from functools import reduce, cached_property
+from itertools import combinations
 
 import numpy as np
 
@@ -36,25 +36,6 @@ def _prod(mats_gen):
     return res
 
 
-def commutator(op1, op2):
-    """Compute the commutator of the given ops"""
-    return
-
-def check_hermitian():
-    return
-
-
-def wires_partial_overlap(operations):
-    r"""Tests whether any two operations in the Tensor have partially
-    overlapping wires.
-    """
-    for o1, o2 in itertools.combinations(operations, r=2):
-        shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
-        if shared:
-            return True
-    return False
-
-
 class Prod(Operator):
     """Arithmetic operator subclass representing the scalar product of an
     operator with the given scalar."""
@@ -62,14 +43,16 @@ class Prod(Operator):
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(self, *operators, do_queue=True, id=None):
+        """Initialize a Prod instance """
+        self._id = id
+        self.queue_idx = None
 
         self.operators = operators
+        self.data = [s.parameters for s in self.operators]
+        self._wires = qml.wires.Wires.all_wires([s.wires for s in self.operators])
 
-        combined_wires = qml.wires.Wires.all_wires([op.wires for op in operators])
-        combined_params = [op.parameters for op in operators]
-        super().__init__(
-            *combined_params, wires=combined_wires, do_queue=do_queue, id=id
-        )
+        if do_queue:
+            self.queue()
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -103,12 +86,16 @@ class Prod(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    @property
-    def is_hermitian(self, check=False):
-        """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-
-
-        raise qml.operation.IsHermitianUndefinedError
+    @cached_property
+    def is_hermitian(self, run_check=True):
+        """check if the product operator is hermitian"""
+        if run_check:
+            mat = self.matrix()
+            adj_mat = qml.math.conjugate(qml.math.transpose(mat))
+            if np.allclose(mat, adj_mat):
+                return True
+            return False
+        raise qml.operation.IsHermitianUndefinedErrors
 
     def decomposition(self):
         """decomposition of the operator into a product of operators. """
@@ -178,7 +165,7 @@ class Prod(Operator):
         if wire_order is None:
             wire_order = self.wires
 
-        return self._prod(matrix_gen(self.operators, wire_order=wire_order))
+        return _prod(matrix_gen(self.operators, wire_order=wire_order))
 
     @property
     def _queue_category(self):  # don't queue Prod instances because it may not be unitary!
