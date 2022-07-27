@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops.op_math.controlled_class import ControlledOp
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
 from pennylane.templates.layers import simplified_two_design
 
@@ -368,6 +369,18 @@ class TestSimplify:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_controlled_operation(self):
+        """Test simplify method with controlled operation."""
+        pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=0, id=3), z=3)
+        final_op = ControlledOp(Pow(base=qml.PauliX(0), z=3), control_wires=0, id=3)
+        simplified_op = pow_op.simplify()
+
+        assert isinstance(simplified_op, ControlledOp)
+        assert final_op.id == simplified_op.id
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
 
 class TestMiscMethods:

@@ -27,6 +27,7 @@ from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
+
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
     """Symbolic operator denoting a controlled operator.
@@ -380,4 +381,19 @@ class ControlledOp(Controlled, operation.Operation):
             f"Operation {self.name} does not have parameter frequencies defined, "
             "and parameter frequencies can not be computed via generator for more than one"
             "parameter."
+        )
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + self.base.arithmetic_depth
+
+    def simplify(self, depth=-1) -> "ControlledOp":
+        if depth == 0:
+            return self
+        return ControlledOp(
+            base=self.base.simplify(depth=depth),
+            control_wires=self.control_wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
+            id=self.id,
         )
