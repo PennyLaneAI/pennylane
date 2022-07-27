@@ -387,6 +387,23 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Breaking changes</h3>
 
+* Custom devices inheriting from `DefaultQubit` can break due to the introduction
+  of parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+
+  A custom device should only break if all three following statements hold simultaneously:
+
+  1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
+  2. The device implements custom methods in the simulation pipeline that are incompatible
+     with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
+  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+     dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
+     (or both).
+
+  Typically, the easiest fix will be to change the `capabilities["supports_broadcasting"]` flag
+  to `False` and/or to include a call to `broadcast_expand` in `CustomDevice.batch_transform`,
+  similar to how `Device.batch_transform` calls it.
+
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
   `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
