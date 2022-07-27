@@ -566,7 +566,7 @@ class QubitDevice(Device):
             
             elif obs.return_type is ShadowExpval:
                 results.append(
-                    self.classical_shadow_expval(wires=obs.wires, n_snapshots=self.shots, circuit=circuit, H=obs, k=10)
+                    self.classical_shadow_expval(wires=obs.wires, n_snapshots=self.shots, circuit=circuit, H=obs)
                 )
 
             elif obs.return_type is not None:
@@ -837,8 +837,9 @@ class QubitDevice(Device):
         finally:
             self.shots = n_snapshots
     
-    def classical_shadow_expval(self, wires, n_snapshots, circuit, H, k):
+    def classical_shadow_expval(self, wires, n_snapshots, circuit, H):
         """TODO: docs"""
+        k=10 # fix this for the moment since this is not an argument that typically occurs in measurements
         if circuit is None:
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
@@ -870,6 +871,12 @@ class QubitDevice(Device):
 
             bitstrings, recipes = self._stack([outcomes, recipes]) #self._cast( .. , dtype=np.uint8)
 
+            unitaries = [
+                qml.matrix(qml.Hadamard(0)),
+                qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
+                qml.matrix(qml.Identity(0)),
+            ]
+
             # Generate local snapshots (density matrices)
             zero = np.zeros((2, 2), dtype="complex")
             zero[0, 0] = 1.0
@@ -897,9 +904,9 @@ class QubitDevice(Device):
                     os = np.asarray([qml.matrix(observable)])  # wont work with other interfaces
 
                 means = []
-                step = self.snapshots // k
+                step = len(bitstrings) // k
 
-                for i in range(0, self.snapshots, step):
+                for i in range(0, len(bitstrings), step):
                     # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
                     # res_i^t = tr(rho_i P_i)
                     res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)

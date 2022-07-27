@@ -1011,10 +1011,9 @@ def classical_shadow(wires):
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(Shadow, wires=wires)
 
-def classical_shadow_expval(H, k, wires):
+def classical_shadow_expval(H):
     """TODO: docs"""
-    wires = qml.wires.Wires(wires)
-    return MeasurementProcess(ShadowExpval, wires=wires, H=H, k=k)
+    return MeasurementProcess(ShadowExpval, obs=H)
 
 
 T = TypeVar("T")
