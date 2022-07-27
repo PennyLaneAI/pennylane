@@ -111,15 +111,12 @@ def _execute(
 
     for i, r in enumerate(res):
 
+        if any(m.return_type is qml.measurements.Counts for m in tapes[i].measurements):
+            continue
+
         if isinstance(r, np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
-            try:
-                if isinstance(r[0][0], dict):
-                    # This happens when measurement type is Counts and shot vector is passed
-                    continue
-            except (TypeError, IndexError, KeyError):
-                pass
             r = np.hstack(r) if r.dtype == np.dtype("object") else r
             res[i] = np.tensor(r)
 
