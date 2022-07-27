@@ -11,33 +11,22 @@
   For example, for the circuit
 
   ```python
-  x, y = np.array([0.4, 0.23], requires_grad=True)
+  dev = qml.device("default.qubit", wires=2)
 
-  with qml.tape.QuantumTape() as tape:
+  @qml.qnode(dev)
+  def circuit(x, y):
       qml.RX(x, wires=0)
       qml.CRY(y, wires=[0, 1])
-      qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
 
   we may compute the derivative via
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2)
-  >>> tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
-  >>> len(tapes)
-  2
-  >>> (tapes[0].batch_size, tapes[1].batch_size)
-  (2, 4)
-  ```
-
-  For `broadcast=False` (the default), multiple unbroadcasted tapes are created as before.
-
-  ```pycon
-  >>> tapes, fn = qml.gradients.param_shift(circuit.qtape, broadcast=False)
-  >>> len(tapes)
-  6
-  >>> [t.batch_size for t in tapes]
-  [None, None, None, None, None, None]
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
   ```
 
   Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported

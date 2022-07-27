@@ -649,6 +649,11 @@ def param_shift(
         with multiple return values or for evaluations with shot vectors.
         As the option ``broadcast=True`` adds a broadcasting dimension, it is not compatible
         with circuits that already are broadcasted.
+        Finally, operations with trainable parameters are required to support broadcasting.
+        One way of checking this is the `Attribute` `supports_broadcasting`:
+
+        >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+        True
 
     .. details::
         :title: Usage Details
