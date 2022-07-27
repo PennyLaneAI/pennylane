@@ -4,7 +4,42 @@
 
 <h3>New features since last release</h3>
 
-* `DefaultQubit` devices now natively support parameter broadcasting.
+* The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
+  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
+  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
+
+  For example, for the circuit
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.CRY(y, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  we may compute the derivative via
+
+  ```pycon
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
+  ```
+
+  Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
+  yet and the operations with trainable parameters are required to support broadcasting when using
+  `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
+
+  ```pycon
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+  True
+  ```
+
+* `DefaultQubit` devices now natively support parameter broadcasting
+  and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
   
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
@@ -40,7 +75,7 @@
   >>> circuit(x, y)
   tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
   ```
-  
+
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -351,6 +386,23 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
 
 <h3>Breaking changes</h3>
+
+* Custom devices inheriting from `DefaultQubit` can break due to the introduction
+  of parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+
+  A custom device should only break if all three following statements hold simultaneously:
+
+  1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
+  2. The device implements custom methods in the simulation pipeline that are incompatible
+     with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
+  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+     dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
+     (or both).
+
+  Typically, the easiest fix will be to change the `capabilities["supports_broadcasting"]` flag
+  to `False` and/or to include a call to `broadcast_expand` in `CustomDevice.batch_transform`,
+  similar to how `Device.batch_transform` calls it.
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
   `qml.qchem`.
