@@ -268,6 +268,10 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Improvements</h3>
 
+* A small performance upgrade to the `compute_matrix` method
+  of broadcastable parametric operations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
 * Jacobians are cached with the Autograd interface when using the
   parameter-shift rule.
   [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
