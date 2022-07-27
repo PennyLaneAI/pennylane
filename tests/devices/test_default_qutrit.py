@@ -228,7 +228,7 @@ class TestExpval:
     """Tests that expectation values are properly calculated or that the proper errors are raised."""
 
     @pytest.mark.parametrize(
-        "observable,state,expected_output,mat",
+        "operation,input,expected_output,par",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
@@ -366,7 +366,7 @@ class TestVar:
     """Tests that variances are properly calculated."""
 
     @pytest.mark.parametrize(
-        "observable,state,expected_output,mat",
+        "operation,input,expected_output,par",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
