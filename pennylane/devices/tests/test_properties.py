@@ -269,6 +269,7 @@ class TestCapabilities:
     def test_supports_broadcasting(self, device_kwargs, mocker):
         """Tests that the device reports correctly whether it supports parameter broadcasting
         and that it can execute broadcasted tapes in any case."""
+        # pylint: disable=protected-access
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
