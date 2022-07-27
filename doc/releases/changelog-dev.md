@@ -4,44 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
-  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
-  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
-
-  For example, for the circuit
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(x, y):
-      qml.RX(x, wires=0)
-      qml.CRY(y, wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-  ```
-
-  we may compute the derivative via
-
-  ```pycon
-  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
-  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
-  (tensor(-0.38429095, requires_grad=True),
-   tensor(0.00899816, requires_grad=True))
-  ```
-
-  Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
-  yet and the operations with trainable parameters are required to support broadcasting when using
-  `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
-
-  ```pycon
-  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
-  True
-  ```
-
-* `DefaultQubit` devices now natively support parameter broadcasting
-  and `qml.gradients.param_shift` allows to make use of broadcasting.
+* `DefaultQubit` devices now natively support parameter broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
+
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
   devices now are able to directly execute broadcasted circuits, providing
   a faster way of executing the same circuit at varied parameter positions.
@@ -456,7 +421,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 * Allow hamiltonians with grouped observables to be measured on devices
   which were transformed using `qml.transform.insert()`.
-  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857) 
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 <h3>Contributors</h3>
 
