@@ -591,7 +591,7 @@ class TestParamShiftBroadcast:
     def test_grad_recipe_parameter_dependent(self, monkeypatch):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly within the parameter
-        shift rule. Also tests that grad_recipes supersedes paramter_frequencies.
+        shift rule. Also tests that grad_recipes supersedes parameter_frequencies.
         """
 
         def fail(*args, **kwargs):

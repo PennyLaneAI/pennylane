@@ -746,7 +746,7 @@ def param_shift(
     if broadcast and len(tape.measurements) > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {tape.measurements}"
+            f"Set broadcast to False instead. The tape measurements are {tape.measurements}."
         )
 
     if argnum is None and not tape.trainable_params:
