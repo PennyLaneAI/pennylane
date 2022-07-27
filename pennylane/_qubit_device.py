@@ -407,9 +407,13 @@ class QubitDevice(Device):
         return results
 
     def shot_vec_statistics(self, circuit):
-        """Computes statistics for a shot vector.
+        """Process measurement results from circuit execution using a device
+        with a shot vector and return statistics.
 
-        This method is used by execute_new.
+        This is an auxiliary method of execute_new and uses statistics_new.
+
+        When using shot vectors, measurement results for each item of the shot
+        vector are contained in a tuple.
 
         Args:
             circuit (~.tapes.QuantumTape): circuit to execute on the device

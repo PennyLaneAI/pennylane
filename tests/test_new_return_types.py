@@ -1172,3 +1172,67 @@ class TestMixMeasurementsShotVector:
                 else:
                     # Return is Counts
                     assert isinstance(r, dict)
+
+
+class TestQubitDeviceNewUnits:
+    """Further unit tests for some new methods of QubitDevice."""
+
+    def test_unsupported_observable_return_type_raise_error(self):
+        """Check that an error is raised if the return type of an observable is unsupported"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliX(wires=0)
+            qml.measurements.MeasurementProcess(
+                return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
+            )
+
+        dev = qml.device("default.qubit", wires=3)
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+        ):
+            qml.execute_new(tapes=[tape], device=dev, gradient_fn=None)
+
+    def test_state_return_with_other_types(self):
+        """Test that an exception is raised when a state is returned along with another return
+        type"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliX(wires=0)
+            qml.state()
+            qml.expval(qml.PauliZ(1))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The state or density matrix cannot be returned in combination with other return types",
+        ):
+            qml.execute_new(tapes=[tape], device=dev, gradient_fn=None)
+
+    def test_entropy_no_custom_wires(self):
+        """Test that entropy cannot be returned with custom wires."""
+
+        dev = qml.device("default.qubit", wires=["a", 1])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliX(wires="a")
+            qml.vn_entropy(wires=["a"])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Returning the Von Neumann entropy is not supported when using custom wire labels",
+        ):
+            qml.execute_new(tapes=[tape], device=dev, gradient_fn=None)
+
+    def test_custom_wire_labels_error(self):
+        """Tests that an error is raised when mutual information is measured
+        with custom wire labels"""
+        dev = qml.device("default.qubit", wires=["a", "b"])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliX(wires="a")
+            qml.mutual_info(wires0=["a"], wires1=["b"])
+
+        msg = "Returning the mutual information is not supported when using custom wire labels"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            qml.execute_new(tapes=[tape], device=dev, gradient_fn=None)
