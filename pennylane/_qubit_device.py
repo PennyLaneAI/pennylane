@@ -415,29 +415,39 @@ class QubitDevice(Device):
                 else:
                     if shot_tuple.copies > 1:
 
-                        # Each item of r has copies length
-                        measurement_group_length = shot_tuple.copies
                         if not counts_exist:
 
                             # r is a nested sequence, contains the results for multiple measurements
+                            # Each item of r has copies length
                             r = [r_.T for r_ in r]
                             r = [
                                 tuple(self._asarray(r_[idx]) for r_ in r)
-                                for idx in range(measurement_group_length)
+                                for idx in range(shot_tuple.copies)
                             ]
                         else:
                             new_r = []
 
                             # Multi-measurements with at least one Counts
                             # First: iterate over each group of measurement results that contain copies many outcomes for a single measurement
-                            for idx in range(measurement_group_length):
+
+                            # Each item of r has copies length
+                            for idx in range(shot_tuple.copies):
                                 result_group = []
 
                                 for idx2, r_ in enumerate(r):
-                                    if circuit.observables[idx2].return_type is Probability:
-                                        # The result has a shape of (num_basis_states, shot_tuple.copies)
-                                        # Extract a single row
-                                        result = r_[:, idx2]
+                                    measurement_proc = circuit.measurements[idx2]
+                                    if measurement_proc.return_type is Probability or (
+                                        measurement_proc.return_type is Sample
+                                        and measurement_proc.obs
+                                    ):
+
+                                        # Here, the result has a shape of (1, num_basis_states, shot_tuple.copies)
+
+                                        # Squeeze -> shape (num_basis_states, shot_tuple.copies)
+                                        r_ = qml.math.squeeze(r_)
+
+                                        # Extract a single row -> shape (num_basis_states,)
+                                        result = r_[:, idx]
                                     else:
                                         result = r_[idx]
 
@@ -450,11 +460,14 @@ class QubitDevice(Device):
 
                             r = new_r
                     else:
+                        # TODO: what if ML framework and not qml.numpy.ndarray
+                        # TODO: refactor r_ name
+
                         r = tuple(
-                            qml.math.squeeze(r_) if isinstance(r_, qml.numpy.ndarray)
+                            qml.math.squeeze(r_).T if isinstance(r_, np.ndarray)
                             # shot_tuple.copies == 1, so we need to unwrap the single element list
                             else r_[0]
-                            for r_ in r
+                            for idx, r_ in enumerate(r)
                         )
 
                 if isinstance(r, qml.numpy.ndarray):
@@ -497,7 +510,7 @@ class QubitDevice(Device):
 
                 s1 = s2
 
-            results = tuple(r for r in results)
+            results = tuple(results)
 
         else:
             results = self.statistics_new(circuit.observables)
@@ -1381,11 +1394,12 @@ class QubitDevice(Device):
                 for bin_sample in samples.reshape(shape)
             ]
 
-        return (
+        res = (
             samples.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
+        return res
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
