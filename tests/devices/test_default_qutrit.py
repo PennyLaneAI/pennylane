@@ -71,10 +71,6 @@ U_tadd = np.array(
 )
 
 
-def include_inverses_with_test_data(test_data):
-    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
-
-
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
