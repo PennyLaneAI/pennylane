@@ -86,10 +86,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def include_inverses_with_test_data(test_data):
-    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
-
-
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -801,7 +797,7 @@ class TestApply:
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             qubit_device_2_wires.apply([qml.QubitStateVector(np.array([1, -1]), wires=[0])])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires."):
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
 
@@ -1171,7 +1167,7 @@ class TestDefaultQubitIntegration:
             "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
-            "supports_broadcasting": False,
+            "supports_broadcasting": True,
             "passthru_devices": {
                 "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
@@ -2469,6 +2465,27 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
+    def test_apply_unitary_tensordot_double_broadcasting_error(self):
+        """Tests that an error is raised if attempting to use _apply_unitary
+        with a broadcasted matrix and a broadcasted state simultaneously."""
+        dev = qml.device("default.qubit", wires=3)
+
+        class BroadcastedToffoli(qml.operation.Operation):
+            num_wires = 3
+            batch_size = 3
+            num_params = 0
+
+            @staticmethod
+            def compute_matrix(*params, **hyperparams):
+                return np.array([U_toffoli] * 3)
+
+        state = np.eye(8)[:3]
+        wires = qml.wires.Wires([0, 1, 2])
+
+        mat = BroadcastedToffoli(wires=wires).matrix()
+        with pytest.raises(NotImplementedError, match="broadcasted unitary to an already"):
+            dev._apply_unitary(state, mat, wires=wires)
+
     def test_identity_skipped(self, mocker):
         """Test that applying the identity operation does not perform any additional computations."""
         dev = qml.device("default.qubit", wires=1)
@@ -2531,68 +2548,33 @@ class TestHamiltonianSupport:
             dev.expval(H)
 
 
-class TestBroadcastingSupport:
-    """Tests that the device correctly makes use of ``broadcast_expand`` to
-    execute broadcasted tapes."""
+class TestGetBatchSize:
+    """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
 
-    @pytest.mark.parametrize("x", [0.2, [0.1, 0.6, 0.3], [0.1]])
-    @pytest.mark.parametrize("shots", [None, 100000])
-    def test_with_single_broadcasted_par(self, x, shots):
-        """Test that broadcasting on a circuit with a
-        single parametrized operation works."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    def test_batch_size_None(self, shape):
+        """Test that a ``batch_size=None`` is reported correctly."""
+        dev = qml.device("default.qubit", wires=1)
+        tensor0 = np.ones(shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
+        tensor1 = np.arange(np.prod(shape)).reshape(shape)
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) is None
 
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-            # return qml.expval(qml.Hamiltonian([0.3], [qml.PauliZ(0)]))
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_batch_size_int(self, shape, batch_size):
+        """Test that an integral ``batch_size`` is reported correctly."""
+        dev = qml.device("default.qubit", wires=1)
+        full_shape = (batch_size,) + shape
+        tensor0 = np.ones(full_shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
+        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
 
-        out = circuit(np.array(x))
-
-        assert circuit.device.num_executions == (1 if isinstance(x, float) else len(x))
-        tol = 1e-10 if shots is None else 1e-2
-        assert qml.math.allclose(out, qml.math.cos(x), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
-    @pytest.mark.parametrize("shots", [None, 1000000])
-    def test_with_multiple_pars(self, x, y, shots):
-        """Test that broadcasting on a circuit with a
-        single parametrized operation works."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=1)
-            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-
-        out = circuit(x, y)
-        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)]).T
-
-        assert circuit.device.num_executions == len(y)
-        tol = 1e-10 if shots is None else 1e-2
-        assert qml.math.allclose(out, expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
-    @pytest.mark.parametrize("shots", [None, 1000000])
-    def test_with_Hamiltonian(self, x, y, shots):
-        """Test that broadcasting on a circuit with a
-        single parametrized operation works."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
-
-        H = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
-        H.compute_grouping()
-
-        @qml.qnode(dev)
-        def circuit(x, y):
-            qml.RX(x, wires=0)
-            qml.RX(y, wires=1)
-            return qml.expval(H)
-
-        out = circuit(x, y)
-        expected = 0.3 * qml.math.cos(x) * qml.math.ones_like(y) - 0.9 * qml.math.sin(y)
-
-        assert circuit.device.num_executions == len(y)
-        tol = 1e-10 if shots is None else 1e-2
-        assert qml.math.allclose(out, expected, atol=tol, rtol=0)
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
+    def test_invalid_tensor(self):
+        """Test that an error is raised if a tensor is provided that does not
+        have a proper shape/ndim."""
+        dev = qml.device("default.qubit", wires=1)
+        with pytest.raises(ValueError, match="could not broadcast"):
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
