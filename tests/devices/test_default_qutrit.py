@@ -257,7 +257,7 @@ class TestExpval:
         ],
     )
     def test_expval_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
@@ -268,7 +268,7 @@ class TestExpval:
         )
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(state).reshape([3])
+        qutrit_device_1_wire._state = np.array(input).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.expval(obs)
 
@@ -395,7 +395,7 @@ class TestVar:
         ],
     )
     def test_var_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
@@ -406,7 +406,7 @@ class TestVar:
         )
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(state).reshape([3])
+        qutrit_device_1_wire._state = np.array(input).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.var(obs)
 
@@ -693,6 +693,7 @@ class TestTensorExpval:
         assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
+# TODO: Add tests for tensor non-parametrized observables
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
