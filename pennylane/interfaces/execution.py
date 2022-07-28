@@ -365,12 +365,12 @@ def execute(
             # this is a quick patch that should be cleaned up by later refactoring
             if INTERFACE_MAP[interface] == "jax":
                 stop_at = (
-                    ~qml.operation.is_measurement & qml.operation.has_nopar | qml.operation.has_gen
+                    ~qml.operation.is_measurement & qml.operation.has_nopar
+                    | qml.operation.has_unitary_gen
                 )
             else:
-                stop_at = (
-                    ~qml.operation.is_measurement & ~qml.operation.is_trainable
-                    | qml.operation.has_gen
+                stop_at = ~qml.operation.is_measurement & (
+                    ~qml.operation.is_trainable | qml.operation.has_unitary_gen
                 )
             for i, tape in enumerate(tapes):
                 if any(not stop_at(op) for op in tape.operations):
