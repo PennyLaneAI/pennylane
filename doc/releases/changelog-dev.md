@@ -149,7 +149,6 @@
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
-
 **Operator Arithmetic:**
 
 * Adds the `Controlled` symbolic operator to represent a controlled version of any
@@ -412,6 +411,10 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * Allow hamiltonians with grouped observables to be measured on devices
   which were transformed using `qml.transform.insert()`.
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
+
+* Fixes a bug where `qml.batch_input` raised an error when using a batched operator that was not
+  located at the beginning of the circuit.
+  [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
 <h3>Contributors</h3>
 
