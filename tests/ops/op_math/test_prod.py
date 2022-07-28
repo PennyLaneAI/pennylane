@@ -741,7 +741,7 @@ class TestIntegration:
         weights = qnp.array([0.1], requires_grad=True)
         grad = qml.grad(circuit)(weights)
 
-        true_grad = (1/qnp.sqrt(2)) * (qnp.cos(weights[0] / 2)**2 - qnp.sin(weights[0] / 2)**2)
+        true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):

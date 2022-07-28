@@ -21,7 +21,6 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qml
-from pennylane import math
 from pennylane.operation import Operator, expand_matrix
 
 
@@ -111,16 +110,16 @@ class Prod(Operator):
         """check if the product operator is hermitian"""
         if run_check:
             mat = self.matrix()
-            adj_mat = qml.math.conjugate(qml.math.transpose(mat))
-            if np.allclose(mat, adj_mat):
+            adj_mat = qml.math.conj(qml.math.transpose(mat))
+            if qml.math.allclose(mat, adj_mat):
                 return True
             return False
         raise qml.operation.IsHermitianUndefinedErrors
 
     def decomposition(self):
         """decomposition of the operator into a product of operators. """
-        if qml.queuing.QueuingContext.is_recording():
-            return [apply(op) for op in self.factors]
+        if qml.queuing.QueuingContext.recording():
+            return [qml.apply(op) for op in self.factors]
         return list(self.factors)
 
     @property
