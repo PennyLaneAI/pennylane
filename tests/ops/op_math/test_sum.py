@@ -453,7 +453,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sum_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax
         import jax.numpy as jnp
 
         theta = jnp.array(1.23)

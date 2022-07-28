@@ -16,7 +16,7 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 from copy import copy
-from functools import reduce, cached_property
+from functools import reduce
 
 import numpy as np
 
@@ -30,7 +30,7 @@ def prod(*ops, do_queue=True, id=None):
     return Prod(*ops, do_queue=do_queue, id=id)
 
 
-def _prod(mats_gen):
+def _prod(mats_gen):  # TODO: current multiplication always expands mats, this is not always necessary
     """Multiply matrices together"""
     res = reduce(math.dot, mats_gen)   # Inefficient method (should group by wires like in tensor class)
     return res
@@ -104,8 +104,8 @@ class Prod(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    @cached_property
-    def is_hermitian(self, run_check=True):
+    @property
+    def is_hermitian(self, run_check=True):   # TODO: cache this value, this check is expensive!
         """check if the product operator is hermitian"""
         if run_check:
             mat = self.matrix()
