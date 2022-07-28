@@ -15,7 +15,6 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 from copy import copy
-from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -208,10 +207,9 @@ class TestInitialization:
         assert len(diagonalizing_gates) == 1
         diagonalizing_mat = diagonalizing_gates[0].matrix()
 
-        true_mat = qnp.array([[1.0, 0.0, 0.0, 0.0],
-                              [0.0, 1.0, 0.0, 0.0],
-                              [0.0, 0.0, 1.0, 0.0],
-                              [0.0, 0.0, 0.0, 1.0]])
+        true_mat = qnp.array(
+            [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+        )
 
         assert np.allclose(diagonalizing_mat, true_mat)
 
@@ -254,7 +252,7 @@ class TestMscMethods:
 
         for f1, f2 in zip(prod_op.factors, copied_op.factors):
             assert qml.equal(f1, f2)
-            assert not(f1 is f2)
+            assert not (f1 is f2)
 
 
 class TestMatrix:
@@ -281,18 +279,20 @@ class TestMatrix:
     @pytest.mark.parametrize("op1, mat1", param_ops)
     @pytest.mark.parametrize("op2, mat2", param_ops)
     def test_parametric_ops_two_terms(
-            self,
-            op1: Operator,
-            mat1: np.ndarray,
-            op2: Operator,
-            mat2: np.ndarray,
+        self,
+        op1: Operator,
+        mat1: np.ndarray,
+        op2: Operator,
+        mat2: np.ndarray,
     ):
         """Test matrix method for a product of parametric ops"""
         par1 = tuple(range(op1.num_params))
         par2 = tuple(range(op2.num_params))
         mat1, mat2 = compare_and_expand_mat(mat1(*par1), mat2(*par2))
 
-        prod_op = Prod(op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires)))
+        prod_op = Prod(
+            op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires))
+        )
         prod_mat = prod_op.matrix()
         true_mat = mat1 @ mat2
         assert np.allclose(prod_mat, true_mat)
@@ -401,7 +401,7 @@ class TestMatrix:
             [[0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
         )
 
-        true_mat = qnp.kron(hermitian_mat,  proj_mat)
+        true_mat = qnp.kron(hermitian_mat, proj_mat)
         assert np.allclose(mat, true_mat)
 
     def test_prod_qubit_unitary(self):
@@ -433,9 +433,9 @@ class TestMatrix:
         mat = prod_op.matrix()
 
         true_mat = (
-            jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2)) @
-            jnp.kron(qnp.eye(2), gd.Rotx(theta)) @
-            qnp.eye(4)
+            jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
+            @ jnp.kron(qnp.eye(2), gd.Rotx(theta))
+            @ qnp.eye(4)
         )
         true_mat = jnp.array(true_mat)
 
@@ -457,9 +457,9 @@ class TestMatrix:
         mat = prod_op.matrix()
 
         true_mat = (
-            qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2)) @
-            qnp.kron(qnp.eye(2), gd.Rotx(theta)) @
-            qnp.eye(4)
+            qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
+            @ qnp.kron(qnp.eye(2), gd.Rotx(theta))
+            @ qnp.eye(4)
         )
         true_mat = torch.tensor(true_mat)
         true_mat = torch.tensor(true_mat, dtype=torch.complex64)
@@ -482,9 +482,9 @@ class TestMatrix:
         mat = prod_op.matrix()
 
         true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2)) @
-            qnp.kron(qnp.eye(2), gd.Rotx(1.23)) @
-            qnp.eye(4)
+            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
+            @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
+            @ qnp.eye(4)
         )
         true_mat = tf.Variable(true_mat)
         true_mat = tf.Variable(true_mat, dtype=tf.complex128)
@@ -516,7 +516,10 @@ class TestProperties:
 
         assert prod_op.num_wires == len(true_wires)
 
-    @pytest.mark.parametrize("ops_lst, hermitian_status", [(ops_tup, status) for ops_tup, status in zip(ops, ops_hermitian_status)])
+    @pytest.mark.parametrize(
+        "ops_lst, hermitian_status",
+        [(ops_tup, status) for ops_tup, status in zip(ops, ops_hermitian_status)],
+    )
     def test_is_hermitian(self, ops_lst, hermitian_status):
         """Test is_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
@@ -655,8 +658,8 @@ class TestPrivateProd:
 
     def test_prod_private(self):
         """Test the prod private method generates expected matrices."""
-        i_at_x = qnp.kron(qnp.eye(2), qnp.array([[0., 1.],[1., 0.]]))
-        h_at_i = qnp.kron((1/qnp.sqrt(2)) * qnp.array([[1.,  1.],[1., -1.]]), qnp.eye(2))
+        i_at_x = qnp.kron(qnp.eye(2), qnp.array([[0.0, 1.0], [1.0, 0.0]]))
+        h_at_i = qnp.kron((1 / qnp.sqrt(2)) * qnp.array([[1.0, 1.0], [1.0, -1.0]]), qnp.eye(2))
         mats = (i_at_x, h_at_i, qnp.eye(4))  # I@X @ H@I @ I
         mats_gen = (mat for mat in mats)  # get generator
 

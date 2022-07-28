@@ -21,6 +21,7 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator, expand_matrix
 
 
@@ -29,22 +30,25 @@ def prod(*ops, do_queue=True, id=None):
     return Prod(*ops, do_queue=do_queue, id=id)
 
 
-def _prod(mats_gen):  # TODO: current multiplication always expands mats, this is not always necessary
+def _prod(
+    mats_gen,
+):  # TODO: current multiplication always expands mats, this is not always necessary
     """Multiply matrices together"""
-    res = reduce(math.dot, mats_gen)   # Inefficient method (should group by wires like in tensor class)
+    res = reduce(
+        math.dot, mats_gen
+    )  # Inefficient method (should group by wires like in tensor class)
     return res
 
 
 class Prod(Operator):
     """Arithmetic operator subclass representing the scalar product of an
     operator with the given scalar."""
+
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(
-            self, *factors, do_queue=True, id=None
-    ):  # pylint: disable=super-init-not-called
-        """Initialize a Prod instance """
+    def __init__(self, *factors, do_queue=True, id=None):  # pylint: disable=super-init-not-called
+        """Initialize a Prod instance"""
         self._id = id
         self.queue_idx = None
 
@@ -106,18 +110,18 @@ class Prod(Operator):
         return len(self.wires)
 
     @property
-    def is_hermitian(self, run_check=True):   # TODO: cache this value, this check is expensive!
+    def is_hermitian(self, run_check=True):  # TODO: cache this value, this check is expensive!
         """check if the product operator is hermitian"""
         if run_check:
             mat = self.matrix()
-            adj_mat = qml.math.conj(qml.math.transpose(mat))
-            if qml.math.allclose(mat, adj_mat):
+            adj_mat = math.conj(math.transpose(mat))
+            if math.allclose(mat, adj_mat):
                 return True
             return False
         raise qml.operation.IsHermitianUndefinedErrors
 
     def decomposition(self):
-        """decomposition of the operator into a product of operators. """
+        """decomposition of the operator into a product of operators."""
         if qml.queuing.QueuingContext.recording():
             return [qml.apply(op) for op in self.factors]
         return list(self.factors)
@@ -135,7 +139,7 @@ class Prod(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
         """
         Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
+        Hmat = math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in self._eigs:
             w, U = np.linalg.eigh(Hmat)
