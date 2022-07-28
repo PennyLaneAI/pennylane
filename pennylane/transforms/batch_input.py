@@ -74,19 +74,19 @@ def batch_input(
     """
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
-    # trainable_params = tape.get_parameters()
+    trainable_params = tape.get_parameters()
     all_parameters = sum(
         (op.parameters if op.parameters != [] else [None] for op in tape.operations), []
     )
     argnum_params = [all_parameters[i] for i in argnum]
 
-    # if any(
-    #     any(param is train_param for train_param in trainable_params) for param in argnum_params
-    # ):
-    #     raise ValueError(
-    #         "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
-    #         + "'argnum' have 'requires_grad' set to False."
-    #     )
+    if any(
+        any(param is train_param for train_param in trainable_params) for param in argnum_params
+    ):
+        raise ValueError(
+            "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
+            + "'argnum' have 'requires_grad' set to False."
+        )
 
     if len(np.unique([qml.math.shape(x)[0] for x in argnum_params])) != 1:
         raise ValueError(

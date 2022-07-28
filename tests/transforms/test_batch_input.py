@@ -14,6 +14,8 @@
 """
 Unit tests for the batch inputs transform.
 """
+from importlib.metadata import requires
+
 import pytest
 
 import pennylane as qml
@@ -110,20 +112,22 @@ def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=2)
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev, diff_method=diff_method)
-    def circuit(x):
-        qml.RY(0.1, wires=1)
+    def circuit(input, x):
+        qml.RY(input, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    def cost(x):
-        return np.sum(circuit(x))
-
     batch_size = 3
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
-    res = qml.grad(cost)(x)
-    expected = -np.sin(0.1) * np.sin(x)
+    def cost(input, x):
+        return np.sum(circuit(input, x))
+
+    input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
+    x = np.array(0.1, requires_grad=True)
+
+    res = qml.grad(cost)(input, x)
+    expected = -np.sin(0.1) * sum(np.sin(input))
     assert np.allclose(res, expected, atol=tol, rtol=0)
