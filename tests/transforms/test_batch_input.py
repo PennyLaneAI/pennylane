@@ -66,6 +66,31 @@ def test_value_error():
         res = circuit(input1, input2, weights)
 
 
+def test_batch_input_with_trainable_parameters_raises_error():
+    """Test derivatives when using autograd"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=0)
+    @qml.qnode(dev)
+    def circuit(input):
+        qml.RY(input, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    batch_size = 3
+
+    input = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+
+    with pytest.raises(
+        ValueError,
+        match="Batched inputs must be non-trainable."
+        + " Please make sure that the parameters indexed by "
+        + "'argnum' have 'requires_grad' set to False.",
+    ):
+        circuit(input)
+
+
 def test_mottonenstate_preparation(mocker):
     """Test that batching works for MottonenStatePreparation"""
     dev = qml.device("default.qubit", wires=3)
