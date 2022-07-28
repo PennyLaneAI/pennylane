@@ -14,8 +14,6 @@
 """
 Unit tests for the batch inputs transform.
 """
-from importlib.metadata import requires
-
 import pytest
 
 import pennylane as qml
