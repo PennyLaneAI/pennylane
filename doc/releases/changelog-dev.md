@@ -4,6 +4,43 @@
 
 <h3>New features since last release</h3>
 
+* `DefaultQubit` devices now natively support parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
+  devices now are able to directly execute broadcasted circuits, providing
+  a faster way of executing the same circuit at varied parameter positions.
+
+  Given a standard `QNode`,
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  we can call it with broadcasted parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
+  >>> circuit(x, y)
+  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
+  ```
+
+  It's also possible to broadcast only some parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array(0.23, requires_grad=True)
+  >>> circuit(x, y)
+  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+  
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -175,6 +212,24 @@
   RZ**2(1.0, wires=[0])
   ```
 
+* Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
+  ```
+
+  Added `__neg__` and `__sub__` dunder methods to the `qml.operation.Operator` class so that users
+  can negate and substract operators more naturally.
+
+  ```pycon
+  >>> -(-qml.PauliZ(0) + qml.PauliX(0)).matrix()
+  array([[ 1, -1],
+        [-1, -1]])
+  ```
+
 * A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
@@ -225,12 +280,17 @@ and `SProd` operators so that users can reduce the depth of nested operators.
 
 <h3>Improvements</h3>
 
+* A small performance upgrade to the `compute_matrix` method
+  of broadcastable parametric operations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
 * Jacobians are cached with the Autograd interface when using the
   parameter-shift rule.
   [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
 
 * Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
 
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
@@ -262,8 +322,7 @@ and `SProd` operators so that users can reduce the depth of nested operators.
   ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
   >>> result = circuit()
   >>> print(result)
-  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
-   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
@@ -356,6 +415,9 @@ and `SProd` operators so that users can reduce the depth of nested operators.
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* Fix the ability to return custom objects as the expectation value of a QNode with the Autograd interface.
+  [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
+
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
@@ -367,6 +429,6 @@ and `SProd` operators so that users can reduce the depth of nested operators.
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
+Samuel Banning, Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
 Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
 Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
