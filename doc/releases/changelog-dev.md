@@ -17,6 +17,7 @@
   [(#2746)](https://github.com/PennyLaneAI/pennylane/pull/2746)
   [(#2796)](https://github.com/PennyLaneAI/pennylane/pull/2796)
   [(#2797)](https://github.com/PennyLaneAI/pennylane/pull/2797)
+  [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
   The resource estimation algorithms are implemented as classes inherited from the `Operation`
