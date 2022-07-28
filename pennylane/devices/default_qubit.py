@@ -896,7 +896,10 @@ class DefaultQubit(QubitDevice):
         n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
-        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        #recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        rng = np.random.RandomState(2)
+        recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+
         obs_list = self._stack(
             [
                 qml.PauliX.compute_matrix(),
