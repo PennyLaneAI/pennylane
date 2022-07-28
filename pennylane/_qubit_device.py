@@ -825,7 +825,7 @@ class QubitDevice(Device):
                 ]
 
                 self.reset()
-                self.apply(circuit.operations, rotations=circuit.diagonalizating_gates + rotations)
+                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
 
                 outcomes[t] = self.generate_samples()[0]
 
