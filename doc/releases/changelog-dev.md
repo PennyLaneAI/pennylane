@@ -352,6 +352,11 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Improvements</h3>
 
+* The efficiency of the Hartree-Fock workflow is improved by removing the repetitive basis set
+  normalisation steps and modifying how the permutational symmetries are applied to avoid repetitive
+  electron repulsion integral calculations.
+  [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
+
 * The coefficients of the non-differentiable molecular Hamiltonians generated with openfermion have
   `requires_grad = False` by default.
   [(#2865)](https://github.com/PennyLaneAI/pennylane/pull/2865)
