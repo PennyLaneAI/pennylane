@@ -14,19 +14,20 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, deque, defaultdict
 import contextlib
 import copy
+
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter, defaultdict, deque
 from threading import RLock
+from typing import List
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.measurements import Sample
+from pennylane.operation import DecompositionUndefinedError, Operation
+from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 
 from .unwrap import UnwrapTape
-
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -139,7 +140,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     if stop_at is None:
         # by default expand all objects
-        stop_at = lambda obj: False
+        def stop_at(obj):  # pylint: disable=unused-argument
+            return False
 
     new_tape = QuantumTape()
 
@@ -420,7 +422,7 @@ class QuantumTape(AnnotatedQueue):
         """
         if QueuingContext.active_context() is not self:
             raise QueuingError(
-                "Cannot stop recording requested tape " "as it is not currently recording."
+                "Cannot stop recording requested tape as it is not currently recording."
             )
 
         active_contexts = QueuingContext._active_contexts
@@ -521,10 +523,9 @@ class QuantumTape(AnnotatedQueue):
             repeated_wires = {w for w in obs_wires if c[w] > 1}
 
             for i, m in enumerate(self.measurements):
-                if m.obs is not None:
-                    if len(set(m.wires) & repeated_wires) > 0:
-                        self._obs_sharing_wires.append(m.obs)
-                        self._obs_sharing_wires_id.append(i)
+                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
+                    self._obs_sharing_wires.append(m.obs)
+                    self._obs_sharing_wires_id.append(i)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -1052,10 +1053,10 @@ class QuantumTape(AnnotatedQueue):
         elif ret_type == qml.measurements.Sample:
             shape = []
             for shot_val in device.shot_vector:
+                shots = shot_val.shots
                 for _ in range(shot_val.copies):
-                    shots = shot_val.shots
                     if shots != 1:
-                        shape.append(tuple([shots, len(mps)]))
+                        shape.append((shots, len(mps)))
                     else:
                         shape.append((len(mps),))
         return shape
@@ -1106,7 +1107,7 @@ class QuantumTape(AnnotatedQueue):
         if len(self._measurements) == 1:
             output_shape = self._single_measurement_shape(self._measurements[0], device)
         else:
-            num_measurements = len(set(meas.return_type for meas in self._measurements))
+            num_measurements = len({meas.return_type for meas in self._measurements})
             if num_measurements == 1:
                 output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
@@ -1149,21 +1150,23 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.numeric_type
             complex
         """
-        measurement_types = set(meas.return_type for meas in self._measurements)
+        measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
             raise TapeError(
                 "Getting the numeric type of a tape that contains multiple types of measurements is unsupported."
             )
 
         if list(measurement_types)[0] == qml.measurements.Sample:
-
-            for observable in self._measurements:
-                # Note: if one of the sample measurements contains outputs that
-                # are real, then the entire result will be real
-                if observable.numeric_type is float:
-                    return observable.numeric_type
-
-            return int
+            # Note: if one of the sample measurements contains outputs that
+            # are real, then the entire result will be real
+            return next(
+                (
+                    observable.numeric_type
+                    for observable in self._measurements
+                    if observable.numeric_type is float
+                ),
+                int,
+            )
 
         return self._measurements[0].numeric_type
 
@@ -1201,7 +1204,7 @@ class QuantumTape(AnnotatedQueue):
     # ========================================================
 
     @property
-    def operations(self):
+    def operations(self) -> List[Operation]:
         """Returns the operations on the quantum tape.
 
         Returns:
@@ -1316,11 +1319,8 @@ class QuantumTape(AnnotatedQueue):
         for observable in self.observables:
             # some observables do not have diagonalizing gates,
             # in which case we just don't append any
-            try:
+            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
                 rotation_gates.extend(observable.diagonalizing_gates())
-            except qml.operation.DiagGatesUndefinedError:
-                pass
-
         return rotation_gates
 
     @property
