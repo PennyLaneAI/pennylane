@@ -119,6 +119,8 @@ class Prod(Operator):
 
     def decomposition(self):
         """decomposition of the operator into a product of operators. """
+        if qml.queuing.QueuingContext.is_recording():
+            return [apply(op) for op in self.factors]
         return list(self.factors)
 
     @property
