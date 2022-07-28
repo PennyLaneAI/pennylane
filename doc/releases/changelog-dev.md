@@ -156,6 +156,10 @@
   for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
   `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
   `Operator.has_matrix` property.
+
+  When adjoint differentiation is requested, tapes are now pre-expanded in `qml.execute` so
+  that all trainable operations have a generator. `U1`, `U2`, and `U3` can now be differentiated
+  using adjoint differentiation.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
 * Adds the `Controlled` symbolic operator to represent a controlled version of any

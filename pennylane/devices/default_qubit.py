@@ -21,7 +21,6 @@ simulation of a qubit-based quantum circuit architecture.
 import itertools
 import functools
 from string import ascii_letters as ABC
-import warnings
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -193,13 +192,7 @@ class DefaultQubit(QubitDevice):
                 # pow operations dont work with backprop or adjoint without decomposition
                 # use class name string so we don't need to use isisntance check
                 return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
-            if obj.name in self.observables:  # not all observables have matrices
-                return True
-            with warnings.catch_warnings():  # state prep routines
-                warnings.simplefilter("ignore")
-                if obj.name in self.operations:
-                    return True
-            return False
+            return obj.name in self.observables.union(self.operations)
 
         return qml.BooleanFn(accepts_obj)
 
