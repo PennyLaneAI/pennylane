@@ -800,7 +800,7 @@ class QubitDevice(Device):
 
     def classical_shadow(self, wires, n_snapshots, circuit):
         """TODO: docs"""
-        if circuit is None:
+        if circuit is None:  # pragma: no cover
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
         # slow implementation but works for all devices

@@ -49,6 +49,22 @@ class TestShadowMeasurement:
 
     @pytest.mark.parametrize("wires", wires_list)
     @pytest.mark.parametrize("shots", shots_list)
+    def test_measurement_process_numeric_type(self, wires, shots):
+        """Test that the numeric type of the MeasurementProcess instance is correct"""
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        res = qml.classical_shadow(wires=range(wires))
+        assert res.numeric_type == int
+
+    @pytest.mark.parametrize("wires", wires_list)
+    @pytest.mark.parametrize("shots", shots_list)
+    def test_measurement_process_shape(self, wires, shots):
+        """Test that the shape of the MeasurementProcess instance is correct"""
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        res = qml.classical_shadow(wires=range(wires))
+        assert res.shape(dev) == (2, shots, wires)
+
+    @pytest.mark.parametrize("wires", wires_list)
+    @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("default_impl", [False, True])
     def test_format(self, wires, shots, default_impl):
         """Test that the format of the returned classical shadow
