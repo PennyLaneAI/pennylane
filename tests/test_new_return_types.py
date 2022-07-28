@@ -481,12 +481,13 @@ shot_vectors = [[10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
+@pytest.mark.parametrize("device", devices)
 class TestShotVector:
     """Test the support for executing tapes with single measurements using a
     device with shot vectors."""
 
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
-    def test_scalar(self, shot_vector, measurement):
+    def test_scalar(self, shot_vector, measurement, device):
         """Test a single scalar-valued measurement."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -507,7 +508,7 @@ class TestShotVector:
         assert all(r.shape == () for r in res[0])
 
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, shot_vector, op, wires):
+    def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -530,7 +531,7 @@ class TestShotVector:
 
     @pytest.mark.parametrize("wires", [[0], [2, 0], [1, 0], [2, 0, 1]])
     @pytest.mark.xfail
-    def test_density_matrix(self, shot_vector, wires):
+    def test_density_matrix(self, shot_vector, wires, device):
         """Test a density matrix measurement."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
@@ -552,7 +553,7 @@ class TestShotVector:
         assert all(r.shape == (dim, dim) for r in res[0])
 
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
-    def test_samples(self, shot_vector, measurement):
+    def test_samples(self, shot_vector, measurement, device):
         """Test the sample measurement."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -582,7 +583,7 @@ class TestShotVector:
     @pytest.mark.parametrize(
         "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
     )
-    def test_counts(self, shot_vector, measurement):
+    def test_counts(self, shot_vector, measurement, device):
         """Test the counts measurement."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -604,11 +605,12 @@ class TestShotVector:
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
+@pytest.mark.parametrize("device", devices)
 class TestSameMeasurementShotVector:
     """Test the support for executing tapes with the same type of measurement
     multiple times using a device with shot vectors"""
 
-    def test_scalar(self, shot_vector):
+    def test_scalar(self, shot_vector, device):
         """Test multiple scalar-valued measurements."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -639,7 +641,7 @@ class TestSameMeasurementShotVector:
 
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
-    def test_probs(self, shot_vector, op1, wires1, op2, wires2):
+    def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
         dev = qml.device("default.qubit", wires=4, shots=shot_vector)
 
@@ -667,7 +669,7 @@ class TestSameMeasurementShotVector:
 
     @pytest.mark.parametrize("measurement1", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.sample(qml.PauliX(1)), qml.sample(wires=[1])])
-    def test_samples(self, shot_vector, measurement1, measurement2):
+    def test_samples(self, shot_vector, measurement1, measurement2, device):
         """Test multiple sample measurements."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -697,7 +699,7 @@ class TestSameMeasurementShotVector:
     @pytest.mark.parametrize(
         "measurement2", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
     )
-    def test_counts(self, shot_vector, measurement1, measurement2):
+    def test_counts(self, shot_vector, measurement1, measurement2, device):
         """Test multiple counts measurements."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
 
@@ -784,12 +786,13 @@ scalar_counts_no_obs_multi = [
 
 
 @pytest.mark.parametrize("shot_vector", shot_vectors)
+@pytest.mark.parametrize("device", devices)
 class TestMixMeasurementsShotVector:
     """Test the support for executing tapes with multiple different
     measurements using a device with shot vectors"""
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs(self, shot_vector, meas1, meas2):
+    def test_scalar_probs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and probability measurements"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
@@ -823,7 +826,7 @@ class TestMixMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_multi)
-    def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2):
+    def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
@@ -859,7 +862,7 @@ class TestMixMeasurementsShotVector:
 
     @pytest.mark.parametrize("meas1,meas2", scalar_sample_no_obs_multi)
     @pytest.mark.xfail
-    def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2):
+    def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis sample measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
 
@@ -892,7 +895,7 @@ class TestMixMeasurementsShotVector:
                         assert r.shape == (shot_tuple.shots,)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_multi)
-    def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2):
+    def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
@@ -935,7 +938,7 @@ class TestMixMeasurementsShotVector:
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
     @pytest.mark.xfail
-    def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
+    def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis counts measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         raw_shot_vector = [
@@ -970,7 +973,7 @@ class TestMixMeasurementsShotVector:
                     assert r.shape == (shots,)
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
-    def test_probs_sample(self, shot_vector, sample_obs):
+    def test_probs_sample(self, shot_vector, sample_obs, device):
         """Test probs and sample measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         raw_shot_vector = [
@@ -1019,7 +1022,7 @@ class TestMixMeasurementsShotVector:
                         assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
-    def test_probs_counts(self, shot_vector, sample_obs):
+    def test_probs_counts(self, shot_vector, sample_obs, device):
         """Test probs and counts measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         raw_shot_vector = [
@@ -1070,7 +1073,7 @@ class TestMixMeasurementsShotVector:
 
     @pytest.mark.parametrize("sample_wires", [[1], [0, 2]])
     @pytest.mark.parametrize("counts_wires", [[4], [3, 5]])
-    def test_sample_counts(self, shot_vector, sample_wires, counts_wires):
+    def test_sample_counts(self, shot_vector, sample_wires, counts_wires, device):
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
         dev = qml.device("default.qubit", wires=6, shots=shot_vector)
@@ -1129,7 +1132,7 @@ class TestMixMeasurementsShotVector:
                     assert isinstance(r, dict)
 
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
-    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
+    def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
         dev = qml.device("default.qubit", wires=5, shots=shot_vector)
