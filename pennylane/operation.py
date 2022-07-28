@@ -1211,14 +1211,35 @@ class Operator(abc.ABC):
         return tape
 
     def __add__(self, other):
-        r"""The addition operation between Operator objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, numbers.Number):
+            if other == 0:
+                return self
+            return qml.ops.Sum(  # pylint: disable=no-member
+                self,
+                qml.ops.SProd(  # pylint: disable=no-member
+                    scalar=other, base=qml.Identity(wires=self.wires)
+                ),
+            )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
+
+    def __sub__(self, other):
+        """The substraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, (Operator, numbers.Number)):
+            return self + (-other)
+        raise ValueError(f"Cannot substract {type(other)} from Operator.")
+
+    def __rsub__(self, other):
+        """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self):
+        """The negation operation of an Operator object."""
+        return qml.ops.SProd(scalar=-1, base=self)  # pylint: disable=no-member
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
@@ -1683,8 +1704,6 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
@@ -1710,7 +1729,10 @@ class Observable(Operator):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(other)} from Observable")
+        try:
+            return super().__sub__(other=other)
+        except ValueError as e:
+            raise ValueError(f"Cannot subtract {type(other)} from Observable") from e
 
 
 class Tensor(Observable):
