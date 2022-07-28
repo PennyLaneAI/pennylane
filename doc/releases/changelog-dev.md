@@ -352,6 +352,14 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Improvements</h3>
 
+* The coefficients of the non-differentiable molecular Hamiltonians generated with openfermion have
+  `requires_grad = False` by default.
+  [(#2865)](https://github.com/PennyLaneAI/pennylane/pull/2865)
+
+* A small performance upgrade to the `compute_matrix` method
+  of broadcastable parametric operations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
 * Jacobians are cached with the Autograd interface when using the
   parameter-shift rule.
   [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
@@ -483,18 +491,21 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* Fix the ability to return custom objects as the expectation value of a QNode with the Autograd interface.
+  [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
+
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
 * Allow hamiltonians with grouped observables to be measured on devices
   which were transformed using `qml.transform.insert()`.
-  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857) 
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal,
-Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard,
-Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Modjtaba Shokrian-Zini,
-Antal Száva, David Wierichs, Moritz Willmann
+Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
+Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
+Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni,
+Modjtaba Shokrian-Zini,Antal Száva, David Wierichs, Moritz Willmann
