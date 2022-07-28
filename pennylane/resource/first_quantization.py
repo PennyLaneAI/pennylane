@@ -333,7 +333,7 @@ class FirstQuantization(Operation):
         >>> _cost_qrom(lz)
         21
         """
-        if lz <= 0 or not isinstance(lz, int):
+        if lz <= 0 or not isinstance(lz, (int, numpy.integer)):
             raise ValueError("The sum of the atomic numbers must be a positive integer.")
 
         k_f = np.floor(np.log2(lz) / 2)
