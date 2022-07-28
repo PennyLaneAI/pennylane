@@ -72,6 +72,7 @@ param_ops = (
 )
 
 ops = (
+    (qml.PauliZ(0), qml.Identity(0), qml.PauliX(1)),
     (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
     (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
     (
@@ -82,9 +83,17 @@ ops = (
 )
 
 ops_rep = (
+    "PauliZ(wires=[0]) @ Identity(wires=[0]) @ PauliX(wires=[1])",
     "PauliX(wires=[0]) @ PauliZ(wires=[0]) @ Hadamard(wires=[0])",
     "CNOT(wires=[0, 1]) @ RX(1.23, wires=[1]) @ Identity(wires=[0])",
     "IsingXX(4.56, wires=[2, 3]) @ Toffoli(wires=[1, 2, 3]) @ Rot(0.34, 1.0, 0, wires=[0])",
+)
+
+ops_hermitian_status = (  # computed manually
+    True,
+    True,
+    False,
+    False,
 )
 
 
@@ -251,16 +260,16 @@ class TestMscMethods:
 class TestMatrix:
     """Test matrix-related methods."""
 
-    @pytest.mark.parametrize("op_and_mat1", non_param_ops)
-    @pytest.mark.parametrize("op_and_mat2", non_param_ops)
+    @pytest.mark.parametrize("op1, mat1", non_param_ops)
+    @pytest.mark.parametrize("op2, mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
         self,
-        op_and_mat1: Tuple[Operator, np.ndarray],
-        op_and_mat2: Tuple[Operator, np.ndarray],
+        op1: Operator,
+        mat1: np.ndarray,
+        op2: Operator,
+        mat2: np.ndarray,
     ):
         """Test matrix method for a product of non_parametric ops"""
-        op1, mat1 = op_and_mat1
-        op2, mat2 = op_and_mat2
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
         true_mat = mat1 @ mat2
 
@@ -269,15 +278,16 @@ class TestMatrix:
 
         assert np.allclose(prod_mat, true_mat)
 
-    @pytest.mark.parametrize("op_mat1", param_ops)
-    @pytest.mark.parametrize("op_mat2", param_ops)
+    @pytest.mark.parametrize("op1, mat1", param_ops)
+    @pytest.mark.parametrize("op2, mat2", param_ops)
     def test_parametric_ops_two_terms(
-        self, op_mat1: Tuple[Operator, np.ndarray], op_mat2: Tuple[Operator, np.ndarray]
+            self,
+            op1: Operator,
+            mat1: np.ndarray,
+            op2: Operator,
+            mat2: np.ndarray,
     ):
         """Test matrix method for a product of parametric ops"""
-        op1, mat1 = op_mat1
-        op2, mat2 = op_mat2
-
         par1 = tuple(range(op1.num_params))
         par2 = tuple(range(op2.num_params))
         mat1, mat2 = compare_and_expand_mat(mat1(*par1), mat2(*par2))
@@ -479,275 +489,271 @@ class TestMatrix:
         true_mat = tf.Variable(true_mat)
         true_mat = tf.Variable(true_mat, dtype=tf.complex128)
 
-
         assert isinstance(mat, tf.Tensor)
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
-#
-#
-# class TestProperties:
-#     """Test class properties."""
-#
-#     @pytest.mark.parametrize("ops_lst", ops)
-#     def test_num_params(self, ops_lst):
-#         """Test num_params property updates correctly."""
-#         prod_op = Prod(*ops_lst)
-#         true_num_params = sum(op.num_params for op in ops_lst)
-#
-#         assert prod_op.num_params == true_num_params
-#
-#     @pytest.mark.parametrize("ops_lst", ops)
-#     def test_num_wires(self, ops_lst):
-#         """Test num_wires property updates correctly."""
-#         prod_op = Prod(*ops_lst)
-#         true_wires = set()
-#
-#         for op in ops_lst:
-#             true_wires = true_wires.union(op.wires.toset())
-#
-#         assert prod_op.num_wires == len(true_wires)
-#
-#     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
-#     @pytest.mark.parametrize("ops_lst", ops)
-#     def test_is_hermitian(self, ops_lst, sum_method):
-#         """Test is_hermitian property updates correctly."""
-#         prod_op = sum_method(*ops_lst)
-#         true_hermitian_state = True
-#
-#         for op in ops_lst:
-#             true_hermitian_state = true_hermitian_state and op.is_hermitian
-#
-#         assert prod_op.is_hermitian == true_hermitian_state
-#
-#     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
-#     @pytest.mark.parametrize("ops_lst", ops)
-#     def test_queue_catagory(self, ops_lst, sum_method):
-#         """Test queue_catagory property is always None."""  # currently not supporting queuing Prod
-#         prod_op = sum_method(*ops_lst)
-#         assert prod_op._queue_category is None
-#
-#     def test_eigendecompostion(self):
-#         """Test that the computed Eigenvalues and Eigenvectors are correct."""
-#         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.Identity(wires=1))
-#         eig_decomp = diag_prod_op.eigendecomposition
-#         eig_vecs = eig_decomp["eigvec"]
-#         eig_vals = eig_decomp["eigval"]
-#
-#         true_eigvecs = qnp.tensor(
-#             [
-#                 [0.0, 0.0, 1.0, 0.0],
-#                 [0.0, 0.0, 0.0, 1.0],
-#                 [1.0, 0.0, 0.0, 0.0],
-#                 [0.0, 1.0, 0.0, 0.0],
-#             ]
-#         )
-#
-#         true_eigvals = qnp.tensor([0.0, 0.0, 2.0, 2.0])
-#
-#         assert np.allclose(eig_vals, true_eigvals)
-#         assert np.allclose(eig_vecs, true_eigvecs)
-#
-#     def test_eigen_caching(self):
-#         """Test that the eigendecomposition is stored in cache."""
-#         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.Identity(wires=1))
-#         eig_decomp = diag_prod_op.eigendecomposition
-#
-#         eig_vecs = eig_decomp["eigvec"]
-#         eig_vals = eig_decomp["eigval"]
-#
-#         eigs_cache = diag_prod_op._eigs[
-#             (2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-#         ]
-#         cached_vecs = eigs_cache["eigvec"]
-#         cached_vals = eigs_cache["eigval"]
-#
-#         assert np.allclose(eig_vals, cached_vals)
-#         assert np.allclose(eig_vecs, cached_vecs)
-#
-#     def test_diagonalizing_gates(self):
-#         """Test that the diagonalizing gates are correct."""
-#         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.Identity(wires=1))
-#         diagonalizing_gates = diag_prod_op.diagonalizing_gates()[0].matrix()
-#         true_diagonalizing_gates = qnp.array(
-#             (
-#                 [
-#                     [0.0, 0.0, 1.0, 0.0],
-#                     [0.0, 0.0, 0.0, 1.0],
-#                     [1.0, 0.0, 0.0, 0.0],
-#                     [0.0, 1.0, 0.0, 0.0],
-#                 ]
-#             )
-#         )
-#
-#         assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
-#
-#
-# class TestWrapperFunc:
-#     """Test wrapper function."""
-#
-#     def test_op_sum_top_level(self):
-#         """Test that the top level function constructs an identical instance to one
-#         created using the class."""
-#
-#         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-#         op_id = "prod_op"
-#         do_queue = False
-#
-#         sum_func_op = op_sum(*summands, id=op_id, do_queue=do_queue)
-#         sum_class_op = Prod(*summands, id=op_id, do_queue=do_queue)
-#
-#         assert sum_class_op.summands == sum_func_op.summands
-#         assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
-#         assert sum_class_op.id == sum_func_op.id
-#         assert sum_class_op.wires == sum_func_op.wires
-#         assert sum_class_op.parameters == sum_func_op.parameters
-#
-#
-# class TestPrivateProd:
-#     """Test private _sum() method."""
-#
-#     def test_sum_private(self):
-#         """Test the sum private method generates expected matrices."""
-#         mats_gen = (qnp.eye(2) for _ in range(3))
-#
-#         sum_mat = _sum(mats_gen)
-#         expected_sum_mat = 3 * qnp.eye(2)
-#         assert qnp.allclose(sum_mat, expected_sum_mat)
-#
-#     def test_dtype(self):
-#         """Test dtype keyword arg casts matrix correctly"""
-#         dtype = "complex128"
-#         mats_gen = (qnp.eye(2) for _ in range(3))
-#
-#         sum_mat = _sum(mats_gen, dtype=dtype)
-#         expected_sum_mat = 3 * qnp.eye(2, dtype=dtype)
-#
-#         assert sum_mat.dtype == "complex128"
-#         assert qnp.allclose(sum_mat, expected_sum_mat)
-#
-#     def test_cast_like(self):
-#         """Test cast_like keyword arg casts matrix correctly"""
-#         cast_like = qnp.array(2, dtype="complex128")
-#         mats_gen = (qnp.eye(2) for _ in range(3))
-#
-#         sum_mat = _sum(mats_gen, cast_like=cast_like)
-#         expected_sum_mat = 3 * qnp.eye(2, dtype="complex128")
-#
-#         assert sum_mat.dtype == "complex128"
-#         assert qnp.allclose(sum_mat, expected_sum_mat)
-#
-#
-# class TestIntegration:
-#     """Integration tests for the Prod class."""
-#
-#     def test_measurement_process_expval(self):
-#         """Test Prod class instance in expval measurement process."""
-#         dev = qml.device("default.qubit", wires=2)
-#         prod_op = Prod(qml.PauliX(0), qml.Hadamard(1))
-#
-#         @qml.qnode(dev)
-#         def my_circ():
-#             qml.PauliX(0)
-#             return qml.expval(prod_op)
-#
-#         exp_val = my_circ()
-#         true_exp_val = qnp.array(1 / qnp.sqrt(2))
-#         assert qnp.allclose(exp_val, true_exp_val)
-#
-#     def test_measurement_process_var(self):
-#         """Test Prod class instance in var measurement process."""
-#         dev = qml.device("default.qubit", wires=2)
-#         prod_op = Prod(qml.PauliX(0), qml.Hadamard(1))
-#
-#         @qml.qnode(dev)
-#         def my_circ():
-#             qml.PauliX(0)
-#             return qml.var(prod_op)
-#
-#         var = my_circ()
-#         true_var = qnp.array(3 / 2)
-#         assert qnp.allclose(var, true_var)
-#
-#     # def test_measurement_process_probs(self):
-#     #     dev = qml.device("default.qubit", wires=2)
-#     #     prod_op = Prod(qml.PauliX(0), qml.Hadamard(1))
-#     #
-#     #     @qml.qnode(dev)
-#     #     def my_circ():
-#     #         qml.PauliX(0)
-#     #         return qml.probs(op=prod_op)
-#     #
-#     #     hand_computed_probs = qnp.array([0.573223935039, 0.073223277604, 0.573223935039, 0.073223277604])
-#     #     returned_probs = qnp.array([0.0732233, 0.43898224, 0.06101776, 0.4267767])
-#     #     # TODO[Jay]: which of these two is correct?
-#     #     assert qnp.allclose(my_circ(), returned_probs)
-#
-#     def test_measurement_process_probs(self):
-#         """Test Prod class instance in probs measurement process raises error."""  # currently can't support due to bug
-#         dev = qml.device("default.qubit", wires=2)
-#         prod_op = Prod(qml.PauliX(0), qml.Hadamard(1))
-#
-#         @qml.qnode(dev)
-#         def my_circ():
-#             qml.PauliX(0)
-#             return qml.probs(op=prod_op)
-#
-#         with pytest.raises(
-#             QuantumFunctionError,
-#             match="Symbolic Operations are not supported for " "rotating probabilities yet.",
-#         ):
-#             my_circ()
-#
-#     def test_measurement_process_sample(self):
-#         """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
-#         dev = qml.device("default.qubit", wires=2)
-#         prod_op = Prod(qml.PauliX(0), qml.Hadamard(1))
-#
-#         @qml.qnode(dev)
-#         def my_circ():
-#             qml.PauliX(0)
-#             return qml.sample(op=prod_op)
-#
-#         with pytest.raises(
-#             QuantumFunctionError,
-#             match="Symbolic Operations are not supported for sampling yet.",
-#         ):
-#             my_circ()
-#
-#     def test_differentiable_measurement_process(self):
-#         """Test that the gradient can be computed with a Prod op in the measurement process."""
-#         prod_op = Prod(qml.PauliX(0), qml.PauliZ(1))
-#         dev = qml.device("default.qubit", wires=2)
-#
-#         @qml.qnode(dev, grad_method="best")
-#         def circuit(weights):
-#             qml.RX(weights[0], wires=0)
-#             qml.RY(weights[1], wires=1)
-#             qml.CNOT(wires=[0, 1])
-#             qml.RX(weights[2], wires=1)
-#             return qml.expval(prod_op)
-#
-#         weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
-#         grad = qml.grad(circuit)(weights)
-#
-#         true_grad = qnp.array([-0.09347337, -0.18884787, -0.28818254])
-#         assert qnp.allclose(grad, true_grad)
-#
-#     def test_non_hermitian_op_in_measurement_process(self):
-#         """Test that non-hermitian ops in a measurement process will raise an error."""
-#         wires = [0, 1]
-#         dev = qml.device("default.qubit", wires=wires)
-#         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
-#
-#         @qml.qnode(dev)
-#         def my_circ():
-#             qml.PauliX(0)
-#             return qml.expval(prod_op)
-#
-#         with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
-#             my_circ()
 
 
-# class TestArithmeticOpIntegration:
+class TestProperties:
+    """Test class properties."""
 
-# class TestQueuing:
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_num_params(self, ops_lst):
+        """Test num_params property updates correctly."""
+        prod_op = Prod(*ops_lst)
+        true_num_params = sum(op.num_params for op in ops_lst)
+
+        assert prod_op.num_params == true_num_params
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_num_wires(self, ops_lst):
+        """Test num_wires property updates correctly."""
+        prod_op = Prod(*ops_lst)
+        true_wires = set()
+
+        for op in ops_lst:
+            true_wires = true_wires.union(op.wires.toset())
+
+        assert prod_op.num_wires == len(true_wires)
+
+    @pytest.mark.parametrize("ops_lst, hermitian_status", [(ops_tup, status) for ops_tup, status in zip(ops, ops_hermitian_status)])
+    def test_is_hermitian(self, ops_lst, hermitian_status):
+        """Test is_hermitian property updates correctly."""
+        prod_op = prod(*ops_lst)
+        assert prod_op.is_hermitian == hermitian_status
+
+    @pytest.mark.tf
+    def test_is_hermitian_tf(self):
+        """Test that is_hermitian works when a tf type scalar is provided."""
+        import tensorflow as tf
+
+        theta = tf.Variable(1.23)
+        ops = (
+            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
+            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
+        )
+        true_hermitian_states = (True, False)
+
+        for op, hermitian_state in zip(ops, true_hermitian_states):
+            assert op.is_hermitian == hermitian_state
+
+    @pytest.mark.jax
+    def test_is_hermitian_jax(self):
+        """Test that is_hermitian works when a jax type scalar is provided."""
+        import jax.numpy as jnp
+
+        theta = jnp.array(1.23)
+        ops = (
+            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
+            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
+        )
+        true_hermitian_states = (True, False)
+
+        for op, hermitian_state in zip(ops, true_hermitian_states):
+            assert op.is_hermitian == hermitian_state
+
+    @pytest.mark.torch
+    def test_is_hermitian_torch(self):
+        """Test that is_hermitian works when a torch type scalar is provided."""
+        import torch
+
+        theta = torch.tensor(1.23)
+        ops = (
+            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
+            prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
+        )
+        true_hermitian_states = (True, False)
+
+        for op, hermitian_state in zip(ops, true_hermitian_states):
+            assert op.is_hermitian == hermitian_state
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_queue_catagory(self, ops_lst):
+        """Test queue_catagory property is always None."""  # currently not supporting queuing Prod
+        prod_op = prod(*ops_lst)
+        assert prod_op._queue_category is None
+
+    def test_eigendecompostion(self):
+        """Test that the computed Eigenvalues and Eigenvectors are correct."""
+        diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
+        eig_decomp = diag_prod_op.eigendecomposition
+        eig_vecs = eig_decomp["eigvec"]
+        eig_vals = eig_decomp["eigval"]
+
+        true_eigvecs = qnp.tensor(
+            [  # the eigvecs ordered according to eigvals ordered smallest --> largest
+                [0.0, 0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        )
+
+        true_eigvals = qnp.tensor([-1.0, -1.0, 1.0, 1.0])
+
+        assert np.allclose(eig_vals, true_eigvals)
+        assert np.allclose(eig_vecs, true_eigvecs)
+
+    def test_eigen_caching(self):
+        """Test that the eigendecomposition is stored in cache."""
+        diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
+        eig_decomp = diag_prod_op.eigendecomposition
+
+        eig_vecs = eig_decomp["eigvec"]
+        eig_vals = eig_decomp["eigval"]
+        print(diag_prod_op._eigs)
+        eigs_cache = diag_prod_op._eigs[
+            (1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+        ]
+        cached_vecs = eigs_cache["eigvec"]
+        cached_vals = eigs_cache["eigval"]
+
+        assert np.allclose(eig_vals, cached_vals)
+        assert np.allclose(eig_vecs, cached_vecs)
+
+    def test_diagonalizing_gates(self):
+        """Test that the diagonalizing gates are correct."""
+        diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
+        diagonalizing_gates = diag_prod_op.diagonalizing_gates()[0].matrix()
+        true_diagonalizing_gates = qnp.array(
+            (  # the gates that swap eigvals till they are ordered smallest --> largest
+                [
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            )
+        )
+
+        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+
+
+class TestWrapperFunc:
+    """Test wrapper function."""
+
+    def test_op_prod_top_level(self):
+        """Test that the top level function constructs an identical instance to one
+        created using the class."""
+
+        factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
+        op_id = "prod_op"
+        do_queue = False
+
+        prod_func_op = prod(*factors, id=op_id, do_queue=do_queue)
+        prod_class_op = Prod(*factors, id=op_id, do_queue=do_queue)
+
+        assert prod_class_op.factors == prod_func_op.factors
+        assert np.allclose(prod_class_op.matrix(), prod_func_op.matrix())
+        assert prod_class_op.id == prod_func_op.id
+        assert prod_class_op.wires == prod_func_op.wires
+        assert prod_class_op.parameters == prod_func_op.parameters
+
+
+class TestPrivateProd:
+    """Test private _prod() method."""
+
+    def test_prod_private(self):
+        """Test the prod private method generates expected matrices."""
+        i_at_x = qnp.kron(qnp.eye(2), qnp.array([[0., 1.],[1., 0.]]))
+        h_at_i = qnp.kron((1/qnp.sqrt(2)) * qnp.array([[1.,  1.],[1., -1.]]), qnp.eye(2))
+        mats = (i_at_x, h_at_i, qnp.eye(4))  # I@X @ H@I @ I
+        mats_gen = (mat for mat in mats)  # get generator
+
+        prod_mat = _prod(mats_gen)
+        expected_prod_mat = i_at_x @ h_at_i @ qnp.eye(4)
+        assert qnp.allclose(prod_mat, expected_prod_mat)
+
+
+class TestIntegration:
+    """Integration tests for the Prod class."""
+
+    def test_measurement_process_expval(self):
+        """Test Prod class instance in expval measurement process."""
+        dev = qml.device("default.qubit", wires=2)
+        prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.expval(prod_op)
+
+        exp_val = my_circ()
+        true_exp_val = qnp.array(-1 / qnp.sqrt(2))
+        assert qnp.allclose(exp_val, true_exp_val)
+
+    def test_measurement_process_var(self):
+        """Test Prod class instance in var measurement process."""
+        dev = qml.device("default.qubit", wires=2)
+        prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.var(prod_op)
+
+        var = my_circ()
+        true_var = qnp.array(1 / 2)
+        assert qnp.allclose(var, true_var)
+
+    def test_measurement_process_probs(self):
+        """Test Prod class instance in probs measurement process raises error."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2)
+        prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.probs(op=prod_op)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+        ):
+            my_circ()
+
+    def test_measurement_process_sample(self):
+        """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2)
+        prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.sample(op=prod_op)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Symbolic Operations are not supported for sampling yet.",
+        ):
+            my_circ()
+
+    def test_differentiable_measurement_process(self):
+        """Test that the gradient can be computed with a Prod op in the measurement process."""
+        prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            return qml.expval(prod_op)
+
+        weights = qnp.array([0.1], requires_grad=True)
+        grad = qml.grad(circuit)(weights)
+
+        true_grad = (1/qnp.sqrt(2)) * (qnp.cos(weights[0] / 2)**2 - qnp.sin(weights[0] / 2)**2)
+        assert qnp.allclose(grad, true_grad)
+
+    def test_non_hermitian_op_in_measurement_process(self):
+        """Test that non-hermitian ops in a measurement process will raise an error."""
+        wires = [0, 1]
+        dev = qml.device("default.qubit", wires=wires)
+        prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.expval(prod_op)
+
+        with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
+            my_circ()

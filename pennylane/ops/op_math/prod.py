@@ -42,7 +42,9 @@ class Prod(Operator):
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *factors, do_queue=True, id=None):
+    def __init__(
+            self, *factors, do_queue=True, id=None
+    ):  # pylint: disable=super-init-not-called
         """Initialize a Prod instance """
         self._id = id
         self.queue_idx = None
