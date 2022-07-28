@@ -192,9 +192,7 @@ class DefaultQubit(QubitDevice):
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
                 # use class name string so we don't need to use isisntance check
-                if obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj):
-                    return False
-                return True
+                return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj)):
             if obj.name in self.observables:  # not all observables have matrices
                 return True
             with warnings.catch_warnings():  # state prep routines
