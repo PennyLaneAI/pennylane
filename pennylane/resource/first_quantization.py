@@ -19,6 +19,7 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 from scipy import integrate
 from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
+import numpy
 
 
 class FirstQuantization(Operation):
@@ -244,7 +245,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, int):
+        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:
@@ -374,7 +375,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, int):
+        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:
@@ -498,7 +499,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, int):
+        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:
@@ -549,7 +550,7 @@ class FirstQuantization(Operation):
         if n <= 0:
             raise ValueError("The number of plane waves must be a positive number.")
 
-        if eta <= 0 or not isinstance(eta, int):
+        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
             raise ValueError("The number of electrons must be a positive integer.")
 
         if omega <= 0:

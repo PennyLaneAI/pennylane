@@ -21,6 +21,8 @@ from pennylane.operation import AnyWires, Operation
 
 from pennylane.qchem import factorize
 
+import numpy
+
 
 class DoubleFactorization(Operation):
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
@@ -275,7 +277,7 @@ class DoubleFactorization(Operation):
         >>> unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
         2007
         """
-        if n <= 0 or not isinstance(n, int) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if rank_r <= 0 or not isinstance(rank_r, int):
@@ -361,7 +363,7 @@ class DoubleFactorization(Operation):
         >>> gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         167048631
         """
-        if n <= 0 or not isinstance(n, int) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if error <= 0.0:
@@ -430,7 +432,7 @@ class DoubleFactorization(Operation):
         >>> qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         292
         """
-        if n <= 0 or not isinstance(n, int) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if error <= 0.0:
