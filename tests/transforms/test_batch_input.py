@@ -67,7 +67,7 @@ def test_value_error():
 
 
 def test_batch_input_with_trainable_parameters_raises_error():
-    """Test derivatives when using autograd"""
+    """Test that using the batch_input method with trainable parameters raises a ValueError."""
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_input(argnum=0)
