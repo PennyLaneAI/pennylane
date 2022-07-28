@@ -24,11 +24,11 @@ def test_simple_circuit():
     """Test that batching works for a simple circuit"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=0)
+    @qml.batch_input(argnum=1)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
-        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
         qml.RY(weights[0], wires=0)
+        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
 
@@ -46,12 +46,12 @@ def test_value_error():
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=[0, 1])
+    @qml.batch_input(argnum=[0, 2])
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(input1, input2, weights):
         qml.AngleEmbedding(input1, wires=range(2), rotation="Y")
-        qml.RY(input2[0], wires=0)
         qml.RY(weights[0], wires=0)
+        qml.RY(input2[0], wires=0)
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
 
@@ -110,12 +110,12 @@ def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input
+    @qml.batch_input(argnum=2)
     @qml.qnode(dev, diff_method=diff_method)
     def circuit(x):
-        qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
         qml.CNOT(wires=[0, 1])
+        qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
     def cost(x):

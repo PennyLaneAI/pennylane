@@ -24,7 +24,7 @@ from pennylane.transforms.batch_transform import batch_transform
 @batch_transform
 def batch_input(
     tape: Union[QuantumTape, qml.QNode],
-    argnum: Union[Sequence[int], int] = 0,
+    argnum: Union[Sequence[int], int],
 ) -> Tuple[Sequence[QuantumTape], Callable]:
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
@@ -42,10 +42,8 @@ def batch_input(
 
     Args:
         tape (.tape.QuantumTape or .QNode): Input quantum circuit to batch
-        argnum (Sequence[int] or int): One or more index value on all gate parameters
-            indicating the location of the non-trainable batched inputs within the input
-            argument sequence of the circuit. By default first argument is assumed to be
-            the only batched input.
+        argnum (Sequence[int] or int): One or more index values indicating the location of the
+        quantum operators that use the non-trainable batched parameters.
 
     Returns:
         Sequence[Sequence[.tape.QuantumTape], Callable]: list of tapes arranged
@@ -59,11 +57,11 @@ def batch_input(
 
         dev = qml.device("default.qubit", wires = 2, shots=None)
 
-        @batch_input(argnum=0)
+        @batch_input(argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
         def circuit(inputs, weights):
-            qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
             qml.RY(weights[0], wires=0)
+            qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
             qml.RY(weights[1], wires=1)
             return qml.expval(qml.PauliZ(1))
 
@@ -74,29 +72,39 @@ def batch_input(
     array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
             0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
-    parameters = tape.get_parameters(trainable_only=False)
-
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
-    non_trainable = [parameters[i] for i in argnum]
+    # trainable_params = tape.get_parameters()
+    all_parameters = sum(
+        (op.parameters if op.parameters != [] else [None] for op in tape.operations), []
+    )
+    argnum_params = [all_parameters[i] for i in argnum]
 
-    if any(param.requires_grad for param in non_trainable):
-        raise ValueError(
-            "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
-            + "'argnum' have 'requires_grad' set to False."
-        )
+    # if any(
+    #     any(param is train_param for train_param in trainable_params) for param in argnum_params
+    # ):
+    #     raise ValueError(
+    #         "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
+    #         + "'argnum' have 'requires_grad' set to False."
+    #     )
 
-    if len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) != 1:
+    if len(np.unique([qml.math.shape(x)[0] for x in argnum_params])) != 1:
         raise ValueError(
             "Batch dimension for all gate arguments specified by 'argnum' must be the same."
         )
 
-    batch_size = len(parameters[argnum[0]])
+    batch_size = qml.math.shape(argnum_params[0])[0]
 
-    outputs = [
-        [param if idx not in argnum else param[i] for idx, param in enumerate(parameters)]
-        for i in range(batch_size)
-    ]
+    outputs = []
+    for i in range(batch_size):
+        batch = []
+        for idx, param in enumerate(all_parameters):
+            if param is None:
+                continue
+            if idx in argnum:
+                param = param[i]
+            batch.append(param)
+        outputs.append(batch)
 
     # Construct new output tape with unstacked inputs
     output_tapes = []
