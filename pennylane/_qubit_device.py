@@ -832,6 +832,8 @@ class QubitDevice(Device):
         results = []
 
         for obs in observables:
+
+            # 1. Based on the return_type, compute statistics
             # Pass instances directly
             if obs.return_type is Expectation:
                 result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
@@ -881,6 +883,7 @@ class QubitDevice(Device):
                     f"Unsupported return type specified for observable {obs.name}"
                 )
 
+            # 2. Post-process statistics results (if need be)
             float_return_types = {Expectation, Variance, Probability, VnEntropy, MutualInfo}
 
             if obs.return_type in float_return_types:
@@ -900,6 +903,7 @@ class QubitDevice(Device):
                 # after: [0.489 0.511 0.    0.   ]
                 result = qml.math.squeeze(result)
 
+            # 3. Append to final list
             results.append(result)
 
         return results
