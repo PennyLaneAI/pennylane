@@ -928,7 +928,6 @@ class DefaultQubit(QubitDevice):
             # sample the observables on the first qubit
             probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
             samples = np.random.uniform(0, 1, size=probs.shape) > probs
-            # samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
             outcomes[:, i] = samples
 
             # collapse the state
@@ -944,5 +943,4 @@ class DefaultQubit(QubitDevice):
         outcomes = outcomes[:, device_wires]
         recipes = recipes[:, device_wires]
 
-        # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
