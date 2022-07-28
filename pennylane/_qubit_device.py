@@ -38,6 +38,7 @@ from pennylane.measurements import (
     MutualInfo,
     Shadow,
 )
+from pennylane.interfaces import set_shots
 
 from pennylane import Device
 from pennylane.math import sum as qmlsum
@@ -803,10 +804,8 @@ class QubitDevice(Device):
         if circuit is None:  # pragma: no cover
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
-        # slow implementation but works for all devices
-        try:
-            self.shots = 1
-
+        with set_shots(self, shots=1):
+            # slow implementation but works for all devices
             n_qubits = len(self.wires)
             device_wires = np.array(self.map_wires(wires))
 
@@ -816,6 +815,7 @@ class QubitDevice(Device):
             outcomes = np.zeros((n_snapshots, n_qubits))
 
             for t in range(n_snapshots):
+                # compute rotations for the Pauli measurements
                 rotations = [
                     rot
                     for wire in wires
@@ -825,13 +825,11 @@ class QubitDevice(Device):
                 ]
 
                 self.reset()
-                self.apply(circuit.operations + rotations)
+                self.apply(circuit.operations, rotations=circuit.diagonalizating_gates + rotations)
 
                 outcomes[t] = self.generate_samples()[0]
 
-            return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        finally:
-            self.shots = n_snapshots
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

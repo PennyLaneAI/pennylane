@@ -81,3 +81,13 @@ class TestShadowMeasurement:
         # test allowed values of bits and recipes
         assert np.all(np.logical_or(bits == 0, bits == 1))
         assert np.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
+
+    @pytest.mark.parametrize("wires", wires_list)
+    def test_shots_none_error(self, wires):
+        """Test that an error is raised when a device with shots=None is used
+        to obtain classical shadows"""
+        circuit = get_circuit(wires, None)
+
+        msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            shadow = circuit()
