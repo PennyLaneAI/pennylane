@@ -158,8 +158,7 @@
   `Operator.has_matrix` property.
 
   When adjoint differentiation is requested, tapes are now pre-expanded in `qml.execute` so
-  that all trainable operations have a generator. `U1`, `U2`, and `U3` can now be differentiated
-  using adjoint differentiation.
+  that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
 * Adds the `Controlled` symbolic operator to represent a controlled version of any
