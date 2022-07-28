@@ -13,18 +13,19 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Union, Sequence, Callable, Tuple
+from typing import Callable, Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_transform import batch_transform
 
 
 @batch_transform
 def batch_input(
-    tape: Union[qml.tape.QuantumTape, qml.QNode],
+    tape: Union[QuantumTape, qml.QNode],
     argnum: Union[Sequence[int], int] = 0,
-) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> Tuple[Sequence[QuantumTape], Callable]:
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
 
@@ -77,21 +78,25 @@ def batch_input(
 
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
-    non_trainable, trainable = [], []
-    for idx, param in enumerate(parameters):
-        if idx in argnum:
-            non_trainable.append(param)
-        else:
-            trainable.append(param)
+    non_trainable = [parameters[i] for i in argnum]
+
+    if any(param.requires_grad for param in non_trainable):
+        raise ValueError(
+            "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
+            + "argnum have 'requires_grad' set to False."
+        )
 
     if len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) != 1:
         raise ValueError(
             "Batch dimension for all gate arguments specified by 'argnum' must be the same."
         )
 
-    outputs = []
-    for inputs in zip(*non_trainable):
-        outputs += [list(inputs) + trainable]
+    batch_size = len(parameters[argnum[0]])
+
+    outputs = [
+        [param if idx not in argnum else param[i] for idx, param in enumerate(parameters)]
+        for i in range(batch_size)
+    ]
 
     # Construct new output tape with unstacked inputs
     output_tapes = []
