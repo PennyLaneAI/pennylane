@@ -258,7 +258,6 @@ class Pow(SymbolicOp):
                 control_wires=self.base.control_wires,
                 control_values=self.base.control_values,
                 work_wires=self.base.work_wires,
-                work_values=self.base.work_wires,
                 id=self.base.id,
             )
         return Pow(base=self.base.simplify(depth=depth), z=self.z, id=self.id)
