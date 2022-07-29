@@ -301,4 +301,5 @@ class Sum(Operator):
         that the summands are not applied to the circuit repeatedly."""
         for op in self.summands:
             context.safe_update_info(op, owner=self)
+        context.append(self, owns=self.summands)
         return self

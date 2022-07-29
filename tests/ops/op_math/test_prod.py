@@ -25,7 +25,6 @@ import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, prod
-from pennylane.ops.op_math.prod import _prod  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -194,9 +193,10 @@ class TestInitialization:
         of the provided factors."""
         prod_op = prod(*ops_lst)
         decomposition = prod_op.decomposition()
+        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
 
         assert isinstance(decomposition, list)
-        for op1, op2 in zip(decomposition, ops_lst):
+        for op1, op2 in zip(decomposition, true_decomposition):
             assert qml.equal(op1, op2)
 
     def test_diagonalizing_gates(self):
@@ -571,9 +571,25 @@ class TestProperties:
             assert op.is_hermitian == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_catagory(self, ops_lst):
-        """Test queue_catagory property is always None."""  # currently not supporting queuing Prod
+    def test_queue_category_ops(self, ops_lst):
+        """Test _queue_category property is '_ops' when all factors are `_ops`."""
         prod_op = prod(*ops_lst)
+        assert prod_op._queue_category == "_ops"
+
+    def test_queue_category_none(self):
+        """Test _queue_category property is None when any factor is not `_ops`."""
+
+        class DummyOp(Operator):
+            """Dummy op with None queue category"""
+            _queue_category = None
+
+            def __init__(self, wires):
+                self._wires = qml.wires.Wires([wires])
+
+            def num_wires(self):
+                return len(self.wires)
+
+        prod_op = prod(qml.Identity(wires=0), DummyOp(wires=0))
         assert prod_op._queue_category is None
 
     def test_eigendecompostion(self):
@@ -651,21 +667,6 @@ class TestWrapperFunc:
         assert prod_class_op.id == prod_func_op.id
         assert prod_class_op.wires == prod_func_op.wires
         assert prod_class_op.parameters == prod_func_op.parameters
-
-
-class TestPrivateProd:
-    """Test private _prod() method."""
-
-    def test_prod_private(self):
-        """Test the prod private method generates expected matrices."""
-        i_at_x = qnp.kron(qnp.eye(2), qnp.array([[0.0, 1.0], [1.0, 0.0]]))
-        h_at_i = qnp.kron((1 / qnp.sqrt(2)) * qnp.array([[1.0, 1.0], [1.0, -1.0]]), qnp.eye(2))
-        mats = (i_at_x, h_at_i, qnp.eye(4))  # I@X @ H@I @ I
-        mats_gen = (mat for mat in mats)  # get generator
-
-        prod_mat = _prod(mats_gen)
-        expected_prod_mat = i_at_x @ h_at_i @ qnp.eye(4)
-        assert qnp.allclose(prod_mat, expected_prod_mat)
 
 
 class TestIntegration:
@@ -760,3 +761,22 @@ class TestIntegration:
 
         with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
             my_circ()
+
+    @pytest.mark.parametrize("ops_tuple", ops)
+    def test_operation_integration(self, ops_tuple):
+        """Test that a Product operation can be queued and executed in a circuit"""
+        num_wires = len(qml.wires.Wires.all_wires([op.wires for op in ops_tuple]))
+        dev = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(dev)
+        def prod_state_circ():
+            Prod(*ops_tuple)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def true_state_circ():
+            for i in reversed(range(3)):
+                ops_tuple[i]
+            return qml.state()
+
+        assert qnp.allclose(prod_state_circ(), true_state_circ())

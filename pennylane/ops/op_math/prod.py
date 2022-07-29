@@ -58,24 +58,6 @@ def prod(*ops, do_queue=True, id=None):
     return Prod(*ops, do_queue=do_queue, id=id)
 
 
-def _prod(mats_gen):
-    r"""Private method to compute the product of matrices. It is assumed that the
-    matrices have the same shape.
-
-    Args:
-        mats_gen (Generator): a python generator which produces the matricies which
-            will be multiplied together.
-
-    Returns:
-        res (Tensor): the tensor which is the product of the matrices obtained from mats_gen.
-    """
-    # TODO: current multiplication always expands mats, this is not always necessary
-    res = reduce(
-        math.dot, mats_gen
-    )  # Inefficient method (should group by wires like in tensor class)
-    return res
-
-
 class Prod(Operator):
     r"""Symbolic operator representing the product of operators.
 
@@ -127,7 +109,7 @@ class Prod(Operator):
             raise ValueError(f"Require at least two operators to multiply; got {len(factors)}")
 
         self.factors = factors
-        self._wires = qml.wires.Wires.all_wires([s.wires for s in self.factors])
+        self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
 
         if do_queue:
             self.queue()
@@ -140,10 +122,9 @@ class Prod(Operator):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.factors = tuple(f.__copy__() for f in self.factors)
-        copied_op.data = self.data.copy()  # copies the combined parameters
 
         for attr, value in vars(self).items():
-            if attr not in {"data", "factors"}:
+            if attr not in {"factors"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -165,7 +146,8 @@ class Prod(Operator):
     @property
     def batch_size(self):
         """Batch size of input parameters."""
-        raise ValueError("Batch size is not defined for Prod operators.")
+        # raise ValueError("Batch size is not defined for Prod operators.")
+        return None
 
     @property
     def ndim_params(self):
@@ -182,7 +164,7 @@ class Prod(Operator):
 
     @property
     def is_hermitian(self, run_check=True):  # TODO: cache this value, this check is expensive!
-        """check if the product operator is hermitian"""
+        """check if the product operator is hermitian."""
         if run_check:
             mat = self.matrix()
             adj_mat = math.conj(math.transpose(mat))
@@ -192,10 +174,15 @@ class Prod(Operator):
         raise qml.operation.IsHermitianUndefinedErrors
 
     def decomposition(self):
-        """decomposition of the operator into a product of operators."""
+        r"""Decomposition of the product operator is given by each factor applied in succession.
+
+        Note that the decomposition is the list of factors returned in reversed order. This is
+        to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
+        that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
+        """
         if qml.queuing.QueuingContext.recording():
-            return [qml.apply(op) for op in self.factors]
-        return list(self.factors)
+            return [qml.apply(op) for op in self.factors[::-1]]
+        return list(self.factors[::-1])
 
     @property
     def eigendecomposition(self):
@@ -207,7 +194,8 @@ class Prod(Operator):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
+            dict[str, array]: dictionary containing the eigenvalues and the
+                eigenvectors of the operator.
         """
         Hmat = self.matrix()
         Hmat = math.to_numpy(Hmat)
@@ -252,16 +240,11 @@ class Prod(Operator):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-
-        def matrix_gen(operators, wire_order=None):
-            """Helper function to construct a generator of matrices"""
-            for op in operators:
-                yield expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
-
         if wire_order is None:
             wire_order = self.wires
 
-        return _prod(matrix_gen(self.factors, wire_order=wire_order))
+        mats = (expand_matrix(op.matrix(), op.wires, wire_order=wire_order) for op in self.factors)
+        return reduce(math.dot, mats)
 
     @property
     def _queue_category(self):  # don't queue Prod instances because it may not be unitary!
@@ -269,13 +252,22 @@ class Prod(Operator):
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
 
-        Returns: None
+        Options are:
+        * `"_prep"`
+        * `"_ops"`
+        * `"_measurements"`
+        * `None`
+
+        Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
-        return None
+        return (
+            "_ops" if all(op._queue_category == "_ops" for op in self.factors) else None
+        )  # pylint: disable=protected-access
 
     def queue(self, context=qml.QueuingContext):
         """Updates each operator's owner to Prod, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self.factors:
             context.safe_update_info(op, owner=self)
+        context.append(self, owns=self.factors)
         return self
