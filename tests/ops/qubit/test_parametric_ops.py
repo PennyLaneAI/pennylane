@@ -1880,6 +1880,7 @@ class TestGrad:
         """Test the gradient with Autograd for the gate PSWAP."""
 
         if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
             pytest.skip("PSWAP does not support adjoint")
 
         dev = qml.device(dev_name, wires=2)
@@ -1910,13 +1911,8 @@ class TestGrad:
         """Test the gradient with JAX for the gate PSWAP."""
 
         if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
             pytest.skip("PSWAP does not support adjoint")
-
-        if diff_method in {"finite-diff"}:
-            pytest.skip("Test does not support finite-diff")
-
-        if diff_method in {"parameter-shift"}:
-            pytest.skip("Test does not support parameter-shift")
 
         import jax
         import jax.numpy as jnp
@@ -1951,6 +1947,7 @@ class TestGrad:
         """Test the gradient with Tensorflow for the gate PSWAP."""
 
         if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
             pytest.skip("PSWAP does not support adjoint")
 
         import tensorflow as tf
@@ -1980,7 +1977,11 @@ class TestGrad:
             result = circuit(phi)
 
         res = tape.gradient(result, phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        if diff_method == "backprop":
+            # Check #2872 https://github.com/PennyLaneAI/pennylane/issues/2872
+            assert np.allclose(np.real(res), expected, atol=tol, rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
