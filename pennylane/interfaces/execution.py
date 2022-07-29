@@ -362,7 +362,7 @@ def execute(
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             # adjoint jacobian needs further expansion
-            # this is a quick patch that should be cleaned up by later refactoring
+            # TODO: this is a quick patch that should be cleaned up by later refactoring
             if INTERFACE_MAP[interface] == "jax":
                 stop_at = ~qml.operation.is_measurement & (
                     qml.operation.has_nopar | qml.operation.has_unitary_gen
