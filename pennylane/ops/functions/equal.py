@@ -16,17 +16,9 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
 import pennylane as qml
-from pennylane.operation import Operator
 
 
-def equal(
-    op1: Operator,
-    op2: Operator,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
+def equal(op1, op2, check_interface=True, check_trainability=True, rtol=1e-5, atol=1e-9):
     r"""Function for determining operator equality.
 
     Args:
@@ -72,20 +64,16 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
+    if op1.__class__ is not op2.__class__:
         return False
-    if op1.arithmetic_depth > 0:
-        raise NotImplementedError(
-            "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
-        )
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
         return False
-    if op1.wires != op2.wires:
+    if not op1.wires == op2.wires:
         return False
     for kwarg in op1.hyperparameters:
-        if op1.hyperparameters[kwarg] != op2.hyperparameters[kwarg]:
+        if not op1.hyperparameters[kwarg] == op2.hyperparameters[kwarg]:
             return False
 
     if check_trainability:

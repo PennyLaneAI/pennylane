@@ -833,17 +833,3 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
-
-    def test_equal_with_different_arithmetic_depth(self):
-        """Test equal method with two operators with different arithmetic depth."""
-        assert not qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.adjoint(qml.PauliX(0))))
-
-    def test_equal_with_nested_operators_raises_error(self):
-        """Test that the equal method with two operators with the same arithmetic depth (>0) raises
-        an error."""
-        with pytest.raises(
-            NotImplementedError,
-            match="Comparison of operators with an arithmetic"
-            + " depth larger than 0 is not yet implemented.",
-        ):
-            qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)))
