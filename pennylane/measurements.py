@@ -185,7 +185,8 @@ class MeasurementProcess:
             return numeric_type
 
         raise qml.QuantumFunctionError(
-            f"Cannot deduce the numeric type of the measurement process with unrecognized return_type {self.return_type}."
+            "Cannot deduce the numeric type of the measurement process with unrecognized "
+            + f"return_type {self.return_type}."
         )
 
     @functools.lru_cache()
@@ -243,7 +244,8 @@ class MeasurementProcess:
         # Then: handle return types that require a device; no shot vector
         if device is None and self.return_type in (Probability, State, Sample):
             raise MeasurementShapeError(
-                f"The device argument is required to obtain the shape of the measurement process; got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
             )
 
         if self.return_type == Probability:
@@ -269,7 +271,8 @@ class MeasurementProcess:
             return (1, device.shots, len_wires)
 
         raise qml.QuantumFunctionError(
-            f"Cannot deduce the shape of the measurement process with unrecognized return_type {self.return_type}."
+            "Cannot deduce the shape of the measurement process with unrecognized return_type "
+            + f"{self.return_type}."
         )
 
     @functools.lru_cache()
@@ -741,13 +744,13 @@ def counts(op=None, wires=None):
 
         QNodes that return samples cannot, in general, be differentiated, since the derivative
         with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in which
-        case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
+        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
+        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with sample"
+            f"{op.name} is not an observable: cannot be used with counts"
         )
 
     if isinstance(op, (qml.ops.Sum, qml.ops.SProd)):  # pylint: disable=no-member
@@ -1045,10 +1048,11 @@ def mutual_info(wires0, wires1, log_base=None):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
+    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and
+    :func:`pennylane.math.mutual_info`
     """
     # the subsystems cannot overlap
-    if len([wire for wire in wires0 if wire in wires1]) > 0:
+    if [wire for wire in wires0 if wire in wires1]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
@@ -1114,12 +1118,14 @@ class MeasurementValue(Generic[T]):
 
         if not isinstance(control_value, tuple(type(val) for val in measurement_outcomes)):
             raise MeasurementValueError(
-                f"The equality operator is used to assert measurement outcomes, but got a value with type {type(control_value)}."
+                "The equality operator is used to assert measurement outcomes, but got a value "
+                + f"with type {type(control_value)}."
             )
 
         if control_value not in measurement_outcomes:
             raise MeasurementValueError(
-                f"Unknown measurement value asserted; the set of possible measurement outcomes is: {measurement_outcomes}."
+                "Unknown measurement value asserted; the set of possible measurement outcomes is: "
+                + f"{measurement_outcomes}."
             )
 
         self._control_value = control_value
