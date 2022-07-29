@@ -26,14 +26,50 @@ from pennylane.operation import Operator, expand_matrix
 
 
 def prod(*ops, do_queue=True, id=None):
-    """Represent the tensor product (or matrix product) between operators."""
+    """Construct an operator which represents the generalized product of the
+    operators provided.
+
+    The generalized product operation represents both the tensor product as
+    well as matrix composition. This can be resolved naturally from the wires
+    that the given operators act on.
+
+    Args:
+        ops (tuple[~.operation.Operator]): The operators we would like to multiply
+
+    Keyword Args:
+        do_queue (bool): determines if the product operator will be queued
+            (currently not supported). Default is True.
+        id (str or None): id for the product operator. Default is None.
+
+    Returns:
+        ~ops.op_math.Prod: the operator representing the product.
+
+    ..seealso:: :class:`~.ops.op_math.Prod`
+
+    **Example**
+
+    >>> prod_op = prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prod_op
+    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    >>> prod_op.matrix()
+    array([[ 0, -1],
+           [ 1,  0]])
+    """
     return Prod(*ops, do_queue=do_queue, id=id)
 
 
-def _prod(
-    mats_gen,
-):  # TODO: current multiplication always expands mats, this is not always necessary
-    """Multiply matrices together"""
+def _prod(mats_gen):
+    r"""Private method to compute the product of matrices. It is assumed that the
+    matrices have the same shape.
+
+    Args:
+        mats_gen (Generator): a python generator which produces the matricies which
+            will be multiplied together.
+
+    Returns:
+        res (Tensor): the tensor which is the product of the matrices obtained from mats_gen.
+    """
+    # TODO: current multiplication always expands mats, this is not always necessary
     res = reduce(
         math.dot, mats_gen
     )  # Inefficient method (should group by wires like in tensor class)
@@ -41,9 +77,44 @@ def _prod(
 
 
 class Prod(Operator):
-    """Arithmetic operator subclass representing the scalar product of an
-    operator with the given scalar."""
+    r"""Symbolic operator representing the product of operators.
 
+    Args:
+        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
+
+    Keyword Args:
+        do_queue (bool): determines if the product operator will be queued (currently not supported).
+            Default is True.
+        id (str or None): id for the product operator. Default is None.
+
+    **Example**
+
+    >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prop_op
+    PauliX(wires=[0]) @ PauliZ(wires=[0])
+    >>> qml.matrix(prop_op)
+    array([[ 0,  -1],
+           [ 1,   0]])
+    >>> prop_op.terms()
+    ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+
+    .. details::
+        :title: Usage Details
+
+        The Prod operator represents both matrix composition and tensor products
+        between operators.
+
+        >>> prod_op = Prod(qml.RZ(1.23, wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=1))
+        >>> prod_op.matrix()
+        array([[ 0.        +0.j        ,  0.        +0.j        ,
+                 0.81677345-0.57695852j,  0.        +0.j        ],
+               [ 0.        +0.j        ,  0.        +0.j        ,
+                 0.        +0.j        , -0.81677345+0.57695852j],
+               [ 0.81677345+0.57695852j,  0.        +0.j        ,
+                 0.        +0.j        ,  0.        +0.j        ],
+               [ 0.        +0.j        , -0.81677345-0.57695852j,
+                 0.        +0.j        ,  0.        +0.j        ]])
+    """
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 

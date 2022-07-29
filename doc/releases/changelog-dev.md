@@ -264,6 +264,43 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   (array(-0.68362956), array(0.21683382))
   ```
 
+* A `Prod` symbolic class is added that allows users to represent the Prod of operators.
+  [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
+
+  The `Prod` class provides functionality like any other PennyLane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+  >>> prop_op
+  PauliX(wires=[0]) @ PauliZ(wires=[0])
+  >>> qml.matrix(prop_op)
+  array([[ 0,  -1],
+         [ 1,   0]])
+  >>> prop_op.terms()
+  ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+  ```
+
+  The `prod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the
+  product observable.
+
+  ```python
+  prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      return qml.expval(prod_op)
+  ```
+
+  ```pycon
+  >>> weights = qnp.array([0.1], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.07059288589999416], requires_grad=True)
+  ```
+
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 <h3>Improvements</h3>
