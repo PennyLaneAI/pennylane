@@ -80,10 +80,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         capabilities.update(model="qutrit")
         return capabilities
 
-    def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
-        # Overloading QubitDevice.statistics() as VnEntropy and MutualInfo not yet supported for QutritDevice
-        raise NotImplementedError
-
     def generate_samples(self):
         r"""Returns the computational basis samples generated for all wires.
 

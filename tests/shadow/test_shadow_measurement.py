@@ -49,6 +49,22 @@ class TestShadowMeasurement:
 
     @pytest.mark.parametrize("wires", wires_list)
     @pytest.mark.parametrize("shots", shots_list)
+    def test_measurement_process_numeric_type(self, wires, shots):
+        """Test that the numeric type of the MeasurementProcess instance is correct"""
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        res = qml.classical_shadow(wires=range(wires))
+        assert res.numeric_type == int
+
+    @pytest.mark.parametrize("wires", wires_list)
+    @pytest.mark.parametrize("shots", shots_list)
+    def test_measurement_process_shape(self, wires, shots):
+        """Test that the shape of the MeasurementProcess instance is correct"""
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        res = qml.classical_shadow(wires=range(wires))
+        assert res.shape(dev) == (2, shots, wires)
+
+    @pytest.mark.parametrize("wires", wires_list)
+    @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("default_impl", [False, True])
     def test_format(self, wires, shots, default_impl):
         """Test that the format of the returned classical shadow
@@ -65,3 +81,13 @@ class TestShadowMeasurement:
         # test allowed values of bits and recipes
         assert np.all(np.logical_or(bits == 0, bits == 1))
         assert np.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
+
+    @pytest.mark.parametrize("wires", wires_list)
+    def test_shots_none_error(self, wires):
+        """Test that an error is raised when a device with shots=None is used
+        to obtain classical shadows"""
+        circuit = get_circuit(wires, None)
+
+        msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            shadow = circuit()

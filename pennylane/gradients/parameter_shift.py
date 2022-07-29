@@ -629,8 +629,6 @@ def param_shift(
          [ 0.69916862  0.34072424  0.69202359]]
     """
 
-    # print('param shift called')
-
     if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."

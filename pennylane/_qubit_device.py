@@ -38,6 +38,7 @@ from pennylane.measurements import (
     MutualInfo,
     Shadow,
 )
+from pennylane.interfaces import set_shots
 
 from pennylane import Device
 from pennylane.math import sum as qmlsum
@@ -333,7 +334,11 @@ class QubitDevice(Device):
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
-                    results = self._asarray(results, dtype=self.R_DTYPE)
+                    try:
+                        # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
+                        results = self._asarray(results, dtype=self.R_DTYPE)
+                    except TypeError:
+                        pass
 
             elif all(
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
@@ -558,7 +563,9 @@ class QubitDevice(Device):
 
             elif obs.return_type is Shadow:
                 results.append(
-                    self.classical_shadow(wires=obs.wires, n_snapshots=self.shots, circuit=circuit)
+                    self.classical_shadow(
+                        wires=obs.wires, n_snapshots=self.shots, circuit=circuit, seed=obs.seed
+                    )
                 )
 
             elif obs.return_type is not None:
@@ -794,15 +801,13 @@ class QubitDevice(Device):
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
-    def classical_shadow(self, wires, n_snapshots, circuit):
+    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
         """TODO: docs"""
-        if circuit is None:
+        if circuit is None:  # pragma: no cover
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
-        # slow implementation but works for all devices
-        try:
-            self.shots = 1
-
+        with set_shots(self, shots=1):
+            # slow implementation but works for all devices
             n_qubits = len(self.wires)
             device_wires = np.array(self.map_wires(wires))
 
@@ -812,6 +817,7 @@ class QubitDevice(Device):
             outcomes = np.zeros((n_snapshots, n_qubits))
 
             for t in range(n_snapshots):
+                # compute rotations for the Pauli measurements
                 rotations = [
                     rot
                     for wire in wires
@@ -821,13 +827,11 @@ class QubitDevice(Device):
                 ]
 
                 self.reset()
-                self.apply(circuit.operations + rotations)
+                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
 
                 outcomes[t] = self.generate_samples()[0]
 
-            return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        finally:
-            self.shots = n_snapshots
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
