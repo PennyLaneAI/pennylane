@@ -563,7 +563,9 @@ class QubitDevice(Device):
 
             elif obs.return_type is Shadow:
                 results.append(
-                    self.classical_shadow(wires=obs.wires, n_snapshots=self.shots, circuit=circuit)
+                    self.classical_shadow(
+                        wires=obs.wires, n_snapshots=self.shots, circuit=circuit, seed=obs.seed
+                    )
                 )
 
             elif obs.return_type is not None:
@@ -799,7 +801,7 @@ class QubitDevice(Device):
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
-    def classical_shadow(self, wires, n_snapshots, circuit):
+    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
         """TODO: docs"""
         if circuit is None:  # pragma: no cover
             raise ValueError("Circuit must be provided when measuring classical shadows")

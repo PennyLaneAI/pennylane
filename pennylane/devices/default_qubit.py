@@ -888,13 +888,18 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, n_snapshots, circuit):
+    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
         """TODO: docs"""
 
         n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
-        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        if seed is not None:
+            rng = np.random.RandomState(seed)
+            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+        else:
+            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+
         obs_list = self._stack(
             [
                 qml.PauliX.compute_matrix(),
@@ -943,4 +948,5 @@ class DefaultQubit(QubitDevice):
         outcomes = outcomes[:, device_wires]
         recipes = recipes[:, device_wires]
 
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)

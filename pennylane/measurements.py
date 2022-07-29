@@ -520,6 +520,17 @@ class MeasurementProcess:
         return hash(fingerprint)
 
 
+class ShadowMeasurementProcess(MeasurementProcess):
+    def __init__(self, *args, seed=None, **kwargs):
+        super(ShadowMeasurementProcess, self).__init__(*args, **kwargs)
+        self.seed = seed
+
+    def __copy__(self):
+        obj = super(ShadowMeasurementProcess, self).__copy__()
+        obj.seed = self.seed
+        return obj
+
+
 def expval(op):
     r"""Expectation value of the supplied observable.
 
@@ -1002,7 +1013,9 @@ def classical_shadow(wires):
     TODO: docs
     """
     wires = qml.wires.Wires(wires)
-    return MeasurementProcess(Shadow, wires=wires)
+
+    seed = np.random.randint(2**30)
+    return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
 T = TypeVar("T")
