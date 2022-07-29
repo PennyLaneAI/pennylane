@@ -395,5 +395,4 @@ class ControlledOp(Controlled, operation.Operation):
             control_wires=self.control_wires,
             control_values=self.control_values,
             work_wires=self.work_wires,
-            id=self.id,
         )

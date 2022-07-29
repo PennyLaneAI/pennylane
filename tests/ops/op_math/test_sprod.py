@@ -510,7 +510,6 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, SProd)
-        assert final_op.id == simplified_op.id
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -524,7 +523,6 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, SProd)
-        assert final_op.id == simplified_op.id
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth

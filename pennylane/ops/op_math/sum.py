@@ -323,4 +323,4 @@ class Sum(Operator):
 
     def simplify(self, depth=-1) -> "Sum":
         summands = self.simplify_summands(depth=depth)
-        return Sum(*summands, id=self.id)
+        return Sum(*summands)

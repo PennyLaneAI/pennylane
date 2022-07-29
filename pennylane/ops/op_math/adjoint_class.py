@@ -246,6 +246,6 @@ class Adjoint(SymbolicOp):
             return self.base.base.simplify(depth=depth - 2)
         if isinstance(self.base, Sum):  # Adj(A + B) = Adj(A) + Adj(B)
             simplified_sum = self.base.simplify(depth=depth)
-            return Sum(*(Adjoint(summand) for summand in simplified_sum.summands), id=self.base.id)
+            return Sum(*(Adjoint(summand) for summand in simplified_sum.summands))
 
-        return Adjoint(base=self.base.simplify(depth=depth), id=self.id)
+        return Adjoint(base=self.base.simplify(depth=depth))
