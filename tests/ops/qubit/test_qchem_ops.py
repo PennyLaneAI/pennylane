@@ -737,6 +737,15 @@ class TestOrbitalRotation:
             assert np.allclose(decomposed_matrix, exp)
 
     def test_adjoint(self):
+        """Test adjoint method for adjoint op decomposition."""
+
+        phi = 1.234
+        wires = (0, 1, 2, 3)
+        op = qml.OrbitalRotation(phi, wires=wires)
+        adj_op = qml.adjoint(op, lazy=False)
+        assert qml.equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
+
+    def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""
         dev = qml.device("default.qubit", wires=4)
 
