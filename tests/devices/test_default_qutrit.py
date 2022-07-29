@@ -473,6 +473,7 @@ class TestVar:
         qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
+
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_var_estimate(self):
@@ -696,6 +697,8 @@ class TestTensorExpval:
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_tensor(self, index_1, index_2, tol):
         """Test that the variance of tensor Gell-Mann observables is correct"""
         dev = qml.device("default.qutrit", wires=2)
@@ -706,15 +709,44 @@ class TestTensorVar:
                 qml.QutritUnitary(U_thadamard_01, wires=0),
                 qml.QutritUnitary(TSHIFT, wires=0),
                 qml.QutritUnitary(TSHIFT, wires=1),
-                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
             ],
             obs.diagonalizing_gates(),
         )
         res = dev.var(obs)
 
-        state = np.array([0, 0, 0, 0, 0, 1, 1, 0, 0]) / np.sqrt(2)
-        # TODO: Change
-        assert True
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index_1 - 1], GELL_MANN[index_2 - 1])
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
+    def test_hermitian(self, tol):
+        dev = qml.device("default.qutrit", wires=3)
+
+        A1 = np.array([[3, 0, 0], [0, -3, 0], [0, 0, -2]])
+
+        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
+        A2 = np.kron(A, B)
+
+        obs = qml.THermitian(A1, wires=[0]) @ qml.THermitian(A2, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(U_thadamard_01, wires=2),
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        res = dev.var(obs)
+        expected = 36
+        assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
 # TODO: Add tests for tensor non-parametrized observables
