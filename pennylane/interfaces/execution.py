@@ -357,23 +357,18 @@ def execute(
         # We must do this now, prior to the interface, to ensure that
         # decompositions with parameter processing is tracked by the
         # autodiff frameworks.
-        for i, tape in enumerate(tapes):
-            tapes[i] = expand_fn(tape)
-
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
-            # adjoint jacobian needs further expansion
-            # TODO: this is a quick patch that should be cleaned up by later refactoring
             if INTERFACE_MAP[interface] == "jax":
-                stop_at = ~qml.operation.is_measurement & (
-                    qml.operation.has_nopar | qml.operation.has_unitary_gen
-                )
+                for i, tape in enumerate(tapes):
+                    tape = expand_fn(tape)
+                    tapes[i] = qml.transforms.adjoint_expand_jax(tape)
             else:
-                stop_at = ~qml.operation.is_measurement & (
-                    ~qml.operation.is_trainable | qml.operation.has_unitary_gen
-                )
+                for i, tape in enumerate(tapes):
+                    tape = expand_fn(tape)
+                    tapes[i] = qml.transforms.adjoint_expand_interfaces_but_jax(tape)
+        else:
             for i, tape in enumerate(tapes):
-                if any(not stop_at(op) for op in tape.operations):
-                    tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
+                tapes[i] = expand_fn(tape)
 
         if mode in ("forward", "best"):
             # replace the forward execution function to return

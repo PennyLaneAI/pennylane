@@ -227,6 +227,8 @@ from .tape_expand import (
     expand_invalid_trainable,
     expand_multipar,
     expand_nonunitary_gen,
+    adjoint_expand_jax,
+    adjoint_expand_interfaces_but_jax,
     expand_trainable_multipar,
     create_expand_fn,
     create_decomp_expand_fn,

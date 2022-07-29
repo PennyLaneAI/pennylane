@@ -371,3 +371,27 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
     finally:
         dev.custom_expand_fn = original_custom_expand_fn
+
+
+# TODO: remove once long term alternative available
+_adjoint_expand_jax = """TODO
+"""
+
+adjoint_expand_jax = create_expand_fn(
+    depth=10,
+    stop_at=~qml.operation.is_measurement
+    & (qml.operation.has_nopar | qml.operation.has_unitary_gen),
+    docstring=_adjoint_expand_jax,
+)
+
+# TODO: remove once long term alternative available
+_adjoint_expand_interfaces_but_jax = """TODO
+"""
+
+adjoint_expand_interfaces_but_jax = create_expand_fn(
+    depth=10,
+    # stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
+    stop_at=~qml.operation.is_measurement
+    & (~qml.operation.is_trainable | qml.operation.has_unitary_gen),
+    docstring=_adjoint_expand_interfaces_but_jax,
+)
