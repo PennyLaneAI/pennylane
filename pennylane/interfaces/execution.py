@@ -452,7 +452,7 @@ def execute_new(
     max_expansion=10,
     device_batch_transform=True,
 ):
-    """New execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
+    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
 
     Args:
