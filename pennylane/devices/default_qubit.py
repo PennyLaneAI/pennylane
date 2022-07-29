@@ -186,6 +186,8 @@ class DefaultQubit(QubitDevice):
             "Toffoli": self._apply_toffoli,
         }
 
+        self.recipes = None
+
     @functools.lru_cache()
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
@@ -896,9 +898,10 @@ class DefaultQubit(QubitDevice):
         n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
-        #recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-        rng = np.random.RandomState(2)
-        recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+        if self.recipes is None:
+            self.recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+
+        recipes = self.recipes
 
         obs_list = self._stack(
             [
