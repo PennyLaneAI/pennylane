@@ -58,28 +58,19 @@ class Exp(SymbolicOp):
         self.coeff = coeff
         super().__init__(base, do_queue=do_queue, id=id)
         self._name = f"Exp({coeff} {base.name})"
-        self._check_batching([coeff] + self.base.parameters)
 
     @property
     def data(self):
-        return [self.coeff] + self.base.data
+        return [[self.coeff], self.base.data]
 
     @data.setter
     def data(self, new_data):
-        self.coeff = new_data[0]
+        self.coeff = new_data[0][0]
         self.base.data = new_data[1:]
-
-    @property
-    def parameters(self):
-        return self.data.copy()
 
     @property
     def num_params(self):
         return self.base.num_params + 1
-
-    @property
-    def ndim_params(self):
-        return (0,) + self.base.ndim_params
 
     def matrix(self, wire_order=None):
         mat = expm(self.coeff * qml.matrix(self.base))
