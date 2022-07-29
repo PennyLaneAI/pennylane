@@ -392,6 +392,25 @@ class TestIntegrationMultipleReturns:
             assert isinstance(res[i], np.ndarray)
             assert res[i].shape == ()
 
+    def test_array_multiple(self):
+        """Return PennyLane array of multiple measurements"""
+        qml.enable_return()
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.numpy.array([qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])])
+
+        qnode = qml.QNode(circuit, dev)
+        res = qnode(0.5)
+
+        qml.disable_return()
+
+        assert isinstance(res, qml.numpy.ndarray)
+        assert res[0].shape == ()
+        assert res[1].shape == (4,)
+
 
 single_scalar_output_measurements = [qml.expval(qml.PauliZ(wires=1)), qml.var(qml.PauliZ(wires=1))]
 

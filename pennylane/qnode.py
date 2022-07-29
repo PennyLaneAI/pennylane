@@ -21,7 +21,6 @@ import inspect
 import warnings
 
 import autograd
-import numpy
 
 import pennylane as qml
 from pennylane import Device
@@ -529,8 +528,7 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        # Support array return to allow Jacobian with Autograd
-        if isinstance(self._qfunc_output, numpy.ndarray):
+        if isinstance(self._qfunc_output, qml.numpy.ndarray):
             measurement_processes = tuple(self.tape.measurements)
         elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
@@ -619,7 +617,7 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        if qml.query_return():
+        if qml.active_return():
             res = qml.execute_new(
                 [self.tape],
                 device=self.device,
@@ -630,27 +628,23 @@ class QNode:
                 **self.execute_kwargs,
             )
 
-            if not isinstance(self._qfunc_output, tuple) and not isinstance(
-                self._qfunc_output, qml.measurements.MeasurementProcess
-            ):
+            res = res[0]
+
+            # Autograd or tensorflow: they do not support tuple return with backpropagation
+            backprop = False
+            if not isinstance(self._qfunc_output, qml.measurements.MeasurementProcess):
+                backprop = any(qml.math.in_backprop(x) for x in res)
+            if self.interface in ("tf", "autograd") and self.gradient_fn == "backprop" and backprop:
+                res = self.device._asarray(res)
+
+            # If the return type is not tuple (list or ndarray)
+            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
                 if not self.device._shot_vector:
-                    res = type(self.tape._qfunc_output)(res[0])
+                    res = type(self.tape._qfunc_output)(res)
                 else:
-                    res = [type(self.tape._qfunc_output)(r) for r in res[0]]
+                    res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
-            else:
-                # Autograd or tensorflow: they do not support tuple return with backpropagation
-                backprop = False
-                if not isinstance(self._qfunc_output, qml.measurements.MeasurementProcess):
-                    backprop = any(qml.math.in_backprop(x) for x in res[0])
-                if (
-                    self.interface in ("tf", "autograd")
-                    and self.gradient_fn == "backprop"
-                    and backprop
-                ):
-                    res = self.device._asarray(res[0])
-                else:
-                    res = res[0]
+
             return res
 
         res = qml.execute(

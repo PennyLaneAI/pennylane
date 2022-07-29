@@ -65,7 +65,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-from pennylane.return_types import enable_return, disable_return, query_return
+from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
