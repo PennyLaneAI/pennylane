@@ -134,6 +134,7 @@ has_unitary_generator = Attribute(
         "PauliRot",
         "IsingXX",
         "IsingYY",
+        "IsingXY",
         "IsingZZ",
         "SingleExcitationMinus",
         "SingleExcitationPlus",
