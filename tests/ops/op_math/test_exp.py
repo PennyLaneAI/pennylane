@@ -49,7 +49,7 @@ class TestInitialization:
 
         assert op.base is base
         assert op.coeff is coeff
-        assert op.name == "Exp(1.234 PauliZ(wires=['b']) @ PauliZ(wires=['c'])"
+        assert op.name == "Exp(1.234 PauliZ(wires=['b']) @ PauliZ(wires=['c']))"
 
         assert op.num_params == 1
         assert op.parameters == [coeff, []]
@@ -96,19 +96,15 @@ class TestProperties:
     def test_queue_category_ops(self):
         assert Exp(qml.PauliX(0), -1.234j)._queue_category == "_ops"
 
-    def test_queue_category_complex_coeff(self):
         assert Exp(qml.PauliX(0), 1 + 2j)._queue_category is None
 
-    def test_queue_category_non_hermitan_base(self):
         assert Exp(qml.RX(1.2, 0), -1.2j)._queue_category is None
 
-    def test_is_hermitian_true(self):
+    def test_is_hermitian(self):
         assert Exp(qml.PauliX(0), -1.0).is_hermitian
 
-    def test_is_hermitian_false_complex_coeff(self):
         assert not Exp(qml.PauliX(0), 1.0 + 2j).is_hermitian
 
-    def test_is_hermitian_false_nonhermitian_base(self):
         assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
 
 
