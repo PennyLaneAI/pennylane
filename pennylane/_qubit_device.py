@@ -396,18 +396,23 @@ class QubitDevice(Device):
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
-        results = self.statistics(circuit.observables)
+        # generate computational basis samples
+        if self.shots is not None:
+            self._samples = self.generate_samples()
 
-        if len(circuit.measurements) == 1:
-            if circuit.measurements[0].return_type is qml.measurements.State:
-                # State: assumed to only be allowed if it's the only measurement
-                results = self._asarray(results[0], dtype=self.C_DTYPE)
-            else:
-                # All other measurements are real
-                results = self._asarray(results[0], dtype=self.R_DTYPE)
+        # compute the required statistics
+        if self._shot_vector is not None:
+
+            results = self.shot_vec_statistics(circuit)
 
         else:
-            results = tuple(self._asarray(res, dtype=self.R_DTYPE) for res in results)
+            results = self.statistics_new(circuit.observables)
+            single_measurement = len(circuit.measurements) == 1
+
+            if single_measurement:
+                results = results[0]
+            else:
+                results = tuple(results)
 
         # increment counter for number of executions of qubit device
         # self._num_executions += 1
@@ -416,6 +421,134 @@ class QubitDevice(Device):
         #     self.tracker.update(executions=1, shots=self._shots)
         #     self.tracker.record()
         return results
+
+    def shot_vec_statistics(self, circuit):
+        """Process measurement results from circuit execution using a device
+        with a shot vector and return statistics.
+
+        This is an auxiliary method of execute_new and uses statistics_new.
+
+        When using shot vectors, measurement results for each item of the shot
+        vector are contained in a tuple.
+
+        Args:
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            tuple: stastics for each shot item from the shot vector
+        """
+        results = []
+        s1 = 0
+
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        single_measurement = len(circuit.measurements) == 1
+
+        for shot_tuple in self._shot_vector:
+            s2 = s1 + np.prod(shot_tuple)
+            r = self.statistics_new(
+                circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+            )
+
+            # This will likely be required:
+            # if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+            #     r = r[0]
+
+            if single_measurement:
+                r = r[0]  # if counts_exist else qml.math.squeeze(r)
+            else:
+                if shot_tuple.copies == 1:
+                    r = tuple(
+                        r_[0] if isinstance(r_, list) else r_.T  # need to unwrap the single element
+                        for idx, r_ in enumerate(r)
+                    )
+                else:
+
+                    if counts_exist:
+                        r = self._multi_meas_with_counts_shot_vec(circuit, shot_tuple, r)
+                    else:
+                        # r is a nested sequence, contains the results for
+                        # multiple measurements
+                        #
+                        # Each item of r has copies length, we need to extract
+                        # each measurement result from the arrays
+
+                        # 1. transpose: applied because measurements like probs
+                        # for multiple copies output results with shape (N,
+                        # copies) and we'd like to index straight to get rows
+                        # which requires a shape of (copies, N)
+                        # 2. asarray: done because indexing into a flat array produces a
+                        # scalar instead of a scalar shaped array
+                        r = [
+                            tuple(self._asarray(r_.T[idx]) for r_ in r)
+                            for idx in range(shot_tuple.copies)
+                        ]
+
+            if isinstance(r, qml.numpy.ndarray):
+                if shot_tuple.copies > 1:
+                    results.extend(r.T)
+                else:
+                    results.append(r.T)
+
+            else:
+                if single_measurement and counts_exist:
+                    # Results are nested in a sequence
+                    results.extend(r)
+                elif not single_measurement and shot_tuple.copies > 1:
+                    # Some samples may still be transposed, fix their shapes
+                    # Leave dictionaries intact
+                    r = [
+                        tuple(elem.T if not isinstance(elem, dict) else elem for elem in r_)
+                        for r_ in r
+                    ]
+                    results.extend(r)
+                else:
+                    results.append(r)
+
+            s1 = s2
+
+        results = tuple(results)
+        return results
+
+    def _multi_meas_with_counts_shot_vec(self, circuit, shot_tuple, r):
+        """Auxiliary function of the shot_vec_statistics and execute_new
+        functions for post-processing the results of multiple measurements at
+        least one of which was a counts measurement.
+
+        The measurements were executed on a device that defines a shot vector.
+        """
+        # First: iterate over each group of measurement
+        # results that contain copies many outcomes for a
+        # single measurement
+        new_r = []
+
+        # Each item of r has copies length
+        for idx in range(shot_tuple.copies):
+            result_group = []
+
+            for idx2, r_ in enumerate(r):
+                measurement_proc = circuit.measurements[idx2]
+                if measurement_proc.return_type is Probability or (
+                    measurement_proc.return_type is Sample and measurement_proc.obs
+                ):
+
+                    # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
+                    # Extract a single row -> shape (num_basis_states,)
+                    result = r_[:, idx]
+                else:
+                    result = r_[idx]
+
+                if not circuit.observables[idx2].return_type is Counts:
+                    result = self._asarray(result.T)
+
+                result_group.append(result)
+
+            new_r.append(tuple(result_group))
+
+        return new_r
 
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
@@ -651,6 +784,131 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
+
+        return results
+
+    def statistics_new(self, observables, shot_range=None, bin_size=None):
+        """Process measurement results from circuit execution and return statistics.
+
+        This includes returning expectation values, variance, samples, probabilities, states, and
+        density matrices.
+
+        Args:
+            observables (List[.Observable]): the observables to be measured
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            Union[float, List[float]]: the corresponding statistics
+
+        .. details::
+            :title: Usage Details
+
+            The ``shot_range`` and ``bin_size`` arguments allow for the statistics
+            to be performed on only a subset of device samples. This finer level
+            of control is accessible from the main UI by instantiating a device
+            with a batch of shots.
+
+            For example, consider the following device:
+
+            >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+
+            This device will execute QNodes using 135 shots, however
+            measurement statistics will be **course grained** across these 135
+            shots:
+
+            * All measurement statistics will first be computed using the
+              first 5 shots --- that is, ``shots_range=[0, 5]``, ``bin_size=5``.
+
+            * Next, the tuple ``(10, 3)`` indicates 10 shots, repeated 3 times. We will want to use
+              ``shot_range=[5, 35]``, performing the expectation value in bins of size 10
+              (``bin_size=10``).
+
+            * Finally, we repeat the measurement statistics for the final 100 shots,
+              ``shot_range=[35, 135]``, ``bin_size=100``.
+        """
+        results = []
+
+        for obs in observables:
+
+            # 1. Based on the return_type, compute statistics
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
+
+            elif obs.return_type is Variance:
+                result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
+
+            elif obs.return_type is Sample:
+                samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                result = qml.math.squeeze(samples)
+
+            elif obs.return_type is Counts:
+                result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+
+            elif obs.return_type is Probability:
+                result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                state = self.access_state(wires=obs.wires)
+                result = self._asarray(state, dtype=self.C_DTYPE)
+
+            elif obs.return_type is VnEntropy:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the Von Neumann entropy is not supported when using custom wire labels"
+                    )
+                result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
+
+            elif obs.return_type is MutualInfo:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the mutual information is not supported when using custom wire labels"
+                    )
+                wires0, wires1 = obs.raw_wires
+                result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+
+            elif obs.return_type is not None:
+                raise qml.QuantumFunctionError(
+                    f"Unsupported return type specified for observable {obs.name}"
+                )
+
+            # 2. Post-process statistics results (if need be)
+            float_return_types = {Expectation, Variance, Probability, VnEntropy, MutualInfo}
+
+            if obs.return_type in float_return_types:
+                result = self._asarray(result, dtype=self.R_DTYPE)
+
+            if self._shot_vector is not None and isinstance(result, np.ndarray):
+                # In the shot vector case, measurement results may be of shape (N, 1) instead of (N,)
+                # Squeeze the result to transform the results
+                #
+                # E.g.,
+                # before:
+                # [[0.489]
+                #  [0.511]
+                #  [0.   ]
+                #  [0.   ]]
+                #
+                # after: [0.489 0.511 0.    0.   ]
+                result = qml.math.squeeze(result)
+
+            # 3. Append to final list
+            results.append(result)
 
         return results
 
@@ -1140,6 +1398,7 @@ class QubitDevice(Device):
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
+        # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
@@ -1174,6 +1433,7 @@ class QubitDevice(Device):
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
+        # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
@@ -1275,11 +1535,12 @@ class QubitDevice(Device):
                 for bin_sample in samples.reshape(shape)
             ]
 
-        return (
+        res = (
             samples.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
+        return res
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in

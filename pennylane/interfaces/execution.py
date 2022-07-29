@@ -316,6 +316,7 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
+
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
         setattr(cache, "_persistent_cache", False)
 
