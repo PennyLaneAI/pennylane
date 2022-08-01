@@ -225,7 +225,7 @@ class TestApply:
     def test_apply_operation_two_wires_with_parameters_inverse(
         self, qutrit_device_2_wires, tol, operation, input, expected_output, par
     ):
-        """Tests that applying an operation yields the expected output state for two wire
+        """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
