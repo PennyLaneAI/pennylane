@@ -791,7 +791,7 @@ class DoubleExcitationPlus(Operation):
     """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
-        G = -1 * np.eye(16, dtype=complex64)
+        G = -1 * np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
@@ -896,7 +896,7 @@ class DoubleExcitationMinus(Operation):
     """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
-        G = np.eye(16, dtype=complex64)
+        G = np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
