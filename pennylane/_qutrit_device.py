@@ -308,9 +308,11 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         # hotfix to catch when default.qutrit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+            wires = inactive_device_wires.labels
         else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+            wires = inactive_device_wires
+
+        prob = self._flatten(self._reduce_sum(prob, wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
