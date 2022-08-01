@@ -407,7 +407,7 @@ class TestWiresIntegration:
         ],
     )
     def test_wires_probs(self, wires1, wires2, tol):
-        """Test that the probability vector of a circuit is independent from the wire labels used."""
+        """Test that the probability vector of a circuit is independent of the wire labels used."""
 
         circuit1 = self.make_circuit_probs(wires1)
         circuit2 = self.make_circuit_probs(wires2)
