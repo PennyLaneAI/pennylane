@@ -100,6 +100,7 @@ single_scalar_multi_wire_ops = [
     "IsingXX",
     "IsingYY",
     "IsingZZ",
+    "IsingXY",
 ]
 
 two_scalar_single_wire_ops = [
@@ -115,6 +116,8 @@ three_scalar_multi_wire_ops = [
     "CRot",
 ]
 
+# When adding an operation to the following list, you
+# actually need to write a new test!
 separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
