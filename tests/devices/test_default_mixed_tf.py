@@ -470,6 +470,7 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, decorator, interface, x, shift):
