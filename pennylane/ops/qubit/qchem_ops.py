@@ -791,8 +791,10 @@ class DoubleExcitationPlus(Operation):
     """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
-        G = 1j * DoubleExcitation.mask_s - I16
+        G = -1 * np.eye(16, dtype=complex64)
         G[3, 3] = G[12, 12] = 0
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
@@ -894,8 +896,10 @@ class DoubleExcitationMinus(Operation):
     """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
-        G = 1j * DoubleExcitation.mask_s + I16
+        G = np.eye(16, dtype=complex64)
         G[3, 3] = G[12, 12] = 0
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
