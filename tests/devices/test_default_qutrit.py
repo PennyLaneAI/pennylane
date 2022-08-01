@@ -119,14 +119,6 @@ class TestApply:
         (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], U_clock),
     ]
 
-    # TODO: Add more data as parametric ops get added
-    test_data_single_wire_with_parameters_inverse = [
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_shift),
-        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], U_shift),
-        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], U_clock),
-        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], U_clock),
-    ]
-
     @pytest.mark.parametrize(
         "operation, input, expected_output, par", test_data_single_wire_with_parameters
     )
@@ -142,6 +134,14 @@ class TestApply:
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+    # TODO: Add more data as parametric ops get added
+    test_data_single_wire_with_parameters_inverse = [
+        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_shift),
+        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], U_shift),
+        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], U_clock),
+        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], U_clock),
+    ]
 
     @pytest.mark.parametrize(
         "operation, input, expected_output, par", test_data_single_wire_with_parameters_inverse
