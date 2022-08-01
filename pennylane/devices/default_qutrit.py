@@ -48,7 +48,7 @@ class DefaultQutrit(QutritDevice):
     short_name = "default.qutrit"
     pennylane_requires = __version__
     version = __version__
-    author = "Mudit Pandey"
+    author = "Mudit Pandey, UBC Quantum Software and Algorithms Research Group, and Xanadu"
 
     # TODO: Update list of operations and observables once more are added
     operations = {
