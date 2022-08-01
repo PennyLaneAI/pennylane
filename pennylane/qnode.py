@@ -640,6 +640,26 @@ class QNode:
 
             res = res[0]
 
+        if (
+            not isinstance(self._qfunc_output, Sequence)
+            and self._qfunc_output.return_type is qml.measurements.Counts
+        ):
+
+            if not self.device._has_partitioned_shots():
+                # return a dictionary with counts not as a single-element array
+                return res[0]
+
+            return tuple(res)
+
+        if isinstance(self._qfunc_output, Sequence) and any(
+            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+        ):
+
+            # If Counts was returned with other measurements, then apply the
+            # data structure used in the qfunc
+            qfunc_output_type = type(self._qfunc_output)
+            return qfunc_output_type(res)
+
         if override_shots is not False:
             # restore the initialization gradient function
             self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
@@ -650,10 +670,8 @@ class QNode:
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
-        if self._qfunc_output.return_type is qml.measurements.Counts:
-            # return a dictionary with counts not as a single-element array
-            return res[0]
 
+        # Squeeze arraylike outputs
         return qml.math.squeeze(res)
 
 

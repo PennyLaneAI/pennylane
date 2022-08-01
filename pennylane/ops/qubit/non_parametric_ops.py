@@ -2215,7 +2215,7 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
+    def __init__(self, wires=Wires([]), only_visual=False, do_queue=True, id=None):
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
@@ -2279,6 +2279,14 @@ class WireCut(Operation):
     num_params = 0
     num_wires = AnyWires
     grad_method = None
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        if wires == []:
+            raise ValueError(
+                f"{self.__class__.__name__}: wrong number of wires. "
+                f"At least one wire has to be given."
+            )
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=unused-argument

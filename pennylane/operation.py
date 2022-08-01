@@ -125,7 +125,7 @@ def __getattr__(name):
         raise AttributeError from e
 
 
-def expand_matrix(base_matrix, wires, wire_order):
+def expand_matrix(base_matrix, wires, wire_order=None):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -182,7 +182,18 @@ def expand_matrix(base_matrix, wires, wire_order):
     torch.Tensor
     >>> res.requires_grad
     True
+
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+
     """
+
+    if (wire_order is None) or (wire_order == wires):
+        return base_matrix
+
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
@@ -1195,14 +1206,35 @@ class Operator(abc.ABC):
         return tape
 
     def __add__(self, other):
-        r"""The addition operation between Operator objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, numbers.Number):
+            if other == 0:
+                return self
+            return qml.ops.Sum(  # pylint: disable=no-member
+                self,
+                qml.ops.SProd(  # pylint: disable=no-member
+                    scalar=other, base=qml.Identity(wires=self.wires)
+                ),
+            )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
+
+    def __sub__(self, other):
+        """The substraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, (Operator, numbers.Number)):
+            return self + (-other)
+        raise ValueError(f"Cannot substract {type(other)} from Operator.")
+
+    def __rsub__(self, other):
+        """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self):
+        """The negation operation of an Operator object."""
+        return qml.ops.SProd(scalar=-1, base=self)  # pylint: disable=no-member
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
@@ -1431,9 +1463,6 @@ class Operation(Operator):
 
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
@@ -1670,8 +1699,6 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
@@ -1697,7 +1724,10 @@ class Observable(Operator):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(other)} from Observable")
+        try:
+            return super().__sub__(other=other)
+        except ValueError as e:
+            raise ValueError(f"Cannot subtract {type(other)} from Observable") from e
 
 
 class Tensor(Observable):
