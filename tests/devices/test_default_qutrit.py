@@ -225,7 +225,7 @@ class TestApply:
     def test_apply_operation_two_wires_with_parameters_inverse(
         self, qutrit_device_2_wires, tol, operation, input, expected_output, par
     ):
-        """Tests that applying an operation yields the expected output state for two wire
+        """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
@@ -407,7 +407,7 @@ class TestWiresIntegration:
         ],
     )
     def test_wires_probs(self, wires1, wires2, tol):
-        """Test that the probability vector of a circuit is independent from the wire labels used."""
+        """Test that the probability vector of a circuit is independent of the wire labels used."""
 
         circuit1 = self.make_circuit_probs(wires1)
         circuit2 = self.make_circuit_probs(wires2)
@@ -415,7 +415,7 @@ class TestWiresIntegration:
         assert np.allclose(circuit1(), circuit2(), tol)
 
     def test_wires_not_found_exception(self):
-        """Tests that an exception is raised when wires not present on the device are adressed."""
+        """Tests that an exception is raised when wires not present on the device are addressed."""
         dev = qml.device("default.qutrit", wires=["a", "b"])
 
         with qml.tape.QuantumTape() as tape:
