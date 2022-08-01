@@ -147,6 +147,7 @@
   ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
+
 * Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
   [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
 
