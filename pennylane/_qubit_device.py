@@ -458,7 +458,7 @@ class QubitDevice(Device):
             #     r = r[0]
 
             if single_measurement:
-                r = r[0]
+                r = r[0]  # if counts_exist else qml.math.squeeze(r)
             else:
                 if shot_tuple.copies == 1:
                     r = tuple(

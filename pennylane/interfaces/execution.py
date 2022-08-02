@@ -589,6 +589,7 @@ def execute_new(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn
             )(tapes)
         )
+
     #
     # # the default execution function is batch_execute
     # execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
