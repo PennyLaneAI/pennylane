@@ -297,23 +297,20 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
                     # New return type output
                     g = []
-                    for result_group, coeff in zip(res, coeffs):
+                    coeffs = qml.math.convert_like(coeffs, res[0])
+                    assert len(res) > 0
+                    num_params = len(res[0])
+                    for parameter_idx in range(num_params):
 
-                        if multi_measure:
-                            new_group_result = []
-                            for r in result_group:
-                                # print("Shapes: ", r.shape, coeffs.shape)
-                                # grad_component = qml.math.tensordot(r, qml.math.convert_like(coeff, r), [[0], [0]])
-                                grad_component = r * coeff
-                                new_group_result.append(grad_component)
+                        # Gather the measurement results
+                        single_result = [
+                            measurement_result[parameter_idx] for measurement_result in res
+                        ]
+                        single_result = qml.math.stack(single_result)
+                        print("Res coeffs: ", single_result, coeffs)
+                        g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
+                        g.append(g_component)
 
-                            g.append(tuple(new_group_result))
-                        else:
-                            # result_group should be the result of a single measurement
-                            grad_component = result_group * coeff
-                            g.append(grad_component)
-
-                    g = [np.sum(g)]
                     # TODO:
                     if unshifted_coeff is not None:
                         # add the unshifted term
@@ -345,6 +342,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                     grads[i] = qml.math.hstack(g)
             res = qml.math.T(qml.math.stack(grads))
 
+        print("grad res:", res)
         return res
 
     return gradient_tapes, processing_fn

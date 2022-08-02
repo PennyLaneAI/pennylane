@@ -21,6 +21,8 @@ from pennylane import numpy as np
 import pennylane as qml
 
 
+# TODO: port more tests
+# Expval
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
 
@@ -115,5 +117,63 @@ class TestParameterShiftRule:
         numeric_val = np.squeeze(fn(dev.batch_execute(tapes)))
         for a_val, n_val in zip(autograd_val, numeric_val):
             assert np.allclose(a_val, n_val, atol=tol, rtol=0)
+
+        qml.disable_return()
+
+    def test_prob_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        qml.enable_return()
+
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 4
+
+        res = fn(dev.batch_execute(tapes))
+        assert len(res) == 2
+
+        for r in res:
+            assert len(r) == 2
+
+        expected = (
+            np.array([-2 * np.sin(x), 0]),
+            np.array(
+                [
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2,
+        )
+
+        print("expected: ", expected)
+        for param_idx, r in enumerate(res):
+            for meas_idx, meas_result in enumerate(r):
+                print(meas_result, param_idx, meas_idx)
+                assert np.allclose(meas_result, expected[param_idx][meas_idx], atol=tol, rtol=0)
 
         qml.disable_return()
