@@ -27,9 +27,15 @@ from tests.ops.qubit.test_parametric_ops import NON_PARAMETRIZED_OPERATIONS
 from gate_data import TSHIFT, TCLOCK
 
 PARAMETRIZED_OPERATIONS = [
+    qml.TRX(0.123, wires=0, subspace=[0, 1]),
+    qml.TRX(0.123, wires=0, subspace=[0, 2]),
     qml.TRX(0.123, wires=0, subspace=[1, 2]),
+    qml.TRY(0.123, wires=0, subspace=[0, 1]),
     qml.TRY(0.123, wires=0, subspace=[0, 2]),
+    qml.TRY(0.123, wires=0, subspace=[1, 2]),
     qml.TRZ(0.123, wires=0, subspace=[0, 1]),
+    qml.TRZ(0.123, wires=0, subspace=[0, 2]),
+    qml.TRZ(0.123, wires=0, subspace=[1, 2]),
     qml.QutritUnitary(TSHIFT, wires=0),
     qml.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
 ]

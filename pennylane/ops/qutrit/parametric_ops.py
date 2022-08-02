@@ -378,10 +378,16 @@ class TRZ(Operation):
     parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
-        gen_mat = np.zeros((3, 3)).astype(np.complex128)
-        gen_mat[self.subspace[0], self.subspace[0]] = 1
-        gen_mat[self.subspace[1], self.subspace[1]] = -1
-        return THermitian(-0.5 * gen_mat, wires=self.wires)
+        if self.subspace == (0, 1):
+            return -0.5 * qml.GellMannObs(3, wires=self.wires)
+        elif self.subspace == (0, 2):
+            coeffs = [-0.25, -0.25 * np.sqrt(3)]
+            obs = [qml.GellMannObs(3, wires=self.wires), qml.GellMannObs(8, wires=self.wires)]
+            return qml.Hamiltonian(coeffs, obs)
+        else:
+            coeffs = [-0.25 * np.sqrt(3), 0.25]
+            obs = [qml.GellMannObs(8, wires=self.wires), qml.GellMannObs(3, wires=self.wires)]
+            return qml.Hamiltonian(coeffs, obs)
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
