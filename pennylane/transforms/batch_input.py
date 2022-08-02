@@ -85,7 +85,7 @@ def batch_input(
     ):
         raise ValueError(
             "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
-            + "'argnum' have 'requires_grad' set to False."
+            + "'argnum' are not marked as trainable."
         )
 
     if len(np.unique([qml.math.shape(x)[0] for x in argnum_params])) != 1:
