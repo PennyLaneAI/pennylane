@@ -114,7 +114,7 @@ def cond(condition, true_fn, false_fn=None):
 
     .. warning::
 
-        The following are not supported by the ``condition`` argument:
+        The following are not supported as the ``condition`` argument:
 
         * Expressions that contain multiple measurement values;
         * Expressions with boolean logic flow using operators like ``and``,
