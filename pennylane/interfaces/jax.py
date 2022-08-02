@@ -169,6 +169,16 @@ def _execute(
         tc.set_parameters(a)
         return tc
 
+    def array_if_not_counts(tape, r):
+        """Auxiliary function to convert the result of a tape to an array,
+        unless the tape had Counts measurements that are represented with
+        dictionaries. JAX NumPy arrays don't support dictionaries."""
+        return (
+            jnp.array(r)
+            if not any(m.return_type is qml.measurements.Counts for m in tape.measurements)
+            else r
+        )
+
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
@@ -176,9 +186,9 @@ def _execute(
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
         if len(tapes) > 1:
-            res = [jnp.array(r) for r in res]
+            res = [array_if_not_counts(tape, r) for tape, r in zip(tapes, res)]
         else:
-            res = jnp.array(res)
+            res = array_if_not_counts(tapes[0], res)
 
         return res
 
