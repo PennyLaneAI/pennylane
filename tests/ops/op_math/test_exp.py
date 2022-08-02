@@ -31,7 +31,7 @@ class TestInitialization:
 
         assert op.base is base
         assert op.coeff == 1
-        assert op.name == "Exp(1 PauliX)"
+        assert op.name == "Exp"
         assert op.id == "something"
 
         assert op.num_params == 1
@@ -49,7 +49,7 @@ class TestInitialization:
 
         assert op.base is base
         assert op.coeff is coeff
-        assert op.name == "Exp(1.234 PauliZ(wires=['b']) @ PauliZ(wires=['c']))"
+        assert op.name == "Exp"
 
         assert op.num_params == 1
         assert op.parameters == [coeff, []]
@@ -67,7 +67,7 @@ class TestInitialization:
 
         assert op.base is base
         assert op.coeff is coeff
-        assert op.name == "Exp(-2.0 RX)"
+        assert op.name == "Exp"
 
         assert op.num_params == 2
         assert op.data == [coeff, [base_coeff]]
