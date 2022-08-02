@@ -44,7 +44,7 @@ def test_circuit_non_param_operator_before_batched_operator():
     """Test a circuit where a non-parametric operation is located before a batched operator."""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=1)
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev)
     def circuit(input):
         qml.CNOT(wires=[0, 1])

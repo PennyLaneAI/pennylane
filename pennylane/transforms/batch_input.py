@@ -42,8 +42,8 @@ def batch_input(
 
     Args:
         tape (.tape.QuantumTape or .QNode): Input quantum circuit to batch
-        argnum (Sequence[int] or int): One or more index values indicating the location of the
-        quantum operators that use the non-trainable batched parameters.
+        argnum (Sequence[int] or int): One or several index values indicating the position of the
+        non-trainable batched parameters in the quantum tape.
 
     Returns:
         Sequence[Sequence[.tape.QuantumTape], Callable]: list of tapes arranged
@@ -74,9 +74,7 @@ def batch_input(
     """
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
-    all_parameters = sum(
-        (op.parameters if op.parameters != [] else [None] for op in tape.operations), []
-    )
+    all_parameters = tape.get_parameters(trainable_only=False)
     argnum_params = [all_parameters[i] for i in argnum]
 
     if any(qml.math.requires_grad(p) for p in argnum_params):
@@ -97,8 +95,6 @@ def batch_input(
     for i in range(batch_size):
         batch = []
         for idx, param in enumerate(all_parameters):
-            if param is None:
-                continue
             if idx in argnum:
                 param = param[i]
             batch.append(param)
