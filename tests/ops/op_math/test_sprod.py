@@ -610,6 +610,21 @@ class TestIntegration:
         ):
             my_circ()
 
+    def test_measurement_process_count(self):
+        """Test SProd class instance in counts measurement process raises error."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qml.Hadamard(1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.counts(op=sprod_op)
+
+        with pytest.raises(
+            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
+        ):
+            my_circ()
+
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
         is used in the measurement process."""
