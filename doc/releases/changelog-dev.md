@@ -425,6 +425,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Bug fixes</h3>
 
+* Updated IsingXY gate doc-string.
+  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
+
 * Fixes a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
   do not contains any unshifted terms.
@@ -465,5 +468,5 @@ This release contains contributions from (in alphabetical order):
 
 Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
 Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
-Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva,
+Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni, Antal Száva,
 David Wierichs, Moritz Willmann
