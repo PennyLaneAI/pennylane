@@ -384,6 +384,25 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> qml.grad(circuit)(weights)
   tensor([-0.07059288589999416], requires_grad=True)
   ```
+  
+  The `prod_op` can also be used inside a `qnode` as an operation which,
+  if parameterized, can be differentiated.
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(theta):
+      qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> circuit(1.23)
+  tensor(0.33423773, requires_grad=True)
+  >>> qml.grad(circuit)(1.23)
+  -0.9424888019316975
+  ```
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
