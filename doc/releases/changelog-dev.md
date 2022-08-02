@@ -4,10 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Functionality for estimating the number of non-Clifford gates and logical qubits needed to
-  implement quantum phase estimation algorithms for simulating materials and molecules is added to
-  the new `qml.resource` module. Quantum algorithms in first quantization using a plane-wave basis
-  and in second quantization with a double-factorized Hamiltonian are supported.
+<h4>Estimate computational requirements ⚙️</h4>
+
+* Functionality for estimating molecular simulation computations has been added.
   [(#2646)](https://github.com/PennyLaneAI/pennylane/pull/2646)
   [(#2653)](https://github.com/PennyLaneAI/pennylane/pull/2653)
   [(#2665)](https://github.com/PennyLaneAI/pennylane/pull/2665)
@@ -20,11 +19,12 @@
   [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
-  The resource estimation algorithms are implemented as classes inherited from the `Operation`
-  class. The number of non-Clifford gates and logical qubits for implementing each algorithm can be
-  estimated by initiating the class for a given system. For the first quantization algorithm, the 
-  number of plane waves, number of electrons and the unit cell volume (in atomic units) are needed
-  to initiate the `FirstQuantization` class. The resource can then be estimated as
+  The new `qml.resource` module allows you to estimate the number of non-[Clifford gates](https://en.wikipedia.org/wiki/Clifford_gates) 
+  and logical qubits needed to implement quantum phase estimation algorithms 
+  for simulating materials and molecules. This includes support for quantum 
+  algorithms using first and second quantization with specific bases:
+
+  - First quantization using a plane-wave basis via the `FirstQuantization` class:
 
   ```python
   import pennylane as qml
@@ -32,22 +32,19 @@
   
   n = 100000        # number of plane waves
   eta = 156         # number of electrons
-  omega = 1145.166  # unit cell volume
+  omega = 1145.166  # unit cell volume in atomic units
   
   algo = FirstQuantization(n, eta, omega)
-  
-  # print the number of non-Clifford gates and logical qubits
-  print(algo.gates, algo.qubits)
   ```
   
   ```pycon
+  >>> print(algo.gates, algo.qubits)
   1.10e+13, 4416
   ```
-  
-  For the second quantization algorithm, the one- and two-electron integrals are needed to initiate
-  the `DoubleFactorization` class which creates a double-factorized Hamiltonian and computes the
-  number of non-Clifford gates and logical qubits for simulating the Hamiltonian:
 
+  - Second quantization with a double-factorized Hamiltonian via the 
+  `DoubleFactorization` class: 
+ 
   ```python
   import pennylane as qml
   from pennylane import numpy as np
@@ -59,113 +56,59 @@
   
   mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
   core, one, two = qml.qchem.electron_integrals(mol)()
-  algo = DoubleFactorization(one, two)
   
-  # print the number of non-Clifford gates and logical qubits
-  print(algo.gates, algo.qubits)
+  algo = DoubleFactorization(one, two)
   ```
 
   ```pycon
+  >>> print(algo.gates, algo.qubits)
   103969925, 290
   ```
 
-  The methods of the `FirstQuantization` and the `DoubleFactorization` classes can be also accessed
-  individually. For instance, the logical qubits can be computed by providing the inputs needed for
-  this estimation without initiating the class. 
+  The methods of the `FirstQuantization` and the `DoubleFactorization` classes 
+  can be also accessed individually without initiating the class:
+
+  - The number of logical qubits with `qubit_cost`:
 
   ```python
   n = 100000
   eta = 156
   omega = 169.69608
   error = 0.01
-  qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
   ```
   
   ```pycon
+  >>> qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
   4377
   ```
 
-  In addition to the number of non-Clifford gates and logical qubits, some other quantities such as
-  the 1-norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
-  obtained either by initiating the classes or by directly calling the functions.
+  - The number of non-Clifford gates with `gate_cost` (TODO: check this):
 
-* `DefaultQubit` devices now natively support parameter broadcasting.
-  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
-  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
-  devices now are able to directly execute broadcasted circuits, providing
-  a faster way of executing the same circuit at varied parameter positions.
+   ```python
+    n = 100000
+    eta = 156
+    omega = 169.69608
+    error = 0.01
+    ```
+    
+    ```pycon
+    >>> qml.resource.FirstQuantization.gate_cost(n, eta, omega, error)
+    TODO
+    ``` 
 
-  Given a standard `QNode`,
+<h4>Differentiable error mitigation 🧑‍🔧</h4>
 
-  ```python
-  dev = qml.device("default.qubit", wires=2)
+  TODO 
 
-  @qml.qnode(dev)
-  def circuit(x, y):
-      qml.RX(x, wires=0)
-      qml.RY(y, wires=0)
-      return qml.expval(qml.PauliZ(0))
-  ```
-
-  we can call it with broadcasted parameters:
-
-  ```pycon
-  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
-  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
-  >>> circuit(x, y)
-  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
-  ```
-
-  It's also possible to broadcast only some parameters:
-
-  ```pycon
-  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
-  >>> y = np.array(0.23, requires_grad=True)
-  >>> circuit(x, y)
-  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
-  ```
-
-* Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
-  perturbation stochastic approximation method based on
-  [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
-  [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
-
-  It is a suitable optimizer for cost functions whose evaluation may involve
-  noise, as optimization with SPSA may significantly decrease the number of
-  quantum executions for the entire optimization.
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=1)
-  >>> def circuit(params):
-  ...     qml.RX(params[0], wires=0)
-  ...     qml.RY(params[1], wires=0)
-  >>> coeffs = [1, 1]
-  >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
-  >>> H = qml.Hamiltonian(coeffs, obs)
-  >>> @qml.qnode(dev)
-  ... def cost(params):
-  ...     circuit(params)
-  ...     return qml.expval(H)
-  >>> params = np.random.normal(0, np.pi, (2), requires_grad=True)
-  >>> print(params)
-  [-5.92774911 -4.26420843]
-  >>> print(cost(params))
-  0.43866366253270167
-  >>> max_iterations = 50
-  >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-  >>> for _ in range(max_iterations):
-  ...     params, energy = opt.step_and_cost(cost, params)
-  >>> print(params)
-  [-6.21193761 -2.99360548]
-  >>> print(energy)
-  -1.1258709813834058
-  ```
-
-* Differentiable zero-noise-extrapolation error mitigation via ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
+* Differentiable zero-noise-extrapolation error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
 
-  When using a noisy or real device, you can now create a differentiable mitigated qnode that internally executes folded circuits that increase the noise and extrapolating with a polynomial fit back to zero noise. There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
+  When using a noisy device (simulator or real hardware), you can now create a 
+  differentiable-mitigated qnode that internally executes *folded* circuits that 
+  increase the noise and extrapolating with a polynomial fit back to zero noise. 
+  There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
+
+  ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
 
   ```python
   # Describe noise
@@ -193,20 +136,72 @@
   >>> grad(theta)
   0.5712737447327619
   ```
+  
+<h4>Native support for parameter broadcasting for `DefaultQubit` devices 📡</h4>
 
-* The quantum information module now supports computation of relative entropy.
-  [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
+* `DefaultQubit` devices now natively support parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
+  devices now are able to directly execute broadcasted circuits, providing
+  a faster way of executing the same circuit at varied parameter positions
 
-  It includes a function in `qml.math`:
+  ```python
+  dev = qml.device("default.qubit", wires=2)
 
-  ```pycon
-  >>> rho = np.array([[0.3, 0], [0, 0.7]])
-  >>> sigma = np.array([[0.5, 0], [0, 0.5]])
-  >>> qml.math.relative_entropy(rho, sigma)
-  tensor(0.08228288, requires_grad=True)
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(0))
   ```
 
-  as well as a QNode transform:
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
+  >>> circuit(x, y)
+  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
+  ```
+
+  It's also possible to broadcast only *some* parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array(0.23, requires_grad=True)
+  >>> circuit(x, y)
+  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+
+<h4>The SPSA optimizer 🦾</h4>
+
+* The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
+  is available via `qml.SPSAOptimizer`.
+  [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
+
+  The SPSA optimizer is suitable for cost functions whose evaluation may involve
+  noise, as optimization with SPSA may significantly decrease the number of
+  quantum executions for the entire optimization. Use the SPSA optimizer like you
+  would any other optimizer:
+
+  ```python
+  max_iterations = 50
+  opt = qml.SPSA(maxiter=max_iterations) # TODO: check documentation for SPSA
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
+
+
+<h4>Relative entropy now available in `qml.qinfo`</h4>
+
+* The quantum information module now supports computation of [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy).
+  [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
+
+  To calculate relative entropy, one requires two quantum states and subspaces over 
+  which you would like to calculate the relative entropy. We've enabled two ways 
+  to calculate the relative entropy:
+  
+  - A QNode transform via `qml.qinfo.relative_entropy`:
 
   ```python
   dev = qml.device('default.qubit', wires=2)
@@ -225,14 +220,17 @@
   0.017750012490703237
   ```
 
+  - Relative entropy support in `qml.math` for flexible post-processing:
+
+  ```pycon
+  >>> rho = np.array([[0.3, 0], [0, 0.7]])
+  >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+  >>> qml.math.relative_entropy(rho, sigma)
+  tensor(0.08228288, requires_grad=True)
+  ```
+
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
-
-* Added `QutritDevice` as an abstract base class for qutrit devices.
-  ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
-
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
 **Operator Arithmetic:**
 
