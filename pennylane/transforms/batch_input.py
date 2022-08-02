@@ -86,12 +86,13 @@ def batch_input(
             + "'argnum' are not marked as trainable."
         )
 
-    if len(np.unique([qml.math.shape(x)[0] for x in argnum_params])) != 1:
+    batch_dims = np.unique([qml.math.shape(x)[0] for x in argnum_params])
+    if len(batch_dims) != 1:
         raise ValueError(
             "Batch dimension for all gate arguments specified by 'argnum' must be the same."
         )
 
-    batch_size = qml.math.shape(argnum_params[0])[0]
+    batch_size = batch_dims[0]
 
     outputs = []
     for i in range(batch_size):
