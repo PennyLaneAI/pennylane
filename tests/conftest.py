@@ -89,6 +89,7 @@ def qubit_device_3_wires(request):
 """The following 3 fixtures are for default.qutrit devices to be used for testing with various
 real and complex dtypes."""
 
+
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qutrit_device_1_wire(request):
     return qml.device("default.qutrit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
