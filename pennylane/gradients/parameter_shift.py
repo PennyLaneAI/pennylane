@@ -292,11 +292,13 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         # The following is for backwards compatibility; currently, the device stacks multiple
         # measurement arrays, even if not the same size, resulting in a ragged array.
         # In the future, we might want to change this so that only tuples of arrays are returned.
-        for i, g in enumerate(grads):
-            if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
-                grads[i] = qml.math.hstack(g)
+        # for i, g in enumerate(grads):
+        #     if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
+        #         grads[i] = qml.math.hstack(g)
 
-        return qml.math.T(qml.math.stack(grads))
+        grads = tuple(qml.math.squeeze(g) for g in grads)
+        print(grads)
+        return grads
 
     return gradient_tapes, processing_fn
 

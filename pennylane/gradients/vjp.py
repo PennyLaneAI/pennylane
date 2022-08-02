@@ -63,6 +63,37 @@ def compute_vjp(dy, jac, num=None):
     return math.tensordot(jac, dy_row, [[0], [0]])
 
 
+# TODO: add new marker
+def compute_vjp(dy, jac, num=None):
+    if jac is None:
+        return None
+
+    dy_row = math.reshape(dy, [-1])
+
+    if num is None:
+        num = math.shape(dy_row)[0]
+
+    if not isinstance(dy_row, np.ndarray):
+        jac = math.convert_like(jac, dy_row)
+        jac = math.cast(jac, dy_row.dtype)
+
+    print("in here: ", jac)
+    jac = math.reshape(jac, [num, -1])
+    print("in here2: ", jac)
+
+    try:
+        if math.allclose(dy, 0):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero.
+            num_params = jac.shape[1]
+            res = math.convert_like(np.zeros([num_params]), dy)
+            return math.cast(res, dy.dtype)
+    except (AttributeError, TypeError):
+        pass
+
+    return tuple(math.tensordot(jac, dy_row, [[0], [0]]))
+
+
 def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a tape.
