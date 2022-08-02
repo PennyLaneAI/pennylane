@@ -390,22 +390,6 @@ class TestSample:
         with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
             sample = circuit()
 
-    def test_providing_symbolic_operation_raises_error(self):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is a symbolic operation"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.sample(qml.op_sum(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not" + " supported for sampling yet.",
-        ):
-            sample = circuit()
-
     def test_observable_return_type_is_sample(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10
@@ -572,22 +556,6 @@ class TestSample:
 
 class TestCounts:
     """Tests for the counts function"""
-
-    def test_providing_symbolic_operation_raises_error(self):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is a symbolic operation"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.counts(qml.op_sum(qml.PauliX(0), qml.PauliZ(0)))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Symbolic Operations are not" + " supported for sampling yet.",
-        ):
-            sample = circuit()
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are
