@@ -57,7 +57,7 @@ def batch_input(
 
         dev = qml.device("default.qubit", wires = 2, shots=None)
 
-        @batch_input(argnum=1)
+        @qml.batch_input(argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
         def circuit(inputs, weights):
             qml.RY(weights[0], wires=0)
