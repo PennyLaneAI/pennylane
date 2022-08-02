@@ -14,7 +14,7 @@
 """
 Unit tests for the new return types.
 """
-
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -43,11 +43,8 @@ class TestSingleReturnExecute:
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         assert res[0].shape == (2**wires,)
-        assert isinstance(res[0], 
-        
-        
-        
-        .ndarray)
+        assert res[0].shape == (2**wires,)
+        assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("wires", wires)
     def test_state_mixed(self, wires, shots):
