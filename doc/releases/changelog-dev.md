@@ -422,7 +422,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 * Fixes a bug where `qml.batch_input` raised an error when using a batched operator that was not
-  located at the beginning of the circuit.
+  located at the beginning of the circuit. In addition, now `qml.batch_input` raises an error when
+  using trainable batched inputs, which avoids an unwanted behaviour where the parameters where
+  duplicated.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
 <h3>Contributors</h3>
