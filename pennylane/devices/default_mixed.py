@@ -124,6 +124,11 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
+
+        # Support float
+        if not hasattr(array, "__len__"):
+            return np.asarray(array, dtype=dtype)
+
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
         is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
