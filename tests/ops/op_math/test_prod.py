@@ -180,12 +180,11 @@ class TestInitialization:
         ):
             _ = prod_op.ndim_params
 
-    def test_batch_size_raises_error(self):
-        """Test that calling batch_size raises a ValueError."""
+    def test_batch_size_is_None(self):
+        """Test that calling batch_size returns None
+        (i.e no batching with Prod)."""
         prod_op = prod(qml.PauliX(0), qml.Identity(1))
-
-        with pytest.raises(ValueError, match="Batch size is not defined for Prod operators."):
-            _ = prod_op.batch_size
+        assert prod_op.batch_size is None
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition(self, ops_lst):
@@ -762,21 +761,27 @@ class TestIntegration:
         with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
             my_circ()
 
-    @pytest.mark.parametrize("ops_tuple", ops)
-    def test_operation_integration(self, ops_tuple):
+    def test_operation_integration(self):
         """Test that a Product operation can be queued and executed in a circuit"""
-        num_wires = len(qml.wires.Wires.all_wires([op.wires for op in ops_tuple]))
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qml.device("default.qubit", wires=3)
+        ops = (
+            qml.Hadamard(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.RX(1.23, wires=1),
+            qml.IsingZZ(0.56, wires=[0, 2])
+        )
 
         @qml.qnode(dev)
         def prod_state_circ():
-            Prod(*ops_tuple)
+            Prod(*ops)
             return qml.state()
 
         @qml.qnode(dev)
         def true_state_circ():
-            for i in reversed(range(3)):
-                ops_tuple[i]
+            qml.IsingZZ(0.56, wires=[0, 2])
+            qml.RX(1.23, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=0)
             return qml.state()
 
         assert qnp.allclose(prod_state_circ(), true_state_circ())
