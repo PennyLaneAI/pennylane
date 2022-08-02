@@ -82,10 +82,14 @@ class TRX(Operation):
     parameter_frequencies = [(0.5, 1)]
 
     def generator(self):
-        gen_mat = np.zeros((3, 3)).astype(np.complex128)
-        gen_mat[self.subspace] = 1
-        gen_mat[self.subspace[::-1]] = 1
-        return THermitian(-0.5 * gen_mat, wires=self.wires)
+        if self.subspace == (0, 1):
+            index = 1
+        elif self.subspace == (0, 2):
+            index = 4
+        else:
+            index = 6
+
+        return -0.5 * qml.GellMannObs(index, wires=self.wires)
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
