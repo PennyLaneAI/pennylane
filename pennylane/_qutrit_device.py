@@ -155,9 +155,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Raises:
             QuantumFunctionError: density matrix is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add density matrix support. Currently, qml.math is hard-coded to work only with qubit states,
-        # (see `qml.math.reduced_dm()`) so it needs to be updated to be able to handle calculations for qutrits
-        # before this method can be implemented.
+        # TODO: Add support for DensityMatrix return type. Currently, qml.math is hard coded to calculate this for qubit
+        # states (see `qml.math.reduced_dm()`), so it needs to be updated before DensityMatrix can be supported for qutrits.
+        # For now, if a user tries to request this return type, an error will be raised.
         raise qml.QuantumFunctionError(
             "Unsupported return type specified for observable density matrix"
         )
@@ -306,9 +306,14 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         prob = self._reshape(prob, [3] * self.num_wires)
 
         # sum over all inactive wires
-        prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
-        # TODO: Add case for when inactive_device_wires is not an instance of Wires once
-        # default qutrit device is added
+        # hotfix to catch when default.qutrit uses this method
+        # since then device_wires is a list
+        if isinstance(inactive_device_wires, Wires):
+            wires = inactive_device_wires.labels
+        else:
+            wires = inactive_device_wires
+
+        prob = self._flatten(self._reduce_sum(prob, wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
