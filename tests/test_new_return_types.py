@@ -17,7 +17,6 @@ Unit tests for the new return types.
 
 import pytest
 
-import numpy as np
 import pennylane as qml
 
 wires = [2, 3, 4]
@@ -44,7 +43,11 @@ class TestSingleReturnExecute:
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         assert res[0].shape == (2**wires,)
-        assert isinstance(res[0], np.ndarray)
+        assert isinstance(res[0], 
+        
+        
+        
+        .ndarray)
 
     @pytest.mark.parametrize("wires", wires)
     def test_state_mixed(self, wires, shots):
@@ -206,9 +209,7 @@ class TestSingleReturnExecute:
         assert isinstance(res[0], np.ndarray)
         assert res[0].shape == (shots,)
 
-    @pytest.mark.parametrize(
-        "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
-    )
+    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, measurement, shots):
         """Test the counts measurement."""
         if shots is None:
@@ -425,9 +426,7 @@ class TestMultipleReturns:
         assert isinstance(res[0][1], np.ndarray)
         assert res[0][1].shape == (shots,)
 
-    @pytest.mark.parametrize(
-        "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
-    )
+    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_expval_counts(self, measurement, shots):
         """Test the expval and counts measurements together."""
         if shots is None:
@@ -581,9 +580,7 @@ class TestShotVector:
             else:
                 assert r.shape == (shots,)
 
-    @pytest.mark.parametrize(
-        "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
-    )
+    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement, device):
         """Test the counts measurement."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
@@ -694,12 +691,8 @@ class TestSameMeasurementShotVector:
             shape = () if shots == 1 else (shots,)
             assert all(res_item.shape == shape for res_item in r)
 
-    @pytest.mark.parametrize(
-        "measurement1", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
-    )
-    @pytest.mark.parametrize(
-        "measurement2", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
-    )
+    @pytest.mark.parametrize("measurement1", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement1, measurement2, device):
         """Test multiple counts measurements."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
@@ -769,20 +762,20 @@ scalar_sample_no_obs_multi = [
 
 scalar_counts_multi = [
     # Expval
-    (qml.expval(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
-    (qml.expval(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
-    (qml.expval(tensor_product), qml.sample(op=qml.PauliZ(0), counts=True)),
+    (qml.expval(pauliz_w2), qml.counts(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.expval(proj_w2), qml.counts(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.expval(tensor_product), qml.counts(op=qml.PauliZ(0))),
     # Var
-    (qml.var(proj_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
-    (qml.var(pauliz_w2), qml.sample(op=qml.PauliZ(1) @ qml.PauliZ(0), counts=True)),
-    (qml.var(tensor_product), qml.sample(op=qml.PauliZ(0), counts=True)),
+    (qml.var(proj_w2), qml.counts(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.var(pauliz_w2), qml.counts(op=qml.PauliZ(1) @ qml.PauliZ(0))),
+    (qml.var(tensor_product), qml.counts(op=qml.PauliZ(0))),
 ]
 
 scalar_counts_no_obs_multi = [
     # TODO: for copy=1, the wires syntax has a bug
     # -----
-    (qml.expval(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1], counts=True)),
-    (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1], counts=True)),
+    (qml.expval(qml.PauliZ(wires=1)), qml.counts(wires=[0, 1])),
+    (qml.var(qml.PauliZ(wires=1)), qml.counts(wires=[0, 1])),
 ]
 
 
@@ -1038,12 +1031,10 @@ class TestMixMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             if sample_obs is not None:
                 # Observable provided to sample
-                return qml.probs(wires=meas1_wires), qml.sample(
-                    sample_obs(meas2_wires), counts=True
-                )
+                return qml.probs(wires=meas1_wires), qml.counts(sample_obs(meas2_wires))
 
             # Only wires provided to sample
-            return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires, counts=True)
+            return qml.probs(wires=meas1_wires), qml.counts(wires=meas2_wires)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -1088,24 +1079,18 @@ class TestMixMeasurementsShotVector:
 
             # 1. Sample obs and Counts obs
             if len(sample_wires) == 1 and len(counts_wires) == 1:
-                return qml.sample(qml.PauliY(sample_wires)), qml.sample(
-                    qml.PauliX(counts_wires), counts=True
-                )
+                return qml.sample(qml.PauliY(sample_wires)), qml.counts(qml.PauliX(counts_wires))
 
             # 2. Sample no obs and Counts obs
             if len(sample_wires) > 1 and len(counts_wires) == 1:
-                return qml.sample(wires=sample_wires), qml.sample(
-                    qml.PauliX(counts_wires), counts=True
-                )
+                return qml.sample(wires=sample_wires), qml.counts(qml.PauliX(counts_wires))
 
             # 3. Sample obs and Counts no obs
             if len(sample_wires) == 1 and len(counts_wires) > 1:
-                return qml.sample(qml.PauliY(sample_wires)), qml.sample(
-                    wires=counts_wires, counts=True
-                )
+                return qml.sample(qml.PauliY(sample_wires)), qml.counts(wires=counts_wires)
 
             # 4. Sample no obs and Counts no obs
-            return qml.sample(wires=sample_wires), qml.sample(wires=counts_wires, counts=True)
+            return qml.sample(wires=sample_wires), qml.counts(wires=counts_wires)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -1147,7 +1132,7 @@ class TestMixMeasurementsShotVector:
                 qml.apply(meas1),
                 qml.apply(meas2),
                 qml.sample(qml.PauliX(4)),
-                qml.sample(qml.PauliX(3), counts=True),
+                qml.counts(qml.PauliX(3)),
             )
 
         qnode = qml.QNode(circuit, dev)
