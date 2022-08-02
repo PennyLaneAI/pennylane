@@ -66,6 +66,7 @@ class DefaultQutrit(QutritDevice):
     # Identity is supported as an observable for qml.state() to work correctly. However, any
     # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
     observables = {
+        "Identity",
         "THermitian",
         "GellMann",
         "Identity",
