@@ -664,7 +664,7 @@ def sample(op=None, wires=None):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd)):  # pylint: disable=no-member
+    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
         raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
 
     if wires is not None:
