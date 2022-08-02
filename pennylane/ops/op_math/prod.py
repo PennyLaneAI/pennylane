@@ -249,7 +249,7 @@ class Prod(Operator):
         return reduce(math.dot, mats)
 
     @property
-    def _queue_category(self):  # don't queue Prod instances because it may not be unitary!
+    def _queue_category(self):  # pylint: disable=protected-access
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
@@ -262,9 +262,7 @@ class Prod(Operator):
 
         Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
-        return (
-            "_ops" if all(op._queue_category == "_ops" for op in self.factors) else None
-        )  # pylint: disable=protected-access
+        return "_ops" if all(op._queue_category == "_ops" for op in self.factors) else None
 
     def queue(self, context=qml.QueuingContext):
         """Updates each operator's owner to Prod, this ensures
