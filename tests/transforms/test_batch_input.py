@@ -33,11 +33,31 @@ def test_simple_circuit():
         return qml.expval(qml.PauliZ(1))
 
     batch_size = 5
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2))
-    inputs.requires_grad = False
+    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     res = circuit(inputs, weights)
+    assert res.shape == (batch_size,)
+
+
+def test_circuit_non_param_operator_before_batched_operator():
+    """Test a circuit where a non-parametric operation is located before a batched operator."""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=1)
+    @qml.qnode(dev)
+    def circuit(input):
+        qml.CNOT(wires=[0, 1])
+        qml.RY(input, wires=1)
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    batch_size = 3
+
+    input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
+
+    res = circuit(input)
+
     assert res.shape == (batch_size,)
 
 
@@ -56,10 +76,8 @@ def test_value_error():
         return qml.expval(qml.PauliZ(1))
 
     batch_size = 5
-    input1 = np.random.uniform(0, np.pi, (batch_size, 2))
-    input1.requires_grad = False
-    input2 = np.random.uniform(0, np.pi, (4, 1))
-    input2.requires_grad = False
+    input1 = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
+    input2 = np.random.uniform(0, np.pi, (4, 1), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     with pytest.raises(ValueError, match="Batch dimension for all gate arguments"):
