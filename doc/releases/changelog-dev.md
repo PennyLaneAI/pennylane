@@ -103,12 +103,19 @@
 * Differentiable zero-noise-extrapolation error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
 
-  When using a noisy device (simulator or real hardware), you can now create a 
-  differentiable-mitigated qnode that internally executes *folded* circuits that 
-  increase the noise and extrapolating with a polynomial fit back to zero noise. 
-  There will be an accompanying demo on this, see [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
+  In zero-noise-extrapolation (ZNE), the noise of a circuit is artificially increased by _folding_
+  the circuit. By executing an expectation value with increasing noise, we can extrapolate back to
+  zero noise by means of a polynomial fit. More details on this can be found in the details section
+  of the [documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.fold_global.html)
+  and a soon-to-appear demo [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
-  ``qml.transforms.mitigate_with_zne`` with ``qml.transforms.fold_global`` and ``qml.transforms.poly_extrapolate``.
+  The new feature in PennyLane is that we now offer ZNE that is differentiable. That means, you can now lift any variational
+  quantum algorithm that is written in PennyLane to a mitigated algorithm with improved results on noisy hardware, with automatic differentiation
+  still working.
+
+  In order to do so, use the `qml.transforms.mitigate_with_zne` transform on your `qnode` and provide the PennyLane proprietary
+  `qml.transforms.fold_global` folding function and `qml.transforms.poly_extrapolate` extrapolation function. Here is an example for a noisy simulation device
+  where we mitigate a `qnode` and still are able to compute the gradient:
 
   ```python
   # Describe noise
