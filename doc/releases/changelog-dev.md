@@ -184,7 +184,6 @@
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
-
 **Operator Arithmetic:**
 
 * Adds the `Controlled` symbolic operator to represent a controlled version of any
@@ -301,6 +300,44 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
+* Added `qml.counts` which samples from the supplied observable returning the number of counts
+  for each sample.
+  [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
+  [(#2876)](https://github.com/PennyLaneAI/pennylane/pull/2876)
+
+  Note that the change included creating a new `Counts` measurement type in `measurements.py`.
+
+  `qml.counts` can be used to obtain counted raw samples in the computational basis:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.counts()
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '11': 505}
+  ```
+
+  Counts can also be obtained when sampling the eigenstates of an observable:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...   qml.Hadamard(wires=0)
+  ...   qml.CNOT(wires=[0, 1])
+  ...   return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
+  >>> result = circuit()
+  >>> print(result)
+  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
+  ```
+
 <h3>Improvements</h3>
 
 * The efficiency of the Hartree-Fock workflow is improved by removing the repetitive basis set
@@ -319,43 +356,6 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * Jacobians are cached with the Autograd interface when using the
   parameter-shift rule.
   [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
-
-* Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
-  [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
-  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
-
-  Note that the change included creating a new `Counts` measurement type in `measurements.py`.
-
-  `counts=True` can be set when obtaining raw samples in the computational basis:
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-  >>>
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...     qml.Hadamard(wires=0)
-  ...     qml.CNOT(wires=[0, 1])
-  ...     # passing the counts flag
-  ...     return qml.sample(counts=True)
-  >>> result = circuit()
-  >>> print(result)
-  {'00': 495, '11': 505}
-  ```
-
-  Counts can also be obtained when sampling the eigenstates of an observable:
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-  >>>
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...   qml.Hadamard(wires=0)
-  ...   qml.CNOT(wires=[0, 1])
-  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
-  >>> result = circuit()
-  >>> print(result)
-  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
-  ```
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
   labels.
