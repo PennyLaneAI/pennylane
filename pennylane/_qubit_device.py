@@ -94,7 +94,9 @@ class QubitDevice(Device):
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
+    _gather = staticmethod(
+        lambda array, indices, axis=0: array[:, indices] if axis == 1 else array[indices]
+    )  # Make sure to only use _gather with axis=0 or axis=1
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
@@ -106,6 +108,8 @@ class QubitDevice(Device):
     _outer = staticmethod(np.outer)
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
+    _size = staticmethod(np.size)
+    _ndim = staticmethod(np.ndim)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -189,6 +193,7 @@ class QubitDevice(Device):
         "Identity",
         "Projector",
         "Sum",
+        "Sprod",
     }
 
     def __init__(
@@ -214,6 +219,7 @@ class QubitDevice(Device):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
+            supports_broadcasting=False,
             supports_finite_shots=True,
             supports_tensor_observables=True,
             returns_probs=True,
@@ -227,6 +233,52 @@ class QubitDevice(Device):
         Most importantly the quantum state is reset to its initial value.
         """
         self._samples = None
+
+    def _collect_shotvector_results(self, circuit, counts_exist):
+        """Obtain and process statistics when using a shot vector.
+        This routine is part of the ``execute()`` method."""
+
+        if self._ndim(self._samples) == 3:
+            raise NotImplementedError(
+                "Parameter broadcasting when using a shot vector is not supported yet."
+            )
+        results = []
+        s1 = 0
+
+        for shot_tuple in self._shot_vector:
+            s2 = s1 + np.prod(shot_tuple)
+            r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+
+            if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                r = r[0]
+            elif not counts_exist:
+                # Measurement types except for Counts
+                r = qml.math.squeeze(r)
+
+            if counts_exist:
+
+                # This happens when at least one measurement type is Counts
+                for result_group in r:
+                    if isinstance(result_group, list):
+                        # List that contains one or more dictionaries
+                        results.extend(result_group)
+                    else:
+                        # Other measurement results
+                        results.append(result_group.T)
+
+            elif shot_tuple.copies > 1:
+                results.extend(r.T)
+            else:
+                results.append(r.T)
+
+            s1 = s2
+
+        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+        if not multiple_sampled_jobs and not counts_exist:
+            # Can only stack single element outputs
+            results = self._stack(results)
+
+        return results
 
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
@@ -246,7 +298,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -263,53 +315,28 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
-        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
-
-            results = []
-            s1 = 0
-
-            for shot_tuple in self._shot_vector:
-                s2 = s1 + np.prod(shot_tuple)
-                r = self.statistics(
-                    circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
-                )
-
-                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
-                    r = r[0]
-                elif not isinstance(r[0], dict):
-                    # Measurement types except for Counts
-                    r = qml.math.squeeze(r)
-                if isinstance(r, (np.ndarray, list)) and r.shape and isinstance(r[0], dict):
-                    # This happens when measurement type is Counts
-                    results.append(r)
-                elif shot_tuple.copies > 1:
-                    results.extend(r.T)
-                else:
-                    results.append(r.T)
-
-                s1 = s2
-
-            if not multiple_sampled_jobs:
-                # Can only stack single element outputs
-                results = qml.math.stack(results)
-
+            results = self._collect_shotvector_results(circuit, counts_exist)
         else:
             results = self.statistics(circuit.observables)
 
         if not circuit.is_sampled:
 
-            ret_types = [m.return_type for m in circuit.measurements]
-
             if len(circuit.measurements) == 1:
-                if circuit.measurements[0].return_type is qml.measurements.State:
+                if ret_types[0] is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 elif circuit.measurements[0].return_type is not qml.measurements.Counts:
                     # Measurements with expval, var or probs
-                    results = self._asarray(results, dtype=self.R_DTYPE)
+                    try:
+                        # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
+                        results = self._asarray(results, dtype=self.R_DTYPE)
+                    except TypeError:
+                        pass
 
             elif all(
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
@@ -317,15 +344,17 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
-            elif any(ret is not qml.measurements.Counts for ret in ret_types):
-                # all the other cases except all counts
+            elif not counts_exist:
+                # all the other cases except any counts
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
-
             results = self._asarray(results)
         else:
-            results = tuple(self._asarray(r) for r in results)
+            results = tuple(
+                qml.math.squeeze(self._asarray(r)) if not isinstance(r, dict) else r
+                for r in results
+            )
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -334,6 +363,192 @@ class QubitDevice(Device):
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
         return results
+
+    def execute_new(self, circuit, **kwargs):
+        """New execute (update of return type) function, it executes a queue of quantum operations on the device and
+        then measure the given observables. More case will be added in future PRs, for the moment it only supports
+        measurements without shots.
+
+        For plugin developers: instead of overwriting this, consider
+        implementing a suitable subset of
+
+        * :meth:`apply`
+
+        * :meth:`~.generate_samples`
+
+        * :meth:`~.probability`
+
+        Additional keyword arguments may be passed to the this method
+        that can be utilised by :meth:`apply`. An example would be passing
+        the ``QNode`` hash that can be used later for parametric compilation.
+
+        Args:
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            array[float]: measured value(s)
+        """
+        self.check_validity(circuit.operations, circuit.observables)
+
+        # apply all circuit operations
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+
+        # generate computational basis samples
+        if self.shots is not None:
+            self._samples = self.generate_samples()
+
+        # compute the required statistics
+        if self._shot_vector is not None:
+
+            results = self.shot_vec_statistics(circuit)
+
+        else:
+            results = self.statistics_new(circuit.observables)
+            single_measurement = len(circuit.measurements) == 1
+
+            if single_measurement:
+                results = results[0]
+            else:
+                results = tuple(results)
+
+        # increment counter for number of executions of qubit device
+        # self._num_executions += 1
+
+        # if self.tracker.active:
+        #     self.tracker.update(executions=1, shots=self._shots)
+        #     self.tracker.record()
+        return results
+
+    def shot_vec_statistics(self, circuit):
+        """Process measurement results from circuit execution using a device
+        with a shot vector and return statistics.
+
+        This is an auxiliary method of execute_new and uses statistics_new.
+
+        When using shot vectors, measurement results for each item of the shot
+        vector are contained in a tuple.
+
+        Args:
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            tuple: stastics for each shot item from the shot vector
+        """
+        results = []
+        s1 = 0
+
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        single_measurement = len(circuit.measurements) == 1
+
+        for shot_tuple in self._shot_vector:
+            s2 = s1 + np.prod(shot_tuple)
+            r = self.statistics_new(
+                circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+            )
+
+            # This will likely be required:
+            # if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+            #     r = r[0]
+
+            if single_measurement:
+                r = r[0]  # if counts_exist else qml.math.squeeze(r)
+            else:
+                if shot_tuple.copies == 1:
+                    r = tuple(
+                        r_[0] if isinstance(r_, list) else r_.T  # need to unwrap the single element
+                        for idx, r_ in enumerate(r)
+                    )
+                else:
+
+                    if counts_exist:
+                        r = self._multi_meas_with_counts_shot_vec(circuit, shot_tuple, r)
+                    else:
+                        # r is a nested sequence, contains the results for
+                        # multiple measurements
+                        #
+                        # Each item of r has copies length, we need to extract
+                        # each measurement result from the arrays
+
+                        # 1. transpose: applied because measurements like probs
+                        # for multiple copies output results with shape (N,
+                        # copies) and we'd like to index straight to get rows
+                        # which requires a shape of (copies, N)
+                        # 2. asarray: done because indexing into a flat array produces a
+                        # scalar instead of a scalar shaped array
+                        r = [
+                            tuple(self._asarray(r_.T[idx]) for r_ in r)
+                            for idx in range(shot_tuple.copies)
+                        ]
+
+            if isinstance(r, qml.numpy.ndarray):
+                if shot_tuple.copies > 1:
+                    results.extend(r.T)
+                else:
+                    results.append(r.T)
+
+            else:
+                if single_measurement and counts_exist:
+                    # Results are nested in a sequence
+                    results.extend(r)
+                elif not single_measurement and shot_tuple.copies > 1:
+                    # Some samples may still be transposed, fix their shapes
+                    # Leave dictionaries intact
+                    r = [
+                        tuple(elem.T if not isinstance(elem, dict) else elem for elem in r_)
+                        for r_ in r
+                    ]
+                    results.extend(r)
+                else:
+                    results.append(r)
+
+            s1 = s2
+
+        results = tuple(results)
+        return results
+
+    def _multi_meas_with_counts_shot_vec(self, circuit, shot_tuple, r):
+        """Auxiliary function of the shot_vec_statistics and execute_new
+        functions for post-processing the results of multiple measurements at
+        least one of which was a counts measurement.
+
+        The measurements were executed on a device that defines a shot vector.
+        """
+        # First: iterate over each group of measurement
+        # results that contain copies many outcomes for a
+        # single measurement
+        new_r = []
+
+        # Each item of r has copies length
+        for idx in range(shot_tuple.copies):
+            result_group = []
+
+            for idx2, r_ in enumerate(r):
+                measurement_proc = circuit.measurements[idx2]
+                if measurement_proc.return_type is Probability or (
+                    measurement_proc.return_type is Sample and measurement_proc.obs
+                ):
+
+                    # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
+                    # Extract a single row -> shape (num_basis_states,)
+                    result = r_[:, idx]
+                else:
+                    result = r_[idx]
+
+                if not circuit.observables[idx2].return_type is Counts:
+                    result = self._asarray(result.T)
+
+                result_group.append(result)
+
+            new_r.append(tuple(result_group))
+
+        return new_r
 
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
@@ -359,12 +574,48 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
+            # TODO: Insert control on value here
             res = self.execute(circuit)
             results.append(res)
 
         if self.tracker.active:
             self.tracker.update(batches=1, batch_len=len(circuits))
             self.tracker.record()
+
+        return results
+
+    def batch_execute_new(self, circuits):
+        """Temporary batch execute function, waiting for QNode execution of the new return types. Execute a batch of
+        quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        # TODO: This method and the tests can be globally implemented by Device
+        # once it has the same signature in the execute() method
+
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            # Insert control on value here
+            res = self.execute_new(circuit)
+            results.append(res)
+
+        # if self.tracker.active:
+        #     self.tracker.update(batches=1, batch_len=len(circuits))
+        #     self.tracker.record()
 
         return results
 
@@ -458,7 +709,7 @@ class QubitDevice(Device):
             >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
 
             This device will execute QNodes using 135 shots, however
-            measurement statistics will be **course grained** across these 135
+            measurement statistics will be **coarse grained** across these 135
             shots:
 
             * All measurement statistics will first be computed using the
@@ -476,12 +727,15 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
+                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Variance:
+                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
+                # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 )
@@ -492,6 +746,8 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is Probability:
+                # Appends a result of shape (2**len(obs.wires), num_bins,)
+                # if bin_size is not None else (2**len(obs.wires),)
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
@@ -528,6 +784,131 @@ class QubitDevice(Device):
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
+
+        return results
+
+    def statistics_new(self, observables, shot_range=None, bin_size=None):
+        """Process measurement results from circuit execution and return statistics.
+
+        This includes returning expectation values, variance, samples, probabilities, states, and
+        density matrices.
+
+        Args:
+            observables (List[.Observable]): the observables to be measured
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            Union[float, List[float]]: the corresponding statistics
+
+        .. details::
+            :title: Usage Details
+
+            The ``shot_range`` and ``bin_size`` arguments allow for the statistics
+            to be performed on only a subset of device samples. This finer level
+            of control is accessible from the main UI by instantiating a device
+            with a batch of shots.
+
+            For example, consider the following device:
+
+            >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+
+            This device will execute QNodes using 135 shots, however
+            measurement statistics will be **course grained** across these 135
+            shots:
+
+            * All measurement statistics will first be computed using the
+              first 5 shots --- that is, ``shots_range=[0, 5]``, ``bin_size=5``.
+
+            * Next, the tuple ``(10, 3)`` indicates 10 shots, repeated 3 times. We will want to use
+              ``shot_range=[5, 35]``, performing the expectation value in bins of size 10
+              (``bin_size=10``).
+
+            * Finally, we repeat the measurement statistics for the final 100 shots,
+              ``shot_range=[35, 135]``, ``bin_size=100``.
+        """
+        results = []
+
+        for obs in observables:
+
+            # 1. Based on the return_type, compute statistics
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
+
+            elif obs.return_type is Variance:
+                result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
+
+            elif obs.return_type is Sample:
+                samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                result = qml.math.squeeze(samples)
+
+            elif obs.return_type is Counts:
+                result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+
+            elif obs.return_type is Probability:
+                result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                state = self.access_state(wires=obs.wires)
+                result = self._asarray(state, dtype=self.C_DTYPE)
+
+            elif obs.return_type is VnEntropy:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the Von Neumann entropy is not supported when using custom wire labels"
+                    )
+                result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
+
+            elif obs.return_type is MutualInfo:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the mutual information is not supported when using custom wire labels"
+                    )
+                wires0, wires1 = obs.raw_wires
+                result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+
+            elif obs.return_type is not None:
+                raise qml.QuantumFunctionError(
+                    f"Unsupported return type specified for observable {obs.name}"
+                )
+
+            # 2. Post-process statistics results (if need be)
+            float_return_types = {Expectation, Variance, Probability, VnEntropy, MutualInfo}
+
+            if obs.return_type in float_return_types:
+                result = self._asarray(result, dtype=self.R_DTYPE)
+
+            if self._shot_vector is not None and isinstance(result, np.ndarray):
+                # In the shot vector case, measurement results may be of shape (N, 1) instead of (N,)
+                # Squeeze the result to transform the results
+                #
+                # E.g.,
+                # before:
+                # [[0.489]
+                #  [0.511]
+                #  [0.   ]
+                #  [0.   ]]
+                #
+                # after: [0.489 0.511 0.    0.   ]
+                result = qml.math.squeeze(result)
+
+            # 3. Append to final list
+            results.append(result)
 
         return results
 
@@ -603,6 +984,11 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
+        if self._ndim(state_probability) == 2:
+            # np.random.choice does not support broadcasting as needed here.
+            return np.array(
+                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
+            )
         return np.random.choice(basis_states, shots, p=state_probability)
 
     def generate_basis_states(self, num_wires, dtype=np.uint32):
@@ -658,8 +1044,11 @@ class QubitDevice(Device):
             array[int]: basis states in binary representation
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
-        states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
+        # `samples` typically is one-dimensional, but can be two-dimensional with broadcasting.
+        # In any case we want to append a new axis at the *end* of the shape.
+        states_sampled_base_ten = samples[..., None] & powers_of_two
+        # `states_sampled_base_ten` can be two- or three-dimensional. We revert the *last* axis.
+        return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
 
     @property
     def circuit_hash(self):
@@ -792,36 +1181,81 @@ class QubitDevice(Device):
         """
 
         wires = wires or self.wires
-        # convert to a wires object
+        # convert to a Wires object
         wires = Wires(wires)
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
+        num_wires = len(device_wires)
 
-        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
-        samples = self._samples[sample_slice, device_wires]
+        if shot_range is None:
+            # The Ellipsis (...) corresponds to broadcasting and shots dimensions or only shots
+            samples = self._samples[..., device_wires]
+        else:
+            # The Ellipsis (...) corresponds to the broadcasting dimension or no axis at all
+            samples = self._samples[..., slice(*shot_range), device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
+        # `self._samples` typically has two axes ((shots, wires)) but can also have three with
+        # broadcasting ((batch_size, shots, wires)) so that we simply read out the batch_size.
+        batch_size = self._samples.shape[0] if np.ndim(self._samples) == 3 else None
+        dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
-            bins = len(samples) // bin_size
+            num_bins = samples.shape[-2] // bin_size
+            prob = self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
+        else:
+            prob = self._count_unbinned_samples(indices, batch_size, dim)
 
-            indices = indices.reshape((bins, -1))
-            prob = np.zeros([2 ** len(device_wires), bins], dtype=np.float64)
+        return self._asarray(prob, dtype=self.R_DTYPE)
 
-            # count the basis state occurrences, and construct the probability vector
+    @staticmethod
+    def _count_unbinned_samples(indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
+        if batch_size is None:
+            prob = np.zeros(dim, dtype=np.float64)
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob[basis_states] = counts / len(indices)
+
+            return prob
+
+        prob = np.zeros((batch_size, dim), dtype=np.float64)
+
+        for i, idx in enumerate(indices):  # iterate over the broadcasting dimension
+            basis_states, counts = np.unique(idx, return_counts=True)
+            prob[i, basis_states] = counts / len(idx)
+
+        return prob
+
+    @staticmethod
+    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
+        """Count the occurences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability per bin."""
+
+        if batch_size is None:
+            prob = np.zeros((dim, num_bins), dtype=np.float64)
+            indices = indices.reshape((num_bins, bin_size))
+            # count the basis state occurrences, and construct the probability vector for each bin
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size
 
-        else:
-            basis_states, counts = np.unique(indices, return_counts=True)
-            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
-            prob[basis_states] = counts / len(samples)
+            return prob
 
-        return self._asarray(prob, dtype=self.R_DTYPE)
+        prob = np.zeros((batch_size, dim, num_bins), dtype=np.float64)
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[i, basis_states, b] = counts / bin_size
+
+        return prob
 
     def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
@@ -842,6 +1276,14 @@ class QubitDevice(Device):
             return self.analytic_probability(wires=wires)
 
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
+
+    @staticmethod
+    def _get_batch_size(tensor, expected_shape, expected_size):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape. As QubitDevice does not natively support broadcasting,
+        it always reports no batch size, that is ``batch_size=None``"""
+        # pylint: disable=unused-argument
+        return None
 
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
@@ -877,6 +1319,8 @@ class QubitDevice(Device):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
+        dim = 2**self.num_wires
+        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
 
         if wires is None:
             # no need to marginalize
@@ -891,15 +1335,22 @@ class QubitDevice(Device):
         inactive_device_wires = self.map_wires(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = self._reshape(prob, [2] * self.num_wires)
+        shape = [2] * self.num_wires
+        if batch_size is not None:
+            shape.insert(0, batch_size)
+        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
+        prob = self._reshape(prob, shape)
 
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
-        else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+            inactive_device_wires = inactive_device_wires.labels
+
+        if batch_size is not None:
+            inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
+        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
+        prob = self._reshape(self._reduce_sum(prob, inactive_device_wires), flat_shape)
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -910,7 +1361,10 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
-        return self._gather(prob, perm)
+        # The permutation happens on the last axis both with and without broadcasting
+        out = self._gather(prob, perm, axis=1 if batch_size is not None else 0)
+
+        return out
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
@@ -931,15 +1385,21 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            # the probability vector must be permuted to account for the permuted wire order of the observable
+            # the probability vector must be permuted to account for the permuted
+            # wire order of the observable
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
-            return self._dot(eigvals, prob)
+            # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
+            return self._dot(prob, eigvals)
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.mean(samples, axis=0))
+        # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
+        # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
+        axis = -1 if bin_size is None else -2
+        # TODO: do we need to squeeze here? Maybe remove with new return types
+        return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
 
@@ -965,11 +1425,16 @@ class QubitDevice(Device):
             permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
-            return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
+            # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
+            return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.var(samples, axis=0))
+        # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
+        # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
+        axis = -1 if bin_size is None else -2
+        # TODO: do we need to squeeze here? Maybe remove with new return types
+        return np.squeeze(np.var(samples, axis=axis))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
@@ -1011,34 +1476,41 @@ class QubitDevice(Device):
                 # Before converting to str, we need to extract elements from arrays
                 # to satisfy the case of jax interface, as jax arrays do not support str.
                 samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
-        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        # Select the samples from self._samples that correspond to ``shot_range`` if provided
+        if shot_range is None:
+            sub_samples = self._samples
+        else:
+            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
+            # colon (:) is required because shots is the second-to-last axis and the
+            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
+            sub_samples = self._samples[..., slice(*shot_range), :]
+
         no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
+            samples = 1 - 2 * sub_samples[..., device_wires[0]]
 
-        elif no_observable_provided:  # if no observable was provided then return the raw samples
-            if (
-                len(observable.wires) != 0
-            ):  # if wires are provided, then we only return samples from those wires
-                samples = self._samples[sample_slice, np.array(device_wires)]
+        elif no_observable_provided:
+            # if no observable was provided then return the raw samples
+            if len(observable.wires) != 0:
+                # if wires are provided, then we only return samples from those wires
+                samples = sub_samples[..., np.array(device_wires)]
             else:
-                samples = self._samples[sample_slice]
+                samples = sub_samples
 
         else:
 
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
-            samples = self._samples[
-                sample_slice, np.array(device_wires)
-            ]  # Add np.array here for Jax support.
+            samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
@@ -1054,17 +1526,21 @@ class QubitDevice(Device):
             if counts:
                 return _samples_to_counts(samples, no_observable_provided)
             return samples
+
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if counts:
-            shape = (-1, bin_size, 3) if no_observable_provided else (-1, bin_size)
+            shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
                 _samples_to_counts(bin_sample, no_observable_provided)
                 for bin_sample in samples.reshape(shape)
             ]
-        return (
-            samples.reshape((3, bin_size, -1))
+
+        res = (
+            samples.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
+        return res
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
@@ -1180,16 +1656,12 @@ class QubitDevice(Device):
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in trainable_params):
-                d_op_matrix = operation_derivative(op)
-
-            op.inv()
-            # Ideally use use op.adjoint() here
-            # then we don't have to re-invert the operation at the end
-            ket = self._apply_operation(ket, op)
+            adj_op = qml.adjoint(op)
+            ket = self._apply_operation(ket, adj_op)
 
             if op.grad_method is not None:
                 if param_number in trainable_params:
+                    d_op_matrix = operation_derivative(op)
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
@@ -1198,7 +1670,6 @@ class QubitDevice(Device):
                 param_number -= 1
 
             for kk in range(n_obs):
-                bras[kk, ...] = self._apply_operation(bras[kk, ...], op)
-            op.inv()
+                bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
         return jac

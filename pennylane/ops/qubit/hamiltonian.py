@@ -395,8 +395,8 @@ class Hamiltonian(Observable):
         self._grouping_indices = None
 
     def __str__(self):
-        # Lambda function that formats the wires
         def wires_print(ob: Observable):
+            """Function that formats the wires."""
             return ",".join(map(str, ob.wires.tolist()))
 
         list_of_coeffs = self.data  # list of scalar tensors
@@ -585,8 +585,10 @@ class Hamiltonian(Observable):
             )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
-
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        try:
+            return super().__add__(other=H)
+        except ValueError as e:
+            raise ValueError(f"Cannot add Hamiltonian and {type(H)}") from e
 
     __radd__ = __add__
 

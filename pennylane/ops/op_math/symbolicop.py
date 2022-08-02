@@ -84,10 +84,6 @@ class SymbolicOp(Operator):
         self.base.data = new_data
 
     @property
-    def parameters(self):
-        return self.base.parameters
-
-    @property
     def num_params(self):
         return self.base.num_params
 

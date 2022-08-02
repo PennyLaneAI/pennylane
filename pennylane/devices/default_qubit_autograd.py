@@ -84,7 +84,6 @@ class DefaultQubitAutograd(DefaultQubit):
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
@@ -94,6 +93,8 @@ class DefaultQubitAutograd(DefaultQubit):
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
+    _size = staticmethod(np.size)
+    _ndim = staticmethod(np.ndim)
 
     @staticmethod
     def _asarray(array, dtype=None):
