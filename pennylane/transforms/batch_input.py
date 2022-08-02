@@ -80,9 +80,7 @@ def batch_input(
     )
     argnum_params = [all_parameters[i] for i in argnum]
 
-    if any(
-        any(param is train_param for train_param in trainable_params) for param in argnum_params
-    ):
+    if any(qml.math.requires_grad(p) for p in argnum_params):
         raise ValueError(
             "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
             + "'argnum' are not marked as trainable."
