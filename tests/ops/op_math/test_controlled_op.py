@@ -524,6 +524,26 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_method_with_depth_equal_to_0(self):
+        """Test the simplify method with depth equal to 1."""
+        controlled_op = Controlled(
+            qml.op_sum(
+                qml.op_sum(qml.op_sum(qml.PauliX(0), qml.Identity(wires=0)), qml.RX(1.9, wires=1)),
+                qml.RZ(1.32, wires=0),
+            ),
+            control_wires=2,
+        )
+        simplified_op = controlled_op.simplify(depth=0)
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Controlled)
+        for s1, s2 in zip(controlled_op.base.summands, simplified_op.base.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
 
 class TestQueuing:
     """Test that Controlled operators queue and update base metadata."""
