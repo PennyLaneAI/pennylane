@@ -709,7 +709,7 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_count(self):
-        """Test Sum class instance in sample measurement process raises error."""  # currently can't support due to bug
+        """Test Sum class instance in counts measurement process raises error."""  # currently can't support due to bug
         dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
 
