@@ -74,7 +74,6 @@ def batch_input(
     """
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
-    trainable_params = tape.get_parameters()
     all_parameters = sum(
         (op.parameters if op.parameters != [] else [None] for op in tape.operations), []
     )
