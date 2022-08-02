@@ -136,7 +136,7 @@
   >>> grad(theta)
   0.5712737447327619
   ```
-  
+
 <h4>Native support for parameter broadcasting for `DefaultQubit` devices 📡</h4>
 
 * `DefaultQubit` devices now natively support parameter broadcasting.
@@ -229,51 +229,62 @@
   tensor(0.08228288, requires_grad=True)
   ```
 
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
+  drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-**Operator Arithmetic:**
+<h4>Quality-of-life upgrades to Operator arithmetic 📈</h4>
 
-* Adds the `Controlled` symbolic operator to represent a controlled version of any
-  operation.
-  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
-
-* Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
-  operators such as `Adjoint` and `Pow`.
-  [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
-
-* A `Sum` symbolic class is added that allows users to represent the sum of operators.
+* Many convenient additions have been made regarding Operator arithmetic.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
+  [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
+  [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
+  [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+  
+When we refer to Operator "arithmetic" we mean operations like addition, 
+multiplication and exponentiation. Quality-of-life features have been added in 
+each of these categories:
 
-  The `Sum` class provides functionality like any other PennyLane operator. We can
-  get the matrix, eigenvalues, terms, diagonalizing gates and more.
+  - Linear combinations:
+
+  Linearly combine any Operators to create a new Operator whose matrix, terms, 
+  and eigenvalues can be accessed as per usual:
 
   ```pycon
-  >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(0))
+  >>> summed_op = qml.PauliX(0) - 5*qml.PauliZ(0)
   >>> summed_op
-  PauliX(wires=[0]) + PauliZ(wires=[0])
+  PauliX(wires=[0]) - 5 * PauliZ(wires=[0])
   >>> qml.matrix(summed_op)
-  array([[ 1,  1],
-         [ 1, -1]])
+  array([[ -5,  1],
+         [ 1, 5]])
   >>> summed_op.terms()
-  ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+  ([1.0, -5.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
   ```
 
-  The `summed_op` can also be used inside a `qnode` as an observable.
-  If the circuit is parameterized, then we can also differentiate through the
-  sum observable.
+  You can also add scalars to Operators, where the interpretation is that the 
+  scalar is a properly-sized identity matrix. 
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
+  ```
+
+  Linearly-combined Operators can also be used inside of a `qnode` as an observable 
+  while maintaining differentiability.
 
   ```python
   sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
   dev = qml.device("default.qubit", wires=2)
 
-  @qml.qnode(dev, grad_method="best")
+  @qml.qnode(dev)
   def circuit(weights):
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        return qml.expval(sum_op)
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RX(weights[2], wires=1)
+      return qml.expval(sum_op)
   ```
 
   ```pycon
@@ -281,9 +292,8 @@
   >>> qml.grad(circuit)(weights)
   tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
   ```
-
-* Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
-  more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
+* Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class 
+  so that users can combine operators more naturally.
 
   ```python
   >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
@@ -294,26 +304,11 @@
   RZ**2(1.0, wires=[0])
   ```
 
-* Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+* Added support for addition of operators and scalars. 
 
-  ```pycon
-  >>> sum_op = 5 + qml.PauliX(0)
-  >>> sum_op.matrix()
-  array([[5., 1.],
-         [1., 5.]])
-  ```
-
-  Added `__neg__` and `__sub__` dunder methods to the `qml.operation.Operator` class so that users
-  can negate and substract operators more naturally.
-
-  ```pycon
-  >>> -(-qml.PauliZ(0) + qml.PauliX(0)).matrix()
-  array([[ 1, -1],
-        [-1, -1]])
-  ```
 
 * A `SProd` symbolic class is added that allows users to represent the scalar product
-of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
+of operators.
 
   We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
 
@@ -346,7 +341,12 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   (array(-0.68362956), array(0.21683382))
   ```
 
-* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
+
+* New FlipSign operator that flips the sign for a given basic state. 
+  [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 * Added `qml.counts` which samples from the supplied observable returning the number of counts
   for each sample.
@@ -386,39 +386,6 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
-<h3>Improvements</h3>
-
-* The efficiency of the Hartree-Fock workflow is improved by removing the repetitive basis set
-  normalisation steps and modifying how the permutational symmetries are applied to avoid repetitive
-  electron repulsion integral calculations.
-  [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
-
-* The coefficients of the non-differentiable molecular Hamiltonians generated with openfermion have
-  `requires_grad = False` by default.
-  [(#2865)](https://github.com/PennyLaneAI/pennylane/pull/2865)
-
-* A small performance upgrade to the `compute_matrix` method
-  of broadcastable parametric operations.
-  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
-
-* Jacobians are cached with the Autograd interface when using the
-  parameter-shift rule.
-  [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
-
-* The `qml.state` and `qml.density_matrix` measurements now support custom wire
-  labels.
-  [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
-
-* Add trivial behaviour logic to `qml.operation.expand_matrix`.
-  [(#2785)](https://github.com/PennyLaneAI/pennylane/issues/2785)
-
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking
-  into account their interfaces and trainability.
-  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
-
-* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
-  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
-
 * Quantum channels such as `qml.BitFlip` now support abstract tensors. This allows
   their usage inside QNodes decorated by `tf.function`, `jax.jit`, or `jax.vmap`:
 
@@ -438,23 +405,57 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
+<h3>Improvements</h3>
+
+* The efficiency of the Hartree-Fock workflow has been improved by removing 
+  repetitive steps.
+  [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
+
+* The coefficients of the non-differentiable molecular Hamiltonians generated 
+  with openfermion now have `requires_grad = False` by default.
+  [(#2865)](https://github.com/PennyLaneAI/pennylane/pull/2865)
+
+* A performance upgrade to the `compute_matrix` method of broadcastable 
+  parametric operations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+* Jacobians are now cached with the Autograd interface when using the
+  parameter-shift rule.
+  [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
+
+* The `qml.state` and `qml.density_matrix` measurements now support custom wire
+  labels.
+  [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
+
+* Add trivial behaviour logic to `qml.operation.expand_matrix`.
+  [(#2785)](https://github.com/PennyLaneAI/pennylane/issues/2785)
+
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality 
+  of parametric operators taking into account their interfaces and trainability.
+  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
+
+* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
+  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+
 * Added an `are_pauli_words_qwc` function which checks if certain
-  Pauli words are pairwise qubit-wise commuting. This new function improves performance when measuring hamiltonians
-  with many commuting terms.
+  Pauli words are pairwise qubit-wise commuting. This new function improves performance 
+  when measuring hamiltonians with many commuting terms.
   [(#2789)](https://github.com/PennyLaneAI/pennylane/pull/2798)
 
-* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
+* Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place 
+  inversion.
   [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
 
-<h3>Breaking changes</h3>
+<h3>Breaking changes 💔</h3>
 
-* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
-  `qml.qchem`.
+* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully 
+  supported by `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
-  which provides an updated API that is incompatible which versions of the package prior to 2.7.
-  If you run into issues relating to this package, please reinstall PennyLane.
+  which provides an updated API that is incompatible which versions of the package 
+  prior to 2.7. If you run into issues relating to this package, please reinstall 
+  PennyLane.
   [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
@@ -471,23 +472,23 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Bug fixes</h3>
 
-* Updated IsingXY gate doc-string.
+* Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
-* Fixes a bug where the parameter-shift gradient breaks when using both
+* Fixed a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
   do not contains any unshifted terms.
   [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
 
-* Fixes mixed CPU-GPU data-locality issues for Torch interface.
+* Fixed mixed CPU-GPU data-locality issues for the Torch interface.
   [(#2830)](https://github.com/PennyLaneAI/pennylane/pull/2830)
 
-* Fixes a bug where the parameter-shift Hessian of circuits with untrainable
+* Fixed a bug where the parameter-shift Hessian of circuits with untrainable
   parameters might be computed with respect to the wrong parameters or
   might raise an error.
   [(#2822)](https://github.com/PennyLaneAI/pennylane/pull/2822)
 
-* Fixes a bug where the custom implementation of the `states_to_binary` device
+* Fixed a bug where the custom implementation of the `states_to_binary` device
   method was not used.
   [(#2809)](https://github.com/PennyLaneAI/pennylane/pull/2809)
 
@@ -498,14 +499,15 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
-* Fix the ability to return custom objects as the expectation value of a QNode with the Autograd interface.
+* Fix the ability to return custom objects as the expectation value of a QNode with 
+  the Autograd interface.
   [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
 
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
-* Allow hamiltonians with grouped observables to be measured on devices
-  which were transformed using `qml.transform.insert()`.
+* Allow hamiltonians with grouped observables to be measured on devices which were 
+  transformed using `qml.transform.insert()`.
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 <h3>Contributors</h3>
