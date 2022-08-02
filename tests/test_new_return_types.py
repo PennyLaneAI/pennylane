@@ -43,7 +43,6 @@ class TestSingleReturnExecute:
         res = qml.execute_new(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         assert res[0].shape == (2**wires,)
-        assert res[0].shape == (2**wires,)
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("wires", wires)

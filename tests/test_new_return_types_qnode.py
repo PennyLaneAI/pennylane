@@ -534,9 +534,7 @@ class TestIntegrationShotVectors:
             else:
                 assert r.shape == (shots,)
 
-    @pytest.mark.parametrize(
-        "measurement", [qml.sample(qml.PauliZ(0), counts=True), qml.sample(wires=[0], counts=True)]
-    )
+    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement):
         """TODO"""
 
