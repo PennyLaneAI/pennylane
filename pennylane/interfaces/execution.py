@@ -363,14 +363,9 @@ def execute(
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             # adjoint jacobian needs further expansion
             # TODO: this is a quick patch that should be cleaned up by later refactoring
-            if INTERFACE_MAP[interface] == "jax":
-                stop_at = ~qml.operation.is_measurement & (
-                    qml.operation.has_nopar | qml.operation.has_unitary_gen
-                )
-            else:
-                stop_at = ~qml.operation.is_measurement & (
-                    ~qml.operation.is_trainable | qml.operation.has_unitary_gen
-                )
+            stop_at = ~qml.operation.is_measurement & (
+                ~qml.operation.is_trainable | qml.operation.has_unitary_gen
+            )
             for i, tape in enumerate(tapes):
                 if any(not stop_at(op) for op in tape.operations):
                     tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
