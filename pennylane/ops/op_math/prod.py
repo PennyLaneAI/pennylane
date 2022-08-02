@@ -121,7 +121,7 @@ class Prod(Operator):
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.factors = tuple(f.__copy__() for f in self.factors)
+        copied_op.factors = tuple(copy(f) for f in self.factors)
 
         for attr, value in vars(self).items():
             if attr not in {"factors"}:
@@ -146,13 +146,7 @@ class Prod(Operator):
     @property
     def batch_size(self):
         """Batch size of input parameters."""
-        # raise ValueError("Batch size is not defined for Prod operators.")
         return None
-
-    @property
-    def ndim_params(self):
-        """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Prod operators.")
 
     @property
     def num_params(self):

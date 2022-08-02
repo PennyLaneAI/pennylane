@@ -170,16 +170,6 @@ class TestInitialization:
         assert len(prod_term_ops) == 1
         assert qml.equal(prod_op, prod_term_ops[0])
 
-    def test_ndim_params_raises_error(self):
-        """Test that calling ndim_params raises a ValueError."""
-        prod_op = prod(qml.PauliX(0), qml.Identity(1))
-
-        with pytest.raises(
-            ValueError,
-            match="Dimension of parameters is not currently implemented for Prod operators.",
-        ):
-            _ = prod_op.ndim_params
-
     def test_batch_size_is_None(self):
         """Test that calling batch_size returns None
         (i.e no batching with Prod)."""
@@ -718,7 +708,7 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
 
         @qml.qnode(dev)
