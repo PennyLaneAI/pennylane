@@ -88,7 +88,7 @@ ops_rep = (
 )
 
 ops_hermitian_status = (  # computed manually
-    True,   # True
+    True,  # True
     False,  # True
     False,  # False
     False,  # False
@@ -515,7 +515,7 @@ class TestProperties:
         assert prod_op.is_hermitian == hermitian_status
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops 
+    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf

@@ -157,17 +157,6 @@ class Prod(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    # @property
-    # def is_hermitian(self, run_check=True):  # TODO: cache this value, this check is expensive!
-    #     """check if the product operator is hermitian."""
-    #     if run_check:
-    #         mat = self.matrix()
-    #         adj_mat = math.conj(math.transpose(mat))
-    #         if math.allclose(mat, adj_mat):
-    #             return True
-    #         return False
-    #     raise qml.operation.IsHermitianUndefinedErrors
-
     @property
     def is_hermitian(self):
         """Check if the product operator is hermitian.
@@ -181,7 +170,7 @@ class Prod(Operator):
             if shared_wires:
                 return False
 
-        if all([op.is_hermitian for op in self.factors]):
+        if all(op.is_hermitian for op in self.factors):
             return True
 
         return False
