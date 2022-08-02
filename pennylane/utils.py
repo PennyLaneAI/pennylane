@@ -123,7 +123,7 @@ def decompose_hamiltonian(H, hide_identity=False, wire_order=None):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H, wires=None):
+def sparse_hamiltonian(H, wires=None, dim=2):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
@@ -131,10 +131,11 @@ def sparse_hamiltonian(H, wires=None):
          computed
         wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
          is constructed. If not profided, ``H.wires`` is used.
+        dim (int): Number of dimensions of qudit(s) for which the Hamiltonian has been constructed
 
     Returns:
         csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
-        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+        :math:`(dim^n, dim^n)`, where :math:`n` is the number of wires
 
     **Example:**
 
@@ -165,7 +166,7 @@ def sparse_hamiltonian(H, wires=None):
         wires = qml.wires.Wires(wires)
 
     n = len(wires)
-    matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+    matrix = scipy.sparse.csr_matrix((dim**n, dim**n), dtype="complex128")
 
     coeffs = qml.math.toarray(H.data)
 
@@ -177,7 +178,7 @@ def sparse_hamiltonian(H, wires=None):
                 # todo: deal with operations created from multi-qubit operations such as Hermitian
                 raise ValueError(
                     f"Can only sparsify Hamiltonians whose constituent observables consist of "
-                    f"(tensor products of) single-qubit operators; got {op}."
+                    f"(tensor products of) single-qubit or qutrit operators; got {op}."
                 )
             obs.append(o.matrix())
 
@@ -189,7 +190,7 @@ def sparse_hamiltonian(H, wires=None):
         for wire_lab in wires:
             if wire_lab in op.wires:
                 if i_count > 0:
-                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                    mat.append(scipy.sparse.eye(dim**i_count, format="coo"))
                 i_count = 0
                 idx = op.wires.index(wire_lab)
                 # obs is an array storing the single-wire observables which
@@ -200,7 +201,7 @@ def sparse_hamiltonian(H, wires=None):
                 i_count += 1
 
         if i_count > 0:
-            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+            mat.append(scipy.sparse.eye(dim**i_count, format="coo"))
 
         red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
