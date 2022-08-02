@@ -46,6 +46,7 @@ from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import (
+    counts,
     density_matrix,
     measure,
     expval,
