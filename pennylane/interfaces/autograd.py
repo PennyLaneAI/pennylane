@@ -199,11 +199,9 @@ def vjp(
             jacs = ans[1]
 
         if jacs:
-            print("have jacs", jacs)
             # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
             vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
-            print("have jacs", vjps)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -265,7 +263,6 @@ def vjp(
             # TODO: remove this exceptional case once the source of this issue
             # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
             return (return_vjps,)  # pragma: no cover
-        print(tuple(return_vjps))
         return tuple(return_vjps)
 
     return grad_fn

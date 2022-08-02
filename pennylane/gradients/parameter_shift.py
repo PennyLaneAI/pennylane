@@ -297,7 +297,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         #         grads[i] = qml.math.hstack(g)
 
         grads = tuple(qml.math.squeeze(g) for g in grads)
-        print(grads)
         return grads
 
     return gradient_tapes, processing_fn
