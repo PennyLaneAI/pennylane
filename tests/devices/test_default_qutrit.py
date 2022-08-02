@@ -22,7 +22,7 @@ from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
 from pennylane.wires import Wires, WireError
 
-from gate_data import TSHIFT, TCLOCK, TSWAP, TADD
+from gate_data import TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 
@@ -63,11 +63,9 @@ def test_dtype_errors():
 dev = qml.device("default.qutrit", wires=1, shots=100000)
 
 
-# TODO: Add tests for expval, var, sample and tensor observables after addition of non-parametric observables
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
 # TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added
 # TODO: Add tests for inverse decomposition once decomposible operations are added
-# TODO: Add tests for verifying correct behaviour of different observables on default qutrit device.
 
 
 class TestApply:
@@ -378,8 +376,6 @@ class TestApply:
 class TestExpval:
     """Tests that expectation values are properly calculated or that the proper errors are raised."""
 
-    # TODO: Add test for expval of non-parametrized observables
-
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
         [
@@ -391,6 +387,22 @@ class TestExpval:
                 1,
                 [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
             ),
+            (qml.GellMannObs, [1, 0, 0], 0, 1),
+            (qml.GellMannObs, [0, 0, 1], 0, 1),
+            (qml.GellMannObs, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], -1, 2),
+            (qml.GellMannObs, [1, 0, 0], 0, 2),
+            (qml.GellMannObs, [1, 0, 0], 1, 3),
+            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], -0.5, 3),
+            (qml.GellMannObs, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], -1, 4),
+            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 4),
+            (qml.GellMannObs, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 1, 5),
+            (qml.GellMannObs, [0, 1, 0], 0, 5),
+            (qml.GellMannObs, [0, 0, 1], 0, 6),
+            (qml.GellMannObs, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0, 6),
+            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 1, 7),
+            (qml.GellMannObs, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], -1, 7),
+            (qml.GellMannObs, [0, 0, 1], -2 / math.sqrt(3), 8),
+            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 0, 8),
         ],
     )
     def test_expval_single_wire_with_parameters(
@@ -398,7 +410,11 @@ class TestExpval:
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0])
+        obs = (
+            operation(par, wires=[0])
+            if isinstance(par, int)
+            else operation(np.array(par), wires=[0])
+        )
 
         qutrit_device_1_wire.reset()
         qutrit_device_1_wire._state = np.array(input).reshape([3])
@@ -485,8 +501,6 @@ class TestExpval:
 class TestVar:
     """Tests that variances are properly calculated."""
 
-    # TODO: Add test for var of non-parametrized observables
-
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
         [
@@ -498,6 +512,22 @@ class TestVar:
                 2 / 3,
                 [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
             ),
+            (qml.GellMannObs, [1, 0, 0], 1, 1),
+            (qml.GellMannObs, [0, 0, 1], 0, 1),
+            (qml.GellMannObs, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], 0, 2),
+            (qml.GellMannObs, [1, 0, 0], 1, 2),
+            (qml.GellMannObs, [1, 0, 0], 0, 3),
+            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], 0.25, 3),
+            (qml.GellMannObs, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], 0, 4),
+            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 9, 4),
+            (qml.GellMannObs, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 0, 5),
+            (qml.GellMannObs, [0, 1, 0], 0, 5),
+            (qml.GellMannObs, [0, 0, 1], 1, 6),
+            (qml.GellMannObs, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0.5, 6),
+            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 0, 7),
+            (qml.GellMannObs, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], 0, 7),
+            (qml.GellMannObs, [0, 0, 1], 0, 8),
+            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 8),
         ],
     )
     def test_var_single_wire_with_parameters(
@@ -505,13 +535,16 @@ class TestVar:
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0])
+        obs = (
+            operation(par, wires=[0])
+            if isinstance(par, int)
+            else operation(np.array(par), wires=[0])
+        )
 
         qutrit_device_1_wire.reset()
         qutrit_device_1_wire._state = np.array(input).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.var(obs)
-        print(res, expected_output)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
@@ -571,7 +604,7 @@ class TestVar:
         qutrit_device_2_wires._state = np.array(input).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
-        print(res, expected_output)
+
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_var_estimate(self):
@@ -718,8 +751,6 @@ class TestDefaultQutritIntegration:
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    # TODO: Add tests for non-parametric observables and identity
-
     def test_hermitian_hermitian(self, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qutrit", wires=3)
@@ -769,15 +800,171 @@ class TestTensorExpval:
         expected = 3.5 * 1 * 1
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "index_1, eval_1", list(zip(list(range(1, 9)), [0, 0, -1, 0, 0, 0, 0, 1 / math.sqrt(3)]))
+    )
+    @pytest.mark.parametrize(
+        "index_2, eval_2", list(zip(list(range(1, 9)), [0, 0, 0, 0, 0, 0, 0, -2 / math.sqrt(3)]))
+    )
+    def test_gell_mann_tensor(self, index_1, index_2, eval_1, eval_2, tol):
+        """Test that the expectation value of the tensor product of two Gell-Mann observables is
+        correct"""
+        dev = qml.device("default.qutrit", wires=2)
+        obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
 
-# TODO: Add tests for tensor non-parametrized observables
+        dev.apply(
+            [
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.expval(obs)
+
+        expected = eval_1 * eval_2
+        assert np.isclose(res, expected, atol=tol, rtol=0)
+
+
 class TestTensorVar:
-    pass
+    """Tests for variance of tensor observables"""
+
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
+    def test_gell_mann_tensor(self, index_1, index_2, tol):
+        """Test that the variance of tensor Gell-Mann observables is correct"""
+        dev = qml.device("default.qutrit", wires=2)
+        obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.var(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index_1 - 1], GELL_MANN[index_2 - 1])
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
+    def test_hermitian(self, tol):
+        dev = qml.device("default.qutrit", wires=3)
+
+        A1 = np.array([[3, 0, 0], [0, -3, 0], [0, 0, -2]])
+
+        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
+        A2 = np.kron(A, B)
+
+        obs = qml.THermitian(A1, wires=[0]) @ qml.THermitian(A2, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(U_thadamard_01, wires=2),
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        res = dev.var(obs)
+        expected = 36
+        assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
 # TODO: Add tests for tensor non-parametrized observables
 class TestTensorSample:
-    pass
+    """Test tensor samples"""
+
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
+    def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
+        """Test that the tensor proudct involving Gell-Mann observables works correctly"""
+        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
+
+        obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        dev._wires_measured = {0, 1}
+        dev._samples = dev.generate_samples()
+        dev.sample(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / np.sqrt(2)
+        state = state.T
+        obs_mat = np.kron(GELL_MANN[index_1 - 1], GELL_MANN[index_2 - 1])
+
+        s1 = obs.eigvals()
+        p = dev.probability(wires=dev.map_wires(obs.wires))
+
+        mean = s1 @ p
+        expected = state.conj().T @ obs_mat @ state
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
+
+        var = (s1**2) @ p - (s1 @ p) ** 2
+        expected = (
+            state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
+        )
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_hermitian(self, index, tol_stochastic):
+        """Tests that tensor product of hermitian obervable with another observable works
+        correctly"""
+
+        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
+
+        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+
+        obs = qml.GellMannObs(index, wires=0) @ qml.THermitian(A, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        dev._wires_measured = {0, 1}
+        dev._samples = dev.generate_samples()
+        dev.sample(obs)
+
+        s1 = obs.eigvals()
+        p = dev.marginal_prob(dev.probability(), wires=obs.wires)
+
+        obs_mat = np.kron(GELL_MANN[index - 1], A)
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / np.sqrt(2)
+        state = state.T
+
+        mean = s1 @ p
+        expected = state.conj().T @ obs_mat @ state
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
+
+        var = (s1**2) @ p - (s1 @ p) ** 2
+        expected = (
+            state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
+        )
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
 
 class TestProbabilityIntegration:
