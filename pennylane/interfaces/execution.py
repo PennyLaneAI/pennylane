@@ -371,6 +371,15 @@ def execute(
             stop_at = ~qml.operation.is_measurement & (
                 ~qml.operation.is_trainable | qml.operation.has_unitary_gen
             )
+            if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+                # qml.math.is_trainable doesn't work with jax on the forward pass
+                stop_at = ~qml.operation.is_measurement & (
+                    qml.operation.has_nopar | qml.operation.has_unitary_gen
+                )
+            else:
+                stop_at = ~qml.operation.is_measurement & (
+                    ~qml.operation.is_trainable | qml.operation.has_unitary_gen
+                )
             for i, tape in enumerate(tapes):
                 if any(not stop_at(op) for op in tape.operations):
                     tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
