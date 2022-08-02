@@ -17,6 +17,8 @@ This submodule defines the symbolic operation that indicates the control of an o
 
 import warnings
 
+from inspect import signature
+
 import numpy as np
 from scipy import sparse
 
@@ -26,6 +28,7 @@ from pennylane import operation
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
@@ -97,6 +100,20 @@ class Controlled(SymbolicOp):
     [(0.5, 1.0)]
 
     """
+
+    # pylint: disable=no-self-argument
+    @operation.classproperty
+    def __signature__(cls):
+        # this method is defined so inspect.signature returns __init__ signature
+        # instead of __new__ signature
+        # See PEP 362
+
+        # use __init__ signature instead of __new__ signature
+        sig = signature(cls.__init__)
+        # get rid of self from signature
+        new_parameters = tuple(sig.parameters.values())[1:]
+        new_sig = sig.replace(parameters=new_parameters)
+        return new_sig
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
