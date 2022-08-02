@@ -251,6 +251,7 @@ Utility functions
     ~pennylane.qchem.active_space
     ~pennylane.qchem.excitations
     ~pennylane.qchem.excitations_to_wires
+    ~pennylane.qchem.factorize
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
     ~pennylane.qchem.read_structure
