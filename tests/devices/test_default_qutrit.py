@@ -71,10 +71,6 @@ U_tadd = np.array(
 )
 
 
-def include_inverses_with_test_data(test_data):
-    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
-
-
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -97,14 +93,12 @@ def test_dtype_errors():
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
 
-dev = qml.device("default.qutrit", wires=1, shots=100000)
-
-
-# TODO: Add tests for expval, var, sample and tensor observables after addition of non-parametric observables
+# TODO: Add tests for expval, var, sample and tensor observables after addition of observables
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
 # TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added
 # TODO: Add tests for inverse decomposition once decomposible operations are added
 # TODO: Add tests for verifying correct behaviour of different observables on default qutrit device.
+# TODO: Add tests for devices with shots for testing correct behaviour of sample
 
 
 class TestApply:
@@ -125,13 +119,6 @@ class TestApply:
         (qml.QutritUnitary, [0, 1, 0], [0, OMEGA, 0], U_clock),
     ]
 
-    # TODO: Add more data as parametric ops get added
-    test_data_single_wire_with_parameters_inverse = [
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_shift),
-        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], U_shift),
-        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], U_clock),
-        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], U_clock),
-    ]
 
     @pytest.mark.parametrize(
         "operation, input, expected_output, par", test_data_single_wire_with_parameters
@@ -148,6 +135,16 @@ class TestApply:
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+
+    # TODO: Add more data as parametric ops get added
+    test_data_single_wire_with_parameters_inverse = [
+        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], U_shift),
+        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], U_shift),
+        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], U_clock),
+        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], U_clock),
+    ]
+
 
     @pytest.mark.parametrize(
         "operation, input, expected_output, par", test_data_single_wire_with_parameters_inverse
@@ -231,7 +228,7 @@ class TestApply:
     def test_apply_operation_two_wires_with_parameters_inverse(
         self, qutrit_device_2_wires, tol, operation, input, expected_output, par
     ):
-        """Tests that applying an operation yields the expected output state for two wire
+        """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
@@ -552,7 +549,6 @@ class TestDefaultQutritIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": False,
@@ -672,7 +668,7 @@ class TestTensorSample:
 
 
 class TestProbabilityIntegration:
-    """Test probability method for when analytic is True/False"""
+    """Test probability method for when computation is/is not analytic"""
 
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
@@ -749,7 +745,7 @@ class TestWiresIntegration:
         ],
     )
     def test_wires_probs(self, wires1, wires2, tol):
-        """Test that the probability vector of a circuit is independent from the wire labels used."""
+        """Test that the probability vector of a circuit is independent of the wire labels used."""
 
         circuit1 = self.make_circuit_probs(wires1)
         circuit2 = self.make_circuit_probs(wires2)
@@ -757,7 +753,7 @@ class TestWiresIntegration:
         assert np.allclose(circuit1(), circuit2(), tol)
 
     def test_wires_not_found_exception(self):
-        """Tests that an exception is raised when wires not present on the device are adressed."""
+        """Tests that an exception is raised when wires not present on the device are addressed."""
         dev = qml.device("default.qutrit", wires=["a", "b"])
 
         with qml.tape.QuantumTape() as tape:
