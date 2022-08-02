@@ -503,10 +503,10 @@ of operators.
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
 
-* The adjoint of an adjoint has a correct `expand` result.
+* The adjoint of an adjoint now has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
-* Fix the ability to return custom objects as the expectation value of a QNode with 
+* Fixed the ability to return custom objects as the expectation value of a QNode with 
   the Autograd interface.
   [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
 
