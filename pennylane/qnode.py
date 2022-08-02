@@ -671,6 +671,7 @@ class QNode:
         ):
             return res
 
+        # Squeeze arraylike outputs
         return qml.math.squeeze(res)
 
 

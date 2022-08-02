@@ -100,6 +100,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
+
         return self.states_to_ternary(samples, self.num_wires)
 
     def generate_basis_states(self, num_wires, dtype=np.uint32):
