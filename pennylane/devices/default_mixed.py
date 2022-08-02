@@ -112,7 +112,10 @@ class DefaultMixed(QubitDevice):
 
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
-    _gather = staticmethod(qnp.gather)
+    # Allow for the `axis` keyword argument for integration with broadcasting-enabling
+    # code in QubitDevice. However, it is not used as DefaultMixed does not support broadcasting
+    # pylint: disable=unnecessary-lambda
+    _gather = staticmethod(lambda *args, axis=0, **kwargs: qnp.gather(*args, **kwargs))
     _dot = staticmethod(qnp.dot)
 
     @staticmethod
@@ -121,6 +124,11 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
+
+        # Support float
+        if not hasattr(array, "__len__"):
+            return np.asarray(array, dtype=dtype)
+
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
         is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
