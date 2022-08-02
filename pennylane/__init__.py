@@ -30,6 +30,7 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
+import pennylane.resource
 import pennylane.templates
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator

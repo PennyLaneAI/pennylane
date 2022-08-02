@@ -38,6 +38,91 @@
   True
   ```
 
+* Functionality for estimating the number of non-Clifford gates and logical qubits needed to
+  implement quantum phase estimation algorithms for simulating materials and molecules is added to
+  the new `qml.resource` module. Quantum algorithms in first quantization using a plane-wave basis
+  and in second quantization with a double-factorized Hamiltonian are supported.
+  [(#2646)](https://github.com/PennyLaneAI/pennylane/pull/2646)
+  [(#2653)](https://github.com/PennyLaneAI/pennylane/pull/2653)
+  [(#2665)](https://github.com/PennyLaneAI/pennylane/pull/2665)
+  [(#2694)](https://github.com/PennyLaneAI/pennylane/pull/2694)
+  [(#2720)](https://github.com/PennyLaneAI/pennylane/pull/2720)
+  [(#2723)](https://github.com/PennyLaneAI/pennylane/pull/2723)
+  [(#2746)](https://github.com/PennyLaneAI/pennylane/pull/2746)
+  [(#2796)](https://github.com/PennyLaneAI/pennylane/pull/2796)
+  [(#2797)](https://github.com/PennyLaneAI/pennylane/pull/2797)
+  [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
+  [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
+
+  The resource estimation algorithms are implemented as classes inherited from the `Operation`
+  class. The number of non-Clifford gates and logical qubits for implementing each algorithm can be
+  estimated by initiating the class for a given system. For the first quantization algorithm, the 
+  number of plane waves, number of electrons and the unit cell volume (in atomic units) are needed
+  to initiate the `FirstQuantization` class. The resource can then be estimated as
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  
+  n = 100000        # number of plane waves
+  eta = 156         # number of electrons
+  omega = 1145.166  # unit cell volume
+  
+  algo = FirstQuantization(n, eta, omega)
+  
+  # print the number of non-Clifford gates and logical qubits
+  print(algo.gates, algo.qubits)
+  ```
+  
+  ```pycon
+  1.10e+13, 4416
+  ```
+  
+  For the second quantization algorithm, the one- and two-electron integrals are needed to initiate
+  the `DoubleFactorization` class which creates a double-factorized Hamiltonian and computes the
+  number of non-Clifford gates and logical qubits for simulating the Hamiltonian:
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  
+  symbols  = ['O', 'H', 'H']
+  geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+                       [0.00000000,  1.45278171, -1.00662237],
+                       [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+  
+  mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+  core, one, two = qml.qchem.electron_integrals(mol)()
+  algo = DoubleFactorization(one, two)
+  
+  # print the number of non-Clifford gates and logical qubits
+  print(algo.gates, algo.qubits)
+  ```
+
+  ```pycon
+  103969925, 290
+  ```
+
+  The methods of the `FirstQuantization` and the `DoubleFactorization` classes can be also accessed
+  individually. For instance, the logical qubits can be computed by providing the inputs needed for
+  this estimation without initiating the class. 
+
+  ```python
+  n = 100000
+  eta = 156
+  omega = 169.69608
+  error = 0.01
+  qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
+  ```
+  
+  ```pycon
+  4377
+  ```
+
+  In addition to the number of non-Clifford gates and logical qubits, some other quantities such as
+  the 1-norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
+  obtained either by initiating the classes or by directly calling the functions.
+
 * `DefaultQubit` devices now natively support parameter broadcasting
   and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
@@ -466,5 +551,5 @@ This release contains contributions from (in alphabetical order):
 
 Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
 Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
-Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni, Antal Száva,
-David Wierichs, Moritz Willmann
+Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
+Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
