@@ -58,7 +58,7 @@ from pennylane.measurements import (
     mutual_info,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, op_sum
+from pennylane.ops import adjoint, ctrl, op_sum, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
