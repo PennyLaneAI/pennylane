@@ -139,14 +139,14 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute(tapes))
+        res = fn(dev.batch_execute_new(tapes))
         assert len(res) == 2
 
         for r in res:
             assert len(r) == 2
 
-        expected = (
-            np.array([-2 * np.sin(x), 0]),
+        expval_expected = [-2 * np.sin(x) / 2, 0]
+        probs_expected = (
             np.array(
                 [
                     [
@@ -167,13 +167,14 @@ class TestParameterShiftRule:
                     ],
                 ]
             )
-            / 2,
+            / 2
         )
 
-        print("expected: ", expected)
-        for param_idx, r in enumerate(res):
-            for meas_idx, meas_result in enumerate(r):
-                print(meas_result, param_idx, meas_idx)
-                assert np.allclose(meas_result, expected[param_idx][meas_idx], atol=tol, rtol=0)
+        # Expvals
+        assert np.allclose(res[0][0], expval_expected[0])
+        assert np.allclose(res[1][0], expval_expected[1])
 
+        # Probs
+        assert np.allclose(res[0][1], probs_expected[:, 0])
+        assert np.allclose(res[1][1], probs_expected[:, 1])
         qml.disable_return()

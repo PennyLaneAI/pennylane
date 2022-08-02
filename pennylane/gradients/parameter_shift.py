@@ -307,7 +307,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                             measurement_result[parameter_idx] for measurement_result in res
                         ]
                         single_result = qml.math.stack(single_result)
-                        print("Res coeffs: ", single_result, coeffs)
                         g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
                         g.append(g_component)
 
@@ -342,7 +341,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                     grads[i] = qml.math.hstack(g)
             res = qml.math.T(qml.math.stack(grads))
 
-        print("grad res:", res)
         return res
 
     return gradient_tapes, processing_fn
