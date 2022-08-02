@@ -110,12 +110,31 @@ class TestProperties:
 
 class TestMatrix:
     def test_matrix_rx(self):
-
+        """Test the matrix comparing to the rx gate."""
         phi = np.array(1.234)
         exp_rx = Exp(qml.PauliX(0), -0.5j * phi)
         rx = qml.RX(phi, 0)
 
         assert qml.math.allclose(exp_rx.matrix(), rx.matrix())
+
+    def test_sparse_matrix(self):
+        """Test the sparse matrix function."""
+        from scipy.sparse import csr_matrix
+
+        format = "lil"
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+
+        op = Exp(base, 3)
+
+        sparse_mat = op.sparse_matrix(format=format)
+        assert sparse_mat.format == format
+
+        dense_mat = qml.matrix(op)
+
+        assert qml.math.allclose(sparse_mat.toarray(), dense_mat)
 
 
 class TestArithmetic:

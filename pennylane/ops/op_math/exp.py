@@ -73,7 +73,7 @@ class Exp(SymbolicOp):
     """
 
     coeff = 1
-    """The numerical coefficiant of the operator in the exponent."""
+    """The numerical coefficient of the operator in the exponent."""
 
     control_wires = Wires([])
 
@@ -102,6 +102,16 @@ class Exp(SymbolicOp):
     def num_params(self):
         return self.base.num_params + 1
 
+    @property
+    def is_hermitian(self):
+        return self.base.is_hermitian and math.imag(self.coeff) == 0
+
+    @property
+    def _queue_category(self):
+        if self.base.is_hermitian and math.real(self.coeff) == 0:
+            return "_ops"
+        return None
+
     def matrix(self, wire_order=None):
         mat = expm(self.coeff * qml.matrix(self.base))
 
@@ -110,12 +120,12 @@ class Exp(SymbolicOp):
 
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
-    def sparse_matrix(self, wire_order=None):
+    # pylint: disable=arguments-differ
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if wire_order is not None:
             raise NotImplementedError("Wire order is not implemented for sparse_matrix")
 
-        base_smat = self.coeff * self.base.sparse_matrix()
-        return sparse_expm(base_smat)
+        return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
@@ -145,13 +155,3 @@ class Exp(SymbolicOp):
 
     def pow(self, z):
         return Exp(self.base, self.coeff * z)
-
-    @property
-    def is_hermitian(self):
-        return self.base.is_hermitian and math.imag(self.coeff) == 0
-
-    @property
-    def _queue_category(self):
-        if self.base.is_hermitian and math.real(self.coeff) == 0:
-            return "_ops"
-        return None
