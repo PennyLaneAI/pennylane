@@ -17,6 +17,7 @@ computing the product between operations.
 """
 from copy import copy
 from functools import reduce
+from itertools import combinations
 
 import numpy as np
 
@@ -156,16 +157,34 @@ class Prod(Operator):
     def num_wires(self):
         return len(self.wires)
 
+    # @property
+    # def is_hermitian(self, run_check=True):  # TODO: cache this value, this check is expensive!
+    #     """check if the product operator is hermitian."""
+    #     if run_check:
+    #         mat = self.matrix()
+    #         adj_mat = math.conj(math.transpose(mat))
+    #         if math.allclose(mat, adj_mat):
+    #             return True
+    #         return False
+    #     raise qml.operation.IsHermitianUndefinedErrors
+
     @property
-    def is_hermitian(self, run_check=True):  # TODO: cache this value, this check is expensive!
-        """check if the product operator is hermitian."""
-        if run_check:
-            mat = self.matrix()
-            adj_mat = math.conj(math.transpose(mat))
-            if math.allclose(mat, adj_mat):
-                return True
-            return False
-        raise qml.operation.IsHermitianUndefinedErrors
+    def is_hermitian(self):
+        """Check if the product operator is hermitian.
+
+        Note, this check is not exhaustive. There can be hermitian operators for which this check
+        yields false, which ARE hermitian. So a false result only implies a more explicit check
+        must be performed.
+        """
+        for o1, o2 in combinations(self.factors, r=2):
+            shared_wires = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
+            if shared_wires:
+                return False
+
+        if all([op.is_hermitian for op in self.factors]):
+            return True
+
+        return False
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
