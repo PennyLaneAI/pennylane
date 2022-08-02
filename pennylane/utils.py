@@ -199,7 +199,7 @@ def sparse_hamiltonian(H, wires=None, dim=2):
                 i_count += 1
 
         if i_count > 0:
-            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+            mat.append(scipy.sparse.eye(dim**i_count, format="coo"))
 
         red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
