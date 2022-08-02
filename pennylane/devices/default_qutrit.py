@@ -65,6 +65,7 @@ class DefaultQutrit(QutritDevice):
 
     observables = {
         "THermitian",
+        "GellMannObs",
         "Identity",
     }
 
