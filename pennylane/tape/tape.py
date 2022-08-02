@@ -1054,11 +1054,10 @@ class QuantumTape(AnnotatedQueue):
             shape = []
             for shot_val in device.shot_vector:
                 shots = shot_val.shots
-                for _ in range(shot_val.copies):
-                    if shots != 1:
-                        shape.append((shots, len(mps)))
-                    else:
-                        shape.append((len(mps),))
+                if shots != 1:
+                    shape.extend((shots, len(mps)) for _ in range(shot_val.copies))
+                else:
+                    shape.extend((len(mps),) for _ in range(shot_val.copies))
         return shape
 
     def shape(self, device):
