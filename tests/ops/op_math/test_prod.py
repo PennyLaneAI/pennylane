@@ -580,6 +580,7 @@ class TestProperties:
 
         class DummyOp(Operator):
             """Dummy op with None queue category"""
+
             _queue_category = None
 
             def __init__(self, wires):
@@ -768,7 +769,7 @@ class TestIntegration:
             qml.Hadamard(wires=0),
             qml.CNOT(wires=[0, 1]),
             qml.RX(1.23, wires=1),
-            qml.IsingZZ(0.56, wires=[0, 2])
+            qml.IsingZZ(0.56, wires=[0, 2]),
         )
 
         @qml.qnode(dev)
