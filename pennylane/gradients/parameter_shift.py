@@ -256,6 +256,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff))
 
     def processing_fn(results):
+
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
@@ -280,24 +281,71 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                 res = fn(res)
 
             # compute the linear combination of results and coefficients
-            res = qml.math.stack(res)
-            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
+            if qml.active_return():
 
-            if unshifted_coeff is not None:
-                # add the unshifted term
-                g = g + unshifted_coeff * r0
+                multi_measure = len(tape.measurements) > 1
+                if not multi_measure:
+
+                    res = qml.math.stack(res)
+                    g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
+
+                    if unshifted_coeff is not None:
+                        # add the unshifted term
+                        g = g + unshifted_coeff * r0
+                else:
+                    # TODO: following is a draft
+
+                    # New return type output
+                    g = []
+                    for result_group, coeff in zip(res, coeffs):
+
+                        if multi_measure:
+                            new_group_result = []
+                            for r in result_group:
+                                # print("Shapes: ", r.shape, coeffs.shape)
+                                # grad_component = qml.math.tensordot(r, qml.math.convert_like(coeff, r), [[0], [0]])
+                                grad_component = r * coeff
+                                new_group_result.append(grad_component)
+
+                            g.append(tuple(new_group_result))
+                        else:
+                            # result_group should be the result of a single measurement
+                            grad_component = result_group * coeff
+                            g.append(grad_component)
+
+                    g = [np.sum(g)]
+                    # TODO:
+                    if unshifted_coeff is not None:
+                        # add the unshifted term
+                        g = g + unshifted_coeff * r0
+
+                    g = tuple(g)
+            else:
+                res = qml.math.stack(res)
+                g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
+
+                if unshifted_coeff is not None:
+                    # add the unshifted term
+                    g = g + unshifted_coeff * r0
 
             grads.append(g)
 
-        # The following is for backwards compatibility; currently, the device stacks multiple
-        # measurement arrays, even if not the same size, resulting in a ragged array.
-        # In the future, we might want to change this so that only tuples of arrays are returned.
-        # for i, g in enumerate(grads):
-        #     if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
-        #         grads[i] = qml.math.hstack(g)
+        if qml.active_return():
 
-        grads = tuple(qml.math.squeeze(g) for g in grads)
-        return grads
+            # New return type output
+            # res = tuple(qml.math.squeeze(g) for g in grads if isinstance(g, Sequence))
+            res = tuple(g for g in grads)
+
+        else:
+            # The following is for backwards compatibility; currently, the device stacks multiple
+            # measurement arrays, even if not the same size, resulting in a ragged array.
+            # In the future, we might want to change this so that only tuples of arrays are returned.
+            for i, g in enumerate(grads):
+                if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
+                    grads[i] = qml.math.hstack(g)
+            res = qml.math.T(qml.math.stack(grads))
+
+        return res
 
     return gradient_tapes, processing_fn
 
