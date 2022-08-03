@@ -230,6 +230,7 @@ def test_broadcasting_jit_compatibility():
     res = circuit(x)
     jit_res = jax.jit(circuit)(x)
     assert not qml.math.isclose(res[0], res[1])
+    assert not qml.math.isclose(jit_res[0], jit_res[1])
     assert qml.math.allclose(res, jnp.cos(x))
     assert qml.math.allclose(jit_res, jnp.cos(x))
 
