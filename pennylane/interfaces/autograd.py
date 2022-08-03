@@ -109,22 +109,23 @@ def _execute(
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-    # for i, r in enumerate(res):
+    if not qml.active_return():
+        for i, r in enumerate(res):
 
-    #     if any(m.return_type is qml.measurements.Counts for m in tapes[i].measurements):
-    #         continue
+            if any(m.return_type is qml.measurements.Counts for m in tapes[i].measurements):
+                continue
 
-    #     if isinstance(r, np.ndarray):
-    #         # For backwards compatibility, we flatten ragged tape outputs
-    #         # when there is no sampling
-    #         r = np.hstack(r) if r.dtype == np.dtype("object") else r
-    #         res[i] = np.tensor(r)
+            if isinstance(r, np.ndarray):
+                # For backwards compatibility, we flatten ragged tape outputs
+                # when there is no sampling
+                r = np.hstack(r) if r.dtype == np.dtype("object") else r
+                res[i] = np.tensor(r)
 
-    #     elif isinstance(res[i], tuple):
-    #         res[i] = tuple(np.tensor(r) for r in res[i])
+            elif isinstance(res[i], tuple):
+                res[i] = tuple(np.tensor(r) for r in res[i])
 
-    #     else:
-    #         res[i] = qml.math.toarray(res[i])
+            else:
+                res[i] = qml.math.toarray(res[i])
 
     return res, jacs
 
@@ -263,7 +264,10 @@ def vjp(
             # TODO: remove this exceptional case once the source of this issue
             # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
             return (return_vjps,)  # pragma: no cover
-        return tuple(return_vjps)
+
+        if qml.active_return():
+            return_vjps = tuple(return_vjps)
+        return return_vjps
 
     return grad_fn
 
