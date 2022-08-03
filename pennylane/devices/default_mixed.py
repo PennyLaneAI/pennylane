@@ -574,8 +574,9 @@ class DefaultMixed(QubitDevice):
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
                 if obs.return_type in (Sample, Counts):
-                    if obs.name == "Identity" and obs.wires == qml.wires.Wires([]):
-                        # Sample, Counts: Readout error applied to all device wires when wires not specified.
+                    if obs.name == "Identity" and obs.wires in (qml.wires.Wires([]), self.wires):
+                        # Sample, Counts: Readout error applied to all device wires when wires
+                        # not specified or all wires specified.
                         self.measured_wires = self.wires
                         return super().execute(circuit, **kwargs)
                 if obs.return_type in (VnEntropy, MutualInfo):

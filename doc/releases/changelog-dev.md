@@ -19,6 +19,7 @@
   ...     return qml.expval(qml.PauliZ(0))
   >>> print(circuit())
   0.8
+  ```
 
 * The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
   argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
