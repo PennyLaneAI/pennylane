@@ -4,6 +4,40 @@
 
 <h3>New features since last release</h3>
 
+* The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
+  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
+  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
+
+  For example, for the circuit
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.CRY(y, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  we may compute the derivative via
+
+  ```pycon
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
+  ```
+
+  Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
+  yet and the operations with trainable parameters are required to support broadcasting when using
+  `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
+
+  ```pycon
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+  True
+  ```
+
 * Functionality for estimating the number of non-Clifford gates and logical qubits needed to
   implement quantum phase estimation algorithms for simulating materials and molecules is added to
   the new `qml.resource` module. Quantum algorithms in first quantization using a plane-wave basis
@@ -89,7 +123,8 @@
   the 1-norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
   obtained either by initiating the classes or by directly calling the functions.
 
-* `DefaultQubit` devices now natively support parameter broadcasting.
+* `DefaultQubit` devices now natively support parameter broadcasting
+  and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
   
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
