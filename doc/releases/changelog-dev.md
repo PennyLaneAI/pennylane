@@ -355,6 +355,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
   [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
   [(#2876)](https://github.com/PennyLaneAI/pennylane/pull/2876)
+  [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
 
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
@@ -370,7 +371,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   ...     return qml.counts()
   >>> result = circuit()
   >>> print(result)
-  {'00': 495, '11': 505}
+  {'00': 495, '01': 0, '10': 0,  '11': 505}
   ```
 
   Counts can also be obtained when sampling the eigenstates of an observable:
@@ -514,7 +515,8 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 This release contains contributions from (in alphabetical order):
 
-Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
-Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
-Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
-Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
+Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, Lillian Marie Austin Frederiksen, David Ittah, 
+Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, 
+Albert Mitjans Coma, Ixchel Meza Chavez,Romain Moyard, Lee James O'Riordan, Mudit Pandey, 
+Bogdan Reznychenko, Shuli Shu, Jay Soni, Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, 
+Moritz Willmann
