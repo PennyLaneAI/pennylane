@@ -4,6 +4,163 @@
 
 <h3>New features since last release</h3>
 
+* The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
+  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
+  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
+
+  For example, for the circuit
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.CRY(y, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  we may compute the derivative via
+
+  ```pycon
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
+  ```
+
+  Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
+  yet and the operations with trainable parameters are required to support broadcasting when using
+  `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
+
+  ```pycon
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+  True
+  ```
+
+* Functionality for estimating the number of non-Clifford gates and logical qubits needed to
+  implement quantum phase estimation algorithms for simulating materials and molecules is added to
+  the new `qml.resource` module. Quantum algorithms in first quantization using a plane-wave basis
+  and in second quantization with a double-factorized Hamiltonian are supported.
+  [(#2646)](https://github.com/PennyLaneAI/pennylane/pull/2646)
+  [(#2653)](https://github.com/PennyLaneAI/pennylane/pull/2653)
+  [(#2665)](https://github.com/PennyLaneAI/pennylane/pull/2665)
+  [(#2694)](https://github.com/PennyLaneAI/pennylane/pull/2694)
+  [(#2720)](https://github.com/PennyLaneAI/pennylane/pull/2720)
+  [(#2723)](https://github.com/PennyLaneAI/pennylane/pull/2723)
+  [(#2746)](https://github.com/PennyLaneAI/pennylane/pull/2746)
+  [(#2796)](https://github.com/PennyLaneAI/pennylane/pull/2796)
+  [(#2797)](https://github.com/PennyLaneAI/pennylane/pull/2797)
+  [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
+  [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
+
+  The resource estimation algorithms are implemented as classes inherited from the `Operation`
+  class. The number of non-Clifford gates and logical qubits for implementing each algorithm can be
+  estimated by initiating the class for a given system. For the first quantization algorithm, the 
+  number of plane waves, number of electrons and the unit cell volume (in atomic units) are needed
+  to initiate the `FirstQuantization` class. The resource can then be estimated as
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  
+  n = 100000        # number of plane waves
+  eta = 156         # number of electrons
+  omega = 1145.166  # unit cell volume
+  
+  algo = FirstQuantization(n, eta, omega)
+  
+  # print the number of non-Clifford gates and logical qubits
+  print(algo.gates, algo.qubits)
+  ```
+  
+  ```pycon
+  1.10e+13, 4416
+  ```
+  
+  For the second quantization algorithm, the one- and two-electron integrals are needed to initiate
+  the `DoubleFactorization` class which creates a double-factorized Hamiltonian and computes the
+  number of non-Clifford gates and logical qubits for simulating the Hamiltonian:
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  
+  symbols  = ['O', 'H', 'H']
+  geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+                       [0.00000000,  1.45278171, -1.00662237],
+                       [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+  
+  mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+  core, one, two = qml.qchem.electron_integrals(mol)()
+  algo = DoubleFactorization(one, two)
+  
+  # print the number of non-Clifford gates and logical qubits
+  print(algo.gates, algo.qubits)
+  ```
+
+  ```pycon
+  103969925, 290
+  ```
+
+  The methods of the `FirstQuantization` and the `DoubleFactorization` classes can be also accessed
+  individually. For instance, the logical qubits can be computed by providing the inputs needed for
+  this estimation without initiating the class. 
+
+  ```python
+  n = 100000
+  eta = 156
+  omega = 169.69608
+  error = 0.01
+  qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
+  ```
+  
+  ```pycon
+  4377
+  ```
+
+  In addition to the number of non-Clifford gates and logical qubits, some other quantities such as
+  the 1-norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
+  obtained either by initiating the classes or by directly calling the functions.
+
+* `DefaultQubit` devices now natively support parameter broadcasting
+  and `qml.gradients.param_shift` allows to make use of broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
+  devices now are able to directly execute broadcasted circuits, providing
+  a faster way of executing the same circuit at varied parameter positions.
+
+  Given a standard `QNode`,
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  we can call it with broadcasted parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
+  >>> circuit(x, y)
+  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
+  ```
+
+  It's also possible to broadcast only some parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array(0.23, requires_grad=True)
+  >>> circuit(x, y)
+  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
@@ -108,11 +265,29 @@
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   ([#2781](https://github.com/PennyLaneAI/pennylane/pull/2781), [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782))
-
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
 
+* Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
+  [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
+
+  ```pycon
+  >>> dev = qml.device("default.qutrit", wires=1)
+  >>> @qml.qnode(dev)
+  ... def circuit(U):
+  ...     qml.QutritUnitary(U, wires=0)
+  ...     return qml.probs(wires=0)
+  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
+  >>> print(circuit(U))
+  [0.5 0.5 0. ]
+  ```
+  
+  
 **Operator Arithmetic:**
+
+* Adds the `Controlled` symbolic operator to represent a controlled version of any
+  operation.
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
 * Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
   operators such as `Adjoint` and `Pow`.
@@ -170,7 +345,25 @@
   RZ**2(1.0, wires=[0])
   ```
 
-* A `SProd` symbolic class is added that allows users to represent the scalar product 
+* Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+
+  ```pycon
+  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op.matrix()
+  array([[5., 1.],
+         [1., 5.]])
+  ```
+
+  Added `__neg__` and `__sub__` dunder methods to the `qml.operation.Operator` class so that users
+  can negate and substract operators more naturally.
+
+  ```pycon
+  >>> -(-qml.PauliZ(0) + qml.PauliX(0)).matrix()
+  array([[ 1, -1],
+        [-1, -1]])
+  ```
+
+* A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
   We can get the matrix, eigenvalues, terms, diagonalizing gates and more.
@@ -206,22 +399,15 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
-<h3>Improvements</h3>
-
-* Automatic circuit cutting is improved by making better partition imbalance derivations.
-  Now it is more likely to generate optimal cuts for larger circuits.
-  [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
-
-* Jacobians are cached with the Autograd interface when using the
-  parameter-shift rule.
-  [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
-
-* Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
+* Added `qml.counts` which samples from the supplied observable returning the number of counts
+  for each sample.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+  [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
+  [(#2876)](https://github.com/PennyLaneAI/pennylane/pull/2876)
 
   Note that the change included creating a new `Counts` measurement type in `measurements.py`.
 
-  `counts=True` can be set when obtaining raw samples in the computational basis:
+  `qml.counts` can be used to obtain counted raw samples in the computational basis:
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
@@ -230,8 +416,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> def circuit():
   ...     qml.Hadamard(wires=0)
   ...     qml.CNOT(wires=[0, 1])
-  ...     # passing the counts flag
-  ...     return qml.sample(counts=True)
+  ...     return qml.counts()
   >>> result = circuit()
   >>> print(result)
   {'00': 495, '11': 505}
@@ -246,12 +431,30 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> def circuit():
   ...   qml.Hadamard(wires=0)
   ...   qml.CNOT(wires=[0, 1])
-  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+  ...   return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
   >>> result = circuit()
   >>> print(result)
-  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
-   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
+
+<h3>Improvements</h3>
+
+* The efficiency of the Hartree-Fock workflow is improved by removing the repetitive basis set
+  normalisation steps and modifying how the permutational symmetries are applied to avoid repetitive
+  electron repulsion integral calculations.
+  [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
+
+* The coefficients of the non-differentiable molecular Hamiltonians generated with openfermion have
+  `requires_grad = False` by default.
+  [(#2865)](https://github.com/PennyLaneAI/pennylane/pull/2865)
+
+* A small performance upgrade to the `compute_matrix` method
+  of broadcastable parametric operations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+* Jacobians are cached with the Autograd interface when using the
+  parameter-shift rule.
+  [(#2645)](https://github.com/PennyLaneAI/pennylane/pull/2645)
 
 * The `qml.state` and `qml.density_matrix` measurements now support custom wire
   labels.
@@ -294,6 +497,10 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * Adjoint differentiation now uses the adjoint symbolic wrapper instead of in-place inversion.
   [(#2855)](https://github.com/PennyLaneAI/pennylane/pull/2855)
 
+* Automatic circuit cutting is improved by making better partition imbalance derivations.
+  Now it is more likely to generate optimal cuts for larger circuits.
+  [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
+
 <h3>Breaking changes</h3>
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
@@ -319,6 +526,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Bug fixes</h3>
 
+* Updated IsingXY gate doc-string.
+  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
+
 * Fixes a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
   do not contains any unshifted terms.
@@ -343,17 +553,21 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * The adjoint of an adjoint has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
+* Fix the ability to return custom objects as the expectation value of a QNode with the Autograd interface.
+  [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
+
 * The WireCut operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
 * Allow hamiltonians with grouped observables to be measured on devices
   which were transformed using `qml.transform.insert()`.
-  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857) 
+  [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, David Ittah, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Christina Lee,
-Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
-Zeyue Niu, Mudit Pandey, Bogdan Reznychenko, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann
+Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
+Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
+Romain Moyard, Zeyue Niu, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
+Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
