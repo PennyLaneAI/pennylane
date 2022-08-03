@@ -1458,7 +1458,7 @@ class QubitDevice(Device):
             dimension ``(shots,)`` or counts
         """
 
-        def _samples_to_counts(samples, no_observable_provided):
+        def _samples_to_counts(samples, obs):
             """Group the obtained samples into a dictionary.
 
             **Example**
@@ -1470,12 +1470,23 @@ class QubitDevice(Device):
                 >>> self._samples_to_counts(samples)
                 {'111':1, '001':2}
             """
-            if no_observable_provided:
-                # If we describe a state vector, we need to convert its list representation
-                # into string (it's hashable and good-looking).
+
+            if isinstance(obs, MeasurementProcess):
+                # get number of wires from obs if passed to observable, otherwise all device wires
+                # ToDo: is there already a general parameter for number of wires?
+                n_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
+                outcomes = self.generate_basis_states(n_wires)
+
+                # convert samples and outcomes from arrays to str for dict keys
+                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+                # ToDo: what is this about extracting elements for JAX?
                 # Before converting to str, we need to extract elements from arrays
                 # to satisfy the case of jax interface, as jax arrays do not support str.
                 samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            else:
+                outcomes = obs.compute_eigvals()
+
+            print(outcomes)
 
             states, counts = np.unique(samples, return_counts=True)
             return dict(zip(states, counts))
@@ -1524,15 +1535,14 @@ class QubitDevice(Device):
 
         if bin_size is None:
             if counts:
-                return _samples_to_counts(samples, no_observable_provided)
+                return _samples_to_counts(samples, observable)
             return samples
 
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if counts:
             shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
-                _samples_to_counts(bin_sample, no_observable_provided)
-                for bin_sample in samples.reshape(shape)
+                _samples_to_counts(bin_sample, observable) for bin_sample in samples.reshape(shape)
             ]
 
         res = (
