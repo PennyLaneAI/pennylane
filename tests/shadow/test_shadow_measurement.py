@@ -27,7 +27,7 @@ def get_circuit(wires, shots, force_super=False):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     if force_super:
-        # make the device call the superclass method
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
         dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev)
