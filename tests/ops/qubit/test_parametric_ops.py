@@ -1905,6 +1905,43 @@ class TestGrad:
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_torch_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Torch for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
+            pytest.skip("PSWAP does not support adjoint")
+
+        import torch
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = torch.tensor(0.1)
+        psi_1 = torch.tensor(0.2)
+        psi_2 = torch.tensor(0.3)
+        psi_3 = torch.tensor(0.4)
+
+        init_state = torch.tensor([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = torch.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        phi = torch.tensor(phi, requires_grad=True)
+
+        expected = 2 * torch.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        result = circuit(phi)
+        result.backward()
+        res = phi.grad
+        assert np.allclose(res, expected.detach())
+
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_pswap_jax_grad(self, tol, dev_name, diff_method, phi):
