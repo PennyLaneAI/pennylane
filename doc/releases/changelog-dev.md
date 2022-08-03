@@ -475,6 +475,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
 * Adds `expm` to the `pennylane.math` module for matrix exponentiation.
+  [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
 
 <h3>Deprecations</h3>
 
