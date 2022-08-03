@@ -77,7 +77,7 @@ def batch_input(
     all_parameters = tape.get_parameters(trainable_only=False)
     argnum_params = [all_parameters[i] for i in argnum]
 
-    if any(qml.math.requires_grad(p) for p in argnum_params):
+    if any(num in tape.trainable_params for num in argnum):
         raise ValueError(
             "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
             + "'argnum' are not marked as trainable."
