@@ -211,7 +211,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         list of generated tapes, in addition to a post-processing
         function to be applied to the results of the evaluated tapes.
     """
-    print('in here too')
     argnum = argnum or tape.trainable_params
 
     gradient_tapes = []
@@ -294,8 +293,6 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                         # add the unshifted term
                         g = g + unshifted_coeff * r0
                 else:
-                    # TODO: there's a bug likely from here for the multi-var case
-
                     # New return type output
                     g = []
                     assert len(res) > 0
@@ -306,14 +303,12 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                         single_result = [
                             measurement_result[parameter_idx] for measurement_result in res
                         ]
-                        single_result = qml.math.stack(single_result)
                         coeffs = qml.math.convert_like(coeffs, single_result)
                         g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
                         g.append(g_component)
 
                     # TODO:
                     if unshifted_coeff is not None:
-                        print('unshifted')
                         # add the unshifted term
                         g = g + unshifted_coeff * r0
 
@@ -331,8 +326,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         if qml.active_return():
 
             # New return type output
-            # res = tuple(qml.math.squeeze(g) for g in grads if isinstance(g, Sequence))
-            res = tuple(g for g in grads)
+            res = tuple(grads)
 
         else:
             # The following is for backwards compatibility; currently, the device stacks multiple
@@ -393,7 +387,9 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     gradient_tapes = [expval_tape]
 
     # evaluate the analytic derivative of <A>
+
     pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0)
+
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
@@ -449,7 +445,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         # and convert it to be the same type as the results.
         res = results[0]
 
-
         mask = []
         for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
             array_func = np.ones if m else np.zeros
@@ -467,12 +462,14 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
-        print(pdA, results)
 
         if non_involutory:
-            # TODO: test for new returns
             # compute the second derivative of non-involutory observables
             pdA2 = pdA2_fn(results[tape_boundary:])
+
+            if qml.active_return() and len(pdA2) == 1:
+                # If only one, get the result from the tuple
+                pdA2 = pdA2[0]
 
             if involutory:
                 # if involutory observables are present, ensure they have zero gradient.
@@ -487,21 +484,35 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
 
                 m = [tape.observables[i].name not in NONINVOLUTORY_OBS for i in var_idx]
                 m = qml.math.convert_like(m, pdA2)
-                print(pdA2)
                 pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
-                print(pdA2)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
-        res = qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
+        # if qml.active_return():
+        #     pdA = qml.math.T(qml.math.stack(pdA))
+
         if qml.active_return():
+            res = []
+            for p in pdA:
+                parameter_res = pdA2 - 2 * np.squeeze(f0) * p
+                if isinstance(parameter_res, Sequence):
+                    parameter_res = tuple(parameter_res)
+
+                res.append(parameter_res)
+
+            res = tuple(res)
+            res = qml.math.where(mask, res, pdA)
+
             # NumPy ops are likely more performant, only convert to tuple here
 
             if len(res.shape) > 1:
                 res = tuple(tuple(r) for r in res)
 
-            else:
+            elif len(res.shape) == 1 and res.shape[0] > 1:
                 res = tuple(res)
+
+        else:
+            res = qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
 
         return res
 

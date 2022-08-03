@@ -423,7 +423,9 @@ class TestParameterShiftRule:
         assert len(tapes) == 5
 
         res = fn(dev.batch_execute_new(tapes))
-        assert res.shape == (2, 2)
+        assert len(res) == 2
+        assert len(res[0]) == 2
+        assert len(res[1]) == 2
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -540,13 +542,14 @@ class TestParameterShiftRule:
         gradA = fn(dev.batch_execute_new(tapes))
         assert len(tapes) == 1 + 4 * 1
 
-        tapes, fn = qml.gradients.finite_diff(tape)
-        gradF = fn(dev.batch_execute_new(tapes))
-        assert len(tapes) == 2
+        # TODO: check when finite diff ready:
+        # tapes, fn = qml.gradients.finite_diff(tape)
+        # gradF = fn(dev.batch_execute_new(tapes))
+        # assert len(tapes) == 2
 
         expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
         assert gradA == pytest.approx(expected, abs=tol)
-        assert gradF == pytest.approx(expected, abs=tol)
+        # assert gradF == pytest.approx(expected, abs=tol)
         qml.disable_return()
 
     def test_involutory_and_noninvolutory_variance(self, tol):
@@ -580,8 +583,9 @@ class TestParameterShiftRule:
         # assert len(tapes) == 1 + 2
 
         expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
-        assert np.diag(gradA) == pytest.approx(expected, abs=tol)
-        #assert np.diag(gradF) == pytest.approx(expected, abs=tol)
+        print(gradA, expected)
+        assert np.allclose(gradA, expected, atol=tol)
+        # assert np.diag(gradF) == pytest.approx(expected, abs=tol)
         qml.disable_return()
 
     def test_expval_and_variance(self, tol):

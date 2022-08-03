@@ -944,6 +944,7 @@ class TestParameterShiftRule:
         assert len(tapes) == 1 + 2
 
         expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
+        print(gradA, expected)
         assert np.diag(gradA) == pytest.approx(expected, abs=tol)
         assert np.diag(gradF) == pytest.approx(expected, abs=tol)
 
