@@ -13,21 +13,19 @@
 # limitations under the License.
 """Tests for the SProd class representing the product of an operator by a scalar"""
 
-import pytest
-import numpy as np
 from copy import copy
 
+import gate_data as gd  # a file containing matrix rep of each gate
+import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import math
 import pennylane.numpy as qnp
-
+from pennylane import QuantumFunctionError, math
+from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
-from pennylane import QuantumFunctionError
-from pennylane.ops.op_math.sprod import s_prod, SProd
-from pennylane.operation import MatrixUndefinedError, DecompositionUndefinedError
-import gate_data as gd  # a file containing matrix rep of each gate
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
@@ -99,7 +97,7 @@ ops_rep = (
 
 
 class TestInitialization:
-    """Test initialization of ther SProd Class."""
+    """Test initialization of the SProd Class."""
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
@@ -126,7 +124,7 @@ class TestInitialization:
         assert sprod_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
     def test_data_setter(self):
-        """Test the setter method for"""
+        """Test the setter method for data"""
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
         old_data = [[9.87], [1.23, 4.0, 5.67]]
 
@@ -548,6 +546,21 @@ class TestIntegration:
         def my_circ():
             qml.PauliX(0)
             return qml.sample(op=sprod_op)
+
+        with pytest.raises(
+            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
+        ):
+            my_circ()
+
+    def test_measurement_process_count(self):
+        """Test SProd class instance in counts measurement process raises error."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qml.Hadamard(1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.counts(op=sprod_op)
 
         with pytest.raises(
             QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
