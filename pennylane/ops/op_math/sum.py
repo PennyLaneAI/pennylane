@@ -144,7 +144,6 @@ class Sum(Operator):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op.summands = tuple(s.__copy__() for s in self.summands)
-        copied_op.data = self.data.copy()  # copies the combined parameters
 
         for attr, value in vars(self).items():
             if attr not in {"data", "summands"}:

@@ -284,11 +284,6 @@ class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
     does not have parameter_frequencies"""
 
 
-class IsHermitianUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have is_hermitian defined"""
-
-
 # =============================================================================
 # Wire types
 # =============================================================================

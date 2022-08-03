@@ -215,10 +215,7 @@ class Prod(Operator):
             if shared_wires:
                 return False
 
-        if all(op.is_hermitian for op in self.factors):
-            return True
-
-        return False
+        return all(op.is_hermitian for op in self.factors)
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
