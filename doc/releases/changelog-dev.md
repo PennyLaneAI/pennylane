@@ -131,6 +131,108 @@
   0.5712737447327619
   ```
 
+<h4>More native support for parameter broadcasting with `DefaultQubit` devices 📡</h4>
+
+* `DefaultQubit` devices now natively support parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
+  devices now are able to directly execute broadcasted circuits, providing
+  a faster way of executing the same circuit at varied parameter positions
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
+  >>> circuit(x, y)
+  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
+  ```
+
+  It's also possible to broadcast only *some* parameters:
+
+  ```pycon
+  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
+  >>> y = np.array(0.23, requires_grad=True)
+  >>> circuit(x, y)
+  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+  
+* Parameter-shift gradients now allow for parameter broadcasting. 
+  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
+
+  The gradient transform `qml.gradients.param_shift` now accepts the new Boolean 
+  keyword argument `broadcast`. If it is set to `True`, broadcasting is used to 
+  compute the derivative:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.CRY(y, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
+  ```
+
+  To illustrate the speedup, consider the following figure which shows, for a 
+  constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
+  time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
+  ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
+  ("Broadcasting") as a function of the number of qubits.
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/default_qubit_native_broadcast_speedup.png" width=70%/>
+
+  For transparency, the base code used for this example is given below:
+
+  ```python
+  dev = qml.device("default.qubit", shots=None, wires=num_wires) 
+
+  def constant_depth_Pauli_rotations(param, wires):
+      [qml.Hadamard(w) for w in wires]
+      [qml.RX(p, w) for p, w in zip(param[0], wires)]
+      [qml.RY(p, w) for p, w in zip(param[1], wires)]
+      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[2])
+      [qml.RY(p, w) for p, w in zip(param[3], wires)]
+      [qml.RZ(p, w) for p, w in zip(param[4], wires)]
+      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[5])
+
+      return qml.probs(wires)
+
+  for num_wires in list(range(3, 13)):
+    dev = qml.device("default.qubit", wires=num_wires)
+    circuit = qml.QNode(constant_depth_Pauli_rotations, device=dev)
+    param = np.random.random(ansatz.shape_fn(num_wires))
+    
+    # time qml.gradients.param_shift(circuit, broadcast=False)(param) 
+    # time qml.gradients.param_shift(circuit, broadcast=True)(param)
+  ```
+
+  Note that `QNodes` with multiple return values and shot vectors are not supported
+  at this time and the Operators with trainable parameters are required to support 
+  broadcasting when using `broadcast=True`. One way of checking the latter is with 
+  `qml.ops.qubit.attributes.supports_broadcasting`:
+
+  ```pycon
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+  True
+  ```
+
 <h4>The SPSA optimizer 🦾</h4>
 
 * The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
@@ -193,7 +295,7 @@
   drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-<h4>Quality-of-life upgrades to Operator arithmetic 📈</h4>
+<h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
 TODO
 
@@ -268,7 +370,6 @@ TODO
   ```
 
 * Added support for addition of operators and scalars. 
-
 
 * A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators.
@@ -368,43 +469,7 @@ of operators.
   DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
   ```
 
-<h3>Improvements</h3>
-
-* `DefaultQubit` devices now natively support parameter broadcasting.
-  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
-  To illustrate the speedup, consider the following figure which shows, for a 
-  constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
-  time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
-  ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
-  ("Broadcasting") as a function of the number of qubits.
-
-  <img src="https://pennylane.readthedocs.io/en/latest/_images/default_qubit_native_broadcast_speedup.png" width=70%/>
-
-  For transparency, the base code used for this example is given below:
-
-  ```python
-  dev = qml.device("default.qubit", shots=None, wires=num_wires) 
-
-  def constant_depth_Pauli_rotations(param, wires):
-      [qml.Hadamard(w) for w in wires]
-      [qml.RX(p, w) for p, w in zip(param[0], wires)]
-      [qml.RY(p, w) for p, w in zip(param[1], wires)]
-      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[2])
-      [qml.RY(p, w) for p, w in zip(param[3], wires)]
-      [qml.RZ(p, w) for p, w in zip(param[4], wires)]
-      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[5])
-
-      return qml.probs(wires)
-
-  for num_wires in list(range(3, 13)):
-    dev = qml.device("default.qubit", wires=num_wires)
-    circuit = qml.QNode(constant_depth_Pauli_rotations, device=dev)
-    param = np.random.random(ansatz.shape_fn(num_wires))
-    
-    # time qml.gradients.param_shift(circuit, broadcast=False)(param) 
-    # time qml.gradients.param_shift(circuit, broadcast=True)(param)
-  ```
+<h3>Improvements 📈</h3>
 
 * The efficiency of the Hartree-Fock workflow has been improved by removing 
   repetitive steps.
@@ -458,11 +523,11 @@ of operators.
   [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
-<h3>Deprecations</h3>
+<h3>Deprecations 👋</h3>
 
 🦗
 
-<h3>Documentation</h3>
+<h3>Documentation 📕</h3>
 
 * Added a dedicated docstring for the `QubitDevice.sample` method.
   [(#2812)](https://github.com/PennyLaneAI/pennylane/pull/2812)
@@ -497,10 +562,10 @@ of operators.
   labels are iterable.
   [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
 
-* The adjoint of an adjoint has a correct `expand` result.
+* The adjoint of an adjoint now has a correct `expand` result.
   [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
-* Fix the ability to return custom objects as the expectation value of a QNode with 
+* Fixed the ability to return custom objects as the expectation value of a QNode with 
   the Autograd interface.
   [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
 
