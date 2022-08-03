@@ -2438,7 +2438,6 @@ class CutStrategy:
 
         depth_imbalance = max(wire_depths.values()) * num_wires / num_gates - 1
         max_imbalance = free_gates / avg_fragment_gates - 1
-        # max_imbalance = max(max_imbalance, 0.1 / avg_fragment_gates)  # numerical stability
         imbalance = min(depth_imbalance, max_imbalance)
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
