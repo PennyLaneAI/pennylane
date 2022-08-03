@@ -461,8 +461,8 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
 * The argument `argnum` of the function `qml.batch_input` has been redefined: now it indicates the
-indices of the non-trainable batched parameters in the quantum tape. Consequently, its default value
-(set to 0) has been removed.
+  indices of the non-trainable batched parameters in the quantum tape. Consequently, its default
+  value (set to 0) has been removed.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
   Before this breaking change, one could call `qml.batch_input` without any arguments when using
