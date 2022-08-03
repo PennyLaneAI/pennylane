@@ -1470,7 +1470,7 @@ class QubitDevice(Device):
             outcomes = obs.compute_eigvals()
 
         # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: 0 for k in outcomes}
+        outcome_dict = {k: np.int64(0) for k in outcomes}
         states, counts = np.unique(samples, return_counts=True)
         for s, c in zip(states, counts):
             outcome_dict[s] = c
