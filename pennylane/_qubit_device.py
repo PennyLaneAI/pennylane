@@ -1436,6 +1436,47 @@ class QubitDevice(Device):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
+    def _samples_to_counts(self, samples, obs, num_wires):
+        """Groups the samples into a dictionary showing number of occurences for
+        each possible outcome.
+
+        Args:
+            samples: samples in an array of dimension ``(shots,len(wires))``
+            obs (Observable): the observable sampled
+            num_wires (int): number of wires the sampled observable was performed on
+
+        Returns:
+            outcome_dict: dictionary with format {'outcome': num_occurences} including all
+                outcomes for the sampled observable
+
+        **Example**
+
+            >>> samples
+            tensor([[0, 0],
+                    [0, 0],
+                    [1, 0]], requires_grad=True)
+            >>> self._samples_to_counts(samples, obs, num_wires)
+            {'00': 2, '01': 0, '10': 1, '11': 0}
+        """
+
+        if isinstance(obs, MeasurementProcess):
+            outcomes = self.generate_basis_states(num_wires)
+
+            # ToDo: converting to str means code does not work with JAX
+            # convert samples and outcomes from arrays to str for dict keys
+            outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+        else:
+            outcomes = obs.compute_eigvals()
+
+        # generate empty outcome dict, populate values with state counts
+        outcome_dict = {k: 0 for k in outcomes}
+        states, counts = np.unique(samples, return_counts=True)
+        for s, c in zip(states, counts):
+            outcome_dict[s] = c
+
+        return outcome_dict
+
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
 
@@ -1457,51 +1498,6 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
-
-        def _samples_to_counts(samples, obs):
-            """Groups the samples into a dictionary showing number of occurences for
-            each possible outcome.
-
-            Args:
-                samples: samples in an array of dimension ``(shots,len(wires))``
-                (Observable): the observable sampled
-
-            Returns:
-                outcome_dict: dictionary with format {'outcome': num_occurences} including all
-                    outcomes for the sampled observable
-
-            **Example**
-
-                >>> samples
-                tensor([[0, 0],
-                        [0, 0],
-                        [1, 0]], requires_grad=True)
-                >>> self._samples_to_counts(samples, obs)
-                {'00': 2, '01': 0, '10': 1, '11': 0}
-            """
-
-            print(np.array(samples).shape)
-            if isinstance(obs, MeasurementProcess):
-                # get n_wires from obs if given, otherwise use all device wires
-                n_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
-                outcomes = self.generate_basis_states(n_wires)
-
-                # convert samples and outcomes from arrays to str for dict keys
-                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
-                # ToDo: what is this about extracting elements for JAX?
-                # Before converting to str, we need to extract elements from arrays
-                # to satisfy the case of jax interface, as jax arrays do not support str.
-                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-            else:
-                outcomes = obs.compute_eigvals()
-
-            # generate empty outcome dict, populate values with state counts
-            outcome_dict = {k: 0 for k in outcomes}
-            states, counts = np.unique(samples, return_counts=True)
-
-            for s, c in zip(states, counts):
-                outcome_dict[s] = c
-            return outcome_dict
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
@@ -1545,16 +1541,16 @@ class QubitDevice(Device):
                     f"Cannot compute samples of {observable.name}."
                 ) from e
 
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
             if counts:
-                return _samples_to_counts(samples, observable)
+                return self._samples_to_counts(samples, observable, num_wires)
             return samples
 
-        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if counts:
             shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
-                _samples_to_counts(bin_sample, observable) for bin_sample in samples.reshape(shape)
+                self._samples_to_counts(bin_sample, observable, num_wires) for bin_sample in samples.reshape(shape)
             ]
 
         res = (
