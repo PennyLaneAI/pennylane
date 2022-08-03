@@ -74,6 +74,7 @@ def _single_excitations_matrix(phi, phase_prefactor):
         + qml.math.einsum("i,jk->ijk", s, mask_s)
     )
 
+
 def _double_excitations_matrix(phi, phase_prefactor):
     """This helper function unifies the `compute_matrix` methods
     of `DoubleExcitation`, `DoubleExcitationPlus` and `DoubleExcitationMinus`.
@@ -200,7 +201,7 @@ class SingleExcitation(Operation):
                 [ 0.0000,  0.2474,  0.9689,  0.0000],
                 [ 0.0000,  0.0000,  0.0000,  1.0000]])
         """
-        return _single_excitations_matrix(phi, 0.)
+        return _single_excitations_matrix(phi, 0.0)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -321,7 +322,6 @@ class SingleExcitationMinus(Operation):
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
         """
         return _single_excitations_matrix(phi, -0.5j)
-
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -612,7 +612,7 @@ class DoubleExcitation(Operation):
         Returns:
           tensor_like: canonical matrix
         """
-        return _double_excitations_matrix(phi, 0.)
+        return _double_excitations_matrix(phi, 0.0)
 
     @staticmethod
     def compute_decomposition(phi, wires):
