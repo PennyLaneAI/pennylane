@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Estimate computational requirements ⚙️</h4>
+<h4>Estimate computational resource requirements 🧠</h4>
 
 * Functionality for estimating molecular simulation computations has been added.
   [(#2646)](https://github.com/PennyLaneAI/pennylane/pull/2646)
@@ -19,10 +19,11 @@
   [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
-  The new `qml.resource` module allows you to estimate the number of non-[Clifford gates](https://en.wikipedia.org/wiki/Clifford_gates) 
-  and logical qubits needed to implement quantum phase estimation algorithms 
-  for simulating materials and molecules. This includes support for quantum 
-  algorithms using first and second quantization with specific bases:
+  The new `qml.resource` module allows you to estimate the number of 
+  non-[Clifford gates](https://en.wikipedia.org/wiki/Clifford_gates) and logical 
+  qubits needed to implement quantum phase estimation algorithms for simulating 
+  materials and molecules. This includes support for quantum algorithms using first 
+  and second quantization with specific bases:
 
   - First quantization using a plane-wave basis via the `FirstQuantization` class:
 
@@ -68,7 +69,8 @@
   The methods of the `FirstQuantization` and the `DoubleFactorization` classes 
   can be also accessed individually without initiating the class:
 
-  - The number of logical qubits with `qubit_cost`:
+  - The number of logical qubits with `qubit_cost`
+  - The number of non-Clifford gates with `gate_cost`
 
   ```python
   n = 100000
@@ -80,25 +82,11 @@
   ```pycon
   >>> qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
   4377
+  >>> qml.resource.FirstQuantization.gate_cost(n, eta, omega, error)
+  3676557345574 
   ```
 
-  - The number of non-Clifford gates with `gate_cost` (TODO: check this):
-
-   ```python
-    n = 100000
-    eta = 156
-    omega = 169.69608
-    error = 0.01
-    ```
-    
-    ```pycon
-    >>> qml.resource.FirstQuantization.gate_cost(n, eta, omega, error)
-    TODO
-    ``` 
-
-<h4>Differentiable error mitigation 🧑‍🔧</h4>
-
-  TODO 
+<h4>Differentiable error mitigation ⚙️</h4>
 
 * Differentiable zero-noise-extrapolation error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
@@ -109,13 +97,12 @@
   of the [documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.fold_global.html)
   and a soon-to-appear demo [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
-  The new feature in PennyLane is that we now offer ZNE that is differentiable. That means, you can now lift any variational
-  quantum algorithm that is written in PennyLane to a mitigated algorithm with improved results on noisy hardware, with automatic differentiation
-  still working.
+  The new feature in this release is that ZNE that is now *differentiable*, meaning that you can now elevate any variational
+  quantum algorithm that is written in PennyLane to a *mitigated* algorithm with improved results on noisy hardware while maintaining differentiability throughout.
 
-  In order to do so, use the `qml.transforms.mitigate_with_zne` transform on your `qnode` and provide the PennyLane proprietary
+  In order to do so, use the `qml.transforms.mitigate_with_zne` transform on your QNode and provide the PennyLane proprietary
   `qml.transforms.fold_global` folding function and `qml.transforms.poly_extrapolate` extrapolation function. Here is an example for a noisy simulation device
-  where we mitigate a `qnode` and still are able to compute the gradient:
+  where we mitigate a QNode and still are able to compute the gradient:
 
   ```python
   # Describe noise
@@ -144,41 +131,6 @@
   0.5712737447327619
   ```
 
-<h4>Native support for parameter broadcasting for `DefaultQubit` devices 📡</h4>
-
-* `DefaultQubit` devices now natively support parameter broadcasting.
-  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
-  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
-  devices now are able to directly execute broadcasted circuits, providing
-  a faster way of executing the same circuit at varied parameter positions
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(x, y):
-      qml.RX(x, wires=0)
-      qml.RY(y, wires=0)
-      return qml.expval(qml.PauliZ(0))
-  ```
-
-  ```pycon
-  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
-  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
-  >>> circuit(x, y)
-  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
-  ```
-
-  It's also possible to broadcast only *some* parameters:
-
-  ```pycon
-  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
-  >>> y = np.array(0.23, requires_grad=True)
-  >>> circuit(x, y)
-  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
-  ```
-
 <h4>The SPSA optimizer 🦾</h4>
 
 * The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
@@ -198,8 +150,7 @@
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-
-<h4>Relative entropy now available in `qml.qinfo`</h4>
+<h4>Relative entropy is now available in `qml.qinfo` 💥</h4>
 
 * The quantum information module now supports computation of [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy).
   [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
@@ -227,7 +178,7 @@
   0.017750012490703237
   ```
 
-  - Relative entropy support in `qml.math` for flexible post-processing:
+  - Support in `qml.math` for flexible post-processing:
 
   ```pycon
   >>> rho = np.array([[0.3, 0], [0, 0.7]])
@@ -236,11 +187,15 @@
   tensor(0.08228288, requires_grad=True)
   ```
 
+<h4>More drawing styles 🎨</h4>
+
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
   drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 <h4>Quality-of-life upgrades to Operator arithmetic 📈</h4>
+
+TODO
 
 * Many convenient additions have been made regarding Operator arithmetic.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
@@ -248,27 +203,49 @@
   [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
   [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
   
-When we refer to Operator "arithmetic" we mean operations like addition, 
-multiplication and exponentiation. Quality-of-life features have been added in 
-each of these categories:
+  Many quality-of-life features have been added to how we handle Operators. This
+  includes:
 
-  - Linear combinations:
-
-  Linearly combine any Operators to create a new Operator whose matrix, terms, 
-  and eigenvalues can be accessed as per usual:
+  - Add Operators via `qml.op_sum` to create a new Operator whose matrix, terms, 
+  and eigenvalues can be accessed as per usual.
 
   ```pycon
-  >>> summed_op = qml.PauliX(0) - 5*qml.PauliZ(0)
+  >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(1))
   >>> summed_op
-  PauliX(wires=[0]) - 5 * PauliZ(wires=[0])
+  PauliX(wires=[0]) + PauliZ(wires=[1])
   >>> qml.matrix(summed_op)
-  array([[ -5,  1],
-         [ 1, 5]])
+  array([[ 1,  0,  1,  0],
+         [ 0, -1,  0,  1],
+         [ 1,  0,  1,  0],
+         [ 0,  1,  0, -1]]) 
   >>> summed_op.terms()
-  ([1.0, -5.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
+  ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[1])))
   ```
 
-  You can also add scalars to Operators, where the interpretation is that the 
+  Summed Operators can also be used inside of a QNode as observables while maintaining
+  differentiability:
+
+  ```python
+  summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(1))
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RX(weights[2], wires=1)
+      return qml.expval(summed_op)
+  ```
+
+  ```pycon
+  >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  array([-0.09347337, -0.18884787, -0.28818254])
+  ```
+
+  - You can now add scalars to Operators, where the interpretation is that the 
   scalar is a properly-sized identity matrix. 
 
   ```pycon
@@ -278,27 +255,6 @@ each of these categories:
          [1., 5.]])
   ```
 
-  Linearly-combined Operators can also be used inside of a `qnode` as an observable 
-  while maintaining differentiability.
-
-  ```python
-  sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(weights):
-      qml.RX(weights[0], wires=0)
-      qml.RY(weights[1], wires=1)
-      qml.CNOT(wires=[0, 1])
-      qml.RX(weights[2], wires=1)
-      return qml.expval(sum_op)
-  ```
-
-  ```pycon
-  >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
-  >>> qml.grad(circuit)(weights)
-  tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
-  ```
 * Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class 
   so that users can combine operators more naturally.
 
@@ -414,6 +370,42 @@ of operators.
 
 <h3>Improvements</h3>
 
+* `DefaultQubit` devices now natively support parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+  
+  To illustrate the speedup, consider the following figure which shows, for a 
+  constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
+  time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
+  ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
+  ("Broadcasting") as a function of the number of qubits.
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/default_qubit_native_broadcast_speedup.png" width=70%/>
+
+  For transparency, the base code used for this example is given below:
+
+  ```python
+  dev = qml.device("default.qubit", shots=None, wires=num_wires) 
+
+  def constant_depth_Pauli_rotations(param, wires):
+      [qml.Hadamard(w) for w in wires]
+      [qml.RX(p, w) for p, w in zip(param[0], wires)]
+      [qml.RY(p, w) for p, w in zip(param[1], wires)]
+      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[2])
+      [qml.RY(p, w) for p, w in zip(param[3], wires)]
+      [qml.RZ(p, w) for p, w in zip(param[4], wires)]
+      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[5])
+
+      return qml.probs(wires)
+
+  for num_wires in list(range(3, 13)):
+    dev = qml.device("default.qubit", wires=num_wires)
+    circuit = qml.QNode(constant_depth_Pauli_rotations, device=dev)
+    param = np.random.random(ansatz.shape_fn(num_wires))
+    
+    # time qml.gradients.param_shift(circuit, broadcast=False)(param) 
+    # time qml.gradients.param_shift(circuit, broadcast=True)(param)
+  ```
+
 * The efficiency of the Hartree-Fock workflow has been improved by removing 
   repetitive steps.
   [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
@@ -422,7 +414,7 @@ of operators.
   with openfermion now have `requires_grad = False` by default.
   [(#2865)](https://github.com/PennyLaneAI/pennylane/pull/2865)
 
-* A performance upgrade to the `compute_matrix` method of broadcastable 
+* Upgraded performance of the `compute_matrix` method of broadcastable 
   parametric operations.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
 
@@ -455,7 +447,7 @@ of operators.
 
 <h3>Breaking changes 💔</h3>
 
-* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully 
+* The deprecated `qml.hf` module is removed. The `qml.hf` functionality is now fully 
   supported by `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
@@ -468,6 +460,8 @@ of operators.
 
 <h3>Deprecations</h3>
 
+🦗
+
 <h3>Documentation</h3>
 
 * Added a dedicated docstring for the `QubitDevice.sample` method.
@@ -477,14 +471,14 @@ of operators.
   been added.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
-<h3>Bug fixes</h3>
+<h3>Bug fixes 🐞</h3>
 
 * Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
 * Fixed a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
-  do not contains any unshifted terms.
+  do not contain any unshifted terms.
   [(#2834)](https://github.com/PennyLaneAI/pennylane/pull/2834)
 
 * Fixed mixed CPU-GPU data-locality issues for the Torch interface.
@@ -510,11 +504,11 @@ of operators.
   the Autograd interface.
   [(#2808)](https://github.com/PennyLaneAI/pennylane/pull/2808)
 
-* The WireCut operator now raises an error when instantiating it with an empty list.
+* The WireCut Operator now raises an error when instantiating it with an empty list.
   [(#2826)](https://github.com/PennyLaneAI/pennylane/pull/2826)
 
-* Allow hamiltonians with grouped observables to be measured on devices which were 
-  transformed using `qml.transform.insert()`.
+* Hamiltonians with grouped observables are now allowed to be measured on devices 
+  which were transformed using `qml.transform.insert()`.
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
 <h3>Contributors</h3>
