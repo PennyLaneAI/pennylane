@@ -155,7 +155,6 @@ class Sum(Operator):
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
         self.summands = summands
-        self.data = [s.parameters for s in self.summands]
         self._wires = qml.wires.Wires.all_wires([s.wires for s in self.summands])
 
         if do_queue:
@@ -168,7 +167,6 @@ class Sum(Operator):
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()  # copies the combined parameters
         copied_op.summands = tuple(s.__copy__() for s in self.summands)
 
         for attr, value in vars(self).items():
@@ -176,6 +174,17 @@ class Sum(Operator):
                 setattr(copied_op, attr, value)
 
         return copied_op
+
+    @property
+    def data(self):
+        """Create data property"""
+        return [s.parameters for s in self.summands]
+
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for new_entry, op in zip(new_data, self.summands):
+            op.data = new_entry
 
     @property
     def batch_size(self):
@@ -314,4 +323,5 @@ class Sum(Operator):
         that the summands are not applied to the circuit repeatedly."""
         for op in self.summands:
             context.safe_update_info(op, owner=self)
+        context.append(self, owns=self.summands)
         return self
