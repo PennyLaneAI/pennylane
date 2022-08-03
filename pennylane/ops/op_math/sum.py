@@ -190,7 +190,7 @@ class Sum(Operator):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self.summands), self.summands
+        return [1.0] * len(self.summands), list(self.summands)
 
     @property
     def eigendecomposition(self):
@@ -323,4 +323,4 @@ class Sum(Operator):
 
     def simplify(self, depth=-1) -> "Sum":
         summands = self.simplify_summands(depth=depth)
-        return Sum(*summands, id=self.id)
+        return Sum(*summands)

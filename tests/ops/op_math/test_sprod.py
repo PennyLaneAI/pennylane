@@ -470,6 +470,64 @@ class TestProperties:
         assert len(cache["matrices"]) == 1
 
 
+class TestSimplify:
+    """Test SProd simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        sprod_op = s_prod(5, s_prod(3, s_prod(-1, qml.RZ(1.32, wires=0))))
+        assert sprod_op.arithmetic_depth == 3
+
+    def test_simplify_method_with_default_depth(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        sprod_op = SProd(
+            2, SProd(2, qml.RZ(1.32, wires=0)) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
+        )
+        final_op = qml.ops.Sum(
+            SProd(4, qml.RZ(1.32, wires=0)),
+            SProd(2, qml.Identity(wires=0)),
+            SProd(2, qml.RX(1.9, wires=1)),
+        )
+        simplified_op = sprod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert isinstance(s2, SProd)
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_given_depth(self):
+        """Test the simplify method with a given depth."""
+        sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
+
+        final_op = SProd(-1, qml.adjoint(qml.PauliX(0)))
+        simplified_op = sprod_op.simplify(depth=3)
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, SProd)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+    def test_simplify_method_with_depth_equal_to_0(self):
+        """Test the simplify method with depth equal to 0."""
+        sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
+        final_op = sprod_op
+        simplified_op = sprod_op.simplify(depth=0)
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, SProd)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_s_prod_top_level(self, op_scalar_tup):

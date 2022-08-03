@@ -263,10 +263,13 @@ class TestSimplify:
         adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
         final_op = Adjoint(qml.RZ(1.32, wires=0))
         simplified_op = adj_op.simplify()
-        assert qml.equal(
-            op1=simplified_op.base, op2=final_op.base
-        )  # TODO: Remove `.base` when comparison between Adjoint operators is fixed
-        assert simplified_op.arithmetic_depth == 1
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Adjoint)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_with_depth_equal_to_2(self):
         """Test the simplify method with depth equal to 2."""
@@ -274,16 +277,32 @@ class TestSimplify:
 
         final_op = Adjoint(Adjoint(qml.RZ(1.32, wires=0)))
         simplified_op = adj_op.simplify(depth=2)
-        assert qml.equal(
-            op1=simplified_op.base.base, op2=final_op.base.base
-        )  # TODO: Remove `.base.base` when comparison between Adjoint operators is fixed
-        assert simplified_op.arithmetic_depth == 2
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Adjoint)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
         adj_op = Adjoint(qml.op_sum(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)))
         sum_op = qml.op_sum(Adjoint(qml.PauliX(0)), Adjoint(qml.PauliY(0)), Adjoint(qml.PauliZ(0)))
-        assert qml.equal(adj_op.simplify(), sum_op)
+        simplified_op = adj_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        assert sum_op.data == simplified_op.data
+        assert sum_op.wires == simplified_op.wires
+        assert sum_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+        for s1, s2 in zip(sum_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
 
 class TestMiscMethods:

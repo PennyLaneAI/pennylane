@@ -56,7 +56,7 @@
 
   The resource estimation algorithms are implemented as classes inherited from the `Operation`
   class. The number of non-Clifford gates and logical qubits for implementing each algorithm can be
-  estimated by initiating the class for a given system. For the first quantization algorithm, the 
+  estimated by initiating the class for a given system. For the first quantization algorithm, the
   number of plane waves, number of electrons and the unit cell volume (in atomic units) are needed
   to initiate the `FirstQuantization` class. The resource can then be estimated as
 
@@ -105,7 +105,7 @@
 
   The methods of the `FirstQuantization` and the `DoubleFactorization` classes can be also accessed
   individually. For instance, the logical qubits can be computed by providing the inputs needed for
-  this estimation without initiating the class. 
+  this estimation without initiating the class.
 
   ```python
   n = 100000
@@ -281,7 +281,6 @@
   >>> print(circuit(U))
   [0.5 0.5 0. ]
   ```
-  
   
 **Operator Arithmetic:**
 

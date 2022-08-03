@@ -15,6 +15,7 @@
 This submodule defines the symbolic operation that stands for the power of an operator.
 """
 import copy
+from typing import Union
 
 from scipy.linalg import fractional_matrix_power
 
@@ -27,6 +28,8 @@ from pennylane.operation import (
     SparseMatrixUndefinedError,
     expand_matrix,
 )
+from pennylane.ops.identity import Identity
+from pennylane.ops.op_math.controlled_class import ControlledOp
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
 
@@ -244,5 +247,16 @@ class Pow(SymbolicOp):
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
 
-    def simplify(self, depth=-1) -> "Pow":
-        return Pow(base=self.base.simplify(depth=depth), z=self.z, id=self.id)
+    def simplify(self, depth=-1) -> Union["Pow", Identity]:
+        if depth == 0:
+            return self
+        if self.z == 0:
+            return Identity(wires=self.wires[0])
+        if isinstance(self.base, ControlledOp):  # Pow(Controlled(base)) = Controlled(Pow(base))
+            return ControlledOp(
+                base=Pow(self.base.base, z=self.z),
+                control_wires=self.base.control_wires,
+                control_values=self.base.control_values,
+                work_wires=self.base.work_wires,
+            )
+        return Pow(base=self.base.simplify(depth=depth), z=self.z)
