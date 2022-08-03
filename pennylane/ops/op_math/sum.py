@@ -120,7 +120,7 @@ class Sum(Operator):
                [0.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 1.81677345+0.57695852j]])
 
-        The `Sum` operation can also be measured inside a `qnode` as an observable.
+        The Sum operation can also be measured inside a qnode as an observable.
         If the circuit is parameterized, then we can also differentiate through the
         sum observable.
 
@@ -139,8 +139,7 @@ class Sum(Operator):
 
         >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.grad(circuit)(weights)
-        tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
-"""
+        tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)"""
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 

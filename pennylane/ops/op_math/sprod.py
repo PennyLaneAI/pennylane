@@ -35,7 +35,7 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     Returns:
         ~ops.op_math.SProd: the operator representing the scalar product.
 
-    .. seealso:: :class:`~.ops.op_math.SProd`, :class: `~.ops.op_math.SymbolicOp`
+    .. seealso:: :class:`~.ops.op_math.SProd` and :class: `~.ops.op_math.SymbolicOp`
 
     **Example**
 
@@ -81,7 +81,7 @@ class SProd(SymbolicOp):
     .. details::
         :title: Usage Details
 
-        The `Sprod` operation can also be measured inside a `qnode` as an observable.
+        The SProd operation can also be measured inside a qnode as an observable.
         If the circuit is parameterized, then we can also differentiate through the observable.
 
         .. code-block:: python
