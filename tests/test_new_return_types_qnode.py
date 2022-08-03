@@ -19,23 +19,8 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-herm = np.diag([1, 2, 3, 4])
-probs_data = [
-    (None, [0]),
-    (None, [0, 1]),
-    (qml.PauliZ(0), None),
-    (qml.Hermitian(herm, wires=[1, 0]), None),
-]
-
-
-herm = np.diag([1, 2, 3, 4])
-probs_data = [
-    (None, [0]),
-    (None, [0, 1]),
-    (qml.PauliZ(0), None),
-    (qml.Hermitian(herm, wires=[1, 0]), None),
-]
 wires = [2, 3, 4]
+devices = ["default.qubit", "default.mixed"]
 
 
 class TestIntegrationSingleReturn:
@@ -81,12 +66,13 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2**wires, 2**wires)
         assert isinstance(res, np.ndarray)
 
+    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", wires)
-    def test_density_matrix_default(self, d_wires):
+    def test_density_matrix(self, d_wires, device):
         """Return density matrix with default.qubit."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device(device, wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -101,31 +87,12 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2**d_wires, 2**d_wires)
         assert isinstance(res, np.ndarray)
 
-    @pytest.mark.parametrize("d_wires", wires)
-    def test_density_matrix_mixed(self, d_wires):
-        """Return density matrix with default.mixed."""
-        qml.enable_return()
-
-        dev = qml.device("default.mixed", wires=4)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.density_matrix(wires=range(0, d_wires))
-
-        qnode = qml.QNode(circuit, dev)
-        res = qnode(0.5)
-
-        qml.disable_return()
-
-        assert res.shape == (2**d_wires, 2**d_wires)
-        assert isinstance(res, np.ndarray)
-
-    def test_expval(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_expval(self, device):
         """Return a single expval."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -140,11 +107,12 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
-    def test_var(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_var(self, device):
         """Return a single var."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -159,11 +127,12 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
-    def test_vn_entropy(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_vn_entropy(self, device):
         """Return a single vn entropy."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -178,11 +147,12 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
-    def test_mutual_info(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_mutual_info(self, device):
         """Return a single mutual information."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -197,12 +167,21 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
+    herm = np.diag([1, 2, 3, 4])
+    probs_data = [
+        (None, [0]),
+        (None, [0, 1]),
+        (qml.PauliZ(0), None),
+        (qml.Hermitian(herm, wires=[1, 0]), None),
+    ]
+
+    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, op, wires):
+    def test_probs(self, op, wires, device):
         """Return a single prob."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -220,20 +199,48 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, np.ndarray)
 
-    # Samples and counts
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    def test_sample(self, measurement, device, shots=100):
+        """Test the sample measurement."""
+        qml.enable_return()
 
+        dev = qml.device(device, wires=2, shots=shots)
 
-# op1, wires1, op2, wires2
-multi_probs_data = [
-    (None, [0], None, [0]),
-    (None, [0], None, [0, 1]),
-    (None, [0, 1], None, [0]),
-    (None, [0, 1], None, [0, 1]),
-    (qml.PauliZ(0), None, qml.PauliZ(1), None),
-    (None, [0], qml.PauliZ(1), None),
-    (qml.PauliZ(0), None, None, [0]),
-    (qml.PauliZ(1), None, qml.PauliZ(0), None),
-]
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        qml.disable_return()
+
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (shots,)
+
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    def test_counts(self, measurement, device, shots=100):
+        """Test the counts measurement."""
+        qml.enable_return()
+
+        dev = qml.device(device, wires=2, shots=shots)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        qml.disable_return()
+
+        assert isinstance(res, dict)
+        assert sum(res.values()) == shots
+
 
 wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
@@ -243,10 +250,11 @@ class TestIntegrationMultipleReturns:
     measurements.
     """
 
-    def test_multiple_expval(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_multiple_expval(self, device):
         """Return multiple expvals."""
         qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -267,10 +275,12 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == ()
 
-    def test_multiple_var(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_multiple_var(self, device):
         """Return multiple vars."""
         qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
+
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -291,10 +301,22 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == ()
 
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2):
-        """Return multiple probs."""
+    # op1, wires1, op2, wires2
+    multi_probs_data = [
+        (None, [0], None, [0]),
+        (None, [0], None, [0, 1]),
+        (None, [0, 1], None, [0]),
+        (None, [0, 1], None, [0, 1]),
+        (qml.PauliZ(0), None, qml.PauliZ(1), None),
+        (None, [0], qml.PauliZ(1), None),
+        (qml.PauliZ(0), None, None, [0]),
+        (qml.PauliZ(1), None, qml.PauliZ(0), None),
+    ]
 
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
+    def test_multiple_prob(self, op1, op2, wires1, wires2, device):
+        """Return multiple probs."""
         qml.enable_return()
 
         dev = qml.device("default.qubit", wires=2)
@@ -324,13 +346,14 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
+    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", wires)
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4):
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -367,14 +390,67 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[3], np.ndarray)
         assert res[3].shape == ()
 
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    def test_expval_sample(self, measurement, device, shots=100):
+        """Test the expval and sample measurements together."""
+        qml.enable_return()
+
+        dev = qml.device(device, wires=2, shots=shots)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(1)), qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        qml.disable_return()
+
+        # Expval
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
+
+        # Sample
+        assert isinstance(res[1], np.ndarray)
+        assert res[1].shape == (shots,)
+
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    def test_expval_counts(self, measurement, device, shots=100):
+        """Test the expval and counts measurements together."""
+        qml.enable_return()
+
+        dev = qml.device(device, wires=2, shots=shots)
+
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(1)), qml.apply(measurement)
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        qml.disable_return()
+
+        # Expval
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
+
+        # Counts
+        assert isinstance(res[1], dict)
+        assert sum(res[1].values()) == shots
+
     wires = [2, 3, 4, 5]
 
+    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
-    def test_list_multiple_expval(self, wires):
+    def test_list_multiple_expval(self, wires, device):
         """Return a comprehension list of multiple expvals."""
         qml.enable_return()
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device(device, wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -392,10 +468,12 @@ class TestIntegrationMultipleReturns:
             assert isinstance(res[i], np.ndarray)
             assert res[i].shape == ()
 
-    def test_array_multiple(self):
+    @pytest.mark.parametrize("device", devices)
+    def test_array_multiple(self, device):
         """Return PennyLane array of multiple measurements"""
         qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
+
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])

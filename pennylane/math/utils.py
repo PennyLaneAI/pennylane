@@ -444,4 +444,7 @@ def in_backprop(tensor, interface=None):
 
         return isinstance(tensor, jax.core.Tracer)
 
+    if interface == "numpy":
+        return False
+
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
