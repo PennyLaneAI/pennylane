@@ -52,6 +52,8 @@ class Controlled(SymbolicOp):
         an entire tape and does not provide as many representations and attributes as ``Controlled``,
         but :class:`~.ControlledOperation` does decompose.
 
+    .. seealso:: :class:`~.ControlledOp` and ::class:`~.ControlledOperation`
+
     **Example**
 
     >>> base = qml.RX(1.234, 1)
@@ -341,6 +343,8 @@ class ControlledOp(Controlled, operation.Operation):
 
     When we no longer rely on certain functionality through ``Operation``, we can get rid of this
     class.
+
+    .. seealso:: :class:`~.Controlled`
     """
 
     def __new__(cls, *_, **__):

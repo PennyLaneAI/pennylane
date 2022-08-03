@@ -28,7 +28,7 @@ def op_sum(*summands, do_queue=True, id=None):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
@@ -36,7 +36,7 @@ def op_sum(*summands, do_queue=True, id=None):
         id (str or None): id for the Sum operator. Default is None.
 
     Returns:
-        ~ops.op_math.Sum: the operator representing the sum of summands.
+        ~ops.op_math.Sum: The operator representing the sum of summands.
 
     .. seealso:: :class:`~.ops.op_math.Sum`
 

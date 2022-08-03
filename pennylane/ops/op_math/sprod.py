@@ -28,12 +28,11 @@ def s_prod(scalar, operator, do_queue=True, id=None):
         operator (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
-        do_queue (bool): determines if the scalar product operator will be queued
-            (currently not supported). Default is True.
+        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
     Returns:
-        ~ops.op_math.SProd: the operator representing the scalar product.
+        ~ops.op_math.SProd: The operator representing the scalar product.
 
     .. seealso:: :class:`~.ops.op_math.SProd` and :class: `~.ops.op_math.SymbolicOp`
 
