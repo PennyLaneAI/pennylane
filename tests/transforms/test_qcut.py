@@ -4736,4 +4736,4 @@ class TestAutoCutCircuit:
             lower, upper = 4, 5
         assert all(lower <= f.order() <= upper for f in frags)
 
-        assert all(len(set(e[2] for e in f.edges.data('wire'))) == 2 for f in frags)
+        assert all(len(set(e[2] for e in f.edges.data("wire"))) == 2 for f in frags)
