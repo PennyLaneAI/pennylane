@@ -4,6 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* Operations for quantum chemistry now also support parameter broadcasting
+  in their numerical representations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+  Similar to standard parametrized operations, quantum chemistry operations now
+  also work with broadcasted parameters:
+
+  ```pycon
+  >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
+  >>> op.matrix().shape
+  (3, 4, 4)
+  ```
+
 * The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
   argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
@@ -259,8 +272,9 @@
   >>> relative_entropy_circuit((x,), (y,))
   0.017750012490703237
   ```
-
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
+  
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
+  drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
