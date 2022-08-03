@@ -146,7 +146,8 @@
 
 <h4>Native support for parameter broadcasting for `DefaultQubit` devices 📡</h4>
 
-* `DefaultQubit` devices now natively support parameter broadcasting.
+* `DefaultQubit` devices now natively support parameter broadcasting
+  and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
   
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
@@ -177,6 +178,40 @@
   >>> y = np.array(0.23, requires_grad=True)
   >>> circuit(x, y)
   tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
+  ```
+  
+* The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
+  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
+  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
+
+  For example, for the circuit
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.CRY(y, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  we may compute the derivative via
+
+  ```pycon
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
+  ```
+
+  Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
+  yet and the operations with trainable parameters are required to support broadcasting when using
+  `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
+
+  ```pycon
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+  True
   ```
 
 <h4>The SPSA optimizer 🦾</h4>
@@ -226,7 +261,7 @@
   >>> relative_entropy_circuit((x,), (y,))
   0.017750012490703237
   ```
-
+  
   - Relative entropy support in `qml.math` for flexible post-processing:
 
   ```pycon
