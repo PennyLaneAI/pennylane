@@ -125,6 +125,7 @@ class Sum(Operator):
         sum observable.
 
         .. code-block:: python
+
             sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
             dev = qml.device("default.qubit", wires=2)
 
