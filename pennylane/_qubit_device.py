@@ -1459,21 +1459,30 @@ class QubitDevice(Device):
         """
 
         def _samples_to_counts(samples, obs):
-            """Group the obtained samples into a dictionary.
+            """Groups the samples into a dictionary showing number of occurences for
+            each possible outcome.
+
+            Args:
+                samples: samples in an array of dimension ``(shots,len(wires))``
+                (Observable): the observable sampled
+
+            Returns:
+                outcome_dict: dictionary with format {'outcome': num_occurences} including all
+                    outcomes for the sampled observable
 
             **Example**
 
                 >>> samples
-                tensor([[0, 0, 1],
-                        [0, 0, 1],
-                        [1, 1, 1]], requires_grad=True)
-                >>> self._samples_to_counts(samples)
-                {'111':1, '001':2}
+                tensor([[0, 0],
+                        [0, 0],
+                        [1, 0]], requires_grad=True)
+                >>> self._samples_to_counts(samples, obs)
+                {'00': 2, '01': 0, '10': 1, '11': 0}
             """
 
+            print(np.array(samples).shape)
             if isinstance(obs, MeasurementProcess):
-                # get number of wires from obs if passed to observable, otherwise all device wires
-                # ToDo: is there already a general parameter for number of wires?
+                # get n_wires from obs if given, otherwise use all device wires
                 n_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
                 outcomes = self.generate_basis_states(n_wires)
 
