@@ -18,23 +18,152 @@ import pennylane.numpy as np
 import pennylane as qml
 
 
-class ClassicalShadow:
-    """TODO: docstring"""
+@autograd.extend.primitive
+def pauli_expval(params, bits, recipes, word, grad_data, shift_results):
+    # determine snapshots and qubits that match the word
+    # -1 in the word indicates a wild card
+    T = recipes.shape[0]
+    grad_data, one_unshifted = grad_data
 
-    def __init__(self, bitstrings, recipes):
-        self.bitstrings = bitstrings
-        self.recipes = recipes
+    id_mask = word == -1
 
-        assert len(bitstrings) == len(recipes)
-        self.snapshots = len(bitstrings)
+    indices = recipes == word
+    indices = np.logical_or(indices, np.tile(id_mask, (T, 1)))
+    indices = np.all(indices, axis=1)
 
-        self.unitaries = [
-            qml.matrix(qml.Hadamard(0)),
-            (
-                qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0))
-            ),  # .conj().T,
-            qml.matrix(qml.Identity(0)),
-        ]
+    bits = bits[:, np.logical_not(id_mask)]
+    bits = np.sum(bits, axis=1) % 2
+
+    return np.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(np.logical_not(id_mask))
+
+
+def _param_shift_grad(grad_data, shift_results, id_mask):
+    # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+    # pylint: disable=protected-access
+    grad_data, one_unshifted = grad_data
+    shift_results = [qml.math.squeeze(res, axis=0) for res in shift_results]
+
+    grads = []
+    start = 1 if one_unshifted else 0
+    r0 = shift_results[0]
+
+    for num_tapes, coeffs, fn, unshifted_coeff in grad_data:
+
+        if num_tapes == 0:
+            # parameter has zero gradient
+            grads.append(qml.math.zeros_like(shift_results[0]))
+            continue
+
+        res = shift_results[start : start + num_tapes]
+        start = start + num_tapes
+
+        # individual post-processing of e.g. Hamiltonian grad tapes
+        if fn is not None:
+            res = fn(res)
+
+        # compute the linear combination of results and coefficients
+        res = qml.math.stack(res)
+
+        bits = res[:, 0]
+        # (tapes, T, n)
+
+        bits = bits[:, :, np.logical_not(id_mask)]
+        bits = np.sum(bits, axis=2) % 2
+        # bits = np.sum(bits, axis=2, keepdims=True) % 2
+        # bits = np.tile(bits, reps=(1, 1, res.shape[3])) / np.count_nonzero(np.logical_not(id_mask))
+
+        g = qml.math.tensordot(bits, qml.math.convert_like(coeffs, bits), [[0], [0]])
+
+        if unshifted_coeff is not None:
+            # add the unshifted term
+            g = g + unshifted_coeff * r0
+
+        grads.append(g)
+
+    # The following is for backwards compatibility; currently, the device stacks multiple
+    # measurement arrays, even if not the same size, resulting in a ragged array.
+    # In the future, we might want to change this so that only tuples of arrays are returned.
+    for i, g in enumerate(grads):
+        if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
+            grads[i] = qml.math.hstack(g)
+
+    return qml.math.stack(grads)
+
+
+def pauli_expval_vjp(ans, params, bits, recipes, word, grad_data, shift_results):
+    # gradient of the parity of bits with respect to the tape parameters
+    T = recipes.shape[0]
+    grads = _param_shift_grad(grad_data, shift_results, word == -1)
+
+    id_mask = word == -1
+
+    indices = recipes == word
+    indices = np.logical_or(indices, np.tile(id_mask, (T, 1)))
+    indices = np.all(indices, axis=1)
+
+    def vjp(dy):
+        dy = np.where(indices, dy, 0)
+        return [-2 * 3 ** np.count_nonzero(np.logical_not(id_mask)) * dy @ grads.T]
+
+    return vjp
+
+
+autograd.extend.defvjp(pauli_expval, pauli_expval_vjp)
+
+
+class ClassicalShadowV2:
+    def __init__(self, qnode):
+        self.qnode = qnode
+        self.parameters = None
+
+        # reset these arguments after every QNode evaluation
+        self.bitstrings = None
+        self.recipes = None
+        self.grad_data = None
+        self.shifted_tape_results = []
+
+    def _grad_data(self, tape):
+        argnum = tape.trainable_params
+        gradient_recipes = [None] * len(argnum)
+        grad_tapes = []
+        grad_data = []
+        at_least_one_unshifted = False
+
+        for idx, _ in enumerate(tape.trainable_params):
+            op, _ = tape.get_operation(idx)
+
+            recipe = qml.gradients.parameter_shift._choose_recipe(argnum, idx, gradient_recipes, None, tape)
+            recipe, at_least_one_unshifted, unshifted_coeff = qml.gradients.parameter_shift._extract_unshifted(
+                recipe, at_least_one_unshifted, None, grad_tapes, tape
+            )
+            coeffs, multipliers, op_shifts = recipe.T
+
+            # generate the gradient tapes
+            g_tapes = qml.gradients.generate_shifted_tapes(tape, idx, op_shifts, multipliers)
+            grad_data.append((len(g_tapes), coeffs, None, unshifted_coeff))
+
+        return grad_data, at_least_one_unshifted
+
+    def construct(self, *args, **kwargs):
+        self.qnode.construct(args, kwargs)
+
+        # find the trainable parameters of the tape
+        params = self.qnode.tape.get_parameters(trainable_only=False)
+        self.qnode.tape.trainable_parameters = qml.math.get_trainable_indices(params)
+        self.parameters = autograd.builtins.tuple(
+            [autograd.builtins.list(self.qnode.tape.get_parameters())]
+        )
+
+        self.bitstrings, self.recipes = qml.math.squeeze(qml.execute(
+            [self.qnode.tape],
+            device=self.qnode.device,
+            gradient_fn=None,
+            interface="autograd"
+        )[0], axis=0)
+        self.grad_data = self._grad_data(self.qnode.tape)
+
+        grad_tapes = qml.gradients.param_shift(self.qnode.tape)[0]
+        self.shifted_tape_results = qml.execute(grad_tapes, device=self.qnode.device, gradient_fn=None, interface="autograd")
 
     def local_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x n x 2 x 2 local snapshots
@@ -52,101 +181,82 @@ class ClassicalShadow:
             bitstrings = bitstrings[:, wires]
             recipes = recipes[:, wires]
 
-        # unitaries as a class attirbute to allow for custom sets
-        unitaries = self.unitaries
-
-        # Computational basis states as density matrices
-        zero = np.zeros((2, 2), dtype="complex")
-        zero[0, 0] = 1.0
-        one = np.zeros((2, 2), dtype="complex")
-        one[1, 1] = 1.0
+        unitaries = [
+            np.array([[0, 1], [1, 0]]),
+            np.array([[0, -1j], [1j, 0]]),
+            np.array([[1, 0], [0, -1]])
+        ]
 
         T, n = bitstrings.shape
 
-        # This vectorized approach is relying on clever broadcasting and might need some rework to make it compatible with all interfaces
-
         U = np.empty((T, n, 2, 2), dtype="complex")
-        for i, _ in enumerate(unitaries):
-            U[np.where(recipes == i)] = unitaries[i]
+        for i, u in enumerate(unitaries):
+            U[np.where(recipes == i)] = u
 
-        state = np.empty((T, n, 2, 2), dtype="complex")
-        state[np.where(bitstrings == 0)] = zero
-        state[np.where(bitstrings == 1)] = one
+        state = ((1 - 2 * bitstrings[:, :, None, None]) * U + np.eye(2)) / 2
 
-        return 3 * qml.math.transpose(
-            qml.math.conj(U), axes=(0, 1, 3, 2)
-        ) @ state @ U - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
+        return 3 * state - np.eye(2)[None, None, :, :]
+
+    def _pauli_expval(self, word):
+        return pauli_expval(self.parameters, self.bitstrings, self.recipes, np.array(word), self.grad_data, self.shifted_tape_results)
+
+    def _tensor_product(self, *arrs):
+        prod = arrs[0]
+        for arr in arrs[1:]:
+            prod = np.kron(prod, arr)
+        return prod
+
+    def _contains(self, arr, ele):
+        for other in arr:
+            if np.all(ele == other):
+                return True
+        return False
 
     def global_snapshots(self, wires=None, snapshots=None):
         """Compute the T x 2**n x 2**n global snapshots"""
 
-        local_snapshot = self.local_snapshots(wires, snapshots)
+        pauli_ops = np.stack([
+            np.array([[0, 1], [1, 0]]),
+            np.array([[0, -1j], [1j, 0]]),
+            np.array([[1, 0], [0, -1]]),
+            np.eye(2)
+        ], requires_grad=False)
 
-        if local_snapshot.shape[1] > 16:
-            warnings.warn(
-                "Querying density matrices for n_wires > 16 is not recommended, operation will take a long time",
-                UserWarning,
-            )
+        T, n = self.recipes.shape
 
-        global_snapshots = []
-        for T_snapshot in local_snapshot:
-            tensor_product = T_snapshot[0]
-            for n_snapshot in T_snapshot[1:]:
-                tensor_product = np.kron(tensor_product, n_snapshot)
-            global_snapshots.append(tensor_product)
+        recipes = np.array(self.recipes, requires_grad=False)
 
-        return np.array(global_snapshots)
+        processed_words = []
 
-    # def compute_snapshot_expval(self, observable, k):
-    #     """Compute expectation value of a Pauli string observable with respect to a single snapshot """
-    #     map_name_to_int = {"PauliX": 0, "PauliY": 1, "PauliZ": 2}
+        snapshots = self._tensor_product(*[np.eye(2) for _ in range(n)])
+        snapshots = np.tile(snapshots, (T, 1, 1))
 
-    #     if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ)):
-    #         target_obs, target_locs = np.array(
-    #             [map_name_to_int[observable.name]]
-    #         ), np.array([observable.wires[0]])
-    #     else:
-    #         target_obs, target_locs = np.array(
-    #             [map_name_to_int[o.name] for o in observable.obs]
-    #         ), np.array([o.wires[0] for o in observable.obs])
+        for word in recipes:
+            for id_mask in product(*[[False, True] for _ in range(n)]):
+                id_mask = np.array(id_mask)
+                if np.all(id_mask):
+                    continue
 
-    #     # We dont actually need to compute any traces to compute the expectation values.
-    #     # Instead, we make use of some Pauli matrix algebra facts to simplify the computation:
-    #     # the goal is to compute tr(rho O), where rho = \Otimes_j (3 U_j^\dagger |b_j x b_j| U_j - 1) and O = \Otimes_j P_j a Pauli string
-    #     # This simplifies to \prod_{j \in matches} tr(3 P_j U_j^\dagger |b_j x b_j| U_j) where matches are those instances
-    #     # where the observable matches those of the non-trivial Pauli measurements in the shadow recipe.
-    #     #
-    #     # Each single snapshot evaluation, in case the measurements all match, is equal to 3^(#non-id P_js) * (-1)^(sum_j b_i^j).
+                masked_word = np.where(id_mask, -1, word).astype(np.int32)
 
-    #     # means data container
-    #     means = []
-    #     step = self.snapshots//k
+                if isinstance(masked_word, autograd.numpy.numpy_boxes.ArrayBox):
+                    masked_word = masked_word._value
 
-    #     for i in range(0, self.snapshots, step):
+                if self._contains(processed_words, masked_word):
+                    continue
 
-    #         bitstrings, recipes = self.bitstrings[i : i + step], self.recipes[i : i + step]
-    #         #print(bitstrings.shape)
-    #         indices = np.where(np.all(recipes[:, target_locs] == target_obs, axis=1))
-    #         #print(bitstrings[indices][:, target_locs])
-    #         mean = np.prod(bitstrings[indices][:, target_locs], axis=1)# / len(indices[0])
-    #         means.append(mean)
-    #     print(len(means))
-    #     return np.median(means)
+                processed_words.append(masked_word)
 
-    def expval_observable_global(self, observable, k):
-        """redundant method but keep for comparison, very slow because it unnecessarily computes the full density matrix for each snapshot"""
-        global_snapshots = self.global_snapshots(wires=observable.wires)
+                # tensor_op = self._tensor_product(*pauli_ops[masked_word])
+                tensor_op = self._tensor_product(*np.take(pauli_ops, masked_word, axis=0))
+                # (2^n, 2^n)
 
-        step = len(global_snapshots) // k
-        if isinstance(observable, qml.operation.Observable):
-            obs_m = qml.matrix(observable)
+                expvals = self._pauli_expval(masked_word)
+                # (T, )
 
-        return np.median(
-            [
-                np.mean(np.tensordot(global_snapshots[i : i + step], obs_m, axes=([1, 2], [0, 1])))
-                for i in range(0, len(global_snapshots), step)
-            ]
-        )
+                snapshots = snapshots + expvals[:, None, None] * tensor_op[None, :, :]
+
+        return snapshots / 2 ** n
 
     def _expval_observable(self, observable, k):
         """Compute expectation values of Pauli-string type observables"""
@@ -161,22 +271,24 @@ class ClassicalShadow:
         means = []
         step = self.snapshots // k
 
-        for i in range(0, self.snapshots, step):
-            # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
-            # res_i^t = tr(rho_i P_i)
-            res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)
-            # res^t = prod_i res_i^t
-            res = np.prod(res, axis=-1)
-            # res = sum_t res^t / T
-            means.append(np.mean(res))
-        return np.median(means)
+        # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
+        # res_i^t = tr(rho_i P_i)
+        # res = np.trace(local_snapshots @ os, axis1=-1, axis2=-2)
+        res = np.einsum('abcd,bdc->ab', local_snapshots, os)
+        res = np.real(res)
+        # res^t = prod_i res_i^t
 
-    def expval(self, H, k):
-        """Compute expectation values of Observables"""
-        if isinstance(H, qml.Hamiltonian):
-            return np.sum([self._expval_observable(observable, k) for observable in H.ops])
+        # res = np.prod(res, axis=-1)
+        prods = []
+        for i in range(res.shape[0]):
+            prod = 1
+            for j in range(res.shape[1]):
+                prod = prod * res[i, j]
+            prods.append(prod)
 
-        if isinstance(H, Iterable):
-            return [self._expval_observable(observable, k) for observable in H]
+        res = np.stack(prods)
+        return np.real(np.mean(res))
 
-        return self._expval_observable(H, k)
+    def expval_pauli(self, word):
+        expvals = self._pauli_expval(word)
+        return np.mean(expvals)
