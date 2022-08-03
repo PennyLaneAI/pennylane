@@ -114,7 +114,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=no-self-argument
     @operation.classproperty
-    def __signature__(cls):
+    def __signature__(cls):  # pragma: no cover
         # this method is defined so inspect.signature returns __init__ signature
         # instead of __new__ signature
         # See PEP 362
