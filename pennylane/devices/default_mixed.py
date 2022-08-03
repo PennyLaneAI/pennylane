@@ -154,7 +154,14 @@ class DefaultMixed(QubitDevice):
         return res
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None, readout_prob=None
+        self,
+        wires,
+        *,
+        r_dtype=np.float64,
+        c_dtype=np.complex128,
+        shots=None,
+        analytic=None,
+        readout_prob=None,
     ):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
@@ -169,9 +176,7 @@ class DefaultMixed(QubitDevice):
                     "The readout error probability should be an integer or a floating-point number in [0,1]."
                 )
             if self.readout_err < 0 or self.readout_err > 1:
-                raise ValueError(
-                    "The readout error probability should be in the range [0,1]."
-                )
+                raise ValueError("The readout error probability should be in the range [0,1].")
 
         # call QubitDevice init
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
@@ -568,12 +573,12 @@ class DefaultMixed(QubitDevice):
                     # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
-                if obs.return_type in (Sample,Counts):
+                if obs.return_type in (Sample, Counts):
                     if obs.name == "Identity" and obs.wires == qml.wires.Wires([]):
                         # Sample, Counts: Readout error applied to all device wires when wires not specified.
                         self.measured_wires = self.wires
                         return super().execute(circuit, **kwargs)
-                if obs.return_type in (VnEntropy,MutualInfo):
+                if obs.return_type in (VnEntropy, MutualInfo):
                     # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
                     # error need not be applied on the corresponding device wires.
                     continue
@@ -606,5 +611,5 @@ class DefaultMixed(QubitDevice):
 
         if self.readout_err:
             for k in self.measured_wires:
-                bit_flip = qml.BitFlip(self.readout_err,wires=k)
+                bit_flip = qml.BitFlip(self.readout_err, wires=k)
                 self._apply_operation(bit_flip)
