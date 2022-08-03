@@ -1940,7 +1940,7 @@ class TestGrad:
         result = circuit(phi)
         result.backward()
         res = phi.grad
-        assert np.allclose(res, expected.detach())
+        assert np.allclose(res, expected.detach(), atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
