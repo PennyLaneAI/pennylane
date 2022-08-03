@@ -1486,10 +1486,13 @@ class QubitDevice(Device):
             else:
                 outcomes = obs.compute_eigvals()
 
-            print(outcomes)
-
+            # generate empty outcome dict, populate values with state counts
+            outcome_dict = {k: 0 for k in outcomes}
             states, counts = np.unique(samples, return_counts=True)
-            return dict(zip(states, counts))
+
+            for s, c in zip(states, counts):
+                outcome_dict[s] = c
+            return outcome_dict
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
