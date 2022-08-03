@@ -29,6 +29,82 @@ I16 = np.eye(16)
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
+def _single_excitations_matrix(phi, phase_prefactor):
+    """This helper function unifies the `compute_matrix` methods
+    of `SingleExcitation`, `SingleExcitationPlus` and `SingleExcitationMinus`.
+    `phase_prefactor` determines which operation is produced:
+        `phase_prefactor=0.` : `SingleExcitation`
+        `phase_prefactor=0.5j` : `SingleExcitationPlus`
+        `phase_prefactor=-0.5j` : `SingleExcitationMinus`
+    """
+    interface = qml.math.get_interface(phi)
+    if interface == "tensorflow":
+        if isinstance(phase_prefactor, complex):
+            phi = qml.math.cast_like(phi, 1j)
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        e = qml.math.exp(phase_prefactor * phi)
+        zeros = qml.math.zeros_like(phi)
+        rows = [
+            [e, zeros, zeros, zeros],
+            [zeros, c, -s, zeros],
+            [zeros, s, c, zeros],
+            [zeros, zeros, zeros, e],
+        ]
+        return qml.math.stack([stack_last(row) for row in rows], axis=-2)
+
+    c = qml.math.cos(phi / 2)
+    s = qml.math.sin(phi / 2)
+    e = qml.math.exp(phase_prefactor * phi)
+
+    mask_e = np.diag([1, 0, 0, 1])
+    mask_c = np.diag([0, 1, 1, 0])
+    mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+
+    if qml.math.ndim(phi) == 0:
+        if interface == "torch":
+            mask_e = qml.math.convert_like(mask_e, phi)
+            mask_c = qml.math.convert_like(mask_c, phi)
+            mask_s = qml.math.convert_like(mask_s, phi)
+        return e * mask_e + c * mask_c + s * mask_s
+
+    return (
+        qml.math.einsum("i,jk->ijk", e, mask_e)
+        + qml.math.einsum("i,jk->ijk", c, mask_c)
+        + qml.math.einsum("i,jk->ijk", s, mask_s)
+    )
+
+def _double_excitations_matrix(phi, phase_prefactor):
+    """This helper function unifies the `compute_matrix` methods
+    of `DoubleExcitation`, `DoubleExcitationPlus` and `DoubleExcitationMinus`.
+    `phase_prefactor` determines which operation is produced:
+        `phase_prefactor=0.` : `DoubleExcitation`
+        `phase_prefactor=0.5j` : `DoubleExcitationPlus`
+        `phase_prefactor=-0.5j` : `DoubleExcitationMinus`
+    """
+    interface = qml.math.get_interface(phi)
+
+    if interface == "tensorflow" and isinstance(phase_prefactor, complex):
+        phi = qml.math.cast_like(phi, 1j)
+
+    c = qml.math.cos(phi / 2)
+    s = qml.math.sin(phi / 2)
+    e = qml.math.exp(phase_prefactor * phi)
+
+    if qml.math.ndim(phi) == 0:
+        diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
+        if interface == "torch":
+            return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
+        return diag + s * DoubleExcitation.mask_s
+
+    if isinstance(phase_prefactor, complex):
+        c = (1 + 0j) * c
+    diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
+    diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+    off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
+    return diag + off_diag
+
+
 class SingleExcitation(Operation):
     r"""
     Single excitation rotation.
@@ -124,39 +200,7 @@ class SingleExcitation(Operation):
                 [ 0.0000,  0.2474,  0.9689,  0.0000],
                 [ 0.0000,  0.0000,  0.0000,  1.0000]])
         """
-        interface = qml.math.get_interface(phi)
-        if interface == "tensorflow":
-            c = qml.math.cos(phi / 2)
-            s = qml.math.sin(phi / 2)
-            ones = qml.math.ones_like(phi)
-            zeros = qml.math.zeros_like(phi)
-            rows = [
-                [ones, zeros, zeros, zeros],
-                [zeros, c, -s, zeros],
-                [zeros, s, c, zeros],
-                [zeros, zeros, zeros, ones],
-            ]
-            return qml.math.stack([stack_last(row) for row in rows], axis=-2)
-
-        c_minus_1 = qml.math.cos(phi / 2) - 1
-        s = qml.math.sin(phi / 2)
-
-        mask_c = np.diag([0, 1, 1, 0])
-        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        eye = np.eye(4)
-        if interface == "torch":
-            mask_c = qml.math.convert_like(mask_c, phi)
-            mask_s = qml.math.convert_like(mask_s, phi)
-            eye = qml.math.convert_like(eye, phi)
-
-        if qml.math.ndim(phi) == 0:
-            return c_minus_1 * mask_c + s * mask_s + eye
-
-        return (
-            qml.math.einsum("i,jk->ijk", c_minus_1, mask_c)
-            + qml.math.einsum("i,jk->ijk", s, mask_s)
-            + eye
-        )
+        return _single_excitations_matrix(phi, 0.)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -276,41 +320,8 @@ class SingleExcitationMinus(Operation):
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
         """
-        interface = qml.math.get_interface(phi)
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cos(phi / 2)
-            s = qml.math.sin(phi / 2)
-            e = qml.math.exp(-0.5j * phi)
-            zeros = qml.math.zeros_like(phi)
-            rows = [
-                [e, zeros, zeros, zeros],
-                [zeros, c, -s, zeros],
-                [zeros, s, c, zeros],
-                [zeros, zeros, zeros, e],
-            ]
-            return qml.math.stack([stack_last(row) for row in rows], axis=-2)
+        return _single_excitations_matrix(phi, -0.5j)
 
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-        e = qml.math.exp(-0.5j * phi)
-
-        mask_e = np.diag([1, 0, 0, 1])
-        mask_c = np.diag([0, 1, 1, 0])
-        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-
-        if qml.math.ndim(phi) == 0:
-            if interface == "torch":
-                mask_e = qml.math.convert_like(mask_e, phi)
-                mask_c = qml.math.convert_like(mask_c, phi)
-                mask_s = qml.math.convert_like(mask_s, phi)
-            return e * mask_e + c * mask_c + s * mask_s
-
-        return (
-            qml.math.einsum("i,jk->ijk", e, mask_e)
-            + qml.math.einsum("i,jk->ijk", c, mask_c)
-            + qml.math.einsum("i,jk->ijk", s, mask_s)
-        )
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -441,41 +452,7 @@ class SingleExcitationPlus(Operation):
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689+0.2474j]])
         """
-        interface = qml.math.get_interface(phi)
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cos(phi / 2)
-            s = qml.math.sin(phi / 2)
-            e = qml.math.exp(0.5j * phi)
-            zeros = qml.math.zeros_like(phi)
-            rows = [
-                [e, zeros, zeros, zeros],
-                [zeros, c, -s, zeros],
-                [zeros, s, c, zeros],
-                [zeros, zeros, zeros, e],
-            ]
-            return qml.math.stack([stack_last(row) for row in rows], axis=-2)
-
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-        e = qml.math.exp(0.5j * phi)
-
-        mask_e = np.diag([1, 0, 0, 1])
-        mask_c = np.diag([0, 1, 1, 0])
-        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-
-        if qml.math.ndim(phi) == 0:
-            if interface == "torch":
-                mask_e = qml.math.convert_like(mask_e, phi)
-                mask_c = qml.math.convert_like(mask_c, phi)
-                mask_s = qml.math.convert_like(mask_s, phi)
-            return e * mask_e + c * mask_c + s * mask_s
-
-        return (
-            qml.math.einsum("i,jk->ijk", e, mask_e)
-            + qml.math.einsum("i,jk->ijk", c, mask_c)
-            + qml.math.einsum("i,jk->ijk", s, mask_s)
-        )
+        return _single_excitations_matrix(phi, 0.5j)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -635,20 +612,7 @@ class DoubleExcitation(Operation):
         Returns:
           tensor_like: canonical matrix
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        if qml.math.ndim(phi) == 0:
-            diag = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
-            if qml.math.get_interface(phi) == "torch":
-                return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
-            return diag + s * DoubleExcitation.mask_s
-
-        ones = qml.math.ones_like(c)
-        diag = qml.math.stack([ones] * 3 + [c] + [ones] * 8 + [c] + [ones] * 3, axis=-1)
-        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
-        off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
-        return diag + off_diag
+        return _double_excitations_matrix(phi, 0.)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -817,29 +781,7 @@ class DoubleExcitationPlus(Operation):
           tensor_like: canonical matrix
 
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        interface = qml.math.get_interface(phi)
-
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(0.5j * phi)
-        c = (1 + 0j) * c
-
-        if qml.math.ndim(phi) == 0:
-            diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
-            if qml.math.get_interface(phi) == "torch":
-                return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
-            return diag + s * DoubleExcitation.mask_s
-
-        diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
-        off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
-        return diag + off_diag
+        return _double_excitations_matrix(phi, 0.5j)
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -920,29 +862,7 @@ class DoubleExcitationMinus(Operation):
           tensor_like: canonical matrix
 
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        interface = qml.math.get_interface(phi)
-
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(-0.5j * phi)
-        c = (1 + 0j) * c
-
-        if qml.math.ndim(phi) == 0:
-            diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
-            if qml.math.get_interface(phi) == "torch":
-                return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
-            return diag + s * DoubleExcitation.mask_s
-
-        diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
-        off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
-        return diag + off_diag
+        return _double_excitations_matrix(phi, -0.5j)
 
     def adjoint(self):
         (theta,) = self.parameters
