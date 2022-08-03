@@ -522,6 +522,10 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 <h3>Bug fixes</h3>
 
+* Parameter-broadcasted tapes now yield the correct output when executed with JAX and JIT
+  in backpropagation mode and while using a cache.
+  [(#2888)](https://github.com/PennyLaneAI/pennylane/pull/2888)
+
 * Updated IsingXY gate doc-string.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
