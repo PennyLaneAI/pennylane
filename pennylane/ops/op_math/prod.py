@@ -38,14 +38,13 @@ def prod(*ops, do_queue=True, id=None):
         ops (tuple[~.operation.Operator]): The operators we would like to multiply
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued
-            (currently not supported). Default is True.
+        do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
 
-    ..seealso:: :class:`~.ops.op_math.Prod`
+    .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
 
@@ -66,13 +65,14 @@ class Prod(Operator):
         factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued (currently not supported).
-            Default is True.
+        do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
+
+    .. seealso:: :func:`~.ops.op_math.prod`
 
     **Example**
 
-    >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+    >>> prop_op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=0))
     >>> prop_op
     PauliX(wires=[0]) @ PauliZ(wires=[0])
     >>> qml.matrix(prop_op)
@@ -80,6 +80,16 @@ class Prod(Operator):
            [ 1,   0]])
     >>> prop_op.terms()
     ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+
+    .. note::
+        When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1} \dot \hat{op}_{2}` which indicates
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
+        in the decomposition of the operator.
+
+    >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+    >>> op.decomposition()
+    [PauliZ(wires=[1]), PauliX(wires=[0])]
 
     .. details::
         :title: Usage Details
@@ -97,6 +107,41 @@ class Prod(Operator):
                  0.        +0.j        ,  0.        +0.j        ],
                [ 0.        +0.j        , -0.81677345-0.57695852j,
                  0.        +0.j        ,  0.        +0.j        ]])
+
+        The Prod operation can be used inside a `qnode` as an operation which,
+        if parameterized, can be differentiated.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=3)
+
+            @qml.qnode(dev)
+            def circuit(theta):
+                qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+                return qml.expval(qml.PauliZ(1))
+
+        >>> circuit(1.23)
+        tensor(0.33423773, requires_grad=True)
+        >>> qml.grad(circuit)(1.23)
+        -0.9424888019316975
+
+        The Prod operation can also be measured as an observable.
+        If the circuit is parameterized, then we can also differentiate through the
+        product observable.
+
+        .. code-block:: python
+
+            prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(weights):
+                qml.RX(weights[0], wires=0)
+                return qml.expval(prod_op)
+
+        >>> weights = qnp.array([0.1], requires_grad=True)
+        >>> qml.grad(circuit)(weights)
+        tensor([-0.07059288589999416], requires_grad=True)
     """
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
