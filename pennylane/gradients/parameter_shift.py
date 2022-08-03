@@ -211,6 +211,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         list of generated tapes, in addition to a post-processing
         function to be applied to the results of the evaluated tapes.
     """
+    print('in here too')
     argnum = argnum or tape.trainable_params
 
     gradient_tapes = []
@@ -293,11 +294,10 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                         # add the unshifted term
                         g = g + unshifted_coeff * r0
                 else:
-                    # TODO: following is a draft
+                    # TODO: there's a bug likely from here for the multi-var case
 
                     # New return type output
                     g = []
-                    coeffs = qml.math.convert_like(coeffs, res[0])
                     assert len(res) > 0
                     num_params = len(res[0])
                     for parameter_idx in range(num_params):
@@ -307,11 +307,13 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                             measurement_result[parameter_idx] for measurement_result in res
                         ]
                         single_result = qml.math.stack(single_result)
+                        coeffs = qml.math.convert_like(coeffs, single_result)
                         g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
                         g.append(g_component)
 
                     # TODO:
                     if unshifted_coeff is not None:
+                        print('unshifted')
                         # add the unshifted term
                         g = g + unshifted_coeff * r0
 
@@ -437,15 +439,16 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
+        if not qml.active_return():
+            # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+            # pylint: disable=protected-access
+            if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+                results = [qml.math.squeeze(res) for res in results]
 
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
         res = results[0]
-        ragged = getattr(results[0], "dtype", None) is np.dtype("object")
+
 
         mask = []
         for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
@@ -453,17 +456,21 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             shape = qml.math.shape(r)
             mask.append(array_func(shape, dtype=bool))
 
-        if ragged and qml.math.ndim(res) > 0:
-            res = qml.math.hstack(res)
-            mask = qml.math.hstack(mask)
+        if not qml.active_return():
+            ragged = getattr(results[0], "dtype", None) is np.dtype("object")
+            if ragged and qml.math.ndim(res) > 0:
+                res = qml.math.hstack(res)
+                mask = qml.math.hstack(mask)
 
         f0 = qml.math.expand_dims(res, -1)
         mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
+        print(pdA, results)
 
         if non_involutory:
+            # TODO: test for new returns
             # compute the second derivative of non-involutory observables
             pdA2 = pdA2_fn(results[tape_boundary:])
 
@@ -480,11 +487,23 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
 
                 m = [tape.observables[i].name not in NONINVOLUTORY_OBS for i in var_idx]
                 m = qml.math.convert_like(m, pdA2)
+                print(pdA2)
                 pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
+                print(pdA2)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
-        return qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
+        res = qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
+        if qml.active_return():
+            # NumPy ops are likely more performant, only convert to tuple here
+
+            if len(res.shape) > 1:
+                res = tuple(tuple(r) for r in res)
+
+            else:
+                res = tuple(res)
+
+        return res
 
     return gradient_tapes, processing_fn
 
