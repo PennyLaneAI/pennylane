@@ -33,12 +33,12 @@ def op_sum(*summands, do_queue=True, id=None):
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
-        id (str or None): id for the sum operator. Default is None.
+        id (str or None): id for the Sum operator. Default is None.
 
     Returns:
         ~ops.op_math.Sum: the operator representing the sum of summands.
 
-    ..seealso:: :class:`~.ops.op_math.Sum`
+    .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
 
@@ -56,7 +56,7 @@ def _sum(mats_gen, dtype=None, cast_like=None):
     r"""Private method to compute the sum of matrices.
 
     Args:
-        mats_gen (Generator): a python generator which produces the matricies which
+        mats_gen (Generator): a python generator which produces the matrices which
             will be summed together.
 
     Keyword Args:
@@ -84,9 +84,13 @@ class Sum(Operator):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
+        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str or None): id for the sum operator. Default is None.
+
+    .. note::
+        Currently this operator can not be queued in a circuit as an operation, only measured terminally.
+
+    .. seealso:: :func:`~.ops.op_math.op_sum`
 
     **Example**
 
@@ -115,7 +119,27 @@ class Sum(Operator):
                 1.81677345+0.57695852j, 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 1.81677345+0.57695852j]])
-    """
+
+        The `Sum` operation can also be measured inside a `qnode` as an observable.
+        If the circuit is parameterized, then we can also differentiate through the
+        sum observable.
+
+        .. code-block:: python
+            sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, grad_method="best")
+            def circuit(weights):
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.RX(weights[2], wires=1)
+                return qml.expval(sum_op)
+
+        >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.grad(circuit)(weights)
+        tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
+"""
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 

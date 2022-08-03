@@ -35,7 +35,7 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     Returns:
         ~ops.op_math.SProd: the operator representing the scalar product.
 
-    ..seealso:: :class:`~.ops.op_math.SProd`
+    .. seealso:: :class:`~.ops.op_math.SProd`, :class: `~.ops.op_math.SymbolicOp`
 
     **Example**
 
@@ -62,6 +62,11 @@ class SProd(SymbolicOp):
             (currently not supported). Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
+    .. note::
+        Currently this operator can not be queued in a circuit as an operation, only measured terminally.
+
+    .. seealso:: :func:`~.ops.op_math.s_prod`
+
     **Example**
 
     >>> sprod_op = SProd(1.23, qml.PauliX(0))
@@ -72,6 +77,26 @@ class SProd(SymbolicOp):
            [1.23, 0.  ]])
     >>> sprod_op.terms()
     ([1.23], [PauliX(wires=[0]])
+
+    .. details::
+        :title: Usage Details
+
+        The `Sprod` operation can also be measured inside a `qnode` as an observable.
+        If the circuit is parameterized, then we can also differentiate through the observable.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=1)
+
+            @qml.qnode(dev, grad_method="best")
+            def circuit(scalar, theta):
+                qml.RX(theta, wires=0)
+                return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
+
+        >>> scalar, theta = (1.2, 3.4)
+        >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+        (array(-0.68362956), array(0.21683382))
+
     """
     _name = "SProd"
 
