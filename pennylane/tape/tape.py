@@ -1571,7 +1571,7 @@ class QuantumTape(AnnotatedQueue):
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the quantum tape"""
-        fingerprint = []
+        fingerprint = [hash(self)]
         fingerprint.extend(op.hash for op in self.operations)
         fingerprint.extend(m.hash for m in self.measurements)
         fingerprint.extend(self.trainable_params)
