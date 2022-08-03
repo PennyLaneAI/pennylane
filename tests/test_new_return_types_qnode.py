@@ -763,6 +763,36 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 3)
 
+    @pytest.mark.tf
+    def test_multiple_meas_tf_autograph(self):
+        """Return Jacobian of multiple measurements with Tf Autograph."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+        qml.enable_return()
+
+        @tf.function
+        @qml.qnode(dev, interface="tf")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        # Autograph does not support multiple measurments with different shape.
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+
+        with tf.GradientTape() as tape:
+            out = circuit(x)
+
+        res = tape.jacobian(out, x)
+        qml.disable_return()
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (2, 3)
+
     @pytest.mark.jax
     def test_multiple_expval_jax(self):
         """Return Jacobian of multiple expvals."""

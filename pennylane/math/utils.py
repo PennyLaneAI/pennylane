@@ -321,7 +321,7 @@ def requires_grad(tensor, interface=None):
 
     .. warning::
 
-        The implemetation depends on the contained tensor type, and
+        The implementation depends on the contained tensor type, and
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
@@ -403,7 +403,25 @@ def requires_grad(tensor, interface=None):
 
 
 def in_backprop(tensor, interface=None):
-    """Returns True if the tensor is considered to be in a backpropagation environment."""
+    """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
+    Tensorflow and Jax.
+
+    Args:
+        tensor (tensor_like): input tensor
+        interface (str): The name of the interface. Will be determined automatically
+            if not provided.
+
+    **Example**
+
+    >>> x = tf.Variable([0.6, 0.1])
+    >>> requires_grad(x)
+    False
+    >>> with tf.GradientTape() as tape:
+    ...     print(requires_grad(x))
+    True
+
+    .. seealso:: :func:`~~requires_grad`
+    """
     interface = interface or get_interface(tensor)
 
     if interface == "tensorflow":
@@ -421,4 +439,9 @@ def in_backprop(tensor, interface=None):
     if interface == "autograd":
         return isinstance(tensor, ArrayBox)
 
-    return False
+    if interface == "jax":
+        import jax
+
+        return isinstance(tensor, jax.core.Tracer)
+
+    raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
