@@ -100,6 +100,7 @@ single_scalar_multi_wire_ops = [
     "IsingXX",
     "IsingYY",
     "IsingZZ",
+    "IsingXY",
 ]
 
 two_scalar_single_wire_ops = [
@@ -115,6 +116,8 @@ three_scalar_multi_wire_ops = [
     "CRot",
 ]
 
+# When adding an operation to the following list, you
+# actually need to write a new test!
 separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
@@ -310,7 +313,7 @@ class TestSupportsBroadcasting:
         assert qml.math.allclose(mat2, single_mats)
 
     @pytest.mark.parametrize("wires", [[0, "4", 1], [1, 5], [7]])
-    def test_pauli_rot(self, wires):
+    def test_multi_rz(self, wires):
         """Test that MultiRZ, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
         par = np.array([0.25, 2.1, -0.42])

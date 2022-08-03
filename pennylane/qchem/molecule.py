@@ -47,6 +47,7 @@ class Molecule:
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         r (array[float]): positions of the Gaussian functions
+        normalize (bool): if True, the basis functions get normalized
 
     **Example**
 
@@ -68,6 +69,7 @@ class Molecule:
         l=None,
         alpha=None,
         coeff=None,
+        normalize=True,
     ):
 
         if basis_name not in ["sto-3g", "STO-3G", "6-31g", "6-31G"]:
@@ -92,6 +94,11 @@ class Molecule:
 
         if coeff is None:
             coeff = [np.array(i[2], requires_grad=False) for i in self.basis_data]
+            if normalize:
+                coeff = [
+                    np.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
+                    for i, c in enumerate(coeff)
+                ]
 
         r = list(
             itertools.chain(
@@ -138,7 +145,6 @@ class Molecule:
         coeff = self.basis_set[index].coeff
         r = self.basis_set[index].r
 
-        coeff = coeff * primitive_norm(l, alpha)
         coeff = coeff * contracted_norm(l, alpha, coeff)
 
         lx, ly, lz = l

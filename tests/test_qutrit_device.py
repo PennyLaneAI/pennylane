@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import QutritDevice, DeviceError, QuantumFunctionError, QubitDevice
 from pennylane.devices import DefaultQubit
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State, Counts
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
@@ -249,6 +249,24 @@ class TestObservables:
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(tape)
 
+    def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
+        """Check that an error is raised if the return type of an observable is unsupported"""
+        U = unitary_group.rvs(3, random_state=10)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QutritUnitary(U, wires=0)
+            qml.measurements.MeasurementProcess(
+                return_type="SomeUnsupportedReturnType", obs=qml.Identity(0)
+            )
+
+        with monkeypatch.context() as m:
+            m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
+            dev = mock_qutrit_device()
+            with pytest.raises(
+                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+            ):
+                dev.execute(tape)
+
 
 class TestParameters:
     """Test for checking device parameter mappings"""
@@ -264,11 +282,99 @@ class TestParameters:
             dev.parameters
 
 
+class TestExtractStatistics:
+    """Test the statistics method"""
+
+    @pytest.mark.parametrize(
+        "returntype", [Expectation, Variance, Sample, Probability, State, Counts]
+    )
+    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+        """Tests that the statistics method simply builds a results list without any side-effects"""
+
+        class SomeObservable(qml.operation.Observable):
+            num_wires = 1
+            return_type = returntype
+
+        obs = SomeObservable(wires=0)
+
+        with monkeypatch.context() as m:
+            dev = mock_qutrit_device_extract_stats()
+            results = dev.statistics([obs])
+
+        assert results == [0]
+
+    def test_results_no_state(self, mock_qutrit_device, monkeypatch):
+        """Tests that the statistics method raises an AttributeError when a State return type is
+        requested when QutritDevice does not have a state attribute"""
+        with monkeypatch.context() as m:
+            dev = mock_qutrit_device()
+            m.delattr(QubitDevice, "state")
+            with pytest.raises(
+                qml.QuantumFunctionError, match="The state is not available in the current"
+            ):
+                dev.statistics([qml.state()])
+
+    @pytest.mark.parametrize("returntype", [None])
+    def test_results_created_empty(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+        """Tests that the statistics method returns an empty list if the return type is None"""
+
+        class SomeObservable(qml.operation.Observable):
+            num_wires = 1
+            return_type = returntype
+
+        obs = SomeObservable(wires=0)
+
+        with monkeypatch.context() as m:
+            dev = mock_qutrit_device_extract_stats()
+            results = dev.statistics([obs])
+
+        assert results == []
+
+    @pytest.mark.parametrize("returntype", ["not None"])
+    def test_error_return_type_not_none(
+        self, mock_qutrit_device_extract_stats, monkeypatch, returntype
+    ):
+        """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
+
+        assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
+
+        class SomeObservable(qml.operation.Observable):
+            num_wires = 1
+            return_type = returntype
+
+        obs = SomeObservable(wires=0)
+
+        dev = mock_qutrit_device_extract_stats()
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.statistics([obs])
+
+    def test_return_state_with_multiple_observables(self, mock_qutrit_device_extract_stats):
+        """Checks that an error is raised if multiple observables are being returned
+        and one of them is state
+        """
+        U = unitary_group.rvs(3, random_state=10)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QutritUnitary(U, wires=0)
+            qml.state()
+            qml.probs(wires=0)
+
+        dev = mock_qutrit_device_extract_stats()
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The state or density matrix cannot be returned in combination",
+        ):
+            dev.execute(tape)
+
+
 class TestSample:
     """Test the sample method"""
 
     # TODO: Add tests for sampling with observables that have eigenvalues to sample from once
     # such observables are added for qutrits.
+    # TODO: Add tests for counts for observables with eigenvalues once such observables are
+    # added for qutrits.
 
     def test_sample_with_no_observable_and_no_wires(
         self, mock_qutrit_device_with_original_statistics, tol
@@ -323,9 +429,63 @@ class TestSample:
         bin_size = 3
 
         out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size)
-        expected_samples = samples.reshape(3, -1)
+        expected_samples = samples.reshape(-1, 3, 2)
 
         assert np.array_equal(out, expected_samples)
+
+    def test_counts(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that sample works correctly when counts=True"""
+
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 1], [2, 0], [2, 0], [0, 1], [2, 2], [1, 2]])
+        dev._samples = samples
+        obs = qml.measurements.sample(op=None, wires=[0, 1])
+
+        out = dev.sample(obs, counts=True)
+        expected_counts = {
+            "01": 2,
+            "20": 2,
+            "22": 1,
+            "12": 1,
+        }
+
+        assert out == expected_counts
+
+    def test_raw_counts_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that sample works correctly when counts=True and device is instantiated with shot
+        list"""
+
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array(
+            [
+                [0, 1],
+                [2, 0],
+                [2, 0],
+                [0, 1],
+                [2, 2],
+                [1, 2],
+                [0, 1],
+                [2, 0],
+                [2, 1],
+                [0, 2],
+                [2, 1],
+                [1, 2],
+            ]
+        )
+        dev._samples = samples
+        obs = qml.measurements.sample(op=None, wires=[0, 1])
+
+        shot_range = [0, 12]
+        bin_size = 4
+        out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+
+        expected_counts = [
+            {"01": 2, "20": 2},
+            {"22": 1, "12": 1, "01": 1, "20": 1},
+            {"21": 2, "02": 1, "12": 1},
+        ]
+
+        assert out == expected_counts
 
 
 class TestGenerateSamples:
@@ -618,6 +778,255 @@ class TestCapabilities:
         assert capabilities == QutritDevice.capabilities()
 
 
+class TestExecution:
+    """Tests for the execute method"""
+
+    def test_device_executions(self, mock_qutrit_device_extract_stats):
+        """Test the number of times a qutrit device is executed over a QNode's
+        lifetime is tracked by `num_executions`"""
+
+        dev_1 = mock_qutrit_device_extract_stats(wires=2)
+
+        def circuit_1(U1, U2, U3):
+            qml.QutritUnitary(U1, wires=[0])
+            qml.QutritUnitary(U2, wires=[1])
+            qml.QutritUnitary(U3, wires=[0, 1])
+            return qml.state()
+
+        node_1 = qml.QNode(circuit_1, dev_1)
+        num_evals_1 = 10
+
+        for _ in range(num_evals_1):
+            node_1(np.eye(3), np.eye(3), np.eye(9))
+        assert dev_1.num_executions == num_evals_1
+
+        # test a new circuit on an existing instance of a qutrit device
+        def circuit_3(U1, U2):
+            qml.QutritUnitary(U1, wires=[0])
+            qml.QutritUnitary(U2, wires=[0, 1])
+            return qml.state()
+
+        node_3 = qml.QNode(circuit_3, dev_1)
+        num_evals_3 = 7
+
+        for _ in range(num_evals_3):
+            node_3(np.eye(3), np.eye(9))
+        assert dev_1.num_executions == num_evals_1 + num_evals_3
+
+
+class TestBatchExecution:
+    """Tests for the batch_execute method."""
+
+    with qml.tape.QuantumTape() as tape1:
+        qml.QutritUnitary(np.eye(3), wires=0)
+        qml.expval(qml.Identity(0)), qml.expval(qml.Identity(1))
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.QutritUnitary(np.eye(3), wires=0)
+        qml.expval(qml.Identity(0))
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_execute(self, n_tapes, mocker, mock_qutrit_device):
+        """Tests that the device's execute method is called the correct number of times."""
+
+        dev = mock_qutrit_device(wires=2)
+        spy = mocker.spy(QutritDevice, "execute")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy.call_count == n_tapes
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_reset(self, n_tapes, mocker, mock_qutrit_device):
+        """Tests that the device's reset method is called the correct number of times."""
+
+        dev = mock_qutrit_device(wires=2)
+
+        spy = mocker.spy(QutritDevice, "reset")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy.call_count == n_tapes
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_result(self, mock_qutrit_device, r_dtype, tol):
+        """Tests that the result has the correct shape and entry types."""
+
+        dev = mock_qutrit_device(wires=2)
+        dev.R_DTYPE = r_dtype
+
+        tapes = [self.tape1, self.tape2]
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 2
+        assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
+        assert res[0].dtype == r_dtype
+        assert res[1].dtype == r_dtype
+
+    def test_result_empty_tape(self, mock_qutrit_device, tol):
+        """Tests that the result has the correct shape and entry types for empty tapes."""
+
+        dev = mock_qutrit_device(wires=2)
+
+        empty_tape = qml.tape.QuantumTape()
+        tapes = [empty_tape] * 3
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 3
+        assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
+
+
+class TestShotList:
+    """Tests for passing shots as a list"""
+
+    # TODO: Add tests for expval and sample with shot lists after observables are added
+
+    def test_invalid_shot_list(self, mock_qutrit_device_shots):
+        """Test exception raised if the shot list is the wrong type"""
+        with pytest.raises(qml.DeviceError, match="Shots must be"):
+            mock_qutrit_device_shots(wires=2, shots=0.5)
+
+        with pytest.raises(ValueError, match="Unknown shot sequence"):
+            mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
+
+    shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 9), 16],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 9),
+            27,
+        ],
+        [[10, 10, 10], [(10, 3)], (3, 9), 30],
+        [[(10, 3)], [(10, 3)], (3, 9), 30],
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
+    def test_probs(
+        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
+    ):
+        """Test a probability return"""
+        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(x, z):
+            RZ_01 = pnp.array(
+                [
+                    [pnp.exp(-1j * z / 2), 0.0, 0.0],
+                    [0.0, pnp.exp(1j * z / 2), 0.0],
+                    [0.0, 0.0, 1.0],
+                ]
+            )
+
+            c = pnp.cos(x / 2)
+            s = pnp.sin(x / 2) * 1j
+            RX_01 = pnp.array([[c, -s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
+
+            qml.QutritUnitary(RZ_01, wires=0)
+            qml.QutritUnitary(RX_01, wires=1)
+            return qml.probs(wires=[0, 1])
+
+        res = circuit(0.1, 0.6)
+
+        assert res.shape == expected_shape
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
+        # test gradient works
+        # TODO: Add after differentiability of qutrit circuits is implemented
+        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
+
+    marginal_shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 3), 16],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 3),
+            27,
+        ],
+        [[10, 10, 10], [(10, 3)], (3, 3), 30],
+        [[(10, 3)], [(10, 3)], (3, 3), 30],
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", marginal_shot_data)
+    def test_marginal_probs(
+        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
+    ):
+        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(x, z):
+            RZ_01 = pnp.array(
+                [
+                    [pnp.exp(-1j * z / 2), 0.0, 0.0],
+                    [0.0, pnp.exp(1j * z / 2), 0.0],
+                    [0.0, 0.0, 1.0],
+                ]
+            )
+
+            c = pnp.cos(x / 2)
+            s = pnp.sin(x / 2) * 1j
+            RX_01 = pnp.array([[c, -s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
+
+            qml.QutritUnitary(RZ_01, wires=0)
+            qml.QutritUnitary(RX_01, wires=1)
+            return qml.probs(wires=0)
+
+        res = circuit(0.1, 0.6)
+
+        assert res.shape == expected_shape
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
+        # test gradient works
+        # TODO: Uncomment after parametric operations are added for qutrits and decomposition
+        # for QutritUnitary exists
+        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
+
+    shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 3, 2), 16],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 3, 2),
+            27,
+        ],
+        [[10, 10, 10], [(10, 3)], (3, 3, 2), 30],
+        [[(10, 3)], [(10, 3)], (3, 3, 2), 30],
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
+    def test_multiple_probs(
+        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
+    ):
+        """Test multiple probability returns"""
+        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(U):
+            qml.QutritUnitary(np.eye(3), wires=0)
+            qml.QutritUnitary(np.eye(3), wires=0)
+            qml.QutritUnitary(U, wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        res = circuit(pnp.eye(9))
+
+        assert res.shape == expected_shape
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
+        # test gradient works
+        # TODO: Uncomment after parametric operations are added for qutrits and decomposition
+        # for QutritUnitary exists
+        # res = qml.jacobian(circuit, argnum=[0])(pnp.eye(9, dtype=np.complex128))
+
+
 class TestUnimplemented:
     """Tests for class methods that aren't implemented
 
@@ -634,13 +1043,6 @@ class TestUnimplemented:
         with pytest.raises(NotImplementedError):
             dev.adjoint_jacobian(tape)
 
-    def test_density_matrix(self, mock_qutrit_device):
-        """Test that density_matrix is unimplemented"""
-        dev = mock_qutrit_device()
-
-        with pytest.raises(NotImplementedError):
-            dev.density_matrix(wires=0)
-
     def test_state(self, mock_qutrit_device):
         """Test that state is unimplemented"""
         dev = mock_qutrit_device()
@@ -652,19 +1054,19 @@ class TestUnimplemented:
         """Test that vn_entropy is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.vn_entropy(wires=0, log_base=3)
+
+    def test_density_matrix(self, mock_qutrit_device):
+        """Test that vn_entropy is unimplemented"""
+        dev = mock_qutrit_device()
+
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.density_matrix(wires=0)
 
     def test_mutual_info(self, mock_qutrit_device):
         """Test that mutual_info is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.mutual_info(0, 1, log_base=3)
-
-    def test_statistics(self, mock_qutrit_device):
-        """Test that statistics is unimplemented"""
-        dev = mock_qutrit_device()
-
-        with pytest.raises(NotImplementedError):
-            dev.statistics([qml.Identity(wires=0)])
