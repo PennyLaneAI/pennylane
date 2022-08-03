@@ -293,8 +293,9 @@ class Prod(Operator):
         mats = (expand_matrix(op.matrix(), op.wires, wire_order=wire_order) for op in self.factors)
         return reduce(math.dot, mats)
 
+    # pylint: disable=protected-access
     @property
-    def _queue_category(self):  # pylint: disable=protected-access
+    def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
