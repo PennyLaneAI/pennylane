@@ -21,8 +21,6 @@ from pennylane.gradients.parameter_shift import _get_operation_recipe
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
-qml.enable_return()
-
 
 class TestGetOperationRecipe:
     """Test the helper function `_get_operation_recipe` that obtains the
