@@ -187,7 +187,7 @@ class Prod(Operator):
     def data(self, new_data):
         """Set the data property"""
         for new_entry, op in zip(new_data, self.factors):
-            op.data = copy(new_entry)
+            op.data = new_entry
 
     @property
     def batch_size(self):

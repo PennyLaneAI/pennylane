@@ -15,7 +15,6 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from copy import copy
 import pennylane as qml
 from .symbolicop import SymbolicOp
 
@@ -101,9 +100,9 @@ class SProd(SymbolicOp):
 
     @data.setter
     def data(self, new_data):
-        self.scalar = copy(new_data[0][0])
+        self.scalar = new_data[0][0]
         if len(new_data) > 1:
-            self.base.data = copy(new_data[1])
+            self.base.data = new_data[1]
 
     @property
     def num_params(self):

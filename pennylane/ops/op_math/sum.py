@@ -15,7 +15,6 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-from copy import copy
 from functools import reduce
 
 import numpy as np
@@ -162,7 +161,7 @@ class Sum(Operator):
     def data(self, new_data):
         """Set the data property"""
         for new_entry, op in zip(new_data, self.summands):
-            op.data = copy(new_entry)
+            op.data = new_entry
 
     @property
     def batch_size(self):
