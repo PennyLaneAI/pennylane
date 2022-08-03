@@ -801,9 +801,10 @@ class TestCounts:
         basis_state = "0111"
 
         assert isinstance(res, tuple)
-        assert res[0] == {basis_state: shot_vec[0]}
-        assert res[1] == {basis_state: shot_vec[1]}
-        assert res[2] == {basis_state: shot_vec[2]}
+        print(res[0])
+        assert res[0][basis_state] == shot_vec[0]
+        assert res[1][basis_state] == shot_vec[1]
+        assert res[2][basis_state] == shot_vec[2]
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
@@ -824,9 +825,9 @@ class TestCounts:
         sample = 1
 
         assert isinstance(res, tuple)
-        assert res[0] == {sample: shot_vec[0]}
-        assert res[1] == {sample: shot_vec[1]}
-        assert res[2] == {sample: shot_vec[2]}
+        assert res[0][sample] == shot_vec[0]
+        assert res[1][sample] == shot_vec[1]
+        assert res[2][sample] == shot_vec[2]
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
