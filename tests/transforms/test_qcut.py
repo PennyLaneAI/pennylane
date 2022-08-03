@@ -4711,7 +4711,8 @@ class TestAutoCutCircuit:
         n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
         template_weights = [[0.1, -0.3]] * n_blocks
 
-        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2)
+        device_size = 2
+        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
 
         with qml.tape.QuantumTape() as tape0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
@@ -4736,4 +4737,5 @@ class TestAutoCutCircuit:
             lower, upper = 4, 5
         assert all(lower <= f.order() <= upper for f in frags)
 
-        assert all(len(set(e[2] for e in f.edges.data("wire"))) == 2 for f in frags)
+        # each frag should have the device size constraint satisfied.
+        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
