@@ -1047,6 +1047,20 @@ class TestReadoutError:
         expected = np.array([[1.+0.j, 0.+0.j],[0.+0.j, 0.+0.j]])
         assert np.allclose(res,expected)
 
+    @pytest.mark.parametrize("prob", [0,0.5,1])
+    @pytest.mark.parametrize("nr_wires", [2,3])
+    def test_readout_vnentropy_and_mutualinfo(self,nr_wires,prob):
+        """Tests the output of qml.vn_entropy and qml.mutual_info is not affected by readout error"""
+        dev = qml.device("default.mixed",wires=nr_wires,readout_prob=prob)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.vn_entropy(wires=0, log_base=2), qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
+
+        res=circuit()
+        expected = np.array([0, 0])
+        assert np.allclose(res,expected)
+
     @pytest.mark.parametrize("nr_wires", [2,3])
     @pytest.mark.parametrize("prob, expected", [(0,[np.zeros(2), np.zeros(2)]) ,(1,[np.ones(2), np.ones(2)])])
     def test_readout_sample(self,nr_wires,prob,expected):
@@ -1086,7 +1100,6 @@ class TestReadoutError:
             return qml.probs(wires=0)
 
         res=circuit()
-        #expected = np.array([1, 0])
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("nr_wires", [2,3])

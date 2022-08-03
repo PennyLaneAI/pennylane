@@ -173,6 +173,8 @@ class DefaultMixed(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
         self.measured_wires = []
+        """List: during execution, stores the list of wires on which measurements are acted for
+        applying the readout error to them when readout_prob is non-zero."""
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -523,6 +525,10 @@ class DefaultMixed(QubitDevice):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
+        Applies a readout error to the measurement outcomes of any observable if
+        readout_prob is non-zero. This is done by finding the list of measured wires on which
+        BitFlip channels are applied in the :meth:`apply`.
+
         For plugin developers: instead of overwriting this, consider
         implementing a suitable subset of
 
@@ -535,10 +541,6 @@ class DefaultMixed(QubitDevice):
         Additional keyword arguments may be passed to the this method
         that can be utilised by :meth:`apply`. An example would be passing
         the ``QNode`` hash that can be used later for parametric compilation.
-
-        Applies a readout error to the measurement outcomes of any observable if
-        readout_prob is non-zero. This is done by finding the list of measured wires on which
-        BitFlip channels are applied in the :meth:`apply`.
 
         Args:
             circuit (~.CircuitGraph): circuit to execute on the device
@@ -553,14 +555,21 @@ class DefaultMixed(QubitDevice):
         if self.readout_err:
             wires_list = []
             for obs in circuit.observables:
-                wires_list.append(obs.wires)
-                if obs.return_type in (State,VnEntropy,MutualInfo):
+                if obs.return_type is State:
+                    # State: This returns pre-rotated state, so no readout error.
+                    # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
                 if obs.return_type in (Sample,Counts):
                     if obs.name == "Identity" and obs.wires == qml.wires.Wires([]):
+                        # Sample, Counts: Readout error applied to all device wires when wires not specified.
                         self.measured_wires = self.wires
                         return super().execute(circuit, **kwargs)
+                if obs.return_type in (VnEntropy,MutualInfo):
+                    # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
+                    # error need not be applied on the corresponding device wires.
+                    continue
+                wires_list.append(obs.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 

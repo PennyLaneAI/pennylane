@@ -7,10 +7,10 @@
 * Added readout error functionality to the MixedDevice.
   [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
 
-  Readout error has been added by applying a BitFlip channel to the wires being
+  Readout error has been added by applying a BitFlip channel to the wires
   measured after the diagonalizing gates corresponding to the measurement
-  observable has been applied. The probability in the BitFlip channel
-  is to be specified by the user.
+  observable has been applied. The probability of the readout error occurring
+  should be passed when creating the device.
 
   ```pycon
   >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
