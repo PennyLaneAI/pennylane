@@ -25,6 +25,7 @@ Constructor Functions
     ~adjoint
     ~ctrl
     ~op_sum
+    ~prod
     ~s_prod
 
 Symbolic Classes
@@ -40,6 +41,7 @@ Symbolic Classes
     ~Controlled
     ~ControlledOp
     ~Pow
+    ~Prod
     ~Sum
     ~SProd
     ~SymbolicOp
