@@ -172,6 +172,19 @@ class TestInitialization:
         sum_op = sum_method(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
         assert sum_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
+    def test_data_setter(self, sum_method):
+        """Test the setter method for data"""
+        sum_op = sum_method(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
+        assert sum_op.data == [[9.87], [1.23, 4.0, 5.67]]
+
+        new_data = [[1.23], [0.0, -1.0, -2.0]]
+        sum_op.data = new_data
+        assert sum_op.data == new_data
+
+        for op, new_entry in zip(sum_op.summands, new_data):
+            assert op.data == new_entry
+
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
         """Test that terms are initialized correctly."""
@@ -208,6 +221,40 @@ class TestInitialization:
 
         with pytest.raises(DecompositionUndefinedError):
             sum_op.decomposition()
+
+    def test_eigen_caching(self):
+        """Test that the eigendecomposition is stored in cache."""
+        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        eig_decomp = diag_sum_op.eigendecomposition
+
+        eig_vecs = eig_decomp["eigvec"]
+        eig_vals = eig_decomp["eigval"]
+
+        eigs_cache = diag_sum_op._eigs[
+            (2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        ]
+        cached_vecs = eigs_cache["eigvec"]
+        cached_vals = eigs_cache["eigval"]
+
+        assert np.allclose(eig_vals, cached_vals)
+        assert np.allclose(eig_vecs, cached_vecs)
+
+    def test_diagonalizing_gates(self):
+        """Test that the diagonalizing gates are correct."""
+        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
+        true_diagonalizing_gates = qnp.array(
+            (
+                [
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                ]
+            )
+        )
+
+        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
 
 class TestMscMethods:
@@ -406,7 +453,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sum_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax
         import jax.numpy as jnp
 
         theta = jnp.array(1.23)
@@ -540,40 +586,6 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
-
-    def test_eigen_caching(self):
-        """Test that the eigendecomposition is stored in cache."""
-        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        eig_decomp = diag_sum_op.eigendecomposition
-
-        eig_vecs = eig_decomp["eigvec"]
-        eig_vals = eig_decomp["eigval"]
-
-        eigs_cache = diag_sum_op._eigs[
-            (2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-        ]
-        cached_vecs = eigs_cache["eigvec"]
-        cached_vals = eigs_cache["eigval"]
-
-        assert np.allclose(eig_vals, cached_vals)
-        assert np.allclose(eig_vecs, cached_vecs)
-
-    def test_diagonalizing_gates(self):
-        """Test that the diagonalizing gates are correct."""
-        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = qnp.array(
-            (
-                [
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                ]
-            )
-        )
-
-        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
 
 
 class TestWrapperFunc:
