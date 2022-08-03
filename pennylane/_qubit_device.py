@@ -847,31 +847,11 @@ class QubitDevice(Device):
         try:
             self.shots = 1
 
-            n_qubits = len(self.wires)
-            device_wires = np.array(self.map_wires(wires))
+            bitstrings, recipes = self.classical_shadow(wires, n_snapshots, circuit)
 
-            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-
-            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
-
-            outcomes = np.zeros((n_snapshots, n_qubits))
-
-            for t in range(n_snapshots):
-                rotations = [
-                    rot
-                    for wire in wires
-                    for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
-                        wires=wire
-                    )
-                ]
-
-                self.reset()
-                self.apply(circuit.operations + rotations)
-
-                outcomes[t] = self.generate_samples()[0]
-
-            bitstrings, recipes = self._stack([outcomes, recipes]) #self._cast( .. , dtype=np.uint8)
-
+            # TODO: Use class method here instead, we can avoid copy-pasting all that code here for the classical post-processing.
+            # shadow = ClassicalShadow(bitstrings, recipes)
+            # return shadow.expval(H)
             unitaries = [
                 qml.matrix(qml.Hadamard(0)),
                 qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),

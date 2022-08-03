@@ -961,6 +961,9 @@ class DefaultQubit(QubitDevice):
 
         bitstrings, recipes = self.classical_shadow(wires, n_snapshots, circuit)
 
+        # TODO: use ClassicalShadow methods here instead, avoid long unnecessary repitition of code i.e.
+        # shadow = ClassicalShadow(bitstrings, recipes)
+        # return shadow.expval(H)
         unitaries = [
                 qml.matrix(qml.Hadamard(0)),
                 qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
