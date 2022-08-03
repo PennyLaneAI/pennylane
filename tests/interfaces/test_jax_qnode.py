@@ -213,6 +213,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 def test_broadcasting_jit_compatibility():
     """Test that cache-executing a parameter-broadcasted circuit with JAX and JIT
     works as expected and does not wrongly cache different tapes as one."""
