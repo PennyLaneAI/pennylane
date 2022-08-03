@@ -630,6 +630,11 @@ class QNode:
 
             res = res[0]
 
+            # Special case of single operation in a list
+            if isinstance(self._qfunc_output, list):
+                if len(self._qfunc_output) == 1:
+                    return [res]
+
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
             if not isinstance(
@@ -639,8 +644,11 @@ class QNode:
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 
-            # If the return type is not tuple (list or ndarray)
-            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+            if (
+                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
+                and not backprop
+            ):
                 if not self.device._shot_vector:
                     res = type(self.tape._qfunc_output)(res)
                 else:

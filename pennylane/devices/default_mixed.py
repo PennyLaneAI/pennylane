@@ -128,6 +128,8 @@ class DefaultMixed(QubitDevice):
         # Support float
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
+        elif array.size == 1:
+            return array
 
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
