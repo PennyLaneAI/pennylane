@@ -21,7 +21,7 @@ from .symbolicop import SymbolicOp
 
 def s_prod(scalar, operator, do_queue=True, id=None):
     r"""Construct an operator which is the scalar product of the
-     given scalar and operator provided.
+    given scalar and operator provided.
 
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
