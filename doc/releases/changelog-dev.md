@@ -4,6 +4,53 @@
 
 <h3>New features since last release</h3>
 
+* Operations for quantum chemistry now also support parameter broadcasting
+  in their numerical representations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+  Similar to standard parametrized operations, quantum chemistry operations now
+  also work with broadcasted parameters:
+
+  ```pycon
+  >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
+  >>> op.matrix().shape
+  (3, 4, 4)
+  ```
+
+* The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
+  argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
+  [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
+
+  For example, for the circuit
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.CRY(y, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  we may compute the derivative via
+
+  ```pycon
+  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor(-0.38429095, requires_grad=True),
+   tensor(0.00899816, requires_grad=True))
+  ```
+
+  Note that `QuantumTapes`/`QNodes` with multiple return values and shot vectors are not supported
+  yet and the operations with trainable parameters are required to support broadcasting when using
+  `broadcast=True`. One way of checking the latter is the `Attribute` `supports_broadcasting`:
+
+  ```pycon
+  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+  True
+  ```
+
 * Functionality for estimating the number of non-Clifford gates and logical qubits needed to
   implement quantum phase estimation algorithms for simulating materials and molecules is added to
   the new `qml.resource` module. Quantum algorithms in first quantization using a plane-wave basis
@@ -89,7 +136,8 @@
   the 1-norm of the Hamiltonian and double factorization of the second-quantized Hamiltonian can be
   obtained either by initiating the classes or by directly calling the functions.
 
-* `DefaultQubit` devices now natively support parameter broadcasting.
+* `DefaultQubit` devices now natively support parameter broadcasting
+  and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
   
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
@@ -224,8 +272,9 @@
   >>> relative_entropy_circuit((x,), (y,))
   0.017750012490703237
   ```
-
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
+  
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
+  drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -360,6 +409,62 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> scalar, theta = (1.2, 3.4)
   >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
   (array(-0.68362956), array(0.21683382))
+  ```
+
+* A `Prod` symbolic class is added that allows users to represent the Prod of operators.
+  [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
+
+  The `Prod` class provides functionality like any other PennyLane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+  >>> prop_op
+  PauliX(wires=[0]) @ PauliZ(wires=[0])
+  >>> qml.matrix(prop_op)
+  array([[ 0,  -1],
+         [ 1,   0]])
+  >>> prop_op.terms()
+  ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+  ```
+
+  The `prod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the
+  product observable.
+
+  ```python
+  prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      return qml.expval(prod_op)
+  ```
+
+  ```pycon
+  >>> weights = qnp.array([0.1], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.07059288589999416], requires_grad=True)
+  ```
+  
+  The `prod_op` can also be used inside a `qnode` as an operation which,
+  if parameterized, can be differentiated.
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(theta):
+      qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> circuit(1.23)
+  tensor(0.33423773, requires_grad=True)
+  >>> qml.grad(circuit)(1.23)
+  -0.9424888019316975
   ```
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
