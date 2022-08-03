@@ -55,13 +55,13 @@ def batch_input(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires = 2, shots=None)
+        dev = qml.device("default.qubit", wires=2, shots=None)
 
         @qml.batch_input(argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
         def circuit(inputs, weights):
             qml.RY(weights[0], wires=0)
-            qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
+            qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
             qml.RY(weights[1], wires=1)
             return qml.expval(qml.PauliZ(1))
 
