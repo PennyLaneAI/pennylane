@@ -179,7 +179,7 @@ a tensor of tensors is returned to provide differentiability for the outputs of 
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0,1])
         qml.PauliX(wires=2)
-        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.sample()
+        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
 >>> result = circuit()
 >>> print(result)
