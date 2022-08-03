@@ -213,6 +213,25 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+def test_broadcasting_jit_compatibility():
+    """Test that cache-executing a parameter-broadcasted circuit with JAX and JIT
+    works as expected and does not wrongly cache different tapes as one."""
+
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.qnode(dev, diff_method="backprop", interface="jax")
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(1))
+
+    x = jnp.array([0.3, 0.6])
+    res = circuit(x)
+    jit_res = jax.jit(circuit)(x)
+    assert not qml.math.isclose(res[0], res[1])
+    assert qml.math.allclose(res, jnp.cos(x))
+    assert qml.math.allclose(jit_res, jnp.cos(x))
+
 
 vv_qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
