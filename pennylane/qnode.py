@@ -630,7 +630,7 @@ class QNode:
 
             res = res[0]
 
-            # Special case of single operation in a list
+            # Special case of single Measurement in a list
             if isinstance(self._qfunc_output, list):
                 if len(self._qfunc_output) == 1:
                     return [res]
