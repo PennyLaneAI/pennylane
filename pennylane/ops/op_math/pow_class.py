@@ -29,7 +29,7 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.identity import Identity
-from pennylane.ops.op_math.controlled_class import ControlledOp
+from pennylane.ops.op_math.controlled_class import Controlled
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
 
