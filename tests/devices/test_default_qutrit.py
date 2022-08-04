@@ -269,7 +269,7 @@ class TestExpval:
         "operation,input,expected_output,par",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
-            (qml.THermitian, [0, 1, 0], -1, [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]]),
+            (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
             (
                 qml.THermitian,
                 [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
@@ -294,7 +294,11 @@ class TestExpval:
 
     A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
     B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
-    obs = np.kron(A, B)
+    obs_1 = np.kron(A, B)
+
+    C = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+    D = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
+    obs_2 = np.kron(C, D)
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
@@ -303,37 +307,47 @@ class TestExpval:
                 qml.THermitian,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
                 1 / 3,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
                 2,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
                 1,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
-                [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
-                -1.5,
-                obs,
+                [
+                    3.73671170e-01 - 0.00000000e00j,
+                    3.73671170e-01 - 8.75889651e-19j,
+                    4.69829451e-01 + 7.59104364e-19j,
+                    -2.74458036e-17 - 3.73671170e-01j,
+                    -1.98254112e-18 - 3.73671170e-01j,
+                    1.04702953e-17 - 4.69829451e-01j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                ],
+                -6.772,
+                obs_2,
             ),
             (
                 qml.THermitian,
                 np.array([1 / 3] * 9),
-                2 / 3,
-                obs,
+                0,
+                obs_2,
             ),
             (
                 qml.THermitian,
-                [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
-                -11 / 4,
-                obs,
+                [0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0],
+                0,
+                obs_2,
             ),
         ],
     )
@@ -358,13 +372,13 @@ class TestExpval:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), wires=0))
+            return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
         expval = circuit()
 
         # With 3 samples we are guaranteed to see a difference between
-        # an estimated variance an an analytically calculated one
-        assert expval != 1.0
+        # an estimated expectation value an an analytically calculated one
+        assert expval != 0
 
 
 class TestVar:
@@ -466,7 +480,7 @@ class TestVar:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), wires=0))
+            return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
         var = circuit()
 
