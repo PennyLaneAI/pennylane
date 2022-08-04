@@ -830,8 +830,8 @@ class TestOperatorIntegration:
 
     def test_mul_with_operator(self):
         """Test the __matmul__ dunder method with an operator."""
-        prod_op = qml.PauliX(0) @ qml.RX(1, 0)
-        final_op = qml.ops.Prod(qml.PauliX(0), qml.RX(1, 0))
+        prod_op = qml.RX(1, 0) @ qml.PauliX(0)
+        final_op = qml.ops.Prod(qml.RX(1, 0), qml.PauliX(0))
         assert isinstance(prod_op, qml.ops.Prod)
         assert prod_op.name == final_op.name
         assert prod_op.wires == final_op.wires
