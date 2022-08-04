@@ -1210,11 +1210,15 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
+            wires = self.wires.tolist()
+            id_op = (
+                qml.ops.Prod(*(qml.Identity(w) for w in wires))  # pylint: disable=no-member
+                if len(wires) > 1
+                else qml.Identity(wires[0])
+            )
             return qml.ops.Sum(  # pylint: disable=no-member
                 self,
-                qml.ops.SProd(  # pylint: disable=no-member
-                    scalar=other, base=qml.Identity(wires=self.wires[0])
-                ),
+                qml.ops.SProd(scalar=other, base=id_op),  # pylint: disable=no-member
             )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member

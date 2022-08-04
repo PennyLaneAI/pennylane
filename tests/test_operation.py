@@ -789,6 +789,21 @@ class TestOperatorIntegration:
             assert s1.data == s2.data
         assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
 
+    def test_sum_multi_wire_operator_with_scalar(self):
+        """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
+        sum_op = 5 + qml.CNOT(wires=[0, 1])
+        final_op = qml.ops.Sum(
+            qml.CNOT(wires=[0, 1]),
+            qml.ops.s_prod(5, qml.ops.Prod(qml.Identity(0), qml.Identity(1))),
+        )
+        # TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
     def test_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
         sum_op = qml.PauliX(0) - 5
