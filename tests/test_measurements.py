@@ -868,6 +868,52 @@ class TestCounts:
         for ind in counts_term_indices:
             assert isinstance(res[ind], dict)
 
+    def test_outcome_dict_keys_providing_observable(self):
+        """Test that the dictionary keys are the eigenvalues of the
+        observable if observable is given"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.counts(qml.PauliZ(0))
+            return res
+
+        res = circuit()
+
+        assert set(res.keys()) == set(qml.PauliZ.compute_eigvals())
+
+    def test_outcome_dict_keys_providing_no_observable_no_wires(self):
+        """Test that the dictionary keys are the possible combinations of
+        basis states for the device if no wire count and no observable are given"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts()
+
+        res = circuit()
+
+        assert set(res.keys()) == {"00", "01", "10", "11"}
+
+    def test_outcome_keys_providing_no_observable_and_wires(self):
+        """Test that the dictionary keys are the possible combinations
+        of basis states for the specified wires if wire count is given"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=4, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(wires=[0, 2])
+
+        res = circuit()
+
+        assert set(res.keys()) == {"00", "01", "10", "11"}
+
 
 class TestMeasure:
     """Tests for the measure function"""
