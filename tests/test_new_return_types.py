@@ -884,6 +884,7 @@ class TestMixMeasurementsShotVector:
                     else:
                         assert r.shape == (shot_tuple.shots,)
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_multi)
     def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and counts measurements where counts takes an
