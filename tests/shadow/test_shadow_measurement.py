@@ -20,14 +20,16 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def get_circuit(wires, shots, seed_recipes, interface="autograd", force_super=False):
+def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
     """
     Return a QNode that prepares the state (|00...0> + |11...1>) / sqrt(2)
         and performs the classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
 
-    if force_super:
         # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
         dev.classical_shadow = super(type(dev), dev).classical_shadow
 
@@ -46,7 +48,7 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", force_super=Fa
 class TestShadowMeasurement:
 
     wires_list = [1, 2, 3, 5, 8]
-    shots_list = [1, 10, 100, 1000]
+    shots_list = [1, 10, 100]
     seed_recipes_list = [True, False]
 
     @pytest.mark.parametrize("wires", wires_list)
@@ -87,17 +89,18 @@ class TestShadowMeasurement:
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("default_impl", [False, True])
-    def test_format(self, wires, shots, seed, interface, default_impl):
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", None])
+    def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
         import torch
 
-        circuit = get_circuit(wires, shots, seed, interface, default_impl)
+        circuit = get_circuit(wires, shots, seed, interface, device)
         shadow = circuit()
 
         # test shape and dtype are correct
         assert shadow.shape == (2, shots, wires)
+        print(shadow.dtype)
         assert shadow.dtype == np.uint8 if interface != "torch" else torch.uint8
 
         bits, recipes = shadow
