@@ -1234,8 +1234,6 @@ class Operator(abc.ABC):
         """The product operation between Operators and/or scalars."""
         if isinstance(other, numbers.Number):
             return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
-        if isinstance(other, Operator):
-            return qml.ops.Prod(other, self)  # pylint: disable=no-member
         raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
     def __sub__(self, other):
