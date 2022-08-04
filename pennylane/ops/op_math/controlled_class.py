@@ -313,7 +313,7 @@ class Controlled(SymbolicOp):
     def simplify(self, depth=-1) -> "ControlledOp":
         if depth == 0:
             return self
-        return ControlledOp(
+        return Controlled(
             base=self.base.simplify(depth=depth),
             control_wires=self.control_wires,
             control_values=self.control_values,
