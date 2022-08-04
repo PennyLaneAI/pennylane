@@ -58,6 +58,11 @@ Operator transform functions
 
 These operator functions act on operators to produce new operators.
 
+>>> op = qml.prod(qml.PauliX(0), qml.PauliZ(1))
+>>> op = qml.op_sum(qml.Hadamard(0), op)
+>>> op = qml.s_prod(1.2, op)
+1.2*(Hadamard(wires=[0]) + PauliX(wires=[0]) @ PauliZ(wires=[1]))
+
 Operator information functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -68,7 +73,6 @@ Operator information functions
     ~pennylane.generator
 
 These operator functions act on operators and return information about the operator.
-
 All operator functions can be used on instantiated operators,
 
 >>> op = qml.RX(0.54, wires=0)
