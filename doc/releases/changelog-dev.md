@@ -86,7 +86,7 @@
 
   The resource estimation algorithms are implemented as classes inherited from the `Operation`
   class. The number of non-Clifford gates and logical qubits for implementing each algorithm can be
-  estimated by initiating the class for a given system. For the first quantization algorithm, the 
+  estimated by initiating the class for a given system. For the first quantization algorithm, the
   number of plane waves, number of electrons and the unit cell volume (in atomic units) are needed
   to initiate the `FirstQuantization` class. The resource can then be estimated as
 
@@ -135,7 +135,7 @@
 
   The methods of the `FirstQuantization` and the `DoubleFactorization` classes can be also accessed
   individually. For instance, the logical qubits can be computed by providing the inputs needed for
-  this estimation without initiating the class. 
+  this estimation without initiating the class.
 
   ```python
   n = 100000
@@ -596,6 +596,43 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
+* The argument `argnum` of the function `qml.batch_input` has been redefined: now it indicates the
+  indices of the batched parameters, which need to be non-trainable, in the quantum tape. Consequently, its default
+  value (set to 0) has been removed.
+  [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
+
+  Before this breaking change, one could call `qml.batch_input` without any arguments when using
+  batched inputs as the first argument of the quantum circuit.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=None)
+
+  @qml.batch_input()  # argnum = 0
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(inputs, weights):  # argument `inputs` is batched
+      qml.RY(weights[0], wires=0)
+      qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
+      qml.RY(weights[1], wires=1)
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  With this breaking change, users must set a value to `argnum` specifying the index of the
+  batched inputs with respect to all quantum tape parameters. In this example the quantum tape
+  parameters are `[ weights[0], inputs, weights[1] ]`, thus `argnum` should be set to 1, specifying
+  that `inputs` is batched:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=None)
+
+  @qml.batch_input(argnum=1)
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(inputs, weights):
+      qml.RY(weights[0], wires=0)
+      qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
+      qml.RY(weights[1], wires=1)
+      return qml.expval(qml.PauliZ(1))
+  ```
+
 * Adds `expm` to the `pennylane.math` module for matrix exponentiation.
   [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
 
@@ -648,6 +685,11 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 * Allow hamiltonians with grouped observables to be measured on devices
   which were transformed using `qml.transform.insert()`.
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
+
+* Fixes a bug where `qml.batch_input` raised an error when using a batched operator that was not
+  located at the beginning of the circuit. In addition, now `qml.batch_input` raises an error when
+  using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
+  [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
 <h3>Contributors</h3>
 
