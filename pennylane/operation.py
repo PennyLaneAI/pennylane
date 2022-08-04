@@ -1232,7 +1232,7 @@ class Operator(abc.ABC):
             return qml.ops.Sum(  # pylint: disable=no-member
                 self,
                 qml.ops.SProd(  # pylint: disable=no-member
-                    scalar=other, base=qml.Identity(wires=self.wires)
+                    scalar=other, base=qml.Identity(wires=self.wires[0])
                 ),
             )
         if isinstance(other, Operator):
