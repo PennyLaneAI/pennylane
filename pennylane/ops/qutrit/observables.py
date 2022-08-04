@@ -60,7 +60,7 @@ class THermitian(Hermitian):
         .. seealso:: :meth:`~.THermitian.matrix`
 
         Args:
-            A (tensor_like): hermitian matrix
+            A (tensor_like): Hermitian matrix
 
         Returns:
             tensor_like: canonical matrix
