@@ -1234,6 +1234,8 @@ class Operator(abc.ABC):
         """The product operation between Operators and/or scalars."""
         if isinstance(other, numbers.Number):
             return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
+        # FIXME: I believe we don't need to add the case where `other` is an Operator, given
+        # that then __mul__ will be called. Anyone disagrees?
         raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
     def __sub__(self, other):
