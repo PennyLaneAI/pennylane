@@ -827,7 +827,7 @@ class TestOperatorIntegration:
 
     def test_mul_with_operator(self):
         """Test the __mul__ dunder method with an operator."""
-        prod_op = qml.PauliX(0) * qml.RX(1, 0)
+        prod_op = qml.PauliX(0) @ qml.RX(1, 0)
         final_op = qml.ops.Prod(qml.PauliX(0), qml.RX(1, 0))
         assert isinstance(prod_op, qml.ops.Prod)
         assert prod_op.name == final_op.name
@@ -1175,30 +1175,6 @@ class TestTensor:
 
         assert isinstance(t, Tensor)
         assert t.obs == [X, Y, Z, H]
-
-    def test_operation_multiply_invalid(self):
-        """Test that an exception is raised if an observable
-        is multiplied by an operation"""
-        X = qml.PauliX(0)
-        Y = qml.CNOT(wires=[0, 1])
-        Z = qml.PauliZ(0)
-
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
-            X @ Y
-
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
-            T = X @ Z
-            T @ Y
-
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
-            T = X @ Z
-            Y @ T
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""

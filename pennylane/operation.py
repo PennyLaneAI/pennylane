@@ -1242,19 +1242,17 @@ class Operator(abc.ABC):
     __radd__ = __add__
 
     def __mul__(self, other):
-        """The product operation between Operators and/or scalars."""
+        """The scalar multiplication between scalars and Operators."""
         if isinstance(other, numbers.Number):
             return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
-        if isinstance(other, Operator):
-            return qml.ops.Prod(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
-    def __rmul__(self, other):
-        """The product operation between Operators and/or scalars."""
-        if isinstance(other, numbers.Number):
-            return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
+    __rmul__ = __mul__
+
+    def __matmul__(self, other):
+        """The product operation between Operator objects."""
         if isinstance(other, Operator):
-            return qml.ops.Prod(other, self)  # pylint: disable=no-member
+            return qml.ops.Prod(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
     def __sub__(self, other):
@@ -1670,7 +1668,10 @@ class Observable(Operator):
         if isinstance(other, Observable):
             return Tensor(self, other)
 
-        raise ValueError("Can only perform tensor products between observables.")
+        try:
+            return super().__matmul__(other=other)
+        except ValueError as e:
+            raise ValueError("Can only perform tensor products between observables.") from e
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
@@ -1754,14 +1755,7 @@ class Observable(Operator):
         except ValueError as e:
             raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
-    def __rmul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        if isinstance(a, (int, float)):
-            return qml.Hamiltonian([a], [self], simplify=True)
-        try:
-            return super().__rmul__(other=a)
-        except ValueError as e:
-            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
+    __rmul__ = __mul__
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""

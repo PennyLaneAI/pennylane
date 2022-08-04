@@ -358,13 +358,17 @@
   RZ**2(1.0, wires=[0])
   ```
 
-* Added `__mul__` dunder method to the `qml.operation.Operator` class so  that users can combine
-  operators more naturally. [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
+* Added `__mul__` and `__matmul__` dunder methods to the `qml.operation.Operator` class so
+  that users can combine operators more naturally.
+  [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
 
   ```pycon
-  >>> prod_op = qml.PauliX(0) * qml.PauliX(1)
+  >>> prod_op = qml.PauliX(0) @ qml.PauliX(1)
   >>> prod_op
   PauliX(wires=[0]) @ PauliZ(wires=[1])
+  >>> sprod_op = 6 * qml.RX(1, 0)
+  >>> sprod_op
+  6*(RX(1, wires=[0]))
   ```
 
 * Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
