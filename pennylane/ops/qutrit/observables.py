@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the discrete-variable quantum observables,
-excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
+This submodule contains the qutrit discrete-variable quantum observables
 """
 from pennylane import numpy as np
 
@@ -48,6 +47,11 @@ class THermitian(Hermitian):
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
+
+    .. note::
+        :class:`Hermitian` cannot be used with qutrit devices due to its use of
+        :class:`QubitUnitary` in :meth:`~.Hermitian.compute_diagonalizing_gates`.
+
     """
 
     # This method is overridden to update the docstring.

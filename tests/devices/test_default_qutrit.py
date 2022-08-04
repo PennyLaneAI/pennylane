@@ -269,12 +269,12 @@ class TestExpval:
         "operation,input,expected_output,par",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
-            (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (qml.THermitian, [0, 1, 0], -1, [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]]),
             (
                 qml.THermitian,
                 [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
-                1,
-                [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
+                0,
+                [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
             ),
         ],
     )
