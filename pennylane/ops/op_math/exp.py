@@ -31,6 +31,8 @@ class Exp(SymbolicOp):
         base (~.operation.Operator)
         coeff=1
 
+    .. note:: This Operator is only differentiable with JAX and TensorFlow.
+
     **Example**
 
     This symbolic operator can be used to make general rotation operators:
@@ -111,7 +113,8 @@ class Exp(SymbolicOp):
         return None
 
     def matrix(self, wire_order=None):
-        mat = math.expm(self.coeff * qml.matrix(self.base))
+        base_mat = self.base.matrix()
+        mat = math.expm(self.coeff * base_mat)
 
         if wire_order is None or self.wires == Wires(wire_order):
             return mat
