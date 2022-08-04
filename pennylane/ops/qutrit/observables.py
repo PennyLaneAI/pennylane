@@ -23,8 +23,7 @@ from pennylane.ops.qutrit import QutritUnitary
 
 
 class THermitian(Hermitian):
-    r"""
-    An arbitrary Hermitian observable for qutrits.
+    r"""An arbitrary Hermitian observable for qutrits.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
 
