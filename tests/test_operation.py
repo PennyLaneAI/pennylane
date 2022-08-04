@@ -823,6 +823,11 @@ class TestOperatorIntegration:
         assert prod_op.data == final_op.data
         assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
 
+    def test_mul_with_not_supported_object_raises_error(self):
+        """Test that the __mul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+            _ = "dummy" * qml.PauliX(0)
+
 
 class TestInverse:
     """Test inverse of operations"""
