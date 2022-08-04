@@ -1237,7 +1237,7 @@ class Operator(abc.ABC):
     def __matmul__(self, other):
         """The product operation between Operator objects."""
         if isinstance(other, Operator):
-            return qml.ops.Prod(self, other)  # pylint: disable=no-member
+            return qml.prod(self, other)
         raise ValueError("Can only perform tensor products between operators.")
 
     def __sub__(self, other):
