@@ -69,7 +69,7 @@
 
   The resource estimation algorithms are implemented as classes inherited from the `Operation`
   class. The number of non-Clifford gates and logical qubits for implementing each algorithm can be
-  estimated by initiating the class for a given system. For the first quantization algorithm, the 
+  estimated by initiating the class for a given system. For the first quantization algorithm, the
   number of plane waves, number of electrons and the unit cell volume (in atomic units) are needed
   to initiate the `FirstQuantization` class. The resource can then be estimated as
 
@@ -118,7 +118,7 @@
 
   The methods of the `FirstQuantization` and the `DoubleFactorization` classes can be also accessed
   individually. For instance, the logical qubits can be computed by providing the inputs needed for
-  this estimation without initiating the class. 
+  this estimation without initiating the class.
 
   ```python
   n = 100000
@@ -274,7 +274,7 @@
   ```
   
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
-  drawing circuit diagram graphics. 
+  drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -295,7 +295,6 @@
   >>> print(circuit(U))
   [0.5 0.5 0. ]
   ```
-  
   
 **Operator Arithmetic:**
 
@@ -357,6 +356,15 @@
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
   RZ**2(1.0, wires=[0])
+  ```
+
+* Added `__mul__` dunder method to the `qml.operation.Operator` class so  that users can combine
+  operators more naturally. [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
+
+  ```pycon
+  >>> prod_op = qml.PauliX(0) * qml.PauliX(1)
+  >>> prod_op
+  PauliX(wires=[0]) @ PauliZ(wires=[1])
   ```
 
 * Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)

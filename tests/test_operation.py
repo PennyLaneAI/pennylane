@@ -792,9 +792,14 @@ class TestOperatorIntegration:
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0)
-        final_op = qml.ops.Sum(qml.ops.s_prod(5, qml.Identity(0)), qml.PauliX(0))
+        final_op = qml.ops.Sum(qml.PauliX(0), qml.ops.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
-        assert np.allclose(sum_op.matrix(), final_op.matrix(), rtol=0)
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
 
     def test_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
@@ -804,6 +809,38 @@ class TestOperatorIntegration:
         assert np.allclose(a=sum_op.matrix(), b=sum_op_2.matrix(), rtol=0)
         neg_op = -qml.PauliX(0)
         assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
+
+    def test_mul_with_scalar(self):
+        """Test the __mul__ dunder method with a scalar value."""
+        sprod_op = 4 * qml.RX(1, 0)
+        sprod_op2 = qml.RX(1, 0) * 4
+        final_op = qml.ops.SProd(scalar=4, base=qml.RX(1, 0))
+        assert isinstance(sprod_op, qml.ops.SProd)
+        assert sprod_op.name == sprod_op2.name
+        assert sprod_op.wires == sprod_op2.wires
+        assert sprod_op.data == sprod_op2.data
+        assert sprod_op.name == final_op.name
+        assert sprod_op.wires == final_op.wires
+        assert sprod_op.data == final_op.data
+        assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
+        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_operator(self):
+        """Test the __mul__ dunder method with an operator."""
+        prod_op = qml.PauliX(0) * qml.RX(1, 0)
+        final_op = qml.ops.Prod(qml.PauliX(0), qml.RX(1, 0))
+        assert isinstance(prod_op, qml.ops.Prod)
+        assert prod_op.name == final_op.name
+        assert prod_op.wires == final_op.wires
+        assert prod_op.data == final_op.data
+        assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_not_supported_object_raises_error(self):
+        """Test that the __mul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+            _ = "dummy" * qml.PauliX(0)
+        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+            _ = qml.PauliX(0) * "dummy"
 
 
 class TestInverse:

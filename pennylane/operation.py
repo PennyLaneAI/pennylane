@@ -1241,6 +1241,22 @@ class Operator(abc.ABC):
 
     __radd__ = __add__
 
+    def __mul__(self, other):
+        """The product operation between Operators and/or scalars."""
+        if isinstance(other, numbers.Number):
+            return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
+        if isinstance(other, Operator):
+            return qml.ops.Prod(self, other)  # pylint: disable=no-member
+        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+
+    def __rmul__(self, other):
+        """The product operation between Operators and/or scalars."""
+        if isinstance(other, numbers.Number):
+            return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
+        if isinstance(other, Operator):
+            return qml.ops.Prod(other, self)  # pylint: disable=no-member
+        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, (Operator, numbers.Number)):
@@ -1732,12 +1748,20 @@ class Observable(Operator):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
-
             return qml.Hamiltonian([a], [self], simplify=True)
+        try:
+            return super().__mul__(other=a)
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
-        raise ValueError(f"Cannot multiply Observable by {type(a)}")
-
-    __rmul__ = __mul__
+    def __rmul__(self, a):
+        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        if isinstance(a, (int, float)):
+            return qml.Hamiltonian([a], [self], simplify=True)
+        try:
+            return super().__rmul__(other=a)
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
