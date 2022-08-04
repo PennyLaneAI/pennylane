@@ -271,11 +271,11 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        if operation.base_name == "Identity":
+        if operation.__class__.__name__ == "Identity":
             return state
         wires = operation.wires
 
-        if operation.base_name in self._apply_ops:
+        if operation.__class__.__name__ in self._apply_ops:
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
