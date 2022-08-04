@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def get_circuit(wires, shots, seed_recipes, force_super=False):
+def get_circuit(wires, shots, seed_recipes, interface="autograd", force_super=False):
     """
     Return a QNode that prepares the state (|00...0> + |11...1>) / sqrt(2)
         and performs the classical shadow measurement
@@ -31,7 +31,7 @@ def get_circuit(wires, shots, seed_recipes, force_super=False):
         # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
         dev.classical_shadow = super(type(dev), dev).classical_shadow
 
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface=interface)
     def circuit():
         qml.Hadamard(wires=0)
 
@@ -82,25 +82,29 @@ class TestShadowMeasurement:
         assert copied_res.wires == res.wires
         assert copied_res.seed == res.seed
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("wires", wires_list)
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("default_impl", [False, True])
-    def test_format(self, wires, shots, seed, default_impl):
+    def test_format(self, wires, shots, seed, interface, default_impl):
         """Test that the format of the returned classical shadow
         measurement is correct"""
-        circuit = get_circuit(wires, shots, seed, default_impl)
+        import torch
+
+        circuit = get_circuit(wires, shots, seed, interface, default_impl)
         shadow = circuit()
 
         # test shape and dtype are correct
         assert shadow.shape == (2, shots, wires)
-        assert shadow.dtype == np.uint8
+        assert shadow.dtype == np.uint8 if interface != "torch" else torch.uint8
 
         bits, recipes = shadow
 
         # test allowed values of bits and recipes
-        assert np.all(np.logical_or(bits == 0, bits == 1))
-        assert np.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
+        assert qml.math.all(np.logical_or(bits == 0, bits == 1))
+        assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
     @pytest.mark.parametrize("wires", wires_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
