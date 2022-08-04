@@ -827,8 +827,13 @@ class TestOperatorIntegration:
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
         with pytest.raises(ValueError, match="Cannot multiply Observable by"):
             _ = "dummy" * qml.PauliX(0)
-        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
-            _ = qml.PauliX(0) * "dummy"
+
+    def test_matmul_with_not_supported_object_raises_error(self):
+        """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables."
+        ):
+            _ = qml.PauliX(0) @ "dummy"
 
 
 class TestInverse:

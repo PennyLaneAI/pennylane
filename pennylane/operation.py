@@ -1226,7 +1226,7 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if isinstance(other, numbers.Number):
             return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
-        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
 
     __rmul__ = __mul__
 
@@ -1234,7 +1234,7 @@ class Operator(abc.ABC):
         """The product operation between Operator objects."""
         if isinstance(other, Operator):
             return qml.ops.Prod(self, other)  # pylint: disable=no-member
-        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+        raise ValueError("Can only perform tensor products between observables.")
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
