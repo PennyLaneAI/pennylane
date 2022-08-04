@@ -646,13 +646,13 @@ class TestSimplify:
     def test_depth_property(self):
         """Test depth property."""
         prod_op = (
-            qml.RZ(1.32, wires=0) * qml.Identity(wires=0) * qml.RX(1.9, wires=1) * qml.PauliX(0)
+            qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1) @ qml.PauliX(0)
         )
         assert prod_op.arithmetic_depth == 3
 
     def test_simplify_method_with_default_depth(self):
         """Test that the simplify method reduces complexity to the minimum."""
-        prod_op = qml.RZ(1.32, wires=0) * qml.Identity(wires=0) * qml.RX(1.9, wires=1)
+        prod_op = qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1)
         final_op = Prod(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
         simplified_op = prod_op.simplify()
 
@@ -692,10 +692,10 @@ class TestSimplify:
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1))
         final_op = qml.ops.Sum(
-            qml.PauliX(0) * qml.PauliX(1),
-            qml.PauliX(0) * qml.RX(1, 1),
-            qml.RX(1, 0) * qml.PauliX(1),
-            qml.RX(1, 0) * qml.RX(1, 1),
+            Prod(qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0) @ qml.RX(1, 1),
+            qml.RX(1, 0) @ qml.PauliX(1),
+            qml.RX(1, 0) @ qml.RX(1, 1),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -709,14 +709,14 @@ class TestSimplify:
         """Test the simplify method with nested sums and products."""
         prod_op = Prod(
             qml.PauliX(0) + Prod(qml.PauliX(0), qml.RX(1, 0)),
-            qml.PauliX(1) + qml.ops.SProd(5, qml.RX(1, 1) + qml.PauliX(1)),
+            qml.PauliX(1) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
         )
         final_op = qml.ops.Sum(
-            qml.PauliX(0) * qml.PauliX(1),
-            qml.PauliX(0) * qml.ops.s_prod(5, qml.RX(1, 1)),
-            qml.PauliX(0) * qml.ops.s_prod(5, qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0) @ (5 * qml.RX(1, 1)),
+            qml.PauliX(0) @ qml.ops.s_prod(5, qml.PauliX(1)),
             Prod(qml.PauliX(0), qml.RX(1, 0), qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.RX(1, 0), qml.ops.s_prod(5, qml.RX(1, 1))),
+            Prod(qml.PauliX(0), qml.RX(1, 0), 5 * qml.RX(1, 1)),
             Prod(qml.PauliX(0), qml.RX(1, 0), qml.ops.s_prod(5, qml.PauliX(1))),
         )
         simplified_op = prod_op.simplify()

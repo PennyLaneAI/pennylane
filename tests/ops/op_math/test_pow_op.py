@@ -23,7 +23,6 @@ from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math.controlled_class import ControlledOp
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
-from pennylane.templates.layers import simplified_two_design
 
 
 class TempOperator(qml.operation.Operator):
