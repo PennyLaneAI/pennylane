@@ -273,7 +273,7 @@ class TestTHermitian:
         assert np.allclose(out, H_01, atol=tol, rtol=0)
 
     def test_thermitian_exceptions(self):
-        """Tests that the hermitian matrix method raises the proper errors."""
+        """Tests that the Hermitian matrix method raises the proper errors."""
         H_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
 
         # test non-square matrix
