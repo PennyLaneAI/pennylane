@@ -416,7 +416,11 @@ class TestVar:
 
     A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
     B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
-    obs = np.kron(A, B)
+    obs_1 = np.kron(A, B)
+
+    C = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+    D = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
+    obs_2 = np.kron(C, D)
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par",
@@ -425,37 +429,37 @@ class TestVar:
                 qml.THermitian,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
                 10.88888889,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
                 0,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
                 9,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
-                6.25,
-                obs,
+                18,
+                obs_2,
             ),
             (
                 qml.THermitian,
                 np.array([1 / 3] * 9),
-                13.55555556,
-                obs,
+                30.22222,
+                obs_2,
             ),
             (
                 qml.THermitian,
                 [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
-                1.6875,
-                obs,
+                20,
+                obs_2,
             ),
         ],
     )
@@ -622,9 +626,9 @@ class TestTensorExpval:
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qutrit", wires=3)
 
-        A1 = np.array([[3, 0, 0], [0, -3, 0], [0, 0, -2]])
+        A1 = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
 
-        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        A = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
         B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
         A2 = np.kron(A, B)
 
@@ -641,7 +645,7 @@ class TestTensorExpval:
 
         res = dev.expval(obs)
 
-        expected = 8
+        expected = 0.0
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian_two_wires_identity_expectation(self, tol):
