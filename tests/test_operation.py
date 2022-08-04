@@ -814,7 +814,7 @@ class TestOperatorIntegration:
         assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
 
     def test_mul_with_operator(self):
-        """Test the __mul__ dunder method with an operator."""
+        """Test the __matmul__ dunder method with an operator."""
         prod_op = qml.PauliX(0) @ qml.RX(1, 0)
         final_op = qml.ops.Prod(qml.PauliX(0), qml.RX(1, 0))
         assert isinstance(prod_op, qml.ops.Prod)
