@@ -119,3 +119,23 @@ class TestShadowMeasurement:
         msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             shadow = circuit()
+
+    @pytest.mark.parametrize("wires", wires_list)
+    @pytest.mark.parametrize("shots", shots_list)
+    def test_multi_measurement_error(self, wires, shots):
+        """Test that an error is raised when classical shadows is returned
+        with other measurement processes"""
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+
+            for target in range(1, wires):
+                qml.CNOT(wires=[0, target])
+
+            return qml.classical_shadow(wires=range(wires)), qml.expval(qml.PauliZ(0))
+
+        msg = "Classical shadows cannot be returned in combination with other return types"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            shadow = circuit()
