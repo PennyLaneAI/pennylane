@@ -5,6 +5,25 @@
 <h3>New features since last release</h3>
 
 
+
+* Added readout error functionality to the MixedDevice.
+  [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
+
+  Readout error has been added by applying a BitFlip channel to the wires
+  measured after the diagonalizing gates corresponding to the measurement
+  observable has been applied. The probability of the readout error occurring
+  should be passed when creating the device.
+
+  ```pycon
+  >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(circuit())
+  0.8
+  ```
+
+
 * Operations for quantum chemistry now also support parameter broadcasting
   in their numerical representations.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
@@ -639,8 +658,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 This release contains contributions from (in alphabetical order):
 
 
-Miguel Esteban Villalobos Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
-Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
-Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
-Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
-
+Miguel Esteban Villalobos, Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
+Ankit Khandelwal, Meenu Kumari, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma,
+Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
+Shuli Shu, Jay Soni, Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
