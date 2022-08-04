@@ -830,9 +830,7 @@ class TestOperatorIntegration:
 
     def test_matmul_with_not_supported_object_raises_error(self):
         """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables."
-        ):
+        with pytest.raises(ValueError, match="Can only perform tensor products between operators."):
             _ = qml.PauliX(0) @ "dummy"
 
 
