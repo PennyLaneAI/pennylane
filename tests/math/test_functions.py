@@ -2261,3 +2261,32 @@ class TestSortFunction:
         result = fn.sort(input)
 
         assert all(result == test_output)
+
+
+class TestExpm:
+
+    _compare_mat = None
+
+    def get_compare_mat(self):
+        """Computes expm via taylor expansion."""
+        if self._compare_mat is None:
+            mat = qml.RX.compute_matrix(0.3)
+            out = np.eye(2, dtype=complex)
+            coeff = 1
+            for i in range(1, 8):
+                coeff *= i
+                out += np.linalg.matrix_power(mat, i) / coeff
+
+            self._compare_mat = out
+
+        return self._compare_mat
+
+    @pytest.mark.parametrize(
+        "phi", [qml.numpy.array(0.3), torch.tensor(0.3), tf.Variable(0.3), jnp.array(0.3)]
+    )
+    def test_expm(self, phi):
+        """Test expm function for all interfaces against taylor expansion approximation."""
+        orig_mat = qml.RX.compute_matrix(phi)
+        exp_mat = qml.math.expm(orig_mat)
+
+        assert qml.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
