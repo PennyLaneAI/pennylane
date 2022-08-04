@@ -49,12 +49,12 @@ Operator transform functions
 
 .. autosummary::
 
-    ~pennylane.adjoint
-    ~pennylane.ctrl
-    ~pennylane.cond
-    ~pennylane.op_sum
-    ~pennylane.prod
-    ~pennylane.s_prod
+    ~pennylane.ops.op_math.adjoint
+    ~pennylane.ops.op_math.ctrl
+    ~pennylane.ops.op_math.cond
+    ~pennylane.ops.op_math.op_sum
+    ~pennylane.ops.op_math.prod
+    ~pennylane.ops.op_math.s_prod
 
 These operator functions act on operators to produce new operators.
 
