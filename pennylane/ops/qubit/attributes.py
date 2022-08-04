@@ -223,6 +223,14 @@ supports_broadcasting = Attribute(
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "OrbitalRotation",
     ]
 )
 """Attribute: Operations that support parameter broadcasting.
