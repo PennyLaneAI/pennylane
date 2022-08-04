@@ -1087,7 +1087,25 @@ def mutual_info(wires0, wires1, log_base=None):
 
 def classical_shadow(wires, seed_recipes=True):
     """
-    TODO: docs
+    The classical shadow measurement protocol.
+
+    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    This measurement process returns the randomized Pauli measurements that are
+    performed for each qubit and snapshot as an integer: 0 for Pauli X, 1 for Pauli Y,
+    and 2 for PauliZ. It also returns the measurement results: 0 if the 1 eigenvalue
+    is sampled and 1 if the -1 eigenvalue is sampled.
+
+    The device shots are used to specify the number of snapshots. If T is the number
+    of shots and n is the number of qubits, then both the measured bits and the
+    Pauli measurements have shape (T, n).
+
+    Args:
+        wires (Sequence[int]): the wires to perform Pauli measurements on
+        seed_recipes (bool): If True (default), a seed will be generated that
+            is used for the randomly sampled Pauli measurements. This is to
+            ensure that the same recipes are used when a tape containing this
+            measurement is copied. Different seeds are still generated for
+            different constructed tapes.
     """
     wires = qml.wires.Wires(wires)
 

@@ -890,7 +890,33 @@ class DefaultQubit(QubitDevice):
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
     def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
-        """TODO: docs"""
+        """
+        Returns the measured bits and recipes in the classical shadow protocol.
+
+        The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+        This measurement process returns the randomized Pauli measurements that are
+        performed for each qubit and snapshot as an integer: 0 for Pauli X, 1 for Pauli Y,
+        and 2 for PauliZ. It also returns the measurement results: 0 if the 1 eigenvalue
+        is sampled and 1 if the -1 eigenvalue is sampled.
+
+        The device shots are used to specify the number of snapshots. If T is the number
+        of shots and n is the number of qubits, then both the measured bits and the
+        Pauli measurements have shape (T, n).
+
+        This implementation leverages vectorization and offers a significant speed-up over
+        the generic implementation.
+
+        Args:
+            wires (Sequence[int]): The wires to perform Pauli measurements on
+            n_snapshots (int): The number of snapshots
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            seed (Union[int, None]): If provided, it is used to seed the random
+                number generation for generating the Pauli measurements.
+
+        Returns:
+            tensor_like[int]: A tensor with shape (2, T, n), where the first row represents
+            the measured bits and the second represents the recipes used.
+        """
 
         n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
