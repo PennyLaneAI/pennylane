@@ -1105,7 +1105,7 @@ class TestInBackprop:
 
     @pytest.mark.slow
     def test_jax(self):
-        """JAX DeviceArrays differentiability depends on the argnums argument"""
+        """The value of in_backprop for JAX DeviceArrays depends on the argnums argument"""
         res = None
 
         def cost_fn(t, s):
