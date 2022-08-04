@@ -688,6 +688,45 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_method_product_of_sums(self):
+        """Test the simplify method with a product of sums."""
+        prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1))
+        final_op = qml.ops.Sum(
+            qml.PauliX(0) * qml.PauliX(1),
+            qml.PauliX(0) * qml.RX(1, 1),
+            qml.RX(1, 0) * qml.PauliX(1),
+            qml.RX(1, 0) * qml.RX(1, 1),
+        )
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_nested_sums_and_prods(self):
+        """Test the simplify method with nested sums and products."""
+        prod_op = Prod(
+            qml.PauliX(0) + Prod(qml.PauliX(0), qml.RX(1, 0)),
+            qml.PauliX(1) + qml.ops.SProd(5, qml.RX(1, 1) + qml.PauliX(1)),
+        )
+        final_op = qml.ops.Sum(
+            qml.PauliX(0) * qml.PauliX(1),
+            qml.PauliX(0) * qml.ops.s_prod(5, qml.RX(1, 1)),
+            qml.PauliX(0) * qml.ops.s_prod(5, qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.RX(1, 0), qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.RX(1, 0), qml.ops.s_prod(5, qml.RX(1, 1))),
+            Prod(qml.PauliX(0), qml.RX(1, 0), qml.ops.s_prod(5, qml.PauliX(1))),
+        )
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
