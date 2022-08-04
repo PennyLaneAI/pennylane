@@ -1373,7 +1373,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (2, 3)
 
     @pytest.mark.tf
-    def test_multiple_meas_tf_autograph(self, device):
+    def test_multiple_meas_tf_autograph(self):
         """Return Jacobian of multiple measurements with Tf Autograph."""
         import tensorflow as tf
 
