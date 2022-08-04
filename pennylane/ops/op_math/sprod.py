@@ -34,7 +34,7 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
 
-    .. seealso:: :class:`~.ops.op_math.SProd` and :class: `~.ops.op_math.SymbolicOp`
+    .. seealso:: :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.SymbolicOp`
 
     **Example**
 
