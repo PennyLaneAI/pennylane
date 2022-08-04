@@ -1234,7 +1234,7 @@ class Operator(abc.ABC):
         """The product operation between Operator objects."""
         if isinstance(other, Operator):
             return qml.ops.Prod(self, other)  # pylint: disable=no-member
-        raise ValueError("Can only perform tensor products between observables.")
+        raise ValueError("Can only perform tensor products between operators.")
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
