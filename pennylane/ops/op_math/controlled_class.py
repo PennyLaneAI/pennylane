@@ -306,10 +306,6 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + self.base.arithmetic_depth
-
     def simplify(self, depth=-1) -> "ControlledOp":
         if depth == 0:
             return self

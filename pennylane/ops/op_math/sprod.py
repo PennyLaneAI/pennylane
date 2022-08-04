@@ -198,10 +198,6 @@ class SProd(SymbolicOp):
         """
         return None
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + self.base.arithmetic_depth
-
     def simplify(self, depth=-1) -> Operator:
         if depth == 0:
             return self

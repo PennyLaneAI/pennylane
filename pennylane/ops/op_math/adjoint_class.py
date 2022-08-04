@@ -233,10 +233,6 @@ class Adjoint(SymbolicOp):
     def adjoint(self):
         return self.base.queue()
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + self.base.arithmetic_depth
-
     def simplify(self, depth=-1):
         # TODO: Should we add a self.do_queue attribute and instantiate the simplified class
         # with the same value?
