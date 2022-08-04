@@ -777,9 +777,21 @@ class TestOperatorIntegration:
         with pytest.raises(ValueError, match="Cannot raise an Operator"):
             _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
 
+    def test_sum_with_operator(self):
+        """Test the __sum__ dunder method with two operators."""
+        sum_op = qml.PauliX(0) + qml.RX(1, 0)
+        final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
+        #  TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
-        sum_op = 5 + qml.PauliX(0)
+        sum_op = 5 + qml.PauliX(0) + 0
         final_op = qml.ops.Sum(qml.PauliX(0), qml.ops.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
