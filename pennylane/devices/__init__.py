@@ -29,6 +29,7 @@ to verify and test quantum gradient computations.
     default_qubit_autograd
     default_gaussian
     default_mixed
+    default_qutrit
     tests
 """
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
