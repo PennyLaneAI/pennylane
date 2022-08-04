@@ -631,7 +631,7 @@ class TestTensorExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian_two_wires_identity_expectation(self, tol):
-        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+        """Test that a tensor product involving a Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qutrit", wires=3)
 
         A = np.array([[-2, 0, 0], [0, 8, 0], [0, 0, -1]])
