@@ -14,25 +14,22 @@
 """
 Class and functions for activating, deactivating and checking the new return types system
 """
-# pylint: disable=too-few-public-methods
-
-
-class ReturnType:
-    """Class to store the attribute `activated` which indicates if the new return type system is on. Default=False."""
-
-    activated = False
+# pylint: disable=global-statement
+__activated = False
 
 
 def enable_return():
     """Function that turns on the new return type system."""
-    ReturnType.activated = True
+    global __activated
+    __activated = True
 
 
 def disable_return():
     """Function that turns off the new return type system."""
-    ReturnType.activated = False
+    global __activated
+    __activated = False
 
 
 def active_return():
     """Function that returns if the new return types system is activated."""
-    return ReturnType.activated
+    return __activated
