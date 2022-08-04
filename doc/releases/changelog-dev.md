@@ -183,13 +183,6 @@
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
 
-  ```pycon
-  >>> x, y = np.array([0.4, 0.23], requires_grad=True)
-  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
-  (tensor(-0.38429095, requires_grad=True),
-   tensor(0.00899816, requires_grad=True))
-  ```
-
   To illustrate the speedup, consider the following figure which shows, for a 
   constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
   time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
@@ -223,16 +216,19 @@
     # time qml.gradients.param_shift(circuit, broadcast=True)(param)
   ```
 
-  Note that `QNodes` with multiple return values and shot vectors are not supported
-  at this time and the Operators with trainable parameters are required to support 
-  broadcasting when using `broadcast=True`. One way of checking the latter is with 
-  `qml.ops.qubit.attributes.supports_broadcasting`:
+* Operations for quantum chemistry now also support parameter broadcasting
+  in their numerical representations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+  Similar to standard parametrized operations, quantum chemistry operations now
+  also work with broadcasted parameters:
 
   ```pycon
-  >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
-  True
+  >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
+  >>> op.matrix().shape
+  (3, 4, 4)
   ```
-
+  
 <h4>The SPSA optimizer 🦾</h4>
 
 * The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
@@ -412,6 +408,62 @@ of operators.
 * New FlipSign operator that flips the sign for a given basic state. 
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
+* A `Prod` symbolic class is added that allows users to represent the Prod of operators.
+  [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
+
+  The `Prod` class provides functionality like any other PennyLane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+  >>> prop_op
+  PauliX(wires=[0]) @ PauliZ(wires=[0])
+  >>> qml.matrix(prop_op)
+  array([[ 0,  -1],
+         [ 1,   0]])
+  >>> prop_op.terms()
+  ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+  ```
+
+  The `prod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the
+  product observable.
+
+  ```python
+  prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      return qml.expval(prod_op)
+  ```
+
+  ```pycon
+  >>> weights = qnp.array([0.1], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.07059288589999416], requires_grad=True)
+  ```
+  
+  The `prod_op` can also be used inside a `qnode` as an operation which,
+  if parameterized, can be differentiated.
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(theta):
+      qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> circuit(1.23)
+  tensor(0.33423773, requires_grad=True)
+  >>> qml.grad(circuit)(1.23)
+  -0.9424888019316975
+  ```
+
 * Added `qml.counts` which samples from the supplied observable returning the number of counts
   for each sample.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
@@ -523,6 +575,9 @@ of operators.
   [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
+* Adds `expm` to the `pennylane.math` module for matrix exponentiation.
+  [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
+  
 <h3>Deprecations 👋</h3>
 
 🦗
