@@ -30,7 +30,6 @@ ops = {
     "QutritUnitary",
 }
 
-# TODO: Remove QutritUnitary from obs list
 obs = {
     "THermitian",  # Added here to prevent errors when using device
 }
