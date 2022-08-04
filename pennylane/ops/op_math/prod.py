@@ -15,15 +15,18 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+import itertools
 from copy import copy
 from functools import reduce
 from itertools import combinations
+from typing import List, Tuple, Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, expand_matrix
+from pennylane.ops.op_math.sum import Sum
 
 
 def prod(*ops, do_queue=True, id=None):
@@ -62,7 +65,8 @@ class Prod(Operator):
     r"""Symbolic operator representing the product of operators.
 
     Args:
-        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
+        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+        together.
 
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
@@ -146,7 +150,9 @@ class Prod(Operator):
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *factors, do_queue=True, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *factors: Operator, do_queue=True, id=None
+    ):  # pylint: disable=super-init-not-called
         """Initialize a Prod instance"""
         self._id = id
         self.queue_idx = None
@@ -314,3 +320,53 @@ class Prod(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.factors)
         return self
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(factor.arithmetic_depth for factor in self.factors)
+
+    def _simplify_factors(self, depth=-1) -> Tuple[List[Sum], List[Operator]]:
+        """Reduces the depth of nested factors.
+
+        If ``depth`` is not provided or negative, then the factors list is completely flattenned.
+
+        Keyword Args:
+            depth (int): Reduced depth. Default is -1.
+
+        Returns:
+            Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
+            factors
+        """
+        if depth == 0:
+            return self.factors
+        sum_factors: List[Sum] = []
+        factors = []
+        for factor in self.factors:
+            if isinstance(factor, Prod):
+                tmp_sum_factors, tmp_factors = factor._simplify_factors(depth=depth - 1)
+                sum_factors.extend(tmp_sum_factors)
+                factors.extend(tmp_factors)
+                continue
+            simplified_factor = factor.simplify(depth=depth - 1)
+            if isinstance(simplified_factor, Prod):
+                factors.extend(simplified_factor.factors)
+            elif isinstance(simplified_factor, Sum):
+                sum_factors.append(simplified_factor.summands)
+            else:
+                factors.append(simplified_factor)
+
+        return sum_factors, factors
+
+    def simplify(self, depth=-1) -> Union["Prod", Sum]:
+        if depth == 0:
+            return self
+        sum_factors, factors = self._simplify_factors(depth=depth)
+        if len(sum_factors) == 0:
+            return Prod(*factors)
+        if len(factors) > 0:
+            sum_factors.append(factors)
+        sum_factors = list(itertools.product(*sum_factors))
+        # FIXME: There might be a Prod operator in sum_factors, thus we need to call simplify
+        # again the make sure there are no nested Prod operations. What depth should we use here?
+        sum_factors = [Prod(*sum_factor).simplify(depth=depth - 1) for sum_factor in sum_factors]
+        return Sum(*sum_factors)
