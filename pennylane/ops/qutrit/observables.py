@@ -42,7 +42,7 @@ class THermitian(Hermitian):
     * Gradient recipe: None
 
     Args:
-        A (array): square hermitian matrix
+        A (array): square Hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
