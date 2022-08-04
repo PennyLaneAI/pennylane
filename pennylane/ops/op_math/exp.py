@@ -14,8 +14,6 @@
 """
 This submodule defines the symbolic operation that stands for an operator raised to a power.
 """
-
-from scipy.linalg import expm
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
@@ -113,7 +111,7 @@ class Exp(SymbolicOp):
         return None
 
     def matrix(self, wire_order=None):
-        mat = expm(self.coeff * qml.matrix(self.base))
+        mat = math.expm(self.coeff * qml.matrix(self.base))
 
         if wire_order is None or self.wires == Wires(wire_order):
             return mat
