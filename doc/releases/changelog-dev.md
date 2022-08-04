@@ -289,11 +289,41 @@
   tensor(0.08228288, requires_grad=True)
   ```
 
+<h4>Backpropagation with Jax for DefaultMixed</h4>
+
+* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
+  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+
 <h4>More drawing styles 🎨</h4>
 
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
   drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
+
+<h4>More support for Jax and Tensorflow tensors 😻</h4>
+
+* Quantum channels now support Jax and Tensorflow tensors.
+  [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
+  
+  This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
+  `jax.jit`, or `jax.vmap`. An example with the `qml.ThermalRelaxationError` channel 
+  is given below:
+
+  ```python
+  dev = qml.device("default.mixed", wires=1)
+
+  @qml.qnode(dev, diff_method="backprop", interface="jax")
+  def circuit(t):
+      qml.PauliX(wires=0)
+      qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+
+  ```pycon
+  >>> x = jnp.array([0.8, 1.0, 1.2])
+  >>> jax.vmap(circuit)(x)
+  DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
+  ```
 
 <h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
@@ -412,6 +442,27 @@ of operators.
 * New FlipSign operator that flips the sign for a given basic state. 
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
+  Mathematically, `qml.FlipSign` functions as follows: $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where $\vert m \rangle$ is an arbitrary qubit state and $n$ 
+  is a qubit configuration:
+
+  ```python
+  basis_state = [1, 0]
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+    for wire in list(range(2)):
+          qml.Hadamard(wires = wire)
+    qml.FlipSign(basis_state, wires = list(range(2)))
+    return qml.sample()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+  ```
+
 * Added `qml.counts` which samples from the supplied observable returning the number of counts
   for each sample.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
@@ -450,24 +501,6 @@ of operators.
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
-* Quantum channels such as `qml.BitFlip` now support abstract tensors. This allows
-  their usage inside QNodes decorated by `tf.function`, `jax.jit`, or `jax.vmap`:
-
-  ```python
-  dev = qml.device("default.mixed", wires=1)
-
-  @qml.qnode(dev, diff_method="backprop", interface="jax")
-  def circuit(t):
-      qml.PauliX(wires=0)
-      qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
-      return qml.expval(qml.PauliZ(0))
-  ```
-
-  ```pycon
-  >>> x = jnp.array([0.8, 1.0, 1.2])
-  >>> jax.vmap(circuit)(x)
-  DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
-  ```
 
 <h3>Improvements 📈</h3>
 
@@ -498,8 +531,6 @@ of operators.
   of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
-* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
-  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
 
 * Added an `are_pauli_words_qwc` function which checks if certain
   Pauli words are pairwise qubit-wise commuting. This new function improves performance 
