@@ -108,6 +108,23 @@ def test_dtype_errors():
         qml.device("default.qubit", wires=1, c_dtype=np.float64)
 
 
+def test_custom_op_with_matrix():
+    """Test that a dummy op with a matrix is supported."""
+
+    class DummyOp(qml.operation.Operation):
+        num_wires = 1
+
+        def compute_matrix(self):
+            return np.eye(2)
+
+    with qml.tape.QuantumTape() as tape:
+        DummyOp(0)
+        qml.state()
+
+    dev = qml.device("default.qubit", wires=1)
+    assert qml.math.allclose(dev.execute(tape), np.array([1, 0]))
+
+
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
     errors are raised.
@@ -2292,43 +2309,28 @@ class TestInverseDecomposition:
         expected = np.array([1.0, -1.0j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
-    def test_inverse_S_decomposition(self, tol, mocker, monkeypatch):
-        """Test that applying the inverse of the S gate
-        works when the inverse S gate is decomposed"""
+    def test_inverse_decomposition(self, tol, mocker):
+        """Test that the expansion is inverted when inverse gate is applied and the gate isn't supported."""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute")
 
-        patched_operations = dev.operations.copy()
-        patched_operations.remove("S")
-        monkeypatch.setattr(dev, "operations", patched_operations)
+        class DummyOp(qml.operation.Operation):
+            """A Dummy Op with a decomposition defined."""
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def test_s():
-            qml.Hadamard(wires=0)
-            qml.S(wires=0)
+            num_wires = 1
+
+            def decomposition(self):
+                return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
+
+        @qml.qnode(dev, diff_method=None)
+        def test_dummy_inv():
+            DummyOp(0).inv()
             return qml.probs(wires=0)
 
-        test_s()
+        test_dummy_inv()
         operations = spy.call_args[0][0].operations
-        assert "S" not in [i.name for i in operations]
-        assert "PhaseShift" in [i.name for i in operations]
-
-        expected = np.array([1.0, 1.0j]) / np.sqrt(2)
-        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def test_s_inverse():
-            qml.Hadamard(wires=0)
-            qml.S(wires=0).inv()
-            return qml.probs(wires=0)
-
-        test_s_inverse()
-        operations = spy.call_args[0][0].operations
-        assert "S.inv" not in [i.name for i in operations]
-        assert "PhaseShift" in [i.name for i in operations]
-
-        expected = np.array([1.0, -1.0j]) / np.sqrt(2)
-        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+        assert qml.equal(operations[0], qml.PauliY(0))
+        assert qml.equal(operations[1], qml.PauliX(0))
 
 
 class TestApplyOperationUnit:
