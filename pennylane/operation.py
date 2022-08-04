@@ -1229,7 +1229,7 @@ class Operator(abc.ABC):
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if isinstance(other, numbers.Number):
-            return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
+            return qml.s_prod(scalar=other, base=self)
         raise ValueError(f"Cannot multiply Operator and {type(other)}.")
 
     __rmul__ = __mul__
