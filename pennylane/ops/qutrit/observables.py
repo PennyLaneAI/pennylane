@@ -22,8 +22,7 @@ from pennylane.ops.qutrit import QutritUnitary
 
 
 class THermitian(Hermitian):
-    r"""
-    An arbitrary Hermitian observable for qutrits.
+    r"""An arbitrary Hermitian observable for qutrits.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
 
@@ -42,7 +41,7 @@ class THermitian(Hermitian):
     * Gradient recipe: None
 
     Args:
-        A (array): square hermitian matrix
+        A (array): square Hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
@@ -65,7 +64,7 @@ class THermitian(Hermitian):
         .. seealso:: :meth:`~.THermitian.matrix`
 
         Args:
-            A (tensor_like): hermitian matrix
+            A (tensor_like): Hermitian matrix
 
         Returns:
             tensor_like: canonical matrix
@@ -73,7 +72,7 @@ class THermitian(Hermitian):
         **Example**
 
         >>> A = np.array([[6+0j, 1-2j, 0],[1+2j, -1, 0], [0, 0, 1]])
-        >>> qml.Hermitian.compute_matrix(A)
+        >>> qml.THermitian.compute_matrix(A)
         [[ 6.+0.j  1.-2.j  0.+0.j]
          [ 1.+2.j -1.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j]]
