@@ -21,6 +21,19 @@
   0.8
   ```
 
+* Operations for quantum chemistry now also support parameter broadcasting
+  in their numerical representations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+  Similar to standard parametrized operations, quantum chemistry operations now
+  also work with broadcasted parameters:
+
+  ```pycon
+  >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
+  >>> op.matrix().shape
+  (3, 4, 4)
+  ```
+
 * The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
   argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
@@ -276,8 +289,9 @@
   >>> relative_entropy_circuit((x,), (y,))
   0.017750012490703237
   ```
-
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
+  
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
+  drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -414,6 +428,62 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   (array(-0.68362956), array(0.21683382))
   ```
 
+* A `Prod` symbolic class is added that allows users to represent the Prod of operators.
+  [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
+
+  The `Prod` class provides functionality like any other PennyLane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+  >>> prop_op
+  PauliX(wires=[0]) @ PauliZ(wires=[0])
+  >>> qml.matrix(prop_op)
+  array([[ 0,  -1],
+         [ 1,   0]])
+  >>> prop_op.terms()
+  ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+  ```
+
+  The `prod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the
+  product observable.
+
+  ```python
+  prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      return qml.expval(prod_op)
+  ```
+
+  ```pycon
+  >>> weights = qnp.array([0.1], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.07059288589999416], requires_grad=True)
+  ```
+  
+  The `prod_op` can also be used inside a `qnode` as an operation which,
+  if parameterized, can be differentiated.
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(theta):
+      qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> circuit(1.23)
+  tensor(0.33423773, requires_grad=True)
+  >>> qml.grad(circuit)(1.23)
+  -0.9424888019316975
+  ```
+
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
 * Added `qml.counts` which samples from the supplied observable returning the number of counts
@@ -525,6 +595,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   If you run into issues relating to this package, please reinstall PennyLane.
   [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
+
+* Adds `expm` to the `pennylane.math` module for matrix exponentiation.
+  [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
 
 <h3>Deprecations</h3>
 

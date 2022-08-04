@@ -194,6 +194,7 @@ class QubitDevice(Device):
         "Projector",
         "Sum",
         "Sprod",
+        "Prod",
     }
 
     def __init__(
