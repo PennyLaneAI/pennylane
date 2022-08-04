@@ -309,7 +309,8 @@ class Sum(Operator):
     def arithmetic_depth(self) -> int:
         return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
-    def _simplify_summands(self, depth=-1) -> List[Operator]:
+    @classmethod
+    def _simplify_summands(cls, sum_op: "Sum", depth=-1) -> List[Operator]:
         """Reduces the depth of nested summands.
 
         If ``depth`` is not provided or negative, then the summands list is completely flattenned.
@@ -321,13 +322,11 @@ class Sum(Operator):
             List[~.operation.Operator]: reduced summands list
         """
         if depth == 0:
-            return self.summands
+            return sum_op.summands
         summands = []
-        for summand in self.summands:
+        for summand in sum_op.summands:
             if isinstance(summand, Sum):
-                summands.extend(
-                    summand._simplify_summands(depth=depth - 1)  # pylint: disable=protected-access
-                )
+                summands.extend(cls._simplify_summands(sum_op=summand, depth=depth - 1))
                 continue
             simplified_summand = summand.simplify(depth=depth)
             if isinstance(simplified_summand, Sum):
@@ -338,5 +337,5 @@ class Sum(Operator):
         return summands
 
     def simplify(self, depth=-1) -> "Sum":
-        summands = self._simplify_summands(depth=depth)
+        summands = self._simplify_summands(sum_op=self, depth=depth)
         return Sum(*summands)
