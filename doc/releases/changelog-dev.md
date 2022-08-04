@@ -312,7 +312,7 @@
   [0.5 0.5 0. ]
   ```
 
-  * Added `qml.THermitian` observable for using user-specified hermitian matrix as an observable for qutrit circuits.
+  * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
   ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
 
 * Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
