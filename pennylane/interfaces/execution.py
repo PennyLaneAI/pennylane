@@ -56,6 +56,27 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
+def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
+    """Performs adjoint jacobian specific expansion.  Expands so that every
+    trainable operation has a generator.
+
+    TODO: Let the device specify any gradient-specific expansion logic.  This
+    function will be removed once the device-support pipeline is improved.
+    """
+    if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+        # qml.math.is_trainable doesn't work with jax on the forward pass
+        non_trainable = qml.operation.has_nopar
+    else:
+        non_trainable = ~qml.operation.is_trainable
+
+    stop_at = ~qml.operation.is_measurement & (non_trainable | qml.operation.has_unitary_gen)
+    for i, tape in enumerate(tapes):
+        if any(not stop_at(op) for op in tape.operations):
+            tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
+
+    return tapes
+
+
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
@@ -366,20 +387,7 @@ def execute(
             tapes[i] = expand_fn(tape)
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
-            # adjoint jacobian needs further expansion
-            # TODO: this is a quick patch that should be cleaned up by later refactoring
-            if mode == "forward" and INTERFACE_MAP[interface] == "jax":
-                # qml.math.is_trainable doesn't work with jax on the forward pass
-                non_trainable = qml.operation.has_nopar
-            else:
-                non_trainable = ~qml.operation.is_trainable
-
-            stop_at = ~qml.operation.is_measurement & (
-                non_trainable | qml.operation.has_unitary_gen
-            )
-            for i, tape in enumerate(tapes):
-                if any(not stop_at(op) for op in tape.operations):
-                    tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
+            tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
         if mode in ("forward", "best"):
             # replace the forward execution function to return
