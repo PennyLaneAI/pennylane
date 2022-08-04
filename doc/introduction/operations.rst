@@ -42,16 +42,32 @@ Operator functions
 ------------------
 
 Various functions and transforms are available for manipulating operators,
-and extracting information.
+and extracting information. These can be broken down into two main categories:
+
+Operator transform functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
     ~pennylane.adjoint
     ~pennylane.ctrl
     ~pennylane.cond
+    ~pennylane.op_sum
+    ~pennylane.prod
+    ~pennylane.sprod
+
+These operator functions act on operators to produce new operators.
+
+Operator information functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
     ~pennylane.matrix
     ~pennylane.eigvals
     ~pennylane.generator
+
+These operator functions act on operators and return information about the operator.
 
 All operator functions can be used on instantiated operators,
 
@@ -60,7 +76,7 @@ All operator functions can be used on instantiated operators,
 [[0.9637709+0.j         0.       -0.26673144j]
 [0.       -0.26673144j 0.9637709+0.j        ]]
 
-Operator functions can also be used in a functional form:
+Some operator functions can also be used in a functional form:
 
 >>> x = torch.tensor(0.6, requires_grad=True)
 >>> matrix_fn = qml.matrix(qml.RX)
@@ -75,7 +91,7 @@ In the functional form, they are usually differentiable with respect to gate arg
 >>> x.grad
 tensor(-0.5910)
 
-Some operator transform can also act on multiple operators, by passing
+Some operator transforms can also act on multiple operators, by passing
 quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
