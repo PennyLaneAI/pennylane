@@ -321,7 +321,7 @@
   `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
   `Operator.has_matrix` property.
 
-  When adjoint differentiation is requested, tapes are now pre-expanded in `qml.execute` so
+* When adjoint differentiation is requested, circuits are now decomposed so
   that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
