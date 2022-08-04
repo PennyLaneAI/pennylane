@@ -337,14 +337,20 @@ class Prod(Operator):
             Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
             factors
         """
-        if depth == 0:
-            return self.factors
+        # FIXME: Should we use tuples?
         sum_factors: List[Sum] = []
         factors = []
+
+        if depth == 0:
+            return sum_factors, list(self.factors)
+
         for factor in self.factors:
             if isinstance(factor, Prod):
                 tmp_sum_factors, tmp_factors = factor._simplify_factors(depth=depth - 1)
-                sum_factors.extend(tmp_sum_factors)
+                if tmp_sum_factors:
+                    sum_factors.append(tmp_sum_factors)
+                if not isinstance(tmp_factors, list):
+                    tmp_factors = [tmp_factors]
                 factors.extend(tmp_factors)
                 continue
             simplified_factor = factor.simplify(depth=depth - 1)
@@ -361,9 +367,9 @@ class Prod(Operator):
         if depth == 0:
             return self
         sum_factors, factors = self._simplify_factors(depth=depth)
-        if len(sum_factors) == 0:
+        if not sum_factors:
             return Prod(*factors)
-        if len(factors) > 0:
+        if factors:
             sum_factors.append(factors)
         sum_factors = list(itertools.product(*sum_factors))
         # FIXME: There might be a Prod operator in sum_factors, thus we need to call simplify
