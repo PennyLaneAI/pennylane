@@ -243,9 +243,7 @@ class Pow(SymbolicOp):
         """
         return self.z * self.base.generator()
 
-    def simplify(self, depth=-1) -> Union["Pow", Identity]:
-        if depth == 0:
-            return self
+    def simplify(self) -> Union["Pow", Identity]:
         if self.z == 0:
             return Identity(wires=self.wires[0])
         if isinstance(self.base, Controlled):  # Pow(Controlled(base)) = Controlled(Pow(base))
@@ -255,4 +253,4 @@ class Pow(SymbolicOp):
                 control_values=self.base.control_values,
                 work_wires=self.base.work_wires,
             )
-        return Pow(base=self.base.simplify(depth=depth), z=self.z)
+        return Pow(base=self.base.simplify(), z=self.z)

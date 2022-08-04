@@ -258,25 +258,11 @@ class TestSimplify:
         adj_op = Adjoint(Adjoint(qml.RZ(1.32, wires=0)))
         assert adj_op.arithmetic_depth == 2
 
-    def test_simplify_method_with_default_depth(self):
+    def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
         final_op = Adjoint(qml.RZ(1.32, wires=0))
         simplified_op = adj_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Adjoint)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-    def test_simplify_method_with_depth_equal_to_2(self):
-        """Test the simplify method with depth equal to 2."""
-        adj_op = Adjoint(Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0)))))
-
-        final_op = Adjoint(Adjoint(qml.RZ(1.32, wires=0)))
-        simplified_op = adj_op.simplify(depth=2)
 
         # TODO: Use qml.equal when supported for nested operators
 

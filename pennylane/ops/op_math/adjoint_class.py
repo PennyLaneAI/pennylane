@@ -233,15 +233,13 @@ class Adjoint(SymbolicOp):
     def adjoint(self):
         return self.base.queue()
 
-    def simplify(self, depth=-1):
+    def simplify(self):
         # TODO: Should we add a self.do_queue attribute and instantiate the simplified class
         # with the same value?
-        if depth == 0:
-            return self
-        if isinstance(self.base, Adjoint) and (depth > 1 or depth < 0):  # Adj(Adj(A)) = A
-            return self.base.base.simplify(depth=depth - 2)
+        if isinstance(self.base, Adjoint):  # Adj(Adj(A)) = A
+            return self.base.base.simplify()
         if isinstance(self.base, Sum):  # Adj(A + B) = Adj(A) + Adj(B)
-            simplified_sum = self.base.simplify(depth=depth)
+            simplified_sum = self.base.simplify()
             return Sum(*(Adjoint(summand) for summand in simplified_sum.summands))
 
-        return Adjoint(base=self.base.simplify(depth=depth))
+        return Adjoint(base=self.base.simplify())

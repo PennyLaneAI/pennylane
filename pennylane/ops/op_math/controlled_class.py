@@ -306,11 +306,9 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
-    def simplify(self, depth=-1) -> "ControlledOp":
-        if depth == 0:
-            return self
+    def simplify(self) -> "ControlledOp":
         return Controlled(
-            base=self.base.simplify(depth=depth),
+            base=self.base.simplify(),
             control_wires=self.control_wires,
             control_values=self.control_values,
             work_wires=self.work_wires,

@@ -650,34 +650,11 @@ class TestSimplify:
         )
         assert prod_op.arithmetic_depth == 3
 
-    def test_simplify_method_with_default_depth(self):
+    def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         prod_op = qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1)
         final_op = Prod(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
         simplified_op = prod_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
-
-    def test_simplify_method_with_depth_equal_to_1(self):
-        """Test the simplify method with depth equal to 1."""
-        prod_op = Prod(
-            Prod(Prod(qml.PauliX(0), qml.Identity(wires=0)), qml.RX(1.9, wires=1)),
-            qml.RZ(1.32, wires=0),
-        )
-
-        final_op = Prod(
-            Prod(qml.PauliX(0), qml.Identity(wires=0)),
-            qml.RX(1.9, wires=1),
-            qml.RZ(1.32, wires=0),
-        )
-        simplified_op = prod_op.simplify(depth=1)
 
         # TODO: Use qml.equal when supported for nested operators
 

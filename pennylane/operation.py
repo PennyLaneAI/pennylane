@@ -1211,13 +1211,8 @@ class Operator(abc.ABC):
         """Arithmetic depth of the operator."""
         return 0
 
-    def simplify(self, depth=-1) -> "Operator":  # pylint: disable=unused-argument
-        """Reduces the depth of nested operators.
-
-        If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
-
-        Keyword Args:
-            depth (int): Reduced depth. Default is -1.
+    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+        """Reduces to the maximum the depth of nested operators.
 
         Returns:
             .Operator: simplified operator
