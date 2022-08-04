@@ -363,7 +363,7 @@
   [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
 
   ```pycon
-  >>> prod_op = qml.PauliX(0) @ qml.PauliX(1)
+  >>> prod_op = qml.RX(1, wires=0) @ qml.RY(2, wires=0)
   >>> prod_op
   PauliX(wires=[0]) @ PauliZ(wires=[1])
   >>> sprod_op = 6 * qml.RX(1, 0)
