@@ -521,12 +521,20 @@ class MeasurementProcess:
 
 
 class ShadowMeasurementProcess(MeasurementProcess):
+    """Represents a classical shadow measurement process occurring at the end of a
+    quantum variational circuit.
+
+    This has the same arguments as the base class MeasurementProcess, along with
+    a seed that is used to seed the random measurement selection for the classical
+    shadow protocol.
+    """
+
     def __init__(self, *args, seed=None, **kwargs):
-        super(ShadowMeasurementProcess, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.seed = seed
 
     def __copy__(self):
-        obj = super(ShadowMeasurementProcess, self).__copy__()
+        obj = super().__copy__()
         obj.seed = self.seed
         return obj
 

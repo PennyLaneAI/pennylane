@@ -949,4 +949,3 @@ class DefaultQubit(QubitDevice):
         recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        # return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)
