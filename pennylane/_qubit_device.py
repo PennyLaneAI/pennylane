@@ -142,7 +142,7 @@ class QubitDevice(Device):
 
         .. code-block:: python
 
-              >>> print(0_1.wires)
+              >>> print(O_1.wires)
               <Wires = [0, 1, 2]>
               >>> print(O_2.wires)
               <Wires = [2, 0, 1]>
@@ -194,6 +194,7 @@ class QubitDevice(Device):
         "Projector",
         "Sum",
         "Sprod",
+        "Prod",
     }
 
     def __init__(
