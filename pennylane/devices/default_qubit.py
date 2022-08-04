@@ -896,6 +896,8 @@ class DefaultQubit(QubitDevice):
         device_wires = np.array(self.map_wires(wires))
 
         if seed is not None:
+            # seed the random measurement generation so that recipes
+            # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
         else:
@@ -921,6 +923,23 @@ class DefaultQubit(QubitDevice):
         outcomes = np.zeros((n_snapshots, n_qubits))
         stacked_state = self._stack([self._state for _ in range(n_snapshots)])
 
+        # There's a significant speedup if we use the following iterative
+        # process to perform the randomized Pauli measurements:
+        #   1. Randomly generate Pauli observables for all snapshots for
+        #      a single qubit (e.g. the first qubit).
+        #   2. Compute the expectation of each Pauli observable on the first
+        #      qubit by tracing out all other qubits.
+        #   3. Sample the first qubit based on each Pauli expectation.
+        #   4. For all snapshots, determine the collapsed state of the remaining
+        #      qubits based on the sample result.
+        #   4. Repeat iteratively until no qubits are remaining.
+        #
+        # Observe that after the first iteration, the second qubit will become the
+        # "first" qubit in the process. The advantage to this approach as opposed to
+        # simulataneously computing the Pauli expectations for each qubit is that
+        # the partial traces are computed over iteratively smaller subsystems, leading
+        # to a significant speed-up.
+
         for i in range(n_qubits):
 
             # trace out every qubit except the first
@@ -936,11 +955,12 @@ class DefaultQubit(QubitDevice):
             samples = np.random.uniform(0, 1, size=probs.shape) > probs
             outcomes[:, i] = samples
 
-            # collapse the state
+            # collapse the state of the remaining qubits; the next qubit in line
+            # becomes the first qubit for the next iteration
             rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
             stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
 
-            # normalize the state
+            # re-normalize the collapsed state
             norms = np.sqrt(
                 np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
             )
