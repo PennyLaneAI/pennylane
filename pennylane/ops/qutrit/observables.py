@@ -68,7 +68,7 @@ class THermitian(Hermitian):
         **Example**
 
         >>> A = np.array([[6+0j, 1-2j, 0],[1+2j, -1, 0], [0, 0, 1]])
-        >>> qml.Hermitian.compute_matrix(A)
+        >>> qml.THermitian.compute_matrix(A)
         [[ 6.+0.j  1.-2.j  0.+0.j]
          [ 1.+2.j -1.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j]]
