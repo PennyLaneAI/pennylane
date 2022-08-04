@@ -129,8 +129,8 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
-        if not isinstance(array, list):
-            if array.size == 1:
+        if not isinstance(array, (list, tuple)):
+            if qnp.shape(array) == ():
                 return array
 
         # check if the array is ragged
