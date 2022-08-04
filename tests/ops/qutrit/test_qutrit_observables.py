@@ -262,7 +262,7 @@ class TestTHermitian:
         assert np.allclose(np.diag(np.sort(eigvals)), x, atol=tol, rtol=0)
 
     def test_thermitian_matrix(self, tol):
-        """Test that the hermitian matrix method produces the correct output."""
+        """Test that the Hermitian matrix method produces the correct output."""
         H_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
         out = qml.THermitian(H_01, wires=0).matrix()
 
