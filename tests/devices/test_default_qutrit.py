@@ -363,7 +363,7 @@ class TestExpval:
         expval = circuit()
 
         # With 3 samples we are guaranteed to see a difference between
-        # an estimated variance an an analytically calculated one
+        # an estimated variance and an analytically calculated one
         assert expval != 1.0
 
 
