@@ -1085,13 +1085,13 @@ def mutual_info(wires0, wires1, log_base=None):
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
 
 
-def classical_shadow(wires):
+def classical_shadow(wires, seed_recipes=True):
     """
     TODO: docs
     """
     wires = qml.wires.Wires(wires)
 
-    seed = np.random.randint(2**30)
+    seed = np.random.randint(2**30) if seed_recipes else None
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
