@@ -1652,7 +1652,7 @@ class Observable(Operator):
         try:
             return super().__matmul__(other=other)
         except ValueError as e:
-            raise ValueError("Can only perform tensor products between observables.") from e
+            raise ValueError("Can only perform tensor products between operators.") from e
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
