@@ -1729,12 +1729,20 @@ class Observable(Operator):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
-
             return qml.Hamiltonian([a], [self], simplify=True)
+        try:
+            return super().__mul__(other=a)
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
-        raise ValueError(f"Cannot multiply Observable by {type(a)}")
-
-    __rmul__ = __mul__
+    def __rmul__(self, a):
+        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        if isinstance(a, (int, float)):
+            return qml.Hamiltonian([a], [self], simplify=True)
+        try:
+            return super().__rmul__(other=a)
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
