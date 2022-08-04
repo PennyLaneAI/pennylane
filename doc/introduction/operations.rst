@@ -54,7 +54,7 @@ Operator transform functions
     ~pennylane.cond
     ~pennylane.op_sum
     ~pennylane.prod
-    ~pennylane.sprod
+    ~pennylane.s_prod
 
 These operator functions act on operators to produce new operators.
 
