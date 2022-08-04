@@ -97,7 +97,7 @@ ops_rep = (
 
 
 class TestInitialization:
-    """Test initialization of ther SProd Class."""
+    """Test initialization of the SProd Class."""
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
@@ -124,7 +124,7 @@ class TestInitialization:
         assert sprod_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
     def test_data_setter(self):
-        """Test the setter method for"""
+        """Test the setter method for data"""
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
         old_data = [[9.87], [1.23, 4.0, 5.67]]
 
