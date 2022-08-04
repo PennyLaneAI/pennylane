@@ -1230,13 +1230,7 @@ class Operator(abc.ABC):
             return qml.ops.Prod(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
-    def __rmul__(self, other):
-        """The product operation between Operators and/or scalars."""
-        if isinstance(other, numbers.Number):
-            return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
-        # FIXME: I believe we don't need to add the case where `other` is an Operator, given
-        # that then __mul__ will be called. Anyone disagrees?
-        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+    __rmul__ = __mul__
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
@@ -1735,14 +1729,7 @@ class Observable(Operator):
         except ValueError as e:
             raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
-    def __rmul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        if isinstance(a, (int, float)):
-            return qml.Hamiltonian([a], [self], simplify=True)
-        try:
-            return super().__rmul__(other=a)
-        except ValueError as e:
-            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
+    __rmul__ = __mul__
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
