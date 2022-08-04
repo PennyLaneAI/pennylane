@@ -16,6 +16,7 @@ This module contains the qml.simplify function.
 """
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.tape import QuantumTape
 
 
 @qml.op_transform
@@ -63,3 +64,11 @@ def simplify(op: Operator, depth=-1):
     (PauliX(wires=[0]) + PauliY(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]))
     """
     return op.simplify(depth=depth)
+
+
+@simplify.tape_transform
+def _simplify_tape(tape: QuantumTape, depth=-1):
+    """Simplify all operators of a quantum tape and return a simplified quantum function."""
+    if depth == 0:
+        return tape
+    return None
