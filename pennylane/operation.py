@@ -1223,14 +1223,18 @@ class Operator(abc.ABC):
     __radd__ = __add__
 
     def __mul__(self, other):
-        """The product operation between Operators and/or scalars."""
+        """The scalar multiplication between scalars and Operators."""
         if isinstance(other, numbers.Number):
             return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
-        if isinstance(other, Operator):
-            return qml.ops.Prod(self, other)  # pylint: disable=no-member
         raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
     __rmul__ = __mul__
+
+    def __matmul__(self, other):
+        """The product operation between Operator objects."""
+        if isinstance(other, Operator):
+            return qml.ops.Prod(self, other)  # pylint: disable=no-member
+        raise ValueError(f"Cannot multiply Operator and {type(other)}")
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
@@ -1645,7 +1649,10 @@ class Observable(Operator):
         if isinstance(other, Observable):
             return Tensor(self, other)
 
-        raise ValueError("Can only perform tensor products between observables.")
+        try:
+            return super().__matmul__(other=other)
+        except ValueError as e:
+            raise ValueError("Can only perform tensor products between observables.") from e
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
