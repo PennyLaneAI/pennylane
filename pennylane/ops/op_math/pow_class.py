@@ -252,7 +252,7 @@ class Pow(SymbolicOp):
             return self
         if self.z == 0:
             return Identity(wires=self.wires[0])
-        if isinstance(self.base, ControlledOp):  # Pow(Controlled(base)) = Controlled(Pow(base))
+        if isinstance(self.base, Controlled):  # Pow(Controlled(base)) = Controlled(Pow(base))
             return ControlledOp(
                 base=Pow(self.base.base, z=self.z),
                 control_wires=self.base.control_wires,
