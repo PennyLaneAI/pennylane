@@ -138,7 +138,7 @@
   
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
   devices now are able to directly execute broadcasted circuits, providing
-  a faster way of executing the same circuit at varied parameter positions
+  a faster way of executing the same circuit at varied parameter positions.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
