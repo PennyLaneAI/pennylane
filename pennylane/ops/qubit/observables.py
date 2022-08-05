@@ -93,7 +93,7 @@ class Hermitian(Observable):
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
-        if not qml.math.allclose(A, A.conj().T):
+        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
             raise ValueError("Observable must be Hermitian.")
 
         return A
