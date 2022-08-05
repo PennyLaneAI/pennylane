@@ -409,7 +409,6 @@ class TestVar:
         qutrit_device_1_wire._state = np.array(input).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.var(obs)
-        print(res, expected_output)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
