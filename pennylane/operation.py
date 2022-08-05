@@ -1212,7 +1212,7 @@ class Operator(abc.ABC):
         return 0
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
-        """Reduces to the maximum the depth of nested operators.
+        """Reduce the depth of nested operators to the minimum.
 
         Returns:
             .Operator: simplified operator
