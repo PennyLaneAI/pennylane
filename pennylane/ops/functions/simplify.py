@@ -49,18 +49,6 @@ def simplify(op: Operator):
     (Adjoint(RX)(0.54, wires=[0]),
     Adjoint(PauliX)(wires=[0]),
     Adjoint(PauliZ)(wires=[1]))
-
-    You can also specify the reduction depth:
-
-    >>> sum_op = qml.op_sum(qml.op_sum(qml.op_sum(qml.PauliX(0), qml.PauliY(0)), qml.PauliZ(0)),
-    qml.PauliX(0))
-    >>> sum_op.arithmetic_depth
-    3
-    >>> sim_op = qml.simplify(sum_op, depth=1)
-    >>> sim_op.arithmetic_depth
-    2
-    >>> sim_op.summands
-    (PauliX(wires=[0]) + PauliY(wires=[0]), PauliZ(wires=[0]), PauliX(wires=[0]))
     """
     if qml.queuing.QueuingContext.recording():
         with qml.tape.stop_recording():
