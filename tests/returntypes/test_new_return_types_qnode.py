@@ -17,8 +17,6 @@ Unit tests for the new return types with QNode.
 import pytest
 
 import numpy as np
-import torch
-
 import pennylane as qml
 
 wires = [2, 3, 4]
@@ -2693,7 +2691,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=1)
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
         res = qml.jacobian(circuit)(x)
