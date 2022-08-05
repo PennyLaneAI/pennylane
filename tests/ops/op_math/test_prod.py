@@ -691,6 +691,21 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_with_nested_prod_and_adjoints(self):
+        """Test simplify method with nested product and adjoint operators."""
+        prod_op = Prod(qml.adjoint(Prod(qml.PauliX(0), qml.PauliY(0))), qml.PauliZ(0))
+        final_op = Prod(qml.adjoint(qml.PauliY(0)), qml.adjoint(qml.PauliX(0)), qml.PauliZ(0))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
     def test_simplify_method_with_nested_ops(self):
         """Test the simplify method with nested operators."""
         prod_op = Prod(

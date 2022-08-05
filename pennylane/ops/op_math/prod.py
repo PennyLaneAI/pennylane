@@ -342,7 +342,7 @@ class Prod(Operator):
                 continue
             simplified_factor = factor.simplify()
             if isinstance(simplified_factor, Prod):
-                new_factors += (simplified_factor.factors,)
+                new_factors += tuple((factor,) for factor in simplified_factor.factors)
             elif isinstance(simplified_factor, Sum):
                 new_factors += (simplified_factor.summands,)
             else:
