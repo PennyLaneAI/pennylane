@@ -725,6 +725,7 @@ and `SProd` operators so that users can reduce the depth of nested operators.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
 * Calling `qml.equal` with nested operators now raises a NotImplementedError.
+  [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
 <h3>Contributors</h3>
 
