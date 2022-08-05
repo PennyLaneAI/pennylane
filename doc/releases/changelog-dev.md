@@ -291,7 +291,7 @@
   ```
   
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
-  drawing circuit diagram graphics. 
+  drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -312,7 +312,6 @@
   >>> print(circuit(U))
   [0.5 0.5 0. ]
   ```
-  
   
 **Operator Arithmetic:**
 
@@ -376,13 +375,26 @@
 * Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
   more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
 
-  ```python
-  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
-  >>> summed_op
+  ```pycon
+  >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> sum_op
   RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
   RZ**2(1.0, wires=[0])
+  ```
+
+* Added `__mul__` and `__matmul__` dunder methods to the `qml.operation.Operator` class so
+  that users can combine operators more naturally.
+  [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
+
+  ```pycon
+  >>> prod_op = qml.RX(1, wires=0) @ qml.RY(2, wires=0)
+  >>> prod_op
+  PauliX(wires=[0]) @ PauliZ(wires=[1])
+  >>> sprod_op = 6 * qml.RX(1, 0)
+  >>> sprod_op
+  6*(RX(1, wires=[0]))
   ```
 
 * Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
@@ -436,6 +448,18 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
   (array(-0.68362956), array(0.21683382))
   ```
+
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
+and `SProd` operators so that users can reduce the depth of nested operators.
+
+```pycon
+>>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliZ(0)))
+>>> sum_op.arithmetic_depth
+2
+>>> simplified_op = sum_op.simplify()
+>>> simplified_op.arithmetic_depth
+1
+```
 
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)

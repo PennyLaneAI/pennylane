@@ -16,6 +16,7 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from functools import reduce
+from typing import List
 
 import numpy as np
 
@@ -198,7 +199,7 @@ class Sum(Operator):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self.summands), self.summands
+        return [1.0] * len(self.summands), list(self.summands)
 
     @property
     def eigendecomposition(self):
@@ -210,7 +211,8 @@ class Sum(Operator):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
+            operator
         """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
@@ -268,7 +270,8 @@ class Sum(Operator):
         .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
 
         Returns:
             tensor_like: matrix representation
@@ -301,3 +304,36 @@ class Sum(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.summands)
         return self
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(summand.arithmetic_depth for summand in self.summands)
+
+    @classmethod
+    def _simplify_summands(cls, sum_op: "Sum") -> List[Operator]:
+        """Reduces the depth of nested summands.
+
+        If ``depth`` is not provided or negative, then the summands list is completely flattenned.
+
+        Keyword Args:
+            depth (int): Reduced depth. Default is -1.
+
+        Returns:
+            List[~.operation.Operator]: reduced summands list
+        """
+        summands = []
+        for summand in sum_op.summands:
+            if isinstance(summand, Sum):
+                summands.extend(cls._simplify_summands(sum_op=summand))
+                continue
+            simplified_summand = summand.simplify()
+            if isinstance(simplified_summand, Sum):
+                summands.extend(simplified_summand.summands)
+            else:
+                summands.append(simplified_summand)
+
+        return summands
+
+    def simplify(self) -> "Sum":
+        summands = self._simplify_summands(sum_op=self)
+        return Sum(*summands)
