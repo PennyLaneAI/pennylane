@@ -363,8 +363,8 @@
   [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
 
   ```pycon
-  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
-  >>> summed_op
+  >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> sum_op
   RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
   >>> qml.matrix(summed_op)
   array([[0.81756977-0.99999968j, 0.        -0.57695852j],
@@ -442,29 +442,16 @@ of operators.
   that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
-
-* New FlipSign operator that flips the sign for a given basic state. 
-  [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
-
-  Mathematically, `qml.FlipSign` functions as follows: $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where $\vert m \rangle$ is an arbitrary qubit state and $n$ 
-  is a qubit configuration:
-
-  ```python
-  basis_state = [0, 1]
-
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit():
-    for wire in list(range(2)):
-          qml.Hadamard(wires = wire)
-    qml.FlipSign(basis_state, wires = list(range(2)))
-    return qml.sample()
-  ```
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
+  and `SProd` operators so that users can reduce the depth of nested operators.
 
   ```pycon
-  >>> circuit()
-  tensor([ 0.5+0.j  -0.5+0.j 0.5+0.j  0.5+0.j], requires_grad=True)
+  >>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliZ(0)))
+  >>> sum_op.arithmetic_depth
+  2
+  >>> simplified_op = sum_op.simplify()
+  >>> simplified_op.arithmetic_depth
+  1
   ```
 
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
@@ -580,6 +567,30 @@ of operators.
   >>> result = circuit()
   >>> print(result)
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
+  ```
+  
+* New FlipSign operator that flips the sign for a given basic state. 
+  [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
+
+  Mathematically, `qml.FlipSign` functions as follows: $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where $\vert m \rangle$ is an arbitrary qubit state and $n$ 
+  is a qubit configuration:
+
+  ```python
+  basis_state = [0, 1]
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+    for wire in list(range(2)):
+          qml.Hadamard(wires = wire)
+    qml.FlipSign(basis_state, wires = list(range(2)))
+    return qml.sample()
+  ```
+
+  ```pycon
+  >>> circuit()
+  tensor([ 0.5+0.j  -0.5+0.j 0.5+0.j  0.5+0.j], requires_grad=True)
   ```
 
 <h4>More drawing styles 🎨</h4>

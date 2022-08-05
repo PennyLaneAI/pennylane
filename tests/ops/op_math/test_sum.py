@@ -588,6 +588,32 @@ class TestProperties:
         assert np.allclose(eig_vecs, true_eigvecs)
 
 
+class TestSimplify:
+    """Test Sum simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        sum_op = (
+            qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1) + qml.PauliX(0)
+        )
+        assert sum_op.arithmetic_depth == 3
+
+    def test_simplify_method(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        sum_op = qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
+        final_op = Sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        simplified_op = sum_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+
 class TestWrapperFunc:
     """Test wrapper function."""
 
