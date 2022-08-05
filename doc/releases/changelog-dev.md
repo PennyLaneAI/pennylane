@@ -93,9 +93,9 @@
 
   In zero-noise-extrapolation (ZNE), the noise of a circuit is artificially increased by _folding_
   the circuit. By executing an expectation value with increasing noise, we can extrapolate back to
-  zero noise by means of a polynomial fit. More details on this can be found in the details section
-  of the [documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html)
-  and a soon-to-appear demo [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
+  zero noise by means of a polynomial fit. More details on this can be found in the 
+  [details section](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html) of 
+  the documentation and a soon-to-appear demo [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
   The new feature in this release is that ZNE that is now *differentiable*, meaning that you can now elevate any variational
   quantum algorithm to a *mitigated* algorithm with improved results on noisy hardware while maintaining differentiability throughout.
@@ -136,7 +136,7 @@
 * `DefaultQubit` devices now natively support parameter broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
 
-  `DefaultQubit`-based devices now are able to directly execute broadcasted circuits, 
+  `DefaultQubit` based devices now are able to directly execute broadcasted circuits, 
   providing a faster way of executing the same circuit at various parameter positions
   compared to using the [`qml.transforms.broadcast_expand`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.broadcast_expand.html) transform:
 
@@ -197,9 +197,8 @@
   constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
   time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
   ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
-  ("Broadcasting") as a function of the number of qubits.
-
-  <img src="https://pennylane.readthedocs.io/en/stable/_images/default_qubit_native_broadcast_speedup.png" width=70%/>
+  ("Broadcasting") as a function of the number of qubits. You can find the 
+  [speed up graph.](https://pennylane.readthedocs.io/en/stable/_images/default_qubit_native_broadcast_speedup.png)
 
 * Operations for quantum chemistry now also support parameter broadcasting.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
@@ -232,7 +231,7 @@
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-<h4>Relative entropy is now available in `qml.qinfo` 💥</h4>
+<h4>Relative entropy is now available in the quantum information module `qml.qinfo` 💥</h4>
 
 * The quantum information module now supports computation of [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy).
   [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
@@ -241,7 +240,7 @@
   which you would like to calculate the relative entropy. We've enabled two cases 
   for calculating the relative entropy:
   
-  - A QNode transform via `qml.qinfo.relative_entropy`:
+  A QNode transform via `qml.qinfo.relative_entropy`:
 
   ```python
   dev = qml.device('default.qubit', wires=2)
@@ -260,7 +259,7 @@
   0.017750012490703237
   ```
 
-  - Support in `qml.math` for flexible post-processing:
+  We also add support in `qml.math` for flexible post-processing:
 
   ```pycon
   >>> rho = np.array([[0.3, 0], [0, 0.7]])
@@ -269,7 +268,7 @@
   tensor(0.08228288, requires_grad=True)
   ```
 
-<h4>Backpropagation with Jax for DefaultMixed 🙌</h4>
+<h4>Backpropagation with Jax for `DefaultMixed 🙌</h4>
 
 * The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
   [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
@@ -514,6 +513,8 @@ of operators.
   `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
   `Operator.has_matrix` property.
   
+<h4>Readout️</h4>
+
 * Added readout error functionality to the MixedDevice.
   [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
 
@@ -530,6 +531,8 @@ of operators.
   >>> print(circuit())
   0.8
   ```
+  
+<h4>New measurements</h4>
 
 * Added `qml.counts` which samples from the supplied observable returning the number of counts
   for each sample.
@@ -569,6 +572,8 @@ of operators.
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
   
+<h4>New operator</h4>
+
 * New FlipSign operator that flips the sign for a given basic state. 
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
