@@ -1212,16 +1212,13 @@ class Operator(abc.ABC):
                 return self
             wires = self.wires.tolist()
             id_op = (
-                qml.ops.Prod(*(qml.Identity(w) for w in wires))  # pylint: disable=no-member
+                qml.prod(*(qml.Identity(w) for w in wires))
                 if len(wires) > 1
                 else qml.Identity(wires[0])
             )
-            return qml.ops.Sum(  # pylint: disable=no-member
-                self,
-                qml.ops.SProd(scalar=other, base=id_op),  # pylint: disable=no-member
-            )
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
         if isinstance(other, Operator):
-            return qml.ops.Sum(self, other)  # pylint: disable=no-member
+            return qml.op_sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
@@ -1252,7 +1249,7 @@ class Operator(abc.ABC):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.ops.SProd(scalar=-1, base=self)  # pylint: disable=no-member
+        return qml.s_prod(scalar=-1, operator=self)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
