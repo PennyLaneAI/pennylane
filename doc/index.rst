@@ -116,11 +116,24 @@ If you are doing research using PennyLane, please cite
 
 .. rst-class:: admonition warning
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-    Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-    Zeyue Niu, Antal Száva, and Nathan Killoran.
-    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
-    `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, Shahnawaz
+    Ahmed, Vishnu Ajith, M. Sohaib Alam, Guillermo Alonso-Linaje, B.
+    AkashNarayanan, Ali Asadi, Juan Miguel Arrazola, Utkarsh Azad, Sam
+    Banning, Carsten Blank, Thomas R Bromley, Benjamin A. Cordier, Jack
+    Ceroni, Alain Delgado, Olivia Di Matteo, Amintor Dusko, Tanya Garg, Diego
+    Guala, Anthony Hayes, Ryan Hill, Aroosa Ijaz, Theodor Isacsson, David
+    Ittah, Soran Jahangiri, Prateek Jain, Edward Jiang, Ankit Khandelwal,
+    Korbinian Kottmann, Robert A. Lang, Christina Lee, Thomas Loke, Angus
+    Lowe, Keri McKiernan, Johannes Jakob Meyer, J. A. Montañez-Barrera, Romain
+    Moyard, Zeyue Niu, Lee James O'Riordan, Steven Oud, Ashish Panigrahi,
+    Chae-Yeun Park, Daniel Polatajko, Nicolás Quesada, Chase Roberts, Nahum
+    Sá, Isidor Schoch, Borun Shi, Shuli Shu, Sukin Sim, Arshpreet Singh,
+    Ingrid Strandberg, Jay Soni, Antal Száva, Slimane Thabet, Rodrigo A.
+    Vargas-Hernández, Trevor Vincent, Nicola Vitucci, Maurice Weber, David
+    Wierichs, Roeland Wiersema, Moritz Willmann, Vincent Wong, Shaoming Zhang,
+    Nathan Killoran. *PennyLane: Automatic differentiation of hybrid
+    quantum-classical computations.* 2018. `arXiv:1811.04968
+    <https://arxiv.org/abs/1811.04968>`_
 
 Support and contribution
 ------------------------
