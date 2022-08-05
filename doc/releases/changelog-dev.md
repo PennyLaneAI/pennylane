@@ -19,13 +19,13 @@
   [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
-  The new `qml.resource` module allows you to estimate the number of 
+  The new [`qml.resource`](https://pennylane.readthedocs.io/en/stable/code/qml_resource.html) module allows you to estimate the number of 
   non-[Clifford gates](https://en.wikipedia.org/wiki/Clifford_gates) and logical 
-  qubits needed to implement quantum phase estimation algorithms for simulating 
-  materials and molecules. This includes support for quantum algorithms using first 
-  and second quantization with specific bases:
+  qubits needed to implement [quantum phase estimation](https://codebook.xanadu.ai/P.1) 
+  algorithms for simulating materials and molecules. This includes support for quantum 
+  algorithms using [first](https://en.wikipedia.org/wiki/First_quantization) and [second](https://en.wikipedia.org/wiki/Second_quantization) quantization with specific bases:
 
-  - First quantization using a plane-wave basis via the `FirstQuantization` class:
+  - [First quantization](https://en.wikipedia.org/wiki/First_quantization) using a plane-wave basis via the [`FirstQuantization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.FirstQuantization.html) class:
 
   ```python
   import pennylane as qml
@@ -43,8 +43,8 @@
   1.10e+13, 4416
   ```
 
-  - Second quantization with a double-factorized Hamiltonian via the 
-  `DoubleFactorization` class: 
+  - [Second quantization](https://en.wikipedia.org/wiki/Second_quantization) with a double-factorized Hamiltonian via the 
+  [`DoubleFactorization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.DoubleFactorization.html) class: 
  
   ```python
   import pennylane as qml
@@ -66,8 +66,8 @@
   103969925, 290
   ```
 
-  The methods of the `FirstQuantization` and the `DoubleFactorization` classes 
-  can be also accessed individually without initiating the class:
+  The methods of the [`FirstQuantization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.FirstQuantization.html) and the [`DoubleFactorization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.DoubleFactorization.html) classes 
+  can be also accessed individually without instantiating an instance of the class:
 
   - The number of logical qubits with `qubit_cost`
   - The number of non-Clifford gates with `gate_cost`
@@ -94,15 +94,15 @@
   In zero-noise-extrapolation (ZNE), the noise of a circuit is artificially increased by _folding_
   the circuit. By executing an expectation value with increasing noise, we can extrapolate back to
   zero noise by means of a polynomial fit. More details on this can be found in the details section
-  of the [documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.fold_global.html)
+  of the [documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html)
   and a soon-to-appear demo [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
 
   The new feature in this release is that ZNE that is now *differentiable*, meaning that you can now elevate any variational
-  quantum algorithm that is written in PennyLane to a *mitigated* algorithm with improved results on noisy hardware while maintaining differentiability throughout.
+  quantum algorithm to a *mitigated* algorithm with improved results on noisy hardware while maintaining differentiability throughout.
 
-  In order to do so, use the `qml.transforms.mitigate_with_zne` transform on your QNode and provide the PennyLane proprietary
-  `qml.transforms.fold_global` folding function and `qml.transforms.poly_extrapolate` extrapolation function. Here is an example for a noisy simulation device
-  where we mitigate a QNode and still are able to compute the gradient:
+  In order to do so, use the [`qml.transforms.mitigate_with_zne`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.mitigate_with_zne.html) transform on your QNode, as a decorator, and provide the PennyLane proprietary
+  [`qml.transforms.fold_global`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html) folding function and [`qml.transforms.poly_extrapolate`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.poly_extrapolate.html) extrapolation function. Here is an example for a noisy simulation device
+  where we mitigate a QNode and are still able to compute the gradient:
 
   ```python
   # Describe noise
@@ -131,14 +131,14 @@
   0.5712737447327619
   ```
 
-<h4>More native support for parameter broadcasting with `DefaultQubit` devices 📡</h4>
+<h4>More native support for parameter broadcasting 📡</h4>
 
 * `DefaultQubit` devices now natively support parameter broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
-  Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
-  devices now are able to directly execute broadcasted circuits, providing
-  a faster way of executing the same circuit at varied parameter positions.
+
+  `DefaultQubit`-based devices now are able to directly execute broadcasted circuits, 
+  providing a faster way of executing the same circuit at various parameter positions
+  compared to using the [`qml.transforms.broadcast_expand`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.broadcast_expand.html) transform:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -169,7 +169,7 @@
 * Parameter-shift gradients now allow for parameter broadcasting. 
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
 
-  The gradient transform `qml.gradients.param_shift` now accepts the new Boolean 
+  The gradient transform [`qml.gradients.param_shift`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.gradients.param_shift.html) now accepts the new Boolean 
   keyword argument `broadcast`. If it is set to `True`, broadcasting is used to 
   compute the derivative:
 
@@ -179,8 +179,18 @@
   @qml.qnode(dev)
   def circuit(x, y):
       qml.RX(x, wires=0)
-      qml.CRY(y, wires=[0, 1])
+      qml.RY(y, wires=1)
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> x = np.array([np.pi/3, np.pi/2], requires_grad=True)
+  >>> y = np.array([np.pi/6, np.pi/5], requires_grad=True)
+  >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
+  (tensor([[-0.9330127,  0.       ],
+           [ 0.       , -0.9330127]], requires_grad=True),
+  tensor([[0.25, 0.  ],
+          [0.  , 0.25]], requires_grad=True))
   ```
 
   To illustrate the speedup, consider the following figure which shows, for a 
@@ -189,35 +199,9 @@
   ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
   ("Broadcasting") as a function of the number of qubits.
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_images/default_qubit_native_broadcast_speedup.png" width=70%/>
+  <img src="https://pennylane.readthedocs.io/en/stable/_images/default_qubit_native_broadcast_speedup.png" width=70%/>
 
-  For transparency, the base code used for this example is given below:
-
-  ```python
-  dev = qml.device("default.qubit", shots=None, wires=num_wires) 
-
-  def constant_depth_Pauli_rotations(param, wires):
-      [qml.Hadamard(w) for w in wires]
-      [qml.RX(p, w) for p, w in zip(param[0], wires)]
-      [qml.RY(p, w) for p, w in zip(param[1], wires)]
-      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[2])
-      [qml.RY(p, w) for p, w in zip(param[3], wires)]
-      [qml.RZ(p, w) for p, w in zip(param[4], wires)]
-      qml.broadcast(qml.CRX, wires=wires, pattern="ring", parameters=param[5])
-
-      return qml.probs(wires)
-
-  for num_wires in list(range(3, 13)):
-    dev = qml.device("default.qubit", wires=num_wires)
-    circuit = qml.QNode(constant_depth_Pauli_rotations, device=dev)
-    param = np.random.random(ansatz.shape_fn(num_wires))
-    
-    # time qml.gradients.param_shift(circuit, broadcast=False)(param) 
-    # time qml.gradients.param_shift(circuit, broadcast=True)(param)
-  ```
-
-* Operations for quantum chemistry now also support parameter broadcasting
-  in their numerical representations.
+* Operations for quantum chemistry now also support parameter broadcasting.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
 
   Similar to standard parametrized operations, quantum chemistry operations now
@@ -253,9 +237,9 @@
 * The quantum information module now supports computation of [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy).
   [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
 
-  To calculate relative entropy, one requires two quantum states and subspaces over 
-  which you would like to calculate the relative entropy. We've enabled two ways 
-  to calculate the relative entropy:
+  To calculate [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy), one requires two quantum states and subspaces over 
+  which you would like to calculate the relative entropy. We've enabled two cases 
+  for calculating the relative entropy:
   
   - A QNode transform via `qml.qinfo.relative_entropy`:
 
@@ -285,16 +269,26 @@
   tensor(0.08228288, requires_grad=True)
   ```
 
-<h4>Backpropagation with Jax for DefaultMixed</h4>
+<h4>Backpropagation with Jax for DefaultMixed 🙌</h4>
 
-* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
+* The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
   [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
 
-<h4>More drawing styles 🎨</h4>
+  ```python
+  dev = qml.device("default.mixed", wires=2)
 
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
-  drawing circuit diagram graphics.
-  [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
+  @qml.qnode(dev, diff_method="backprop", interface="jax")
+  def circuit(angles):
+      qml.RX(angles[0], wires=0)
+      qml.RY(angles[1], wires=1)
+      return qml.expval(qml.PauliZ(0) + qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> angles = np.array([np.pi/6, np.pi/5], requires_grad=True)
+  >>> qml.grad(circuit)(params)
+  array([-0.8660254 , -0.25881905])
+  ```
 
 <h4>More support for Jax and Tensorflow tensors 😻</h4>
 
@@ -302,8 +296,7 @@
   [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
   
   This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
-  `jax.jit`, or `jax.vmap`. An example with the `qml.ThermalRelaxationError` channel 
-  is given below:
+  `jax.jit`, or `jax.vmap`:
 
   ```python
   dev = qml.device("default.mixed", wires=1)
@@ -323,38 +316,31 @@
 
 <h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
-TODO
-
-* Many convenient additions have been made regarding Operator arithmetic.
+* Any number of Operators can now be summed to create a new "summed" Operator that 
+  maintains differentiability when placed inside QNodes.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
-  [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
-  [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
-  [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
-  
-  Many quality-of-life features have been added to how we handle Operators. This
-  includes:
 
-  - Add Operators via `qml.op_sum` to create a new Operator whose matrix, terms, 
-  and eigenvalues can be accessed as per usual.
+  Summing any number of Operators via `qml.op_sum` results in a "summed" Operator 
+  whose matrix, terms, and eigenvalues can be accessed as per usual.
 
   ```pycon
-  >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(1))
+  >>> ops_to_sum = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)]
+  >>> summed_op = qml.op_sum(*ops_to_sum)
   >>> summed_op
-  PauliX(wires=[0]) + PauliZ(wires=[1])
+  PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[0])
   >>> qml.matrix(summed_op)
-  array([[ 1,  0,  1,  0],
-         [ 0, -1,  0,  1],
-         [ 1,  0,  1,  0],
-         [ 0,  1,  0, -1]]) 
+  array([[ 1.+0.j,  0.-1.j,  1.+0.j,  0.+0.j],
+         [ 0.+1.j,  1.+0.j,  0.+0.j,  1.+0.j],
+         [ 1.+0.j,  0.+0.j, -1.+0.j,  0.-1.j],
+         [ 0.+0.j,  1.+0.j,  0.+1.j, -1.+0.j]])
   >>> summed_op.terms()
-  ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[1])))
+  ([1.0, 1.0, 1.0], (PauliX(wires=[0]), PauliY(wires=[1]), PauliZ(wires=[0])))
   ```
 
-  Summed Operators can also be used inside of a QNode as observables while maintaining
-  differentiability:
+  Summed Operators can also be used inside of a QNode while maintaining differentiability:
 
   ```python
-  summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(1))
+  summed_obs = qml.op_sum(qml.PauliX(0), qml.PauliZ(1))
 
   dev = qml.device("default.qubit", wires=2)
 
@@ -364,7 +350,7 @@ TODO
       qml.RY(weights[1], wires=1)
       qml.CNOT(wires=[0, 1])
       qml.RX(weights[2], wires=1)
-      return qml.expval(summed_op)
+      return qml.expval(summed_obs)
   ```
 
   ```pycon
@@ -373,29 +359,44 @@ TODO
   array([-0.09347337, -0.18884787, -0.28818254])
   ```
 
+* The `+` and `**` Python operators now function intuitively with Operators.
+  [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
+
+  ```pycon
+  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> summed_op
+  RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
+  >>> qml.matrix(summed_op)
+  array([[0.81756977-0.99999968j, 0.        -0.57695852j],
+         [0.        -0.57695852j, 0.81756977+0.99999968j]])
+  >>> exp_op = qml.RZ(1.0, wires=0) ** 2
+  >>> exp_op
+  RZ**2(1.0, wires=[0])
+  >>> qml.matrix(exp_op)
+  array([[0.54030231-0.84147098j, 0.        +0.j        ],
+         [0.        +0.j        , 0.54030231+0.84147098j]])
+  ```
+
+  Note that the behavior of `+` with *Observables* is different: it still creates 
+  a Hamiltonian.
+
+* Many convenient additions have been made regarding Operator arithmetic.
+  [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
+  [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
+  [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
+  
+  Many quality-of-life features have been added to how we handle Operators. This
+  includes:
+
   - You can now add scalars to Operators, where the interpretation is that the 
   scalar is a properly-sized identity matrix. 
 
   ```pycon
-  >>> sum_op = 5 + qml.PauliX(0)
+  >>> sum_op = 5 + qml.CNOT([0,1])
   >>> sum_op.matrix()
   array([[5., 1.],
          [1., 5.]])
   ```
-
-* Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class 
-  so that users can combine operators more naturally.
-
-  ```python
-  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
-  >>> summed_op
-  RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
-  >>> exp_op = qml.RZ(1.0, wires=0) ** 2
-  >>> exp_op
-  RZ**2(1.0, wires=[0])
-  ```
-
-* Added support for addition of operators and scalars. 
 
 * A `SProd` symbolic class is added that allows users to represent the scalar product
 of operators.
@@ -442,7 +443,7 @@ of operators.
   is a qubit configuration:
 
   ```python
-  basis_state = [1, 0]
+  basis_state = [0, 1]
 
   dev = qml.device("default.qubit", wires=2)
 
@@ -456,7 +457,7 @@ of operators.
 
   ```pycon
   >>> circuit()
-  [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+  tensor([ 0.5+0.j  -0.5+0.j 0.5+0.j  0.5+0.j], requires_grad=True)
   ```
 
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
@@ -553,6 +554,11 @@ of operators.
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
 
+<h4>More drawing styles 🎨</h4>
+
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
+  drawing circuit diagram graphics.
+  [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 <h3>Improvements 📈</h3>
 
@@ -582,7 +588,6 @@ of operators.
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality 
   of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
-
 
 * Added an `are_pauli_words_qwc` function which checks if certain
   Pauli words are pairwise qubit-wise commuting. This new function improves performance 
