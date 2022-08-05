@@ -665,6 +665,15 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_method_with_identity(self):
+        """Test that the simplify method of a product of an operator with an identity returns
+        the operator."""
+        prod_op = Prod(qml.PauliX(0), qml.Identity(0))
+        final_op = qml.PauliX(0)
+        simplified_op = prod_op.simplify()
+
+        assert isinstance(simplified_op, qml.PauliX)
+
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
