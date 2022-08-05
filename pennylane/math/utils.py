@@ -404,7 +404,8 @@ def requires_grad(tensor, interface=None):
 
 def in_backprop(tensor, interface=None):
     """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
-    Tensorflow and Jax.
+    Tensorflow and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
+    rather checking if the gradient is actually calculated.
 
     Args:
         tensor (tensor_like): input tensor
@@ -420,7 +421,7 @@ def in_backprop(tensor, interface=None):
     ...     print(requires_grad(x))
     True
 
-    .. seealso:: :func:`~~requires_grad`
+    .. seealso:: :func:`~.requires_grad`
     """
     interface = interface or get_interface(tensor)
 
