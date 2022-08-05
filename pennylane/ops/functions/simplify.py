@@ -24,13 +24,9 @@ from pennylane.operation import Operator
 def simplify(op: Operator):
     """Reduces the depth of nested operators.
 
-    If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
 
     Args:
         op (.Operator): an operator
-
-    Keyword Args:
-        depth (int): Reduced depth. Default is -1.
 
     Returns:
         .Operator: simplified operator
