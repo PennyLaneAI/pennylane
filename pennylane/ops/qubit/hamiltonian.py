@@ -342,7 +342,7 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def simplify(self):  # pylint: disable=arguments-differ
+    def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
