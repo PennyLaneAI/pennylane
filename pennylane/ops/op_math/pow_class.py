@@ -29,7 +29,7 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.identity import Identity
-from pennylane.ops.op_math.controlled_class import ControlledOp
+from pennylane.ops.op_math.controlled_class import Controlled
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
 
@@ -243,22 +243,14 @@ class Pow(SymbolicOp):
         """
         return self.z * self.base.generator()
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + self.base.arithmetic_depth
-
-    def simplify(self, depth=-1) -> Union["Pow", Identity]:
-        if depth == 0:
-            return self
+    def simplify(self) -> Union["Pow", Identity]:
         if self.z == 0:
-            return Identity(wires=self.wires[0], id=self.id)
-        if isinstance(self.base, ControlledOp):  # Pow(Controlled(base)) = Controlled(Pow(base))
-            return ControlledOp(
-                base=Pow(self.base.base, z=self.z, id=self.id),
+            return Identity(wires=self.wires[0])
+        if isinstance(self.base, Controlled):  # Pow(Controlled(base)) = Controlled(Pow(base))
+            return Controlled(
+                base=Pow(self.base.base.simplify(), z=self.z),
                 control_wires=self.base.control_wires,
                 control_values=self.base.control_values,
                 work_wires=self.base.work_wires,
-                work_values=self.base.work_wires,
-                id=self.base.id,
             )
-        return Pow(base=self.base.simplify(depth=depth), z=self.z, id=self.id)
+        return Pow(base=self.base.simplify(), z=self.z)

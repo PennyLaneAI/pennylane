@@ -97,7 +97,7 @@ ops_rep = (
 
 
 class TestInitialization:
-    """Test initialization of ther SProd Class."""
+    """Test initialization of the SProd Class."""
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
@@ -124,7 +124,7 @@ class TestInitialization:
         assert sprod_op.data == [[9.87], [1.23, 4.0, 5.67]]
 
     def test_data_setter(self):
-        """Test the setter method for"""
+        """Test the setter method for data"""
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
         old_data = [[9.87], [1.23, 4.0, 5.67]]
 
@@ -478,7 +478,7 @@ class TestSimplify:
         sprod_op = s_prod(5, s_prod(3, s_prod(-1, qml.RZ(1.32, wires=0))))
         assert sprod_op.arithmetic_depth == 3
 
-    def test_simplify_method_with_default_depth(self):
+    def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         sprod_op = SProd(
             2, SProd(2, qml.RZ(1.32, wires=0)) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
@@ -500,34 +500,29 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
-    def test_simplify_method_with_given_depth(self):
-        """Test the simplify method with a given depth."""
-        sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
+    def test_simplify_scalar_equal_to_1(self):
+        """Test the simplify method when the scalar is 1."""
+        sprod_op = s_prod(1, qml.PauliX(0))
+        final_op = qml.PauliX(0)
+        simplified_op = sprod_op.simplify()
 
-        final_op = SProd(-1, qml.adjoint(qml.PauliX(0)))
-        simplified_op = sprod_op.simplify(depth=3)
+        assert isinstance(simplified_op, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
-        # TODO: Use qml.equal when supported for nested operators
+    def test_simplify_nested_sprod_scalar_equal_to_1(self):
+        """Test the simplify method with nested SProd where the global scalar is 1."""
+        sprod_op = s_prod(3, s_prod(1 / 3, qml.PauliX(0)))
+        final_op = qml.PauliX(0)
+        simplified_op = sprod_op.simplify()
 
-        assert isinstance(simplified_op, SProd)
-        assert final_op.id == simplified_op.id
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-    def test_simplify_method_with_depth_equal_to_0(self):
-        """Test the simplify method with depth equal to 0."""
-        sprod_op = SProd(0.5, SProd(2, SProd(-1, qml.adjoint(qml.PauliX(0)))))
-        final_op = sprod_op
-        simplified_op = sprod_op.simplify(depth=0)
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, SProd)
-        assert final_op.id == simplified_op.id
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert isinstance(simplified_op, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
 
 class TestWrapperFunc:
@@ -606,6 +601,21 @@ class TestIntegration:
         def my_circ():
             qml.PauliX(0)
             return qml.sample(op=sprod_op)
+
+        with pytest.raises(
+            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
+        ):
+            my_circ()
+
+    def test_measurement_process_count(self):
+        """Test SProd class instance in counts measurement process raises error."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2)
+        sprod_op = SProd(1.23, qml.Hadamard(1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            qml.PauliX(0)
+            return qml.counts(op=sprod_op)
 
         with pytest.raises(
             QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."

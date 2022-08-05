@@ -86,6 +86,25 @@ def qubit_device_3_wires(request):
     return qml.device("default.qubit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
+"""The following 3 fixtures are for default.qutrit devices to be used for testing with various
+real and complex dtypes."""
+
+
+@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+def qutrit_device_1_wire(request):
+    return qml.device("default.qutrit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
+
+
+@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+def qutrit_device_2_wires(request):
+    return qml.device("default.qutrit", wires=2, r_dtype=request.param[0], c_dtype=request.param[1])
+
+
+@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+def qutrit_device_3_wires(request):
+    return qml.device("default.qutrit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
+
+
 @pytest.fixture(scope="session")
 def gaussian_device(n_subsystems):
     """Number of qubits or modes."""

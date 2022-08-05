@@ -1211,13 +1211,8 @@ class Operator(abc.ABC):
         """Arithmetic depth of the operator."""
         return 0
 
-    def simplify(self, depth=-1) -> "Operator":  # pylint: disable=unused-argument
-        """Reduces the depth of nested operators.
-
-        If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
-
-        Keyword Args:
-            depth (int): Reduced depth. Default is -1.
+    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+        """Reduces to the maximum the depth of nested operators.
 
         Returns:
             .Operator: simplified operator
@@ -1229,17 +1224,32 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
-            return qml.ops.Sum(  # pylint: disable=no-member
-                self,
-                qml.ops.SProd(  # pylint: disable=no-member
-                    scalar=other, base=qml.Identity(wires=self.wires)
-                ),
+            wires = self.wires.tolist()
+            id_op = (
+                qml.prod(*(qml.Identity(w) for w in wires))
+                if len(wires) > 1
+                else qml.Identity(wires[0])
             )
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
         if isinstance(other, Operator):
-            return qml.ops.Sum(self, other)  # pylint: disable=no-member
+            return qml.op_sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
+
+    def __mul__(self, other):
+        """The scalar multiplication between scalars and Operators."""
+        if isinstance(other, numbers.Number):
+            return qml.s_prod(scalar=other, operator=self)
+        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other):
+        """The product operation between Operator objects."""
+        if isinstance(other, Operator):
+            return qml.prod(self, other)
+        raise ValueError("Can only perform tensor products between operators.")
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
@@ -1253,7 +1263,7 @@ class Operator(abc.ABC):
 
     def __neg__(self):
         """The negation operation of an Operator object."""
-        return qml.ops.SProd(scalar=-1, base=self)  # pylint: disable=no-member
+        return qml.s_prod(scalar=-1, operator=self)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
@@ -1654,7 +1664,10 @@ class Observable(Operator):
         if isinstance(other, Observable):
             return Tensor(self, other)
 
-        raise ValueError("Can only perform tensor products between observables.")
+        try:
+            return super().__matmul__(other=other)
+        except ValueError as e:
+            raise ValueError("Can only perform tensor products between operators.") from e
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
@@ -1732,10 +1745,11 @@ class Observable(Operator):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
-
             return qml.Hamiltonian([a], [self], simplify=True)
-
-        raise ValueError(f"Cannot multiply Observable by {type(a)}")
+        try:
+            return super().__mul__(other=a)
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
     __rmul__ = __mul__
 
