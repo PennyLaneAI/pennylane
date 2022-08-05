@@ -29,8 +29,8 @@ jobs:
           python-root-list: "pennylane"
           use-pylint: True
           use-pycodestyle: false
-          use-flake8: false
-          use-black: false
+          use-flake8: True
+          use-black: True
           use-mypy: false
           use-isort: false
           extra-pylint-options: "--rcfile .pylintrc"
