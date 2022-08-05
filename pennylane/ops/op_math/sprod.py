@@ -199,6 +199,8 @@ class SProd(SymbolicOp):
         return None
 
     def simplify(self) -> Operator:
+        if self.scalar == 1:
+            return self.base.simplify()
         if isinstance(self.base, SProd):
             scalar = self.scalar * self.base.scalar
             if scalar == 1:

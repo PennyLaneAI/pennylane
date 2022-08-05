@@ -19,7 +19,7 @@ import itertools
 from copy import copy
 from functools import reduce
 from itertools import combinations
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -325,44 +325,37 @@ class Prod(Operator):
     def arithmetic_depth(self) -> int:
         return 1 + max(factor.arithmetic_depth for factor in self.factors)
 
-    def _simplify_factors(self) -> Tuple[List[Sum], List[Operator]]:
+    @classmethod
+    def _simplify_factors(cls, factors: Tuple[Operator]) -> Tuple[Operator]:
         """Reduces the depth of nested factors.
 
         Returns:
             Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
             factors
         """
-        # FIXME: Should we use tuples?
-        sum_factors: List[Sum] = []
-        factors = []
+        new_factors = ()
 
-        for factor in self.factors:
+        for factor in factors:
             if isinstance(factor, Prod):
-                tmp_sum_factors, tmp_factors = factor._simplify_factors()
-                if tmp_sum_factors:
-                    sum_factors.append(tmp_sum_factors)
-                if not isinstance(tmp_factors, list):
-                    tmp_factors = [tmp_factors]
-                factors.extend(tmp_factors)
+                tmp_factors = cls._simplify_factors(factors=factor.factors)
+                if not isinstance(tmp_factors, tuple):
+                    tmp_factors = (tmp_factors,)
+                new_factors += tmp_factors
                 continue
             simplified_factor = factor.simplify()
             if isinstance(simplified_factor, Prod):
-                factors.extend(simplified_factor.factors)
+                new_factors += (simplified_factor.factors,)
             elif isinstance(simplified_factor, Sum):
-                sum_factors.append(simplified_factor.summands)
+                new_factors += (simplified_factor.summands,)
             else:
-                factors.append(simplified_factor)
+                new_factors += ((simplified_factor,),)
 
-        return sum_factors, factors
+        return new_factors
 
     def simplify(self) -> Union["Prod", Sum]:
-        sum_factors, factors = self._simplify_factors()
-        if not sum_factors:
-            return Prod(*factors)
-        if factors:
-            sum_factors.append(factors)
-        sum_factors = list(itertools.product(*sum_factors))
-        # FIXME: There might be a Prod operator in sum_factors, thus we need to call simplify
-        # again the make sure there are no nested Prod operations. What depth should we use here?
-        sum_factors = [Prod(*sum_factor).simplify() for sum_factor in sum_factors]
-        return Sum(*sum_factors)
+        factors = self._simplify_factors(factors=self.factors)
+        factors = list(itertools.product(*factors))
+        if len(factors) == 1:
+            return Prod(*factors[0])
+        factors = [Prod(*factor).simplify() for factor in factors]
+        return Sum(*factors)
