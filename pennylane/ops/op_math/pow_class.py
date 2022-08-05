@@ -14,22 +14,27 @@
 """
 This submodule defines the symbolic operation that stands for the power of an operator.
 """
+import copy
+from typing import Union
+
 from scipy.linalg import fractional_matrix_power
 
+import pennylane as qml
+from pennylane import math as qmlmath
 from pennylane.operation import (
     DecompositionUndefinedError,
-    SparseMatrixUndefinedError,
-    PowUndefinedError,
-    Operation,
     Observable,
+    Operation,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
     expand_matrix,
 )
+from pennylane.ops.identity import Identity
+from pennylane.ops.op_math.controlled_class import Controlled
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
-from pennylane import math as qmlmath
 
 from .symbolicop import SymbolicOp
-
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -112,8 +117,9 @@ class Pow(SymbolicOp):
     def __new__(cls, base=None, z=1, do_queue=True, id=None):
         """Mixes in parents based on inheritance structure of base.
 
-        Though all the types will be named "Pow", their *identity* and location in memory will be different
-        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
+        Though all the types will be named "Pow", their *identity* and location in memory will be
+        different based on ``base``'s inheritance.  We cache the different types in private class
+        variables so that:
 
         """
 
@@ -187,7 +193,7 @@ class Pow(SymbolicOp):
             if isinstance(self.z, int) and self.z > 0:
                 if QueuingContext.recording():
                     return [apply(self.base) for _ in range(self.z)]
-                return [self.base.__copy__() for _ in range(self.z)]
+                return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
@@ -237,3 +243,19 @@ class Pow(SymbolicOp):
         See also :func:`~.generator`
         """
         return self.z * self.base.generator()
+
+    def simplify(self) -> Union["Pow", Identity]:
+        if self.z == 0:
+            return (
+                qml.prod(*(qml.Identity(w) for w in self.wires))
+                if len(self.wires) > 1
+                else qml.Identity(self.wires[0])
+            )
+        if isinstance(self.base, Controlled):  # Pow(Controlled(base)) = Controlled(Pow(base))
+            return Controlled(
+                base=Pow(self.base.base.simplify(), z=self.z),
+                control_wires=self.base.control_wires,
+                control_values=self.base.control_values,
+                work_wires=self.base.work_wires,
+            )
+        return Pow(base=self.base.simplify(), z=self.z)
