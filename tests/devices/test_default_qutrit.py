@@ -472,7 +472,6 @@ class TestVar:
         qutrit_device_2_wires._state = np.array(input).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
-        print(res, expected_output)
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_var_estimate(self):
