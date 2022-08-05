@@ -100,6 +100,7 @@ import itertools
 import numbers
 import warnings
 from enum import IntEnum
+from typing import List
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -1205,6 +1206,19 @@ class Operator(abc.ABC):
 
         return tape
 
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 0
+
+    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+        """Reduce the depth of nested operators to the minimum.
+
+        Returns:
+            .Operator: simplified operator
+        """
+        return self
+
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, numbers.Number):
@@ -1774,7 +1788,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
-        self.obs = []
+        self.obs: List[Observable] = []
         self._args = args
         self.queue(init=True)
 
