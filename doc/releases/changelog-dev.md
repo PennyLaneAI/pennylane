@@ -451,16 +451,30 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 
 * Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
 and `SProd` operators so that users can reduce the depth of nested operators.
+  [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
 
-```pycon
->>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
->>> sum_op.arithmetic_depth
-2
->>> simplified_op = sum_op.simplify()
->>> simplified_op.arithmetic_depth
-1
-```
+  ```pycon
+  >>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
+  >>> sum_op.arithmetic_depth
+  2
+  >>> simplified_op = sum_op.simplify()
+  >>> simplified_op.arithmetic_depth
+  1
+  ```
 
+* `qml.simplify` can now be used instead of using each operator's simplify method.
+  [(#2854)](https://github.com/PennyLaneAI/pennylane/pull/2854)
+
+  This wrapper can also be used inside tapes:
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  >>>     op = qml.adjoint(qml.adjoint(qml.RX(1.0, wires=0)))
+  >>>     qml.simplify(op)
+  >>> tape.circuit
+  [RX(1.0, wires=[0])]
+  ```
+  
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
 
