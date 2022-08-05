@@ -1134,13 +1134,14 @@ class TestInBackprop:
             res = [fn.in_backprop(t), fn.in_backprop(s)]
             return np.sum(t * s)
 
-        t = np.array([1.0, 2.0, 3.0])
-        s = np.array([-2.0, -3.0, -4.0])
+        t = np.array([1.0, 2.0, 3.0], requires_grad=True)
+        s = np.array([-2.0, -3.0, -4.0], requires_grad=True)
 
         qml.grad(cost_fn)(t, s)
         assert res == [True, True]
 
         t.requires_grad = False
+        s.requires_grad = True
         qml.grad(cost_fn)(t, s)
         assert res == [False, True]
 
@@ -1178,8 +1179,8 @@ class TestInBackprop:
         """TensorFlow tensors will True *if* they are being watched by a gradient tape with Autograph."""
         t1 = tf.Variable([1.0, 2.0])
         t2 = tf.constant([1.0, 2.0])
-        assert not fn.requires_grad(t1)
-        assert not fn.requires_grad(t2)
+        assert not fn.in_backprop(t1)
+        assert not fn.in_backprop(t2)
 
         @tf.function
         def f_pow(x):
@@ -1188,16 +1189,16 @@ class TestInBackprop:
         with tf.GradientTape():
             # variables are automatically watched within a context,
             # but constants are not
+            y = f_pow(t1)
             assert fn.in_backprop(t1)
             assert not fn.in_backprop(t2)
-            y = f_pow(t1)
 
         with tf.GradientTape() as tape:
             # watching makes all tensors trainable
             tape.watch([t1, t2])
+            y = f_pow(t1)
             assert fn.in_backprop(t1)
             assert fn.in_backprop(t2)
-            y = f_pow(t1)
 
     @pytest.mark.torch
     def test_unknown_interface_in_backprop(self):

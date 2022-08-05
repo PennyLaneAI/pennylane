@@ -168,7 +168,9 @@ class TestIntegrationSingleReturn:
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0]), qml.sample(wires=[0, 1])]
+    )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
         dev = qml.device(device, wires=2, shots=shots)
@@ -182,10 +184,16 @@ class TestIntegrationSingleReturn:
         res = qnode(0.5)
 
         assert isinstance(res, np.ndarray)
-        assert res.shape == (shots,)
+
+        if measurement.wires.tolist() != [0, 1]:
+            assert res.shape == (shots,)
+        else:
+            assert res.shape == (shots, 2)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0]), qml.counts(wires=[0, 1])]
+    )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
         dev = qml.device(device, wires=2, shots=shots)
@@ -369,7 +377,9 @@ class TestIntegrationSingleReturnTensorFlow:
         assert isinstance(res, tf.Tensor)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0]), qml.sample(wires=[0, 1])]
+    )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
         import tensorflow as tf
@@ -388,10 +398,16 @@ class TestIntegrationSingleReturnTensorFlow:
         res = qnode(tf.Variable(0.5))
 
         assert isinstance(res, tf.Tensor)
-        assert res.shape == (shots,)
+
+        if measurement.wires.tolist() != [0, 1]:
+            assert res.shape == (shots,)
+        else:
+            assert res.shape == (shots, 2)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0]), qml.counts(wires=[0, 1])]
+    )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
         import tensorflow as tf
@@ -575,7 +591,9 @@ class TestIntegrationSingleReturnTorch:
         assert isinstance(res, torch.Tensor)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0]), qml.sample(wires=[0, 1])]
+    )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
         import torch
@@ -594,7 +612,11 @@ class TestIntegrationSingleReturnTorch:
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert isinstance(res, torch.Tensor)
-        assert res.shape == (shots,)
+
+        if measurement.wires.tolist() != [0, 1]:
+            assert res.shape == (shots,)
+        else:
+            assert res.shape == (shots, 2)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
@@ -784,7 +806,9 @@ class TestIntegrationSingleReturnJax:
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0]), qml.sample(wires=[0, 1])]
+    )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
         import jax
@@ -803,10 +827,16 @@ class TestIntegrationSingleReturnJax:
         res = qnode(jax.numpy.array(0.5))
 
         assert isinstance(res, jax.numpy.ndarray)
-        assert res.shape == (shots,)
+
+        if measurement.wires.tolist() != [0, 1]:
+            assert res.shape == (shots,)
+        else:
+            assert res.shape == (shots, 2)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0]), qml.counts(wires=[0, 1])]
+    )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
         import jax
@@ -843,7 +873,7 @@ class TestIntegrationMultipleReturns:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         qnode = qml.QNode(circuit, dev)
         res = qnode(0.5)
@@ -865,7 +895,7 @@ class TestIntegrationMultipleReturns:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
+            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
 
         qnode = qml.QNode(circuit, dev)
         res = qnode(0.5)
@@ -1097,7 +1127,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
@@ -1121,7 +1151,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
+            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
@@ -1360,7 +1390,7 @@ class TestIntegrationMultipleReturnsTorch:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
@@ -1384,7 +1414,7 @@ class TestIntegrationMultipleReturnsTorch:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
+            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
@@ -1620,7 +1650,7 @@ class TestIntegrationMultipleReturnJax:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
@@ -1644,7 +1674,7 @@ class TestIntegrationMultipleReturnJax:
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
+            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
@@ -2566,7 +2596,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+            return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
         res = qml.jacobian(circuit)(x)
@@ -2679,6 +2709,31 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (3,)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("device", devices)
+    def test_multiple_expval_jax_jit(self, device):
+        """Return Jacobian of multiple expvals with Jitting."""
+        import jax
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+        res = jax.jit(jax.jacobian(circuit))(x)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for elem in res:
+            assert isinstance(elem, jax.numpy.ndarray)
+            assert elem.shape == (3,)
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_autograd(self, device):
@@ -2691,7 +2746,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qml.CNOT(wires=(0, 1))
             qml.RY(a[1], wires=1)
             qml.RZ(a[2], wires=1)
-            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=[1])
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
         res = qml.jacobian(circuit)(x)
@@ -2770,6 +2825,32 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         x = jax.numpy.array([0.1, 0.2, 0.3])
 
         res = jax.jacobian(circuit)(x)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for elem in res:
+            assert isinstance(elem, jax.numpy.ndarray)
+            assert elem.shape == (2, 3)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("device", devices)
+    def test_multiple_probs_jax_jit(self, device):
+        """Return Jacobian of multiple probs with Jax jit."""
+        import jax
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=1)
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+
+        res = jax.jit(jax.jacobian(circuit))(x)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -2877,6 +2958,37 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         x = jax.numpy.array([0.1, 0.2, 0.3])
 
         res = jax.jacobian(circuit)(x)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+        for i, elem in enumerate(res):
+            assert isinstance(elem, jax.numpy.ndarray)
+            if i == 0:
+                assert elem.shape == (3,)
+            elif i == 1:
+                assert elem.shape == (4, 3)
+            elif i == 2:
+                assert elem.shape == (3,)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("device", devices)
+    def test_multiple_meas_jax_jit(self, device):
+        """Return Jacobian of multiple measurements with Jax jit."""
+        import jax
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(a):
+            qml.RX(a[0], wires=0)
+            qml.CNOT(wires=(0, 1))
+            qml.RY(a[1], wires=1)
+            qml.RZ(a[2], wires=1)
+            return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
+
+        x = jax.numpy.array([0.1, 0.2, 0.3])
+
+        res = jax.jit(jax.jacobian(circuit))(x)
 
         assert isinstance(res, tuple)
         assert len(res) == 3
