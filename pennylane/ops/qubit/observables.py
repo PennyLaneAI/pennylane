@@ -16,13 +16,15 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
-from scipy.sparse import csr_matrix
+from copy import copy
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import AllWires, AnyWires, Observable
 from pennylane.wires import Wires
+
 from .matrix_ops import QubitUnitary
 
 
@@ -458,4 +460,4 @@ class Projector(Observable):
         return []
 
     def pow(self, z):
-        return [self.__copy__()] if (isinstance(z, int) and z > 0) else super().pow(z)
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
