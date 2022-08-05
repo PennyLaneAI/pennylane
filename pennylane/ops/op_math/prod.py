@@ -345,9 +345,8 @@ class Prod(Operator):
                 new_factors += tuple((factor,) for factor in simplified_factor.factors)
             elif isinstance(simplified_factor, Sum):
                 new_factors += (simplified_factor.summands,)
-            else:
-                if not isinstance(simplified_factor, qml.Identity):
-                    new_factors += ((simplified_factor,),)
+            elif not isinstance(simplified_factor, qml.Identity):
+                new_factors += ((simplified_factor,),)
 
         return new_factors
 
