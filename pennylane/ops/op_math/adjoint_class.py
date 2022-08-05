@@ -14,26 +14,32 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from pennylane.operation import Operation, AdjointUndefinedError, Observable
-from pennylane.math import transpose, conj
+import pennylane as qml
+from pennylane.math import conj, transpose
+from pennylane.operation import AdjointUndefinedError, Observable, Operation
+from pennylane.ops.op_math.prod import Prod
+from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
 
 
 # pylint: disable=no-member
 class AdjointOperation(Operation):
-    """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class is an ``Operation``.
+    """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
+    is an ``Operation``.
 
     .. warning::
         This mixin class should never be initialized independent of ``Adjoint``.
 
-    Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of an instance and dynamically
-    add in parent classes.
+    Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of
+    an instance and dynamically add in parent classes.
 
-    .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin class can be removed.
+    .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin
+    class can be removed.
     """
 
-    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is removed.
+    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is
+    # removed.
 
     @property
     def _inverse(self):
@@ -102,7 +108,8 @@ class Adjoint(SymbolicOp):
 
     .. seealso:: :func:`~.adjoint`, :meth:`~.operation.Operator.adjoint`
 
-    This is a *developer*-facing class, and the :func:`~.adjoint` transform should be used to construct instances
+    This is a *developer*-facing class, and the :func:`~.adjoint` transform should be used to
+    construct instances
     of this class.
 
     **Example**
@@ -121,8 +128,9 @@ class Adjoint(SymbolicOp):
     .. details::
         :title: Developer Details
 
-    This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.  For example, when
-    provided an ``Operation``, the instance will inherit from ``Operation`` and the ``AdjointOperation`` mixin.
+    This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.
+    For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
+    the ``AdjointOperation`` mixin.
 
     >>> op = Adjoint(qml.RX(1.234, wires=0))
     >>> isinstance(op, qml.operation.Operation)
@@ -132,7 +140,8 @@ class Adjoint(SymbolicOp):
     >>> op.grad_method
     'A'
 
-    If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as well.
+    If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
+    well.
 
     >>> op = Adjoint(1.0 * qml.PauliX(0))
     >>> isinstance(op, qml.operation.Observable)
@@ -152,8 +161,9 @@ class Adjoint(SymbolicOp):
     def __new__(cls, base=None, do_queue=True, id=None):
         """Mixes in parents based on inheritance structure of base.
 
-        Though all the types will be named "Adjoint", their *identity* and location in memory will be different
-        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
+        Though all the types will be named "Adjoint", their *identity* and location in memory will
+        be different based on ``base``'s inheritance.  We cache the different types in private class
+        variables so that:
 
         >>> Adjoint(op).__class__ is Adjoint(op).__class__
         True
@@ -194,7 +204,7 @@ class Adjoint(SymbolicOp):
         super().__init__(base, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return self.base.label(decimals, base_label, cache=cache) + "†"
+        return f"{self.base.label(decimals, base_label, cache=cache)}†"
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -224,3 +234,14 @@ class Adjoint(SymbolicOp):
 
     def adjoint(self):
         return self.base.queue()
+
+    def simplify(self):
+        if isinstance(self.base, qml.Identity):
+            return self.base
+        if isinstance(self.base, Adjoint):  # Adj(Adj(A)) = A
+            return self.base.base.simplify()
+        if isinstance(self.base, Sum):  # Adj(A + B) = Adj(A) + Adj(B)
+            return Sum(*(Adjoint(summand) for summand in self.base.summands)).simplify()
+        if isinstance(self.base, Prod):  # Adj(AB) = Adj(B) @ Adj(A)
+            return Prod(*(Adjoint(factor) for factor in self.base.factors[::-1])).simplify()
+        return Adjoint(base=self.base.simplify())
