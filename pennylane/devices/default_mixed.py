@@ -141,6 +141,10 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
+        if not isinstance(array, (list, tuple)):
+            if qnp.shape(array) == ():
+                return array
+
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
         is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))

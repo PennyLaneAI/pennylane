@@ -213,13 +213,17 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
+        if "returntypes" in rel_path.parts:
+            mark = getattr(pytest.mark, "return")
+            item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
         if (
             not any(
-                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
+                elem
+                in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces", "return"]
                 for elem in markers
             )
             or not markers
