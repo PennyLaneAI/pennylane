@@ -45,7 +45,7 @@ Various functions and transforms are available for manipulating operators,
 and extracting information. These can be broken down into two main categories:
 
 Operator to Operator functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
@@ -65,7 +65,7 @@ These operator functions act on operators to produce new operators.
 1.2*(Hadamard(wires=[0]) + PauliX(wires=[0]) @ PauliZ(wires=[1]))
 
 Operator to Other functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
