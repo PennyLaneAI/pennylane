@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from copy import copy
+
+import pytest
+from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
 import pennylane as qml
@@ -21,14 +23,11 @@ from pennylane import numpy as np
 from pennylane.operation import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
-    Operator,
     Operation,
+    Operator,
 )
 from pennylane.ops.op_math.controlled_class import Controlled, ControlledOp
 from pennylane.wires import Wires
-
-
-from gate_data import CNOT, CZ, CSWAP, Toffoli, CRotx, CRoty, CRotz, CRot3
 
 base_num_control_mats = [
     (qml.PauliX("a"), 1, CNOT),
@@ -466,6 +465,50 @@ class TestOperationProperties:
             match=r"does not have parameter frequencies",
         ):
             op.parameter_frequencies
+
+
+class TestSimplify:
+    """Test qml.op_sum simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        controlled_op = Controlled(qml.RZ(1.32, wires=0) + qml.Identity(wires=0), control_wires=1)
+        assert controlled_op.arithmetic_depth == 2
+
+    def test_simplify_method(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        controlled_op = Controlled(
+            qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1), control_wires=2
+        )
+        final_op = Controlled(
+            qml.op_sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1)),
+            control_wires=2,
+        )
+        simplified_op = controlled_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Controlled)
+        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_nested_controlled_ops(self):
+        """Test the simplify method with nested control operations on different wires."""
+        controlled_op = Controlled(Controlled(qml.PauliX(0), 1), 2)
+        final_op = Controlled(qml.PauliX(0), [2, 1])
+        simplified_op = controlled_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Controlled)
+        assert isinstance(simplified_op.base, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
 
 class TestQueuing:
