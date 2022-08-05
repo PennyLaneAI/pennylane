@@ -44,17 +44,18 @@ Operator functions
 Various functions and transforms are available for manipulating operators,
 and extracting information. These can be broken down into two main categories:
 
-Operator transform functions
+Operator to Operator functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
-    ~pennylane.ops.op_math.adjoint
-    ~pennylane.ops.op_math.ctrl
-    ~pennylane.transforms.cond
-    ~pennylane.ops.op_math.op_sum
-    ~pennylane.ops.op_math.prod
-    ~pennylane.ops.op_math.s_prod
+    ~pennylane.adjoint
+    ~pennylane.ctrl
+    ~pennylane.cond
+    ~pennylane.op_sum
+    ~pennylane.prod
+    ~pennylane.s_prod
+    ~pennylane.generator
 
 These operator functions act on operators to produce new operators.
 
@@ -63,16 +64,15 @@ These operator functions act on operators to produce new operators.
 >>> op = qml.s_prod(1.2, op)
 1.2*(Hadamard(wires=[0]) + PauliX(wires=[0]) @ PauliZ(wires=[1]))
 
-Operator information functions
+Operator to Other functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
     ~pennylane.matrix
     ~pennylane.eigvals
-    ~pennylane.generator
 
-These operator functions act on operators and return information about the operator.
+These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators,
 
 >>> op = qml.RX(0.54, wires=0)
