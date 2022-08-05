@@ -801,7 +801,6 @@ class TestCounts:
         basis_state = "0111"
 
         assert isinstance(res, tuple)
-        print(res[0])
         assert res[0][basis_state] == shot_vec[0]
         assert res[1][basis_state] == shot_vec[1]
         assert res[2][basis_state] == shot_vec[2]
