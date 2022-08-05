@@ -653,7 +653,7 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         prod_op = qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1)
-        final_op = Prod(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        final_op = Prod(qml.RZ(1.32, wires=0), qml.RX(1.9, wires=1))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -667,7 +667,7 @@ class TestSimplify:
 
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
-        prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1))
+        prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
@@ -682,22 +682,36 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
-    def test_simplify_method_with_nested_sums_and_prods(self):
-        """Test the simplify method with nested sums and products."""
+    def test_simplify_method_with_nested_ops(self):
+        """Test the simplify method with nested operators."""
         prod_op = Prod(
-            qml.PauliX(0) + Prod(qml.PauliX(0), qml.RX(1, 0) + qml.PauliX(0)),
-            qml.PauliX(1) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
+            Prod(
+                qml.PauliX(0)
+                + qml.adjoint(
+                    Prod(
+                        qml.PauliX(0),
+                        qml.RX(1, 0) + qml.PauliX(0),
+                        qml.Identity(0),
+                    )
+                ),
+                qml.PauliX(1) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
+            ),
+            qml.Identity(0),
         )
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.RX(1, 0), qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.RX(1, 0), 5 * qml.RX(1, 1)),
-            Prod(qml.PauliX(0), qml.RX(1, 0), qml.s_prod(5, qml.PauliX(1))),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
+            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
+            Prod(
+                qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
+            ),
+            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
+            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
+            Prod(
+                qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
+            ),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
