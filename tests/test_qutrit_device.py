@@ -434,6 +434,8 @@ class TestSample:
         assert np.array_equal(out, expected_samples)
 
     def test_counts(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that sample works correctly when counts=True"""
+
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 1], [2, 0], [2, 0], [0, 1], [2, 2], [1, 2]])
         dev._samples = samples
@@ -450,6 +452,9 @@ class TestSample:
         assert out == expected_counts
 
     def test_raw_counts_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that sample works correctly when counts=True and device is instantiated with shot
+        list"""
+
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         samples = np.array(
             [
@@ -1045,19 +1050,19 @@ class TestUnimplemented:
         with pytest.raises(NotImplementedError):
             dev.state()
 
-    def test_density_matrix(self, mock_qutrit_device):
-        """Test that density_matrix is unimplemented"""
-        dev = mock_qutrit_device()
-
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
-            dev.density_matrix(wires=0)
-
     def test_vn_entropy(self, mock_qutrit_device):
         """Test that vn_entropy is unimplemented"""
         dev = mock_qutrit_device()
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.vn_entropy(wires=0, log_base=3)
+
+    def test_density_matrix(self, mock_qutrit_device):
+        """Test that vn_entropy is unimplemented"""
+        dev = mock_qutrit_device()
+
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.density_matrix(wires=0)
 
     def test_mutual_info(self, mock_qutrit_device):
         """Test that mutual_info is unimplemented"""

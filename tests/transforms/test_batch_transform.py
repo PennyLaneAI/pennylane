@@ -462,12 +462,14 @@ class TestBatchTransform:
             tape2 = tape.copy()
             return [tape1, tape2], lambda res: a * qml.math.sum(res)
 
+        custom_wrapper_called = [False]  # use list so can edit by reference
+
         @my_transform.custom_qnode_wrapper
         def qnode_wrapper(self, qnode, targs, tkwargs):
             wrapper = self.default_qnode_wrapper(qnode, targs, tkwargs)
             assert targs == (a,)
             assert tkwargs == {}
-            print("custom wrapper called")
+            custom_wrapper_called[0] = True
             return wrapper
 
         @my_transform(a)
@@ -479,8 +481,7 @@ class TestBatchTransform:
 
         circuit(x)
 
-        captured = capsys.readouterr()
-        assert captured.out == "custom wrapper called\n"
+        assert custom_wrapper_called[0] is True
 
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
