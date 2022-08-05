@@ -193,6 +193,57 @@ jobs:
           name: qcut-coverage
           path: ./coverage.xml
 
+  # Testing the new return types suite
+  return-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/returntypes --cov=pennylane $COVERAGE_FLAGS -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: return-coverage
+          path: ./coverage.xml
+
   qchem-tests:
     runs-on: ubuntu-latest
 
@@ -305,7 +356,7 @@ jobs:
           path: ./coverage.xml
 
   upload-to-codecov:
-      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, device-tests]
+      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, device-tests]
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
