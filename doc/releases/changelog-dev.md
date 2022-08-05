@@ -156,7 +156,7 @@
 * `DefaultQubit` devices now natively support parameter broadcasting
   and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
+
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
   devices now are able to directly execute broadcasted circuits, providing
   a faster way of executing the same circuit at varied parameter positions.
@@ -626,6 +626,29 @@ and `SProd` operators so that users can reduce the depth of nested operators.
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is fully supported by
   `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
+
+* Custom devices inheriting from `DefaultQubit` or `QubitDevice` can break due to the introduction
+  of parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+
+  A custom device should only break if all three following statements hold simultaneously:
+
+  1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
+  2. The device implements custom methods in the simulation pipeline that are incompatible
+     with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
+  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+     dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
+     (or both).
+
+  The `capabilities["supports_broadcasting"]` is set to `True` for
+  `DefaultQubit`. Therefore typically, the easiest fix will be to change the
+  `capabilities["supports_broadcasting"]` flag to `False` for the child device
+  and/or to include a call to `broadcast_expand` in
+  `CustomDevice.batch_transform`, similar to how `Device.batch_transform` calls
+  it.
+
+  Separately from the above, custom devices that inherit from `QubitDevice` and implement a
+  custom `_gather` method need to allow for the kwarg `axis` to be passed to this `_gather` method.
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
   which provides an updated API that is incompatible which versions of the package prior to 2.7.
