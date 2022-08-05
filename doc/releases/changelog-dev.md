@@ -88,15 +88,15 @@
 
 <h4>Differentiable error mitigation ⚙️</h4>
 
-* Differentiable zero-noise-extrapolation error mitigation is now available.
+* Differentiable zero-noise-extrapolation (ZNE) error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
 
-  Zero-noise-extrapolation (ZNE) is now *differentiable*, meaning that you can now elevate any variational
-  quantum algorithm to a *mitigated* algorithm with improved results on noisy hardware while maintaining differentiability throughout.
+  Elevate any variational quantum algorithm to a *mitigated* algorithm with improved 
+  results on noisy hardware while maintaining differentiability throughout.
 
-  In order to do so, use the [`qml.transforms.mitigate_with_zne`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.mitigate_with_zne.html) transform on your QNode, as a decorator, and provide the PennyLane proprietary
-  [`qml.transforms.fold_global`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html) folding function and [`qml.transforms.poly_extrapolate`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.poly_extrapolate.html) extrapolation function. Here is an example for a noisy simulation device
-  where we mitigate a QNode and are still able to compute the gradient:
+  In order to do so, use the [`qml.transforms.mitigate_with_zne`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.mitigate_with_zne.html) transform on your QNode and provide the PennyLane proprietary
+  [`qml.transforms.fold_global`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html) folding function and [`qml.transforms.poly_extrapolate`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.poly_extrapolate.html) extrapolation function. Here is an example for a noisy simulation device where we mitigate a QNode and are still 
+  able to compute the gradient:
 
   ```python
   # Describe noise
@@ -127,45 +127,17 @@
 
 <h4>More native support for parameter broadcasting 📡</h4>
 
-* `DefaultQubit` devices now natively support parameter broadcasting.
+* `DefaultQubit` devices now natively support parameter broadcasting, providing 
+  a faster way of executing the same circuit at various parameter positions
+  compared to using the [`qml.transforms.broadcast_expand`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.broadcast_expand.html) transform.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-
-  `DefaultQubit` based devices now are able to directly execute broadcasted circuits, 
-  providing a faster way of executing the same circuit at various parameter positions
-  compared to using the [`qml.transforms.broadcast_expand`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.broadcast_expand.html) transform:
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(x, y):
-      qml.RX(x, wires=0)
-      qml.RY(y, wires=0)
-      return qml.expval(qml.PauliZ(0))
-  ```
-
-  ```pycon
-  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
-  >>> y = np.array([0.9, -0.7, 4.2], requires_grad=True)
-  >>> circuit(x, y)
-  tensor([ 0.5725407 ,  0.2771465 , -0.40462972], requires_grad=True)
-  ```
-
-  It's also possible to broadcast only *some* parameters:
-
-  ```pycon
-  >>> x = np.array([0.4, 1.2, 0.6], requires_grad=True)
-  >>> y = np.array(0.23, requires_grad=True)
-  >>> circuit(x, y)
-  tensor([0.89680614, 0.35281557, 0.80360155], requires_grad=True)
-  ```
   
 * Parameter-shift gradients now allow for parameter broadcasting. 
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
 
-  The gradient transform [`qml.gradients.param_shift`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.gradients.param_shift.html) now accepts the new Boolean 
-  keyword argument `broadcast`. If it is set to `True`, broadcasting is used to 
-  compute the derivative:
+  The gradient transform [`qml.gradients.param_shift`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.gradients.param_shift.html) 
+  now accepts the keyword argument `broadcast`. If set to `True`, broadcasting is 
+  used to compute the derivative:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -193,101 +165,14 @@
   ("Broadcasting") as a function of the number of qubits is given
   [here](https://pennylane.readthedocs.io/en/stable/_images/default_qubit_native_broadcast_speedup.png).
 
-* Operations for quantum chemistry now also support parameter broadcasting.
+* Operations for quantum chemistry now support parameter broadcasting.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
-
-  Similar to standard parametrized operations, quantum chemistry operations now
-  also work with broadcasted parameters:
 
   ```pycon
   >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
   >>> op.matrix().shape
   (3, 4, 4)
   ```
-  
-<h4>The SPSA optimizer 🦾</h4>
-
-* The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
-  is available via `qml.SPSAOptimizer`.
-  [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
-
-  TODO: link to docs
-
-  The SPSA optimizer is suitable for cost functions whose evaluation may involve
-  noise, as optimization with SPSA may significantly decrease the number of
-  quantum executions for the entire optimization. Use the SPSA optimizer like you
-  would any other optimizer:
-
-  ```python
-  max_iterations = 50
-  opt = qml.SPSA(maxiter=max_iterations) # TODO: check documentation for SPSA
-
-  for _ in range(max_iterations):
-      params, cost = opt.step_and_cost(cost, params)
-  ```  
-
-<h4>Relative entropy is now available in the quantum information module `qml.qinfo` 💥</h4>
-
-* The quantum information module now supports computation of [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy).
-  [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
-
-  To calculate [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy), one requires two quantum states and subspaces over 
-  which you would like to calculate the relative entropy. We've enabled two cases 
-  for calculating the relative entropy:
-  
-  A QNode transform via `qml.qinfo.relative_entropy`:
-
-  ```python
-  dev = qml.device('default.qubit', wires=2)
-
-  @qml.qnode(dev)
-  def circuit(param):
-      qml.RY(param, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
-  >>> x, y = np.array(0.4), np.array(0.6)
-  >>> relative_entropy_circuit((x,), (y,))
-  0.017750012490703237
-  ```
-
-  We also add support in `qml.math` for flexible post-processing:
-
-  ```pycon
-  >>> rho = np.array([[0.3, 0], [0, 0.7]])
-  >>> sigma = np.array([[0.5, 0], [0, 0.5]])
-  >>> qml.math.relative_entropy(rho, sigma)
-  tensor(0.08228288, requires_grad=True)
-  ```
-
-<h4>Backpropagation with Jax for `DefaultMixed 🙌</h4>
-
-* The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
-  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
-  [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
-
-  ```python
-  dev = qml.device("default.mixed", wires=2)
-
-  @qml.qnode(dev, diff_method="backprop", interface="jax")
-  def circuit(angles):
-      qml.RX(angles[0], wires=0)
-      qml.RY(angles[1], wires=1)
-      return qml.expval(qml.PauliZ(0) + qml.PauliZ(1))
-  ```
-
-  ```pycon
-  >>> angles = np.array([np.pi/6, np.pi/5], requires_grad=True)
-  >>> qml.grad(circuit)(params)
-  array([-0.8660254 , -0.25881905])
-  ```
-
-  Additionally, quantum channels now support Jax and Tensorflow tensors.
-  This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
-  `jax.jit`, or `jax.vmap`.
 
 <h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
@@ -488,72 +373,138 @@ of operators.
   for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
   `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
   `Operator.has_matrix` property.
-  
-<h4>Readout️</h4>
 
-* Added readout error functionality to the MixedDevice.
+<h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
+
+* The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
+  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+  [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
+
+  ```python
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev, diff_method="backprop", interface="jax")
+  def circuit(angles):
+      qml.RX(angles[0], wires=0)
+      qml.RY(angles[1], wires=1)
+      return qml.expval(qml.PauliZ(0) + qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> angles = np.array([np.pi/6, np.pi/5], requires_grad=True)
+  >>> qml.grad(circuit)(params)
+  array([-0.8660254 , -0.25881905])
+  ```
+  
+  Additionally, quantum channels now support Jax and Tensorflow tensors.
+  This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
+  `jax.jit`, or `jax.vmap`.
+
+* The `DefaultMixed` device now supports readout error.
   [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
 
-  Readout error has been added by applying a BitFlip channel to the wires
-  measured after the diagonalizing gates corresponding to the measurement
-  observable has been applied. The probability of the readout error occurring
-  should be passed when creating the device.
+  When creating an instance of `qml.device` using `"default.mixed"`, a new 
+  keyword argument called `readout_prob` can be specified. Any circuits running
+  on a `DefaultMixed` device with a finite `readout_prob` (upper-bounded by 1) 
+  will alter the measurements performed at the end of the circuit similarly to how
+  a `qml.BitFlip` channel would affect circuit measurements:
 
   ```pycon
   >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
   >>> @qml.qnode(dev)
   ... def circuit():
   ...     return qml.expval(qml.PauliZ(0))
-  >>> print(circuit())
+  >>> circuit()
   0.8
   ```
   
-<h4>New measurements</h4>
+<h4>Relative entropy is now available in `qml.qinfo` 💥</h4>
 
-* Added `qml.counts` which samples from the supplied observable returning the number of counts
-  for each sample.
+* The quantum information module now supports computation of [relative entropy](https://en.wikipedia.org/wiki/Quantum_relative_entropy).
+  [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
+
+  We've enabled two cases for calculating the relative entropy:
+  
+  - A QNode transform via `qml.qinfo.relative_entropy`:
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(param):
+      qml.RY(param, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
+  >>> x, y = np.array(0.4), np.array(0.6)
+  >>> relative_entropy_circuit((x,), (y,))
+  0.017750012490703237
+  ```
+
+ - Support in `qml.math` for flexible post-processing:
+
+  ```pycon
+  >>> rho = np.array([[0.3, 0], [0, 0.7]])
+  >>> sigma = np.array([[0.5, 0], [0, 0.5]])
+  >>> qml.math.relative_entropy(rho, sigma)
+  tensor(0.08228288, requires_grad=True)
+  ```
+
+<h4>A new measurement, operator, and optimizer ✨</h4>
+
+* A new measurement called [`qml.counts`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.counts.html) 
+  is available.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
   [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
   [(#2876)](https://github.com/PennyLaneAI/pennylane/pull/2876)
 
-  Note that the change included creating a new `Counts` measurement type in `measurements.py`.
+  QNodes with `shots != None` that return [`qml.counts`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.counts.html) 
+  will yield a dictionary whose keys are bitstrings representing computational basis 
+  states that were measured, and whose values are the corresponding counts (i.e., 
+  how many times that computational basis state was measured):
 
-  `qml.counts` can be used to obtain counted raw samples in the computational basis:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=1000)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.counts()
+  ```
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-  >>>
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...     qml.Hadamard(wires=0)
-  ...     qml.CNOT(wires=[0, 1])
-  ...     return qml.counts()
-  >>> result = circuit()
-  >>> print(result)
+  >>> circuit()
   {'00': 495, '11': 505}
   ```
 
-  Counts can also be obtained when sampling the eigenstates of an observable:
+  `qml.counts` can also accept Observables, where the resulting dictionary is ordered
+  by the eigenvalues of the Observable.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=1000)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
+  ```
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-  >>>
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...   qml.Hadamard(wires=0)
-  ...   qml.CNOT(wires=[0, 1])
-  ...   return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
-  >>> result = circuit()
-  >>> print(result)
+  >>> circuit()
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
   
-<h4>New operator</h4>
-
-* New FlipSign operator that flips the sign for a given basic state. 
+* An operator called [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html) 
+  is now available.
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
-  Mathematically, `qml.FlipSign` functions as follows: 
+  Mathematically, [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html)  
+  functions  as follows: 
   $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where 
   $\vert m \rangle$ is an arbitrary qubit state and $n$ is a qubit configuration:
 
@@ -574,6 +525,21 @@ of operators.
   >>> circuit()
   tensor([ 0.5+0.j  -0.5+0.j 0.5+0.j  0.5+0.j], requires_grad=True)
   ```
+
+* The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
+  is available via [`qml.SPSAOptimizer`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.SPSAOptimizer.html).
+  [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
+
+  The SPSA optimizer is suitable for cost functions whose evaluation may involve
+  noise. Use the SPSA optimizer like you would any other optimizer:
+
+  ```python
+  max_iterations = 50
+  opt = qml.SPSA(maxiter=max_iterations) # TODO: check documentation for SPSA
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
 
 <h4>More drawing styles 🎨</h4>
 
