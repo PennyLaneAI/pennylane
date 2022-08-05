@@ -27,9 +27,6 @@ def simplify(op: Operator):
     Args:
         op (.Operator): an operator
 
-    Keyword Args:
-        depth (int): Reduced depth. Default is -1.
-
     Returns:
         .Operator: simplified operator
 
