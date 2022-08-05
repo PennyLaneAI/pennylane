@@ -1156,7 +1156,7 @@ class TestInBackprop:
         assert res == [False, False]
 
     def test_tf(self):
-        """TensorFlow tensors will True *if* they are being watched by a gradient tape"""
+        """The value of in_backprop for TensorFlow tensors is True *if* they are being watched by a gradient tape"""
         t1 = tf.Variable([1.0, 2.0])
         t2 = tf.constant([1.0, 2.0])
         assert not fn.in_backprop(t1)
