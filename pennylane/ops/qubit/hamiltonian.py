@@ -371,12 +371,7 @@ class Hamiltonian(Observable):
             c = self.coeffs[i]
             op = op if isinstance(op, Tensor) else Tensor(op)
 
-            ind = None
-            for j, o in enumerate(new_ops):
-                if op.compare(o):
-                    ind = j
-                    break
-
+            ind = next((j for j, o in enumerate(new_ops) if op.compare(o)), None)
             if ind is not None:
                 new_coeffs[ind] += c
                 if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
