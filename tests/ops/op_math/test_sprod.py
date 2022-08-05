@@ -500,6 +500,30 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_scalar_equal_to_1(self):
+        """Test the simplify method when the scalar is 1."""
+        sprod_op = s_prod(1, qml.PauliX(0))
+        final_op = qml.PauliX(0)
+        simplified_op = sprod_op.simplify()
+
+        assert isinstance(simplified_op, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_simplify_nested_sprod_scalar_equal_to_1(self):
+        """Test the simplify method with nested SProd where the global scalar is 1."""
+        sprod_op = s_prod(3, s_prod(1 / 3, qml.PauliX(0)))
+        final_op = qml.PauliX(0)
+        simplified_op = sprod_op.simplify()
+
+        assert isinstance(simplified_op, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
 
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)
