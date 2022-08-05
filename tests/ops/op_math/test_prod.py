@@ -168,7 +168,12 @@ class TestInitialization:
 
         assert coeff == [1.0]
         assert len(prod_term_ops) == 1
-        assert qml.equal(prod_op, prod_term_ops[0])
+        assert prod_op.id == prod_term_ops[0].id
+        assert prod_op.data == prod_term_ops[0].data
+        assert prod_op.wires == prod_term_ops[0].wires
+
+        for f1, f2 in zip(prod_op.factors, prod_term_ops[0].factors):
+            assert qml.equal(f1, f2)
 
     def test_batch_size_is_None(self):
         """Test that calling batch_size returns None
