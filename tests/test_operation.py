@@ -816,7 +816,7 @@ class TestOperatorIntegration:
             assert s1.data == s2.data
         assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
 
-    def test_dunder_methods(self):
+    def test_sub_rsub_and_neg_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
         sum_op = qml.PauliX(0) - 5
         sum_op_2 = -(5 - qml.PauliX(0))
@@ -849,14 +849,6 @@ class TestOperatorIntegration:
         assert prod_op.wires == final_op.wires
         assert prod_op.data == final_op.data
         assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
-
-    def test_multiply_operator_with_observable_valid(self):
-        """Test that now it is valid to multiply an operator with an observable."""
-        PX = qml.PauliX(0)
-        CNOT = qml.CNOT(wires=[0, 1])
-        PZ = qml.PauliZ(0)
-        PX @ CNOT
-        CNOT @ (PX @ PZ)
 
     def test_mul_with_not_supported_object_raises_error(self):
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
@@ -1218,7 +1210,8 @@ class TestTensor:
         with pytest.raises(
             ValueError, match="Can only perform tensor products between observables"
         ):
-            _ = 4 @ X
+            T = X @ Z
+            4 @ T
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
