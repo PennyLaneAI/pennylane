@@ -23,7 +23,6 @@ from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math.controlled_class import ControlledOp
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
-from pennylane.templates.layers import simplified_two_design
 
 
 class TempOperator(qml.operation.Operator):
@@ -294,65 +293,11 @@ class TestSimplify:
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
         assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
 
-    def test_simplify_method_with_depth_equal_to_0(self):
-        """Test the simplify method with depth equal to 0."""
-        pow_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        simplified_op = pow_op.simplify(depth=0)
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Pow)
-        assert pow_op.id == simplified_op.id
-        assert pow_op.data == simplified_op.data
-        assert pow_op.wires == simplified_op.wires
-        assert pow_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        assert isinstance(simplified_op.base, qml.ops.Sum)
-        for s1, s2 in zip(pow_op.base.summands, simplified_op.base.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
-
-    def test_simplify_method_with_default_depth(self):
+    def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
         final_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), 2)
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Pow)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        assert isinstance(simplified_op.base, qml.ops.Sum)
-        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
-
-    def test_simplify_method_with_depth_equal_to_1(self):
-        """Test the simplify method with depth equal to 1."""
-        pow_op = Pow(
-            qml.ops.Sum(
-                qml.ops.Sum(
-                    qml.ops.Sum(qml.PauliX(0), qml.Identity(wires=0)), qml.RX(1.9, wires=1)
-                ),
-                qml.RZ(1.32, wires=0),
-            )
-        )
-
-        final_op = Pow(
-            qml.ops.Sum(
-                qml.ops.Sum(qml.PauliX(0), qml.Identity(wires=0)),
-                qml.RX(1.9, wires=1),
-                qml.RZ(1.32, wires=0),
-            )
-        )
-        simplified_op = pow_op.simplify(depth=1)
 
         # TODO: Use qml.equal when supported for nested operators
 

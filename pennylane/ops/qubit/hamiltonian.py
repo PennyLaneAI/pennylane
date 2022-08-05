@@ -342,7 +342,7 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def simplify(self):  # pylint: disable=arguments-differ
+    def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
@@ -585,10 +585,8 @@ class Hamiltonian(Observable):
             )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
-        try:
-            return super().__add__(other=H)
-        except ValueError as e:
-            raise ValueError(f"Cannot add Hamiltonian and {type(H)}") from e
+
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     __radd__ = __add__
 

@@ -475,9 +475,9 @@ class TestSimplify:
         controlled_op = Controlled(qml.RZ(1.32, wires=0) + qml.Identity(wires=0), control_wires=1)
         assert controlled_op.arithmetic_depth == 2
 
-    def test_simplify_method_with_default_depth(self):
+    def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
-        controlled_op = ControlledOp(
+        controlled_op = Controlled(
             qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1), control_wires=2
         )
         final_op = Controlled(
@@ -495,54 +495,20 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
-    def test_simplify_method_with_depth_equal_to_1(self):
-        """Test the simplify method with depth equal to 1."""
-        controlled_op = Controlled(
-            qml.op_sum(
-                qml.op_sum(qml.op_sum(qml.PauliX(0), qml.Identity(wires=0)), qml.RX(1.9, wires=1)),
-                qml.RZ(1.32, wires=0),
-            ),
-            control_wires=2,
-        )
-
-        final_op = Controlled(
-            qml.op_sum(
-                qml.op_sum(qml.PauliX(0), qml.Identity(wires=0)),
-                qml.RX(1.9, wires=1),
-                qml.RZ(1.32, wires=0),
-            ),
-            control_wires=2,
-        )
-        simplified_op = controlled_op.simplify(depth=1)
+    def test_simplify_nested_controlled_ops(self):
+        """Test the simplify method with nested control operations on different wires."""
+        controlled_op = Controlled(Controlled(qml.PauliX(0), 1), 2)
+        final_op = Controlled(qml.PauliX(0), [2, 1])
+        simplified_op = controlled_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Controlled)
-        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
-
-    def test_simplify_method_with_depth_equal_to_0(self):
-        """Test the simplify method with depth equal to 1."""
-        controlled_op = Controlled(
-            qml.op_sum(
-                qml.op_sum(qml.op_sum(qml.PauliX(0), qml.Identity(wires=0)), qml.RX(1.9, wires=1)),
-                qml.RZ(1.32, wires=0),
-            ),
-            control_wires=2,
-        )
-        simplified_op = controlled_op.simplify(depth=0)
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, Controlled)
-        for s1, s2 in zip(controlled_op.base.summands, simplified_op.base.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        assert isinstance(simplified_op.base, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
 
 class TestQueuing:

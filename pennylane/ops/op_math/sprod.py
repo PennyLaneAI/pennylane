@@ -198,24 +198,18 @@ class SProd(SymbolicOp):
         """
         return None
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + self.base.arithmetic_depth
-
-    def simplify(self, depth=-1) -> Operator:
-        if depth == 0:
-            return self
+    def simplify(self) -> Operator:
         if isinstance(self.base, SProd):
             scalar = self.scalar * self.base.scalar
-            if scalar == 1 and (depth > 1 or depth < -1):
-                return self.base.base.simplify(depth=depth - 2)
-            return SProd(scalar=scalar, base=self.base.base.simplify(depth=depth - 1))
+            if scalar == 1:
+                return self.base.base.simplify()
+            return SProd(scalar=scalar, base=self.base.base.simplify())
         if isinstance(self.base, Sum):
-            simplified_sum = self.base.simplify(depth=depth)
+            simplified_sum = self.base.simplify()
             return Sum(
                 *(
-                    SProd(scalar=self.scalar, base=summand).simplify(depth=depth - 1)
+                    SProd(scalar=self.scalar, base=summand).simplify()
                     for summand in simplified_sum.summands
                 )
             )
-        return SProd(scalar=self.scalar, base=self.base.simplify(depth=depth))
+        return SProd(scalar=self.scalar, base=self.base.simplify())

@@ -4,6 +4,36 @@
 
 <h3>New features since last release</h3>
 
+* Added readout error functionality to the MixedDevice.
+  [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
+
+  Readout error has been added by applying a BitFlip channel to the wires
+  measured after the diagonalizing gates corresponding to the measurement
+  observable has been applied. The probability of the readout error occurring
+  should be passed when creating the device.
+
+  ```pycon
+  >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> print(circuit())
+  0.8
+  ```
+
+* Operations for quantum chemistry now also support parameter broadcasting
+  in their numerical representations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+  Similar to standard parametrized operations, quantum chemistry operations now
+  also work with broadcasted parameters:
+
+  ```pycon
+  >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
+  >>> op.matrix().shape
+  (3, 4, 4)
+  ```
+
 * The gradient transform `qml.gradients.param_shift` now accepts the new Boolean keyword
   argument `broadcast`. If it is set to `True`, broadcasting is used to compute the derivative.
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
@@ -259,8 +289,9 @@
   >>> relative_entropy_circuit((x,), (y,))
   0.017750012490703237
   ```
-
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
+  
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
+  drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -283,6 +314,15 @@
   ```
   
 **Operator Arithmetic:**
+
+* `default.qubit` now will natively execute any operation that defines a matrix except
+  for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
+  `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
+  `Operator.has_matrix` property.
+
+* When adjoint differentiation is requested, circuits are now decomposed so
+  that all trainable operations have a generator.
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
 * Adds the `Controlled` symbolic operator to represent a controlled version of any
   operation.
@@ -342,6 +382,19 @@
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
   RZ**2(1.0, wires=[0])
+  ```
+
+* Added `__mul__` and `__matmul__` dunder methods to the `qml.operation.Operator` class so
+  that users can combine operators more naturally.
+  [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
+
+  ```pycon
+  >>> prod_op = qml.RX(1, wires=0) @ qml.RY(2, wires=0)
+  >>> prod_op
+  PauliX(wires=[0]) @ PauliZ(wires=[1])
+  >>> sprod_op = 6 * qml.RX(1, 0)
+  >>> sprod_op
+  6*(RX(1, wires=[0]))
   ```
 
 * Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum` and `Adjoint`
@@ -406,6 +459,74 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> scalar, theta = (1.2, 3.4)
   >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
   (array(-0.68362956), array(0.21683382))
+  ```
+
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
+and `SProd` operators so that users can reduce the depth of nested operators.
+
+```pycon
+>>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
+>>> sum_op.arithmetic_depth
+2
+>>> simplified_op = sum_op.simplify()
+>>> simplified_op.arithmetic_depth
+1
+```
+
+* A `Prod` symbolic class is added that allows users to represent the Prod of operators.
+  [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
+
+  The `Prod` class provides functionality like any other PennyLane operator. We can
+  get the matrix, eigenvalues, terms, diagonalizing gates and more.
+
+  ```pycon
+  >>> prop_op = Prod(qml.PauliX(0), qml.PauliZ(0))
+  >>> prop_op
+  PauliX(wires=[0]) @ PauliZ(wires=[0])
+  >>> qml.matrix(prop_op)
+  array([[ 0,  -1],
+         [ 1,   0]])
+  >>> prop_op.terms()
+  ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+  ```
+
+  The `prod_op` can also be used inside a `qnode` as an observable.
+  If the circuit is parameterized, then we can also differentiate through the
+  product observable.
+
+  ```python
+  prod_op = Prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      return qml.expval(prod_op)
+  ```
+
+  ```pycon
+  >>> weights = qnp.array([0.1], requires_grad=True)
+  >>> qml.grad(circuit)(weights)
+  tensor([-0.07059288589999416], requires_grad=True)
+  ```
+  
+  The `prod_op` can also be used inside a `qnode` as an operation which,
+  if parameterized, can be differentiated.
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(theta):
+      qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> circuit(1.23)
+  tensor(0.33423773, requires_grad=True)
+  >>> qml.grad(circuit)(1.23)
+  -0.9424888019316975
   ```
 
 * New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
@@ -520,6 +641,46 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
   [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
+* The argument `argnum` of the function `qml.batch_input` has been redefined: now it indicates the
+  indices of the batched parameters, which need to be non-trainable, in the quantum tape. Consequently, its default
+  value (set to 0) has been removed.
+  [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
+
+  Before this breaking change, one could call `qml.batch_input` without any arguments when using
+  batched inputs as the first argument of the quantum circuit.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=None)
+
+  @qml.batch_input()  # argnum = 0
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(inputs, weights):  # argument `inputs` is batched
+      qml.RY(weights[0], wires=0)
+      qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
+      qml.RY(weights[1], wires=1)
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  With this breaking change, users must set a value to `argnum` specifying the index of the
+  batched inputs with respect to all quantum tape parameters. In this example the quantum tape
+  parameters are `[ weights[0], inputs, weights[1] ]`, thus `argnum` should be set to 1, specifying
+  that `inputs` is batched:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=None)
+
+  @qml.batch_input(argnum=1)
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(inputs, weights):
+      qml.RY(weights[0], wires=0)
+      qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
+      qml.RY(weights[1], wires=1)
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+* Adds `expm` to the `pennylane.math` module for matrix exponentiation.
+  [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -570,11 +731,16 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   which were transformed using `qml.transform.insert()`.
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
+* Fixes a bug where `qml.batch_input` raised an error when using a batched operator that was not
+  located at the beginning of the circuit. In addition, now `qml.batch_input` raises an error when
+  using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
+  [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Samuel Banning, Juan Miguel Arrazola, Utkarsh Azad, David Ittah, Soran Jahangiri, Edward Jiang,
-Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
-Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
-Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
+Ankit Khandelwal, Meenu Kumari, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma,
+Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko,
+Shuli Shu, Jay Soni, Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
