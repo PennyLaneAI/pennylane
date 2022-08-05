@@ -304,9 +304,10 @@ of operators.
 
 * Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
   and `SProd` operators so that users can reduce the depth of nested operators.
+  [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
 
   ```pycon
-  >>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliZ(0)))
+  >>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
   >>> sum_op.arithmetic_depth
   2
   >>> simplified_op = sum_op.simplify()
@@ -314,6 +315,28 @@ of operators.
   1
   ```
 
+* `qml.simplify` can now be used instead of using each operator's simplify method.
+  [(#2854)](https://github.com/PennyLaneAI/pennylane/pull/2854)
+
+  This wrapper can also be used inside circuits:
+
+ ```python
+  @qml.qnode(qml.device('default.qubit', wires=1))
+  def circuit(x, simplify=True):
+      op = qml.adjoint(qml.adjoint(qml.RX(x, wires=0)))
+      if simplify:
+          qml.simplify(op)
+      return qml.expval(qml.PauliZ(0))
+
+  print(qml.draw(circuit)(1.2, simplify=False))
+  print(qml.draw(circuit)(1.2))
+  ```
+
+  ```pycon
+  0: ──RX(1.20)††─┤  <Z>
+  0: ──RX(1.20)─┤  <Z>
+  ```
+  
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
 
