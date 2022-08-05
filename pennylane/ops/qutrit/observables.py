@@ -53,6 +53,8 @@ class THermitian(Hermitian):
 
     """
 
+    _eigs = {}
+
     # This method is overridden to update the docstring.
     @staticmethod
     def compute_matrix(A):

@@ -266,7 +266,7 @@ class TestExpval:
     # TODO: Add test for expval of non-parametrized observables
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
@@ -279,14 +279,14 @@ class TestExpval:
         ],
     )
     def test_expval_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0])
+        obs = observable(np.array(mat), wires=[0])
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(input).reshape([3])
+        qutrit_device_1_wire._state = np.array(state).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.expval(obs)
 
@@ -301,7 +301,7 @@ class TestExpval:
     obs_2 = np.kron(C, D)
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (
                 qml.THermitian,
@@ -352,14 +352,14 @@ class TestExpval:
         ],
     )
     def test_expval_two_wires_with_parameters(
-        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+        self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
     ):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0, 1])
+        obs = observable(np.array(mat), wires=[0, 1])
 
         qutrit_device_2_wires.reset()
-        qutrit_device_2_wires._state = np.array(input).reshape([3] * 2)
+        qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.expval(obs)
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
@@ -386,7 +386,7 @@ class TestVar:
     # TODO: Add test for var of non-parametrized observables
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
@@ -399,14 +399,14 @@ class TestVar:
         ],
     )
     def test_var_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0])
+        obs = observable(np.array(mat), wires=[0])
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(input).reshape([3])
+        qutrit_device_1_wire._state = np.array(state).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.var(obs)
 
@@ -421,7 +421,7 @@ class TestVar:
     obs_2 = np.kron(C, D)
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (
                 qml.THermitian,
@@ -462,14 +462,14 @@ class TestVar:
         ],
     )
     def test_var_two_wires_with_parameters(
-        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+        self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
     ):
         """Tests that variances are properly calculated for two-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0, 1])
+        obs = observable(np.array(mat), wires=[0, 1])
 
         qutrit_device_2_wires.reset()
-        qutrit_device_2_wires._state = np.array(input).reshape([3] * 2)
+        qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
