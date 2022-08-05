@@ -328,11 +328,6 @@ class Prod(Operator):
     def _simplify_factors(self) -> Tuple[List[Sum], List[Operator]]:
         """Reduces the depth of nested factors.
 
-        If ``depth`` is not provided or negative, then the factors list is completely flattenned.
-
-        Keyword Args:
-            depth (int): Reduced depth. Default is -1.
-
         Returns:
             Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
             factors
