@@ -166,9 +166,6 @@ class MeasurementProcess:
         if self.return_type is State:
             return complex
 
-        if self.return_type is Shadow:
-            return int
-
         if self.return_type is Sample:
 
             # Note: we only assume an integer numeric type if the observable is a
@@ -242,7 +239,7 @@ class MeasurementProcess:
             return shape
 
         # Then: handle return types that require a device; no shot vector
-        if device is None and self.return_type in (Probability, State, Sample, Shadow):
+        if device is None and self.return_type in (Probability, State, Sample):
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of the measurement process; "
                 + f"got return type {self.return_type}."
@@ -269,11 +266,6 @@ class MeasurementProcess:
 
             # qml.sample() case
             return (1, device.shots, len_wires)
-
-        if self.return_type == Shadow:
-            # the first entry of tensor represents the measured bits,
-            # and the second indicate the indices of the unitaries used
-            return (2, device.shots, len(device.wires))
 
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
@@ -535,6 +527,40 @@ class ShadowMeasurementProcess(MeasurementProcess):
     def __init__(self, *args, seed=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.seed = seed
+
+    @property
+    def numeric_type(self):
+        """The Python numeric type of the measurement result.
+
+        Returns:
+            type: This is always ``int``.
+        """
+        return int
+
+    def shape(self, device=None):
+        """The expected output shape of the ShadowMeasurementProcess.
+
+        Args:
+            device (.Device): a PennyLane device to use for determining the shape
+
+        Returns:
+            tuple: the output shape; this is always ``(2, T, n)``, where ``T`` is the
+                number of device shots and ``n`` is the number of measured wires.
+
+        Raises:
+            MeasurementShapeError: when a device is not provided, since the output
+                shape is dependent on the device.
+        """
+        # the return type requires a device
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of a classical "
+                "shadow measurement process."
+            )
+
+        # the first entry of the tensor represents the measured bits,
+        # and the second indicate the indices of the unitaries used
+        return (2, device.shots, len(self.wires))
 
     def __copy__(self):
         obj = super().__copy__()
@@ -1092,11 +1118,11 @@ def classical_shadow(wires, seed_recipes=True):
     The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
     This measurement process returns the randomized Pauli measurements that are
     performed for each qubit and snapshot as an integer:
-    
+
     - 0 for Pauli X,
     - 1 for Pauli Y, and
     - 2 for PauliZ.
-    
+
     It also returns the measurement results; 0 if the 1 eigenvalue
     is sampled, and 1 if the -1 eigenvalue is sampled.
 
