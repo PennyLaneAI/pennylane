@@ -1224,11 +1224,15 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
+            wires = self.wires.tolist()
+            id_op = (
+                qml.ops.Prod(*(qml.Identity(w) for w in wires))  # pylint: disable=no-member
+                if len(wires) > 1
+                else qml.Identity(wires[0])
+            )
             return qml.ops.Sum(  # pylint: disable=no-member
                 self,
-                qml.ops.SProd(  # pylint: disable=no-member
-                    scalar=other, base=qml.Identity(wires=self.wires[0])
-                ),
+                qml.ops.SProd(scalar=other, base=id_op),  # pylint: disable=no-member
             )
         if isinstance(other, Operator):
             return qml.ops.Sum(self, other)  # pylint: disable=no-member
@@ -1239,16 +1243,16 @@ class Operator(abc.ABC):
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if isinstance(other, numbers.Number):
-            return qml.ops.SProd(scalar=other, base=self)  # pylint: disable=no-member
-        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+            return qml.s_prod(scalar=other, operator=self)
+        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
 
     __rmul__ = __mul__
 
     def __matmul__(self, other):
         """The product operation between Operator objects."""
         if isinstance(other, Operator):
-            return qml.ops.Prod(self, other)  # pylint: disable=no-member
-        raise ValueError(f"Cannot multiply Operator and {type(other)}")
+            return qml.prod(self, other)
+        raise ValueError("Can only perform tensor products between operators.")
 
     def __sub__(self, other):
         """The substraction operation of Operator-Operator objects and Operator-scalar."""
@@ -1666,7 +1670,7 @@ class Observable(Operator):
         try:
             return super().__matmul__(other=other)
         except ValueError as e:
-            raise ValueError("Can only perform tensor products between observables.") from e
+            raise ValueError("Can only perform tensor products between operators.") from e
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
