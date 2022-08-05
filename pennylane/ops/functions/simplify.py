@@ -14,6 +14,8 @@
 """
 This module contains the qml.simplify function.
 """
+from copy import copy
+
 import pennylane as qml
 from pennylane.operation import Operator
 
@@ -52,7 +54,7 @@ def simplify(op: Operator):
     """
     if qml.queuing.QueuingContext.recording():
         with qml.tape.stop_recording():
-            new_op = op.simplify()
+            new_op = copy(op.simplify())
         qml.queuing.QueuingContext.safe_update_info(op, owner=new_op)
         return qml.apply(new_op)
     return op.simplify()

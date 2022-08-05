@@ -44,3 +44,4 @@ class TestSimplify:
         tape: QuantumTape
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is simplified_op
+        assert tape._queue[op]["owner"] is simplified_op
