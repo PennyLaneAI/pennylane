@@ -18,7 +18,12 @@ from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import expand_matrix, Tensor
+from pennylane.operation import (
+    expand_matrix,
+    Tensor,
+    OperatorPropertyUndefined,
+    MatrixUndefinedError,
+)
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -28,10 +33,8 @@ class Exp(SymbolicOp):
     """A symbolic operator representating the exponential of a operator.
 
     Args:
-        base (~.operation.Operator)
-        coeff=1
-
-    .. note:: This Operator is only differentiable with JAX and TensorFlow.
+        base (~.operation.Operator): The Operator to be exponentiated
+        coeff=1 (Number): A scalar coefficient of the operator.
 
     **Example**
 
@@ -113,11 +116,19 @@ class Exp(SymbolicOp):
         return None
 
     def matrix(self, wire_order=None):
-        base_mat = self.base.matrix()
-        mat = math.expm(self.coeff * base_mat)
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return mat
+        if math.get_interface(self.coeff) == "autograd":
+            # math.expm is not differentiable with autograd
+            try:
+                diagonalizing_mat = qml.matrix(self.diagonalizing_gates)()
+                eigvals_mat = math.diag(self.eigvals())
+            except OperatorPropertyUndefined as e:
+                raise MatrixUndefinedError from e
+            mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
+        else:
+            base_mat = qml.matrix(self.base)
+            base_mat = math.convert_like(base_mat, self.coeff)
+            base_mat = math.cast(base_mat, "complex128")  # else tensorflow gets confused
+            mat = math.expm(self.coeff * base_mat)
 
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
@@ -149,7 +160,9 @@ class Exp(SymbolicOp):
         tensor([20.08553692,  0.04978707], requires_grad=True)
 
         """
-        return qml.math.exp(self.coeff * self.base.eigvals())
+        base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
+        base_eigvals = math.cast_like(base_eigvals, self.coeff)
+        return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Exp"

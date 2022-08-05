@@ -159,6 +159,7 @@ class DefaultQubit(QubitDevice):
         "Sum",
         "SProd",
         "Prod",
+        "Exp",
     }
 
     def __init__(

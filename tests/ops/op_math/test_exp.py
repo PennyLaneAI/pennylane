@@ -127,30 +127,45 @@ class TestMatrix:
 
         op = Exp(base, 3)
 
-        format = "lil"
-        sparse_mat = op.sparse_matrix(format=format)
-        assert sparse_mat.format == format
+        sp_format = "lil"
+        sparse_mat = op.sparse_matrix(format=sp_format)
+        assert sparse_mat.format == sp_format
 
         dense_mat = qml.matrix(op)
 
         assert qml.math.allclose(sparse_mat.toarray(), dense_mat)
 
 
-def test_pow(self):
-    """Test the pow decomposition method."""
-    base = qml.PauliX(0)
-    coeff = 2j
-    z = 0.3
+class TestMiscMethods:
+    def test_diagonalizing_gates(self):
 
-    op = Exp(base, coeff)
-    pow_op = op.pow(z)
+        base = qml.PauliX(0)
+        op = Exp(base, 1 + 2j)
+        for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates()):
+            assert qml.equal(op1, op2)
 
-    assert isinstance(pow_op, Exp)
-    assert pow_op.base is base
-    assert pow_op.coeff == coeff * z
+    def test_pow(self):
+        """Test the pow decomposition method."""
+        base = qml.PauliX(0)
+        coeff = 2j
+        z = 0.3
+
+        op = Exp(base, coeff)
+        pow_op = op.pow(z)
+
+        assert isinstance(pow_op, Exp)
+        assert pow_op.base is base
+        assert pow_op.coeff == coeff * z
+
+    def test_label(self):
+
+        op = Exp(qml.PauliZ(0), 2 + 3j)
+        assert op.label(decimals=4) == "Exp"
 
 
 class TestIntegration:
+    """Test Exp with gradients in qnodes."""
+
     @pytest.mark.jax
     def test_jax_qnode(self):
         """Test the execution and gradient of a jax qnode."""
@@ -192,11 +207,12 @@ class TestIntegration:
         assert qml.math.allclose(res, tf.cos(phi))
         assert qml.math.allclose(phi_grad, -tf.sin(phi))
 
-    def test_torch_execution(self):
+    @pytest.mark.torch
+    def test_torch_qnode(self):
         """Test execution with torch."""
         import torch
 
-        phi = torch.tensor(1.2, dtype=torch.float64)
+        phi = torch.tensor(1.2, dtype=torch.float64, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -208,9 +224,12 @@ class TestIntegration:
         res = circuit(phi)
         assert qml.math.allclose(res, torch.cos(phi))
 
+        res.backward()
+        assert qml.math.allclose(phi.grad, -torch.sin(phi))
+
     @pytest.mark.autograd
-    def test_autograd_execution(self):
-        """Test execution with pennylane numpy array."""
+    def test_autograd_qnode(self):
+        """Test execution and gradient with pennylane numpy array."""
         phi = qml.numpy.array(1.2)
 
         dev = qml.device("default.qubit", wires=1)
@@ -222,3 +241,90 @@ class TestIntegration:
 
         res = circuit(phi)
         assert qml.math.allclose(res, qml.numpy.cos(phi))
+
+        grad = qml.grad(circuit)(phi)
+        assert qml.math.allclose(grad, -qml.numpy.sin(phi))
+
+    @pytest.mark.autograd
+    def test_autograd_measurement(self):
+        """Test exp in a measurement with gradient and autograd."""
+
+        x = qml.numpy.array(2)
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit(x):
+            qml.Hadamard(0)
+            return qml.expval(Exp(qml.PauliZ(0), x))
+
+        res = circuit(x)
+        expected = 0.5 * (np.exp(x) + np.exp(-x))
+        assert qml.math.allclose(res, expected)
+
+        grad = qml.grad(circuit)(x)
+        expected_grad = 0.5 * (np.exp(x) - np.exp(-x))
+        assert qml.math.allclose(grad, expected_grad)
+
+    @pytest.mark.torch
+    def test_torch_measurement(self):
+        """Test Exp in a measurement with gradient and torch."""
+
+        import torch
+
+        x = torch.tensor(2.0, requires_grad=True, dtype=float)
+
+        @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
+        def circuit(x):
+            qml.Hadamard(0)
+            return qml.expval(Exp(qml.PauliZ(0), x))
+
+        res = circuit(x)
+        expected = 0.5 * (torch.exp(x) + torch.exp(-x))
+        assert qml.math.allclose(res, expected)
+
+        res.backward()
+        expected_grad = 0.5 * (torch.exp(x) - torch.exp(-x))
+        assert qml.math.allclose(x.grad, expected_grad)
+
+    @pytest.mark.jax
+    def test_jax_measurement(self):
+        """Test Exp in a measurement with gradient and jax."""
+
+        import jax
+        from jax import numpy as jnp
+
+        x = jnp.array(2.0)
+
+        @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
+        def circuit(x):
+            qml.Hadamard(0)
+            return qml.expval(Exp(qml.PauliZ(0), x))
+
+        res = circuit(x)
+        expected = 0.5 * (jnp.exp(x) + jnp.exp(-x))
+        assert qml.math.allclose(res, expected)
+
+        grad = jax.grad(circuit)(x)
+        expected_grad = 0.5 * (jnp.exp(x) - jnp.exp(-x))
+        assert qml.math.allclose(grad, expected_grad)
+
+    @pytest.mark.tf
+    def test_tf_measurement(self):
+        """Test Exp in a measurement with gradient and tensorflow."""
+        import tensorflow as tf
+
+        x = tf.Variable(2.0)
+
+        @qml.qnode(qml.device("default.qubit", wires=1), interface="tensorflow")
+        def circuit(x):
+            qml.Hadamard(0)
+            return qml.expval(Exp(qml.PauliZ(0), x))
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+
+        expected = 0.5 * (tf.exp(x) + tf.exp(-x))
+        assert qml.math.allclose(res, expected)
+
+        x_grad = tape.gradient(res, x)
+        expected_grad = 0.5 * (tf.exp(x) - tf.exp(-x))
+        assert qml.math.allclose(x_grad, expected_grad)
