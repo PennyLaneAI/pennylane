@@ -338,8 +338,6 @@ class Prod(Operator):
         for factor in factors:
             if isinstance(factor, Prod):
                 tmp_factors = cls._simplify_factors(factors=factor.factors)
-                if not isinstance(tmp_factors, tuple):
-                    tmp_factors = (tmp_factors,)
                 new_factors += tmp_factors
                 continue
             simplified_factor = factor.simplify()
@@ -348,7 +346,8 @@ class Prod(Operator):
             elif isinstance(simplified_factor, Sum):
                 new_factors += (simplified_factor.summands,)
             else:
-                new_factors += ((simplified_factor,),)
+                if not isinstance(simplified_factor, qml.Identity):
+                    new_factors += ((simplified_factor,),)
 
         return new_factors
 
@@ -356,6 +355,9 @@ class Prod(Operator):
         factors = self._simplify_factors(factors=self.factors)
         factors = list(itertools.product(*factors))
         if len(factors) == 1:
-            return Prod(*factors[0])
-        factors = [Prod(*factor).simplify() for factor in factors]
+            factor = factors[0]
+            if len(factor) == 1:
+                return factor[0]
+            return Prod(*factor)
+        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
         return Sum(*factors)
