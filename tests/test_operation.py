@@ -804,7 +804,7 @@ class TestOperatorIntegration:
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0) + 0
-        final_op = qml.ops.Sum(qml.PauliX(0), qml.ops.s_prod(5, qml.Identity(0)))
+        final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
         for s1, s2 in zip(sum_op.summands, final_op.summands):
@@ -816,9 +816,9 @@ class TestOperatorIntegration:
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qml.CNOT(wires=[0, 1])
-        final_op = qml.ops.Sum(
+        final_op = qml.op_sum(
             qml.CNOT(wires=[0, 1]),
-            qml.ops.s_prod(5, qml.ops.Prod(qml.Identity(0), qml.Identity(1))),
+            qml.s_prod(5, qml.prod(qml.Identity(0), qml.Identity(1))),
         )
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
@@ -828,7 +828,7 @@ class TestOperatorIntegration:
             assert s1.data == s2.data
         assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
 
-    def test_dunder_methods(self):
+    def test_sub_rsub_and_neg_dunder_methods(self):
         """Test the __sub__, __rsub__ and __neg__ dunder methods."""
         sum_op = qml.PauliX(0) - 5
         sum_op_2 = -(5 - qml.PauliX(0))
@@ -841,7 +841,7 @@ class TestOperatorIntegration:
         """Test the __mul__ dunder method with a scalar value."""
         sprod_op = 4 * qml.RX(1, 0)
         sprod_op2 = qml.RX(1, 0) * 4
-        final_op = qml.ops.SProd(scalar=4, base=qml.RX(1, 0))
+        final_op = qml.s_prod(scalar=4, operator=qml.RX(1, 0))
         assert isinstance(sprod_op, qml.ops.SProd)
         assert sprod_op.name == sprod_op2.name
         assert sprod_op.wires == sprod_op2.wires
@@ -855,20 +855,12 @@ class TestOperatorIntegration:
     def test_mul_with_operator(self):
         """Test the __matmul__ dunder method with an operator."""
         prod_op = qml.RX(1, 0) @ qml.PauliX(0)
-        final_op = qml.ops.Prod(qml.RX(1, 0), qml.PauliX(0))
+        final_op = qml.prod(qml.RX(1, 0), qml.PauliX(0))
         assert isinstance(prod_op, qml.ops.Prod)
         assert prod_op.name == final_op.name
         assert prod_op.wires == final_op.wires
         assert prod_op.data == final_op.data
         assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
-
-    def test_multiply_operator_with_observable_valid(self):
-        """Test that now it is valid to multiply an operator with an observable."""
-        PX = qml.PauliX(0)
-        CNOT = qml.CNOT(wires=[0, 1])
-        PZ = qml.PauliZ(0)
-        PX @ CNOT
-        CNOT @ (PX @ PZ)
 
     def test_mul_with_not_supported_object_raises_error(self):
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
@@ -1226,6 +1218,12 @@ class TestTensor:
         ):
             T = X @ Z
             T @ Y
+
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables"
+        ):
+            T = X @ Z
+            4 @ T
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
