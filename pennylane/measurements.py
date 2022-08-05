@@ -1137,6 +1137,95 @@ def classical_shadow(wires, seed_recipes=True):
             ensure that the same recipes are used when a tape containing this
             measurement is copied. Different seeds are still generated for
             different constructed tapes.
+
+    **Example**
+
+    Consider the following QNode that prepares a Bell state and performs a classical
+    shadow measurement:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.classical_shadow(wires=[0, 1])
+
+    Executing this QNode produces the sampled bits and the Pauli measurements used:
+
+    >>> bits, recipes = circuit()
+    >>> bits
+    tensor([[0, 0],
+            [1, 0],
+            [1, 0],
+            [0, 0],
+            [0, 1]], dtype=uint8, requires_grad=True)
+    >>> recipes
+    tensor([[2, 2],
+            [0, 2],
+            [1, 0],
+            [0, 2],
+            [0, 2]], dtype=uint8, requires_grad=True)
+
+    .. details::
+        :title: Usage Details
+
+        Consider again the QNode in the above example. Since the Pauli observables are
+        randomly sampled, executing this QNode again would produce different bits and Pauli recipes:
+
+        >>> bits, recipes = circuit()
+        >>> bits
+        tensor([[0, 1],
+                [0, 1],
+                [0, 0],
+                [0, 1],
+                [1, 1]], dtype=uint8, requires_grad=True)
+        >>> recipes
+        tensor([[1, 0],
+                [2, 1],
+                [2, 2],
+                [1, 0],
+                [0, 0]], dtype=uint8, requires_grad=True)
+
+        To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
+        interface should be used instead:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2, shots=5)
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.classical_shadow(wires=[0, 1])
+
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> np.all(recipes1 == recipes2)
+        True
+        >>> np.all(bits1 == bits2)
+        False
+
+        If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
+        the ``seed_recipes`` flag should be explicitly set to ``False``:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2, shots=5)
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.classical_shadow(wires=[0, 1], seed_recipes=False)
+
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> np.all(recipes1 == recipes2)
+        False
+        >>> np.all(bits1 == bits2)
+        False
     """
     wires = qml.wires.Wires(wires)
 
