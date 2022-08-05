@@ -23,12 +23,13 @@ import pennylane as qml
 from pennylane.wires import Wires
 from tests.ops.qubit.test_non_parametric_ops import NON_PARAMETRIZED_OPERATIONS
 
-from gate_data import TSHIFT, TCLOCK, TADD
+from gate_data import TSHIFT, TCLOCK, TADD, TSWAP
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.TShift, TSHIFT),
     (qml.TClock, TCLOCK),
     (qml.TAdd, TADD),
+    (qml.TSWAP, TSWAP),
 ]
 
 
