@@ -78,7 +78,7 @@
   omega = 169.69608
   error = 0.01
   ```
-  
+  x
   ```pycon
   >>> qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
   4377
@@ -87,6 +87,7 @@
   ```
 
 <h4>Differentiable error mitigation ⚙️</h4>
+
 
 * Differentiable zero-noise-extrapolation (ZNE) error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
@@ -590,6 +591,29 @@ of operators.
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is now fully 
   supported by `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
+
+* Custom devices inheriting from `DefaultQubit` or `QubitDevice` can break due to the introduction
+  of parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+
+  A custom device should only break if all three following statements hold simultaneously:
+
+  1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
+  2. The device implements custom methods in the simulation pipeline that are incompatible
+     with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
+  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+     dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
+     (or both).
+
+  The `capabilities["supports_broadcasting"]` is set to `True` for
+  `DefaultQubit`. Therefore typically, the easiest fix will be to change the
+  `capabilities["supports_broadcasting"]` flag to `False` for the child device
+  and/or to include a call to `broadcast_expand` in
+  `CustomDevice.batch_transform`, similar to how `Device.batch_transform` calls
+  it.
+
+  Separately from the above, custom devices that inherit from `QubitDevice` and implement a
+  custom `_gather` method need to allow for the kwarg `axis` to be passed to this `_gather` method.
 
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
   which provides an updated API that is incompatible which versions of the package 
