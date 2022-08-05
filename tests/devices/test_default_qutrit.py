@@ -376,7 +376,7 @@ class TestExpval:
         expval = circuit()
 
         # With 3 samples we are guaranteed to see a difference between
-        # an estimated expectation value an an analytically calculated one
+        # an estimated expectation value and an analytically calculated one
         assert not np.isclose(expval, 0.0)
 
 
