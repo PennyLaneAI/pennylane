@@ -16,6 +16,9 @@ This file contains the implementation of the SProd class which contains logic fo
 computing the scalar product of operations.
 """
 import pennylane as qml
+from pennylane.operation import Operator
+from pennylane.ops.op_math.sum import Sum
+
 from .symbolicop import SymbolicOp
 
 
@@ -201,7 +204,8 @@ class SProd(SymbolicOp):
         .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
 
         Returns:
             tensor_like: matrix representation
@@ -217,3 +221,21 @@ class SProd(SymbolicOp):
         Returns: None
         """
         return None
+
+    def simplify(self) -> Operator:
+        if self.scalar == 1:
+            return self.base.simplify()
+        if isinstance(self.base, SProd):
+            scalar = self.scalar * self.base.scalar
+            if scalar == 1:
+                return self.base.base.simplify()
+            return SProd(scalar=scalar, base=self.base.base.simplify())
+        if isinstance(self.base, Sum):
+            simplified_sum = self.base.simplify()
+            return Sum(
+                *(
+                    SProd(scalar=self.scalar, base=summand).simplify()
+                    for summand in simplified_sum.summands
+                )
+            )
+        return SProd(scalar=self.scalar, base=self.base.simplify())
