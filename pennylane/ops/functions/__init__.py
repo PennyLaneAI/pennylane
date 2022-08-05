@@ -22,6 +22,7 @@ This module contains functions that act on operators and tapes.
     ~eigvals
     ~generator
     ~matrix
+    ~equal
 
 """
 from .eigvals import eigvals
