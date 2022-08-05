@@ -1212,7 +1212,7 @@ class Operator(abc.ABC):
         return 0
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
-        """Reduces to the maximum the depth of nested operators.
+        """Reduce the depth of nested operators to the minimum.
 
         Returns:
             .Operator: simplified operator
@@ -1224,11 +1224,10 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
-            wires = self.wires.tolist()
             id_op = (
-                qml.prod(*(qml.Identity(w) for w in wires))
-                if len(wires) > 1
-                else qml.Identity(wires[0])
+                qml.prod(*(qml.Identity(w) for w in self.wires))
+                if len(self.wires) > 1
+                else qml.Identity(self.wires[0])
             )
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
         if isinstance(other, Operator):
