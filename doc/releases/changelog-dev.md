@@ -753,6 +753,9 @@ of operators.
   using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
+* Calling `qml.equal` with nested operators now raises a NotImplementedError.
+  [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
