@@ -217,10 +217,8 @@ class Prod(Operator):
         must be performed.
         """
         for o1, o2 in combinations(self.factors, r=2):
-            shared_wires = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
-            if shared_wires:
+            if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-
         return all(op.is_hermitian for op in self.factors)
 
     def decomposition(self):
@@ -355,8 +353,7 @@ class Prod(Operator):
         factors = list(itertools.product(*factors))
         if len(factors) == 1:
             factor = factors[0]
-            if len(factor) == 1:
-                return factor[0]
-            return Prod(*factor)
+            return factor[0] if len(factor) == 1 else Prod(*factor)
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+
         return Sum(*factors)
