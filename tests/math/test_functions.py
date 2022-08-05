@@ -1105,7 +1105,7 @@ class TestInBackprop:
 
     @pytest.mark.slow
     def test_jax(self):
-        """JAX DeviceArrays differentiability depends on the argnums argument"""
+        """The value of in_backprop for JAX DeviceArrays depends on the argnums argument"""
         res = None
 
         def cost_fn(t, s):
@@ -1126,7 +1126,7 @@ class TestInBackprop:
         assert res == [True, True]
 
     def test_autograd_backwards(self):
-        """Autograd trainability corresponds to the requires_grad attribute during the backwards pass."""
+        """The value of in_backprop for Autograd tensors corresponds to the requires_grad attribute during the backwards pass."""
         res = None
 
         def cost_fn(t, s):
