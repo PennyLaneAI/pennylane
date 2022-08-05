@@ -27,7 +27,7 @@ def enable_return():
 def disable_return():
     """Function that turns off the new return type system."""
     global __activated
-    __activated = False
+    __activated = False  # pragma: no cover
 
 
 def active_return():
