@@ -12,35 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the measure module"""
-from _pytest.nodes import Node
-import pytest
 import numpy as np
+import pytest
+from _pytest.nodes import Node
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
-from pennylane.operation import DecompositionUndefinedError
-
-from pennylane.queuing import AnnotatedQueue
 from pennylane.measurements import (
-    expval,
-    var,
-    sample,
-    probs,
-    state,
-    density_matrix,
-    Expectation,
-    Sample,
     Counts,
-    State,
-    Variance,
-    Probability,
-    MidMeasure,
+    Expectation,
     MeasurementProcess,
+    MeasurementShapeError,
     MeasurementValue,
     MeasurementValueError,
-    MeasurementShapeError,
+    MidMeasure,
+    Probability,
+    Sample,
+    State,
+    Variance,
+    density_matrix,
+    expval,
+    probs,
+    sample,
+    state,
+    var,
 )
+from pennylane.operation import DecompositionUndefinedError
+from pennylane.queuing import AnnotatedQueue
 
 
 @pytest.mark.parametrize(
@@ -546,7 +545,7 @@ class TestSample:
         def circuit():
             qml.Hadamard(wires=0)
             qml.PauliZ(0)
-            return qml.sample(qml.PauliZ(0), counts=False)
+            return qml.sample(qml.PauliZ(0))
 
         binned_samples = circuit()
 
@@ -558,8 +557,38 @@ class TestSample:
 class TestCounts:
     """Tests for the counts function"""
 
+    def test_providing_observable_and_wires(self):
+        """Test that a ValueError is raised if both an observable is provided and wires are
+        specified"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            return qml.counts(qml.PauliZ(0), wires=[0, 1])
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot specify the wires to sample if an observable is provided."
+            " The wires to sample will be determined directly from the observable.",
+        ):
+            res = circuit()
+
+    def test_not_an_observable(self):
+        """Test that a qml.QuantumFunctionError is raised if the provided
+        argument is not an observable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.52, wires=0)
+            return qml.counts(qml.CNOT(wires=[0, 1]))
+
+        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
+            sample = circuit()
+
     def test_counts_dimension(self, tol):
-        """Test that the sample function outputs counts of the right size"""
+        """Test that the counts function outputs counts of the right size"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=2, shots=n_sample)
@@ -567,7 +596,7 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliX(1), counts=True)
+            return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
 
         sample = circuit()
 
@@ -585,7 +614,7 @@ class TestCounts:
             qml.RX(0.54, wires=0)
 
             return (
-                qml.sample(qml.PauliZ(0), counts=True),
+                qml.counts(qml.PauliZ(0)),
                 qml.expval(qml.PauliX(1)),
                 qml.var(qml.PauliY(2)),
             )
@@ -605,7 +634,7 @@ class TestCounts:
         def circuit():
             qml.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0), counts=True)
+            return qml.counts(qml.PauliZ(0))
 
         result = circuit()
 
@@ -622,9 +651,9 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             return (
-                qml.sample(qml.PauliZ(0), counts=True),
-                qml.sample(qml.PauliZ(1), counts=True),
-                qml.sample(qml.PauliZ(2), counts=True),
+                qml.counts(qml.PauliZ(0)),
+                qml.counts(qml.PauliZ(1)),
+                qml.counts(qml.PauliZ(2)),
             )
 
         result = circuit()
@@ -642,7 +671,7 @@ class TestCounts:
 
         @qml.qnode(dev)
         def circuit():
-            res = qml.sample(qml.PauliZ(0), counts=True)
+            res = qml.counts(qml.PauliZ(0))
             return res
 
         circuit()
@@ -655,7 +684,7 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-            res = qml.sample(counts=True)
+            res = qml.counts()
             assert res.obs is None
             assert res.wires == qml.wires.Wires([])
             return res
@@ -671,7 +700,7 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-            res = qml.sample(wires=wires, counts=True)
+            res = qml.counts(wires=wires)
 
             assert res.obs is None
             assert res.wires == wires_obj
@@ -691,7 +720,7 @@ class TestCounts:
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.PauliX(1)
-            return qml.sample(wires=wires, counts=True)
+            return qml.counts(wires=wires)
 
         res = circuit()
         assert res == {basis_state: n_shots}
@@ -706,7 +735,7 @@ class TestCounts:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            return qml.sample(qml.PauliZ(0), counts=True)
+            return qml.counts(qml.PauliZ(0))
 
         res = circuit()
         assert res == {1: n_shots}
@@ -723,7 +752,7 @@ class TestCounts:
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.PauliX(1)
-            return qml.sample(wires=wires, counts=True)
+            return qml.counts(wires=wires)
 
         res = circuit()
 
@@ -744,7 +773,7 @@ class TestCounts:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            return qml.sample(qml.PauliZ(0), counts=True)
+            return qml.counts(qml.PauliZ(0))
 
         res = circuit()
 
@@ -766,7 +795,7 @@ class TestCounts:
             qml.PauliX(1)
             qml.PauliX(2)
             qml.PauliX(3)
-            return qml.sample(counts=True)
+            return qml.counts()
 
         res = circuit()
         basis_state = "0111"
@@ -789,7 +818,7 @@ class TestCounts:
             qml.PauliX(1)
             qml.PauliX(2)
             qml.PauliX(3)
-            return qml.sample(qml.PauliZ(0), counts=True)
+            return qml.counts(qml.PauliZ(0))
 
         res = circuit()
         sample = 1
@@ -828,7 +857,7 @@ class TestCounts:
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.PauliX(0)
-            return qml.sample(wires=0, counts=True), qml.apply(meas2)
+            return qml.counts(wires=0), qml.apply(meas2)
 
         res = circuit()
         assert isinstance(res, tuple)

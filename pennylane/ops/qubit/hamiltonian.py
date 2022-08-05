@@ -590,10 +590,8 @@ class Hamiltonian(Observable):
             )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
-        try:
-            return super().__add__(other=H)
-        except ValueError as e:
-            raise ValueError(f"Cannot add Hamiltonian and {type(H)}") from e
+
+        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
     __radd__ = __add__
 
