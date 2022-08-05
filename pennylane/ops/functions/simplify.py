@@ -19,7 +19,7 @@ from pennylane.operation import Operator
 
 
 @qml.op_transform
-def simplify(op: Operator, depth=-1):
+def simplify(op: Operator):
     """Reduces the depth of nested operators.
 
     If ``depth`` is not provided or negative, then the operator is reduced to the maximum.
@@ -64,7 +64,7 @@ def simplify(op: Operator, depth=-1):
     """
     if qml.queuing.QueuingContext.recording():
         with qml.tape.stop_recording():
-            new_op = op.simplify(depth=depth)
+            new_op = op.simplify()
         qml.queuing.QueuingContext.safe_update_info(op, owner=new_op)
         return qml.apply(new_op)
-    return op.simplify(depth=depth)
+    return op.simplify()
