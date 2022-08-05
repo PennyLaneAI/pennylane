@@ -51,7 +51,7 @@ Operator transform functions
 
     ~pennylane.ops.op_math.adjoint
     ~pennylane.ops.op_math.ctrl
-    ~pennylane.ops.op_math.cond
+    ~pennylane.transforms.cond
     ~pennylane.ops.op_math.op_sum
     ~pennylane.ops.op_math.prod
     ~pennylane.ops.op_math.s_prod
