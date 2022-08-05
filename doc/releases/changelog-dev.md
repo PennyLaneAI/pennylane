@@ -376,8 +376,8 @@
   more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
 
   ```pycon
-  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
-  >>> summed_op
+  >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> sum_op
   RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
@@ -448,6 +448,18 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
   (array(-0.68362956), array(0.21683382))
   ```
+
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
+and `SProd` operators so that users can reduce the depth of nested operators.
+
+```pycon
+>>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliZ(0)))
+>>> sum_op.arithmetic_depth
+2
+>>> simplified_op = sum_op.simplify()
+>>> simplified_op.arithmetic_depth
+1
+```
 
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
@@ -711,6 +723,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   located at the beginning of the circuit. In addition, now `qml.batch_input` raises an error when
   using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
+
+* Calling `qml.equal` with nested operators now raises a NotImplementedError.
+  [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
 <h3>Contributors</h3>
 

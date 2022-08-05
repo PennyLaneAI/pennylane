@@ -193,6 +193,7 @@ jobs:
           name: qcut-coverage
           path: ./coverage.xml
 
+  # Testing the new return types suite
   return-tests:
     runs-on: ubuntu-latest
 
