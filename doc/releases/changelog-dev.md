@@ -91,13 +91,7 @@
 * Differentiable zero-noise-extrapolation error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
 
-  In zero-noise-extrapolation (ZNE), the noise of a circuit is artificially increased by _folding_
-  the circuit. By executing an expectation value with increasing noise, we can extrapolate back to
-  zero noise by means of a polynomial fit. More details on this can be found in the details section
-  of the [documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html)
-  and a soon-to-appear demo [(PennyLaneAI/qml/529)](https://github.com/PennyLaneAI/qml/pull/529).
-
-  The new feature in this release is that ZNE that is now *differentiable*, meaning that you can now elevate any variational
+  The new feature in this release is that zero-noise-extrapolation (ZNE) that is now *differentiable*, meaning that you can now elevate any variational
   quantum algorithm to a *mitigated* algorithm with improved results on noisy hardware while maintaining differentiability throughout.
 
   In order to do so, use the [`qml.transforms.mitigate_with_zne`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.mitigate_with_zne.html) transform on your QNode, as a decorator, and provide the PennyLane proprietary
@@ -219,6 +213,8 @@
   is available via `qml.SPSAOptimizer`.
   [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
+  TODO: link to docs
+
   The SPSA optimizer is suitable for cost functions whose evaluation may involve
   noise, as optimization with SPSA may significantly decrease the number of
   quantum executions for the entire optimization. Use the SPSA optimizer like you
@@ -273,6 +269,7 @@
 
 * The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
   [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
+  [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
 
   ```python
   dev = qml.device("default.mixed", wires=2)
@@ -290,29 +287,9 @@
   array([-0.8660254 , -0.25881905])
   ```
 
-<h4>More support for Jax and Tensorflow tensors 😻</h4>
-
-* Quantum channels now support Jax and Tensorflow tensors.
-  [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
-  
+  Additionally, quantum channels now support Jax and Tensorflow tensors.
   This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
-  `jax.jit`, or `jax.vmap`:
-
-  ```python
-  dev = qml.device("default.mixed", wires=1)
-
-  @qml.qnode(dev, diff_method="backprop", interface="jax")
-  def circuit(t):
-      qml.PauliX(wires=0)
-      qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
-      return qml.expval(qml.PauliZ(0))
-  ```
-
-  ```pycon
-  >>> x = jnp.array([0.8, 1.0, 1.2])
-  >>> jax.vmap(circuit)(x)
-  DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
-  ```
+  `jax.jit`, or `jax.vmap`.
 
 <h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
@@ -437,7 +414,6 @@ of operators.
   operation.
   [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
-
 * When adjoint differentiation is requested, circuits are now decomposed so
   that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
@@ -509,6 +485,7 @@ of operators.
   >>> qml.grad(circuit)(1.23)
   -0.9424888019316975
   ```
+
 * `default.qubit` now will natively execute any operation that defines a matrix except
   for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
   `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
@@ -572,8 +549,9 @@ of operators.
 * New FlipSign operator that flips the sign for a given basic state. 
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
-  Mathematically, `qml.FlipSign` functions as follows: $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where $\vert m \rangle$ is an arbitrary qubit state and $n$ 
-  is a qubit configuration:
+  Mathematically, `qml.FlipSign` functions as follows: 
+  $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where 
+  $\vert m \rangle$ is an arbitrary qubit state and $n$ is a qubit configuration:
 
   ```python
   basis_state = [0, 1]
