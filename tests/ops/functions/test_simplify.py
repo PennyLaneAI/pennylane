@@ -15,6 +15,7 @@
 Unit tests for the qml.simplify function
 """
 import pennylane as qml
+from pennylane.tape import QuantumTape
 
 
 class TestSimplify:
@@ -35,4 +36,11 @@ class TestSimplify:
         sim_op = qml.simplify(op)
         assert sim_op.arithmetic_depth == 2
 
-    # TODO: Add more tests.
+    def test_simplify_method_with_queuing(self):
+        """Test the simplify method while queuing."""
+        with qml.tape.QuantumTape() as tape:
+            op = qml.adjoint(qml.adjoint(qml.PauliX(0)))
+            simplified_op = qml.simplify(op)
+        tape: QuantumTape
+        assert len(tape.circuit) == 1
+        assert tape.circuit[0] is simplified_op
