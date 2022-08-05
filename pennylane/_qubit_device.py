@@ -1462,7 +1462,6 @@ class QubitDevice(Device):
         if isinstance(obs, MeasurementProcess):
             outcomes = self.generate_basis_states(num_wires)
 
-            # ToDo: converting to str means code does not work with JAX
             # convert samples and outcomes from arrays to str for dict keys
             outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
