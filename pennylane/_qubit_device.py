@@ -1446,7 +1446,7 @@ class QubitDevice(Device):
             num_wires (int): number of wires the sampled observable was performed on
 
         Returns:
-            dict: dictionary with format {'outcome': num_occurences}, including all
+            dict: dictionary with format ``{'outcome': num_occurences}``, including all
                 outcomes for the sampled observable
 
         **Example**
