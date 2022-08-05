@@ -881,7 +881,7 @@ class TestCounts:
 
         res = circuit()
 
-        assert set(res.keys()) == set(qml.PauliZ.compute_eigvals())
+        assert set(res.keys()) == {-1, 1}
 
     def test_outcome_dict_keys_providing_no_observable_no_wires(self):
         """Test that the dictionary keys are the possible combinations of
