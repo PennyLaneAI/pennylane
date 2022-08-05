@@ -1467,7 +1467,7 @@ class QubitDevice(Device):
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
         else:
             try:
-                outcomes = obs.compute_eigvals()
+                outcomes = qml.eigvals(obs)
             #  if observable has no info on eigenvalues, we cannot return this measurement
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
