@@ -14,8 +14,10 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
+import pennylane as qml
 from pennylane.math import conj, transpose
 from pennylane.operation import AdjointUndefinedError, Observable, Operation
+from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
@@ -234,12 +236,12 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        # TODO: Should we add a self.do_queue attribute and instantiate the simplified class
-        # with the same value?
+        if isinstance(self.base, qml.Identity):
+            return self.base
         if isinstance(self.base, Adjoint):  # Adj(Adj(A)) = A
             return self.base.base.simplify()
         if isinstance(self.base, Sum):  # Adj(A + B) = Adj(A) + Adj(B)
-            simplified_sum = self.base.simplify()
-            return Sum(*(Adjoint(summand) for summand in simplified_sum.summands))
-
+            return Sum(*(Adjoint(summand) for summand in self.base.summands)).simplify()
+        if isinstance(self.base, Prod):  # Adj(AB) = Adj(B) @ Adj(A)
+            return Prod(*(Adjoint(factor) for factor in self.base.factors[::-1])).simplify()
         return Adjoint(base=self.base.simplify())

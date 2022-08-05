@@ -453,7 +453,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
 and `SProd` operators so that users can reduce the depth of nested operators.
 
 ```pycon
->>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
+>>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliZ(0)))
 >>> sum_op.arithmetic_depth
 2
 >>> simplified_op = sum_op.simplify()
