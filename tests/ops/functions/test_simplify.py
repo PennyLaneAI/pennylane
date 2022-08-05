@@ -41,7 +41,6 @@ class TestSimplify:
         with qml.tape.QuantumTape() as tape:
             op = qml.adjoint(qml.adjoint(qml.PauliX(0)))
             simplified_op = qml.simplify(op)
-        tape: QuantumTape
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is simplified_op
         assert tape._queue[op]["owner"] is simplified_op
