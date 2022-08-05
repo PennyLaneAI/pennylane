@@ -1,21 +1,26 @@
 repos:
-- repo: local
-  hooks:
-    - id: pylint
-      name: pylint
-      entry: pylint
-      language: system
-      types: [python]
-      args:
-        [
-          "-rn", # Only display messages
-          "-sn", # Don't display the score
-          "--rcfile=.pylintrc", # Link to your config file
-        ]
-      exclude: ^(doc/|tests/)
--   repo: https://github.com/psf/black
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+        args: [
+            "-rn", # Only display messages
+            "-sn", # Don't display the score
+            "--rcfile=.pylintrc", # Link to your config file
+          ]
+        exclude: ^(doc/|tests/)
+  - repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
-    - id: black
-      exclude: ^doc/
-      language_version: python3.8
+      - id: black
+        exclude: ^doc/
+        language_version: python3.8
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
+        exclude: ^doc/
