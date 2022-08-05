@@ -293,10 +293,24 @@ class TestSimplify:
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
         assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
 
+    def test_simplify_zero_power_multiple_wires(self):
+        """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
+        of Identity matrices."""
+        pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
+        final_op = qml.prod(qml.Identity(0), qml.Identity(1))
+        simplified_op = pow_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Prod)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
-        pow_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = Pow(qml.ops.Sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), 2)
+        pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
+        final_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), 2)
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators

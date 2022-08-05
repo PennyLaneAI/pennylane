@@ -19,6 +19,7 @@ from typing import Union
 
 from scipy.linalg import fractional_matrix_power
 
+import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane.operation import (
     DecompositionUndefinedError,
@@ -245,7 +246,11 @@ class Pow(SymbolicOp):
 
     def simplify(self) -> Union["Pow", Identity]:
         if self.z == 0:
-            return Identity(wires=self.wires[0])
+            return (
+                qml.prod(*(qml.Identity(w) for w in self.wires))
+                if len(self.wires) > 1
+                else qml.Identity(self.wires[0])
+            )
         if isinstance(self.base, Controlled):  # Pow(Controlled(base)) = Controlled(Pow(base))
             return Controlled(
                 base=Pow(self.base.base.simplify(), z=self.z),
