@@ -236,8 +236,6 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        # TODO: Should we add a self.do_queue attribute and instantiate the simplified class
-        # with the same value?
         if isinstance(self.base, qml.Identity):
             return self.base
         if isinstance(self.base, Adjoint):  # Adj(Adj(A)) = A
