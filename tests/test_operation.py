@@ -1215,6 +1215,11 @@ class TestTensor:
             T = X @ Z
             T @ Y
 
+        with pytest.raises(
+            ValueError, match="Can only perform tensor products between observables"
+        ):
+            _ = 4 @ X
+
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
         X = qml.PauliX(0)
