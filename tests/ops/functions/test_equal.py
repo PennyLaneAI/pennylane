@@ -15,12 +15,13 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-import pytest
-import numpy as np
-from pennylane import numpy as npp
-import pennylane as qml
 import itertools
 
+import numpy as np
+import pytest
+
+import pennylane as qml
+from pennylane import numpy as npp
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -147,9 +148,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -193,9 +194,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = [0, 1]
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -263,9 +264,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = [0, 1, 2, 3]
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -333,9 +334,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor([1, 2, 3])
         param_tf = tf.Variable([1, 2, 3])
@@ -402,9 +403,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor([1, 2])
         param_tf = tf.Variable([1, 2])
