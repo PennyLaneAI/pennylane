@@ -867,51 +867,69 @@ class TestCounts:
         for ind in counts_term_indices:
             assert isinstance(res[ind], dict)
 
-    def test_outcome_dict_keys_providing_observable(self):
-        """Test that the dictionary keys are the eigenvalues of the
-        observable if observable is given"""
+    def test_all_outcomes_kwarg_providing_observable(self):
+        """Test that the dictionary keys *all* eigenvalues of the observable,
+        including 0 count values, if observable is given and all_outcomes=True"""
 
         n_shots = 10
         dev = qml.device("default.qubit", wires=1, shots=n_shots)
 
         @qml.qnode(dev)
         def circuit():
-            res = qml.counts(qml.PauliZ(0))
+            res = qml.counts(qml.PauliZ(0), all_outcomes=True)
             return res
 
         res = circuit()
 
-        assert set(res.keys()) == {-1, 1}
+        assert res=={1: n_shots, -1: 0}
 
-    def test_outcome_dict_keys_providing_no_observable_no_wires(self):
-        """Test that the dictionary keys are the possible combinations of
-        basis states for the device if no wire count and no observable are given"""
+    def test_all_outcomes_kwarg_no_observable_no_wires(self):
+        """Test that the dictionary keys are *all* the possible combinations
+        of basis states for the device, including 0 count values, if no wire
+        count and no observable are given and all_outcomes=True"""
 
         n_shots = 10
         dev = qml.device("default.qubit", wires=2, shots=n_shots)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.counts()
+            return qml.counts(all_outcomes=True)
 
         res = circuit()
 
-        assert set(res.keys()) == {"00", "01", "10", "11"}
+        assert res=={'00': n_shots, '01': 0, '10': 0, '11': 0}
 
-    def test_outcome_keys_providing_no_observable_and_wires(self):
-        """Test that the dictionary keys are the possible combinations
-        of basis states for the specified wires if wire count is given"""
+    def test_all_outcomes_kwarg_providing_wires_and_no_observable(self):
+        """Test that the dictionary keys are *all* possible combinations
+        of basis states for the specified wires, including 0 count values,
+        if wire count is given and all_outcomes=True"""
 
         n_shots = 10
         dev = qml.device("default.qubit", wires=4, shots=n_shots)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.counts(wires=[0, 2])
+            return qml.counts(wires=[0, 2], all_outcomes=True)
 
         res = circuit()
 
-        assert set(res.keys()) == {"00", "01", "10", "11"}
+        assert res=={'00': n_shots, '01': 0, '10': 0, '11': 0}
+
+    def test_all_outcomes_hermitian(self):
+        """Tests that the all_outcomes=True option for counts works with the
+        qml.Hermitian observable"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+        A = p.array([[1, 0], [0, -1]])
+
+        @qml.qnode(dev)
+        def circuit(x):
+            return qml.counts(qml.Hermitian(x, wires=0))
+
+        res = circuit(A)
+
+        assert res=={-1.0: 0, 1.0: n_shots}
 
 
 class TestMeasure:
