@@ -921,7 +921,7 @@ class TestCounts:
 
         n_shots = 10
         dev = qml.device("default.qubit", wires=2, shots=n_shots)
-        A = p.array([[1, 0], [0, -1]])
+        A = np.array([[1, 0], [0, -1]])
 
         @qml.qnode(dev)
         def circuit(x):
