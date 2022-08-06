@@ -678,7 +678,7 @@ def sample(op=None, wires=None):
     return MeasurementProcess(Sample, obs=op, wires=wires)
 
 
-def counts(op=None, wires=None):
+def counts(op=None, wires=None, all_outcomes=False):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -764,8 +764,13 @@ def counts(op=None, wires=None):
             )
         wires = qml.wires.Wires(wires)
 
-    return MeasurementProcess(Counts, obs=op, wires=wires)
+    meas_process = MeasurementProcess(Counts, obs=op, wires=wires)
+    if all_outcomes:
+        meas_process.return_type.all_outcomes = True
+    else:
+        meas_process.return_type.all_outcomes = False
 
+    return meas_process
 
 def probs(wires=None, op=None):
     r"""Probability of each computational basis state.

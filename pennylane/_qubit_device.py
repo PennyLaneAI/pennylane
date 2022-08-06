@@ -1459,20 +1459,24 @@ class QubitDevice(Device):
             {'00': 2, '01': 0, '10': 1, '11': 0}
         """
 
-        if isinstance(obs, MeasurementProcess):
-            outcomes = self.generate_basis_states(num_wires)
+        outcomes = []
 
-            # convert samples and outcomes from arrays to str for dict keys
-            outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+        if isinstance(obs, MeasurementProcess):
+            # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+
+            if obs.return_type.all_outcomes:
+                outcomes = self.generate_basis_states(num_wires)
+                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
         else:
-            try:
-                outcomes = qml.eigvals(obs)
-            #  if observable has no info on eigenvalues, we cannot return this measurement
-            except qml.operation.EigvalsUndefinedError as e:
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot find outcomes for {obs.name}."
-                ) from e
+            if obs.return_type.all_outcomes:
+                try:
+                    outcomes = qml.eigvals(obs)
+                #  if observable has no info on eigenvalues, we cannot return this measurement
+                except qml.operation.EigvalsUndefinedError as e:
+                    raise qml.operation.EigvalsUndefinedError(
+                        f"Cannot find outcomes for {obs.name}."
+                    ) from e
 
         # generate empty outcome dict, populate values with state counts
         outcome_dict = {k: np.int64(0) for k in outcomes}
