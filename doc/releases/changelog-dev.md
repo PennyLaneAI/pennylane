@@ -420,7 +420,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   ...     return qml.counts()
   >>> result = circuit()
   >>> print(result)
-  {'00': 495, '01': 0, '10': 0,  '11': 505}
+  {'00': 495, '11': 505}
   ```
 
   Counts can also be obtained when sampling the eigenstates of an observable:
@@ -436,6 +436,21 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> result = circuit()
   >>> print(result)
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
+  ```
+  
+  Per default, counts returns only the outcomes observed in sampling. Optionally, specifying   `qml.counts(all_outcomes=True)` will return a dictionary containing all possible outcomes:
+  
+    ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.counts()
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '01': 0, '10': 0,  '11': 505}
   ```
 
 <h3>Improvements</h3>
