@@ -151,7 +151,7 @@ After executing the circuit, we can directly see how many times each measurement
 >>> print(result)
 ({1: 475, -1: 525}, {1: 475, -1: 525})
  
-Similarly, if the observable is not provided, the count of each computational basis state is returned.
+Similarly, if the observable is not provided, the count of the observed computational basis state is returned.
 
 .. code-block:: python
 
@@ -167,7 +167,32 @@ And the result is:
            
 >>> result = circuit()
 >>> print(result)
-{'00': 495, '01': 0, '10': 0, '11': 505}
+{'00': 495, '11': 505}
+
+Per default, only observed outcomes are included in the dictionary. The kwarg all_outcomes=True can 
+be used to display all possible outcomes, including those that were observed 0 times in sampling.
+
+For example, we could run the previous circuit with all_outcomes=True:
+
+.. code-block:: python
+
+dev = qml.device("default.qubit", wires=2, shots=1000)
+
+@qml.qnode(dev)
+def circuit():
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    return qml.counts(all_outcomes=True)
+
+>>> result = circuit()
+>>> print(result)
+{'00': 518, '01': 0, '10': 0, '11': 482}
+
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to cost of calcuating 
+eigenvalues to determine possible outcomes), and as number of qubits increases, the length of the output 
+dictionary showing possible computational basis states grows rapidly. 
+
+
 
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
 a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
