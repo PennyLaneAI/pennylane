@@ -723,7 +723,7 @@ class TestCounts:
             return qml.counts(wires=wires)
 
         res = circuit()
-        assert res[basis_state] == n_shots
+        assert res == {basis_state: n_shots}
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
@@ -757,9 +757,9 @@ class TestCounts:
         res = circuit()
 
         assert isinstance(res, tuple)
-        assert res[0][basis_state] == shot_vec[0]
-        assert res[1][basis_state] == shot_vec[1]
-        assert res[2][basis_state] == shot_vec[2]
+        assert res[0] == {basis_state: shot_vec[0]}
+        assert res[1] == {basis_state: shot_vec[1]}
+        assert res[2] == {basis_state: shot_vec[2]}
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
@@ -778,9 +778,9 @@ class TestCounts:
         res = circuit()
 
         assert isinstance(res, tuple)
-        assert res[0][1] == shot_vec[0]
-        assert res[1][1] == shot_vec[1]
-        assert res[2][1] == shot_vec[2]
+        assert res[0] == {1: shot_vec[0]}
+        assert res[1] == {1: shot_vec[1]}
+        assert res[2] == {1: shot_vec[2]}
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
