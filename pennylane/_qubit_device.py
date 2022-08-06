@@ -1440,6 +1440,13 @@ class QubitDevice(Device):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
+        The format of the dictionary depends on obs.return_type.all_outcomes (bool),
+        which is set when calling measurements.counts. Per default, the dictionary
+        will only contain the observed outcomes. If obs.return_type.all_outcomes=True,
+        the dictionary will instead contain all possible outcomes, with a count of 0
+        for those not observed. See example.
+
+
         Args:
             samples: samples in an array of dimension ``(shots,len(wires))``
             obs (Observable): the observable sampled
@@ -1455,8 +1462,27 @@ class QubitDevice(Device):
             tensor([[0, 0],
                     [0, 0],
                     [1, 0]], requires_grad=True)
+
+            Per default, this will return:
+            >>> self._samples_to_counts(samples, obs, num_wires)
+            {'00': 2, '10': 1}
+
+            However, if obs.return_type.all_outcomes is set to True, this will return:
             >>> self._samples_to_counts(samples, obs, num_wires)
             {'00': 2, '01': 0, '10': 1, '11': 0}
+
+            The variable all_outcomes can be set when running measurements.counts, i.e.:
+
+             .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2, shots=4)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, wires=0)
+                return qml.counts(all_outcomes=True)
+
+
         """
 
         outcomes = []

@@ -690,7 +690,9 @@ def counts(op=None, wires=None, all_outcomes=False):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-        op is None
+            op is None
+        all_outcomes(bool): determines whether the returned dict will contain only the observed
+            states (default), or whether it will display all possible outcomes for the system
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -739,6 +741,34 @@ def counts(op=None, wires=None, all_outcomes=False):
 
     >>> circuit(0.5)
     {'00': 3, '01': 1}
+
+    Per default, outcomes that were not observed will not be included in the dictionary.
+    Passing all_outcomes=True will create a dictionary that displays all possible outcomes.
+
+    .. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=2, shots=4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.PauliX(wires=0)
+        return qml.counts()
+
+    Executing this QNode shows only the observed state:
+
+    >>> circuit()
+    {'01': 4}
+
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.PauliX(wires=0)
+        return qml.counts(all_outcomes=True)
+
+    Executing this QNode shows counts for all states:
+
+    >>> circuit()
+    {'00': 0, '01': 0, '10': 4, '11': 0}
 
     .. note::
 
