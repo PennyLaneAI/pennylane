@@ -881,7 +881,7 @@ class TestCounts:
 
         res = circuit()
 
-        assert res=={1: n_shots, -1: 0}
+        assert res == {1: n_shots, -1: 0}
 
     def test_all_outcomes_kwarg_no_observable_no_wires(self):
         """Test that the dictionary keys are *all* the possible combinations
@@ -897,7 +897,7 @@ class TestCounts:
 
         res = circuit()
 
-        assert res=={'00': n_shots, '01': 0, '10': 0, '11': 0}
+        assert res == {"00": n_shots, "01": 0, "10": 0, "11": 0}
 
     def test_all_outcomes_kwarg_providing_wires_and_no_observable(self):
         """Test that the dictionary keys are *all* possible combinations
@@ -913,7 +913,7 @@ class TestCounts:
 
         res = circuit()
 
-        assert res=={'00': n_shots, '01': 0, '10': 0, '11': 0}
+        assert res == {"00": n_shots, "01": 0, "10": 0, "11": 0}
 
     def test_all_outcomes_hermitian(self):
         """Tests that the all_outcomes=True option for counts works with the
@@ -929,7 +929,7 @@ class TestCounts:
 
         res = circuit(A)
 
-        assert res=={-1.0: 0, 1.0: n_shots}
+        assert res == {-1.0: 0, 1.0: n_shots}
 
 
 class TestMeasure:

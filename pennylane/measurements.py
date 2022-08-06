@@ -802,6 +802,7 @@ def counts(op=None, wires=None, all_outcomes=False):
 
     return meas_process
 
+
 def probs(wires=None, op=None):
     r"""Probability of each computational basis state.
 
