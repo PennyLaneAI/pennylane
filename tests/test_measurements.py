@@ -925,7 +925,7 @@ class TestCounts:
 
         @qml.qnode(dev)
         def circuit(x):
-            return qml.counts(qml.Hermitian(x, wires=0))
+            return qml.counts(qml.Hermitian(x, wires=0), all_outcomes=True)
 
         res = circuit(A)
 
