@@ -911,8 +911,6 @@ class Operator(abc.ABC):
         ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
-        if self not in qml.ops.qubit.attributes.supports_broadcasting:
-            return
         self._batch_size = None
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)

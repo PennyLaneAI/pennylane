@@ -700,7 +700,7 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
-* `Operator._check_batching` now only performs checks if the Operator supports broadcasting.
+* Removes `ndim_params` from `SymbolicOp` and `Sum`.
   [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls

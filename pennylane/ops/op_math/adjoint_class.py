@@ -203,6 +203,14 @@ class Adjoint(SymbolicOp):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, do_queue=do_queue, id=id)
 
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     def label(self, decimals=None, base_label=None, cache=None):
         return f"{self.base.label(decimals, base_label, cache=cache)}†"
 

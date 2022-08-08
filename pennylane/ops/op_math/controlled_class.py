@@ -144,6 +144,14 @@ class Controlled(SymbolicOp):
 
         super().__init__(base, do_queue, id)
 
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     # Properties on the control values ######################
     @property
     def control_values(self):
