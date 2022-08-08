@@ -30,16 +30,16 @@ jobs:
       - name: Run linter
         uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: ""
+          python-root-list: (git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E 'pennylane/')
           use-pylint: true
           use-pycodestyle: false
           use-flake8: false
           use-black: True
           use-mypy: false
           use-isort: false
-          extra-pylint-options: "--rcfile .pylintrc $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E 'pennylane/')"
+          extra-pylint-options: --rcfile .pylintrc
           extra-pycodestyle-options: ""
           extra-flake8-options: ""
-          extra-black-options: "-l 100 $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)')"
+          extra-black-options: -l 100
           extra-mypy-options: ""
           extra-isort-options: ""
