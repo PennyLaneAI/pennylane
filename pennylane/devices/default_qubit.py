@@ -158,6 +158,7 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
         "Sum",
         "SProd",
+        "Prod",
     }
 
     def __init__(
@@ -184,6 +185,17 @@ class DefaultQubit(QubitDevice):
             "CZ": self._apply_cz,
             "Toffoli": self._apply_toffoli,
         }
+
+    @property
+    def stopping_condition(self):
+        def accepts_obj(obj):
+            if getattr(obj, "has_matrix", False):
+                # pow operations dont work with backprop or adjoint without decomposition
+                # use class name string so we don't need to use isisntance check
+                return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
+            return obj.name in self.observables.union(self.operations)
+
+        return qml.BooleanFn(accepts_obj)
 
     @functools.lru_cache()
     def map_wires(self, wires):
@@ -259,11 +271,11 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        if operation.base_name == "Identity":
+        if operation.__class__.__name__ == "Identity":
             return state
         wires = operation.wires
 
-        if operation.base_name in self._apply_ops:
+        if operation.__class__.__name__ in self._apply_ops:
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
