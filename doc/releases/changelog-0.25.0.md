@@ -624,7 +624,7 @@ of operators.
   1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
   2. The device implements custom methods in the simulation pipeline that are incompatible
      with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
-  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+  3. The custom device maintains the flag `"supports_broadcasting": True` in its `capabilities`
      dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
      (or both).
 
