@@ -58,7 +58,9 @@ class ClassicalShadow:
         for i, u in enumerate(self.observables):
             U[np.where(recipes == i)] = u
 
-        state = ((1 - 2 * bitstrings[:, :, None, None]) * U + np.eye(2)) / 2
+        state = (
+            qml.math.cast((1 - 2 * bitstrings[:, :, None, None]), np.complex64) * U + np.eye(2)
+        ) / 2
 
         return 3 * state - np.eye(2)[None, None, :, :]
 

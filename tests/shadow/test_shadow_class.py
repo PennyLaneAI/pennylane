@@ -114,9 +114,97 @@ class TestIntegrationShadows:
         assert qml.math.allclose(state, 0.5 * np.eye(2), atol=1e-1)
 
 
+def hadamard_circuit(wires, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=10000)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        for i in range(wires):
+            qml.Hadamard(wires=i)
+        return qml.classical_shadow(wires=range(wires))
+
+    return circuit
+
+
+def max_entangled_circuit(wires, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=10000)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.Hadamard(wires=0)
+        for i in range(1, wires):
+            qml.CNOT(wires=[0, i])
+        return qml.classical_shadow(wires=range(wires))
+
+    return circuit
+
+
+def qft_circuit(wires, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=10000)
+
+    one_state = np.zeros(wires)
+    one_state[-1] = 1
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.BasisState(one_state, wires=range(wires))
+        qml.QFT(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires))
+
+    return circuit
+
+
+# marked slow because state reconstruction for high number of qubits is slow
+@pytest.mark.slow
+@pytest.mark.all_interfaces
 class TestStateReconstruction:
     """Test that the state reconstruction is correct for a variety of states"""
 
+    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_hadamard_reconstruction(self, wires, interface):
+        """Test that the state reconstruction is correct for a uniform
+        superposition of qubits"""
+        circuit = hadamard_circuit(wires, interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
 
+        actual = np.mean(shadow.global_snapshots(), axis=0)
+        expected = np.ones((2**wires, 2**wires)) / (2**wires)
+
+        assert qml.math.allclose(actual, expected, atol=1e-1)
+
+    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_max_entangled_reconstruction(self, wires, interface):
+        """Test that the state reconstruction is correct for a maximally
+        entangled state"""
+        circuit = max_entangled_circuit(wires, interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        actual = np.mean(shadow.global_snapshots(), axis=0)
+        expected = np.zeros((2**wires, 2**wires))
+        expected[np.array([0, 0, -1, -1]), np.array([0, -1, 0, -1])] = 0.5
+
+        assert qml.math.allclose(actual, expected, atol=1e-1)
+
+    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_qft_reconstruction(self, wires, interface):
+        """Test that the state reconstruction is correct for a maximally
+        entangled state"""
+        circuit = qft_circuit(wires, interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        actual = np.mean(shadow.global_snapshots(), axis=0)
+        expected = np.exp(np.arange(2**wires) * 2j * np.pi / (2**wires)) / (2 ** (wires / 2))
+        expected = np.outer(expected, np.conj(expected))
+
+        assert qml.math.allclose(actual, expected, atol=1e-1)
+
+
+@pytest.mark.all_interfaces
 class TestExpvalEstimation:
     """Test that the expval estimation is correct for a variety of observables"""
