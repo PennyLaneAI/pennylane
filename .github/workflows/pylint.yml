@@ -29,9 +29,9 @@ jobs:
       - name: Run pylint
         run: |
           git fetch origin master
-          git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/' > changed_files.txt
+          echo $(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/') > changed_files.txt
           if [[ $(cat changed_files.txt) != "" ]]; then
-            echo -e "Running pylint on files:\n$(cat changed_files.txt)"
+            echo "Running pylint on files: $(cat changed_files.txt)"
             pylint --rcfile .pylintrc $(cat changed_files.txt);
             else echo "No changes in source files were found in this PR."
           fi;
