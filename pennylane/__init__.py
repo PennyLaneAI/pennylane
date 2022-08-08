@@ -58,7 +58,7 @@ from pennylane.measurements import (
     mutual_info,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, op_sum, prod
+from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -67,6 +67,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
+from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
