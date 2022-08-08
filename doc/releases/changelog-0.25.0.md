@@ -596,6 +596,8 @@ of operators.
   res = qnode(0.5)
   >>> res
   (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.5, 0.5], requires_grad=True), tensor(0.93879128, requires_grad=True))
+  
+  qml.disable_return()
   ```
 
   Backpropagation:
@@ -605,7 +607,6 @@ of operators.
   qml.enable_return()
   
   dev = qml.device("default.qubit", wires=2)
-  qml.enable_return()
   
   @qml.qnode(dev, interface="jax")
   def circuit(a):
@@ -617,6 +618,7 @@ of operators.
   
   x = jax.numpy.array([0.1, 0.2, 0.3])
   ```
+  
   ```pycon
   res = jax.jacobian(circuit)(x)
   >>> res
@@ -626,6 +628,8 @@ of operators.
                [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
                [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32), 
   DeviceArray([ 2.9899091e-01, -4.4703484e-08,  9.5104014e-10], dtype=float32))
+  
+  qml.disable_return()
   ```
 
 <h4>More drawing styles 🎨</h4>
