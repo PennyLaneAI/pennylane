@@ -44,7 +44,7 @@ class Controlled(SymbolicOp):
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     .. note::
-        This class, ``Controlled``, denotes a controlled version of any inidividual operation.
+        This class, ``Controlled``, denotes a controlled version of any individual operation.
         :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
         more general ``Controlled`` class.
 
