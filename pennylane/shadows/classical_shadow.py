@@ -118,6 +118,9 @@ class ClassicalShadow:
             return coeffs_and_words
 
     def expval(self, H, k):
+        """
+        Get the expectation of an observable
+        """
         coeffs_and_words = self._convert_to_pauli_words(H)
 
         expval = 0
@@ -174,9 +177,9 @@ class ClassicalShadow:
         """Compute expectation values of Observables"""
         # TODO: allow for list of Hamiltonians
         if isinstance(H, qml.Hamiltonian):
-            return np.sum([self._expval_observable(observable, k) for observable in H.ops])
+            return np.sum([self._expval_observable_old(observable, k) for observable in H.ops])
 
         if isinstance(H, Iterable):
-            return [self._expval_observable(observable, k) for observable in H]
+            return [self._expval_observable_old(observable, k) for observable in H]
 
-        return self._expval_observable(H, k)
+        return self._expval_observable_old(H, k)
