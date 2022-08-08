@@ -102,6 +102,14 @@ single_scalar_multi_wire_ops = [
     "IsingXX",
     "IsingYY",
     "IsingZZ",
+    "IsingXY",
+    "SingleExcitation",
+    "SingleExcitationPlus",
+    "SingleExcitationMinus",
+    "DoubleExcitation",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
+    "OrbitalRotation",
 ]
 
 two_scalar_single_wire_ops = [
@@ -117,6 +125,8 @@ three_scalar_multi_wire_ops = [
     "CRot",
 ]
 
+# When adding an operation to the following list, you
+# actually need to write a new test!
 separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
@@ -170,9 +180,11 @@ class TestSupportsBroadcasting:
         """Test that single-scalar-parameter operations on multiple wires marked
         as supporting parameter broadcasting actually do support broadcasting."""
         par = np.array([0.25, 2.1, -0.42])
-        wires = ["wire0", 5]
-
         cls = getattr(qml, name)
+
+        # Provide up to 6 wires and take as many as the class requires
+        # This assumes that the class does *not* have `num_wires=qml.operation.AnyWires`
+        wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
         op = cls(par, wires=wires)
 
         mat1 = op.matrix()
@@ -312,7 +324,7 @@ class TestSupportsBroadcasting:
         assert qml.math.allclose(mat2, single_mats)
 
     @pytest.mark.parametrize("wires", [[0, "4", 1], [1, 5], [7]])
-    def test_pauli_rot(self, wires):
+    def test_multi_rz(self, wires):
         """Test that MultiRZ, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
         par = np.array([0.25, 2.1, -0.42])
