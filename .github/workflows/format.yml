@@ -17,6 +17,9 @@ jobs:
         with:
           python-version: 3.8
 
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Set env
         run: |
           echo "CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E 'pennylane/')" >> $GITHUB_ENV
@@ -24,8 +27,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install black
-
-      - uses: actions/checkout@v2
 
       - name: Run Black
         run: |
