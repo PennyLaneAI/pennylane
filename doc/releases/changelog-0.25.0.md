@@ -700,6 +700,10 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* Fixed a bug where the parameter-shift rule wasn't defined for QNodes containing
+  `qml.kUpCCGSD`.
+  TODO: add PR link
+
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
   because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
   error.
