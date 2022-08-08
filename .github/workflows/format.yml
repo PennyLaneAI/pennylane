@@ -25,8 +25,8 @@ jobs:
 
       - name: Set env
         run: |
-          echo "CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB | grep -E 'pennylane/')" >> $GITHUB_ENV
-          echo "CHANGED_TEST_FILES=$(git diff --name-only --diff-filter=ACMRTUXB | grep -E 'pennylane/')" >> $GITHUB_ENV
+          echo "CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')" >> $GITHUB_ENV
+          echo "CHANGED_TEST_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')" >> $GITHUB_ENV
 
       - name: Run Black
         run: |
