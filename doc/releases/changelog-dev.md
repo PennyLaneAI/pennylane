@@ -17,4 +17,3 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
-
