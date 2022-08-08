@@ -170,13 +170,6 @@ class TestInitialization:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
-    def test_no_parameter_broadcasting(self):
-        """Test error raised if base gate has parameter broadcasting."""
-
-        base = qml.RX(np.array([1.0, 2.0]), 0)
-        with pytest.raises(ValueError, match="Controlled does not support parameter"):
-            Controlled(base, 1)
-
 
 class TestProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
