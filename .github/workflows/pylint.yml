@@ -20,8 +20,11 @@ jobs:
         with:
           python-version: 3.8
 
+      - name: Install dependencies
+        run: pip install pylint
+
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Set env
         run: |
@@ -29,7 +32,6 @@ jobs:
 
       - name: Run pylint
         run: |
-          pip install pylint
           echo "------------------------------------"
           echo "Running pylint on files: $CHANGED_SRC_FILES"
           if [[ $CHANGED_SRC_FILES != "" ]]
