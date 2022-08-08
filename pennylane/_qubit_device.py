@@ -1217,7 +1217,7 @@ class QubitDevice(Device):
 
                 outcomes[t] = self.generate_samples()[0]
 
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

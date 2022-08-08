@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for classical shadows
-"""
+"""Unit tests for the classical shadows class"""
+
 import pytest
+
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
@@ -56,10 +56,10 @@ class TestIntegrationShadows:
         """Testing the output of expectation values match those of exact evaluation"""
 
         o1 = qml.PauliX(0)
-        res1 = shadow._expval_observable(o1, k=2)
+        res1 = shadow.expval(o1, k=2)
 
         o2 = qml.PauliX(0) @ qml.PauliX(1)
-        res2 = shadow._expval_observable(o1, k=2)
+        res2 = shadow.expval(o1, k=2)
 
         res_exact = 1.0
         assert qml.math.allclose(res1, res_exact, atol=1e-1)
@@ -79,9 +79,7 @@ class TestIntegrationShadows:
         """Test ClassicalShadow.expval can handle different inputs"""
         assert qml.math.allclose(shadow.expval(H, k=2), 1.0, atol=1e-1)
 
-    def test_reconstruct_bell_state(
-        self,
-    ):
+    def test_reconstruct_bell_state(self):
         """Test that a bell state can be faithfully reconstructed"""
         wires = range(2)
 
@@ -103,7 +101,6 @@ class TestIntegrationShadows:
         assert qml.math.allclose(state, bell_state, atol=1e-1)
 
         # reduced state should yield maximally mixed state
-
         local_snapshots = shadow.local_snapshots(wires=[0])
         assert qml.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5 * np.eye(2), atol=1e-1)
 

@@ -105,7 +105,7 @@ class TestShadowMeasurement:
 
         # test shape and dtype are correct
         assert shadow.shape == (2, shots, wires)
-        assert shadow.dtype == np.uint8 if interface != "torch" else torch.uint8
+        assert shadow.dtype == np.int8 if interface != "torch" else torch.int8
 
         bits, recipes = shadow
 
