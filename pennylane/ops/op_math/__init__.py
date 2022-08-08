@@ -22,10 +22,15 @@ This module contains classes and functions for Operator arithmetic.
 
 from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
-from .control import ControlledOperation, ctrl
 from .controlled_class import Controlled, ControlledOp
+
+from .prod import prod, Prod
+
+from .sum import op_sum, Sum
+
+from .sprod import s_prod, SProd
+
+from .control import ctrl, ControlledOperation
 from .pow_class import Pow
-from .prod import Prod, prod
-from .sprod import SProd, s_prod
-from .sum import Sum, op_sum
+
 from .symbolicop import SymbolicOp

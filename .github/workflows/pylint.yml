@@ -24,13 +24,13 @@ jobs:
         run: pip install pylint
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v1
 
       - name: Run pylint
         run: |
           git fetch origin master
           CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')
-          echo -e "Running pylint on files:\n$CHANGED_SRC_FILES"
           if [[ $CHANGED_SRC_FILES != "" ]]
-          then pylint --rcfile .pylintrc $CHANGED_SRC_FILES
+          then echo -e "Running pylint on files:\n$CHANGED_SRC_FILES"
+          pylint --rcfile .pylintrc $CHANGED_SRC_FILES
           fi
