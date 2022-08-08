@@ -25,6 +25,7 @@ jobs:
 
       - name: Set env
         run: |
+          git fetch origin master
           echo "CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')" >> $GITHUB_ENV
           echo "CHANGED_TEST_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')" >> $GITHUB_ENV
 
