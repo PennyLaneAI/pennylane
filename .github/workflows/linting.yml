@@ -26,7 +26,7 @@ jobs:
       - name: Run linter
         uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "git diff --name-only --diff-filter=ACMRTUXB master | grep -E '(pennylane/|tests/)'"
+          python-root-list: "$(git diff --name-only --diff-filter=ACMRTUXB master | grep -E '(pennylane/|tests/)')"
           use-pylint: True
           use-pycodestyle: false
           use-flake8: false
