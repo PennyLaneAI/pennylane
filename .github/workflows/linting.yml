@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Test
-        run: git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)'
+        run: echo $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)')
 
       - name: Run linter
         uses: ricardochaves/python-lint@v1.4.0
