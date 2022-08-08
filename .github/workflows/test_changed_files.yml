@@ -15,7 +15,7 @@ jobs:
           cat $HOME/files_modified.json
           cat $HOME/files_added.json
           cat $HOME/files_deleted.json
-          echo '${{ steps.file_changes.outputs.files}}'
+          echo ${{ steps.file_changes.outputs.files}}
           echo '${{ steps.file_changes.outputs.files_modified}}'
           echo '${{ steps.file_changes.outputs.files_added}}'
           echo '${{ steps.file_changes.outputs.files_deleted}}'
