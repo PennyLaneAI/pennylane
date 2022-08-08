@@ -15,6 +15,7 @@
 This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
+# pylint: disable=too-many-arguments,too-many-branches
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.eager import context
