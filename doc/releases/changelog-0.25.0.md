@@ -700,7 +700,8 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
-* Removes `ndim_params` from `SymbolicOp` and `Sum`.
+* Cleans up interactions between operator arithmetic and batching by
+  testing supported cases and adding errors when batching is not supported.
   [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls

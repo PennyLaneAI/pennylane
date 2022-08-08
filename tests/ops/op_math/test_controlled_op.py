@@ -170,6 +170,13 @@ class TestInitialization:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    def test_no_parameter_broadcasting(self):
+        """Test error raised if base gate has parameter broadcasting."""
+
+        base = qml.RX(np.array([1.0, 2.0]), 0)
+        with pytest.raises(ValueError, match="Controlled does not support parameter"):
+            Controlled(base, 1)
+
 
 class TestProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
@@ -234,22 +241,6 @@ class TestProperties:
 
         op = Controlled(DummyOp(1), 0)
         assert op.is_hermitian is value
-
-    def test_batching_properties(self):
-        """Test that Adjoint batching behavior mirrors that of the base."""
-
-        class DummyOp(Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op = Controlled(base, 1)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
 
     def test_private_wires_getter_setter(self):
         """Test that we can get and set private wires."""

@@ -110,6 +110,8 @@ class Controlled(SymbolicOp):
     def __init__(
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
+        if getattr(base, "batch_size", None) is not None:
+            raise ValueError("Controlled does not support parameter-broadcasting.")
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -143,14 +145,6 @@ class Controlled(SymbolicOp):
         self._name = f"C{base.name}"
 
         super().__init__(base, do_queue, id)
-
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
 
     # Properties on the control values ######################
     @property
