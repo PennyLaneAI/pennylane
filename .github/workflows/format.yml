@@ -31,7 +31,7 @@ jobs:
           if [[ $CHANGED_SRC_FILES != "" ]]
           then black -l 100 $CHANGED_SRC_FILES --check
           fi
-          CHANGED_TEST_FILES$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'tests/')
+          CHANGED_TEST_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'tests/')
           echo "Running black on files: $CHANGED_TEST_FILES"
           if [[ $CHANGED_TEST_FILES != "" ]];
           then black -l 100 $CHANGED_TEST_FILES --check

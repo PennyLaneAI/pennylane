@@ -26,13 +26,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set env
-        run: |
-          git fetch origin master
-          echo "CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')" >> $GITHUB_ENV
-
       - name: Run pylint
         run: |
+          git fetch origin master
+          CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')
           echo "Running pylint on files: $CHANGED_SRC_FILES"
           if [[ $CHANGED_SRC_FILES != "" ]]
           then pylint --rcfile .pylintrc $CHANGED_SRC_FILES
