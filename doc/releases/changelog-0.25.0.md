@@ -573,7 +573,7 @@ of operators.
   [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
   [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
   
-  The new system guarantees an intuitive return types, it is returning tuple of measurements by default. It is now
+  The new system guarantees intuitive return types such that a sequence (e.g., list or tuple) is returned based on the `return` statement of the quantum function. It is now
   possible to trigger the new return type system with the top-level function `qml.enable_return`. We have support for
   forward pass and backpropagation for every interface. It does not support custom gradient function for now.
   
