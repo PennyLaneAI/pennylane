@@ -7,6 +7,7 @@ jobs:
     steps:
       - name: Get Changed Files
         uses: lots0logs/gh-action-get-changed-files@2.1.4
+      - name: Print changed files
         run: |
           cat $HOME/files.json
           cat $HOME/files_modified.json
