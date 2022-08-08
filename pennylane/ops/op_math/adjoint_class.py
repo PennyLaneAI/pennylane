@@ -200,18 +200,21 @@ class Adjoint(SymbolicOp):
         return object.__new__(Adjoint)
 
     def __init__(self, base=None, do_queue=True, id=None):
-        if getattr(base, "batch_size", None) is not None:
-            raise ValueError("Adjoint does not support parameter-broadcasting.")
         self._name = f"Adjoint({base.name})"
         super().__init__(base, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return f"{self.base.label(decimals, base_label, cache=cache)}†"
 
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_matrix(*params, base=None):
-        base_matrix = base.compute_matrix(*params, **base.hyperparameters)
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix if self.base.batch_size is None else False
+
+    def matrix(self, wire_order=None):
+        if self.base.batch_size is not None:
+            raise qml.operation.MatrixUndefinedError
+        base_matrix = self.base.matrix(wire_order=wire_order)
         return transpose(conj(base_matrix))
 
     def decomposition(self):

@@ -118,7 +118,7 @@ class TestInitialization:
 
         assert op.work_wires == Wires(("aux"))
 
-        assert op.name == "CTempOperator"
+        assert op.name == "C:TempOperator"
         assert op.id == "something"
 
         assert op.num_params == 0
@@ -219,6 +219,14 @@ class TestProperties:
 
         op = Controlled(DummyOp(1), 0)
         assert op.has_matrix is value
+
+    def test_no_matrix_if_batching(self):
+        """Test that has_matrix is false if the base operator has batching."""
+
+        x = np.array([1.2, 3.4, 5.6])
+        base = qml.RX(x, wires=0)
+        op = Controlled(base, 1)
+        assert op.has_matrix is False
 
     @pytest.mark.parametrize("value", ("_ops", "_prep", None))
     def test_queue_cateogry(self, value):
@@ -374,14 +382,14 @@ class TestOperationProperties:
         op = Controlled(base, 2)
 
         assert op.inverse == base.inverse == False
-        assert op.name == "CS"
+        assert op.name == "C:S"
 
         op.inv()
 
         assert op.inverse == False
         assert base.inverse == True
-        assert op.name == "CS.inv"
-        assert op.base_name == "CS"
+        assert op.name == "C:S.inv"
+        assert op.base_name == "C:S"
 
     def test_inverse_setter(self):
         """Teest that the inverse property can be set."""
@@ -389,14 +397,14 @@ class TestOperationProperties:
         op = Controlled(base, 1)
 
         assert op.inverse == base.inverse == False
-        assert op.name == "CT"
+        assert op.name == "C:T"
 
         op.inverse = True
 
         assert op.inverse == False
         assert base.inverse == True
-        assert op.name == "CT.inv"
-        assert op.base_name == "CT"
+        assert op.name == "C:T.inv"
+        assert op.base_name == "C:T"
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -550,6 +558,15 @@ base_num_control_mats = [
 
 class TestMatrix:
     """Tests of Controlled.matrix and Controlled.sparse_matrix"""
+
+    def test_raises_error_if_batching(self):
+        """Test a MatrixUndefinedError is raised if the base is batched."""
+        x = np.array([1.0, 2.0, 3.0])
+        base = qml.RX(x, 0)
+        op = Controlled(base, 1)
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
 
     @pytest.mark.parametrize("base, num_control, mat", base_num_control_mats)
     def test_matrix_compare_with_gate_data(self, base, num_control, mat):

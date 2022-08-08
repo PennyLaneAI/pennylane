@@ -110,8 +110,6 @@ class Controlled(SymbolicOp):
     def __init__(
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
-        if getattr(base, "batch_size", None) is not None:
-            raise ValueError("Controlled does not support parameter-broadcasting.")
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -142,9 +140,14 @@ class Controlled(SymbolicOp):
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires
 
-        self._name = f"C{base.name}"
+        self._name = f"C:{base.name}"
 
         super().__init__(base, do_queue, id)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix if self.base.batch_size is None else False
 
     # Properties on the control values ######################
     @property
@@ -213,6 +216,9 @@ class Controlled(SymbolicOp):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
     def matrix(self, wire_order=None):
+
+        if self.base.batch_size is not None:
+            raise qml.operation.MatrixUndefinedError
 
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)

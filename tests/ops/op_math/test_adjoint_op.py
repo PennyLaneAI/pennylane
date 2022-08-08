@@ -692,7 +692,6 @@ class TestIntegration:
 
         assert qml.math.allclose(grad, expected_grad)
 
-    @pytest.mark.xfail
     def test_adj_batching(self):
         """Test execution of the adjoint of an operation with batched parameters."""
         dev = qml.device("default.qubit", wires=1)
