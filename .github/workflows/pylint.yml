@@ -1,0 +1,29 @@
+name: Pylint
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Run pylint
+        run: |
+          pip install pylint
+          pylint --rcfile .pylintrc $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)')

@@ -1,0 +1,28 @@
+name: Formatting check
+on:
+  - pull_request
+
+jobs:
+  black:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: pip install black
+
+      - uses: actions/checkout@v2
+
+      - name: Run Black
+        run: |
+          black -l 100 pennylane/ --check
+          black -l 100 tests/ --check
