@@ -567,7 +567,7 @@ of operators.
 
 <h4>Experimental feature: New return types</h4>
 
-* We provide a new experimental return types system for QNodes with multiple measurements.
+* A new experimental return type for QNodes with multiple measurements has been added.
   
   [(#2814)](https://github.com/PennyLaneAI/pennylane/pull/2814)
   [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
