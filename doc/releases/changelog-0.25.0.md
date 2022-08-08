@@ -599,38 +599,8 @@ of operators.
   
   qml.disable_return()
   ```
-
-  Backpropagation:
-  ```python
-  import jax
   
-  qml.enable_return()
-  
-  dev = qml.device("default.qubit", wires=2)
-  
-  @qml.qnode(dev, interface="jax")
-  def circuit(a):
-      qml.RX(a[0], wires=0)
-      qml.CNOT(wires=(0, 1))
-      qml.RY(a[1], wires=1)
-      qml.RZ(a[2], wires=1)
-      return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
-  
-  x = jax.numpy.array([0.1, 0.2, 0.3])
-  ```
-  
-  ```pycon
-  res = jax.jacobian(circuit)(x)
-  >>> res
-  (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32), 
-  DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
-               [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
-               [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
-               [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32), 
-  DeviceArray([ 2.9899091e-01, -4.4703484e-08,  9.5104014e-10], dtype=float32))
-  
-  qml.disable_return()
-  ```
+  In addition, QNodes that utilize this new return type support backpropagation.
 
 <h4>More drawing styles 🎨</h4>
 
