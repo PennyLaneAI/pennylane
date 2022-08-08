@@ -31,12 +31,10 @@ jobs:
 
       - name: Run Black
         run: |
-          echo "------------------------------------"
           echo "Running black on files: $CHANGED_SRC_FILES"
           if [[ $CHANGED_SRC_FILES != "" ]]
           then black -l 100 $CHANGED_SRC_FILES --check
           fi
-          echo "------------------------------------"
           echo "Running black on files: $CHANGED_TEST_FILES"
           if [[ $CHANGED_TEST_FILES != "" ]];
           then black -l 100 $CHANGED_TEST_FILES --check
