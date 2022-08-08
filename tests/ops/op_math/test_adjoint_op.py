@@ -162,12 +162,6 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires([0, "b"])
 
-    def test_broadcasting_error(self):
-        """Test error is raised if base has parameter-broadcasting."""
-        base = qml.RX(np.array([1.0, 2.0]), 0)
-        with pytest.raises(ValueError, match="Adjoint does not support"):
-            Adjoint(base)
-
 
 class TestProperties:
     """Test Adjoint properties."""
