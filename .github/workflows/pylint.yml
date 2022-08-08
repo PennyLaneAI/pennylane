@@ -24,6 +24,8 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Run pylint
+        env:
+          CHANGED_SRC_FILES: git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E 'pennylane/'
         run: |
           pip install pylint
-          pylint --rcfile .pylintrc $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E 'pennylane/')
+          pylint --rcfile .pylintrc $CHANGED_SRC_FILES
