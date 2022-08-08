@@ -73,7 +73,7 @@ Operator to Other functions
     ~pennylane.eigvals
 
 These operator functions act on operators and return other data types.
-All operator functions can be used on instantiated operators,
+All operator functions can be used on instantiated operators.
 
 >>> op = qml.RX(0.54, wires=0)
 >>> qml.matrix(op)
