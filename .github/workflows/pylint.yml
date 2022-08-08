@@ -29,9 +29,7 @@ jobs:
       - name: Run pylint
         run: |
           git fetch origin master
-          echo "test"
-          CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')
-          echo "test2"
+          CHANGED_SRC_FILES=$(echo $(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/'))
           if [[ $CHANGED_SRC_FILES != "" ]]; then
             echo -e "Running pylint on files:\n$CHANGED_SRC_FILES"
             pylint --rcfile .pylintrc $CHANGED_SRC_FILES;
