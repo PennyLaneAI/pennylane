@@ -700,6 +700,11 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
+  because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
+  error.
+  [(#2895)](https://github.com/PennyLaneAI/pennylane/pull/2895)
+
 * Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
