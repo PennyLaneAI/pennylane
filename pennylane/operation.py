@@ -899,6 +899,7 @@ class Operator(abc.ABC):
         if do_queue:
             self.queue()
 
+    # pylint: disable=no-member
     def _check_batching(self, params):
         """Check if the expected numbers of dimensions of parameters coincides with the
         ones received and sets the ``_batch_size`` attribute.
@@ -910,6 +911,8 @@ class Operator(abc.ABC):
         ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
+        if self not in qml.ops.qubit.attributes.supports_broadcasting:
+            return
         self._batch_size = None
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)

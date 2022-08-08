@@ -667,3 +667,22 @@ class TestIntegration:
 
         with pytest.raises(QuantumFunctionError, match="SProd is not an observable:"):
             my_circ()
+
+    @pytest.mark.torch
+    def test_unwrapping_to_numpy(self):
+        """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
+        is requested for a given interface parameters."""
+
+        import torch
+
+        m = qml.s_prod(torch.tensor(2), qml.PauliZ(0))
+
+        @qml.qnode(
+            qml.device("default.qubit", wires=5), interface="torch", diff_method="parameter-shift"
+        )
+        def circuit():
+            return qml.expval(m)
+
+        res = circuit()
+
+        assert qml.math.allclose(res, 2)

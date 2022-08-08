@@ -164,16 +164,6 @@ class Sum(Operator):
             op.data = new_entry
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        raise ValueError("Batch size is not defined for Sum operators.")
-
-    @property
-    def ndim_params(self):
-        """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Sum operators.")
-
-    @property
     def num_wires(self):
         return len(self.wires)
 

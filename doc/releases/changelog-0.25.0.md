@@ -700,6 +700,8 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* `Operator._check_batching` now only performs checks if the Operator supports broadcasting.
+
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
   because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
   error.
