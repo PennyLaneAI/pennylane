@@ -702,7 +702,7 @@ of operators.
 
 * Fixed a bug where the parameter-shift rule wasn't defined for QNodes containing
   `qml.kUpCCGSD`.
-  TODO: add PR link
+  [(#2913)](https://github.com/PennyLaneAI/pennylane/pull/2913)  
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
   because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
