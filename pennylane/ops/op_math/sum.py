@@ -141,7 +141,7 @@ class Sum(Operator):
         >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.grad(circuit)(weights)
         tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
-        """
+    """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
