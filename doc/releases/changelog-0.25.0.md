@@ -599,7 +599,7 @@ of operators.
   ```
 
   Backpropagation:
-  ```
+  ```python
   import jax
   
   qml.enable_return()
