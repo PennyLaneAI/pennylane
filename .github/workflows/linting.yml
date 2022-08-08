@@ -23,6 +23,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
 
+      - name: Test
+        env:
+          FILES: $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)')
+        run: pip install pylint;
+          pylint $FILES
+
       - name: Run linter
         uses: ricardochaves/python-lint@v1.4.0
         env:
