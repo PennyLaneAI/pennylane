@@ -37,7 +37,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The shot adaptive optimizer only supports single QNodes or :class:`~.ExpvalCost` objects as
+        The shot adaptive optimizer only supports single QNodes object as
         objective functions. The bound device must also be instantiated with a finite number
         of shots.
 
@@ -364,14 +364,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
             :math:`\nabla f(x^{(t)})` and the variance of the gradient
         """
-        if isinstance(objective_fn, qml.ExpvalCost):
-            grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
+        if isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
             grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
         else:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the Shot adaptive optimizer. "
+                "The objective function must either be encoded as a single QNode for the Shot adaptive optimizer. "
             )
 
         # grads will have dimension [max(self.s), *params.shape]
@@ -501,9 +498,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         new_args = self.step(objective_fn, *args, **kwargs)
 
-        if isinstance(objective_fn, qml.ExpvalCost):
-            device = objective_fn.qnodes[0].device
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
+        if isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
             device = objective_fn.device
 
         original_shots = device.shots

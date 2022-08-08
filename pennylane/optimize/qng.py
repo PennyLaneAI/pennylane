@@ -75,7 +75,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The QNG optimizer supports single QNodes or :class:`~.ExpvalCost` objects as objective functions.
+        The QNG optimizer supports single QNodes as objective functions.
         Alternatively, the metric tensor can directly be provided to the :func:`step` method of the optimizer,
         using the ``metric_tensor_fn`` argument.
 
@@ -91,39 +91,14 @@ class QNGOptimizer(GradientDescentOptimizer):
           if a parameter is shared amongst several QNodes.
 
         If the objective function is VQE/VQE-like, i.e., a function of a group
-        of QNodes that share an ansatz, there are two ways to use the optimizer:
-
-        * Realize the objective function as an :class:`~.ExpvalCost` object, which has
-          a ``metric_tensor`` method.
+        of QNodes that share an ansatz, there is one way to use the optimizer:
 
         * Manually provide the ``metric_tensor_fn`` corresponding to the metric tensor of
           of the QNode(s) involved in the objective function.
 
     **Examples:**
 
-    For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as an ExpvalCost object.
-
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> def circuit(params, wires=0):
-    ...     qml.RX(params[0], wires=wires)
-    ...     qml.RY(params[1], wires=wires)
-    >>> coeffs = [1, 1]
-    >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> cost_fn = qml.ExpvalCost(circuit, H, dev)
-
-    Once constructed, the cost function can be passed directly to the
-    optimizer's ``step`` function:
-
-    >>> eta = 0.01
-    >>> init_params = np.array([0.011, 0.012])
-    >>> opt = qml.QNGOptimizer(eta)
-    >>> theta_new = opt.step(cost_fn, init_params)
-    >>> print(theta_new)
-    [0.011445239214543481, -0.027519522461477233]
-
-    Alternatively, the same objective function can be used for the optimizer
+    The same function can be used for the optimizer
     by manually providing the ``metric_tensor_fn``.
 
     >>> qnodes = qml.map(circuit, obs, dev, 'expval')
@@ -193,10 +168,9 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if not isinstance(qnode, (qml.QNode, qml.ExpvalCost)) and metric_tensor_fn is None:
+        if not isinstance(qnode, qml.QNode) and metric_tensor_fn is None:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the natural gradient to be automatically computed. "
+                "The objective function must either be encoded as a single QNode. "
                 "Otherwise, metric_tensor_fn must be explicitly provided to the optimizer."
             )
 
