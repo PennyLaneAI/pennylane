@@ -33,5 +33,5 @@ jobs:
           if [[ $CHANGED_SRC_FILES != "" ]]; then
             echo -e "Running pylint on files:\n$CHANGED_SRC_FILES"
             pylint --rcfile .pylintrc $CHANGED_SRC_FILES;
-            else echo "0 source files changed"
+            else echo "No changes in source files were found in this PR."
           fi;
