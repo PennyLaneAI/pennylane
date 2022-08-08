@@ -112,3 +112,11 @@ class TestIntegrationShadows:
 
         state = np.sum(global_snapshots, axis=0) / shadow.snapshots
         assert qml.math.allclose(state, 0.5 * np.eye(2), atol=1e-1)
+
+
+class TestStateReconstruction:
+    """Test that the state reconstruction is correct for a variety of states"""
+
+
+class TestExpvalEstimation:
+    """Test that the expval estimation is correct for a variety of observables"""
