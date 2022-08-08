@@ -26,9 +26,9 @@ jobs:
       - name: Run Black
         run: |
           git fetch origin master
-          CHANGED_FILES=$(echo $(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E '(pennylane/|tests/)'))
-          if [[ $CHANGED_FILES != "" ]]; then
-            echo -e "Running black on files:\n$CHANGED_FILES"
-            black -l 100 $(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E '(pennylane/|tests/)') --check;
+          git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E '(pennylane/|tests/)' > changed_files.txt
+          if [[ $(cat changed_files.txt) != "" ]]; then
+            echo -e "Running black on files:\n$(cat changed_files.txt)"
+            black -l 100 $(cat changed_files.txt) --check;
             else echo "No changes were found in this PR."
           fi;
