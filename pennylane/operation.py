@@ -899,7 +899,6 @@ class Operator(abc.ABC):
         if do_queue:
             self.queue()
 
-    # pylint: disable=no-member
     def _check_batching(self, params):
         """Check if the expected numbers of dimensions of parameters coincides with the
         ones received and sets the ``_batch_size`` attribute.
