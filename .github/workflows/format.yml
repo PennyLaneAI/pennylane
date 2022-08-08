@@ -27,7 +27,7 @@ jobs:
         run: |
           git fetch origin master
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E '(pennylane/|tests/)')
-          echo "Running black on files:\n$CHANGED_FILES"
+          echo -e "Running black on files:\n$CHANGED_FILES"
           if [[ $CHANGED_FILES != "" ]]
           then black -l 100 $CHANGED_FILES --check
           fi
