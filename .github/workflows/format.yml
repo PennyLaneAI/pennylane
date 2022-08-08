@@ -26,13 +26,8 @@ jobs:
       - name: Run Black
         run: |
           git fetch origin master
-          CHANGED_SRC_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'pennylane/')
-          echo "Running black on files: $CHANGED_SRC_FILES"
-          if [[ $CHANGED_SRC_FILES != "" ]]
-          then black -l 100 $CHANGED_SRC_FILES --check
-          fi
-          CHANGED_TEST_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E 'tests/')
-          echo "Running black on files: $CHANGED_TEST_FILES"
-          if [[ $CHANGED_TEST_FILES != "" ]];
-          then black -l 100 $CHANGED_TEST_FILES --check
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRTUXB origin/master -- | grep -E '(pennylane/|tests/)')
+          echo "Running black on files: '\n'$CHANGED_FILES"
+          if [[ $CHANGED_FILES != "" ]]
+          then black -l 100 $CHANGED_FILES --check
           fi
