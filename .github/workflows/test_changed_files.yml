@@ -5,15 +5,14 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     steps:
-      - id: file_changes
-        uses: trilom/file-changes-action@v1.2.3
-      - name: test
+      - name: Get Changed Files
+        uses: lots0logs/gh-action-get-changed-files@2.1.4
         run: |
           cat $HOME/files.json
           cat $HOME/files_modified.json
           cat $HOME/files_added.json
-          cat $HOME/files_removed.json
+          cat $HOME/files_deleted.json
           echo '${{ steps.file_changes.outputs.files}}'
           echo '${{ steps.file_changes.outputs.files_modified}}'
           echo '${{ steps.file_changes.outputs.files_added}}'
-          echo '${{ steps.file_changes.outputs.files_removed}}'
+          echo '${{ steps.file_changes.outputs.files_deleted}}'
