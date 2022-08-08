@@ -29,6 +29,8 @@ jobs:
 
       - name: Run pylint
         run: |
-          echo "Running pylint on files: \n $CHANGED_SRC_FILES"
           pip install pylint
-          pylint --rcfile .pylintrc $CHANGED_SRC_FILES
+          echo "Running pylint on files: $CHANGED_SRC_FILES"
+          if [[ $CHANGED_SRC_FILES != "" ]]
+          then pylint --rcfile .pylintrc $CHANGED_SRC_FILES
+          fi
