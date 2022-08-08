@@ -30,6 +30,7 @@ jobs:
       - name: Run pylint
         run: |
           pip install pylint
+          echo "----------------------------"
           echo "Running pylint on files: $CHANGED_SRC_FILES"
           if [[ $CHANGED_SRC_FILES != "" ]]
           then pylint --rcfile .pylintrc $CHANGED_SRC_FILES
