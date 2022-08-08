@@ -36,6 +36,6 @@ jobs:
           extra-pylint-options: "--rcfile .pylintrc"
           extra-pycodestyle-options: ""
           extra-flake8-options: ""
-          extra-black-options: "-l 100 --check"
+          extra-black-options: "-l 100"
           extra-mypy-options: ""
           extra-isort-options: ""
