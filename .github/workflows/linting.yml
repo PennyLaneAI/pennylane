@@ -25,7 +25,7 @@ jobs:
 
       - name: Test
         run:
-          git diff --name-only --diff-filter=ACMRTUXB master | grep -E '(pennylane/|tests/)'
+          git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)'
           pylint --rcfile .pylintrc $(git diff --name-only --diff-filter=ACMRTUXB origin/master | grep -E '(pennylane/|tests/)')
 
       - name: Run linter
