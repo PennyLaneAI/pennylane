@@ -236,7 +236,7 @@ class TestStateReconstruction:
 
         with monkeypatch.context() as m:
             # don't run the actual state computation since we only want the warning
-            m.setattr(ClassicalShadow, "_obtain_global_snapshots", lambda x: None)
+            m.setattr(ClassicalShadow, "_obtain_global_snapshots", lambda *args, **kwargs: None)
 
             with pytest.warns(UserWarning, match=msg):
                 shadow.global_snapshots()
@@ -307,7 +307,7 @@ class TestExpvalEstimation:
     )
     def test_qft_expval(self, interface, obs, expected):
         """Test that the expval estimation is correct for a QFT state"""
-        circuit = qft_circuit(3, interface=interface)
+        circuit = qft_circuit(3, shots=100000, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 

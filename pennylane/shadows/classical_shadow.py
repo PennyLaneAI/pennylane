@@ -89,7 +89,7 @@ class ClassicalShadow:
                 UserWarning,
             )
 
-        return ClassicalShadow._obtain_global_snapshots(local_snapshot)
+        return self._obtain_global_snapshots(local_snapshot)
 
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the
