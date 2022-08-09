@@ -21,7 +21,65 @@ from pennylane.shadows.utils import median_of_means, pauli_expval
 
 
 class ClassicalShadow:
-    """TODO: docstring"""
+    """Class for classical shadow post-processing
+
+    A ``ClassicalShadow`` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+    The idea is to capture :math:`T` (``shots``) local snapshots of the state by performing measurements in random Pauli bases at each qubit.
+    The measurement outcomes, denoted ``bitstrings``, as well as the choices of measurement bases, ``recipes``, are recorded in two `(T, len(wires))` integer tensors.
+
+    From the :math:`t`-th measurement, we can reconstruct the ``local_snapshots``
+
+    .. math-mode:: \rho^{(t)} = \bigotimes_{i=1}^{n} 3 U^\dagger_i |b_i \times b_i | U_i - \mathbb{1},
+
+    where :math:`U_i` is the rotation corresponding to the measurement of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
+    the corresponding computational basis state given the output bit :math:`b_i`.
+
+    From these local snapshots, one can compute expectation values of local Pauli strings :math:`\langle P_p \otimes P_q \otimes P_r \rangle` (:math:`P_i \in \{X, Y, Z\}`
+    are Pauli operators).
+
+    The accuracy of the procedure is determined by the number of measurements :math:`T` (``shots``).
+    To target an error :math:`\epsilon`, one needs of order :math:`T = \mathcal{O}\left( \log(M) 4^\ell/\epsilon^2 \right)` measurements to determine :math:`M` different,
+    :math:`\ell`-local observables.
+
+    One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to the exponential scaling
+
+    Args:
+        bitstrings (tensor): recorded measurement outcomes in random Pauli bases.
+        recipes (tensor): recorded measurement bases.
+    
+    .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadows`
+    
+    **Example**
+
+    We obtain the ``bitstrings`` and ``recipes`` via :func:`~.pennylane.classical_shadows`:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=range(2), shots=1000)
+        @qml.qnode(dev)
+        def qnode(x):
+            qml.Hadamard(0)
+            qml.CNOT((0,1))
+            qml.RX(x, wires=0)
+            return classical_shadow(wires=range(2))
+
+        bitstrings, recipes = qnode(0)
+        shadow = ClassicalShadow(bitstrings, recipes)
+    
+    After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
+    For example, we can compute the expectation value of a Pauli string
+    
+    >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+    (1.0079999999999998+0j)
+
+    or of a Hamiltonian
+    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+    >>> shadow.expval(H, k=1)
+    (2.2319999999999998+0j)
+
+    The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm. The case ``k=1`` corresponds to simply taking the mean
+    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means.
+    """
 
     def __init__(self, bitstrings, recipes):
         self.bitstrings = bitstrings
