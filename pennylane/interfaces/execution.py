@@ -598,12 +598,12 @@ def execute_new(
 
     if gradient_fn is None:
         # don't unwrap if it's an interface device
-        # if "passthru_interface" in device.capabilities():
-        #     return batch_fn(
-        #         qml.interfaces.cache_execute(
-        #             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-        #         )(tapes)
-        #     )
+        if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
+            return batch_fn(
+                qml.interfaces.cache_execute(
+                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                )(tapes)
+            )
         with qml.tape.Unwrap(*tapes):
             res = qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn
@@ -611,12 +611,13 @@ def execute_new(
 
         return batch_fn(res)
 
-    # if gradient_fn == "backprop" or interface is None:
-    #     return batch_fn(
-    #         qml.interfaces.cache_execute(
-    #             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-    #         )(tapes)
-    #     )
+    if gradient_fn == "backprop" or interface is None:
+        return batch_fn(
+            qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
+        )
+
     #
     # # the default execution function is batch_execute
     # execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)

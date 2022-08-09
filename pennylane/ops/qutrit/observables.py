@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the qutrit discrete-variable quantum observables
+This submodule contains the qutrit quantum observables.
 """
 from pennylane import numpy as np
 

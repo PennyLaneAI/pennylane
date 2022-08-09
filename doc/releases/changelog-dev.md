@@ -156,7 +156,7 @@
 * `DefaultQubit` devices now natively support parameter broadcasting
   and `qml.gradients.param_shift` allows to make use of broadcasting.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
-  
+
   Instead of utilizing the `broadcast_expand` transform, `DefaultQubit`-based
   devices now are able to directly execute broadcasted circuits, providing
   a faster way of executing the same circuit at varied parameter positions.
@@ -291,7 +291,7 @@
   ```
   
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for
-  drawing circuit diagram graphics. 
+  drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -328,7 +328,6 @@
   >>> print(circuit(U))
   [0.5 0.5 0. ]
   ```
-  
   
 **Operator Arithmetic:**
 
@@ -392,13 +391,26 @@
 * Added `__add__` and `__pow__` dunder methods to the `qml.operation.Operator` class so that users can combine operators
   more naturally. [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
 
-  ```python
-  >>> summed_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
-  >>> summed_op
+  ```pycon
+  >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
+  >>> sum_op
   RX(1.23, wires=[0]) + RZ(3.14, wires=[0])
   >>> exp_op = qml.RZ(1.0, wires=0) ** 2
   >>> exp_op
   RZ**2(1.0, wires=[0])
+  ```
+
+* Added `__mul__` and `__matmul__` dunder methods to the `qml.operation.Operator` class so
+  that users can combine operators more naturally.
+  [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
+
+  ```pycon
+  >>> prod_op = qml.RX(1, wires=0) @ qml.RY(2, wires=0)
+  >>> prod_op
+  PauliX(wires=[0]) @ PauliZ(wires=[1])
+  >>> sprod_op = 6 * qml.RX(1, 0)
+  >>> sprod_op
+  6*(RX(1, wires=[0]))
   ```
 
 * Added support for addition of operators and scalars. [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
@@ -453,6 +465,41 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   (array(-0.68362956), array(0.21683382))
   ```
 
+* Added `arithmetic_depth` property and `simplify` method to the `Operator`, `Sum`, `Adjoint`
+and `SProd` operators so that users can reduce the depth of nested operators.
+  [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
+
+  ```pycon
+  >>> sum_op = qml.ops.Sum(qml.RX(phi=1.23, wires=0), qml.ops.Sum(qml.RZ(phi=3.14, wires=0), qml.PauliX(0)))
+  >>> sum_op.arithmetic_depth
+  2
+  >>> simplified_op = sum_op.simplify()
+  >>> simplified_op.arithmetic_depth
+  1
+  ```
+
+* `qml.simplify` can now be used instead of using each operator's simplify method.
+  [(#2854)](https://github.com/PennyLaneAI/pennylane/pull/2854)
+
+  This wrapper can also be used inside circuits:
+
+ ```python
+  @qml.qnode(qml.device('default.qubit', wires=1))
+  def circuit(x, simplify=True):
+      op = qml.adjoint(qml.adjoint(qml.RX(x, wires=0)))
+      if simplify:
+          qml.simplify(op)
+      return qml.expval(qml.PauliZ(0))
+
+  print(qml.draw(circuit)(1.2, simplify=False))
+  print(qml.draw(circuit)(1.2))
+  ```
+
+  ```pycon
+  0: ──RX(1.20)††─┤  <Z>
+  0: ──RX(1.20)─┤  <Z>
+  ```
+  
 * A `Prod` symbolic class is added that allows users to represent the Prod of operators.
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
 
@@ -618,6 +665,29 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
+* Custom devices inheriting from `DefaultQubit` or `QubitDevice` can break due to the introduction
+  of parameter broadcasting.
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
+
+  A custom device should only break if all three following statements hold simultaneously:
+
+  1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
+  2. The device implements custom methods in the simulation pipeline that are incompatible
+     with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
+  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+     dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
+     (or both).
+
+  The `capabilities["supports_broadcasting"]` is set to `True` for
+  `DefaultQubit`. Therefore typically, the easiest fix will be to change the
+  `capabilities["supports_broadcasting"]` flag to `False` for the child device
+  and/or to include a call to `broadcast_expand` in
+  `CustomDevice.batch_transform`, similar to how `Device.batch_transform` calls
+  it.
+
+  Separately from the above, custom devices that inherit from `QubitDevice` and implement a
+  custom `_gather` method need to allow for the kwarg `axis` to be passed to this `_gather` method.
+
 * PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
   which provides an updated API that is incompatible which versions of the package prior to 2.7.
   If you run into issues relating to this package, please reinstall PennyLane.
@@ -718,6 +788,9 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   located at the beginning of the circuit. In addition, now `qml.batch_input` raises an error when
   using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
+
+* Calling `qml.equal` with nested operators now raises a NotImplementedError.
+  [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
 <h3>Contributors</h3>
 
