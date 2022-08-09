@@ -177,18 +177,17 @@
 
 <h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
-* Implemented new symbolic Operators to represent the sum, product,
-  control, and scalar-product of Operators.
+* New functionality for representing the sum, product, and scalar-product 
+  of Operators is available.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
   [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
-  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
   [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
 
-  The following functions have been added to facilitate creating new Operators whose 
-  matrix, terms, and eigenvalues can be accessed as per usual, while maintaining 
-  differentiability. Operators created from these new functions can be used within
-  QNodes as operations or as Observables (where physically applicable). 
+  The following functionalities have been added to facilitate creating new Operators 
+  whose matrix, terms, and eigenvalues can be accessed as per usual, while maintaining 
+  differentiability. Operators created from these new features can be used within
+  QNodes as Operations or as Observables (where physically applicable). 
 
   - Summing any number of Operators via `qml.op_sum` results in a "summed" Operator:
 
@@ -259,10 +258,6 @@
     ([2.0], [PauliX(wires=[0])])
     ```
   
-  - A symbolic operator `qml.ops.op_math.Controlled` to represent a controlled version of any
-    operation. 
-    <INSERT EXAMPLE CODE>
-  
 * All PennyLane Operators can now be added, subtracted, multiplied, scaled, and raised to 
   powers using `+`, `-`, `@`, `*`, `**`, respectively.
   [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
@@ -314,6 +309,29 @@
            [0.        +0.j        , 0.54030231+0.84147098j]])
     ```
 
+* A new class called `Controlled` is available in `qml.ops.op_math` to help represent 
+  a controlled version of any operation. 
+  [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
+
+  '''python
+  from pennylane.ops.op_math import Controlled
+
+  @qml.qnode(qml.device('default.qubit', wires=3))
+  def circuit():
+      qml.PauliX(0)
+      Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
+      return qml.probs(wires=range(3))
+  '''
+
+  '''pycon
+  >>> circuit()
+  tensor([0. , 0. , 0. , 0. , 0.5, 0.5, 0. , 0. ], requires_grad=True)
+  >>> print(qml.draw(circuit)())
+  0: ──X─╭●─┤ ╭Probs
+  1: ────├○─┤ ├Probs
+  2: ────╰H─┤ ╰Probs
+  '''
+
 * Simplify nested arithmetic operations using `qml.simplify`.
   [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
   [(#2854)](https://github.com/PennyLaneAI/pennylane/pull/2854)
@@ -335,13 +353,6 @@
   >>> qml.draw(circuit)(1.2) 
   0: ──RX(1.20)─┤  <Z>
   ```
-
-* `default.qubit` now natively executes any operation that defines a matrix except
-  for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
-  `U1`, `U2`, `U3`, and arithmetic operations. The existence of a matrix is determined by the
-  `Operator.has_matrix` property.
-  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
-  
 
 <h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
 
@@ -549,6 +560,10 @@
 
 <h3>Improvements 📈</h3>
 
+* `default.qubit` now natively executes any operation that defines a matrix except
+  for trainable `Pow` operations. 
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
+  
 * When adjoint differentiation is requested, circuits are now decomposed so
   that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
@@ -676,7 +691,7 @@
 
 * Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
-  
+
 <h3>Bug fixes 🐞</h3>
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
