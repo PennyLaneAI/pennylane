@@ -31,7 +31,7 @@ ops = {
 }
 
 obs = {
-    "THermitian",  # Added here to prevent errors when using device
+    "THermitian",
 }
 
 __all__ = list(ops | obs)
