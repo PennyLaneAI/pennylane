@@ -54,6 +54,14 @@ def simplify(op: Operator):
     >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
     RX(0.1, wires=[0])
 
+    Both types of simplification occur together:
+
+    >>> op = qml.adjoint(qml.U2(-np.pi/2, np.pi/2, wires=0) + qml.PauliX(0))
+    >>> op
+    Adjoint(Sum)([-1.5707963267948966, 1.5707963267948966], [], wires=[0])
+    >>> qml.simplify(op)
+    Adjoint(RX)(1.5707963267948966, wires=[0]) + Adjoint(PauliX)(wires=[0])
+
     """
     if qml.queuing.QueuingContext.recording():
         with qml.tape.stop_recording():
