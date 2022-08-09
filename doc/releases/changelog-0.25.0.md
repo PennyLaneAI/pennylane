@@ -335,12 +335,6 @@
   0: ──RX(1.20)─┤  <Z>
   ```
 
-* `default.qubit` now natively executes any operation that defines a matrix except
-  for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
-  `U1`, `U2`, `U3`, and arithmetic operations. The existence of a matrix is determined by the
-  `Operator.has_matrix` property.
-  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
-  
 
 <h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
 
@@ -544,6 +538,10 @@
 
 <h3>Improvements 📈</h3>
 
+* `default.qubit` now natively executes any operation that defines a matrix except
+  for trainable `Pow` operations. 
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
+  
 * When adjoint differentiation is requested, circuits are now decomposed so
   that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
@@ -675,7 +673,7 @@
 
 * Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
-  
+
 <h3>Bug fixes 🐞</h3>
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
