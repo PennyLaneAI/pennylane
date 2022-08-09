@@ -91,7 +91,6 @@ from pennylane.transforms import (
     is_commuting,
     pattern_matching,
     pattern_matching_optimization,
-    simplify,
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
