@@ -188,7 +188,7 @@ def circuit():
 >>> print(result)
 {'00': 518, '01': 0, '10': 0, '11': 482}
 
-Note: For complicated Hamiltonians, this can add considerable overhead time (due to cost of calcuating 
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
 eigenvalues to determine possible outcomes), and as number of qubits increases, the length of the output 
 dictionary showing possible computational basis states grows rapidly. 
 
