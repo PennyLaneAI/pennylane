@@ -49,19 +49,22 @@ class DefaultQutrit(QutritDevice):
     short_name = "default.qutrit"
     pennylane_requires = __version__
     version = __version__
-    author = "Mudit Pandey"
+    author = "Mudit Pandey, UBC Quantum Software and Algorithms Research Group, and Xanadu"
 
     # TODO: Update list of operations and observables once more are added
     operations = {
+        "Identity",
         "QutritUnitary",
         "TShift",
         "TClock",
         "TAdd",
     }
 
+    # Identity is supported as an observable for qml.state() to work correctly. However, any
+    # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
     observables = {
-        "THermitian",
         "Identity",
+        "THermitian",
     }
 
     def __init__(
@@ -114,6 +117,10 @@ class DefaultQutrit(QutritDevice):
         rotations = rotations or []
 
         # apply the circuit operations
+
+        # Operations are enumerated so that the order of operations can eventually be used
+        # for correctly applying basis state / state vector / snapshot operations which will
+        # be added later.
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
             self._state = self._apply_operation(self._state, operation)
 
@@ -252,7 +259,6 @@ class DefaultQutrit(QutritDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qutrit",
-            supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,

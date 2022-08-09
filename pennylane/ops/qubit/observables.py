@@ -16,13 +16,15 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
-from scipy.sparse import csr_matrix
+from copy import copy
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import AllWires, AnyWires, Observable
 from pennylane.wires import Wires
+
 from .matrix_ops import QubitUnitary
 
 
@@ -93,7 +95,7 @@ class Hermitian(Observable):
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
-        if not qml.math.allclose(A, A.conj().T):
+        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
             raise ValueError("Observable must be Hermitian.")
 
         return A
@@ -208,7 +210,7 @@ class SparseHamiltonian(Observable):
 
     >>> wires = 20
     >>> coeffs = [1 for _ in range(wires)]
-    >>> observables = [qml.PauliZ(i) for _ in range(wires)]
+    >>> observables = [qml.PauliZ(i) for i in range(wires)]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = qml.utils.sparse_hamiltonian(H)
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires=wires)
@@ -458,4 +460,4 @@ class Projector(Observable):
         return []
 
     def pow(self, z):
-        return [self.__copy__()] if (isinstance(z, int) and z > 0) else super().pow(z)
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)

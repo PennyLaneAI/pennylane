@@ -170,7 +170,7 @@ class TestMolecule:
         r"""Test that the molecule object contains the correct basis set and non-default basis data
         for a given molecule.
         """
-        mol = qchem.Molecule(symbols, geometry)
+        mol = qchem.Molecule(symbols, geometry, normalize=False)
 
         assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
         assert mol.l == l
