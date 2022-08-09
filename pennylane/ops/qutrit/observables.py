@@ -81,8 +81,6 @@ class THermitian(Hermitian):
         """
         return Hermitian.compute_matrix(A)
 
-    # This overrides `Hermitian.eigendecomposition`, because keying into the dictionary `THermitian_eigs` directly
-    # does not work as expected and users need to key into `Hermitian._eigs` instead without this override.
     @property
     def eigendecomposition(self):
         """Return the eigendecomposition of the matrix specified by the Hermitian observable.
@@ -93,7 +91,8 @@ class THermitian(Hermitian):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
+                Hermitian observable
         """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)

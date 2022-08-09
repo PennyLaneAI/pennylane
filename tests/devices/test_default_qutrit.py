@@ -339,7 +339,7 @@ class TestExpval:
             ),
             (
                 qml.THermitian,
-                np.array([1 / 3] * 9),
+                [1 / 3] * 9,
                 0,
                 obs_2,
             ),
@@ -449,7 +449,7 @@ class TestVar:
             ),
             (
                 qml.THermitian,
-                np.array([1 / 3] * 9),
+                [1 / 3] * 9,
                 30.22222,
                 obs_2,
             ),
