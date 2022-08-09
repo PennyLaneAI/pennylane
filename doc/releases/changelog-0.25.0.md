@@ -477,7 +477,7 @@ of operators.
   tensor(0.08228288, requires_grad=True)
   ```
 
-<h4>A new measurement, operator, and optimizer ✨</h4>
+<h4>New measurement types and a new operator and optimizer ✨</h4>
 
 * A new measurement called [`qml.counts`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.counts.html) 
   is available.
@@ -522,6 +522,33 @@ of operators.
   >>> circuit()
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
+
+* A new experimental return type for QNodes with multiple measurements has been added.
+  [(#2814)](https://github.com/PennyLaneAI/pennylane/pull/2814)
+  [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
+  [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
+  
+  QNodes returning a list or tuple of different measurements return an intuitive 
+  data structure via `qml.enable_return`, where the individual measurements are 
+  separated into their own tensors:
+
+  ```python
+  qml.enable_return()
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.Hadamard(wires=[0])
+      qml.CRX(x, wires=[0, 1])
+      return (qml.probs(wires=[0]), qml.vn_entropy(wires=[0]), qml.probs(wires=0), qml.expval(wires=1))
+  ```
+  ```pycon
+  >>> circuit(0.5)
+  (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.5, 0.5], requires_grad=True), tensor(0.93879128, requires_grad=True))
+  ```
+  
+  In addition, QNodes that utilize this new return type support backpropagation.
+  This new return type can be disabled thereafter via `qml.disable_return()`.
   
 * An operator called [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html) 
   is now available.
@@ -565,42 +592,6 @@ of operators.
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-<h4>Experimental feature: New return types</h4>
-
-* A new experimental return type for QNodes with multiple measurements has been added.
-  
-  [(#2814)](https://github.com/PennyLaneAI/pennylane/pull/2814)
-  [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
-  [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
-  
-  The new system guarantees intuitive return types such that a sequence (e.g., list or tuple) is returned based on the `return` statement of the quantum function. It is now
-  possible to trigger the new return type system with the top-level function `qml.enable_return`. We have support for
-  forward pass and backpropagation for every interface. It does not support custom gradient function for now.
-  
-  **Example**
-  
-  Forward pass:
-  ```python
-  qml.enable_return()
-  
-  dev = qml.device("default.qubit", wires=2)
-  
-  def circuit(x):
-          qml.Hadamard(wires=[0])
-          qml.CRX(x, wires=[0, 1])
-          return (qml.probs(wires=[0]), qml.vn_entropy(wires=[0]), qml.probs(wires=0), qml.expval(wires=1))
-  
-  qnode = qml.QNode(circuit, dev)
-  ```
-  ```pycon
-  res = qnode(0.5)
-  >>> res
-  (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.5, 0.5], requires_grad=True), tensor(0.93879128, requires_grad=True))
-  
-  qml.disable_return()
-  ```
-  
-  In addition, QNodes that utilize this new return type support backpropagation.
 
 <h4>More drawing styles 🎨</h4>
 
