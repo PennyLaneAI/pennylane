@@ -88,7 +88,6 @@
 
 <h4>Differentiable error mitigation ⚙️</h4>
 
-
 * Differentiable zero-noise-extrapolation (ZNE) error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
 
@@ -175,7 +174,7 @@
   (3, 4, 4)
   ```
 
-<h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
+<h4>Intuitive Operator arithmetic 🧮</h4>
 
 * New functionality for representing the sum, product, and scalar-product 
   of Operators is available.
@@ -332,7 +331,7 @@
   2: ────╰H─┤ ╰Probs
   '''
 
-* Simplify nested arithmetic operations using `qml.simplify`.
+* Arithmetic operations can now be simplified using `qml.simplify`.
   [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
   [(#2854)](https://github.com/PennyLaneAI/pennylane/pull/2854)
   
@@ -354,9 +353,20 @@
   0: ──RX(1.20)─┤  <Z>
   ```
 
+* A new function called `qml.equal` can be used to compare the equality 
+  of parametric operators.
+  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
+
+  '''pycon
+  >>> qml.equal(qml.RX(1.23, 0), qml.RX(1.23, 0))
+  True
+  >>> qml.equal(qml.RY(4.56, 0), qml.RY(7.89, 0))
+  False
+  '''
+
 <h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
 
-* The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
+* The `DefaultMixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
   [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
   [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
 
@@ -547,10 +557,6 @@
   for _ in range(max_iterations):
       params, cost = opt.step_and_cost(cost, params)
   ```  
-  
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality 
-  of parametric operators taking into account their interfaces and trainability.
-  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
   
 <h4>More drawing styles 🎨</h4>
 
