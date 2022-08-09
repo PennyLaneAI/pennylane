@@ -221,7 +221,7 @@
   ```
 
 * The `+` and `**` Python operators now function intuitively with Operators.
-  [(#2807)](https://github.com/PennyLaneAI/pennylane/pull/2807)
+  [(#2825)](https://github.com/PennyLaneAI/pennylane/pull/2825)
 
   ```pycon
   >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0)
