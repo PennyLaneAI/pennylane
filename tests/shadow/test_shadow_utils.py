@@ -42,6 +42,8 @@ def convert_to_interface(arr, interface):
 class TestMedianOfMeans:
     """Test the median of means function"""
 
+    # TODO: add tests for the gradient once we implement the post-processing reconstruction
+
     @pytest.mark.parametrize(
         "arr, num_batches, expected",
         [

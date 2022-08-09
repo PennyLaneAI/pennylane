@@ -15,6 +15,7 @@
 
 import pytest
 
+import numpy as _np
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
@@ -114,8 +115,8 @@ class TestIntegrationShadows:
         assert qml.math.allclose(state, 0.5 * np.eye(2), atol=1e-1)
 
 
-def hadamard_circuit(wires, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=10000)
+def hadamard_circuit(wires, shots=10000, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -126,8 +127,8 @@ def hadamard_circuit(wires, interface="autograd"):
     return circuit
 
 
-def max_entangled_circuit(wires, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=10000)
+def max_entangled_circuit(wires, shots=10000, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -139,8 +140,8 @@ def max_entangled_circuit(wires, interface="autograd"):
     return circuit
 
 
-def qft_circuit(wires, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=10000)
+def qft_circuit(wires, shots=10000, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     one_state = np.zeros(wires)
     one_state[-1] = 1
@@ -165,44 +166,81 @@ class TestStateReconstruction:
     def test_hadamard_reconstruction(self, wires, interface):
         """Test that the state reconstruction is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(wires, interface)
+        circuit = hadamard_circuit(wires, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
-        actual = np.mean(shadow.global_snapshots(), axis=0)
+        state = shadow.global_snapshots()
+        assert state.shape == (10000, 2**wires, 2**wires)
+
+        state = np.mean(state, axis=0)
         expected = np.ones((2**wires, 2**wires)) / (2**wires)
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(state, expected, atol=1e-1)
 
     @pytest.mark.parametrize("wires", [1, 2, 3, 4])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_max_entangled_reconstruction(self, wires, interface):
         """Test that the state reconstruction is correct for a maximally
         entangled state"""
-        circuit = max_entangled_circuit(wires, interface)
+        circuit = max_entangled_circuit(wires, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
-        actual = np.mean(shadow.global_snapshots(), axis=0)
+        state = shadow.global_snapshots()
+        assert state.shape == (10000, 2**wires, 2**wires)
+
+        state = np.mean(state, axis=0)
         expected = np.zeros((2**wires, 2**wires))
         expected[np.array([0, 0, -1, -1]), np.array([0, -1, 0, -1])] = 0.5
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(state, expected, atol=1e-1)
 
     @pytest.mark.parametrize("wires", [1, 2, 3, 4])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_qft_reconstruction(self, wires, interface):
-        """Test that the state reconstruction is correct for a maximally
-        entangled state"""
-        circuit = qft_circuit(wires, interface)
+        """Test that the state reconstruction is correct for a QFT state"""
+        circuit = qft_circuit(wires, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
-        actual = np.mean(shadow.global_snapshots(), axis=0)
+        state = shadow.global_snapshots()
+        assert state.shape == (10000, 2**wires, 2**wires)
+
+        state = np.mean(state, axis=0)
         expected = np.exp(np.arange(2**wires) * 2j * np.pi / (2**wires)) / (2 ** (wires / 2))
         expected = np.outer(expected, np.conj(expected))
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(state, expected, atol=1e-1)
+
+    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("snapshots", [10, 100, 1000])
+    def test_subset_reconstruction(self, wires, interface, snapshots):
+        """Test that the state reconstruction is correct for different numbers
+        of used snapshots"""
+        circuit = hadamard_circuit(wires, interface=interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        state = shadow.global_snapshots(snapshots=snapshots)
+        assert state.shape == (snapshots, 2**wires, 2**wires)
+
+    def test_large_state_warning(self):
+        """Test that a warning is raised when a very large state is reconstructed"""
+        circuit = hadamard_circuit(17, shots=2)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        msg = "Querying density matrices for n_wires > 16 is not recommended, operation will take a long time"
+        with pytest.warns(UserWarning, match=msg):
+            try:
+                shadow.global_snapshots()
+            except _np.core._exceptions._ArrayMemoryError:
+                # Depending on the memory available on the machine, this may
+                # or may not raise an OOM error. This is fine in any case since
+                # we only want to catch the warning.
+                pass
 
 
 @pytest.mark.all_interfaces
@@ -223,11 +261,12 @@ class TestExpvalEstimation:
     def test_hadamard_reconstruction(self, interface, obs, expected):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(3, interface)
+        circuit = hadamard_circuit(3, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
         actual = shadow.expval(obs, k=10)
+        assert actual.shape == ()
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
