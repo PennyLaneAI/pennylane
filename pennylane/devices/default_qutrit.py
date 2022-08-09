@@ -152,12 +152,12 @@ class DefaultQutrit(QutritDevice):
         return self._apply_unitary(state, matrix, wires)
 
     def _apply_tshift(self, state, axes, inverse=False):
-        """Applies a Shift gate by rolling 1 unit along the axis specified in ``axes``.
+        """Applies a ternary Shift gate by rolling 1 unit along the axis specified in ``axes``.
 
         Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
         shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
         the last index loops back to the first, :math:`|2 \rangle` is transformed to
-        :math:`|0\rangle`.
+        :math:`|0 \rangle`.
 
         Args:
             state (array[complex]): input state
@@ -171,8 +171,8 @@ class DefaultQutrit(QutritDevice):
         return self._roll(state, shift, axes[0])
 
     def _apply_tclock(self, state, axes, inverse=False):
-        """Applies a ternary Clock gate by adding a phase of :math:`\omega` to the 1 index and
-        :math:`\omega^{2}` to the 2 index along the axis specified in ``axes``
+        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 index
+        along the axis specified in ``axes``
 
         Args:
             state (array[complex]): input state
@@ -185,7 +185,9 @@ class DefaultQutrit(QutritDevice):
         partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
 
-    def _apply_phase(self, state, axes, index, parameters, inverse=False):
+    def _apply_phase(
+        self, state, axes, index, parameters, inverse=False
+    ):  # pylint: disable=too-many-arguments
         """Applies a phase onto the specified index along the axis specified in ``axes``.
 
         Args:
