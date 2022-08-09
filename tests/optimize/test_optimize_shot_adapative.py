@@ -14,6 +14,7 @@
 """Tests for the shot adaptive optimizer"""
 import pytest
 from scipy.stats import multinomial
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -593,9 +594,11 @@ class TestStepAndCost:
 
         assert np.allclose(res, -1, atol=tol, rtol=0)
 
+    @flaky(max_runs=3)
     def test_expval_cost(self, tol):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
+        np.random.seed(0)
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         def ansatz(x, **kwargs):
