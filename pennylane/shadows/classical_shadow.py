@@ -22,15 +22,15 @@ from pennylane.shadows.utils import median_of_means, pauli_expval
 
 
 class ClassicalShadow:
-    """Class for classical shadow post-processing
+    r"""Class for classical shadow post-processing
 
     A ``ClassicalShadow`` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
     The idea is to capture :math:`T` (``shots``) local snapshots of the state by performing measurements in random Pauli bases at each qubit.
-    The measurement outcomes, denoted ``bitstrings``, as well as the choices of measurement bases, ``recipes``, are recorded in two `(T, len(wires))` integer tensors.
+    The measurement outcomes, denoted ``bitstrings``, as well as the choices of measurement bases, ``recipes``, are recorded in two ``(T, len(wires))`` integer tensors.
 
     From the :math:`t`-th measurement, we can reconstruct the ``local_snapshots``
 
-    .. math-mode:: \rho^{(t)} = \bigotimes_{i=1}^{n} 3 U^\dagger_i |b_i \times b_i | U_i - \mathbb{1},
+    .. math:: \rho^{(t)} = \bigotimes_{i=1}^{n} 3 U^\dagger_i |b_i \rangle \langle b_i | U_i - \mathbb{I},
 
     where :math:`U_i` is the rotation corresponding to the measurement of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
     the corresponding computational basis state given the output bit :math:`b_i`.
