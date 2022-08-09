@@ -236,7 +236,7 @@ class TestStateReconstruction:
 
         with monkeypatch.context() as m:
             # don't run the actual state computation since we only want the warning
-            m.setattr(ClassicalShadow, "_obtain_global_snapshots", lambda x: None)
+            m.setattr(ClassicalShadow, "_obtain_global_snapshots", lambda *args, **kwargs: None)
 
             with pytest.warns(UserWarning, match=msg):
                 shadow.global_snapshots()
@@ -252,15 +252,17 @@ class TestExpvalEstimation:
         [
             (qml.PauliX(1), 1),
             (qml.PauliX(0) @ qml.PauliX(2), 1),
+            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), 1),
             (qml.PauliY(2), 0),
             (qml.PauliY(1) @ qml.PauliZ(2), 0),
             (qml.PauliX(0) @ qml.PauliY(1), 0),
+            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
         ],
     )
     def test_hadamard_expval(self, interface, obs, expected):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(3, interface=interface)
+        circuit = hadamard_circuit(3, shots=100000, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -275,15 +277,17 @@ class TestExpvalEstimation:
             (qml.PauliX(1), 0),
             (qml.PauliX(0) @ qml.PauliX(2), 0),
             (qml.PauliZ(2), 0),
+            (qml.Identity(1) @ qml.PauliZ(2), 0),
             (qml.PauliZ(1) @ qml.PauliZ(2), 1),
             (qml.PauliX(0) @ qml.PauliY(1), 0),
+            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
             (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2), -1),
         ],
     )
     def test_max_entangled_expval(self, interface, obs, expected):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
-        circuit = max_entangled_circuit(3, interface=interface)
+        circuit = max_entangled_circuit(3, shots=100000, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -298,16 +302,18 @@ class TestExpvalEstimation:
             (qml.PauliX(0), -1),
             (qml.PauliX(0) @ qml.PauliX(1), 0),
             (qml.PauliX(0) @ qml.PauliX(2), -1 / np.sqrt(2)),
+            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), -1 / np.sqrt(2)),
             (qml.PauliZ(2), 0),
             (qml.PauliX(1) @ qml.PauliY(2), 0),
             (qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
+            (qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
             (qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2), -1 / np.sqrt(2)),
             (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2), 0),
         ],
     )
     def test_qft_expval(self, interface, obs, expected):
         """Test that the expval estimation is correct for a QFT state"""
-        circuit = qft_circuit(3, interface=interface)
+        circuit = qft_circuit(3, shots=100000, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
