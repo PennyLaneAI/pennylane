@@ -671,7 +671,7 @@ class TestIntegration:
     @pytest.mark.torch
     def test_unwrapping_to_numpy(self):
         """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
-        is requested for a given interface parameters."""
+        is requested for a given interface."""
 
         import torch
 
