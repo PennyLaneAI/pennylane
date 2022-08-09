@@ -14,6 +14,7 @@
 """Classical Shadows base class with processing functions"""
 import warnings
 from collections.abc import Iterable
+from string import ascii_letters as ABC
 
 import pennylane.numpy as np
 import pennylane as qml
@@ -69,14 +70,16 @@ class ClassicalShadow:
 
     @staticmethod
     def _obtain_global_snapshots(local_snapshot):
-        global_snapshots = []
-        for T_snapshot in local_snapshot:
-            tensor_product = T_snapshot[0]
-            for n_snapshot in T_snapshot[1:]:
-                tensor_product = np.kron(tensor_product, n_snapshot)
-            global_snapshots.append(tensor_product)
+        T, n = local_snapshot.shape[:2]
 
-        return np.array(global_snapshots)
+        transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
+
+        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
+        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
+
+        return np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots).reshape(
+            T, 2**n, 2**n
+        )
 
     def global_snapshots(self, wires=None, snapshots=None):
         """Compute the T x 2**n x 2**n global snapshots"""

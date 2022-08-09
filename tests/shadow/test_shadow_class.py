@@ -262,7 +262,7 @@ class TestExpvalEstimation:
     def test_hadamard_expval(self, interface, obs, expected):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(3, interface=interface)
+        circuit = hadamard_circuit(3, shots=100000, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -287,7 +287,7 @@ class TestExpvalEstimation:
     def test_max_entangled_expval(self, interface, obs, expected):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
-        circuit = max_entangled_circuit(3, interface=interface)
+        circuit = max_entangled_circuit(3, shots=100000, interface=interface)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
