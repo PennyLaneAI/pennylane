@@ -33,9 +33,8 @@ ops = {
     "TClock",
 }
 
-# TODO: Remove QutritUnitary from obs list
 obs = {
-    "THermitian",  # Added here to prevent errors when using device
+    "THermitian",
 }
 
 __all__ = list(ops | obs)

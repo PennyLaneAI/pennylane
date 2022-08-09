@@ -256,12 +256,13 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
-def overlap_integral(basis_a, basis_b):
+def overlap_integral(basis_a, basis_b, normalize=True):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the overlap integral
@@ -291,11 +292,13 @@ def overlap_integral(basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
+        if basis_a.params[1].requires_grad or normalize:
+            ca = ca * primitive_norm(basis_a.l, alpha)
+            cb = cb * primitive_norm(basis_b.l, beta)
+            na = contracted_norm(basis_a.l, alpha, ca)
+            nb = contracted_norm(basis_b.l, beta, cb)
+        else:
+            na = nb = 1.0
 
         return (
             na
@@ -426,7 +429,7 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
     return s
 
 
-def moment_integral(basis_a, basis_b, order, idx):
+def moment_integral(basis_a, basis_b, order, idx, normalize=True):
     r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
 
     The multipole moment integral for two primitive Gaussian functions is computed as
@@ -451,6 +454,7 @@ def moment_integral(basis_a, basis_b, order, idx):
         basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the multipole moment integral
@@ -484,11 +488,13 @@ def moment_integral(basis_a, basis_b, order, idx):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
+        if basis_a.params[1].requires_grad or normalize:
+            ca = ca * primitive_norm(basis_a.l, alpha)
+            cb = cb * primitive_norm(basis_b.l, beta)
+            na = contracted_norm(basis_a.l, alpha, ca)
+            nb = contracted_norm(basis_b.l, beta, cb)
+        else:
+            na = nb = 1.0
 
         p = alpha[:, anp.newaxis] + beta
         q = anp.sqrt(anp.pi / p)
@@ -614,12 +620,13 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     return -0.5 * (t1 + t2 + t3)
 
 
-def kinetic_integral(basis_a, basis_b):
+def kinetic_integral(basis_a, basis_b, normalize=True):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the kinetic integral
@@ -650,11 +657,13 @@ def kinetic_integral(basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
+        if basis_a.params[1].requires_grad or normalize:
+            ca = ca * primitive_norm(basis_a.l, alpha)
+            cb = cb * primitive_norm(basis_b.l, beta)
+            na = contracted_norm(basis_a.l, alpha, ca)
+            nb = contracted_norm(basis_b.l, beta, cb)
+        else:
+            na = nb = 1.0
 
         return (
             na
@@ -815,7 +824,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     return a
 
 
-def attraction_integral(r, basis_a, basis_b):
+def attraction_integral(r, basis_a, basis_b, normalize=True):
     r"""Return a function that computes the nuclear attraction integral for two contracted Gaussian
     functions.
 
@@ -823,6 +832,7 @@ def attraction_integral(r, basis_a, basis_b):
         r (array[float]): position vector of nucleus
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
+        normalize (bool): if True, the basis functions get normalized
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -862,11 +872,13 @@ def attraction_integral(r, basis_a, basis_b):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
+        if basis_a.params[1].requires_grad or normalize:
+            ca = ca * primitive_norm(basis_a.l, alpha)
+            cb = cb * primitive_norm(basis_b.l, beta)
+            na = contracted_norm(basis_a.l, alpha, ca)
+            nb = contracted_norm(basis_b.l, beta, cb)
+        else:
+            na = nb = 1.0
 
         v = (
             na
@@ -956,7 +968,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     return g
 
 
-def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
+def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
     r"""Return a function that computes the electron-electron repulsion integral for four contracted
     Gaussian functions.
 
@@ -965,6 +977,8 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         basis_c (~qchem.basis_set.BasisFunction): third basis function
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
+        normalize (bool): if True, the basis functions get normalized
+
     Returns:
         function: function that computes the electron repulsion integral
 
@@ -1003,15 +1017,18 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
         gamma, cc, rc = _generate_params(basis_c.params, args_c)
         delta, cd, rd = _generate_params(basis_d.params, args_d)
 
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-        cc = cc * primitive_norm(basis_c.l, gamma)
-        cd = cd * primitive_norm(basis_d.l, delta)
+        if basis_a.params[1].requires_grad or normalize:
+            ca = ca * primitive_norm(basis_a.l, alpha)
+            cb = cb * primitive_norm(basis_b.l, beta)
+            cc = cc * primitive_norm(basis_c.l, gamma)
+            cd = cd * primitive_norm(basis_d.l, delta)
 
-        n1 = contracted_norm(basis_a.l, alpha, ca)
-        n2 = contracted_norm(basis_b.l, beta, cb)
-        n3 = contracted_norm(basis_c.l, gamma, cc)
-        n4 = contracted_norm(basis_d.l, delta, cd)
+            n1 = contracted_norm(basis_a.l, alpha, ca)
+            n2 = contracted_norm(basis_b.l, beta, cb)
+            n3 = contracted_norm(basis_c.l, gamma, cc)
+            n4 = contracted_norm(basis_d.l, delta, cd)
+        else:
+            n1 = n2 = n3 = n4 = 1.0
 
         e = (
             n1
