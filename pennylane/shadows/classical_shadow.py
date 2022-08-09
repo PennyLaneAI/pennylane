@@ -68,7 +68,7 @@ class ClassicalShadow:
         return 3 * state - np.eye(2)[None, None, :, :]
 
     @staticmethod
-    def _obtain_global_snapshots(local_snapshots):
+    def _obtain_global_snapshots(local_snapshot):
         global_snapshots = []
         for T_snapshot in local_snapshot:
             tensor_product = T_snapshot[0]
