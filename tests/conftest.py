@@ -86,6 +86,10 @@ def qubit_device_3_wires(request):
     return qml.device("default.qubit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
+"""The following 3 fixtures are for default.qutrit devices to be used for testing with various
+real and complex dtypes."""
+
+
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qutrit_device_1_wire(request):
     return qml.device("default.qutrit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
@@ -215,13 +219,17 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
+        if "returntypes" in rel_path.parts:
+            mark = getattr(pytest.mark, "return")
+            item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
         if (
             not any(
-                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
+                elem
+                in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces", "return"]
                 for elem in markers
             )
             or not markers

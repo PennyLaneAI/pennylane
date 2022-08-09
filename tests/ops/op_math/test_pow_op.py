@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
+from pennylane.ops.op_math.controlled_class import ControlledOp
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
 
 
@@ -278,6 +279,64 @@ class TestProperties:
 
         assert op.ndim_params == (0, 2)
         assert op.batch_size == 3
+
+
+class TestSimplify:
+    """Test Pow simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
+        assert pow_op.arithmetic_depth == 2
+
+    def test_simplify_zero_power(self):
+        """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
+        assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
+
+    def test_simplify_zero_power_multiple_wires(self):
+        """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
+        of Identity matrices."""
+        pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
+        final_op = qml.prod(qml.Identity(0), qml.Identity(1))
+        simplified_op = pow_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Prod)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+    def test_simplify_method(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
+        final_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), 2)
+        simplified_op = pow_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Pow)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+        assert isinstance(simplified_op.base, qml.ops.Sum)
+        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_controlled_operation(self):
+        """Test simplify method with controlled operation."""
+        pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=1, id=3), z=3)
+        final_op = ControlledOp(Pow(base=qml.PauliX(0), z=3), control_wires=1, id=3)
+        simplified_op = pow_op.simplify()
+
+        assert isinstance(simplified_op, ControlledOp)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
 
 class TestMiscMethods:
