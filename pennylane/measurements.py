@@ -743,7 +743,6 @@ def counts(op=None, wires=None, all_outcomes=False):
     {'00': 3, '01': 1}
 
     Per default, outcomes that were not observed will not be included in the dictionary.
-    Passing all_outcomes=True will create a dictionary that displays all possible outcomes.
 
     .. code-block:: python3
 
@@ -759,6 +758,7 @@ def counts(op=None, wires=None, all_outcomes=False):
     >>> circuit()
     {'01': 4}
 
+    Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
 
     @qml.qnode(dev)
     def circuit(x):
