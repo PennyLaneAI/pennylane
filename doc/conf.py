@@ -229,7 +229,8 @@ html_theme = "xanadu"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
-    "navbar_wordmark_path": "_static/pl_wordmark.png",
+    "navbar_logo_path": "_static/logo.png",
+    "navbar_wordmark_path": "_static/pennylane.svg",
     # Specifying #19b37b is more correct but does not match the other PL websites.
     "navbar_logo_colour": "#2d7c7f",
     "navbar_home_link": "https://pennylane.ai",
