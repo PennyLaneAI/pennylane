@@ -637,7 +637,9 @@ class TestGradient:
         backprop_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="backprop"))
         ps_rule_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="parameter-shift"))
 
-        weights = np.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65], requires_grad=True).reshape(1, -1)
+        weights = qml.numpy.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65], requires_grad=True).reshape(
+            1, -1
+        )
         res = backprop_grad(weights)
         res2 = ps_rule_grad(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
