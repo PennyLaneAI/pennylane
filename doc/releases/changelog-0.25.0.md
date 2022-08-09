@@ -257,7 +257,6 @@
     ([2.0], [PauliX(wires=[0])])
     ```
   
-  
 * All PennyLane Operators can now be added, subtracted, multiplied, scaled, and raised to 
   powers using `+`, `-`, `@`, `*`, `**`, respectively.
   [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
