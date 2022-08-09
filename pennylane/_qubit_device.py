@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed,unreachable
 import abc
 import itertools
 import warnings
@@ -760,6 +760,18 @@ class QubitDevice(Device):
                         " with other return types"
                     )
 
+                if self.shots is not None:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                    warnings.warn(
+                        "Requested state or density matrix with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
@@ -769,6 +781,19 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
+
+                if self.shots is not None:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                    warnings.warn(
+                        "Requested Von Neumann entropy with finite shots; the returned "
+                        "result is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
             elif obs.return_type is MutualInfo:
@@ -776,6 +801,19 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
+
+                if self.shots is not None:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                    warnings.warn(
+                        "Requested mutual information with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 wires0, wires1 = obs.raw_wires
                 results.append(
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
@@ -863,6 +901,18 @@ class QubitDevice(Device):
                         " with other return types"
                     )
 
+                if self.shots is not None:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                    warnings.warn(
+                        "Requested state or density matrix with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 state = self.access_state(wires=obs.wires)
@@ -873,12 +923,36 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
+
+                if self.shots is not None:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                    warnings.warn(
+                        "Requested Von Neumann entropy with finite shots; the returned "
+                        "result is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
             elif obs.return_type is MutualInfo:
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
+                    )
+
+                if self.shots is not None:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                    warnings.warn(
+                        "Requested mutual information with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
                     )
                 wires0, wires1 = obs.raw_wires
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
