@@ -754,7 +754,7 @@ def counts(op=None, wires=None, all_outcomes=False):
         qml.PauliX(wires=0)
         return qml.counts()
 
-    Executing this QNode shows only the observed state:
+    Executing this QNode shows only the observed outcomes:
 
     >>> circuit()
     {'01': 4}
