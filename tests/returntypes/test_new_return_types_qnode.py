@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 
 wires = [2, 3, 4]
-devices = ["default.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 class TestIntegrationSingleReturn:
@@ -36,7 +36,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == (2**wires,)
@@ -52,7 +52,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == (2**wires, 2**wires)
@@ -69,7 +69,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=range(0, d_wires))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == (2**d_wires, 2**d_wires)
@@ -85,7 +85,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
@@ -101,7 +101,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
@@ -117,7 +117,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=0)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
@@ -133,7 +133,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
@@ -158,7 +158,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         if wires is None:
@@ -246,7 +246,7 @@ class TestIntegrationSingleReturnTensorFlow:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
 
         assert res.shape == (2**wires, 2**wires)
@@ -461,7 +461,7 @@ class TestIntegrationSingleReturnTorch:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert res.shape == (2**wires, 2**wires)
@@ -675,7 +675,7 @@ class TestIntegrationSingleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
 
         assert res.shape == (2**wires, 2**wires)
@@ -854,7 +854,7 @@ class TestIntegrationSingleReturnJax:
 
 wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 class TestIntegrationMultipleReturns:
@@ -872,7 +872,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -894,7 +894,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -929,7 +929,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -964,7 +964,7 @@ class TestIntegrationMultipleReturns:
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         if wires1 is None:
@@ -1045,7 +1045,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=0))]
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, list)
@@ -2354,7 +2354,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
