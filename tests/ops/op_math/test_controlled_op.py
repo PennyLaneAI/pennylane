@@ -118,7 +118,7 @@ class TestInitialization:
 
         assert op.work_wires == Wires(("aux"))
 
-        assert op.name == "C:TempOperator"
+        assert op.name == "C(TempOperator)"
         assert op.id == "something"
 
         assert op.num_params == 0
@@ -263,7 +263,7 @@ class TestProperties:
         base = qml.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (3, 4), work_wires="aux")
 
-        with pytest.raises(AssertionError, match="CIsingXX needs at least 4 wires."):
+        with pytest.raises(AssertionError, match=r"C\(IsingXX\) needs at least 4 wires."):
             op._wires = ("a", "b")
 
     def test_private_wires_setter_no_work_wires(self):
@@ -375,14 +375,14 @@ class TestOperationProperties:
         op = Controlled(base, 2)
 
         assert op.inverse == base.inverse == False
-        assert op.name == "C:S"
+        assert op.name == "C(S)"
 
         op.inv()
 
         assert op.inverse == False
         assert base.inverse == True
-        assert op.name == "C:S.inv"
-        assert op.base_name == "C:S"
+        assert op.name == "C(S.inv)"
+        assert op.base_name == "C(S)"
 
     def test_inverse_setter(self):
         """Teest that the inverse property can be set."""
@@ -390,14 +390,14 @@ class TestOperationProperties:
         op = Controlled(base, 1)
 
         assert op.inverse == base.inverse == False
-        assert op.name == "C:T"
+        assert op.name == "C(T)"
 
         op.inverse = True
 
         assert op.inverse == False
         assert base.inverse == True
-        assert op.name == "C:T.inv"
-        assert op.base_name == "C:T"
+        assert op.name == "C(T.inv)"
+        assert op.base_name == "C(T)"
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):

@@ -140,7 +140,7 @@ class Controlled(SymbolicOp):
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires
 
-        self._name = f"C:{base.name}"
+        self._name = f"C({base.name})"
 
         super().__init__(base, do_queue, id)
 
@@ -354,17 +354,17 @@ class ControlledOp(Controlled, operation.Operation):
     def _inverse(self, boolean):
         self.base._inverse = boolean  # pylint: disable=protected-access
         # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
+        self._name = f"C({self.base.name})"
 
     def inv(self):
         self.base.inv()
         # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
+        self._name = f"C({self.base.name})"
         return self
 
     @property
     def base_name(self):
-        return f"C{self.base.base_name}"
+        return f"C({self.base.base_name})"
 
     @property
     def name(self):
