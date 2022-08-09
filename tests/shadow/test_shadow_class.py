@@ -226,6 +226,10 @@ class TestStateReconstruction:
         state = shadow.global_snapshots(snapshots=snapshots)
         assert state.shape == (snapshots, 2**wires, 2**wires)
 
+    # the error marker is necessary so that pytest ends the test immediately
+    # after the warning, since the state reconstruction is slow and the warning
+    # is all we care about
+    @pytest.mark.filterwarnings("error")
     def test_large_state_warning(self):
         """Test that a warning is raised when a very large state is reconstructed"""
         circuit = hadamard_circuit(17, shots=2)
@@ -233,14 +237,8 @@ class TestStateReconstruction:
         shadow = ClassicalShadow(bits, recipes)
 
         msg = "Querying density matrices for n_wires > 16 is not recommended, operation will take a long time"
-        with pytest.warns(UserWarning, match=msg):
-            try:
-                shadow.global_snapshots()
-            except _np.core._exceptions._ArrayMemoryError:
-                # Depending on the memory available on the machine, this may
-                # or may not raise an OOM error. This is fine in any case since
-                # we only want to catch the warning.
-                pass
+        with pytest.raises(UserWarning, match=msg):
+            shadow.global_snapshots()
 
 
 @pytest.mark.all_interfaces
