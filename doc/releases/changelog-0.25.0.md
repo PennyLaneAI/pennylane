@@ -700,6 +700,9 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* Fixed a bug where the parameter-shift rule wasn't defined for `qml.kUpCCGSD`.
+  [(#2913)](https://github.com/PennyLaneAI/pennylane/pull/2913)  
+
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
   because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
   error.
