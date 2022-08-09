@@ -45,6 +45,68 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
     return circuit
 
 
+def get_x_basis_circuit(wires, shots, interface="autograd", device="default.qubit"):
+    """
+    Return a QNode that prepares the |++..+> state and performs a classical shadow measurement
+    """
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        for wire in range(wires):
+            qml.Hadamard(wire)
+        return qml.classical_shadow(wires=range(wires))
+
+    return circuit
+
+
+def get_y_basis_circuit(wires, shots, interface="autograd", device="default.qubit"):
+    """
+    Return a QNode that prepares the |+i>|+i>...|+i> state and performs a classical shadow measurement
+    """
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        for wire in range(wires):
+            qml.Hadamard(wire)
+            qml.RZ(np.pi / 2, wire)
+        return qml.classical_shadow(wires=range(wires))
+
+    return circuit
+
+
+def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubit"):
+    """
+    Return a QNode that prepares the |00..0> state and performs a classical shadow measurement
+    """
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        return qml.classical_shadow(wires=range(wires))
+
+    return circuit
+
+
 class TestShadowMeasurement:
 
     wires_list = [1, 2, 3, 5, 8]
@@ -121,6 +183,39 @@ class TestShadowMeasurement:
         # test allowed values of bits and recipes
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("wires", wires_list)
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("device", ["default.qubit", None])
+    @pytest.mark.parametrize(
+        "circuit_fn, basis_recipe",
+        [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
+    )
+    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe):
+        """Test that the distribution of the bits and recipes are correct for a circuit
+        that prepares all qubits in a Pauli basis"""
+        # high number of shots to prevent true negatives
+        shots = 5000
+
+        circuit = circuit_fn(wires, shots=shots, interface=interface, device=device)
+        bits, recipes = circuit()
+
+        # test that the recipes follow a rough uniform distribution
+        ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
+        assert np.allclose(ratios, 1 / 3, atol=5e-2)
+
+        # test that the bit is 0 for all X measurements
+        assert qml.math.allequal(bits[recipes == basis_recipe], 0)
+
+        # test that the bits are uniformly distributed for all Y and Z measurements
+        bits1 = bits[recipes == (basis_recipe + 1) % 3]
+        ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
+        assert np.allclose(ratios1, 1 / 2, atol=5e-2)
+
+        bits2 = bits[recipes == (basis_recipe + 2) % 3]
+        ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
+        assert np.allclose(ratios2, 1 / 2, atol=5e-2)
 
     @pytest.mark.parametrize("wires", wires_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
