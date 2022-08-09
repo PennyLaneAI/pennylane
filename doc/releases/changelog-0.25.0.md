@@ -624,7 +624,7 @@ of operators.
   1. The custom device inherits from `DefaultQubit`, not `QubitDevice`.
   2. The device implements custom methods in the simulation pipeline that are incompatible
      with broadcasting (for example `expval`, `apply_operation` or `analytic_probability`).
-  3. The custom device maintains the flag `"supports_broadcasting": False` in its `capabilities`
+  3. The custom device maintains the flag `"supports_broadcasting": True` in its `capabilities`
      dictionary *or* it overwrites `Device.batch_transform` without applying `broadcast_expand`
      (or both).
 
@@ -699,6 +699,11 @@ of operators.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes 🐞</h3>
+
+* Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
+  because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
+  error.
+  [(#2895)](https://github.com/PennyLaneAI/pennylane/pull/2895)
 
 * Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
