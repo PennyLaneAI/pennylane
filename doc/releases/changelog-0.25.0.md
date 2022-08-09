@@ -88,7 +88,6 @@
 
 <h4>Differentiable error mitigation ⚙️</h4>
 
-
 * Differentiable zero-noise-extrapolation (ZNE) error mitigation is now available.
   [(#2757)](https://github.com/PennyLaneAI/pennylane/pull/2757)
 
@@ -424,14 +423,14 @@ of operators.
   This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
   `jax.jit`, or `jax.vmap`.
 
-* The `DefaultMixed` device now supports readout error.
+* The `default.mixed` device now supports readout error.
   [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
 
-  When creating an instance of `qml.device` using `"default.mixed"`, a new 
-  keyword argument called `readout_prob` can be specified. Any circuits running
-  on a `DefaultMixed` device with a finite `readout_prob` (upper-bounded by 1) 
-  will alter the measurements performed at the end of the circuit similarly to how
-  a `qml.BitFlip` channel would affect circuit measurements:
+  A new keyword argument called `readout_prob` can be specified when creating a
+  `DefaultMixed` device. Any circuits running on a `DefaultMixed` device with a 
+  finite `readout_prob` (upper-bounded by 1) will alter the measurements performed 
+  at the end of the circuit similarly to how a `qml.BitFlip` channel would affect 
+  circuit measurements:
 
   ```pycon
   >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
@@ -555,8 +554,8 @@ of operators.
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
   Mathematically, [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html)  
-  functions  as follows: 
-  $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where 
+  functions as follows: 
+  $\text{FlipSign}(n) \vert m \rangle = (-1)^{\delta_{n,m}} \vert m \rangle$, where 
   $\vert m \rangle$ is an arbitrary qubit state and $n$ is a qubit configuration:
 
   ```python
@@ -591,7 +590,6 @@ of operators.
   for _ in range(max_iterations):
       params, cost = opt.step_and_cost(cost, params)
   ```  
-
 
 <h4>More drawing styles 🎨</h4>
 
@@ -657,7 +655,7 @@ of operators.
      (or both).
 
   The `capabilities["supports_broadcasting"]` is set to `True` for
-  `DefaultQubit`. Therefore typically, the easiest fix will be to change the
+  `DefaultQubit`. Typically, the easiest fix will be to change the
   `capabilities["supports_broadcasting"]` flag to `False` for the child device
   and/or to include a call to `broadcast_expand` in
   `CustomDevice.batch_transform`, similar to how `Device.batch_transform` calls
@@ -726,15 +724,14 @@ of operators.
   been added.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
-<h3>Bug fixes 🐞</h3>
-
-* Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
-  because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
-  error.
-  [(#2895)](https://github.com/PennyLaneAI/pennylane/pull/2895)
-
 * Updated IsingXY gate docstring.
   [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
+
+<h3>Bug fixes 🐞</h3>
+
+* Fixed a bug where calling `.conj()` on an `EagerTensor` from TensorFlow raised an
+  error.
+  [(#2895)](https://github.com/PennyLaneAI/pennylane/pull/2895)
 
 * Fixed a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
@@ -787,4 +784,3 @@ Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Isaac De Vlugt, David Ittah,
 Ankit Khandelwal, Meenu Kumari, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
 Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
 Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
-
