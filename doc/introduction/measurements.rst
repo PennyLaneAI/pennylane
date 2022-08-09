@@ -192,8 +192,6 @@ Note: For complicated Hamiltonians, this can add considerable overhead time (due
 eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
 dictionary showing possible computational basis states grows rapidly. 
 
-
-
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
 a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
 
