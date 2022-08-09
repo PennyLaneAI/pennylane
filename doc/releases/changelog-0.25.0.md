@@ -177,35 +177,23 @@
 
 <h4>Quality-of-life upgrades to Operator arithmetic ➕➖✖️</h4>
 
-* Implemented new arithmetic/symbolic Operators to represent the sum, product,
+* Implemented new symbolic Operators to represent the sum, product,
   control, and scalar-product of Operators.
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
   [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
+  The following functions have been added to facilitate creating new Operators whose 
+  matrix, terms, and eigenvalues can be accessed as per usual, while maintaining 
+  differentiability. Operators created from these new functions can be used within
+  QNodes as operations or as Observables (where physically applicable). 
 
-  - Summing any number of Operators via `qml.op_sum` results in a "summed" Operator 
-    whose matrix, terms, and eigenvalues can be accessed as per usual.
-
-    ```pycon
-    >>> ops_to_sum = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)]
-    >>> summed_op = qml.op_sum(*ops_to_sum)
-    >>> summed_op
-    PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[0])
-    >>> qml.matrix(summed_op)
-    array([[ 1.+0.j,  0.-1.j,  1.+0.j,  0.+0.j],
-           [ 0.+1.j,  1.+0.j,  0.+0.j,  1.+0.j],
-           [ 1.+0.j,  0.+0.j, -1.+0.j,  0.-1.j],
-           [ 0.+0.j,  1.+0.j,  0.+1.j, -1.+0.j]])
-    >>> summed_op.terms()
-    ([1.0, 1.0, 1.0], (PauliX(wires=[0]), PauliY(wires=[1]), PauliZ(wires=[0])))
-    ```
-
-  - Summed Operators can also be used inside of a QNode while maintaining differentiability:
+  - Summing any number of Operators via `qml.op_sum` results in a "summed" Operator:
 
     ```python
-    summed_obs = qml.op_sum(qml.PauliX(0), qml.PauliZ(1))
+    ops_to_sum = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)] 
+    summed_ops = qml.op_sum(*ops_to_sum)
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -215,52 +203,26 @@
         qml.RY(weights[1], wires=1)
         qml.CNOT(wires=[0, 1])
         qml.RX(weights[2], wires=1)
-        return qml.expval(summed_obs)
+        return qml.expval(summed_ops)
     ```
 
     ```pycon
-    >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> summed_ops
+    PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[0])
+    >>> qml.matrix(summed_ops)
+    array([[ 1.+0.j,  0.-1.j,  1.+0.j,  0.+0.j],
+           [ 0.+1.j,  1.+0.j,  0.+0.j,  1.+0.j],
+           [ 1.+0.j,  0.+0.j, -1.+0.j,  0.-1.j],
+           [ 0.+0.j,  1.+0.j,  0.+1.j, -1.+0.j]])
+    >>> summed_ops.terms()
+    ([1.0, 1.0, 1.0], (PauliX(wires=[0]), PauliY(wires=[1]), PauliZ(wires=[0])))
+    >>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.grad(circuit)(weights)
-    array([-0.09347337, -0.18884787, -0.28818254])
-    ```
-  
-  - Support composing operators acting on the same wire (matrix product) or different wires 
-    (tensor product) using `qml.prod`. This creates a "product" Operator of which we can get 
-    the matrix, eigenvalues, terms, diagonalizing gates and more.
-
-    ```pycon
-    >>> prop_op = qml.prod(qml.PauliX(0), qml.PauliZ(0))
-    >>> prop_op
-    PauliX(wires=[0]) @ PauliZ(wires=[0])
-    >>> qml.matrix(prop_op)
-    array([[ 0,  -1],
-           [ 1,   0]])
-    >>> prop_op.terms()
-    ([1.0], [PauliX(wires=[0]) @ PauliZ(wires=[0])])
+    array([-0.07091872,  0.05841749, -0.9316158 ])
     ```
 
-  - The `prod_op` can also be used inside a `qnode` as an observable.
-    If the circuit is parameterized, then we can also differentiate through the
-    product observable.
-
-    ```python
-    prod_op = qml.prod(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def circuit(weights):
-        qml.RX(weights[0], wires=0)
-        return qml.expval(prod_op)
-    ```
-
-    ```pycon
-    >>> weights = qnp.array([0.1], requires_grad=True)
-    >>> qml.grad(circuit)(weights)
-    tensor([-0.07059288589999416], requires_grad=True)
-    ```
-
-    The `prod_op` can also be used inside a `qnode` as an operation which,
-    if parameterized, can be differentiated.
+  - Multiplying any number of Operators via `qml.prod` results in a "product" Operator, 
+    where the matrix product or tensor product is used correspondingly:
 
     ```python
     dev = qml.device("default.qubit", wires=3)
@@ -272,14 +234,18 @@
     ```
 
     ```pycon
-    >>> circuit(1.23)
-    tensor(0.33423773, requires_grad=True)
-    >>> qml.grad(circuit)(1.23)
+    >>> theta = 1.23
+    >>> prod_op = qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
+    >>> prod_op
+    PauliZ(wires=[0]) @ RX(1.23, wires=[1]) 
+    >>> qml.eigvals(prod_op)
+    [-1.39373197 -0.23981492  0.23981492  1.39373197]
+    >>> qml.grad(circuit)(theta)
     -0.9424888019316975
     ```
   
-  - Taking the product of a coefficient and an operator using `qml.s_prod` produces a 
-    "scalar-product" Operator. We can get its the matrix, eigenvalues, terms, diagonalizing gates and more.
+  - Taking the product of a coefficient and an operator via `qml.s_prod` produces a 
+    "scalar-product" Operator:
 
     ```pycon
     >>> sprod_op = qml.s_prod(2.0, qml.PauliX(0))
@@ -291,47 +257,28 @@
     >>> sprod_op.terms()
     ([2.0], [PauliX(wires=[0])])
     ```
-
-  - The `sprod_op` can also be used inside a `qnode` as an observable.
-    If the circuit is parameterized, then we can also differentiate through the observable.
-
-    ```python
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev, grad_method="best")
-    def circuit(scalar, theta):
-          qml.RX(theta, wires=0)
-          return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
-    ```
-
-    ```pycon
-    >>> scalar, theta = (1.2, 3.4)
-    >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
-    (array(-0.68362956), array(0.21683382))
-    ```
   
   - A symbolic operator `qml.ops.op_math.Controlled` to represent a controlled version of any
     operation. 
     <INSERT EXAMPLE CODE>
   
-
 * All PennyLane Operators can now be added, subtracted, multiplied, scaled, and raised to 
-  powers using `+`, `-`, `@`, `*`, `**`.
+  powers using `+`, `-`, `@`, `*`, `**`, respectively.
   [(#2849)](https://github.com/PennyLaneAI/pennylane/pull/2849)
   [(#2825)](https://github.com/PennyLaneAI/pennylane/pull/2825)
   [(#2891)](https://github.com/PennyLaneAI/pennylane/pull/2891)
   
   - You can now add scalars to Operators, where the interpretation is that the 
-    scalar is a properly-sized identity matrix.
+    scalar is a properly-sized identity matrix;
 
     ```pycon
-    >>> sum_op = 5 + qml.CNOT([0,1])
+    >>> sum_op = 5 + qml.PauliX(0)
     >>> sum_op.matrix()
     array([[5., 1.],
            [1., 5.]])
     ```
     
-  - The `+`/`-` operators can be used to combine Pennylane Operators. 
+  - The `+` and `-` operators can be used to combine all Pennylane Operators:
 
     ```pycon
     >>> sum_op = qml.RX(phi=1.23, wires=0) + qml.RZ(phi=3.14, wires=0) - qml.RY(phi=0.12, wires=0)
@@ -341,10 +288,10 @@
     array([[-0.18063077-0.99999968j,  0.05996401-0.57695852j],
            [-0.05996401-0.57695852j, -0.18063077+0.99999968j]])
     ```
-    Note that the behavior of `+` with *Observables* is different: it still creates 
+    Note that the behavior of `+` with *Observables* is different; it still creates 
     a Hamiltonian.
   
-  - The `*`/`@` operators can be used to scale and compose all PennyLane Operators.
+  - The `*` and `@` operators can be used to scale and compose all PennyLane Operators.
   
     ```pycon
     >>> prod_op = 2*qml.RX(1, wires=0) @ qml.RY(2, wires=0)
@@ -356,6 +303,7 @@
      ```
   
   - The `**` operator can be used to raise PennyLane Operators to a power.
+  
     ```pycon       
     >>> exp_op = qml.RZ(1.0, wires=0) ** 2
     >>> exp_op
@@ -365,13 +313,11 @@
            [0.        +0.j        , 0.54030231+0.84147098j]])
     ```
 
-* We can simplify nested arithmetic operations using `qml.simplify`.
+* Simplify nested arithmetic operations using `qml.simplify`.
   [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
   [(#2854)](https://github.com/PennyLaneAI/pennylane/pull/2854)
-
-  <INSERT Example HERE>
   
-  This wrapper can also be used inside circuits:
+  This can also be used inside circuits:
 
   ```python
   @qml.qnode(qml.device('default.qubit', wires=1))
@@ -380,24 +326,21 @@
       if simplify:
           qml.simplify(op)
       return qml.expval(qml.PauliZ(0))
-
-  print(qml.draw(circuit)(1.2, simplify=False))
-  print(qml.draw(circuit)(1.2))
   ```
 
   ```pycon
+  >>> qml.draw(circuit)(1.2, simplify=False)
   0: ──RX(1.20)††─┤  <Z>
+  >>> qml.draw(circuit)(1.2) 
   0: ──RX(1.20)─┤  <Z>
   ```
 
-* `default.qubit` now will natively execute any operation that defines a matrix except
+* `default.qubit` now natively executes any operation that defines a matrix except
   for trainable `Pow` operations. This includes custom operations, `GroverOperator`, `QFT`,
-  `U1`, `U2`, `U3`, and arithmetic operations. The existance of a matrix is determined by the
-  `Operator.has_matrix` property.[(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
-  
-* When adjoint differentiation is requested, circuits are now decomposed so
-  that all trainable operations have a generator.
+  `U1`, `U2`, `U3`, and arithmetic operations. The existence of a matrix is determined by the
+  `Operator.has_matrix` property.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
+  
 
 <h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
 
@@ -428,11 +371,11 @@
 * The `DefaultMixed` device now supports readout error.
   [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
 
-  When creating an instance of `qml.device` using `"default.mixed"`, a new 
-  keyword argument called `readout_prob` can be specified. Any circuits running
-  on a `DefaultMixed` device with a finite `readout_prob` (upper-bounded by 1) 
-  will alter the measurements performed at the end of the circuit similarly to how
-  a `qml.BitFlip` channel would affect circuit measurements:
+  A new keyword argument called `readout_prob` can be specified when creating a
+  `DefaultMixed` device. Any circuits running on a `DefaultMixed` device with a 
+  finite `readout_prob` (upper-bounded by 1) will alter the measurements performed 
+  at the end of the circuit similarly to how a `qml.BitFlip` channel would affect 
+  circuit measurements:
 
   ```pycon
   >>> dev = qml.device("default.mixed", wires=2, readout_prob=0.1)
@@ -478,7 +421,7 @@
   tensor(0.08228288, requires_grad=True)
   ```
 
-<h4>A new measurement, operator, and optimizer ✨</h4>
+<h4>New measurement types and a new operator and optimizer ✨</h4>
 
 * A new measurement called [`qml.counts`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.counts.html) 
   is available.
@@ -524,12 +467,39 @@
   ({-1: 470, 1: 530}, {-1: 470, 1: 530})
   ```
   
+* A new experimental return type for QNodes with multiple measurements has been added.
+  [(#2814)](https://github.com/PennyLaneAI/pennylane/pull/2814)
+  [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
+  [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
+
+  QNodes returning a list or tuple of different measurements return an intuitive 
+  data structure via `qml.enable_return()`, where the individual measurements are 
+  separated into their own tensors:
+
+  ```python
+  qml.enable_return()
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.Hadamard(wires=[0])
+      qml.CRX(x, wires=[0, 1])
+      return (qml.probs(wires=[0]), qml.vn_entropy(wires=[0]), qml.probs(wires=0), qml.expval(wires=1))
+  ```
+  ```pycon
+  >>> circuit(0.5)
+  (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.5, 0.5], requires_grad=True), tensor(0.93879128, requires_grad=True))
+  ```
+
+  In addition, QNodes that utilize this new return type support backpropagation.
+  This new return type can be disabled thereafter via `qml.disable_return()`.
+
 * An operator called [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html) 
   is now available.
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
   Mathematically, [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html)  
-  functions  as follows: 
+  functions as follows: 
   $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where 
   $\vert m \rangle$ is an arbitrary qubit state and $n$ is a qubit configuration:
 
@@ -566,43 +536,6 @@
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-<h4>Experimental feature: New return types</h4>
-
-* A new experimental return type for QNodes with multiple measurements has been added.
-  
-  [(#2814)](https://github.com/PennyLaneAI/pennylane/pull/2814)
-  [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
-  [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
-  
-  The new system guarantees intuitive return types such that a sequence (e.g., list or tuple) is returned based on the `return` statement of the quantum function. It is now
-  possible to trigger the new return type system with the top-level function `qml.enable_return`. We have support for
-  forward pass and backpropagation for every interface. It does not support custom gradient function for now.
-  
-  **Example**
-  
-  Forward pass:
-  ```python
-  qml.enable_return()
-  
-  dev = qml.device("default.qubit", wires=2)
-  
-  def circuit(x):
-          qml.Hadamard(wires=[0])
-          qml.CRX(x, wires=[0, 1])
-          return (qml.probs(wires=[0]), qml.vn_entropy(wires=[0]), qml.probs(wires=0), qml.expval(wires=1))
-  
-  qnode = qml.QNode(circuit, dev)
-  ```
-  ```pycon
-  res = qnode(0.5)
-  >>> res
-  (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.5, 0.5], requires_grad=True), tensor(0.93879128, requires_grad=True))
-  
-  qml.disable_return()
-  ```
-  
-  In addition, QNodes that utilize this new return type support backpropagation.
-
 <h4>More drawing styles 🎨</h4>
 
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
@@ -610,6 +543,10 @@
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 <h3>Improvements 📈</h3>
+
+* When adjoint differentiation is requested, circuits are now decomposed so
+  that all trainable operations have a generator.
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
 * The efficiency of the Hartree-Fock workflow has been improved by removing 
   repetitive steps.
@@ -667,7 +604,7 @@
      (or both).
 
   The `capabilities["supports_broadcasting"]` is set to `True` for
-  `DefaultQubit`. Therefore typically, the easiest fix will be to change the
+  `DefaultQubit`. Typically, the easiest fix will be to change the
   `capabilities["supports_broadcasting"]` flag to `False` for the child device
   and/or to include a call to `broadcast_expand` in
   `CustomDevice.batch_transform`, similar to how `Device.batch_transform` calls
@@ -736,15 +673,15 @@
   been added.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
+* Updated IsingXY gate docstring.
+  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
+  
 <h3>Bug fixes 🐞</h3>
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
   because calling `.conj()` on an `EagerTensor` from TensorFlow raised an
   error.
   [(#2895)](https://github.com/PennyLaneAI/pennylane/pull/2895)
-
-* Updated IsingXY gate docstring.
-  [(#2858)](https://github.com/PennyLaneAI/pennylane/pull/2858)
 
 * Fixed a bug where the parameter-shift gradient breaks when using both
   custom `grad_recipe`s that contain unshifted terms and recipes that
