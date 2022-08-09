@@ -529,7 +529,7 @@ of operators.
   [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
   
   QNodes returning a list or tuple of different measurements return an intuitive 
-  data structure via `qml.enable_return`, where the individual measurements are 
+  data structure via `qml.enable_return()`, where the individual measurements are 
   separated into their own tensors:
 
   ```python
