@@ -268,6 +268,7 @@ class TestExpvalEstimation:
 
         actual = shadow.expval(obs, k=10)
         assert actual.shape == ()
+        assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -293,6 +294,7 @@ class TestExpvalEstimation:
 
         actual = shadow.expval(obs, k=10)
         assert actual.shape == ()
+        assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -319,6 +321,7 @@ class TestExpvalEstimation:
 
         actual = shadow.expval(obs, k=10)
         assert actual.shape == ()
+        assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
