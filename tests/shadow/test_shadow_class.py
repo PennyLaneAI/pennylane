@@ -226,19 +226,20 @@ class TestStateReconstruction:
         state = shadow.global_snapshots(snapshots=snapshots)
         assert state.shape == (snapshots, 2**wires, 2**wires)
 
-    # the error marker is necessary so that pytest ends the test immediately
-    # after the warning, since the state reconstruction is slow and the warning
-    # is all we care about
-    @pytest.mark.filterwarnings("error")
-    def test_large_state_warning(self):
+    def test_large_state_warning(self, monkeypatch):
         """Test that a warning is raised when a very large state is reconstructed"""
         circuit = hadamard_circuit(17, shots=2)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
         msg = "Querying density matrices for n_wires > 16 is not recommended, operation will take a long time"
-        with pytest.raises(UserWarning, match=msg):
-            shadow.global_snapshots()
+
+        with monkeypatch.context() as m:
+            # don't run the actual state computation since we only want the warning
+            m.setattr(ClassicalShadow, "_obtain_global_snapshots", lambda x: None)
+
+            with pytest.warns(UserWarning, match=msg):
+                shadow.global_snapshots()
 
 
 @pytest.mark.all_interfaces

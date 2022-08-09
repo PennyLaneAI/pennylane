@@ -67,6 +67,17 @@ class ClassicalShadow:
 
         return 3 * state - np.eye(2)[None, None, :, :]
 
+    @staticmethod
+    def _obtain_global_snapshots(local_snapshots):
+        global_snapshots = []
+        for T_snapshot in local_snapshot:
+            tensor_product = T_snapshot[0]
+            for n_snapshot in T_snapshot[1:]:
+                tensor_product = np.kron(tensor_product, n_snapshot)
+            global_snapshots.append(tensor_product)
+
+        return np.array(global_snapshots)
+
     def global_snapshots(self, wires=None, snapshots=None):
         """Compute the T x 2**n x 2**n global snapshots"""
 
@@ -78,14 +89,7 @@ class ClassicalShadow:
                 UserWarning,
             )
 
-        global_snapshots = []
-        for T_snapshot in local_snapshot:
-            tensor_product = T_snapshot[0]
-            for n_snapshot in T_snapshot[1:]:
-                tensor_product = np.kron(tensor_product, n_snapshot)
-            global_snapshots.append(tensor_product)
-
-        return np.array(global_snapshots)
+        return ClassicalShadow._obtain_global_snapshots(local_snapshot)
 
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the
