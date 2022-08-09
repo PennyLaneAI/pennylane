@@ -96,7 +96,7 @@ class ClassicalShadow:
         sum of which is equal to the observable"""
 
         num_wires = self.bitstrings.shape[1]
-        obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2}
+        obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
         def pauli_list_to_word(obs):
             word = [-1] * num_wires
@@ -108,7 +108,7 @@ class ClassicalShadow:
 
             return word
 
-        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ)):
+        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)):
             word = pauli_list_to_word([observable])
             return [(1, word)]
 

@@ -252,9 +252,11 @@ class TestExpvalEstimation:
         [
             (qml.PauliX(1), 1),
             (qml.PauliX(0) @ qml.PauliX(2), 1),
+            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), 1),
             (qml.PauliY(2), 0),
             (qml.PauliY(1) @ qml.PauliZ(2), 0),
             (qml.PauliX(0) @ qml.PauliY(1), 0),
+            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
         ],
     )
     def test_hadamard_expval(self, interface, obs, expected):
@@ -275,8 +277,10 @@ class TestExpvalEstimation:
             (qml.PauliX(1), 0),
             (qml.PauliX(0) @ qml.PauliX(2), 0),
             (qml.PauliZ(2), 0),
+            (qml.Identity(1) @ qml.PauliZ(2), 0),
             (qml.PauliZ(1) @ qml.PauliZ(2), 1),
             (qml.PauliX(0) @ qml.PauliY(1), 0),
+            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
             (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2), -1),
         ],
     )
@@ -298,9 +302,11 @@ class TestExpvalEstimation:
             (qml.PauliX(0), -1),
             (qml.PauliX(0) @ qml.PauliX(1), 0),
             (qml.PauliX(0) @ qml.PauliX(2), -1 / np.sqrt(2)),
+            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), -1 / np.sqrt(2)),
             (qml.PauliZ(2), 0),
             (qml.PauliX(1) @ qml.PauliY(2), 0),
             (qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
+            (qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
             (qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2), -1 / np.sqrt(2)),
             (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2), 0),
         ],
