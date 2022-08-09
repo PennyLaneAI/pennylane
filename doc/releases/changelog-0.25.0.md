@@ -183,6 +183,7 @@
   [(#2625)](https://github.com/PennyLaneAI/pennylane/pull/2625)
   [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
+  [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
 
   The following functions have been added to facilitate creating new Operators whose 
   matrix, terms, and eigenvalues can be accessed as per usual, while maintaining 
@@ -535,7 +536,11 @@
   for _ in range(max_iterations):
       params, cost = opt.step_and_cost(cost, params)
   ```  
-
+  
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality 
+  of parametric operators taking into account their interfaces and trainability.
+  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
+  
 <h4>More drawing styles 🎨</h4>
 
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
@@ -558,7 +563,7 @@
 
 * Upgraded performance of the `compute_matrix` method of broadcastable 
   parametric operations.
-  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+  [(#2759)](https://github.com/PennyLaneAI/pennylane/pull/2759)
 
 * Jacobians are now cached with the Autograd interface when using the
   parameter-shift rule.
@@ -570,10 +575,6 @@
 
 * Add trivial behaviour logic to `qml.operation.expand_matrix`.
   [(#2785)](https://github.com/PennyLaneAI/pennylane/issues/2785)
-
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality 
-  of parametric operators taking into account their interfaces and trainability.
-  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
 * Added an `are_pauli_words_qwc` function which checks if certain
   Pauli words are pairwise qubit-wise commuting. This new function improves performance 
@@ -730,8 +731,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Isaac De Vlugt, David Ittah, Soran Jahangiri, Edward Jiang,
-Ankit Khandelwal, Meenu Kumari, Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez,
-Romain Moyard, Lee James O'Riordan, Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni,
-Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, Moritz Willmann
+Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Prajwal Borkar, Isaac De Vlugt, Olivia Di Matteo, Kristiyan Dilov, 
+David Ittah, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Meenu Kumari, 
+Christina Lee, Sergio Martínez-Losa, Albert Mitjans Coma, Ixchel Meza Chavez, Romain Moyard, Lee James O'Riordan,
+Mudit Pandey, Bogdan Reznychenko, Shuli Shu, Jay Soni, Modjtaba Shokrian-Zini, Antal Száva, David Wierichs, 
+Moritz Willmann
 
