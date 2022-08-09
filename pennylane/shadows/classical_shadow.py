@@ -95,7 +95,7 @@ class ClassicalShadow:
             word = [-1] * num_wires
             for ob in obs:
                 if ob.name not in obs_to_recipe_map:
-                    raise ValueError("Observable must be a combination of Pauli observables")
+                    raise ValueError("Observable must be a linear combination of Pauli observables")
 
                 word[ob.wires[0]] = obs_to_recipe_map[ob.name]
 

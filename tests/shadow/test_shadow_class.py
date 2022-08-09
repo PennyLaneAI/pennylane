@@ -208,3 +208,36 @@ class TestStateReconstruction:
 @pytest.mark.all_interfaces
 class TestExpvalEstimation:
     """Test that the expval estimation is correct for a variety of observables"""
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize(
+        "obs, expected",
+        [
+            (qml.PauliX(1), 1),
+            (qml.PauliX(0) @ qml.PauliX(2), 1),
+            (qml.PauliY(2), 0),
+            (qml.PauliY(1) @ qml.PauliZ(2), 0),
+            (qml.PauliX(0) @ qml.PauliY(1), 0),
+        ],
+    )
+    def test_hadamard_reconstruction(self, interface, obs, expected):
+        """Test that the expval estimation is correct for a uniform
+        superposition of qubits"""
+        circuit = hadamard_circuit(3, interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        actual = shadow.expval(obs, k=10)
+        assert qml.math.allclose(actual, expected, atol=1e-1)
+
+    def test_non_pauli_error(self):
+        """Test that an error is raised when a non-Pauli observable is passed"""
+        circuit = hadamard_circuit(3)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        H = qml.Hadamard(0) @ qml.Hadamard(2)
+
+        msg = "Observable must be a linear combination of Pauli observables"
+        with pytest.raises(ValueError, match=msg):
+            shadow.expval(H, k=10)

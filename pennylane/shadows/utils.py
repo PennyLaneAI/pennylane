@@ -14,6 +14,7 @@
 
 """Utility functions common to classical shadows"""
 
+import pennylane as qml
 from pennylane import numpy as np
 
 
@@ -36,7 +37,7 @@ def median_of_means(arr, num_batches):
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
 
     for i in range(num_batches):
-        means.append(np.mean(arr[i * batch_size : (i + 1) * batch_size]))
+        means.append(qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0))
 
     return np.median(means)
 
@@ -67,15 +68,27 @@ def pauli_expval(bits, recipes, word):
     """
     T = recipes.shape[0]
 
+    word = qml.math.convert_like(qml.math.cast_like(word, bits), bits)
+
     # -1 in the word indicates an identity observable on that qubit
     id_mask = word == -1
 
+    # nothing to do if every observable is the identity
+    if qml.math.allequal(id_mask, True):
+        return np.ones(T)
+
     # determine snapshots and qubits that match the word
-    indices = recipes == word
+    # indices = recipes == word
+    indices = qml.math.equal(recipes, word)
     indices = np.logical_or(indices, np.tile(id_mask, (T, 1)))
     indices = np.all(indices, axis=1)
 
-    bits = bits[:, np.logical_not(id_mask)]
-    bits = np.sum(bits, axis=1) % 2
+    non_id_bits = qml.math.where(np.logical_not(id_mask))
+    bits = qml.math.T(qml.math.gather(qml.math.T(bits), non_id_bits))
+
+    # this reshape is necessary since the interfaces have different gather behaviours
+    bits = qml.math.reshape(bits, (T, np.count_nonzero(np.logical_not(id_mask))))
+
+    bits = qml.math.sum(bits, axis=1) % 2
 
     return np.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(np.logical_not(id_mask))
