@@ -52,11 +52,15 @@ class DefaultQutrit(QutritDevice):
 
     # TODO: Update list of operations and observables once more are added
     operations = {
+        "Identity",
         "QutritUnitary",
     }
 
+    # Identity is supported as an observable for qml.state() to work correctly. However, any
+    # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
     observables = {
         "Identity",
+        "THermitian",
     }
 
     def __init__(

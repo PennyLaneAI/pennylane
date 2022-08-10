@@ -26,6 +26,5 @@ jobs:
     - uses: josh146/sphinx-action@master
       with:
         docs-folder: "doc/"
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
         pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf"
         build-command: "sphinx-build -b html . _build -W --keep-going"

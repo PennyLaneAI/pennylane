@@ -228,153 +228,6 @@ def intersection(wires1, wires2):
     return len(qml.wires.Wires.shared_wires([wires1, wires2])) != 0
 
 
-def simplify_rotation(rot):
-    r"""Simplify a general one qubit rotation into RX, RY and RZ rotation.
-
-    Args:
-        rot (pennylane.Rot): One qubit rotation.
-
-    Returns:
-         qml.operation: Simplified rotation if possible.
-    """
-    wires = rot.wires
-    params = rot.parameters
-
-    p0, p1, p2 = np.mod(params, 2 * np.pi)
-
-    if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(rot.data[2], -2 * np.pi), -np.pi / 2):
-        return qml.RX(rot.data[1], wires=wires)
-    if np.allclose(p0, 0) and np.allclose(p2, 0):
-        return qml.RY(rot.data[1], wires=wires)
-    if np.allclose(p1, 0):
-        return qml.RZ(rot.data[0] + rot.data[2], wires=wires)
-    if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
-        return qml.Hadamard(wires=rot.wires)
-
-    return rot
-
-
-def simplify_controlled_rotation(crot):
-    r"""Simplify a general one qubit controlled rotation into CRX, CRY, CRZ and
-    controlled-Hadamard.
-
-    Args:
-        crot (pennylane.CRot): One qubit controlled rotation.
-
-    Returns:
-         qml.operation: Simplified controlled rotation if possible.
-    """
-    target_wires = [w for w in crot.wires if w not in crot.control_wires]
-    wires = crot.wires
-    params = crot.parameters
-
-    p0, p1, p2 = np.mod(params, 2 * np.pi)
-
-    if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(crot.data[2], -2 * np.pi), -np.pi / 2):
-        return qml.CRX(crot.data[1], wires=wires)
-    if np.allclose(p0, 0) and np.allclose(p2, 0):
-        return qml.CRY(crot.data[1], wires=wires)
-    if np.allclose(p1, 0):
-        return qml.CRZ(crot.data[0] + crot.data[2], wires=wires)
-    if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
-        hadamard = qml.Hadamard
-        return qml.ctrl(hadamard, control=crot.control_wires)(wires=target_wires)
-
-    return crot
-
-
-def simplify_u2(u2):
-    r"""Simplify a u2 one qubit rotation into RX and RY rotations.
-
-    Args:
-        u2 (pennylane.U2): U2 rotation.
-
-    Returns:
-         qml.operation: Simplified rotation if possible.
-    """
-    wires = u2.wires
-
-    if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
-        np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
-    ):
-        return qml.RY(np.pi / 2, wires=wires)
-    if np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
-        np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
-    ):
-        return qml.RX(u2.data[1], wires=wires)
-
-    return u2
-
-
-def simplify_u3(u3):
-    r"""Simplify a general U3 one qubit rotation into RX, RY and RZ rotation.
-
-    Args:
-        u3 (pennylane.U3): One qubit U3 rotation.
-
-    Returns:
-         qml.operation: Simplified rotation if possible.
-    """
-    wires = u3.wires
-    params = u3.parameters
-
-    p0, p1, p2 = np.mod(params, 2 * np.pi)
-
-    if np.allclose(p0, 0) and not np.allclose(p1, 0) and np.allclose(p2, 0):
-        return qml.PhaseShift(u3.data[1], wires=wires)
-    if (
-        np.allclose(p2, np.pi / 2)
-        and np.allclose(np.mod(u3.data[1] + u3.data[2], 2 * np.pi), 0)
-        and not np.allclose(p0, 0)
-    ):
-        return qml.RX(u3.data[0], wires=wires)
-    if not np.allclose(p0, 0) and np.allclose(p1, 0) and np.allclose(p2, 0):
-        return qml.RY(u3.data[0], wires=wires)
-
-    return u3
-
-
-def simplify(operation):
-    r"""Simplify the (controlled) rotation operations :class:`~.Rot`,
-    :class:`~.U2`, :class:`~.U3`, and :class:`~.CRot` into one of
-    :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`, :class:`~.RZ`,
-    :class:`~.CZ`, :class:`~.Hadamard` and controlled-Hadamard where possible.
-
-    Args:
-        operation (.Operation): Rotation or controlled rotation.
-
-    Returns:
-         .Operation: An operation representing the simplified rotation, if possible.
-         Otherwise, the original operation is returned.
-
-    **Example**
-
-    You can simplify rotation with certain parameters, for example:
-
-    >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
-    qml.RX(0.1, wires=0)
-
-    However, not every rotation can be simplified. The original operation
-    is returned if no simplification is possible.
-
-    >>> qml.simplify(qml.Rot(0.1, 0.2, 0.3, wires=0))
-    qml.Rot(0.1, 0.2, 0.3, wires=0)
-    """
-    if operation.name not in ["Rot", "U2", "U3", "CRot"]:
-        raise qml.QuantumFunctionError(f"{operation.name} is not a Rot, U2, U3 or CRot.")
-
-    if operation.name == "Rot":
-        return simplify_rotation(operation)
-
-    if operation.name == "U2":
-        return simplify_u2(operation)
-
-    if operation.name == "U3":
-        return simplify_u3(operation)
-
-    return simplify_controlled_rotation(operation)
-
-
 def check_commutation_two_non_simplified_crot(operation1, operation2):
     r"""Check commutation for two CRot that were not simplified.
 
@@ -626,10 +479,10 @@ def is_commuting(operation1, operation2):
 
     # Simplify the rotations if possible
     if operation1.name in ["U2", "U3", "Rot", "CRot"]:
-        operation1 = simplify(operation1)
+        operation1 = qml.simplify(operation1)
 
     if operation2.name in ["U2", "U3", "Rot", "CRot"]:
-        operation2 = simplify(operation2)
+        operation2 = qml.simplify(operation2)
 
     # Case 1 operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
@@ -1043,6 +896,7 @@ class CommutationDAG:
         """
         return len(self._multi_graph)
 
+    # pylint: disable=no-member
     def draw(self, filename="dag.png"):  # pragma: no cover
         """Draw the DAG object.
 
