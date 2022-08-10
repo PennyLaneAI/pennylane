@@ -161,6 +161,14 @@ class Pow(SymbolicOp):
         """The exponent."""
         return self.hyperparameters["z"]
 
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         return self.base.label(decimals, base_label, cache=cache) + z_string

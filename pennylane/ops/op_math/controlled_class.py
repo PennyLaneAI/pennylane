@@ -167,9 +167,14 @@ class Controlled(SymbolicOp):
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires
 
-        self._name = f"C{base.name}"
+        self._name = f"C({base.name})"
 
         super().__init__(base, do_queue, id)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix if self.base.batch_size is None else False
 
     # Properties on the control values ######################
     @property
@@ -238,6 +243,9 @@ class Controlled(SymbolicOp):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
     def matrix(self, wire_order=None):
+
+        if self.base.batch_size is not None:
+            raise qml.operation.MatrixUndefinedError
 
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
@@ -375,17 +383,17 @@ class ControlledOp(Controlled, operation.Operation):
     def _inverse(self, boolean):
         self.base._inverse = boolean  # pylint: disable=protected-access
         # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
+        self._name = f"C({self.base.name})"
 
     def inv(self):
         self.base.inv()
         # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
+        self._name = f"C({self.base.name})"
         return self
 
     @property
     def base_name(self):
-        return f"C{self.base.base_name}"
+        return f"C({self.base.base_name})"
 
     @property
     def name(self):
