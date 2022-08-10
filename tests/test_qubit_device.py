@@ -753,6 +753,28 @@ class TestSample:
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
             dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
 
+    def test_no_error_measuring__commuting_ops_in_sample(self):
+        """Test that no error is raised when computational basis samples are
+        taken with other commuting measurements."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(wires=0)), qml.sample()
+
+        _ = circuit()
+
+    def test_no_error_measuring__commuting_ops_in_counts(self):
+        """Test that no error is raised when computational basis samples are
+        taken with other commuting measurements."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(wires=0)), qml.counts()
+
+        _ = circuit()
+
 
 class TestSampleWithBroadcasting:
     """Test the sample method when broadcasting is used"""
@@ -1150,6 +1172,32 @@ class TestExecution:
         for _ in range(num_evals_3):
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
+
+    def test_raise_error_measuring_non_commuting_ops_in_sample(self):
+        """Test that an error is raised in the execution method when
+        computational basis samples are taken and other non-commuting
+        measurements are present"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.sample()
+
+        with pytest.raises(qml.QuantumFunctionError, match="Computational basis measurements do not commute"):
+            _ = circuit()
+
+    def test_raise_error_measuring_non_commuting_ops_in_counts(self):
+        """Test that an error is raised in the execution method when
+        computational basis samples are taken and other non-commuting
+        measurements are present"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.counts()
+
+        with pytest.raises(qml.QuantumFunctionError, match="Computational basis measurements do not commute"):
+            _ = circuit()
 
 
 class TestExecutionBroadcasted:

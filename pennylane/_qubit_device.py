@@ -312,9 +312,19 @@ class QubitDevice(Device):
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
-        # generate computational basis samples
+        # generate computational basis samples and check for commutativity in sampled observables
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
+
+            sampled_obs = [
+                o for o in circuit.measurements if o.return_type in (qml.measurements.Sample, qml.measurements.Counts)
+            ]
+            raw_sampled_ops = any(o.obs is None for o in sampled_obs)
+            if raw_sampled_ops and circuit.diagonalizing_gates:
+                raise qml.QuantumFunctionError(
+                    f"Computational basis measurements do not commute with some of the "
+                    f"other measurements being performed:\n {circuit.measurements}"
+                )
 
         ret_types = [m.return_type for m in circuit.measurements]
         counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
@@ -400,6 +410,16 @@ class QubitDevice(Device):
         # generate computational basis samples
         if self.shots is not None:
             self._samples = self.generate_samples()
+
+            sampled_obs = [
+                o for o in circuit.measurements if o.return_type in (qml.measurements.Sample, qml.measurements.Counts)
+            ]
+            raw_sampled_ops = any(o.obs is None for o in sampled_obs)
+            if raw_sampled_ops and circuit.diagonalizing_gates:
+                raise qml.QuantumFunctionError(
+                    f"Computational basis measurements do not commute with some of the "
+                    f"other measurements being performed:\n {circuit.measurements}"
+                )
 
         # compute the required statistics
         if self._shot_vector is not None:
