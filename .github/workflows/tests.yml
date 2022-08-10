@@ -5,12 +5,10 @@ on:
       - master
   pull_request:
 
-
 env:
   TF_VERSION: 2.6.0
   TORCH_VERSION: 1.10.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
-
 
 jobs:
   core-and-interface-tests:
@@ -19,19 +17,19 @@ jobs:
     strategy:
       matrix:
         config:
-          - {python-version: 3.7, suite: 'torch'}
-          - {python-version: 3.7, suite: 'tf'}
-          - {python-version: 3.8, suite: 'tf'}
-          - {python-version: 3.8, suite: 'torch'}
-          - {python-version: 3.8, suite: 'jax'}
-          - {python-version: 3.7, suite: 'autograd'}
-          - {python-version: 3.8, suite: 'autograd'}
-          - {python-version: 3.9, suite: 'autograd'}
-          - {python-version: '3.10', suite: 'autograd'}
-          - {python-version: 3.7, suite: 'core'}
-          - {python-version: 3.8, suite: 'core'}
-          - {python-version: 3.9, suite: 'core'}
-          - {python-version: '3.10', suite: 'core'}
+          - { python-version: 3.7, suite: "torch" }
+          - { python-version: 3.7, suite: "tf" }
+          - { python-version: 3.8, suite: "tf" }
+          - { python-version: 3.8, suite: "torch" }
+          - { python-version: 3.8, suite: "jax" }
+          - { python-version: 3.7, suite: "autograd" }
+          - { python-version: 3.8, suite: "autograd" }
+          - { python-version: 3.9, suite: "autograd" }
+          - { python-version: "3.10", suite: "autograd" }
+          - { python-version: 3.7, suite: "core" }
+          - { python-version: 3.8, suite: "core" }
+          - { python-version: 3.9, suite: "core" }
+          - { python-version: "3.10", suite: "core" }
 
     env:
       SUITE: ${{ matrix.config.suite }}
@@ -296,11 +294,11 @@ jobs:
     strategy:
       matrix:
         config:
-          - {device: "default.qubit", shots: None}
-          - {device: "default.qubit", shots: 10000}
+          - { device: "default.qubit", shots: None }
+          - { device: "default.qubit", shots: 10000 }
           # - {device: "default.qubit.tf", shots: None}
-          - {device: "default.qubit.autograd", shots: None}
-          - {device: "default.mixed", shots: None}
+          - { device: "default.qubit.autograd", shots: None }
+          - { device: "default.mixed", shots: None }
 
     steps:
       - name: Cancel Previous Runs
@@ -345,7 +343,9 @@ jobs:
           python -m pytest pennylane/devices/tests \
             --device=${{ matrix.config.device }} \
             --shots=${{ matrix.config.shots }} \
-            --cov=pennylane $COVERAGE_FLAGS
+            --cov=pennylane $COVERAGE_FLAGS \
+            -p no:randomly  \
+            --random-order
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -356,12 +356,20 @@ jobs:
           path: ./coverage.xml
 
   upload-to-codecov:
-      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, device-tests]
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v2
-        - name: Download reports from tests
-          uses: actions/download-artifact@v2
-        - name: Upload to Codecov
-          uses: codecov/codecov-action@v3
+    needs:
+      [
+        core-and-interface-tests,
+        all-interfaces-tests,
+        qcut-tests,
+        return-tests,
+        qchem-tests,
+        device-tests,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Download reports from tests
+        uses: actions/download-artifact@v2
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v3
