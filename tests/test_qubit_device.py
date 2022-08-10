@@ -773,7 +773,7 @@ class TestSample:
         def circuit():
             return qml.expval(qml.PauliZ(wires=0)), qml.counts()
 
-        _ = circuit()
+        circuit()
 
 
 class TestSampleWithBroadcasting:
@@ -1186,7 +1186,7 @@ class TestExecution:
         with pytest.raises(
             qml.QuantumFunctionError, match="Computational basis measurements do not commute"
         ):
-            _ = circuit()
+            circuit()
 
     def test_raise_error_measuring_non_commuting_ops_in_counts(self):
         """Test that an error is raised in the execution method when
@@ -1201,7 +1201,7 @@ class TestExecution:
         with pytest.raises(
             qml.QuantumFunctionError, match="Computational basis measurements do not commute"
         ):
-            _ = circuit()
+            circuit()
 
 
 class TestExecutionBroadcasted:
