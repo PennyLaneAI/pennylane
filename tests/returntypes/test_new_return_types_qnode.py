@@ -213,6 +213,7 @@ class TestIntegrationSingleReturn:
 devices = ["default.qubit.tf", "default.mixed"]
 
 
+@pytest.mark.tf_r
 class TestIntegrationSingleReturnTensorFlow:
     """Test that single measurements return behavior does not change for Torch device."""
 
@@ -428,6 +429,7 @@ class TestIntegrationSingleReturnTensorFlow:
 devices = ["default.qubit.torch", "default.mixed"]
 
 
+@pytest.mark.torch_r
 class TestIntegrationSingleReturnTorch:
     """Test that single measurements return behavior does not change for Torch device."""
 
@@ -642,6 +644,7 @@ class TestIntegrationSingleReturnTorch:
 devices = ["default.qubit.jax", "default.mixed"]
 
 
+@pytest.mark.jax_r
 class TestIntegrationSingleReturnJax:
     """Test that single measurements return behavior does not change for Jax device."""
 
@@ -1108,6 +1111,7 @@ class TestIntegrationMultipleReturns:
 devices = ["default.qubit.tf", "default.mixed"]
 
 
+@pytest.mark.tf_r
 class TestIntegrationMultipleReturnsTensorflow:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
@@ -1370,6 +1374,7 @@ class TestIntegrationMultipleReturnsTensorflow:
 devices = ["default.qubit.torch", "default.mixed"]
 
 
+@pytest.mark.torch_r
 class TestIntegrationMultipleReturnsTorch:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
@@ -1629,6 +1634,7 @@ class TestIntegrationMultipleReturnsTorch:
 devices = ["default.qubit.jax", "default.mixed"]
 
 
+@pytest.mark.jax_r
 class TestIntegrationMultipleReturnJax:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
@@ -2597,6 +2603,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, np.ndarray)
         assert res.shape == (2, 3)
 
+    @pytest.mark.torch_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_torch(self, device):
         """Return Jacobian of multiple expvals."""
@@ -2622,6 +2629,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, torch.Tensor)
             assert elem.shape == (3,)
 
+    @pytest.mark.tf_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_tf(self, device):
         """Return Jacobian of multiple expvals."""
@@ -2647,6 +2655,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 3)
 
+    @pytest.mark.tf_r
     def test_multiple_meas_tf_autograph(self):
         """Return Jacobian of multiple measurements with Tf Autograph."""
         import tensorflow as tf
@@ -2674,6 +2683,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 3)
 
+    @pytest.mark.jax_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_jax(self, device):
         """Return Jacobian of multiple expvals."""
@@ -2698,6 +2708,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (3,)
 
+    @pytest.mark.jax_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_jax_jit(self, device):
         """Return Jacobian of multiple expvals with Jitting."""
@@ -2741,6 +2752,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, np.ndarray)
         assert res.shape == (2, 2, 3)
 
+    @pytest.mark.torch_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_torch(self, device):
         """Return Jacobian of multiple probs."""
@@ -2766,6 +2778,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, torch.Tensor)
             assert elem.shape == (2, 3)
 
+    @pytest.mark.tf_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_tf(self, device):
         """Return Jacobian of multiple probs."""
@@ -2791,6 +2804,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 2, 3)
 
+    @pytest.mark.jax_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_jax(self, device):
         """Return Jacobian of multiple probs."""
@@ -2816,6 +2830,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (2, 3)
 
+    @pytest.mark.jax_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_jax_jit(self, device):
         """Return Jacobian of multiple probs with Jax jit."""
@@ -2860,6 +2875,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, np.ndarray)
         assert res.shape == (6, 3)
 
+    @pytest.mark.torch_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_torch(self, device):
         """Return Jacobian of multiple measurements."""
@@ -2890,6 +2906,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             elif i == 2:
                 assert elem.shape == (3,)
 
+    @pytest.mark.tf_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_tf(self, device):
         """Return Jacobian of multiple measurements."""
@@ -2919,6 +2936,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (6, 3)
 
+    @pytest.mark.jax_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_jax(self, device):
         """Return Jacobian of multiple measurements."""
@@ -2949,6 +2967,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             elif i == 2:
                 assert elem.shape == (3,)
 
+    @pytest.mark.jax_r
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_jax_jit(self, device):
         """Return Jacobian of multiple measurements with Jax jit."""
