@@ -758,6 +758,11 @@ of operators.
 * Calling `qml.equal` with nested operators now raises a NotImplementedError.
   [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
+* Returning `qml.sample()` or `qml.counts()` with other non-commuting measurements of observables
+  now raises a QuantumFunctionError. (eg. `return qml.expval(PauliX(wires=0)), qml.sample()` 
+  now raises an error)
+  [(#2924)](https://github.com/PennyLaneAI/pennylane/pull/2924)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
