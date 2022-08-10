@@ -14,9 +14,37 @@
 """
 This module contains classes and functions for Operator arithmetic.
 
-.. currentmodule:: pennylane.ops.op_math
+Constructor Functions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
+
+    ~adjoint
+    ~ctrl
+    ~op_sum
+    ~prod
+    ~s_prod
+
+Symbolic Classes
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~Adjoint
+    ~ControlledOperation
+    ~Controlled
+    ~ControlledOp
+    ~Pow
+    ~Prod
+    ~Sum
+    ~SProd
+    ~SymbolicOp
 
 """
 

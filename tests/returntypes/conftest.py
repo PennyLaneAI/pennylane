@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,26 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the discrete-variable qutrit quantum operations.
-
-The operations are in one file:
-
-* ``matrix_ops.py``: Generalized operations that accept a matrix parameter,
-  either unitary or hermitian depending.
+Pytest configuration file for return types test suite.
 """
 
-from .matrix_ops import *
-from .observables import *
-from ..identity import Identity
+import pytest
+import pennylane as qml
 
-# TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
-ops = {
-    "Identity",
-    "QutritUnitary",
-}
 
-obs = {
-    "THermitian",
-}
-
-__all__ = list(ops | obs)
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests():
+    qml.enable_return()
+    yield
+    qml.disable_return()
