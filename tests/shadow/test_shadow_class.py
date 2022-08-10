@@ -60,7 +60,7 @@ class TestIntegrationShadows:
         res1 = shadow.expval(o1, k=2)
 
         o2 = qml.PauliX(0) @ qml.PauliX(1)
-        res2 = shadow.expval(o1, k=2)
+        res2 = shadow.expval(o2, k=2)
 
         res_exact = 1.0
         assert qml.math.allclose(res1, res_exact, atol=1e-1)
