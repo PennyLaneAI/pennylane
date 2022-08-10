@@ -46,6 +46,9 @@ RUN pip install pytest pytest-cov pytest-mock flaky
 RUN pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade
 # hotfix, remove when pyscf 2.1 is released (currently no wheel for python3.10)
 RUN pip install openfermionpyscf || true
+RUN pip3 install torch==1.10.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip3 install tensorflow~=2.6.0 keras~=2.6.0
+RUN pip3 install jax jaxlib
 RUN make test && make coverage
 
 # create Second small build.
