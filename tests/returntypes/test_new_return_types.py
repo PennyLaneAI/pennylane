@@ -85,7 +85,7 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_expval(self, device, shots):
         """Return a single expval."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -103,7 +103,7 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_var(self, device, shots):
         """Return a single var."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -139,7 +139,7 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device, shots):
         """Return a single mutual information."""
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -166,7 +166,7 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device, shots):
         """Return a single prob."""
-        dev = qml.device(device, wires=3)
+        dev = qml.device(device, wires=3, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -332,6 +332,9 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("wires3, wires4", wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device, shots):
         """Return multiple different measurements."""
+        if shots is not None:
+            pytest.skip("VN entropy is always analytical shots.")
+
         dev = qml.device(device, wires=2, shots=shots)
 
         def circuit(x):
