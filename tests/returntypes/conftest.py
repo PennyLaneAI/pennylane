@@ -18,68 +18,9 @@ Pytest configuration file for return types test suite.
 import pytest
 import pennylane as qml
 
-try:
-    import tensorflow as tf
-except (ImportError, ModuleNotFoundError) as e:
-    tf_available = False
-else:
-    tf_available = True
 
-try:
-    import torch
-    from torch.autograd import Variable
-
-    torch_available = True
-except ImportError as e:
-    torch_available = False
-
-try:
-    import jax
-    import jax.numpy as jnp
-
-    jax_available = True
-except ImportError as e:
-    jax_available = False
-
-
-def pytest_sessionstart(session):
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests():
     qml.enable_return()
-
-
-def pytest_sessionfinish(session, exitstatus):
+    yield
     qml.disable_return()
-
-
-def pytest_runtest_setup(item):
-    """Automatically skip tests if interfaces are not installed"""
-    # Autograd is assumed to be installed
-    interfaces = {"tf_r", "torch_r", "jax_r"}
-    available_interfaces = {
-        "tf_r": tf_available,
-        "torch_r": torch_available,
-        "jax_r": jax_available,
-    }
-
-    allowed_interfaces = [
-        allowed_interface
-        for allowed_interface in interfaces
-        if available_interfaces[allowed_interface] is True
-    ]
-
-    # load the marker specifying what the interface is
-    all_interfaces = {"tf_r", "torch_r", "jax_r", "all_interfaces_r"}
-    marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
-
-    for b in marks:
-        if b == "all_interfaces_r":
-            required_interfaces = {"tf_r", "torch_r", "jax_r"}
-            for interface in required_interfaces:
-                if interface not in allowed_interfaces:
-                    pytest.skip(
-                        f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
-                    )
-        else:
-            if b not in allowed_interfaces:
-                pytest.skip(
-                    f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
-                )
