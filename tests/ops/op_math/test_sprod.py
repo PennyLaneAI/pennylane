@@ -548,6 +548,8 @@ class TestWrapperFunc:
 
 
 class TestIntegration:
+    """Integration tests for SProd with a QNode."""
+
     def test_measurement_process_expval(self):
         """Test SProd class instance in expval measurement process."""
         dev = qml.device("default.qubit", wires=2)
@@ -669,20 +671,53 @@ class TestIntegration:
             my_circ()
 
     @pytest.mark.torch
-    def test_unwrapping_to_numpy(self):
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_torch(self, diff_method):
         """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
         is requested for a given interface."""
 
         import torch
 
-        m = qml.s_prod(torch.tensor(2), qml.PauliZ(0))
+        dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(
-            qml.device("default.qubit", wires=5), interface="torch", diff_method="parameter-shift"
-        )
-        def circuit():
-            return qml.expval(m)
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
-        res = circuit()
+        res = circuit(torch.tensor(2))
+
+        assert qml.math.allclose(res, 2)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_torch(self, diff_method):
+        """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
+        is requested for a given interface."""
+
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(jnp.array(2))
+
+        assert qml.math.allclose(res, 2)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_tensorflow_qnode(self, diff_method):
+
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(tf.Variable(2))
 
         assert qml.math.allclose(res, 2)
