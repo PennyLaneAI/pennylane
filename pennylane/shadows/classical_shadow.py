@@ -107,10 +107,16 @@ class ClassicalShadow:
         bitstrings = self.bitstrings
         recipes = self.recipes
 
-        if isinstance(snapshots, int):
-            pick_snapshots = np.random.choice(
-                np.arange(snapshots, dtype=np.int64), size=snapshots, replace=False
-            )
+        if snapshots is not None:
+            if isinstance(snapshots, int):
+                # choose the given number of random snapshots
+                pick_snapshots = np.random.choice(
+                    np.arange(snapshots, dtype=np.int64), size=snapshots, replace=False
+                )
+            else:
+                # snapshots is an iterable that determines the indices
+                pick_snapshots = snapshots
+
             pick_snapshots = qml.math.convert_like(pick_snapshots, bitstrings)
             bitstrings = qml.math.gather(bitstrings, pick_snapshots)
             recipes = qml.math.gather(recipes, pick_snapshots)

@@ -216,7 +216,7 @@ class TestStateReconstruction:
     @pytest.mark.parametrize("wires", [1, 2, 3, 4])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("snapshots", [10, 100, 1000])
-    def test_subset_reconstruction(self, wires, interface, snapshots):
+    def test_subset_reconstruction_integer(self, wires, interface, snapshots):
         """Test that the state reconstruction is correct for different numbers
         of used snapshots"""
         circuit = hadamard_circuit(wires, interface=interface)
@@ -225,6 +225,25 @@ class TestStateReconstruction:
 
         state = shadow.global_snapshots(snapshots=snapshots)
         assert state.shape == (snapshots, 2**wires, 2**wires)
+
+    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_subset_reconstruction_iterable(self, wires, interface):
+        """Test that the state reconstruction is correct for different indices
+        of considered snapshots"""
+        circuit = hadamard_circuit(wires, interface=interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        # choose 1000 random indices
+        snapshots = np.random.choice(np.arange(10000, dtype=np.int64), size=1000, replace=False)
+        state = shadow.global_snapshots(snapshots=snapshots)
+        assert state.shape == (len(snapshots), 2**wires, 2**wires)
+
+        # check the results against obtaining the full global snapshots
+        expected = shadow.global_snapshots()
+        for i, t in enumerate(snapshots):
+            assert np.allclose(expected[t], state[i])
 
     def test_large_state_warning(self, monkeypatch):
         """Test that a warning is raised when a very large state is reconstructed"""
