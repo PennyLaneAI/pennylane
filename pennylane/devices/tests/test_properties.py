@@ -221,10 +221,6 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
 
-        # TODO: catch the warning
-        if dev.shots is not None:
-            pytest.skip("State and density matrix don't support finite shots and raise a warning.")
-
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(wires=0)
@@ -244,7 +240,16 @@ class TestCapabilities:
 
             assert state is None
         else:
-            circuit()
+
+            if dev.shots is not None:
+                with pytest.warns(
+                    UserWarning,
+                    match="Requested state or density matrix with finite shots; the returned",
+                ):
+                    circuit()
+            else:
+                circuit()
+
             assert dev.state is not None
 
     def test_returns_probs(self, device_kwargs):

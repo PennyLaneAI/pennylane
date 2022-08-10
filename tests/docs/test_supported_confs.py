@@ -113,17 +113,6 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
             qml.Hadamard(wires=wire_label)
             qml.RX(x[i], wires=wire_label)
 
-        if shots is not None and return_type in (
-            VnEntropy,
-            MutualInfo,
-            "StateCost",
-            "StateVector",
-            "DensityMatrix",
-        ):
-            pytest.skip(
-                f"{return_type} raises a warning for finite shots and behaves analytically; skipping the test."
-            )
-
         if return_type == "StateCost":
             return qml.state()
         elif return_type == "StateVector":
@@ -416,7 +405,13 @@ class TestSupportedConfs:
         with pytest.raises(ValueError, match=msg):
             circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs, complex=complex)
-            grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+            if shots is not None:
+
+                with pytest.warns(UserWarning, match="the returned result is analytic"):
+                    grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+            else:
+
+                grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -432,7 +427,12 @@ class TestSupportedConfs:
         # correctness is already tested in other test files
         circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
-        grad = compute_gradient(x, interface, circuit, return_type)
+        if shots is not None and return_type in (VnEntropy, MutualInfo):
+
+            with pytest.warns(UserWarning, match="unaffected by sampling"):
+                grad = compute_gradient(x, interface, circuit, return_type)
+        else:
+            grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
@@ -451,7 +451,13 @@ class TestSupportedConfs:
         with pytest.raises(ValueError, match=msg):
             circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs, complex=complex)
-            grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+
+            if shots is not None:
+
+                with pytest.warns(UserWarning, match="unaffected by sampling"):
+                    grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+            else:
+                grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(

@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed,unreachable
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import abc
 import itertools
 import warnings
@@ -761,10 +761,6 @@ class QubitDevice(Device):
                     )
 
                 if self.shots is not None:
-                    raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
-                    )
                     warnings.warn(
                         "Requested state or density matrix with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -783,10 +779,6 @@ class QubitDevice(Device):
                     )
 
                 if self.shots is not None:
-                    raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
-                    )
                     warnings.warn(
                         "Requested Von Neumann entropy with finite shots; the returned "
                         "result is analytic and is unaffected by sampling. To silence "
@@ -803,10 +795,6 @@ class QubitDevice(Device):
                     )
 
                 if self.shots is not None:
-                    raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
-                    )
                     warnings.warn(
                         "Requested mutual information with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -902,10 +890,6 @@ class QubitDevice(Device):
                     )
 
                 if self.shots is not None:
-                    raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
-                    )
                     warnings.warn(
                         "Requested state or density matrix with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -925,10 +909,6 @@ class QubitDevice(Device):
                     )
 
                 if self.shots is not None:
-                    raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
-                    )
                     warnings.warn(
                         "Requested Von Neumann entropy with finite shots; the returned "
                         "result is analytic and is unaffected by sampling. To silence "
@@ -944,10 +924,6 @@ class QubitDevice(Device):
                     )
 
                 if self.shots is not None:
-                    raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
-                    )
                     warnings.warn(
                         "Requested mutual information with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
