@@ -15,15 +15,18 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+import itertools
 from copy import copy
 from functools import reduce
 from itertools import combinations
+from typing import Tuple, Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, expand_matrix
+from pennylane.ops.op_math.sum import Sum
 
 
 def prod(*ops, do_queue=True, id=None):
@@ -62,7 +65,8 @@ class Prod(Operator):
     r"""Symbolic operator representing the product of operators.
 
     Args:
-        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied together.
+        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+        together.
 
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
@@ -83,7 +87,7 @@ class Prod(Operator):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1} \dot \hat{op}_{2}` which indicates
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
         in the decomposition of the operator.
 
@@ -146,7 +150,9 @@ class Prod(Operator):
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *factors, do_queue=True, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *factors: Operator, do_queue=True, id=None
+    ):  # pylint: disable=super-init-not-called
         """Initialize a Prod instance"""
         self._id = id
         self.queue_idx = None
@@ -211,10 +217,8 @@ class Prod(Operator):
         must be performed.
         """
         for o1, o2 in combinations(self.factors, r=2):
-            shared_wires = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
-            if shared_wires:
+            if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-
         return all(op.is_hermitian for op in self.factors)
 
     def decomposition(self):
@@ -314,3 +318,42 @@ class Prod(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.factors)
         return self
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(factor.arithmetic_depth for factor in self.factors)
+
+    @classmethod
+    def _simplify_factors(cls, factors: Tuple[Operator]) -> Tuple[Operator]:
+        """Reduces the depth of nested factors.
+
+        Returns:
+            Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
+            factors
+        """
+        new_factors = ()
+
+        for factor in factors:
+            if isinstance(factor, Prod):
+                tmp_factors = cls._simplify_factors(factors=factor.factors)
+                new_factors += tmp_factors
+                continue
+            simplified_factor = factor.simplify()
+            if isinstance(simplified_factor, Prod):
+                new_factors += tuple((factor,) for factor in simplified_factor.factors)
+            elif isinstance(simplified_factor, Sum):
+                new_factors += (simplified_factor.summands,)
+            elif not isinstance(simplified_factor, qml.Identity):
+                new_factors += ((simplified_factor,),)
+
+        return new_factors
+
+    def simplify(self) -> Union["Prod", Sum]:
+        factors = self._simplify_factors(factors=self.factors)
+        factors = list(itertools.product(*factors))
+        if len(factors) == 1:
+            factor = factors[0]
+            return factor[0] if len(factor) == 1 else Prod(*factor)
+        factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+
+        return Sum(*factors)

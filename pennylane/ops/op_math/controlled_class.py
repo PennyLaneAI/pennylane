@@ -17,6 +17,8 @@ This submodule defines the symbolic operation that indicates the control of an o
 
 import warnings
 
+from inspect import signature
+
 import numpy as np
 from scipy import sparse
 
@@ -26,6 +28,7 @@ from pennylane import operation
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
@@ -39,6 +42,17 @@ class Controlled(SymbolicOp):
         control_values (Iterable[Bool]): The values to control on. Must be the same
             length as ``control_wires``. Defaults to ``True`` for all control wires.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    .. note::
+        This class, ``Controlled``, denotes a controlled version of any individual operation.
+        :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
+        more general ``Controlled`` class.
+
+        The :class:`~.ControlledOperation` currently constructed by the :func:`~.ctrl` transform wraps
+        an entire tape and does not provide as many representations and attributes as ``Controlled``,
+        but :class:`~.ControlledOperation` does decompose.
+
+    .. seealso:: :class:`~.ControlledOp` and ::class:`~.ControlledOperation`
 
     **Example**
 
@@ -97,6 +111,20 @@ class Controlled(SymbolicOp):
     [(0.5, 1.0)]
 
     """
+
+    # pylint: disable=no-self-argument
+    @operation.classproperty
+    def __signature__(cls):  # pragma: no cover
+        # this method is defined so inspect.signature returns __init__ signature
+        # instead of __new__ signature
+        # See PEP 362
+
+        # use __init__ signature instead of __new__ signature
+        sig = signature(cls.__init__)
+        # get rid of self from signature
+        new_parameters = tuple(sig.parameters.values())[1:]
+        new_sig = sig.replace(parameters=new_parameters)
+        return new_sig
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
@@ -305,6 +333,22 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
+    def simplify(self) -> "Controlled":
+        if isinstance(self.base, Controlled):
+            base = self.base.base.simplify()
+            return Controlled(
+                base,
+                control_wires=self.control_wires + self.base.control_wires,
+                control_values=self.control_values + self.base.control_values,
+                work_wires=self.work_wires + self.base.work_wires,
+            )
+        return Controlled(
+            base=self.base.simplify(),
+            control_wires=self.control_wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
+        )
+
 
 class ControlledOp(Controlled, operation.Operation):
     """Operation-specific methods and properties for the :class:`~.ops.op_math.Controlled` class.
@@ -315,6 +359,8 @@ class ControlledOp(Controlled, operation.Operation):
 
     When we no longer rely on certain functionality through ``Operation``, we can get rid of this
     class.
+
+    .. seealso:: :class:`~.Controlled`
     """
 
     def __new__(cls, *_, **__):

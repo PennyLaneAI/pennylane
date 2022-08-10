@@ -3100,6 +3100,131 @@ class TestMultiRZ:
         assert np.allclose(eigvals, expected)
 
 
+class TestSimplify:
+    """Test rotation simplification methods."""
+
+    def test_simplify_rot(self):
+        """Simplify rot operations with different parameters."""
+
+        rot_x = qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0)
+        simplify_rot_x = rot_x.simplify()
+
+        assert simplify_rot_x.name == "RX"
+        assert simplify_rot_x.data == [0.1]
+        assert np.allclose(simplify_rot_x.matrix(), rot_x.matrix())
+
+        rot_y = qml.Rot(0, 0.1, 0, wires=0)
+        simplify_rot_y = rot_y.simplify()
+
+        assert simplify_rot_y.name == "RY"
+        assert simplify_rot_y.data == [0.1]
+        assert np.allclose(simplify_rot_y.matrix(), rot_y.matrix())
+
+        rot_z = qml.Rot(0.1, 0, 0.2, wires=0)
+        simplify_rot_z = rot_z.simplify()
+
+        assert simplify_rot_z.name == "RZ"
+        assert np.allclose(simplify_rot_z.data, [0.3])
+        assert np.allclose(simplify_rot_z.matrix(), rot_z.matrix())
+
+        rot_h = qml.Rot(np.pi, np.pi / 2, 0, wires=0)
+        simplify_rot_h = rot_h.simplify()
+
+        assert simplify_rot_h.name == "Hadamard"
+        assert np.allclose(simplify_rot_h.matrix(), 1.0j * rot_h.matrix())
+
+        rot = qml.Rot(0.1, 0.2, 0.3, wires=0)
+        not_simplified_rot = rot.simplify()
+
+        assert not_simplified_rot.name == "Rot"
+        assert np.allclose(not_simplified_rot.matrix(), rot.matrix())
+
+    def test_simplify_crot(self):
+        """Simplify CRot operations with different parameters."""
+
+        crot_x = qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
+        simplify_crot_x = crot_x.simplify()
+
+        assert simplify_crot_x.name == "CRX"
+        assert simplify_crot_x.data == [0.1]
+        assert np.allclose(simplify_crot_x.matrix(), crot_x.matrix())
+
+        crot_y = qml.CRot(0, 0.1, 0, wires=[0, 1])
+        simplify_crot_y = crot_y.simplify()
+
+        assert simplify_crot_y.name == "CRY"
+        assert simplify_crot_y.data == [0.1]
+        assert np.allclose(simplify_crot_y.matrix(), crot_y.matrix())
+
+        crot_z = qml.CRot(0.1, 0, 0.2, wires=[0, 1])
+        simplify_crot_z = crot_z.simplify()
+
+        assert simplify_crot_z.name == "CRZ"
+        assert np.allclose(simplify_crot_z.data, [0.3])
+        assert np.allclose(simplify_crot_z.matrix(), crot_z.matrix())
+
+        crot = qml.CRot(0.1, 0.2, 0.3, wires=[0, 1])
+        not_simplified_crot = crot.simplify()
+
+        assert not_simplified_crot.name == "CRot"
+        assert np.allclose(not_simplified_crot.matrix(), crot.matrix())
+
+    def test_simplify_u2(self):
+        """Simplify u2 operations with different parameters."""
+
+        u2_x = qml.U2(-np.pi / 2, np.pi / 2, wires=0)
+        simplify_u2_x = u2_x.simplify()
+
+        assert simplify_u2_x.name == "RX"
+        assert simplify_u2_x.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_x.matrix(), u2_x.matrix())
+
+        u2_y = qml.U2(-2 * np.pi, 2 * np.pi, wires=0)
+        simplify_u2_y = u2_y.simplify()
+
+        assert simplify_u2_y.name == "RY"
+        assert simplify_u2_y.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_y.matrix(), u2_y.matrix())
+
+        u2 = qml.U2(0.1, 0.2, wires=0)
+        u2_not_simplified = u2.simplify()
+
+        assert u2_not_simplified.name == "U2"
+        assert u2_not_simplified.data == [0.1, 0.2]
+        assert np.allclose(u2_not_simplified.matrix(), u2.matrix())
+
+    def test_simplify_u3(self):
+        """Simplify u3 operations with different parameters."""
+
+        u3_x = qml.U3(0.1, -np.pi / 2, np.pi / 2, wires=0)
+        simplify_u3_x = u3_x.simplify()
+
+        assert simplify_u3_x.name == "RX"
+        assert simplify_u3_x.data == [0.1]
+        assert np.allclose(simplify_u3_x.matrix(), u3_x.matrix())
+
+        u3_y = qml.U3(0.1, 0.0, 0.0, wires=0)
+        simplify_u3_y = u3_y.simplify()
+
+        assert simplify_u3_y.name == "RY"
+        assert simplify_u3_y.data == [0.1]
+        assert np.allclose(simplify_u3_y.matrix(), u3_y.matrix())
+
+        u3_z = qml.U3(0.0, 0.1, 0.0, wires=0)
+        simplify_u3_z = u3_z.simplify()
+
+        assert simplify_u3_z.name == "PhaseShift"
+        assert simplify_u3_z.data == [0.1]
+        assert np.allclose(simplify_u3_z.matrix(), u3_z.matrix())
+
+        u3 = qml.U3(0.1, 0.2, 0.3, wires=0)
+        u3_not_simplified = u3.simplify()
+
+        assert u3_not_simplified.name == "U3"
+        assert u3_not_simplified.data == [0.1, 0.2, 0.3]
+        assert np.allclose(u3_not_simplified.matrix(), u3.matrix())
+
+
 label_data = [
     (
         qml.Rot(1.23456, 2.3456, 3.45678, wires=0),
