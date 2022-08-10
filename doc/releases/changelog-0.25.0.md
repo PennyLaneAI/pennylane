@@ -608,6 +608,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `DefaultQubit` now uses `stopping_condition` to specify support for anything with a matrix.
+  To override this behavior in inheriting devices and support only a specific subset of operations,
+  developers need to override `stopping_condition`.
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
+
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is now fully 
   supported by `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
