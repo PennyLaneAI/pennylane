@@ -222,7 +222,7 @@ class TestCapabilities:
         cap = dev.capabilities()
 
         # TODO: catch the warning
-        if shots is not None and measurement.return_type is qml.measurements.State:
+        if dev.shots is not None:
             pytest.skip("State and density matrix don't support finite shots and raise a warning.")
 
         @qml.qnode(dev)
