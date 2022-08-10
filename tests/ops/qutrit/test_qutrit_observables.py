@@ -13,10 +13,12 @@
 # limitations under the License.
 """Unit tests for qutrit observables."""
 import functools
-import pytest
-import pennylane as qml
-import numpy as np
+from unittest.mock import PropertyMock, patch
 
+import numpy as np
+import pytest
+
+import pennylane as qml
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 EIGVALS_TEST_DATA = [
@@ -66,6 +68,17 @@ EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [X_12, np.eye(3), Z_0
 @pytest.mark.usefixtures("tear_down_thermitian")
 class TestTHermitian:
     """Test the THermitian observable"""
+
+    def setup_method(self):
+        """Patch the _eigs class attribute of the Hermitian class before every test."""
+        self.patched_eigs = patch(
+            "pennylane.ops.qutrit.observables.THermitian._eigs", PropertyMock(return_value={})
+        )
+        self.patched_eigs.start()
+
+    def tear_down_method(self):
+        """Stop patch after every test."""
+        self.patched_eigs.stop()
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_thermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
