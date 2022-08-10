@@ -13,7 +13,7 @@ semantic_version==2.10
 scipy
 docutils==0.16
 sphinx==3.5
-sphinx-automodapi==0.14
+sphinx-automodapi==0.13
 sphinx-copybutton
 sphinxcontrib-bibtex==2.4.2
 tensorflow==2.9.0; platform_machine == "x86_64"
