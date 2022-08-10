@@ -45,9 +45,9 @@ class ClassicalShadow:
     Args:
         bitstrings (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
-    
+
     .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadows`
-    
+
     **Example**
 
     We obtain the ``bitstrings`` and ``recipes`` via :func:`~.pennylane.classical_shadows`:
@@ -64,10 +64,10 @@ class ClassicalShadow:
 
         bitstrings, recipes = qnode(0)
         shadow = ClassicalShadow(bitstrings, recipes)
-    
+
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
-    
+
     >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
     (1.0079999999999998+0j)
 
@@ -146,10 +146,9 @@ class ClassicalShadow:
 
     def global_snapshots(self, wires=None, snapshots=None):
         """Compute the T x 2**n x 2**n global snapshots
-        
-        
-        .. warning:: 
-        
+
+        .. warning::
+
             Classical shadows are not intended to reconstruct global quantum states.
             This method requires exponential scaling of measurements for accurate representations. Further, the output scales exponentially in the output dimension,
             and is therefore not practical for larger systems. A warning is raised for systems of sizes ``n>16``.
@@ -224,8 +223,7 @@ class ClassicalShadow:
             return coeffs_and_words
 
     def expval(self, H, k):
-        """
-        Compute expectation value of an observable :math:`H`.
+        r"""Compute expectation value of an observable :math:`H`.
 
         The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
         This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
@@ -236,8 +234,9 @@ class ClassicalShadow:
         Args:
             H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
-        
-        TODO: advanced expectation value examples, i.e. play with k?
+
+        **Example**
+
         .. code-block:: python3
 
             dev = qml.device("default.qubit", wires=range(2), shots=1000)
@@ -250,9 +249,9 @@ class ClassicalShadow:
 
             bitstrings, recipes = qnode(0)
             shadow = ClassicalShadow(bitstrings, recipes)
-        
+
         Compute Pauli string observables
-        
+
         >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
         (1.0079999999999998+0j)
 
