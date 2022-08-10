@@ -321,6 +321,7 @@ class QubitDevice(Device):
                 if o.return_type in (qml.measurements.Sample, qml.measurements.Counts) and o.obs is None:
                     raw_sampled_ops = True
                     break
+
             if raw_sampled_ops and circuit.diagonalizing_gates:
                 raise qml.QuantumFunctionError(
                     f"Computational basis measurements do not commute with some of the "
@@ -412,12 +413,12 @@ class QubitDevice(Device):
         if self.shots is not None:
             self._samples = self.generate_samples()
 
-            sampled_obs = []
+            raw_sampled_ops = False
             for o in circuit.measurements:
-                if o.return_type in (qml.measurements.Sample, qml.measurements.Counts):
-                    sampled_obs.append(o)
+                if o.return_type in (qml.measurements.Sample, qml.measurements.Counts) and o.obs is None:
+                    raw_sampled_ops = True
+                    break
 
-            raw_sampled_ops = any(o.obs is None for o in sampled_obs)
             if raw_sampled_ops and circuit.diagonalizing_gates:
                 raise qml.QuantumFunctionError(
                     f"Computational basis measurements do not commute with some of the "
