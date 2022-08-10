@@ -31,7 +31,7 @@ class ClassicalShadow:
 
     .. math:: \rho^{(t)} = \bigotimes_{i=1}^{n} 3 U^\dagger_i |b_i \rangle \langle b_i | U_i - \mathbb{I},
 
-    where :math:`U_i` is the rotation corresponding to the measurement of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
+    where :math:`U_i` is the rotation corresponding to the measurement (e.g. :math:`U_i=H` for measurement in :math:`X`) of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
     the corresponding computational basis state given the output bit :math:`b_i`.
 
     From these local snapshots, one can compute expectation values of local Pauli strings, where locality refers to the number of non-Identity operators.
