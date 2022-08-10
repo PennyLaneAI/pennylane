@@ -221,25 +221,27 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
 
-        if "returns_state" not in cap:
-            pytest.skip("No returns_state capability specified by device.")
-
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(wires=0)
             return qml.state()
 
-        circuit()
+        if not cap.get("returns_state"):
 
-        if cap["returns_state"]:
-            assert dev.state is not None
-        else:
+            # If the device is not defined to return state then the
+            # access_state method should raise
+            with pytest.raises(qml.QuantumFunctionError):
+                dev.access_state()
+
             try:
                 state = dev.state
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 state = None
 
             assert state is None
+        else:
+            circuit()
+            assert dev.state is not None
 
     def test_returns_probs(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""

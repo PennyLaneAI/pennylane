@@ -366,6 +366,7 @@ class TestQFuncTransformGradients:
         """Analytic expectation value of the above circuit qfunc"""
         return np.cos(np.sum(b) * np.sqrt(x)) * np.cos(a * x)
 
+    @pytest.mark.autograd
     def test_differentiable_qfunc_autograd(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         autograd"""
@@ -383,10 +384,12 @@ class TestQFuncTransformGradients:
         expected = qml.grad(self.expval)(x, a, b)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
+    @pytest.mark.tf
     def test_differentiable_qfunc_tf(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         TensorFlow"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
@@ -406,10 +409,12 @@ class TestQFuncTransformGradients:
         expected = qml.grad(self.expval)(x_np, a_np, b_np)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
+    @pytest.mark.torch
     def test_differentiable_qfunc_torch(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         PyTorch"""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -430,10 +435,12 @@ class TestQFuncTransformGradients:
         assert np.allclose(a.grad, expected[1])
         assert np.allclose(b.grad, expected[2])
 
+    @pytest.mark.jax
     def test_differentiable_qfunc_jax(self, diff_method):
         """Test that a qfunc transform is differentiable when using
         jax"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
 

@@ -24,7 +24,7 @@ import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES
+from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
 
 
 class QNode:
@@ -41,21 +41,22 @@ class QNode:
         func (callable): a quantum function
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
-            This affects the types of objects that can be passed to/returned from the QNode:
+            This affects the types of objects that can be passed to/returned from the QNode. See
+            ``qml.interfaces.SUPPORTED_INTERFACES`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays.
 
-            * ``"torch"``: Allows PyTorch to backpropogate
+            * ``"torch"``: Allows PyTorch to backpropagate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropagate
               through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
-            * ``"jax"``: Allows JAX to backpropogate
+            * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
               JAX ``DeviceArray`` objects.
 
@@ -296,7 +297,6 @@ class QNode:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
         if diff_method == "best":
             return QNode.get_best_method(device, interface)
 
@@ -364,26 +364,56 @@ class QNode:
                     return qml.gradients.finite_diff, {}, device
 
     @staticmethod
+    def best_method_str(device, interface):
+        """Similar to :meth:`~.get_best_method`, except return the
+        'best' differentiation method in human-readable format.
+
+        This method attempts to determine support for differentiation
+        methods using the following order:
+
+        * ``"device"``
+        * ``"backprop"``
+        * ``"parameter-shift"``
+        * ``"finite-diff"``
+
+        The first differentiation method that is supported (going from
+        top to bottom) will be returned.
+
+        This method is intended only for debugging purposes. Otherwise,
+        :meth:`~.get_best_method` should be used instead.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            str: The gradient function to use in human-readable format.
+        """
+        transform = QNode.get_best_method(device, interface)[0]
+
+        if transform is qml.gradients.finite_diff:
+            return "finite-diff"
+
+        if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
+            return "parameter-shift"
+
+        # only other options at this point are "backprop" or "device"
+        return transform
+
+    @staticmethod
     def _validate_backprop_method(device, interface):
-        # determine if the device supports backpropagation
-        backprop_interface = device.capabilities().get("passthru_interface", None)
-
-        # determine if the device has any child devices that support backpropagation
-        backprop_devices = device.capabilities().get("passthru_devices", None)
-
-        if getattr(device, "cache", 0):
-            # TODO: deprecate device caching, and replacing with QNode caching.
-            raise qml.QuantumFunctionError(
-                "Device caching is incompatible with the backprop diff_method"
-            )
-
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+
+        mapped_interface = INTERFACE_MAP.get(interface, interface)
+
+        # determine if the device supports backpropagation
+        backprop_interface = device.capabilities().get("passthru_interface", None)
 
         if backprop_interface is not None:
             # device supports backpropagation natively
 
-            if interface == backprop_interface:
+            if mapped_interface == backprop_interface:
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(
@@ -391,19 +421,25 @@ class QNode:
                 f"{backprop_interface} interface."
             )
 
+        # determine if the device has any child devices that support backpropagation
+        backprop_devices = device.capabilities().get("passthru_devices", None)
+
         if backprop_devices is not None:
             # device is analytic and has child devices that support backpropagation natively
 
-            if interface in backprop_devices:
+            if mapped_interface in backprop_devices:
+
+                # no need to create another device if the child device is the same (e.g., default.mixed)
+                if backprop_devices[mapped_interface] == device.short_name:
+                    return "backprop", {}, device
+
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
 
                 device = qml.device(
-                    backprop_devices[interface],
-                    wires=device.wires,
-                    shots=device.shots,
+                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
                 )
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
@@ -492,7 +528,9 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if not isinstance(self._qfunc_output, Sequence):
+        if isinstance(self._qfunc_output, qml.numpy.ndarray):
+            measurement_processes = tuple(self.tape.measurements)
+        elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
             measurement_processes = self._qfunc_output
@@ -548,7 +586,7 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
         override_shots = False
 
         if not self._qfunc_uses_shots_arg:
@@ -579,6 +617,46 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        if qml.active_return():
+            res = qml.execute_new(
+                [self.tape],
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
+
+            res = res[0]
+
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list):
+                if len(self._qfunc_output) == 1:
+                    return [res]
+
+            # Autograd or tensorflow: they do not support tuple return with backpropagation
+            backprop = False
+            if not isinstance(
+                self._qfunc_output, qml.measurements.MeasurementProcess
+            ) and self.interface in ("tf", "autograd"):
+                backprop = any(qml.math.in_backprop(x) for x in res)
+            if self.gradient_fn == "backprop" and backprop:
+                res = self.device._asarray(res)
+
+            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+            if (
+                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
+                and not backprop
+            ):
+                if not self.device._shot_vector:
+                    res = type(self.tape._qfunc_output)(res)
+                else:
+                    res = [type(self.tape._qfunc_output)(r) for r in res]
+                    res = tuple(res)
+
+            return res
+
         res = qml.execute(
             [self.tape],
             device=self.device,
@@ -603,6 +681,26 @@ class QNode:
 
             res = res[0]
 
+        if (
+            not isinstance(self._qfunc_output, Sequence)
+            and self._qfunc_output.return_type is qml.measurements.Counts
+        ):
+
+            if not self.device._has_partitioned_shots():
+                # return a dictionary with counts not as a single-element array
+                return res[0]
+
+            return tuple(res)
+
+        if isinstance(self._qfunc_output, Sequence) and any(
+            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+        ):
+
+            # If Counts was returned with other measurements, then apply the
+            # data structure used in the qfunc
+            qfunc_output_type = type(self._qfunc_output)
+            return qfunc_output_type(res)
+
         if override_shots is not False:
             # restore the initialization gradient function
             self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
@@ -614,6 +712,7 @@ class QNode:
         ):
             return res
 
+        # Squeeze arraylike outputs
         return qml.math.squeeze(res)
 
 

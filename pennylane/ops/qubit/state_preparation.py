@@ -16,9 +16,10 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+
+state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
 
 class BasisState(Operation):
@@ -59,6 +60,9 @@ class BasisState(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
+
     @staticmethod
     def compute_decomposition(n, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -83,9 +87,6 @@ class BasisState(Operation):
 
         """
         return [BasisStatePreparation(n, wires)]
-
-    def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for BasisState operations.")
 
 
 class QubitStateVector(Operation):
@@ -125,6 +126,9 @@ class QubitStateVector(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
+
     @staticmethod
     def compute_decomposition(state, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -149,9 +153,6 @@ class QubitStateVector(Operation):
         """
         return [MottonenStatePreparation(state, wires)]
 
-    def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for QubitStateVector operations.")
-
 
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
@@ -175,7 +176,8 @@ class QubitDensityMatrix(Operation):
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example:
 
@@ -206,5 +208,5 @@ class QubitDensityMatrix(Operation):
 
     grad_method = None
 
-    def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"

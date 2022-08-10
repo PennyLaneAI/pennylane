@@ -262,7 +262,7 @@ class TestQuantumMonteCarlo:
             qmc_circuit()
             qml.probs(estimation_wires)
 
-        tape = tape.expand()
+        tape = tape.expand(depth=2)
 
         for op in tape.operations:
             unexpanded = (

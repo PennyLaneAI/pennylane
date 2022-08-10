@@ -153,6 +153,7 @@ expected_wires_list = [
 class TestUndoSwapsInterfaces:
     """Test that `undo_swaps` transform works in all interfaces."""
 
+    @pytest.mark.autograd
     def test_undo_swaps_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
@@ -173,9 +174,10 @@ class TestUndoSwapsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_undo_swaps_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
@@ -199,9 +201,10 @@ class TestUndoSwapsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     def test_undo_swaps_tf(self):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
@@ -230,9 +233,10 @@ class TestUndoSwapsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_undo_swaps_jax(self):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         from jax.config import config

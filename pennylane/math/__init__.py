@@ -40,23 +40,30 @@ from .multi_dispatch import (
     concatenate,
     diag,
     dot,
+    einsum,
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
+    scatter,
     scatter_element_add,
     stack,
     tensordot,
     unwrap,
     where,
+    add,
+    iscomplex,
+    expm,
 )
 
 from .quantum import cov_matrix, marginal_prob
+from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity, relative_entropy
 
 from .utils import (
     allclose,
     allequal,
     cast,
     cast_like,
+    in_backprop,
     is_abstract,
     convert_like,
     get_interface,
@@ -68,6 +75,9 @@ from .is_independent import is_independent
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
+
+# small constant for numerical stability that the user can modify
+eps = 1e-14
 
 
 def __getattr__(name):
@@ -87,17 +97,27 @@ __all__ = [
     "cov_matrix",
     "diag",
     "dot",
+    "einsum",
+    "fidelity",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
+    "in_backprop",
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "mutual_info",
     "ones_like",
+    "reduced_dm",
+    "relative_entropy",
     "requires_grad",
+    "sqrt_matrix",
     "scatter_element_add",
     "stack",
     "tensordot",
     "unwrap",
+    "vn_entropy",
     "where",
+    "add",
+    "iscomplex",
 ]

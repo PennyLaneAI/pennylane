@@ -522,6 +522,7 @@ class TestInterfaces:
         res2 = circuit2(weights_tuple)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test the autograd interface."""
 
@@ -544,10 +545,11 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Test the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 6)))
@@ -569,10 +571,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Test the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 6)))
 
@@ -595,10 +598,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 6)), requires_grad=True)
 
@@ -620,3 +624,22 @@ class TestInterfaces:
         grads2 = [weights.grad]
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+
+class TestGradient:
+    """Test that the parameter-shift rule for this template matches that of backprop."""
+
+    def test_ps_rule_gradient(self, tol):
+        """Test parameter-shift rule gradient."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        backprop_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="backprop"))
+        ps_rule_grad = qml.grad(qml.QNode(circuit_template, dev, diff_method="parameter-shift"))
+
+        weights = qml.numpy.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65], requires_grad=True).reshape(
+            1, -1
+        )
+        res = backprop_grad(weights)
+        res2 = ps_rule_grad(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)

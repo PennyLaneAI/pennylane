@@ -1,9 +1,8 @@
 Software tests
 ==============
 
-Running the tests
-~~~~~~~~~~~~~~~~~
-
+Requirements
+~~~~~~~~~~~~
 The PennyLane test suite requires the Python ``pytest`` package, as well as:
 
 * ``pytest-cov``: determines test coverage
@@ -16,25 +15,166 @@ These requirements can be installed via ``pip``:
 
     pip install pytest pytest-cov pytest-mock flaky
 
+Creating a test
+~~~~~~~~~~~~~~~
+Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__.
+The test folder follows the structure of the PennyLane module folder. Therefore, tests needs to be added to the corresponding subfolder of the functionality they are testing.
+
+Most tests typcally will not require the use of an interface or autodifferentiation framework (such as Autograd, Torch, TensorFlow and Jax). Tests without an interface will be marked
+as a ``core`` test automatically by pytest (the functionality for this is located in ``conftest.py``). For such general tests, you can follow the structure of the example below,
+where it is recommended that you follow general `pytest guidelines <https://docs.pytest.org/>`__:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    def test_circuit_expval(self):
+        """ Test that the circuit expectation value for PauliX is 0."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliX(0))
+
+        expval = circuit()
+
+        assert expval == 0
+
+This test will be marked automatically as a ``core`` test.
+
+On the other hand, some tests require specific interfaces and need to be marked in order to be run on our Github test suite.
+Tests involving interfaces have to be marked with their respective marker:
+
+- ``@pytest.mark.autograd``,
+
+- ``@pytest.mark.torch``,
+
+- ``@pytest.mark.tf``, and
+
+- ``@pytest.mark.jax``.
+
+If tests involve multiple interfaces, one should add the marker:
+
+- ``@pytest.mark.all_interfaces``.
+
+.. warning::
+    Please do not use ``pytest.importorskip`` inside your tests. Instead, simply import the autodifferentiation package
+    as needed inside your marked test. The mark will automatically ensure that the test is skipped if the
+    autodifferentiation framework is not installed.
+
+Tests that are not marked but do import an interface will lead to a failure in the GitHub test suite.
+
+Below you can find an example for testing a PennyLane template with Jax:
+
+.. code-block:: python
+
+    def circuit_template(features):
+        qml.AngleEmbedding(features, range(3))
+        return qml.expval(qml.PauliZ(0))
+
+    def circuit_decomposed(features):
+        qml.RX(features[0], wires=0)
+        qml.RX(features[1], wires=1)
+        qml.RX(features[2], wires=2)
+        return qml.expval(qml.PauliZ(0))
+
+    @pytest.mark.jax
+    def test_jax(self, tol):
+        """Tests the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array([1.0, 1.0, 1.0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+Another example of a test involving multiple interfaces is shown below:
+
+.. code-block:: python
+
+        def circuit(features):
+            qml.AngleEmbedding(features, range(3))
+            return qml.expval(qml.PauliZ(0))
+
+        @pytest.mark.all_interfaces
+        def test_all_interfaces_gradient_agree(self):
+            """Test the results are similar between torch and tf"""
+            import torch
+            import tensorflow as tf
+
+            dev = qml.device("default.qubit", wires=3)
+
+            features_torch = torch.Tensor([1.0, 1.0, 1.0])
+            features_tf = tf.Variable([1.0, 1.0, 1.0], dtype=tf.float64)
+
+            circuit_torch = qml.QNode(circuit, dev, interface="torch")
+            circuit_tf = qml.QNode(circuit, dev, interface="tf")
+
+            res_torch = circuit_torch(features_torch)
+            res_tf = circuit_tf(features_tf)
+
+            assert np.allclose(res_torch, res_tf)
+
+
+Running the tests
+~~~~~~~~~~~~~~~~~
+
 The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
 
 .. code-block:: bash
 
-    python -m pytest --ignore=tests/beta tests
+    python -m pytest tests
 
-Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system. The ``tests/beta`` folder can contain failing tests, so ``--ignore=tests/beta`` excludes them from execution.
-
-As the entire test suite takes some time, locally running only relevant files speeds the debugging cycle.  For example, if a developer was adding a new non-parametric operation, they could run:
+Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system.
+As the entire test suite takes some time, locally running only relevant files speeds up the debugging cycle. For example,
+if a developer was adding a new non-parametric operation, they could run:
 
 .. code-block:: bash
 
     python -m pytest tests/ops/qubit/test_non_parametric_ops.py
+
+Using ``pytest -m`` offers the possibility to select and run tests with specific markers. For example,
+if Jax is installed and a developer wants to run only Jax related tests, they could run:
+
+.. code-block:: bash
+
+    python -m pytest tests -m "jax"
+
+There exists markers for interfaces (``autograd``, ``torch``, ``tf``, ``jax``), for multiple interfaces (``all_interfaces``) and
+also for certain PennyLane submodules (``qchem`` and ``qcut``).
+
+For running ``qchem`` tests, one can run the following:
+
+.. code-block:: bash
+
+    python -m pytest tests -m "qchem"
 
 The slowest tests are marked with ``slow`` and can be deselected by:
 
 .. code-block:: bash
 
     python -m pytest -m "not slow" tests
+
+The ``pytest -m`` option supports Boolean combinations of markers. It is therefore possible to run both Jax and TensorFlow
+tests by writing:
+
+.. code-block:: bash
+
+    python -m pytest -m "jax and tf" tests
+
+or Jax tests that are not slow:
+
+.. code-block:: bash
+
+    python -m pytest -m "jax and not slow" tests
 
 Pytest supports many other command-line options, which can be found with the command:
 

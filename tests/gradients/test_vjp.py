@@ -52,11 +52,12 @@ class TestComputeVJP:
         vjp = qml.gradients.compute_vjp(dy, jac)
         assert np.all(vjp == np.zeros([3]))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_torch(self, dtype1, dtype2):
         """Test that using the Torch interface the dtype of the result is
         determined by the dtype of the dy."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dtype1 = getattr(torch, dtype1)
         dtype2 = getattr(torch, dtype2)
@@ -66,11 +67,12 @@ class TestComputeVJP:
 
         assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_tf(self, dtype1, dtype2):
         """Test that using the TensorFlow interface the dtype of the result is
         determined by the dtype of the dy."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dtype1 = getattr(tf, dtype1)
         dtype2 = getattr(tf, dtype2)
@@ -80,12 +82,12 @@ class TestComputeVJP:
 
         assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_jax(self, dtype1, dtype2):
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -273,6 +275,7 @@ def ansatz(x, y):
 class TestVJPGradients:
     """Gradient tests for the vjp function"""
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using autograd."""
@@ -295,10 +298,11 @@ class TestVJPGradients:
         res = qml.jacobian(cost_fn)(params, dy)
         assert np.allclose(res, qml.jacobian(expected)(params), atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -321,11 +325,12 @@ class TestVJPGradients:
         exp = qml.jacobian(lambda x: expected(x)[0])(params_np)
         assert np.allclose(params.grad, exp, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using TF."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit.tf", wires=2)
 
@@ -346,11 +351,12 @@ class TestVJPGradients:
         res = t.jacobian(vjp, params)
         assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf_custom_loss(self):
         """Tests that the gradient pipeline using the TensorFlow interface with
         a custom TF loss and lightning.qubit with a custom dtype does not raise
         any errors."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         nwires = 5
         dev = qml.device("lightning.qubit", wires=nwires)
@@ -380,11 +386,12 @@ class TestVJPGradients:
         grads = tape.gradient(loss_value, [params])
         assert len(grads) == 1
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_jax(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using JAX."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit.jax", wires=2)

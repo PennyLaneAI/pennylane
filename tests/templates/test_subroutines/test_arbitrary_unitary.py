@@ -112,7 +112,7 @@ class TestDecomposition:
 
         for i, op in enumerate(queue):
             assert op.data[0] == weights[i]
-            assert op.data[1] == pauli_words[i]
+            assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on two wires."""
@@ -145,7 +145,7 @@ class TestDecomposition:
 
         for i, op in enumerate(queue):
             assert op.data[0] == weights[i]
-            assert op.data[1] == pauli_words[i]
+            assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -245,6 +245,7 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -267,10 +268,11 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(15,)))
@@ -291,10 +293,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(15,)))
         dev = qml.device("default.qubit", wires=2)
@@ -316,10 +319,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(15,)), requires_grad=True)
 

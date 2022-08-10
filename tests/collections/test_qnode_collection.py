@@ -22,21 +22,29 @@ from pennylane import numpy as np
 
 import pennylane as qml
 
-try:
-    import torch
-except ImportError as e:
-    torch = None
 
-try:
-    import tensorflow as tf
+def qnodes(interface):
+    """Function returning some QNodes for a specific interface"""
 
-    if tf.__version__[0] == "1":
-        tf.enable_eager_execution()
+    dev1 = qml.device("default.qubit", wires=2)
+    dev2 = qml.device("default.qubit", wires=2)
 
-    from tensorflow import Variable
-except ImportError as e:
-    tf = None
-    Variable = None
+    @qml.qnode(dev1, interface=interface)
+    def qnode1(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.var(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    @qml.qnode(dev2, interface=interface)
+    def qnode2(x):
+        qml.Hadamard(wires=0)
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+
+    return qnode1, qnode2
 
 
 class TestConstruction:
@@ -62,15 +70,10 @@ class TestConstruction:
         assert qc.qnodes == qnodes
         assert len(qc) == 4
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-    def test_interface_property(self, interface, tf_support, torch_support):
+    @pytest.mark.autograd
+    def test_interface_property_autograd(self):
         """Test that the interface property correctly
         resolves interfaces from the internal QNodes"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
-
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
 
         qc = qml.QNodeCollection()
         assert qc.interface is None
@@ -80,9 +83,43 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [qml.QNode(circuit, dev, interface=interface) for i in range(4)]
+        qnodes = [qml.QNode(circuit, dev, interface="autograd") for i in range(4)]
         qc = qml.QNodeCollection(qnodes)
-        assert qc.interface == interface
+        assert qc.interface == "autograd"
+
+    @pytest.mark.torch
+    def test_interface_property_torch(self):
+        """Test that the interface property correctly
+        resolves interfaces from the internal QNodes"""
+
+        qc = qml.QNodeCollection()
+        assert qc.interface is None
+
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        qnodes = [qml.QNode(circuit, dev, interface="torch") for i in range(4)]
+        qc = qml.QNodeCollection(qnodes)
+        assert qc.interface == "torch"
+
+    @pytest.mark.tf
+    def test_interface_property_tf(self):
+        """Test that the interface property correctly
+        resolves interfaces from the internal QNodes"""
+
+        qc = qml.QNodeCollection()
+        assert qc.interface is None
+
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        qnodes = [qml.QNode(circuit, dev, interface="tf") for i in range(4)]
+        qc = qml.QNodeCollection(qnodes)
+        assert qc.interface == "tf"
 
     def test_append_qnode(self):
         """Test that a QNode is correctly appended"""
@@ -173,15 +210,15 @@ class TestConstruction:
 class TestEvalation:
     """Tests for the QNodeCollection evaluation"""
 
-    @pytest.mark.parametrize("interface", ["autograd"])
-    def test_eval_autograd(self, qnodes, parallel, interface, dask_support):
+    @pytest.mark.autograd
+    def test_eval_autograd(self, parallel, dask_support):
         """Test correct evaluation of the QNodeCollection using
         the Autograd interface"""
 
         if (not dask_support) and (parallel):
             pytest.skip("Skipped, no dask support")
 
-        qnode1, qnode2 = qnodes
+        qnode1, qnode2 = qnodes("autograd")
         qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
@@ -189,11 +226,11 @@ class TestEvalation:
         expected = np.vstack([qnode1(params), qnode2(params)])
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["autograd"])
-    def test_grad_autograd(self, qnodes, parallel, interface):
+    @pytest.mark.autograd
+    def test_grad_autograd(self, parallel):
         """Test correct gradient of the QNodeCollection using
         the Autograd interface"""
-        qnode1, qnode2 = qnodes
+        qnode1, qnode2 = qnodes("autograd")
 
         params = np.array([0.5643, -0.45], requires_grad=True)
         qc = qml.QNodeCollection([qnode1, qnode2])
@@ -208,11 +245,11 @@ class TestEvalation:
 
         assert len(res) != 0 and np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["torch"])
-    def test_eval_torch(self, qnodes, skip_if_no_torch_support, parallel, interface):
+    @pytest.mark.torch
+    def test_eval_torch(self, parallel):
         """Test correct evaluation of the QNodeCollection using
         the torch interface"""
-        qnode1, qnode2 = qnodes
+        qnode1, qnode2 = qnodes("torch")
         qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
@@ -220,11 +257,13 @@ class TestEvalation:
         expected = np.vstack([qnode1(params), qnode2(params)])
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["torch"])
-    def test_grad_torch(self, qnodes, skip_if_no_torch_support, parallel, interface):
+    @pytest.mark.torch
+    def test_grad_torch(self, parallel):
         """Test correct gradient of the QNodeCollection using
         the torch interface"""
-        qnode1, qnode2 = qnodes
+        import torch
+
+        qnode1, qnode2 = qnodes("torch")
 
         # calculate the gradient of the collection using pytorch
         params = torch.autograd.Variable(torch.tensor([0.5643, -0.45]), requires_grad=True)
@@ -241,11 +280,11 @@ class TestEvalation:
 
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_eval_tf(self, qnodes, skip_if_no_tf_support, parallel, interface):
+    @pytest.mark.tf
+    def test_eval_tf(self, parallel):
         """Test correct evaluation of the QNodeCollection using
         the tf interface"""
-        qnode1, qnode2 = qnodes
+        qnode1, qnode2 = qnodes("tf")
         qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
@@ -258,19 +297,21 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.xfail(raises=AttributeError, reason="Dask breaks the TF gradient tape")
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_grad_tf(self, qnodes, skip_if_no_tf_support, parallel, interface):
+    @pytest.mark.tf
+    def test_grad_tf(self, parallel):
         """Test correct gradient of the QNodeCollection using
         the tf interface"""
+        import tensorflow as tf
+
         if parallel and qml.tape_mode_active():
             pytest.skip(
                 "There appears to be a race condition when constructing TF tapes in parallel"
             )
 
-        qnode1, qnode2 = qnodes
+        qnode1, qnode2 = qnodes("tf")
 
         # calculate the gradient of the collection using tf
-        params = Variable([0.5643, -0.45])
+        params = tf.Variable([0.5643, -0.45])
         qc = qml.QNodeCollection([qnode1, qnode2])
 
         with tf.GradientTape() as tape:
@@ -286,7 +327,7 @@ class TestEvalation:
             res = tape.gradient(cost, params).numpy()
 
         # calculate the gradient of the QNodes individually using tf
-        params = Variable([0.5643, -0.45])
+        params = tf.Variable([0.5643, -0.45])
 
         with tf.GradientTape() as tape:
             tape.watch(params)

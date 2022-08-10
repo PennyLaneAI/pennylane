@@ -73,6 +73,14 @@ b_rx.add_nodes_from(["b", 1, 0.3])
 b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
 
 
+def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
+    """Computes the ExpvalCost and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated,"):
+        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
+    return res
+
+
 def decompose_hamiltonian(hamiltonian):
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
@@ -115,7 +123,7 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
 
         for wire in range(n_wires):
             loc = np.argwhere(op_wires == wire).flatten()
-            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].get_matrix()
+            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix()
             mat = csc_matrix(mat)
             op_matrices.append(mat)
 
@@ -1050,7 +1058,15 @@ class TestCostHamiltonians:
         cost_h, mixer_h, m = qaoa.max_weight_cycle(graph, constrained=constrained)
 
         assert mapping == m
-        assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
+
+        c1, t1, w1 = decompose_hamiltonian(cost_hamiltonian)
+        c2, t2, w2 = decompose_hamiltonian(cost_h)
+
+        # There may be a very small numeric difference in the coeffs
+        assert np.allclose(c1, c2)
+        assert t1 == t2
+        assert w1 == w2
+
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
     @pytest.mark.parametrize("constrained", [True, False])
@@ -1208,7 +1224,7 @@ class TestIntegration:
 
         # Defines the device and the QAOA cost function
         dev = qml.device("default.qubit", wires=len(wires))
-        cost_function = qml.ExpvalCost(circuit, cost_h, dev)
+        cost_function = catch_warn_ExpvalCost(circuit, cost_h, dev)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299
@@ -1242,7 +1258,7 @@ class TestIntegration:
 
         # Defines the device and the QAOA cost function
         dev = qml.device("default.qubit", wires=len(wires))
-        cost_function = qml.ExpvalCost(circuit, cost_h, dev)
+        cost_function = catch_warn_ExpvalCost(circuit, cost_h, dev)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299
@@ -1862,7 +1878,7 @@ class TestCycles:
         def states(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
-        cost = qml.ExpvalCost(states, h, dev, optimize=True)
+        cost = catch_warn_ExpvalCost(states, h, dev, optimize=True)
 
         # Calculate the set of all bitstrings
         bitstrings = itertools.product([0, 1], repeat=wires)
@@ -1915,7 +1931,7 @@ class TestCycles:
         def energy(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
-        cost = qml.ExpvalCost(energy, h, dev, optimize=True)
+        cost = catch_warn_ExpvalCost(energy, h, dev, optimize=True)
 
         # Calculate the set of all bitstrings
         states = itertools.product([0, 1], repeat=wires)
@@ -1977,7 +1993,7 @@ class TestCycles:
         def states(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
-        cost = qml.ExpvalCost(states, h, dev, optimize=True)
+        cost = catch_warn_ExpvalCost(states, h, dev, optimize=True)
 
         # Calculate the set of all bitstrings
         bitstrings = itertools.product([0, 1], repeat=wires)

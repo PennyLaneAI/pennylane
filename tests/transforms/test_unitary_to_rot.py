@@ -35,8 +35,8 @@ single_qubit_decomps = [
     (Z, qml.RZ, [np.pi]),
     (S, qml.RZ, [np.pi / 2]),
     (T, qml.RZ, [np.pi / 4]),
-    (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
-    (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
+    (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
+    (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
     # Next set of gates are non-diagonal and decomposed as Rots
     (
         np.array(
@@ -50,9 +50,9 @@ single_qubit_decomps = [
     ),
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
     (
-        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(),
+        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         qml.Rot,
         [-1.0, 2.0, -3.0],
     ),
@@ -91,7 +91,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform ignores QubitUnitary instances that are too big
         to decompose."""
 
-        tof = qml.Toffoli(wires=[0, 1, 2]).get_matrix()
+        tof = qml.Toffoli(wires=[0, 1, 2]).matrix()
 
         def qfunc():
             qml.QubitUnitary(H, wires="a")
@@ -109,10 +109,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert ops[1].name == "QubitUnitary"
         assert ops[1].wires == Wires(["a", "b", "c"])
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_unitary_to_rot_torch(self, U, expected_gate, expected_params):
         """Test that the transform works in the torch interface."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
 
@@ -132,10 +133,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_unitary_to_rot_tf(self, U, expected_gate, expected_params):
         """Test that the transform works in the Tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         U = tf.Variable(U, dtype=tf.complex128)
 
@@ -155,10 +157,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_unitary_to_rot_jax(self, U, expected_gate, expected_params):
         """Test that the transform works in the JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
 
         # Enable float64 support
         from jax.config import config
@@ -184,10 +187,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_unitary_to_rot_jax_jit(self, U, expected_gate, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
-        jax = pytest.importorskip("jax")
+        import jax
 
         # Enable float64 support
         from jax.config import config
@@ -233,6 +237,7 @@ class TestQubitUnitaryDifferentiability:
     """Tests to ensure the transform is fully differentiable in all interfaces for
     single-qubit unitary decompositions."""
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot(self, rot_angles, diff_method):
         """Tests differentiability in autograd interface."""
@@ -268,10 +273,11 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot_torch(self, rot_angles, diff_method):
         """Tests differentiability in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
@@ -321,10 +327,11 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_input.grad, transformed_input.grad, atol=1e-7)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot_tf(self, rot_angles, diff_method):
         """Tests differentiability in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def qfunc_with_qubit_unitary(angles):
             z = tf.cast(angles[0], tf.complex128)
@@ -371,10 +378,11 @@ class TestQubitUnitaryDifferentiability:
         # For 64bit values, need to slightly increase the tolerance threshold
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot_jax(self, rot_angles, diff_method):
         """Tests differentiability in jax interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         # Enable float64 support
@@ -516,6 +524,7 @@ class TestTwoQubitUnitaryDifferentiability:
     when we are decomposing two-qubit unitaries within.
     """
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_gradient_unitary_to_rot_two_qubit(self, diff_method):
         """Tests differentiability in autograd interface."""
@@ -551,9 +560,10 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-6)
 
+    @pytest.mark.torch
     def test_gradient_unitary_to_rot_torch_two_qubit(self):
         """Tests differentiability in torch interface."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         U0 = torch.tensor(test_two_qubit_unitaries[0], requires_grad=False, dtype=torch.complex128)
         U1 = torch.tensor(test_two_qubit_unitaries[1], requires_grad=False, dtype=torch.complex128)
@@ -598,10 +608,11 @@ class TestTwoQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(x.grad, transformed_x.grad)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_gradient_unitary_to_rot_tf_two_qubits(self, diff_method):
         """Tests differentiability in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         # We have to mark these as constant, otherwise it will try to
         # differentiate with respect to them.
@@ -648,9 +659,10 @@ class TestTwoQubitUnitaryDifferentiability:
         # For 64bit values, need to slightly increase the tolerance threshold
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
+    @pytest.mark.jax
     def test_gradient_unitary_to_rot_two_qubit_jax(self):
         """Tests differentiability in jax interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         from jax.config import config

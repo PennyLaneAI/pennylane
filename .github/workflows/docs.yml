@@ -1,3 +1,19 @@
+# Sphinx docs check
+# -----------------
+#
+# There are 2 main reasons for having this dedicated Sphinx docs check in
+# addition to the Read the Docs (RTD) builder:
+#
+# 1. This action is set up to fail on Sphinx warnings, whereas RTD's will show
+# a passing sign for warnings, and only fail for errors. So this is a stricter
+# check.
+#
+# 2. When this action detects warnings, it produces GitHub annotations on the
+# Files Changed tab in the pull request. Such annotations can be convenient for
+# developers/code reviewers (e.g., the same way CodeCov and CodeFactor
+# annotate).
+# -----------------
+
 name: "Documentation check"
 on:
 - pull_request
@@ -10,6 +26,5 @@ jobs:
     - uses: josh146/sphinx-action@master
       with:
         docs-folder: "doc/"
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
-        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . && pip3 install -r qchem/requirements.txt && pip3 install ./qchem"
+        pre-build-command: "apt install -y graphviz && pip3 install -r doc/requirements.txt && pip3 install . pip3 install openfermionpyscf"
         build-command: "sphinx-build -b html . _build -W --keep-going"

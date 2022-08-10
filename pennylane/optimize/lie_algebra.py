@@ -358,6 +358,6 @@ class LieAlgebraOptimizer:
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = 0.5 * (circuits_plus - circuits_min)
+        omegas = circuits_plus - circuits_min
 
         return np.dot(self.coeffs, omegas)

@@ -30,6 +30,7 @@ from pennylane.grouping.utils import (
     pauli_word_to_matrix,
     is_commuting,
     is_qwc,
+    are_pauli_words_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
@@ -98,6 +99,13 @@ class TestGroupingUtils:
         wire_map = {"a": 0, "b": 1, "c": 3}
         n_qubits = 3
         assert pytest.raises(ValueError, pauli_to_binary, pauli_word, n_qubits, wire_map)
+
+    @pytest.mark.parametrize("pauli_word,binary_pauli", ops_to_vecs_explicit_wires)
+    def test_pauli_to_binary_no_check(self, pauli_word, binary_pauli):
+        """Tests that pauli_to_binary runs well when pauli words are provided and
+        check_is_pauli_word is False."""
+
+        assert (pauli_to_binary(pauli_word, check_is_pauli_word=False) == binary_pauli).all()
 
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
     def test_binary_to_pauli_no_wire_map(self, vec, op):
@@ -187,6 +195,28 @@ class TestGroupingUtils:
             == is_qwc(identity, identity)
             == True
         )
+
+    obs_lsts = [
+        ([qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(2), qml.PauliX(1) @ qml.PauliY(2)], True),
+        ([qml.PauliZ(0) @ qml.Identity(1), qml.PauliY(2), qml.PauliX(2) @ qml.PauliY(1)], False),
+        (
+            [
+                qml.PauliZ(0) @ qml.PauliX(1),
+                qml.PauliY(2),
+                qml.Identity(1) @ qml.PauliY(2),
+                qml.Identity(0),
+            ],
+            True,
+        ),  # multi I
+        ([qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(2), qml.PauliX(1) @ qml.PauliY(2)], False),
+    ]
+
+    @pytest.mark.parametrize("obs_lst, expected_qwc", obs_lsts)
+    def test_are_qwc_pauli_words(self, obs_lst, expected_qwc):
+        """Given a list of Pauli words test that this function accurately
+        determines if they are pairwise qubit-wise commuting."""
+        qwc = are_pauli_words_qwc(obs_lst)
+        assert qwc == expected_qwc
 
     def test_is_qwc_not_equal_lengths(self):
         """Tests ValueError is raised when input Pauli vectors are not of equal length."""
@@ -360,7 +390,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_matrix",
         [
-            (PauliX(0), {0: 0}, PauliX(0).get_matrix()),
+            (PauliX(0), {0: 0}, PauliX(0).matrix()),
             (Identity(0), {0: 0}, np.eye(2)),
             (
                 PauliZ(0) @ PauliY(1),
@@ -378,7 +408,7 @@ class TestGroupingUtils:
                 np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
             ),
             (Identity(0), {0: 0, 1: 1}, np.eye(4)),
-            (PauliX(2), None, PauliX(2).get_matrix()),
+            (PauliX(2), None, PauliX(2).matrix()),
             (
                 PauliX(2),
                 {0: 0, 1: 1, 2: 2},

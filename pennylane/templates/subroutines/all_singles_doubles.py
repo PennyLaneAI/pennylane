@@ -70,7 +70,8 @@ class AllSinglesDoubles(Operation):
         doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
             the :class:`~.pennylane.DoubleExcitation` operations act on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Notice that:
 

@@ -27,6 +27,8 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward"],
 ]
 
+pytestmark = pytest.mark.autograd
+
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestQNode:
@@ -1320,7 +1322,11 @@ class TestTapeExpansion:
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
 
-            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            if diff_method == "backprop":
+                with pytest.warns(UserWarning, match=r"Output seems independent of input."):
+                    grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            else:
+                grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
             assert np.allclose(grad2_c, 0)
 
             grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
@@ -1377,7 +1383,8 @@ class TestTapeExpansion:
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
 
-            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            with pytest.warns(UserWarning, match=r"Output seems independent of input."):
+                grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=0.1)
 
             grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)

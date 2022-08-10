@@ -23,24 +23,12 @@ import pennylane as qml
 from pennylane.math import is_independent
 from pennylane.math.is_independent import _get_random_args
 
-try:
-    import jax
+pytestmark = pytest.mark.all_interfaces
 
-    have_jax = True
-except ImportError:
-    have_jax = False
-try:
-    import torch
-
-    have_torch = True
-except ImportError:
-    have_torch = False
-try:
-    import tensorflow as tf
-
-    have_tf = True
-except ImportError:
-    have_tf = False
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 
 dependent_lambdas = [
@@ -234,336 +222,335 @@ class TestIsIndependentAutograd:
         assert len(recwarn) == 0
 
 
-if have_jax:
+class TestIsIndependentJax:
+    """Tests for is_independent, which tests a function to be
+    independent of its inputs, using JAX."""
 
-    class TestIsIndependentJax:
-        """Tests for is_independent, which tests a function to be
-        independent of its inputs, using JAX."""
+    interface = "jax"
 
-        interface = "jax"
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (0.2,),
+            (1.1, 3.2, 0.2),
+            (np.array([[0, 9.2], [-1.2, 3.2]]),),
+            (0.3, [1, 4, 2], np.array([0.3, 9.1])),
+        ],
+    )
+    @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+    def test_get_random_args(self, args, num, bounds):
+        """Tests the utility ``_get_random_args`` using a fixed seed."""
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
+        assert len(rnd_args) == num
+        np.random.seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(
+                np.random.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
+                for arg in args
+            )
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-        @pytest.mark.parametrize("num", [0, 1, 2])
-        @pytest.mark.parametrize(
-            "args",
-            [
-                (0.2,),
-                (1.1, 3.2, 0.2),
-                (np.array([[0, 9.2], [-1.2, 3.2]]),),
-                (0.3, [1, 4, 2], np.array([0.3, 9.1])),
-            ],
-        )
-        @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
-        def test_get_random_args(self, args, num, bounds):
-            """Tests the utility ``_get_random_args`` using a fixed seed."""
-            seed = 921
-            rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
-            assert len(rnd_args) == num
-            np.random.seed(seed)
-            for _rnd_args in rnd_args:
-                expected = tuple(
-                    np.random.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
-                    for arg in args
-                )
-                assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+    dev = qml.device("default.qubit", wires=1)
 
-        dev = qml.device("default.qubit", wires=1)
+    @qml.qnode(dev, interface=interface)
+    def const_circuit(x, y):
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface=interface)
-        def const_circuit(x, y):
-            qml.RX(0.1, wires=0)
-            return qml.expval(qml.PauliZ(0))
+    constant_functions = [
+        const_circuit,
+        lambda x: np.arange(20).reshape((2, 5, 2)),
+        lambda x: (np.ones(3), -0.1),
+        jax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
+    ]
 
-        constant_functions = [
-            const_circuit,
-            lambda x: np.arange(20).reshape((2, 5, 2)),
-            lambda x: (np.ones(3), -0.1),
-            jax.jacobian(lambda x, y: 4.0 * x - 2.1 * y, argnums=[0, 1]),
-        ]
+    args_constant = [
+        (0.1, np.array([-2.1, 0.1])),
+        (1.2,),
+        (np.ones((2, 3)),),
+        (jax.numpy.ones((3, 8)) * 0.1, -0.2 * jax.numpy.ones((3, 8))),
+    ]
 
-        args_constant = [
-            (0.1, np.array([-2.1, 0.1])),
-            (1.2,),
-            (np.ones((2, 3)),),
-            (jax.numpy.ones((3, 8)) * 0.1, -0.2 * jax.numpy.ones((3, 8))),
-        ]
+    @qml.qnode(dev, interface=interface)
+    def dependent_circuit(x, y, z):
+        qml.RX(0.1, wires=0)
+        qml.RY(y / 2, wires=0)
+        qml.RZ(qml.math.sin(z), wires=0)
+        return qml.expval(qml.PauliX(0))
 
-        @qml.qnode(dev, interface=interface)
-        def dependent_circuit(x, y, z):
-            qml.RX(0.1, wires=0)
-            qml.RY(y / 2, wires=0)
-            qml.RZ(qml.math.sin(z), wires=0)
-            return qml.expval(qml.PauliX(0))
+    dependent_functions = [
+        dependent_circuit,
+        jax.numpy.array,
+        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
+        *dependent_lambdas,
+    ]
 
-        dependent_functions = [
-            dependent_circuit,
-            jax.numpy.array,
-            lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
-            *dependent_lambdas,
-        ]
+    args_dependent = [
+        (0.1, np.array(-2.1), -0.9),
+        (-4.1,),
+        (jax.numpy.ones((3, 8)) * 1.1,),
+        *args_dependent_lambdas,
+    ]
 
-        args_dependent = [
-            (0.1, np.array(-2.1), -0.9),
-            (-4.1,),
-            (jax.numpy.ones((3, 8)) * 1.1,),
-            *args_dependent_lambdas,
-        ]
+    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    def test_independent(self, func, args):
+        """Tests that an independent function is correctly detected as such."""
+        assert is_independent(func, self.interface, args)
 
-        @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
-        def test_independent(self, func, args):
-            """Tests that an independent function is correctly detected as such."""
-            assert is_independent(func, self.interface, args)
+    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
+    def test_dependent(self, func, args):
+        """Tests that a dependent function is correctly detected as such."""
+        assert not is_independent(func, self.interface, args)
 
-        @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
-        def test_dependent(self, func, args):
-            """Tests that a dependent function is correctly detected as such."""
-            assert not is_independent(func, self.interface, args)
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    def test_overlooked_dependence(self, func, args):
+        """Test that particular functions that are dependent on the input
+        are overlooked."""
+        assert not is_independent(func, self.interface, args)
 
-        @pytest.mark.xfail
-        @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
-        def test_overlooked_dependence(self, func, args):
-            """Test that particular functions that are dependent on the input
-            are overlooked."""
-            assert not is_independent(func, self.interface, args)
-
-        def test_kwargs_are_considered(self):
-            """Tests that kwargs are taken into account when checking
-            independence of outputs."""
-            f = lambda x, kw=False: 0.1 * x if kw else 0.2
-            jac = jax.jacobian(f, argnums=0)
-            args = (0.2,)
-            assert is_independent(f, self.interface, args)
-            assert not is_independent(f, self.interface, args, {"kw": True})
-            assert is_independent(jac, self.interface, args, {"kw": True})
+    def test_kwargs_are_considered(self):
+        """Tests that kwargs are taken into account when checking
+        independence of outputs."""
+        f = lambda x, kw=False: 0.1 * x if kw else 0.2
+        jac = jax.jacobian(f, argnums=0)
+        args = (0.2,)
+        assert is_independent(f, self.interface, args)
+        assert not is_independent(f, self.interface, args, {"kw": True})
+        assert is_independent(jac, self.interface, args, {"kw": True})
 
 
-if have_tf:
+class TestIsIndependentTensorflow:
+    """Tests for is_independent, which tests a function to be
+    independent of its inputs, using Tensorflow."""
 
-    class TestIsIndependentTensorflow:
-        """Tests for is_independent, which tests a function to be
-        independent of its inputs, using Tensorflow."""
+    interface = "tf"
 
-        interface = "tf"
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (tf.Variable(0.2),),
+            (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
+            (tf.Variable(np.array([[0, 9.2], [-1.2, 3.2]])),),
+            (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
+        ],
+    )
+    @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+    def test_get_random_args(self, args, num, bounds):
+        """Tests the utility ``_get_random_args`` using a fixed seed."""
+        tf = pytest.importorskip("tensorflow")
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
+        assert len(rnd_args) == num
+        tf.random.set_seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(
+                tf.random.uniform(tf.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
+                for arg in args
+            )
+            expected = tuple(
+                tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
+                for _arg, _exp in zip(args, expected)
+            )
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-        @pytest.mark.parametrize("num", [0, 1, 2])
-        @pytest.mark.parametrize(
-            "args",
-            [
-                (tf.Variable(0.2),),
-                (tf.Variable(1.1), tf.constant(3.2), tf.Variable(0.2)),
-                (tf.Variable(np.array([[0, 9.2], [-1.2, 3.2]])),),
-                (tf.Variable(0.3), [1, 4, 2], tf.Variable(np.array([0.3, 9.1]))),
-            ],
-        )
-        @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
-        def test_get_random_args(self, args, num, bounds):
-            """Tests the utility ``_get_random_args`` using a fixed seed."""
-            tf = pytest.importorskip("tensorflow")
-            seed = 921
-            rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
-            assert len(rnd_args) == num
-            tf.random.set_seed(seed)
-            for _rnd_args in rnd_args:
-                expected = tuple(
-                    tf.random.uniform(tf.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
-                    for arg in args
-                )
-                expected = tuple(
-                    tf.Variable(_exp) if isinstance(_arg, tf.Variable) else _exp
-                    for _arg, _exp in zip(args, expected)
-                )
-                assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+    dev = qml.device("default.qubit", wires=1)
 
-        dev = qml.device("default.qubit", wires=1)
+    @qml.qnode(dev, interface=interface)
+    def const_circuit(x, y):
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface=interface)
-        def const_circuit(x, y):
-            qml.RX(0.1, wires=0)
-            return qml.expval(qml.PauliZ(0))
+    constant_functions = [
+        const_circuit,
+        lambda x: np.arange(20).reshape((2, 5, 2)),
+        lambda x: (np.ones(3), np.array(-0.1)),
+    ]
 
-        constant_functions = [
-            const_circuit,
-            lambda x: np.arange(20).reshape((2, 5, 2)),
-            lambda x: (np.ones(3), np.array(-0.1)),
-        ]
+    args_constant = [
+        (0.1, np.array([-2.1, 0.1])),
+        (1.2,),
+        (np.ones((2, 3)),),
+    ]
 
-        args_constant = [
-            (0.1, np.array([-2.1, 0.1])),
-            (1.2,),
-            (np.ones((2, 3)),),
-        ]
+    @qml.qnode(dev, interface=interface)
+    def dependent_circuit(x, y, z):
+        qml.RX(0.1, wires=0)
+        qml.RY(y / 2, wires=0)
+        qml.RZ(qml.math.sin(z), wires=0)
+        return qml.expval(qml.PauliX(0))
 
-        @qml.qnode(dev, interface=interface)
-        def dependent_circuit(x, y, z):
-            qml.RX(0.1, wires=0)
-            qml.RY(y / 2, wires=0)
-            qml.RZ(qml.math.sin(z), wires=0)
-            return qml.expval(qml.PauliX(0))
+    dependent_functions = [
+        dependent_circuit,
+        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
+        *dependent_lambdas,
+    ]
 
-        dependent_functions = [
-            dependent_circuit,
-            lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
-            *dependent_lambdas,
-        ]
-
-        args_dependent = [
-            (tf.Variable(0.1), np.array(-2.1), tf.Variable(-0.9)),
-            (
-                tf.Variable(
-                    np.ones((3, 8)) * 1.1,
-                ),
+    args_dependent = [
+        (tf.Variable(0.1), np.array(-2.1), tf.Variable(-0.9)),
+        (
+            tf.Variable(
+                np.ones((3, 8)) * 1.1,
             ),
-            *args_dependent_lambdas,
-        ]
+        ),
+        *args_dependent_lambdas,
+    ]
 
-        @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
-        def test_independent(self, func, args):
-            """Tests that an independent function is correctly detected as such."""
-            args = tuple([tf.Variable(_arg) for _arg in args])
-            assert is_independent(func, self.interface, args)
+    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    def test_independent(self, func, args):
+        """Tests that an independent function is correctly detected as such."""
+        args = tuple([tf.Variable(_arg) for _arg in args])
+        assert is_independent(func, self.interface, args)
 
-        @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
-        def test_dependent(self, func, args):
-            """Tests that a dependent function is correctly detected as such."""
-            args = tuple([tf.Variable(_arg) for _arg in args])
-            # Filter out functions with TF-incompatible output format
-            out = func(*args)
-            if not isinstance(out, tf.Tensor):
-                try:
-                    _func = lambda *args: tf.Variable(func(*args))
-                    assert not is_independent(_func, self.interface, args)
-                except:
-                    pytest.skip()
-            else:
-                assert not is_independent(func, self.interface, args)
-
-        @pytest.mark.xfail
-        @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
-        def test_overlooked_dependence(self, func, args):
-            """Test that particular functions that are dependent on the input
-            are overlooked."""
+    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
+    def test_dependent(self, func, args):
+        """Tests that a dependent function is correctly detected as such."""
+        args = tuple([tf.Variable(_arg) for _arg in args])
+        # Filter out functions with TF-incompatible output format
+        out = func(*args)
+        if not isinstance(out, tf.Tensor):
+            try:
+                _func = lambda *args: tf.Variable(func(*args))
+                assert not is_independent(_func, self.interface, args)
+            except:
+                pytest.skip()
+        else:
             assert not is_independent(func, self.interface, args)
 
-        def test_kwargs_are_considered(self):
-            """Tests that kwargs are taken into account when checking
-            independence of outputs."""
-            f = lambda x, kw=False: 0.1 * x if kw else tf.constant(0.2)
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    def test_overlooked_dependence(self, func, args):
+        """Test that particular functions that are dependent on the input
+        are overlooked."""
+        assert not is_independent(func, self.interface, args)
 
-            def _jac(x, kw):
-                with tf.GradientTape() as tape:
-                    out = f(x, kw)
-                return tape.jacobian(out, x)
+    def test_kwargs_are_considered(self):
+        """Tests that kwargs are taken into account when checking
+        independence of outputs."""
+        f = lambda x, kw=False: 0.1 * x if kw else tf.constant(0.2)
 
-            args = (tf.Variable(0.2),)
-            assert is_independent(f, self.interface, args)
-            assert not is_independent(f, self.interface, args, {"kw": True})
-            assert is_independent(_jac, self.interface, args, {"kw": True})
+        def _jac(x, kw):
+            with tf.GradientTape() as tape:
+                out = f(x, kw)
+            return tape.jacobian(out, x)
+
+        args = (tf.Variable(0.2),)
+        assert is_independent(f, self.interface, args)
+        assert not is_independent(f, self.interface, args, {"kw": True})
+        assert is_independent(_jac, self.interface, args, {"kw": True})
 
 
-if have_torch:
+class TestIsIndependentTorch:
+    """Tests for is_independent, which tests a function to be
+    independent of its inputs, using PyTorch."""
 
-    class TestIsIndependentTorch:
-        """Tests for is_independent, which tests a function to be
-        independent of its inputs, using PyTorch."""
+    interface = "torch"
 
-        interface = "torch"
+    @pytest.mark.parametrize("num", [0, 1, 2])
+    @pytest.mark.parametrize(
+        "args",
+        [
+            (torch.tensor(0.2),),
+            (1.1, 3.2, torch.tensor(0.2)),
+            (torch.tensor([[0, 9.2], [-1.2, 3.2]]),),
+            (0.3, torch.tensor([1, 4, 2]), torch.tensor([0.3, 9.1])),
+        ],
+    )
+    @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
+    def test_get_random_args(self, args, num, bounds):
+        """Tests the utility ``_get_random_args`` using a fixed seed."""
+        torch = pytest.importorskip("torch")
+        seed = 921
+        rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
+        assert len(rnd_args) == num
+        torch.random.manual_seed(seed)
+        for _rnd_args in rnd_args:
+            expected = tuple(
+                torch.rand(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
+            )
+            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
-        @pytest.mark.parametrize("num", [0, 1, 2])
-        @pytest.mark.parametrize(
-            "args",
-            [
-                (torch.tensor(0.2),),
-                (1.1, 3.2, torch.tensor(0.2)),
-                (torch.tensor([[0, 9.2], [-1.2, 3.2]]),),
-                (0.3, torch.tensor([1, 4, 2]), torch.tensor([0.3, 9.1])),
-            ],
-        )
-        @pytest.mark.parametrize("bounds", [(-1, 1), (0.1, 1.0211)])
-        def test_get_random_args(self, args, num, bounds):
-            """Tests the utility ``_get_random_args`` using a fixed seed."""
-            torch = pytest.importorskip("torch")
-            seed = 921
-            rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
-            assert len(rnd_args) == num
-            torch.random.manual_seed(seed)
-            for _rnd_args in rnd_args:
-                expected = tuple(
-                    torch.rand(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
-                )
-                assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+    dev = qml.device("default.qubit", wires=1)
 
-        dev = qml.device("default.qubit", wires=1)
+    @qml.qnode(dev, interface=interface)
+    def const_circuit(x, y):
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface=interface)
-        def const_circuit(x, y):
-            qml.RX(0.1, wires=0)
-            return qml.expval(qml.PauliZ(0))
+    constant_functions = [
+        const_circuit,
+        lambda x: np.arange(20).reshape((2, 5, 2)),
+        lambda x: (np.ones(3), -0.1),
+    ]
 
-        constant_functions = [
-            const_circuit,
-            lambda x: np.arange(20).reshape((2, 5, 2)),
-            lambda x: (np.ones(3), -0.1),
-        ]
+    args_constant = [
+        (0.1, torch.tensor([-2.1, 0.1])),
+        (1.2,),
+        (torch.ones((2, 3)),),
+    ]
 
-        args_constant = [
-            (0.1, torch.tensor([-2.1, 0.1])),
-            (1.2,),
-            (torch.ones((2, 3)),),
-        ]
+    @qml.qnode(dev, interface=interface)
+    def dependent_circuit(x, y, z):
+        qml.RX(0.1, wires=0)
+        qml.RY(y / 2, wires=0)
+        qml.RZ(qml.math.sin(z), wires=0)
+        return qml.expval(qml.PauliX(0))
 
-        @qml.qnode(dev, interface=interface)
-        def dependent_circuit(x, y, z):
-            qml.RX(0.1, wires=0)
-            qml.RY(y / 2, wires=0)
-            qml.RZ(qml.math.sin(z), wires=0)
-            return qml.expval(qml.PauliX(0))
+    dependent_functions = [
+        dependent_circuit,
+        torch.as_tensor,
+        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
+        *dependent_lambdas,
+    ]
 
-        dependent_functions = [
-            dependent_circuit,
-            torch.as_tensor,
-            lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
-            *dependent_lambdas,
-        ]
+    args_dependent = [
+        (0.1, torch.tensor(-2.1), -0.9),
+        (-4.1,),
+        (torch.ones((3, 8)) * 1.1,),
+        *args_dependent_lambdas,
+    ]
 
-        args_dependent = [
-            (0.1, torch.tensor(-2.1), -0.9),
-            (-4.1,),
-            (torch.ones((3, 8)) * 1.1,),
-            *args_dependent_lambdas,
-        ]
+    dependent_expect_torch_fail = [False, False, False, *lambdas_expect_torch_fail]
 
-        dependent_expect_torch_fail = [False, False, False, *lambdas_expect_torch_fail]
-
-        @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
-        def test_independent(self, func, args):
-            """Tests that an independent function is correctly detected as such."""
+    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    def test_independent(self, func, args):
+        """Tests that an independent function is correctly detected as such."""
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert is_independent(func, self.interface, args)
 
-        @pytest.mark.parametrize(
-            "func, args, exp_fail",
-            zip(dependent_functions, args_dependent, dependent_expect_torch_fail),
-        )
-        def test_dependent(self, func, args, exp_fail):
-            """Tests that a dependent function is correctly detected as such."""
+    @pytest.mark.parametrize(
+        "func, args, exp_fail",
+        zip(dependent_functions, args_dependent, dependent_expect_torch_fail),
+    )
+    def test_dependent(self, func, args, exp_fail):
+        """Tests that a dependent function is correctly detected as such."""
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             if exp_fail:
                 assert is_independent(func, self.interface, args)
             else:
                 assert not is_independent(func, self.interface, args)
 
-        @pytest.mark.xfail
-        @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
-        def test_overlooked_dependence(self, func, args):
-            """Test that particular functions that are dependent on the input
-            are overlooked."""
-            assert not is_independent(func, self.interface, args)
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    def test_overlooked_dependence(self, func, args):
+        """Test that particular functions that are dependent on the input
+        are overlooked."""
+        assert not is_independent(func, self.interface, args)
 
-        def test_kwargs_are_considered(self):
-            """Tests that kwargs are taken into account when checking
-            independence of outputs."""
-            f = lambda x, kw=False: 0.1 * x if kw else 0.2
-            jac = lambda x, kw: torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
-            args = (torch.tensor(0.2),)
+    def test_kwargs_are_considered(self):
+        """Tests that kwargs are taken into account when checking
+        independence of outputs."""
+        f = lambda x, kw=False: 0.1 * x if kw else 0.2
+        jac = lambda x, kw: torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
+        args = (torch.tensor(0.2),)
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert is_independent(f, self.interface, args)
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert not is_independent(f, self.interface, args, {"kw": True})
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
             assert is_independent(jac, self.interface, args, {"kw": True})
 
 

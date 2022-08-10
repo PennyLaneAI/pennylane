@@ -88,48 +88,6 @@ class TestCoeffs:
         assert np.allclose(shifts, [0, -1, 1, -2, 2])
 
 
-class TestShiftedTapes:
-    """Tests for the generate_shifted_tapes function"""
-
-    def test_behaviour(self):
-        """Test that the function behaves as expected"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape.trainable_params = {0, 2}
-        shifts = [0.1, -0.2, 1.6]
-        res = generate_shifted_tapes(tape, 1, shifts=shifts)
-
-        assert len(res) == len(shifts)
-        assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
-        assert res[1].get_parameters(trainable_only=False) == [1.0, 2.0, 2.8, 4.0]
-        assert res[2].get_parameters(trainable_only=False) == [1.0, 2.0, 4.6, 4.0]
-
-    def test_multipliers(self):
-        """Test that the function behaves as expected when multipliers are used"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape.trainable_params = {0, 2}
-        shifts = [0.3, 0.6]
-        multipliers = [0.2, 0.5]
-        res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
-
-        assert len(res) == 2
-        assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert res[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-
-
 class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
 
@@ -182,15 +140,67 @@ class TestFiniteDiff:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, 0)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.finite_diff(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.finite_diff(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.finite_diff(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -281,13 +291,13 @@ class TestFiniteDiff:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = finite_diff(tape1, approx_order=1)
@@ -379,7 +389,14 @@ class TestFiniteDiff:
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
-            R_DTYPE = SpecialObservable
+
+            @staticmethod
+            def _asarray(arr, dtype=None):
+                return arr
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
                 if self.analytic and isinstance(observable, SpecialObservable):
@@ -592,6 +609,7 @@ class TestFiniteDiffIntegration:
 class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
+    @pytest.mark.autograd
     def test_autograd(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
@@ -620,6 +638,7 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd_ragged(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
@@ -644,11 +663,12 @@ class TestFiniteDiffGradients:
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
@@ -678,10 +698,12 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf_ragged(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
@@ -702,10 +724,11 @@ class TestFiniteDiffGradients:
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
@@ -735,10 +758,11 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(hess.detach().numpy(), np.sum(expected, axis=0), atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
         from jax.config import config
 

@@ -181,7 +181,26 @@ Optimization
 ------------
 
 To optimize your hybrid classical-quantum model using the NumPy interface,
-use the provided :ref:`PennyLane optimizers <intro_ref_opt>`.
+use the provided optimizers:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.AdagradOptimizer
+    ~pennylane.AdamOptimizer
+    ~pennylane.GradientDescentOptimizer
+    ~pennylane.LieAlgebraOptimizer
+    ~pennylane.MomentumOptimizer
+    ~pennylane.NesterovMomentumOptimizer
+    ~pennylane.QNGOptimizer
+    ~pennylane.RMSPropOptimizer
+    ~pennylane.RotosolveOptimizer
+    ~pennylane.RotoselectOptimizer
+    ~pennylane.ShotAdaptiveOptimizer
+
+:html:`</div>`
 
 For example, we can optimize a NumPy-interfacing QNode (below) such that the weights ``x``
 lead to a final expectation value of 0.5:

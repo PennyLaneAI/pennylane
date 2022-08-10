@@ -36,7 +36,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         momentum (float): user-defined hyperparameter :math:`m`
     """
 
-    def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
+    def compute_grad(
+        self, objective_fn, args, kwargs, grad_fn=None
+    ):  # pylint: disable=arguments-renamed
         r"""Compute gradient of the objective function at at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function forward pass
         (if available).
@@ -57,18 +59,17 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         """
         shifted_args = list(args)
 
-        trainable_args = []
-        for arg in args:
-            if getattr(arg, "requires_grad", False):
-                trainable_args.append(arg)
+        trainable_indices = [
+            i for i, arg in enumerate(args) if getattr(arg, "requires_grad", False)
+        ]
 
         if self.accumulation:
-            for index, arg in enumerate(trainable_args):
-                shifted_args[index] = arg - self.momentum * self.accumulation[index]
+            for index in trainable_indices:
+                shifted_args[index] = args[index] - self.momentum * self.accumulation[index]
 
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        grad = (grad,) if len(trainable_args) == 1 else grad
+        grad = (grad,) if len(trainable_indices) == 1 else grad
         return grad, forward

@@ -35,6 +35,8 @@ The available measurement functions are
     ~pennylane.probs
     ~pennylane.state
     ~pennylane.density_matrix
+    ~pennylane.vn_entropy
+    ~pennylane.mutual_info
 
 :html:`</div>`
 
@@ -77,7 +79,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
     import pennylane as qml
     from pennylane import numpy as np
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit", wires=2, shots=1000)
 
     @qml.qnode(dev)
     def circuit():
@@ -99,7 +101,6 @@ the measurement results always coincide, and the lists are therefore equal:
 
 >>> np.all(result[0] == result[1])
 True
-
 
 Tensor observables
 ------------------
@@ -125,12 +126,72 @@ accept observables as arguments,
 including :func:`~.pennylane.expval`, :func:`~.pennylane.var`,
 and :func:`~.pennylane.sample`.
 
+Counts
+------
+
+To avoid dealing with long arrays for the larger numbers of shots, one can pass an argument counts=True
+to :func:`~pennylane.sample`. In this case, the result will be a dictionary containing the number of occurrences for each
+unique sample. The previous example will be modified as follows:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        # passing the counts flag
+        return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+
+After executing the circuit, we can directly see how many times each measurement outcome occurred:
+        
+>>> result = circuit()
+>>> print(result)
+[{-1: 526, 1: 474} {-1: 526, 1: 474}]
+ 
+Similarly, if the observable is not provided, the count of each computational basis state is returned.
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        # passing the counts flag
+        return qml.sample(counts=True)
+
+And the result is:
+           
+>>> result = circuit()
+>>> print(result)
+{'00': 495, '11': 505}
+
+If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
+a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.PauliX(wires=2)
+        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.sample(counts=True)
+
+>>> result = circuit()
+>>> print(result)
+[tensor(0.026, requires_grad=True) tensor(0.026, requires_grad=True)
+ tensor({'001': 513, '111': 487}, dtype=object, requires_grad=True)]
+
 Probability
 -----------
 
 You can also train QNodes on computational basis probabilities, by using
 the :func:`~.pennylane.probs` measurement function. The function can
-accept either specified ``wires`` or an observable that rotates the 
+accept either specified ``wires`` or an observable that rotates the
 computational basis.
 
 .. code-block:: python3

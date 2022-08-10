@@ -149,6 +149,7 @@ class TestCVGradient:
         manualgrad_val = 0.5 * np.tanh(r) ** 3 * (2 / (np.sinh(r) ** 2) - 1) / np.cosh(r)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator])
     @pytest.mark.parametrize(
         "make_gate",
@@ -185,6 +186,7 @@ class TestCVGradient:
         assert qml.math.shape(grad_A2) == qml.math.shape(grad_F) == ()
         assert np.allclose(grad_A2, grad_F, atol=tol)
 
+    @pytest.mark.autograd
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
         par = anp.array([0.4, -0.3, -0.7, 0.2], requires_grad=True)
@@ -218,6 +220,7 @@ class TestCVGradient:
 
         assert all(qml.math.isclose(dn[i], grad_F[i], atol=tol, rtol=0) for i in range(4))
 
+    @pytest.mark.autograd
     def test_cv_gradients_repeated_gate_parameters(self, gaussian_dev, tol):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
         par = anp.array([0.2, 0.3], requires_grad=True)
@@ -237,6 +240,7 @@ class TestCVGradient:
         assert qml.math.allclose(grad_A, grad_F, atol=tol, rtol=0)
         assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_cv_gradients_parameters_inside_array(self, gaussian_dev, tol):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
         par = anp.array([0.4, 1.3], requires_grad=True)
@@ -261,6 +265,7 @@ class TestCVGradient:
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
+    @pytest.mark.autograd
     def test_cv_gradient_fanout(self, gaussian_dev, tol):
         "Tests that qnodes can compute the correct gradient when the same parameter is used in multiple gates."
         par = anp.array([0.5, 1.3], requires_grad=True)
@@ -281,6 +286,7 @@ class TestCVGradient:
         assert qml.math.allclose(grad_A, grad_F, atol=tol, rtol=0)
         assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_CVOperation_with_heisenberg_and_no_params(self, gaussian_dev, tol):
         """An integration test for InterferometerUnitary, a gate that supports analytic
         differentiation if succeeding the gate to be differentiated, but cannot be
@@ -436,6 +442,7 @@ class TestQubitGradient:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_qfunc_gradients(self, qubit_device_2_wires, tol):
         "Tests that the various ways of computing the gradient of a qfunc all agree."
 
@@ -452,9 +459,11 @@ class TestQubitGradient:
         qnode = qml.QNode(circuit, qubit_device_2_wires, diff_method="parameter-shift")
         params = anp.array([0.1, -1.6, np.pi / 5], requires_grad=True)
 
+        h = 1e-4 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-7
+
         # manual gradients
-        grad_fd1 = qml.gradients.finite_diff(qnode, approx_order=1)(*params)
-        grad_fd2 = qml.gradients.finite_diff(qnode, approx_order=2)(*params)
+        grad_fd1 = qml.gradients.finite_diff(qnode, h=h, approx_order=1)(*params)
+        grad_fd2 = qml.gradients.finite_diff(qnode, h=h, approx_order=2)(*params)
         grad_angle = qml.gradients.param_shift(qnode)(*params)
 
         # automatic gradient
@@ -466,6 +475,7 @@ class TestQubitGradient:
         assert qml.math.allclose(grad_fd1, grad_angle, atol=tol, rtol=0)
         assert qml.math.allclose(grad_fd1, grad_auto, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_hybrid_gradients(self, qubit_device_2_wires, tol):
         "Tests that the various ways of computing the gradient of a hybrid computation all agree."
 
@@ -509,7 +519,9 @@ class TestQubitGradient:
         grad = autograd.grad(error)
         grad_auto = grad(param)
 
-        grad_fd1 = d_error(param, qml.gradients.finite_diff)
+        h = 1e-3 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-7
+
+        grad_fd1 = d_error(param, lambda x: qml.gradients.finite_diff(x, h=h))
         grad_angle = d_error(param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
@@ -517,7 +529,8 @@ class TestQubitGradient:
         assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
         assert grad_angle == pytest.approx(grad_auto, abs=tol)
 
-    def test_hybrid_gradients_autograd_numpy(self, qubit_device_2_wires, tol):
+    @pytest.mark.autograd
+    def test_hybrid_gradients_autograd_numpy(self, qubit_device_2_wires):
         "Test the gradient of a hybrid computation requiring autograd.numpy functions."
 
         def circuit(x, y):
@@ -545,13 +558,16 @@ class TestQubitGradient:
         grad_classical = autograd.jacobian(classical)
         grad_auto = grad_classical(param)
 
-        grad_fd1 = d_classical(*param, qml.gradients.finite_diff)
+        h = 5e-4 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-7
+        atol = 2e-3 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-5
+
+        grad_fd1 = d_classical(*param, lambda x: qml.gradients.finite_diff(x, h=h))
         grad_angle = d_classical(*param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
-        assert qml.math.allclose(grad_fd1, grad_angle, atol=tol, rtol=0)
-        assert qml.math.allclose(grad_fd1, grad_auto, atol=tol, rtol=0)
-        assert qml.math.allclose(grad_angle, grad_auto, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_angle, atol=atol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_auto, atol=atol, rtol=0)
+        assert qml.math.allclose(grad_angle, grad_auto, atol=atol, rtol=0)
 
     def test_qnode_gradient_fanout(self, qubit_device_1_wire, tol):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
@@ -617,6 +633,7 @@ class TestQubitGradient:
 
                 assert grad_eval == pytest.approx(grad_true, abs=tol)
 
+    @pytest.mark.autograd
     def test_autograd_trainable_no_warn_grad(self, recwarn):
         """Test that no warning is raised if positional arguments are marked as
         trainable using the requires_grad attribute."""
@@ -631,6 +648,7 @@ class TestQubitGradient:
         qml.grad(test)(par)
         assert len(recwarn) == 0
 
+    @pytest.mark.autograd
     def test_autograd_trainable_argnum_no_warn_grad(self, recwarn):
         """Test that no warning is raised if positional arguments are marked as
         trainable using the argnum argument."""
@@ -645,6 +663,7 @@ class TestQubitGradient:
         qml.grad(test, argnum=0)(par)
         assert len(recwarn) == 0
 
+    @pytest.mark.autograd
     def test_autograd_trainable_no_warn_jacobian(self, recwarn):
         """Test that no warning is raised if positional arguments are marked as
         trainable using the requires_grad attribute."""
@@ -659,6 +678,7 @@ class TestQubitGradient:
         qml.jacobian(test)(par)
         assert len(recwarn) == 0
 
+    @pytest.mark.autograd
     def test_autograd_trainable_argnum_no_warn_jacobian(self, recwarn):
         """Test that no warning is raised if positional arguments are marked as
         trainable using the argnum argument."""
@@ -677,6 +697,7 @@ class TestQubitGradient:
 class TestFourTermParameterShifts:
     """Tests for quantum gradients that require a 4-term shift formula"""
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled RX gate"""
@@ -696,6 +717,7 @@ class TestFourTermParameterShifts:
         expected = np.sin(b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
@@ -732,6 +754,7 @@ class TestArgnum:
     """Test various argnum scenarios for qml.grad and qml.jacobian and compare output
     to equivalent requires_grad configuration of the inputs."""
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         "input",
         [
@@ -765,6 +788,7 @@ class TestArgnum:
 
         assert np.allclose(result, expected)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         "input",
         [np.array([[0.1, 0.2], [0.1, 0.2]]), qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]])],

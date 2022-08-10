@@ -18,11 +18,12 @@ from collections.abc import Sequence
 from types import FunctionType
 from typing import Type, Union
 
+import pennylane as qml
 from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms.qfunc_transforms import qfunc_transform
+from pennylane.ops.op_math import Adjoint
 
 # pylint: disable=too-many-branches
 
@@ -116,10 +117,11 @@ def insert(
     >>> f(0.9, 0.4, 0.5, 0.6)
     tensor(0.754847, requires_grad=True)
     >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-    0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
+    0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Specifying the operation as a quantum function:**
 
@@ -151,7 +153,7 @@ def insert(
         To check this, let's print out the circuit:
 
         >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-        0: ──RX(0.90)─╭C──RY(0.50)──RX(0.20)──Rϕ(0.30)─┤ ╭<Z@Z>
+        0: ──RX(0.90)─╭●──RY(0.50)──RX(0.20)──Rϕ(0.30)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──RX(0.20)──Rϕ(0.30)─┤ ╰<Z@Z>
 
         **Transforming tapes:**
@@ -173,7 +175,7 @@ def insert(
         >>> from pennylane.transforms import insert
         >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
-        0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
+        0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
 
         **Transforming devices:**
@@ -206,7 +208,11 @@ def insert(
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
-    circuit = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+    # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
+    # TODO: change this to be cleaner and more robust
+    circuit = circuit.expand(
+        stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
+    )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
@@ -221,7 +227,7 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = sum(isinstance(o, STATE_PREP_OPS) for o in circuit.operations)
+    num_preps = len(circuit._prep)  # pylint: disable=protected-access
 
     for i in range(num_preps):
         apply(circuit.operations[i])

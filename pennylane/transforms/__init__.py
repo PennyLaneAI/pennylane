@@ -32,11 +32,11 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
-    ~transforms.get_unitary_matrix
+    ~batch_partial
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
-    ~transforms.mitigate_with_zne
+    ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,8 +47,6 @@ containing quantum operations) that are used to construct QNodes.
 .. autosummary::
     :toctree: api
 
-    ~adjoint
-    ~ctrl
     ~transforms.cond
     ~defer_measurements
     ~apply_controlled_Q
@@ -84,7 +82,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
-    ~transforms.simplify
     ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
@@ -148,6 +145,7 @@ more tapes as well as a classical processing function.
 .. autosummary::
     :toctree: api
 
+    ~transforms.broadcast_expand
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
@@ -172,26 +170,37 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.expand_multipar
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
+
+Transforms for error mitigation
+-------------------------------
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.mitigate_with_zne
+    ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.richardson_extrapolate
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
-from .adjoint import adjoint
 from .batch_params import batch_params
 from .batch_input import batch_input
+from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
-from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand
+from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
-from .mitigate import mitigate_with_zne
+from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
     cancel_inverses,
     commute_controlled,
@@ -206,13 +215,11 @@ from .optimization import (
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
-from .get_unitary_matrix import get_unitary_matrix
 from .commutation_dag import (
     commutation_dag,
     is_commuting,
     CommutationDAG,
     CommutationDAGNode,
-    simplify,
 )
 from .tape_expand import (
     expand_invalid_trainable,
@@ -226,3 +233,4 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
+from .broadcast_expand import broadcast_expand

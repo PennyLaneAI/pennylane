@@ -59,6 +59,7 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
@@ -134,7 +135,7 @@ class TestTorchLayer:
             "w4": [3],
             "w5": (2, n_qubits, 3),
             "w6": 3,
-            "w7": 0,
+            "w7": 1,
         }
 
         @qml.qnode(dev, interface="torch")
@@ -173,6 +174,106 @@ class TestTorchLayer:
             assert kwargs["b"] == 2 * math.pi
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_callable_init(self, get_circuit, monkeypatch):
+        """Test if weights are initialized according to the callable function specified in the
+        init_method argument."""
+        c, w = get_circuit
+
+        normal_ = mock.MagicMock(return_value=torch.normal(mean=0, std=1, size=[1]))
+        with monkeypatch.context() as m:
+            m.setattr(torch.nn.init, "uniform_", normal_)
+            layer = TorchLayer(qnode=c, weight_shapes=w, init_method=normal_)
+        normal_.assert_called()
+        for _, weight in layer.qnode_weights.items():
+            data = weight.data.tolist()
+            if not isinstance(data, list):
+                data = [data]
+            assert data == normal_().tolist()
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_fixed_init(self, get_circuit, n_qubits):
+        """Test if weights are initialized according to the value specified in the
+        init_method argument."""
+        c, w = get_circuit
+
+        init_method = {
+            "w1": torch.normal(mean=0, std=1, size=(3, n_qubits, 3)),
+            "w2": torch.normal(mean=0, std=1, size=(1,)),
+            "w3": torch.normal(mean=0, std=1, size=[]),
+            "w4": torch.normal(mean=0, std=1, size=(3,)),
+            "w5": torch.normal(mean=0, std=1, size=(2, n_qubits, 3)),
+            "w6": torch.normal(mean=0, std=1, size=(3,)),
+            "w7": torch.normal(mean=0, std=1, size=[]),
+        }
+
+        layer = TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
+        for name, weight in layer.qnode_weights.items():
+            assert weight.data.tolist() == init_method[name].tolist()
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_fixed_init_raises_error(self, get_circuit, n_qubits):
+        """Test that a ValueError is raised when using a Tensor with the wrong shape."""
+        c, w = get_circuit
+
+        init_method = {
+            "w1": torch.normal(mean=0, std=1, size=(1,)),
+            "w2": torch.normal(mean=0, std=1, size=(1,)),
+            "w3": torch.normal(mean=0, std=1, size=[]),
+            "w4": torch.normal(mean=0, std=1, size=(3,)),
+            "w5": torch.normal(mean=0, std=1, size=(2, n_qubits, 3)),
+            "w6": torch.normal(mean=0, std=1, size=(3,)),
+            "w7": torch.normal(mean=0, std=1, size=[]),
+        }
+
+        with pytest.raises(ValueError):
+            TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_init_missing_weights(self, get_circuit, n_qubits):
+        """Test that a KeyError is raised when using an init_method with missing weights."""
+        c, w = get_circuit
+
+        init_method = {
+            "w1": torch.normal(mean=0, std=1, size=(3, n_qubits, 3)),
+            "w2": torch.normal(mean=0, std=1, size=(1,)),
+            "w3": torch.normal(mean=0, std=1, size=[]),
+            "w5": torch.normal(mean=0, std=1, size=(2, n_qubits, 3)),
+            "w7": torch.normal(mean=0, std=1, size=[]),
+        }
+
+        with pytest.raises(KeyError):
+            TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_fixed_and_callable_init(self, get_circuit, n_qubits):
+        """Test if weights are initialized according to the callables and values specified in the
+        init_method argument."""
+        c, w = get_circuit
+
+        normal_ = mock.MagicMock(return_value=torch.normal(mean=0, std=1, size=[1]))
+
+        init_method = {
+            "w1": normal_,
+            "w2": torch.normal(mean=0, std=1, size=(1,)),
+            "w3": normal_,
+            "w4": torch.normal(mean=0, std=1, size=(3,)),
+            "w5": normal_,
+            "w6": torch.normal(mean=0, std=1, size=(3,)),
+            "w7": normal_,
+        }
+
+        layer = TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
+        normal_.assert_called()
+        for name, weight in layer.qnode_weights.items():
+            data = weight.data.tolist()
+            if not isinstance(data, list):
+                data = [data]
+            if isinstance(init_method[name], mock.MagicMock):
+                assert data == init_method[name]().tolist()
+            else:
+                assert data == init_method[name].tolist()
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_non_input_defaults(self, n_qubits, output_dim):
         """Test that everything works when default arguments that are not the input argument are
         present in the QNode"""
@@ -184,7 +285,7 @@ class TestTorchLayer:
             "w4": [3],
             "w5": (2, n_qubits, 3),
             "w6": 3,
-            "w7": 0,
+            "w7": 1,
         }
 
         @qml.qnode(dev, interface="torch")
@@ -388,11 +489,11 @@ class TestTorchLayer:
         assert len(weights) == len(list(layer.parameters()))
 
 
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
-@pytest.mark.usefixtures("skip_if_no_tf_support")
-def test_interface_conversion(get_circuit, skip_if_no_tf_support):
+def test_interface_conversion(get_circuit):
     """Test if input QNodes with all types of interface are converted internally to the PyTorch
     interface"""
     c, w = get_circuit
@@ -400,6 +501,7 @@ def test_interface_conversion(get_circuit, skip_if_no_tf_support):
     assert layer.qnode.interface == "torch"
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("interface", ["torch"])
 @pytest.mark.usefixtures("get_circuit", "module")
 class TestTorchLayerIntegration:
@@ -470,6 +572,7 @@ class TestTorchLayerIntegration:
         assert len(dict_keys) == len(all_params)
 
 
+@pytest.mark.torch
 def test_vjp_is_unwrapped_for_param_shift():
     """Test that the intermediate vjps used by the batch Torch interface
     are unwrapped and no error is raised for a custom operation.

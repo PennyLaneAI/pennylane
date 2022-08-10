@@ -84,7 +84,8 @@ class Tracker:
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qml.RX``.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         .. note::
             With backpropagation, this function should take ``qnode.device``

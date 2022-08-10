@@ -107,7 +107,7 @@ class QFT(Operation):
 
         **Example:**
 
-        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        >>> qml.QFT.compute_decomposition((0,1,2,4))
         [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
 
         """
@@ -129,8 +129,3 @@ class QFT(Operation):
             decomp_ops.append(swap)
 
         return decomp_ops
-
-    def adjoint(self):
-        adjoint_op = QFT(wires=self.wires)
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op

@@ -187,7 +187,8 @@ class ParticleConservingU1(Operation):
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
             used to initialize the wires
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         #. The number of wires :math:`N` has to be equal to the number of
            spin orbitals included in the active space.

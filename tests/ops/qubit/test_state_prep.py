@@ -33,7 +33,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
     ],
 )
 def test_adjoint_error_exception(op):
-    with pytest.raises(qml.ops.AdjointError):
+    with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
 
 

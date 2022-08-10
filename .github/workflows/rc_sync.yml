@@ -39,6 +39,7 @@ jobs:
           else
             echo "branch_exists=false" >> $GITHUB_ENV
           fi
+          echo "new_changes=false" >> $GITHUB_ENV
 
       # Create a new branch at from the current rc to be used in the PR
       - name: Create temp branch
@@ -51,17 +52,19 @@ jobs:
           git checkout -b "$BRANCH"
           # Exclude some files known to be divergent during the release process from the PR
           git checkout master -- pennylane/_version.py
-          git checkout master -- doc/releases/changelog-dev.md
-          if ! git diff-index --quiet HEAD; then
-            git config user.name "GitHub Actions Bot"
-            git config user.email "<>"
-            git commit -m "exclude files from pr"
+          git checkout master -- doc/development/release_notes.md
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git commit -m "exclude files from pr"
+          # check for new changes on the rc branch only, based on the diff between master and rc
+          if ! git diff master HEAD --quiet -- $(git diff --name-only master...HEAD); then
+            echo "new_changes=true" >> $GITHUB_ENV
+            git push --set-upstream origin "$BRANCH"
           fi
-          git push --set-upstream origin "$BRANCH"
 
       # Create PR to master
       - name: Create pull request
-        if: ${{ env.branch_exists == 'true' }}
+        if: ${{ env.new_changes == 'true' }}
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "${{ env.tmp_branch }}"
@@ -71,3 +74,4 @@ jobs:
           pr_body: "Automatic sync from the release candidate to master during a feature freeze."
           pr_allow_empty: false
           pr_draft: false
+          pr_reviewer: "antalszava,dime10"

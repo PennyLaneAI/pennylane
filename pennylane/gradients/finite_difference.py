@@ -221,7 +221,8 @@ def finite_diff(
             [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
 
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
 

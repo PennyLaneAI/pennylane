@@ -114,7 +114,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     Step 21: cost = -7.23, shots_used = 82014
     Step 22: cost = -7.31, shots_used = 92838
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The shot adaptive optimizer is based on the iCANS1 optimizer by
         `Kübler et al. (2020) <https://quantum-journal.org/papers/q-2020-05-11-263/>`__, and works
@@ -350,7 +351,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def compute_grad(
         self, objective_fn, args, kwargs
-    ):  # pylint: disable=signature-differs,arguments-differ
+    ):  # pylint: disable=signature-differs,arguments-differ,arguments-renamed
         r"""Compute gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 

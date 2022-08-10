@@ -15,6 +15,8 @@
 import pytest
 import numpy as np
 
+pytestmark = pytest.mark.torch
+
 torch = pytest.importorskip("torch", minversion="1.3")
 from torch.autograd.functional import hessian, jacobian
 
@@ -118,7 +120,7 @@ class TestQNode:
         circuit(p1=x, p3=z)
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤  <Z>\n" "1: ──RY(0.06)───────────╰X─┤  <Z>"
+        expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  <Z>\n" "1: ──RY(0.06)───────────╰X─┤  <Z>"
 
         assert result == expected
 
@@ -1071,7 +1073,7 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliX(0))
 
         spy = mocker.spy(circuit.device, "batch_execute")
-        x = torch.tensor(0.5, requires_grad=True)
+        x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
         loss = circuit(x)
 

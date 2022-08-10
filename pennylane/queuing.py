@@ -185,9 +185,27 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
+    # pylint: disable=protected-access
+    @classmethod
+    def safe_update_info(cls, obj, **kwargs):
+        """Updates information of an object in the active queue if it is already in the queue.
+
+        Args:
+            obj: the object with metadata to be updated
+        """
+        if cls.recording():
+            cls.active_context()._safe_update_info(obj, **kwargs)
+
+    @abc.abstractmethod
+    def _safe_update_info(self, obj, **kwargs):
+        """Updates information of an object in the queue instance only if the object is in the queue.
+        If the object is not in the queue, nothing is done and no errors are raised.
+        """
+
+    @abc.abstractmethod
     def _update_info(self, obj, **kwargs):
-        """Updates information of an object in the queue instance."""
-        raise NotImplementedError
+        """Updates information of an object in the queue instance. Raises a ``QueuingError`` if the object
+        is not in the queue."""
 
     @classmethod
     def get_info(cls, obj):
@@ -204,28 +222,9 @@ class QueuingContext(abc.ABC):
 
         return None
 
+    @abc.abstractmethod
     def _get_info(self, obj):
         """Retrieves information of an object in the queue instance."""
-        raise NotImplementedError
-
-
-class Queue(QueuingContext):
-    """Lightweight class that maintains a basic queue of objects."""
-
-    def __init__(self):
-        self.queue = []
-
-    def _append(self, obj, **kwargs):
-        self.queue.append(obj)
-
-    def _remove(self, obj):
-        self.queue.remove(obj)
-
-    # Overwrite the inherited class methods, so that if queue.append is called,
-    # it is appended to the instantiated queue (rather than being added to the
-    # currently active queuing context, which may be a different queue).
-    append = _append
-    remove = _remove
 
 
 class AnnotatedQueue(QueuingContext):
@@ -240,6 +239,10 @@ class AnnotatedQueue(QueuingContext):
 
     def _remove(self, obj):
         del self._queue[obj]
+
+    def _safe_update_info(self, obj, **kwargs):
+        if obj in self._queue:
+            self._queue[obj].update(kwargs)
 
     def _update_info(self, obj, **kwargs):
         if obj not in self._queue:
@@ -259,6 +262,7 @@ class AnnotatedQueue(QueuingContext):
     append = _append
     remove = _remove
     update_info = _update_info
+    safe_update_info = _safe_update_info
     get_info = _get_info
 
     @property
@@ -314,7 +318,8 @@ def apply(op, context=QueuingContext):
     >>> print(qml.draw(circuit)(0.6))
     0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Instantiated measurements can also be applied to queuing contexts
         using ``apply``:
@@ -331,7 +336,7 @@ def apply(op, context=QueuingContext):
                 return qml.apply(meas)
 
         >>> print(qml.draw(circuit)(0.6))
-         0: ──RY(0.6)──╭C──╭┤ ⟨Z ⊗ Y⟩
+         0: ──RY(0.6)──╭●──╭┤ ⟨Z ⊗ Y⟩
          1: ───────────╰X──╰┤ ⟨Z ⊗ Y⟩
 
         By default, ``apply`` will queue operators to the currently

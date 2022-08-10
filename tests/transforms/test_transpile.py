@@ -134,6 +134,7 @@ class TestTranspile:
             for po, pt in zip(original_probs, transpiled_probs)
         )
 
+    @pytest.mark.autograd
     def test_transpile_differentiable(self):
         """test that circuit remains differentiable after transpilation"""
         dev = qml.device("default.qubit", wires=3)

@@ -462,12 +462,14 @@ class TestBatchTransform:
             tape2 = tape.copy()
             return [tape1, tape2], lambda res: a * qml.math.sum(res)
 
+        custom_wrapper_called = [False]  # use list so can edit by reference
+
         @my_transform.custom_qnode_wrapper
         def qnode_wrapper(self, qnode, targs, tkwargs):
             wrapper = self.default_qnode_wrapper(qnode, targs, tkwargs)
             assert targs == (a,)
             assert tkwargs == {}
-            print("custom wrapper called")
+            custom_wrapper_called[0] = True
             return wrapper
 
         @my_transform(a)
@@ -479,8 +481,7 @@ class TestBatchTransform:
 
         circuit(x)
 
-        captured = capsys.readouterr()
-        assert captured.out == "custom wrapper called\n"
+        assert custom_wrapper_called[0] is True
 
 
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop", "finite-diff"])
@@ -529,6 +530,7 @@ class TestBatchTransformGradients:
         """Analytic expectation value of the above circuit qfunc"""
         return np.cos(weights[1] * np.cos(x)) + np.cos(weights[0] * np.sin(x))
 
+    @pytest.mark.autograd
     def test_differentiable_autograd(self, diff_method):
         """Test that a batch transform is differentiable when using
         autograd"""
@@ -548,10 +550,12 @@ class TestBatchTransformGradients:
         expected = qml.grad(self.expval)(x, weights)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
+    @pytest.mark.tf
     def test_differentiable_tf(self, diff_method):
         """Test that a batch transform is differentiable when using
         TensorFlow"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
@@ -570,10 +574,12 @@ class TestBatchTransformGradients:
         assert len(grad) == len(expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
+    @pytest.mark.torch
     def test_differentiable_torch(self, diff_method):
         """Test that a batch transform is differentiable when using
         PyTorch"""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -591,10 +597,12 @@ class TestBatchTransformGradients:
         assert np.allclose(x.grad, expected[0])
         assert np.allclose(weights.grad, expected[1])
 
+    @pytest.mark.jax
     def test_differentiable_jax(self, diff_method):
         """Test that a batch transform is differentiable when using
         jax"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
 

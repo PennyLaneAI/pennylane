@@ -73,8 +73,8 @@ class TestHelperFunctions:
         "op, out",
         [
             (qml.PauliX(0), ["─X", "─", "─", "─"]),
-            (qml.CNOT(wires=(0, 2)), ["╭C", "│", "╰X", "─"]),
-            (qml.Toffoli(wires=(0, 1, 3)), ["╭C", "├C", "│", "╰X"]),
+            (qml.CNOT(wires=(0, 2)), ["╭●", "│", "╰X", "─"]),
+            (qml.Toffoli(wires=(0, 1, 3)), ["╭●", "├●", "│", "╰X"]),
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
             (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
@@ -88,8 +88,8 @@ class TestHelperFunctions:
         "op, out",
         [
             (qml.PauliY(1), ["─X", "─Y", "─", "─"]),
-            (qml.CNOT(wires=(1, 2)), ["─X", "╭C", "╰X", "─"]),
-            (qml.CRX(1.23, wires=(2, 3)), ["─X", "─", "╭C", "╰RX"]),
+            (qml.CNOT(wires=(1, 2)), ["─X", "╭●", "╰X", "─"]),
+            (qml.CRX(1.23, wires=(2, 3)), ["─X", "─", "╭●", "╰RX"]),
         ],
     )
     def test_add_second_op(self, op, out):
@@ -175,27 +175,32 @@ class TestDecimals:
 
         assert tape_text(tape, decimals=0) == expected
 
+    @pytest.mark.torch
     def test_torch_parameters(self):
         """Test torch parameters in tape display as normal numbers."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         with QuantumTape() as tape_torch:
             qml.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_torch, decimals=2) == expected
 
+    @pytest.mark.tf
     def test_tensorflow_parameters(self):
         """Test tensorflow parameters display as normal numbers."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         with QuantumTape() as tape_tf:
             qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_tf, decimals=2) == expected
 
+    @pytest.mark.jax
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
-        jnp = pytest.importorskip("jax.numpy")
+        import jax.numpy as jnp
 
         with QuantumTape() as tape_jax:
             qml.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)
@@ -237,10 +242,15 @@ class TestMaxLength:
 
 
 single_op_tests_data = [
-    (qml.CNOT(wires=(0, 1)), "0: ─╭C─┤  \n1: ─╰X─┤  "),
-    (qml.Toffoli(wires=(0, 1, 2)), "0: ─╭C─┤  \n1: ─├C─┤  \n2: ─╰X─┤  "),
+    (qml.MultiControlledX([0, 1, 2], 3, "010"), "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  "),
+    (
+        qml.ops.op_math.Controlled(qml.PauliY(3), (0, 1, 2), [0, 1, 0]),
+        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
+    ),
+    (qml.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
+    (qml.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
     (qml.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
-    (qml.CSWAP(wires=(0, 1, 2)), "0: ─╭C────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
+    (qml.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
     (
         qml.DoubleExcitationPlus(1.23, wires=(0, 1, 2, 3)),
         "0: ─╭G²₊(1.23)─┤  \n1: ─├G²₊(1.23)─┤  \n2: ─├G²₊(1.23)─┤  \n3: ─╰G²₊(1.23)─┤  ",

@@ -8,7 +8,8 @@ PennyLane requires the following libraries be installed:
 
 * `Python <http://python.org/>`_ >= 3.7
 
-as well as the following Python packages:
+The following Python packages are hard dependencies, and will automatically
+be installed alongside PennyLane:
 
 * `numpy <http://numpy.org/>`_ >= 1.13.3
 * `scipy <http://scipy.org/>`_ >= 1.0.0
@@ -16,13 +17,14 @@ as well as the following Python packages:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ == 2.6
+* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
 * `autoray <https://github.com/jcmgray/autoray>`__
 
 The following Python packages are optional:
 
 * `dask["parallel"] <https://dask.org/>`_, for parallel QNodeCollection execution
 * `tensornetwork <https://github.com/google/TensorNetwork>`_ >= 0.3, for the ``default.tensor`` plugin
+* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
 
 If you currently do not have Python 3 installed, we recommend
 `Anaconda for Python 3 <https://www.anaconda.com/download/>`_, a distributed version
@@ -33,61 +35,15 @@ of Python packaged for scientific computation.
 Interface dependencies
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For development of the TensorFlow and PyTorch interfaces, there are additional
-requirements:
+For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
+requirements which must be installed manually:
+
+* **JAX interface**: ``jax > 0.2.0`` and ``jaxlib``
 
 * **PyTorch interface**: ``pytorch >= 1.1``
 
-* **TensorFlow interface**: ``tensorflow >= 1.15``
+* **TensorFlow interface**: ``tensorflow >= 2.3``
 
-  Note that any version of TensorFlow supporting eager execution mode
-  is supported, however there are slight differences between the eager
-  API in TensorFlow 1.X versus 2.X.
-
-  Make sure that all modifications and tests involving the TensorFlow
-  interface work for both TensorFlow 1.X and 2.X!
-
-  This includes:
-
-  - If ``tf.__version__[0] == "1"``, running ``tf.enable_eager_execution()``
-    before execution.
-
-  - Only using the ``tf.GradientTape`` context for gradient computation.
-
-QChem dependencies
-~~~~~~~~~~~~~~~~~~
-
-Finally, for development of the QChem package, the following dependencies
-are required:
-
-* `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 0.10
-
-* `pySCF <https://sunqm.github.io/pyscf>`__ < 2.0
-  and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.4
-
-* `Psi4 <http://www.psicode.org/>`__ and
-  `OpenFermion-Psi4 <https://github.com/quantumlib/OpenFermion-Psi4>`__ >= 0.4
-  (optional but recommended to run the full test suite)
-
-  The easiest way to install Psi4 is via Ananconda:
-
-  .. code-block:: bash
-
-    conda install psi4 psi4-rt -c psi4
-
-* `Open Babel <https://openbabel.org>`__ (optional but recommended to run the full test suite)
-
-  Open Babel can be installed using ``apt`` if on Ubuntu/Debian:
-
-  .. code-block:: bash
-
-      sudo apt install openbabel
-
-  or using Anaconda:
-
-  .. code-block:: bash
-
-      conda install -c conda-forge openbabel
 
 Installation
 ------------
@@ -100,12 +56,6 @@ using development mode:
     git clone https://github.com/PennyLaneAI/pennylane
     cd pennylane
     pip install -e .
-
-If also developing for the QChem package, this will need to installed as well:
-
-.. code-block:: bash
-
-    pip install -e qchem
 
 The ``-e`` flag ensures that edits to the source code will be reflected when
 importing PennyLane in Python.
@@ -169,25 +119,3 @@ Build a PennyLane image with a plugin
   .. code-block:: bash
 
     make -f docker/Makefile build-plugin plugin-name=qiskit
-
-Build a PennyLane-Qchem image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- You can also build an image with the PennyLane Qchem package and its
-  dependencies. Use the following commands:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile build-qchem
-
-- To check all available interfaces, run the following:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile available-interfaces
-
-- To check all available plugins, run the following:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile available-plugins

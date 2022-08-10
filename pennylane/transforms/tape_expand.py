@@ -13,12 +13,13 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,invalid-unary-operand-type
 import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
     has_gen,
+    gen_is_multi_term_hamiltonian,
     has_grad_method,
     has_nopar,
     has_unitary_gen,
@@ -136,7 +137,7 @@ Returns:
 
 expand_multipar = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | has_nopar | has_gen,
+    stop_at=not_tape | is_measurement | has_nopar | (has_gen & ~gen_is_multi_term_hamiltonian),
     docstring=_expand_multipar_doc,
 )
 
@@ -159,7 +160,11 @@ Returns:
 
 expand_trainable_multipar = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | has_nopar | (~is_trainable) | has_gen,
+    stop_at=not_tape
+    | is_measurement
+    | has_nopar
+    | (~is_trainable)
+    | (has_gen & ~gen_is_multi_term_hamiltonian),
     docstring=_expand_trainable_multipar_doc,
 )
 
@@ -340,14 +345,14 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
             return qml.expval(qml.PauliZ(wires=0))
 
     >>> print(qml.draw(circuit)())
-    0: ─╭C─┤  <Z>
+    0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
     Now let's set up a context where the custom decomposition will be applied:
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
     ...     print(qml.draw(circuit)())
-    0: ────╭C────┤  <Z>
+    0: ────╭●────┤  <Z>
     1: ──H─╰Z──H─┤
 
     """

@@ -383,6 +383,7 @@ expected_wires_list = [
 class TestCompileInterfaces:
     """Test that the top-level compile function works across all interfaces."""
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_compile_autograd(self, diff_method):
         """Test QNode and gradient in autograd interface."""
@@ -407,9 +408,10 @@ class TestCompileInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_compile_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch", diff_method="parameter-shift")
         transformed_qnode = qml.QNode(
@@ -438,10 +440,11 @@ class TestCompileInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_compile_tf(self, diff_method):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf", diff_method=diff_method)
         transformed_qnode = qml.QNode(
@@ -475,10 +478,11 @@ class TestCompileInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_compile_jax(self, diff_method):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         from jax.config import config
@@ -508,12 +512,12 @@ class TestCompileInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_compile_jax_jit(self, diff_method):
         """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
-
         from jax.config import config
 
         remember = config.read("jax_enable_x64")

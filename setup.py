@@ -25,44 +25,43 @@ requirements = [
     "autograd",
     "toml",
     "appdirs",
-    "semantic_version==2.6",
-    "autoray",
+    "semantic-version>=2.7",
+    "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.22",
+    "pennylane-lightning>=0.24",
 ]
 
 info = {
-    'name': 'PennyLane',
-    'version': version,
-    'maintainer': 'Xanadu Inc.',
-    'maintainer_email': 'software@xanadu.ai',
-    'url': 'https://github.com/XanaduAI/pennylane',
-    'license': 'Apache License 2.0',
-    'packages': find_packages(where="."),
-    'entry_points': {
+    "name": "PennyLane",
+    "version": version,
+    "maintainer": "Xanadu Inc.",
+    "maintainer_email": "software@xanadu.ai",
+    "url": "https://github.com/XanaduAI/pennylane",
+    "license": "Apache License 2.0",
+    "packages": find_packages(where="."),
+    "entry_points": {
         # TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
         # This requires a rename in the setup file of all devices, and is best done during another refactor
-        'pennylane.plugins': [
-            'default.qubit = pennylane.devices:DefaultQubit',
-            'default.gaussian = pennylane.devices:DefaultGaussian',
-            'default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF',
-            'default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch',
-            'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
-            'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
-            'default.mixed = pennylane.devices.default_mixed:DefaultMixed'
-            ],
-        'console_scripts': [
-                'pl-device-test=pennylane.devices.tests:cli'
-            ]
-        },
-    'description': 'PennyLane is a Python quantum machine learning library by Xanadu Inc.',
-    'long_description': open('README.md').read(),
-    'long_description_content_type': "text/markdown",
-    'provides': ["pennylane"],
-    'install_requires': requirements,
-    'extras_require': {'kernels': ['cvxpy', 'cvxopt']},
-    'package_data': {'pennylane': ['devices/tests/pytest.ini']},
-    'include_package_data': True
+        "pennylane.plugins": [
+            "default.qubit = pennylane.devices:DefaultQubit",
+            "default.gaussian = pennylane.devices:DefaultGaussian",
+            "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
+            "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
+            "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
+            "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
+            "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
+            "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
+        ],
+        "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
+    },
+    "description": "PennyLane is a Python quantum machine learning library by Xanadu Inc.",
+    "long_description": open("README.md").read(),
+    "long_description_content_type": "text/markdown",
+    "provides": ["pennylane"],
+    "install_requires": requirements,
+    "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
+    "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
+    "include_package_data": True,
 }
 
 classifiers = [
@@ -76,13 +75,13 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3 :: Only',
-    "Topic :: Scientific/Engineering :: Physics"
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Physics",
 ]
 
 setup(classifiers=classifiers, **(info))

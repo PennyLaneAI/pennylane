@@ -57,7 +57,8 @@ class RandomLayers(Operation):
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Default seed**
 
@@ -90,11 +91,11 @@ class RandomLayers(Operation):
 
         >>> print(qml.draw(circuit1, expansion_strategy="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
-        1: ──RX(0.10)──RX(-2.10)─╰C─╰C───────────┤
+        1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
 
         >>> print(qml.draw(circuit2, expansion_strategy="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
-        1: ──RX(0.10)──RX(-2.10)─╰C─╰C───────────┤
+        1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
 
 
         **Changing the seed**
@@ -110,10 +111,10 @@ class RandomLayers(Operation):
         False
         >>>  print(qml.draw(circuit, expansion_strategy="device")(weights, seed=9))
         0: ─╭X──RX(0.10)────────────┤  <Z>
-        1: ─╰C──RY(-2.10)──RX(1.40)─┤
+        1: ─╰●──RY(-2.10)──RX(1.40)─┤
         >>> print(qml.draw(circuit, expansion_strategy="device")(weights, seed=12))
-        0: ─╭X──RZ(0.10)──╭C─╭X───────────┤  <Z>
-        1: ─╰C──RX(-2.10)─╰X─╰C──RZ(1.40)─┤
+        0: ─╭X──RZ(0.10)──╭●─╭X───────────┤  <Z>
+        1: ─╰●──RX(-2.10)─╰X─╰●──RZ(1.40)─┤
 
 
         **Automatic creation of random circuits**

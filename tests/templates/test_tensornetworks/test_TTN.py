@@ -285,10 +285,10 @@ class TestAttributes:
         ("wires", "n_block_wires", "expected_n_blocks"),
         [
             (range(4), 2, 3),
-            (range(5), 2, 4),
-            (range(6), 2, 5),
-            (range(10), 4, 4),
-            (range(11), 4, 4),
+            (range(5), 2, 3),
+            (range(8), 2, 7),
+            (range(10), 4, 3),
+            (range(25), 6, 7),
         ],
     )
     def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
@@ -301,7 +301,7 @@ class TestAttributes:
         ("wires", "n_block_wires"),
         [(range(4), 5), (range(9), 20)],
     )
-    def test_get_n_blocks(self, wires, n_block_wires):
+    def test_get_n_blocks_error(self, wires, n_block_wires):
         """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
 
         with pytest.raises(
@@ -371,14 +371,14 @@ class TestTemplateOutputs:
         @qml.qnode(dev)
         def circuit():
             qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            return qml.expval(qml.PauliX(wires=wires[-1]))
 
         template_result = circuit()
 
         @qml.qnode(dev)
         def circuit():
             expected_circuit(template_weights, wires)
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
+            return qml.expval(qml.PauliX(wires=wires[-1]))
 
         manual_result = circuit()
         assert np.isclose(template_result, manual_result)

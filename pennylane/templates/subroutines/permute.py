@@ -48,7 +48,8 @@ class Permute(Operation):
 
     See "Usage Details" for further examples.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         As a simple example, suppose we have a 4-qubit device with wires labeled
         by the integers ``[0, 1, 2, 3]``. We apply a permutation to shuffle the

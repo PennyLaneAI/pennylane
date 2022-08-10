@@ -84,7 +84,8 @@ class UCCSD(Operation):
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Notice that:
 

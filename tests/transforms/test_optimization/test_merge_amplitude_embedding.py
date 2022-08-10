@@ -75,6 +75,7 @@ class TestMergeAmplitudeEmbedding:
 class TestMergeAmplitudeEmbeddingInterfaces:
     """Test that merging amplitude embedding operations works in all interfaces."""
 
+    @pytest.mark.autograd
     def test_merge_amplitude_embedding_autograd(self):
         """Test QNode in autograd interface."""
 
@@ -91,9 +92,10 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
+    @pytest.mark.torch
     def test_merge_amplitude_embedding_torch(self):
         """Test QNode in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)
@@ -108,9 +110,10 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
+    @pytest.mark.tf
     def test_merge_amplitude_embedding_tf(self):
         """Test QNode in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def qfunc(amplitude):
             qml.AmplitudeEmbedding(amplitude, wires=0)
@@ -125,11 +128,10 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
+    @pytest.mark.jax
     def test_merge_amplitude_embedding_jax(self):
         """Test QNode in JAX interface."""
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
-
         from jax.config import config
 
         remember = config.read("jax_enable_x64")

@@ -79,7 +79,8 @@ class IQPEmbedding(Operation):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         A typical usage example of the template is the following:
 
