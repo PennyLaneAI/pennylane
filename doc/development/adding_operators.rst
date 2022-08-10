@@ -228,7 +228,7 @@ property.
   might have a hardcoded implementation, *or* it may refer to one of the
   numerical representations of the operator (such as :meth:`.Operator.matrix`).
   
-- If the device does not support for an operation, PennyLane will automatically
+- If the device does not support an operation, PennyLane will automatically
   decompose the gate using :meth:`.Operator.decomposition`.
 
 .. code-block:: python
