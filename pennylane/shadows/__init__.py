@@ -13,5 +13,4 @@
 # limitations under the License.
 """Differentiable classical shadows module"""
 
-from .utils import *
 from .classical_shadow import *
