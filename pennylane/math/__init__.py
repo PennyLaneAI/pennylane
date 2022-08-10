@@ -52,6 +52,7 @@ from .multi_dispatch import (
     where,
     add,
     iscomplex,
+    expm,
 )
 
 from .quantum import cov_matrix, marginal_prob
@@ -62,6 +63,7 @@ from .utils import (
     allequal,
     cast,
     cast_like,
+    in_backprop,
     is_abstract,
     convert_like,
     get_interface,
@@ -100,6 +102,7 @@ __all__ = [
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
+    "in_backprop",
     "is_abstract",
     "is_independent",
     "marginal_prob",

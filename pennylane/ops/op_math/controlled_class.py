@@ -27,6 +27,7 @@ from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
+
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
     """Symbolic operator denoting a controlled operator.
@@ -304,6 +305,22 @@ class Controlled(SymbolicOp):
             Controlled(op, self.control_wires, self.control_values, self.work_wires)
             for op in base_pow
         ]
+
+    def simplify(self) -> "Controlled":
+        if isinstance(self.base, Controlled):
+            base = self.base.base.simplify()
+            return Controlled(
+                base,
+                control_wires=self.control_wires + self.base.control_wires,
+                control_values=self.control_values + self.base.control_values,
+                work_wires=self.work_wires + self.base.work_wires,
+            )
+        return Controlled(
+            base=self.base.simplify(),
+            control_wires=self.control_wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
+        )
 
 
 class ControlledOp(Controlled, operation.Operation):

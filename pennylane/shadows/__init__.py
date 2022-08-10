@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Differentiable quantum information module"""
+"""Differentiable classical shadows module"""
 
+from .utils import *
 from .classical_shadow import *

@@ -941,7 +941,7 @@ class Device(abc.ABC):
                     "simulate the application of mid-circuit measurements on this device."
                 )
 
-            if o.inverse:
+            if getattr(o, "inverse", False):
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
                     "supports_inverse_operations", False
@@ -952,7 +952,7 @@ class Device(abc.ABC):
                     )
                 operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
+            if not self.stopping_condition(o):
                 raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )

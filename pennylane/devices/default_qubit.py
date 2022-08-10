@@ -159,6 +159,7 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
         "Sum",
         "SProd",
+        "Prod",
     }
 
     def __init__(
@@ -186,7 +187,16 @@ class DefaultQubit(QubitDevice):
             "Toffoli": self._apply_toffoli,
         }
 
-        self.recipes = None
+    @property
+    def stopping_condition(self):
+        def accepts_obj(obj):
+            if getattr(obj, "has_matrix", False):
+                # pow operations dont work with backprop or adjoint without decomposition
+                # use class name string so we don't need to use isisntance check
+                return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
+            return obj.name in self.observables.union(self.operations)
+
+        return qml.BooleanFn(accepts_obj)
 
     @functools.lru_cache()
     def map_wires(self, wires):
@@ -262,11 +272,11 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        if operation.base_name == "Identity":
+        if operation.__class__.__name__ == "Identity":
             return state
         wires = operation.wires
 
-        if operation.base_name in self._apply_ops:
+        if operation.__class__.__name__ in self._apply_ops:
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
@@ -891,17 +901,50 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, n_snapshots, circuit):
-        """TODO: docs"""
-        # return super().classical_shadow(wires, n_snapshots, circuit)
+    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
+        """
+        Returns the measured bits and recipes in the classical shadow protocol.
 
+        The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+
+        This measurement process returns the randomized Pauli measurements that are
+        performed for each qubit and snapshot as an integer:
+
+        - 0 for Pauli X,
+        - 1 for Pauli Y, and
+        - 2 for PauliZ.
+
+        It also returns the measurement results: 0 if the 1 eigenvalue
+        is sampled, and 1 if the -1 eigenvalue is sampled.
+
+        The device shots are used to specify the number of snapshots. If ``T`` is the number
+        of shots and ``n`` is the number of qubits, then both the measured bits and the
+        Pauli measurements have shape ``(T, n)``.
+
+        This implementation leverages vectorization and offers a significant speed-up over
+        the generic implementation.
+
+        Args:
+            wires (Sequence[int]): The wires to perform Pauli measurements on
+            n_snapshots (int): The number of snapshots
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            seed (Union[int, None]): If provided, it is used to seed the random
+                number generation for generating the Pauli measurements.
+
+        Returns:
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
+            the measured bits and the second represents the recipes used.
+        """
         n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
-        if self.recipes is None:
-            self.recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-
-        recipes = self.recipes
+        if seed is not None:
+            # seed the random measurement generation so that recipes
+            # are the same for different executions with the same seed
+            rng = np.random.RandomState(seed)
+            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+        else:
+            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
 
         obs_list = self._stack(
             [
@@ -923,6 +966,23 @@ class DefaultQubit(QubitDevice):
         outcomes = np.zeros((n_snapshots, n_qubits))
         stacked_state = self._stack([self._state for _ in range(n_snapshots)])
 
+        # There's a significant speedup if we use the following iterative
+        # process to perform the randomized Pauli measurements:
+        #   1. Randomly generate Pauli observables for all snapshots for
+        #      a single qubit (e.g. the first qubit).
+        #   2. Compute the expectation of each Pauli observable on the first
+        #      qubit by tracing out all other qubits.
+        #   3. Sample the first qubit based on each Pauli expectation.
+        #   4. For all snapshots, determine the collapsed state of the remaining
+        #      qubits based on the sample result.
+        #   4. Repeat iteratively until no qubits are remaining.
+        #
+        # Observe that after the first iteration, the second qubit will become the
+        # "first" qubit in the process. The advantage to this approach as opposed to
+        # simulataneously computing the Pauli expectations for each qubit is that
+        # the partial traces are computed over iteratively smaller subsystems, leading
+        # to a significant speed-up.
+
         for i in range(n_qubits):
 
             # trace out every qubit except the first
@@ -936,14 +996,14 @@ class DefaultQubit(QubitDevice):
             # sample the observables on the first qubit
             probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
             samples = np.random.uniform(0, 1, size=probs.shape) > probs
-            # samples = self._cast((np.random.uniform(0, 1, size=probs.shape) > probs), np.uint8)
             outcomes[:, i] = samples
 
-            # collapse the state
+            # collapse the state of the remaining qubits; the next qubit in line
+            # becomes the first qubit for the next iteration
             rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
+            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.int8)]
 
-            # normalize the state
+            # re-normalize the collapsed state
             norms = np.sqrt(
                 np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
             )
@@ -952,8 +1012,7 @@ class DefaultQubit(QubitDevice):
         outcomes = outcomes[:, device_wires]
         recipes = recipes[:, device_wires]
 
-        # return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.float32)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
     
     def classical_shadow_expval(self, wires, n_snapshots, circuit, H):
         """TODO: docs"""
@@ -1017,3 +1076,4 @@ class DefaultQubit(QubitDevice):
             return [_expval_observable(observable, k) for observable in H]
 
         return _expval_observable(H, k)
+

@@ -11,72 +11,177 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Classical Shadows baseclass with processing functions"""
+"""Classical Shadows base class with processing functions"""
 import warnings
 from collections.abc import Iterable
+from string import ascii_letters as ABC
+
 import pennylane.numpy as np
 import pennylane as qml
+from pennylane.shadows.utils import median_of_means, pauli_expval
 
 
 class ClassicalShadow:
-    """TODO: docstring"""
+    r"""Class for classical shadow post-processing
+
+    A ``ClassicalShadow`` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+    The idea is to capture :math:`T` (``shots``) local snapshots of the state by performing measurements in random Pauli bases at each qubit.
+    The measurement outcomes, denoted ``bitstrings``, as well as the choices of measurement bases, ``recipes``, are recorded in two ``(T, len(wires))`` integer tensors, respectively.
+
+    From the :math:`t`-th measurement, we can reconstruct the ``local_snapshots``
+
+    .. math:: \rho^{(t)} = \bigotimes_{i=1}^{n} 3 U^\dagger_i |b_i \rangle \langle b_i | U_i - \mathbb{I},
+
+    where :math:`U_i` is the rotation corresponding to the measurement of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
+    the corresponding computational basis state given the output bit :math:`b_i`.
+
+    From these local snapshots, one can compute expectation values of local Pauli strings, where locality refers to the number of non-Identity operators.
+    The accuracy of the procedure is determined by the number of measurements :math:`T` (``shots``).
+    To target an error :math:`\epsilon`, one needs of order :math:`T = \mathcal{O}\left( \log(M) 4^\ell/\epsilon^2 \right)` measurements to determine :math:`M` different,
+    :math:`\ell`-local observables.
+
+    One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to the exponential scaling
+
+    Args:
+        bitstrings (tensor): recorded measurement outcomes in random Pauli bases.
+        recipes (tensor): recorded measurement bases.
+
+    .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadows`
+
+    **Example**
+
+    We obtain the ``bitstrings`` and ``recipes`` via :func:`~.pennylane.classical_shadows`:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=range(2), shots=1000)
+        @qml.qnode(dev)
+        def qnode(x):
+            qml.Hadamard(0)
+            qml.CNOT((0,1))
+            qml.RX(x, wires=0)
+            return classical_shadow(wires=range(2))
+
+        bitstrings, recipes = qnode(0)
+        shadow = ClassicalShadow(bitstrings, recipes)
+
+    After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
+    For example, we can compute the expectation value of a Pauli string
+
+    >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+    (1.0079999999999998+0j)
+
+    or of a Hamiltonian
+
+    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+    >>> shadow.expval(H, k=1)
+    (2.2319999999999998+0j)
+
+    The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm. The case ``k=1`` corresponds to simply taking the mean
+    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means.
+    """
 
     def __init__(self, bitstrings, recipes):
         self.bitstrings = bitstrings
         self.recipes = recipes
 
-        assert len(bitstrings) == len(recipes)
+        assert bitstrings.shape == recipes.shape
         self.snapshots = len(bitstrings)
 
-        self.unitaries = [
-            qml.matrix(qml.Hadamard(0)),
-            qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
-            qml.matrix(qml.Identity(0)),
+        self.observables = [
+            qml.matrix(qml.PauliX(0)),
+            qml.matrix(qml.PauliY(0)),
+            qml.matrix(qml.PauliZ(0)),
         ]
 
     def local_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x n x 2 x 2 local snapshots
-        i.e. compute :math:`3 U_i^\dagger |b_i \rangle \langle b_i| U_i - 1` for each qubit and each snapshot
+
+        For each qubit and each snapshot, compute :math:`3 U_i^\dagger |b_i \rangle \langle b_i| U_i - 1`
+
+        Args:
+            wires (Iterable[int]): The wires over which to compute the snapshots. For ``wires=None``(default) all ``n`` qubits are used.
+            snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None``(default), all local snapshots are taken.
+            In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
         """
         bitstrings = self.bitstrings
         recipes = self.recipes
 
-        if isinstance(snapshots, int):
-            pick_snapshots = np.random.rand(self.snapshots, size=(snapshots))
-            bitstrings = bitstrings[pick_snapshots]
-            recipes = recipes[pick_snapshots]
+        if snapshots is not None:
+            if isinstance(snapshots, int):
+                # choose the given number of random snapshots
+                pick_snapshots = np.random.choice(
+                    np.arange(snapshots, dtype=np.int64), size=snapshots, replace=False
+                )
+            else:
+                # snapshots is an iterable that determines the indices
+                pick_snapshots = snapshots
+
+            pick_snapshots = qml.math.convert_like(pick_snapshots, bitstrings)
+            bitstrings = qml.math.gather(bitstrings, pick_snapshots)
+            recipes = qml.math.gather(recipes, pick_snapshots)
 
         if isinstance(wires, Iterable):
             bitstrings = bitstrings[:, wires]
             recipes = recipes[:, wires]
 
-        # unitaries as a class attirbute to allow for custom sets
-        unitaries = self.unitaries
-
-        # Computational basis states as density matrices
-        zero = np.zeros((2, 2), dtype="complex")
-        zero[0, 0] = 1.0
-        one = np.zeros((2, 2), dtype="complex")
-        one[1, 1] = 1.0
-
         T, n = bitstrings.shape
 
-        # This vectorized approach is relying on clever broadcasting and might need some rework to make it compatible with all interfaces
-
         U = np.empty((T, n, 2, 2), dtype="complex")
-        for i, _ in enumerate(unitaries):
-            U[np.where(recipes == i)] = unitaries[i]
+        for i, u in enumerate(self.observables):
+            U[np.where(recipes == i)] = u
 
-        state = np.empty((T, n, 2, 2), dtype="complex")
-        state[np.where(bitstrings == 0)] = zero
-        state[np.where(bitstrings == 1)] = one
+        state = (
+            qml.math.cast((1 - 2 * bitstrings[:, :, None, None]), np.complex64) * U + np.eye(2)
+        ) / 2
 
-        return 3 * qml.math.transpose(
-            qml.math.conj(U), axes=(0, 1, 3, 2)
-        ) @ state @ U - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
+        return 3 * state - np.eye(2)[None, None, :, :]
+
+    @staticmethod
+    def _obtain_global_snapshots(local_snapshot):
+        T, n = local_snapshot.shape[:2]
+
+        transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
+
+        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
+        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
+
+        return np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots).reshape(
+            T, 2**n, 2**n
+        )
 
     def global_snapshots(self, wires=None, snapshots=None):
-        """Compute the T x 2**n x 2**n global snapshots"""
+        """Compute the T x 2**n x 2**n global snapshots
+
+        .. warning::
+
+            Classical shadows are not intended to reconstruct global quantum states.
+            This method requires exponential scaling of measurements for accurate representations. Further, the output scales exponentially in the output dimension,
+            and is therefore not practical for larger systems. A warning is raised for systems of sizes ``n>16``.
+
+        **Example**
+
+        We can approximately reconstruct a Bell state:
+
+        .. code-block::python
+
+            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            @qml.qnode(dev)
+            def qnode():
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                return classical_shadow(wires=range(2))
+
+            bitstrings, recipes = qnode()
+            shadow = ClassicalShadow(bitstrings, recipes)
+            shadow_state = np.mean(shadow.global_snapshots(), axis=0)
+
+            bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
+
+            >>> np.allclose(bell_state, shadow_state, atol=1e-1)
+            True
+
+        """
 
         local_snapshot = self.local_snapshots(wires, snapshots)
 
@@ -86,95 +191,87 @@ class ClassicalShadow:
                 UserWarning,
             )
 
-        global_snapshots = []
-        for T_snapshot in local_snapshot:
-            tensor_product = T_snapshot[0]
-            for n_snapshot in T_snapshot[1:]:
-                tensor_product = np.kron(tensor_product, n_snapshot)
-            global_snapshots.append(tensor_product)
+        return self._obtain_global_snapshots(local_snapshot)
 
-        return np.array(global_snapshots)
+    def _convert_to_pauli_words(self, observable):
+        """Given an observable, obtain a list of coefficients and Pauli words, the
+        sum of which is equal to the observable"""
 
-    # def compute_snapshot_expval(self, observable, k):
-    #     """Compute expectation value of a Pauli string observable with respect to a single snapshot """
-    #     map_name_to_int = {"PauliX": 0, "PauliY": 1, "PauliZ": 2}
+        num_wires = self.bitstrings.shape[1]
+        obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
-    #     if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ)):
-    #         target_obs, target_locs = np.array(
-    #             [map_name_to_int[observable.name]]
-    #         ), np.array([observable.wires[0]])
-    #     else:
-    #         target_obs, target_locs = np.array(
-    #             [map_name_to_int[o.name] for o in observable.obs]
-    #         ), np.array([o.wires[0] for o in observable.obs])
+        def pauli_list_to_word(obs):
+            word = [-1] * num_wires
+            for ob in obs:
+                if ob.name not in obs_to_recipe_map:
+                    raise ValueError("Observable must be a linear combination of Pauli observables")
 
-    #     # We dont actually need to compute any traces to compute the expectation values.
-    #     # Instead, we make use of some Pauli matrix algebra facts to simplify the computation:
-    #     # the goal is to compute tr(rho O), where rho = \Otimes_j (3 U_j^\dagger |b_j x b_j| U_j - 1) and O = \Otimes_j P_j a Pauli string
-    #     # This simplifies to \prod_{j \in matches} tr(3 P_j U_j^\dagger |b_j x b_j| U_j) where matches are those instances
-    #     # where the observable matches those of the non-trivial Pauli measurements in the shadow recipe.
-    #     #
-    #     # Each single snapshot evaluation, in case the measurements all match, is equal to 3^(#non-id P_js) * (-1)^(sum_j b_i^j).
+                word[ob.wires[0]] = obs_to_recipe_map[ob.name]
 
-    #     # means data container
-    #     means = []
-    #     step = self.snapshots//k
+            return word
 
-    #     for i in range(0, self.snapshots, step):
+        if isinstance(observable, (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)):
+            word = pauli_list_to_word([observable])
+            return [(1, word)]
 
-    #         bitstrings, recipes = self.bitstrings[i : i + step], self.recipes[i : i + step]
-    #         #print(bitstrings.shape)
-    #         indices = np.where(np.all(recipes[:, target_locs] == target_obs, axis=1))
-    #         #print(bitstrings[indices][:, target_locs])
-    #         mean = np.prod(bitstrings[indices][:, target_locs], axis=1)# / len(indices[0])
-    #         means.append(mean)
-    #     print(len(means))
-    #     return np.median(means)
-
-    def expval_observable_global(self, observable, k):
-        """redundant method but keep for comparison, very slow because it unnecessarily computes the full density matrix for each snapshot"""
-        global_snapshots = self.global_snapshots(wires=observable.wires)
-
-        step = len(global_snapshots) // k
-        if isinstance(observable, qml.operation.Observable):
-            obs_m = qml.matrix(observable)
-
-        return np.median(
-            [
-                np.mean(np.tensordot(global_snapshots[i : i + step], obs_m, axes=([1, 2], [0, 1])))
-                for i in range(0, len(global_snapshots), step)
-            ]
-        )
-
-    def _expval_observable(self, observable, k):
-        """Compute expectation values of Pauli-string type observables"""
         if isinstance(observable, qml.operation.Tensor):
-            os = np.asarray([qml.matrix(o) for o in observable.obs])
-        else:
-            os = np.asarray([qml.matrix(observable)])  # wont work with other interfaces
+            word = pauli_list_to_word(observable.obs)
+            return [(1, word)]
 
-        # Picking only the wires with non-trivial Pauli strings avoids computing unnecessary tr(rho_i 1)=1
-        local_snapshots = self.local_snapshots(wires=observable.wires)
+        # TODO: cases for new operator arithmetic
 
-        means = []
-        step = self.snapshots // k
-
-        for i in range(0, self.snapshots, step):
-            # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
-            # res_i^t = tr(rho_i P_i)
-            res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)
-            # res^t = prod_i res_i^t
-            res = np.prod(res, axis=-1)
-            # res = sum_t res^t / T
-            means.append(np.mean(res))
-        return np.median(means)
+        if isinstance(observable, qml.Hamiltonian):
+            coeffs_and_words = []
+            for coeff, op in zip(observable.data, observable.ops):
+                coeffs_and_words.extend(
+                    [(coeff * c, w) for c, w in self._convert_to_pauli_words(op)]
+                )
+            return coeffs_and_words
 
     def expval(self, H, k):
-        """Compute expectation values of Observables"""
-        if isinstance(H, qml.Hamiltonian):
-            return np.sum([self._expval_observable(observable, k) for observable in H.ops])
+        r"""Compute expectation value of an observable :math:`H`.
 
-        if isinstance(H, Iterable):
-            return [self._expval_observable(observable, k) for observable in H]
+        The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
+        This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
-        return self._expval_observable(H, k)
+        One of the main perks of classical shadows is being able to compute many different expectation values by classically post-processing the same measurements. This is helpful in general as it may help
+        save quantum circuit executions.
+
+        Args:
+            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+
+        **Example**
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            @qml.qnode(dev)
+            def qnode(x):
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                qml.RX(x, wires=0)
+                return classical_shadow(wires=range(2))
+
+            bitstrings, recipes = qnode(0)
+            shadow = ClassicalShadow(bitstrings, recipes)
+
+        Compute Pauli string observables
+
+        >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
+        (1.0079999999999998+0j)
+
+        or of a Hamiltonian using `the same` measurement results
+
+        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        >>> shadow.expval(H, k=1)
+        (2.2319999999999998+0j)
+        """
+        coeffs_and_words = self._convert_to_pauli_words(H)
+
+        expval = 0
+        for coeff, word in coeffs_and_words:
+            expvals = pauli_expval(self.bitstrings, self.recipes, np.array(word))
+            expval += coeff * median_of_means(expvals, k)
+
+        return expval
