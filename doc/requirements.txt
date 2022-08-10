@@ -5,7 +5,7 @@ autograd
 autoray
 jax==0.3.14
 jaxlib==0.3.14
-mistune==0.8.4
+mistune==2.0.3
 m2r2
 numpy
 pygments-github-lexers
