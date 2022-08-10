@@ -17,6 +17,8 @@ This submodule defines the symbolic operation that indicates the control of an o
 
 import warnings
 
+from inspect import signature
+
 import numpy as np
 from scipy import sparse
 
@@ -40,6 +42,17 @@ class Controlled(SymbolicOp):
         control_values (Iterable[Bool]): The values to control on. Must be the same
             length as ``control_wires``. Defaults to ``True`` for all control wires.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    .. note::
+        This class, ``Controlled``, denotes a controlled version of any individual operation.
+        :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
+        more general ``Controlled`` class.
+
+        The :class:`~.ControlledOperation` currently constructed by the :func:`~.ctrl` transform wraps
+        an entire tape and does not provide as many representations and attributes as ``Controlled``,
+        but :class:`~.ControlledOperation` does decompose.
+
+    .. seealso:: :class:`~.ControlledOp` and ::class:`~.ControlledOperation`
 
     **Example**
 
@@ -98,6 +111,20 @@ class Controlled(SymbolicOp):
     [(0.5, 1.0)]
 
     """
+
+    # pylint: disable=no-self-argument
+    @operation.classproperty
+    def __signature__(cls):  # pragma: no cover
+        # this method is defined so inspect.signature returns __init__ signature
+        # instead of __new__ signature
+        # See PEP 362
+
+        # use __init__ signature instead of __new__ signature
+        sig = signature(cls.__init__)
+        # get rid of self from signature
+        new_parameters = tuple(sig.parameters.values())[1:]
+        new_sig = sig.replace(parameters=new_parameters)
+        return new_sig
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
@@ -332,6 +359,8 @@ class ControlledOp(Controlled, operation.Operation):
 
     When we no longer rely on certain functionality through ``Operation``, we can get rid of this
     class.
+
+    .. seealso:: :class:`~.Controlled`
     """
 
     def __new__(cls, *_, **__):
