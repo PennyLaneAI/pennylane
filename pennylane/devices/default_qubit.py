@@ -901,7 +901,7 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
+    def classical_shadow(self, obs, circuit):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -935,6 +935,10 @@ class DefaultQubit(QubitDevice):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
+        wires = obs.wires
+        n_snapshots = self.shots
+        seed = obs.seed
+
         n_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
@@ -1013,67 +1017,3 @@ class DefaultQubit(QubitDevice):
         recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
-    
-    def classical_shadow_expval(self, wires, n_snapshots, circuit, H):
-        """TODO: docs"""
-        k=10
-
-        bitstrings, recipes = self.classical_shadow(wires, n_snapshots, circuit)
-
-        # TODO: use ClassicalShadow methods here instead, avoid long unnecessary repitition of code i.e.
-        # shadow = ClassicalShadow(bitstrings, recipes)
-        # return shadow.expval(H)
-        unitaries = [
-                qml.matrix(qml.Hadamard(0)),
-                qml.matrix(qml.Hadamard(0)) @ qml.matrix(qml.PhaseShift(np.pi / 2, wires=0)),
-                qml.matrix(qml.Identity(0)),
-            ]
-
-        # Generate local snapshots (density matrices)
-        zero = np.zeros((2, 2), dtype="complex")
-        zero[0, 0] = 1.0
-        one = np.zeros((2, 2), dtype="complex")
-        one[1, 1] = 1.0
-
-        T, n = bitstrings.shape
-
-        U = np.empty((T, n, 2, 2), dtype="complex")
-        for i, _ in enumerate(unitaries):
-            U[np.where(recipes == i)] = unitaries[i]
-
-        state = np.empty((T, n, 2, 2), dtype="complex")
-        state[np.where(bitstrings == 0)] = zero
-        state[np.where(bitstrings == 1)] = one
-
-        local_snapshots = 3 * qml.math.transpose(qml.math.conj(U), axes=(0, 1, 3, 2)) @ state @ U - qml.math.reshape(np.eye(2), (1, 1, 2, 2))
-
-        # Compute Pauli string observable expectation value
-        def _expval_observable(observable, k):
-            """Compute expectation values of Pauli-string type observables"""
-            if isinstance(observable, qml.operation.Tensor):
-                os = np.asarray([qml.matrix(o) for o in observable.obs])
-            else:
-                os = np.asarray([qml.matrix(observable)])  # wont work with other interfaces
-
-            means = []
-            step = len(bitstrings) // k
-
-            for i in range(0, len(bitstrings), step):
-                # Compute expectation value of snapshot = sum_t prod_i tr(rho_i^t P_i)
-                # res_i^t = tr(rho_i P_i)
-                res = np.trace(local_snapshots[i : i + step] @ os, axis1=-1, axis2=-2)
-                # res^t = prod_i res_i^t
-                res = np.prod(res, axis=-1)
-                # res = sum_t res^t / T
-                means.append(np.mean(res))
-            return np.median(means)
-        
-        # expval(H):
-        if isinstance(H, qml.Hamiltonian):
-            return np.sum([_expval_observable(observable, k) for observable in H.ops])
-
-        if isinstance(H, Iterable):
-            return [_expval_observable(observable, k) for observable in H]
-
-        return _expval_observable(H, k)
-

@@ -528,9 +528,10 @@ class ShadowMeasurementProcess(MeasurementProcess):
     shadow protocol.
     """
 
-    def __init__(self, *args, seed=None, **kwargs):
+    def __init__(self, *args, seed=None, k=1, **kwargs):
         super().__init__(*args, **kwargs)
         self.seed = seed
+        self.k = k
 
     @property
     def numeric_type(self):
@@ -539,7 +540,10 @@ class ShadowMeasurementProcess(MeasurementProcess):
         Returns:
             type: This is always ``int``.
         """
-        return int
+        if self.return_type is Shadow:
+            return int
+        elif self.return_type is ShadowExpval:
+            return float
 
     def shape(self, device=None):
         """The expected output shape of the ShadowMeasurementProcess.
@@ -555,7 +559,11 @@ class ShadowMeasurementProcess(MeasurementProcess):
             MeasurementShapeError: when a device is not provided, since the output
                 shape is dependent on the device.
         """
-        # the return type requires a device
+        # the return value of expval is always a scalar
+        if self.return_type is ShadowExpval:
+            return ()
+
+        # otherwise, the return type requires a device
         if device is None:
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of a classical "
@@ -569,6 +577,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
     def __copy__(self):
         obj = super().__copy__()
         obj.seed = self.seed
+        obj.k = self.k
         return obj
 
 
@@ -1237,9 +1246,10 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-def classical_shadow_expval(H):
+def classical_shadow_expval(H, k=1, seed_recipes=True):
     """TODO: docs"""
-    return ShadowMeasurementProcess(ShadowExpval, obs=H)
+    seed = np.random.randint(2**30) if seed_recipes else None
+    return ShadowMeasurementProcess(ShadowExpval, obs=obs, seed=seed, k=k)
 
 
 T = TypeVar("T")
