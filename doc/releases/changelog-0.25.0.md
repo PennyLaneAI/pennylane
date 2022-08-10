@@ -364,6 +364,9 @@
   False
   '''
 
+* Added `expm` to the `qml.math` module for matrix exponentiation.
+  [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
+
 <h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
 
 * The `DefaultMixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
@@ -566,7 +569,7 @@
 
 <h3>Improvements 📈</h3>
 
-* `default.qubit` now natively executes any operation that defines a matrix except
+* The `DefaultQubit` device now natively executes any operation that defines a matrix except
   for trainable `Pow` operations. 
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
   
@@ -608,14 +611,14 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `DefaultQubit` now uses `stopping_condition` to specify support for anything with a matrix.
-  To override this behavior in inheriting devices and support only a specific subset of operations,
-  developers need to override `stopping_condition`.
-  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
-
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is now fully 
   supported by `qml.qchem`.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
+
+* `DefaultQubit` now uses `stopping_condition` to specify support for anything with a matrix.
+  To override this behavior in inheriting devices and to support only a specific subset of operations,
+  developers need to override `stopping_condition`.
+  [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
 
 * Custom devices inheriting from `DefaultQubit` or `QubitDevice` can break due to the introduction
   of parameter broadcasting.
@@ -639,13 +642,6 @@
 
   Separately from the above, custom devices that inherit from `QubitDevice` and implement a
   custom `_gather` method need to allow for the kwarg `axis` to be passed to this `_gather` method.
-
-* PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
-  which provides an updated API that is incompatible which versions of the package 
-  prior to 2.7. If you run into issues relating to this package, please reinstall 
-  PennyLane.
-  [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
-  [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
 
 * The argument `argnum` of the function `qml.batch_input` has been redefined: now it indicates the
   indices of the batched parameters, which need to be non-trainable, in the quantum tape. Consequently, its default
@@ -684,9 +680,13 @@
       return qml.expval(qml.PauliZ(1))
   ```
 
-* Adds `expm` to the `pennylane.math` module for matrix exponentiation.
-  [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
-  
+* PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
+  which provides an updated API that is incompatible which versions of the package 
+  prior to 2.7. If you run into issues relating to this package, please reinstall 
+  PennyLane.
+  [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
+  [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
+
 <h3>Deprecations 👋</h3>
 
 🦗
