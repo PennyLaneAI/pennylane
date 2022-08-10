@@ -85,11 +85,14 @@ Device capabilities
 You must further tell PennyLane about the operations that your device supports, 
 as well as potential further capabilities, by providing the following class attributes/properties:
 
-* :attr:`.Device.operations`: a set of the supported PennyLane operations as strings, e.g.,
+* :attr:`.Device.stopping_condition`: This :class:`~.BooleanFn` should return ``True`` for supported
+  operations and measurement processes, and ``False`` otherwise.  Note that this function is called on
+  **both** ``Operator`` and ``MeasurementProcess`` classes.
 
-  .. code-block:: python
-
-    operations = {"CNOT", "PauliX"}
+  If the device does *not* inherit from :class:`~.DefaultQubit`, then supported operations can be determined
+  by the :attr:`.Device.operations` property.  This property is a list of string names for supported operations.
+  :class:`~.DefaultQubit` supports any operation with a matrix, even if it's name isn't specifically enumerated
+  in :attr:`.Device.operations`.
 
   See :doc:`/introduction/operations` for a full list of operations
   supported by PennyLane.

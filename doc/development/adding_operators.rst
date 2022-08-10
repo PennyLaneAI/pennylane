@@ -213,16 +213,23 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-The new gate can be used with PennyLane devices. PennyLane checks with the device
-whether it supports operations using the operation name.
+The new gate can be used with PennyLane devices. Device support for an operation can be checked via
+``dev.stopping_condition(op)``.  If ``True``, then the device supports the matrix.
+
+``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
+If the Operator doesn't have a matrix, the device then checks if the name of the Operator is explicitly specified in 
+:attr:`~DefaultQubit.operations` or :attr:`~DefaultQubit.observables`.
+
+Other devices that do not inherit from ``DefaultQubit`` only check if the name is explicitly specified in the ``operations``
+property.
 
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device
   might have a hardcoded implementation, *or* it may refer to one of the
   numerical representations of the operator (such as :meth:`.Operator.matrix`).
   
-- If the device does not register support for an operation with the same
-  name, PennyLane will automatically decompose the gate using :meth:`.Operator.decomposition`.
+- If the device does not support for an operation, PennyLane will automatically
+  decompose the gate using :meth:`.Operator.decomposition`.
 
 .. code-block:: python
 
