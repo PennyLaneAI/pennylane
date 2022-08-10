@@ -39,7 +39,7 @@ class ClassicalShadow:
     To target an error :math:`\epsilon`, one needs of order :math:`T = \mathcal{O}\left( \log(M) 4^\ell/\epsilon^2 \right)` measurements to determine :math:`M` different,
     :math:`\ell`-local observables.
 
-    One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to the exponential scaling
+    One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to the exponential scaling.
 
     Args:
         bitstrings (tensor): recorded measurement outcomes in random Pauli bases.
