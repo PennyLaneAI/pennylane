@@ -316,9 +316,11 @@ class QubitDevice(Device):
         if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
-            sampled_obs = [
-                o for o in circuit.measurements if o.return_type in (qml.measurements.Sample, qml.measurements.Counts)
-            ]
+            sampled_obs = []
+            for o in circuit.measurements:
+                if o.return_type in (qml.measurements.Sample, qml.measurements.Counts):
+                    sampled_obs.append(o)
+
             raw_sampled_ops = any(o.obs is None for o in sampled_obs)
             if raw_sampled_ops and circuit.diagonalizing_gates:
                 raise qml.QuantumFunctionError(
@@ -411,9 +413,11 @@ class QubitDevice(Device):
         if self.shots is not None:
             self._samples = self.generate_samples()
 
-            sampled_obs = [
-                o for o in circuit.measurements if o.return_type in (qml.measurements.Sample, qml.measurements.Counts)
-            ]
+            sampled_obs = []
+            for o in circuit.measurements:
+                if o.return_type in (qml.measurements.Sample, qml.measurements.Counts):
+                    sampled_obs.append(o)
+
             raw_sampled_ops = any(o.obs is None for o in sampled_obs)
             if raw_sampled_ops and circuit.diagonalizing_gates:
                 raise qml.QuantumFunctionError(
