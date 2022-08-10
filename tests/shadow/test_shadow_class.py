@@ -19,6 +19,7 @@ import numpy as _np
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
+from pennylane.shadows import median_of_means, pauli_expval
 
 np.random.seed(777)
 
@@ -60,7 +61,7 @@ class TestIntegrationShadows:
         res1 = shadow.expval(o1, k=2)
 
         o2 = qml.PauliX(0) @ qml.PauliX(1)
-        res2 = shadow.expval(o1, k=2)
+        res2 = shadow.expval(o2, k=2)
 
         res_exact = 1.0
         assert qml.math.allclose(res1, res_exact, atol=1e-1)
@@ -354,3 +355,103 @@ class TestExpvalEstimation:
         msg = "Observable must be a linear combination of Pauli observables"
         with pytest.raises(ValueError, match=msg):
             shadow.expval(H, k=10)
+
+
+def convert_to_interface(arr, interface):
+    import jax.numpy as jnp
+    import tensorflow as tf
+    import torch
+
+    if interface == "autograd":
+        return arr
+
+    if interface == "jax":
+        return jnp.array(arr)
+
+    if interface == "tf":
+        return tf.constant(arr)
+
+    if interface == "torch":
+        return torch.tensor(arr)
+
+
+@pytest.mark.all_interfaces
+class TestMedianOfMeans:
+    """Test the median of means function"""
+
+    # TODO: add tests for the gradient once we implement the post-processing reconstruction
+
+    @pytest.mark.parametrize(
+        "arr, num_batches, expected",
+        [
+            (np.array([0.1]), 1, 0.1),
+            (np.array([0.1, 0.2]), 1, 0.15),
+            (np.array([0.1, 0.2]), 2, 0.15),
+            (np.array([0.2, 0.1, 0.4]), 1, 0.7 / 3),
+            (np.array([0.2, 0.1, 0.4]), 2, 0.275),
+            (np.array([0.2, 0.1, 0.4]), 3, 0.2),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_output(self, arr, num_batches, expected, interface):
+        """Test that the output is correct"""
+        arr = convert_to_interface(arr, interface)
+
+        actual = median_of_means(arr, num_batches)
+        assert actual.shape == ()
+        assert np.allclose(actual, expected)
+
+
+@pytest.mark.all_interfaces
+class TestPauliExpval:
+    """Test the Pauli expectation value function"""
+
+    @pytest.mark.parametrize("word", [[0, 0, 1], [0, 2, -1], [-1, -1, 1]])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_word_not_present(self, word, interface):
+        """Test that the output is 0 if the Pauli word is not present in the recipes"""
+        bits = convert_to_interface(np.array([[0, 0, 0]]), interface)
+        recipes = convert_to_interface(np.array([[0, 0, 0]]), interface)
+
+        actual = pauli_expval(bits, recipes, np.array(word))
+        assert actual.shape == (1,)
+        assert actual[0] == 0
+
+    single_bits = np.array([[1, 0, 1]])
+    single_recipes = np.array([[0, 1, 2]])
+
+    @pytest.mark.parametrize(
+        "word, expected", [([0, 1, 2], 27), ([0, 1, -1], -9), ([-1, -1, 2], -3), ([-1, -1, -1], 1)]
+    )
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_single_word_present(self, word, expected, interface):
+        """Test that the output is correct if the Pauli word appears once in the recipes"""
+        bits = convert_to_interface(self.single_bits, interface)
+        recipes = convert_to_interface(self.single_recipes, interface)
+
+        actual = pauli_expval(bits, recipes, np.array(word))
+        assert actual.shape == (1,)
+        assert actual[0] == expected
+
+    multi_bits = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
+    multi_recipes = np.array([[0, 1, 2], [0, 1, 2], [0, 1, 0]])
+
+    @pytest.mark.parametrize(
+        "word, expected",
+        [
+            ([0, 1, 2], [27, -27, 0]),
+            ([0, 1, -1], [-9, 9, 9]),
+            ([-1, -1, 2], [-3, -3, 0]),
+            ([-1, -1, -1], [1, 1, 1]),
+        ],
+    )
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_multi_word_present(self, word, expected, interface):
+        """Test that the output is correct if the Pauli word appears multiple
+        times in the recipes"""
+        bits = convert_to_interface(self.multi_bits, interface)
+        recipes = convert_to_interface(self.multi_recipes, interface)
+
+        actual = pauli_expval(bits, recipes, np.array(word))
+        assert actual.shape == (self.multi_bits.shape[0],)
+        assert np.all(actual == expected)

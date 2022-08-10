@@ -18,7 +18,6 @@ from string import ascii_letters as ABC
 
 import pennylane.numpy as np
 import pennylane as qml
-from pennylane.shadows.utils import median_of_means, pauli_expval
 
 
 class ClassicalShadow:
@@ -32,7 +31,7 @@ class ClassicalShadow:
 
     .. math:: \rho^{(t)} = \bigotimes_{i=1}^{n} 3 U^\dagger_i |b_i \rangle \langle b_i | U_i - \mathbb{I},
 
-    where :math:`U_i` is the rotation corresponding to the measurement of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
+    where :math:`U_i` is the rotation corresponding to the measurement (e.g. :math:`U_i=H` for measurement in :math:`X`) of qubit :math:`i` at snapshot :math:`t` and :math:`|b_i\rangle = (1 - b_i, b_i)`
     the corresponding computational basis state given the output bit :math:`b_i`.
 
     From these local snapshots, one can compute expectation values of local Pauli strings, where locality refers to the number of non-Identity operators.
@@ -40,7 +39,7 @@ class ClassicalShadow:
     To target an error :math:`\epsilon`, one needs of order :math:`T = \mathcal{O}\left( \log(M) 4^\ell/\epsilon^2 \right)` measurements to determine :math:`M` different,
     :math:`\ell`-local observables.
 
-    One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to the exponential scaling
+    One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to the exponential scaling.
 
     Args:
         bitstrings (tensor): recorded measurement outcomes in random Pauli bases.
@@ -275,3 +274,80 @@ class ClassicalShadow:
             expval += coeff * median_of_means(expvals, k)
 
         return expval
+
+
+# Util functions
+def median_of_means(arr, num_batches):
+    """
+    The median of means of the given array.
+
+    The array is split into the specified number of batches. The mean value
+    of each batch is taken, then the median of the mean values is returned.
+
+    Args:
+        arr (tensor-like[float]): The 1-D array for which the median of means
+            is determined
+        num_batches (int): The number of batches to split the array into
+
+    Returns:
+        float: The median of means
+    """
+    means = []
+    batch_size = int(np.ceil(arr.shape[0] / num_batches))
+
+    for i in range(num_batches):
+        means.append(qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0))
+
+    return np.median(means)
+
+
+def pauli_expval(bits, recipes, word):
+    """
+    The approximate expectation value of a Pauli word given the bits and recipes
+    from a classical shadow measurement.
+
+    Args:
+        bits (tensor-like[int]): An array with shape ``(T, n)``, where ``T`` is the
+            number of snapshots and ``n`` is the number of measured qubits. Each
+            entry must be either ``0`` or ``1`` depending on the sample for the
+            corresponding snapshot and qubit.
+        recipes (tensor-like[int]): An array with shape ``(T, n)``. Each entry
+            must be either ``0``, ``1``, or ``2`` depending on the selected Pauli
+            measurement for the corresponding snapshot and qubit. ``0`` corresponds
+            to PauliX, ``1`` to PauliY, and ``2`` to PauliZ.
+        word (tensor-like[int]): An array with shape ``(n,)``. Each entry must be
+            either ``0``, ``1``, ``2``, or ``-1`` depending on the Pauli observable
+            on each qubit. For example, when ``n=3``, the observable ``PauliY(0) @ PauliX(2)``
+            corresponds to the word ``np.array([1 -1 0])``.
+
+    Returns:
+        tensor-like[float]: An array with shape ``(T,)`` containing the value
+            of the Pauli observable for each snapshot. The expectation can be
+            found by averaging across the snapshots.
+    """
+    T = recipes.shape[0]
+
+    word = qml.math.convert_like(qml.math.cast_like(word, bits), bits)
+
+    # -1 in the word indicates an identity observable on that qubit
+    id_mask = word == -1
+
+    # nothing to do if every observable is the identity
+    if qml.math.allequal(id_mask, True):
+        return np.ones(T)
+
+    # determine snapshots and qubits that match the word
+    # indices = recipes == word
+    indices = qml.math.equal(recipes, word)
+    indices = np.logical_or(indices, np.tile(id_mask, (T, 1)))
+    indices = np.all(indices, axis=1)
+
+    non_id_bits = qml.math.where(np.logical_not(id_mask))
+    bits = qml.math.T(qml.math.gather(qml.math.T(bits), non_id_bits))
+
+    # this reshape is necessary since the interfaces have different gather behaviours
+    bits = qml.math.reshape(bits, (T, np.count_nonzero(np.logical_not(id_mask))))
+
+    bits = qml.math.sum(bits, axis=1) % 2
+
+    return np.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(np.logical_not(id_mask))
