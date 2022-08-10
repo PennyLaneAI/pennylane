@@ -113,6 +113,17 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
             qml.Hadamard(wires=wire_label)
             qml.RX(x[i], wires=wire_label)
 
+        if shots is not None and return_type in (
+            VnEntropy,
+            MutualInfo,
+            "StateCost",
+            "StateVector",
+            "DensityMatrix",
+        ):
+            pytest.skip(
+                f"{return_type} raises a warning for finite shots and behaves analytically; skipping the test."
+            )
+
         if return_type == "StateCost":
             return qml.state()
         elif return_type == "StateVector":
