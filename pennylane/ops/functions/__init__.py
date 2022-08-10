@@ -13,6 +13,17 @@
 # limitations under the License.
 """
 This module contains functions that act on operators and tapes.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~eigvals
+    ~generator
+    ~matrix
+    ~equal
+
 """
 from .eigvals import eigvals
 from .equal import equal
