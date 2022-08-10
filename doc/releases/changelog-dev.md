@@ -29,6 +29,10 @@
   [0.5 0.5 0. ]
   ```
 
+  * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
+  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -43,7 +47,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo
+Olivia Di Matteo,
 Josh Izaac,
 Korbinian Kottmann,
 Mudit Pandey,

@@ -83,6 +83,13 @@ class ControlledOperation(Operation):
         control_wires: A wire or set of wires.
         control_values: An int or list of ints indicating the values each control wire should
             take.
+
+    .. note::
+        Currently, the :func:`~.ctrl` tranform uses this class ``ControlledOperation``.  This class
+        wraps an entire :class:`pennylane.tape.QuantumTape`, and it is rarely supported for native device
+        execution.  See :class:`pennylane.ops.op_math.Controlled` for a more versatile controlled operation
+        that wraps a single target ``Operator``.
+
     """
 
     grad_method = None
@@ -196,6 +203,8 @@ def ctrl(fn, control, control_values=None):
     Returns:
         function: A new function that applies the controlled equivalent of ``fn``. The returned
         function takes the same input arguments as ``fn``.
+
+    .. seealso:: :class:`~.ControlledOperation`.
 
     **Example**
 
