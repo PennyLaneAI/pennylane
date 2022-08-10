@@ -357,8 +357,6 @@ class TestExpvalEstimation:
             shadow.expval(H, k=10)
 
 
-
-
 def convert_to_interface(arr, interface):
     import jax.numpy as jnp
     import tensorflow as tf
