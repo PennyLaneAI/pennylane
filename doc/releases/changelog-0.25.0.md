@@ -565,69 +565,6 @@ of operators.
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-<h4>Experimental feature: New return types</h4>
-
-* We provide a new experimental return types system for QNodes with multiple measurements.
-  
-  [(#2814)](https://github.com/PennyLaneAI/pennylane/pull/2814)
-  [(#2815)](https://github.com/PennyLaneAI/pennylane/pull/2815)
-  [(#2860)](https://github.com/PennyLaneAI/pennylane/pull/2860)
-  
-  The new system guarantees an intuitive return types, it is returning tuple of measurements by default. It is now
-  possible to trigger the new return type system with the top-level function `qml.enable_return`. We have support for
-  forward pass and backpropagation for every interface. It does not support custom gradient function for now.
-  
-  **Example**
-  
-  Forward pass:
-  ```python
-  qml.enable_return()
-  
-  dev = qml.device("default.qubit", wires=2)
-  
-  def circuit(x):
-          qml.Hadamard(wires=[0])
-          qml.CRX(x, wires=[0, 1])
-          return (qml.probs(wires=[0]), qml.vn_entropy(wires=[0]), qml.probs(wires=0), qml.expval(wires=1))
-  
-  qnode = qml.QNode(circuit, dev)
-  ```
-  ```pycon
-  res = qnode(0.5)
-  >>> res
-  (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.5, 0.5], requires_grad=True), tensor(0.93879128, requires_grad=True))
-  ```
-
-  Backpropagation:
-  ```
-  import jax
-  
-  qml.enable_return()
-  
-  dev = qml.device("default.qubit", wires=2)
-  qml.enable_return()
-  
-  @qml.qnode(dev, interface="jax")
-  def circuit(a):
-      qml.RX(a[0], wires=0)
-      qml.CNOT(wires=(0, 1))
-      qml.RY(a[1], wires=1)
-      qml.RZ(a[2], wires=1)
-      return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
-  
-  x = jax.numpy.array([0.1, 0.2, 0.3])
-  ```
-  ```pycon
-  res = jax.jacobian(circuit)(x)
-  >>> res
-  (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32), 
-  DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
-               [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
-               [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
-               [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32), 
-  DeviceArray([ 2.9899091e-01, -4.4703484e-08,  9.5104014e-10], dtype=float32))
-  ```
-
 <h4>More drawing styles 🎨</h4>
 
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for 
