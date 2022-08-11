@@ -40,6 +40,7 @@ Symbolic Classes
     ~ControlledOperation
     ~Controlled
     ~ControlledOp
+    ~Exp
     ~Pow
     ~Prod
     ~Sum

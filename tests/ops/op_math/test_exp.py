@@ -24,7 +24,7 @@ class TestInitialization:
     """Test the initalization process and standard properties."""
 
     def test_pauli_base(self):
-
+        """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
 
         op = Exp(base, id="something")
@@ -41,7 +41,7 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("a")
 
     def test_provided_coeff(self):
-
+        """Test initialization with a provided coefficient and a Tensor base."""
         base = qml.PauliZ("b") @ qml.PauliZ("c")
         coeff = np.array(1.234)
 
@@ -58,6 +58,7 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires(("b", "c"))
 
     def test_parametric_base(self):
+        """Test initialization with a coefficient and a parametric operation base."""
 
         base_coeff = 1.23
         base = qml.RX(base_coeff, wires=5)
@@ -76,7 +77,10 @@ class TestInitialization:
 
 
 class TestProperties:
+    """Test of the properties of the Exp class."""
+
     def test_data(self):
+        """Test accessing and setting the data property."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -94,6 +98,7 @@ class TestProperties:
         assert base.data == [-3.4]
 
     def test_queue_category_ops(self):
+        """Test the _queue_category property."""
         assert Exp(qml.PauliX(0), -1.234j)._queue_category == "_ops"
 
         assert Exp(qml.PauliX(0), 1 + 2j)._queue_category is None
@@ -101,6 +106,7 @@ class TestProperties:
         assert Exp(qml.RX(1.2, 0), -1.2j)._queue_category is None
 
     def test_is_hermitian(self):
+        """Test that the op is hermitian if the base is hermitian and the coeff is real."""
         assert Exp(qml.PauliX(0), -1.0).is_hermitian
 
         assert not Exp(qml.PauliX(0), 1.0 + 2j).is_hermitian
@@ -109,13 +115,58 @@ class TestProperties:
 
 
 class TestMatrix:
-    def test_matrix_rx(self):
+    """Test the matrix method."""
+
+    def test_tensor_base_isingxx(self):
+        """Test that isingxx can be created with a tensor base."""
+        phi = -0.46
+        base = qml.PauliX(0) @ qml.PauliX(1)
+        op = Exp(base, -0.5j * phi)
+        isingxx = qml.IsingXX(phi, wires=(0, 1))
+
+        assert qml.math.allclose(op.matrix(), isingxx.matrix())
+
+    def test_prod_base_isingyy(self):
+        """Test that IsingYY can be created with a `Prod` base."""
+        phi = -0.46
+        base = qml.prod(qml.PauliY(0), qml.PauliY(1))
+        op = Exp(base, -0.5j * phi)
+        isingxx = qml.IsingYY(phi, wires=(0, 1))
+
+        assert qml.math.allclose(op.matrix(), isingxx.matrix())
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_rx(self):
         """Test the matrix comparing to the rx gate."""
         phi = np.array(1.234)
         exp_rx = Exp(qml.PauliX(0), -0.5j * phi)
         rx = qml.RX(phi, 0)
 
         assert qml.math.allclose(exp_rx.matrix(), rx.matrix())
+
+    @pytest.mark.autograd
+    def test_base_no_diagonalizing_gates_autograd_coeff(self):
+        """Test the matrix when the base matrix doesn't define the diagonalizing gates."""
+        coeff = np.array(0.4)
+        base = qml.RX(2.0, wires=0)
+        op = Exp(base, coeff)
+
+        mat = op.matrix()
+        expected = qml.math.expm(coeff * base.matrix())
+        assert qml.math.allclose(mat, expected)
+
+    @pytest.mark.torch
+    def test_torch_matrix_ry(self):
+        """Test the matrix with a torch."""
+        import torch
+
+        phi = torch.tensor(0.4)
+
+        base = qml.PauliY(0)
+        op = Exp(base, -0.5j * phi)
+        compare = qml.RY(phi, 0)
+
+        assert qml.math.allclose(op.matrix(), compare.matrix())
 
     def test_sparse_matrix(self):
         """Test the sparse matrix function."""
@@ -135,10 +186,25 @@ class TestMatrix:
 
         assert qml.math.allclose(sparse_mat.toarray(), dense_mat)
 
+    def test_sparse_matrix_wire_order_error(self):
+        """Test that sparse_matrix raises an error if wire_order provided."""
+        from scipy.sparse import csr_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+
+        op = Exp(base, 3)
+
+        with pytest.raises(NotImplementedError):
+            op.sparse_matrix(wire_order=[0, 1])
+
 
 class TestMiscMethods:
-    def test_diagonalizing_gates(self):
+    """Test other representation methods."""
 
+    def test_diagonalizing_gates(self):
+        """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
         base = qml.PauliX(0)
         op = Exp(base, 1 + 2j)
         for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates()):
@@ -158,7 +224,7 @@ class TestMiscMethods:
         assert pow_op.coeff == coeff * z
 
     def test_label(self):
-
+        """Test that the label is always EXP"""
         op = Exp(qml.PauliZ(0), 2 + 3j)
         assert op.label(decimals=4) == "Exp"
 

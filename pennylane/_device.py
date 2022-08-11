@@ -741,7 +741,10 @@ class Device(abc.ABC):
 
         else:
             # otherwise, return the output of an identity transform
-            circuits, hamiltonian_fn = [circuit], lambda res: res[0]
+            def hamiltonian_fn(res):
+                return res[0]
+
+            circuits = [circuit]
 
         # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
         # ones will be as well) and whether broadcasting is supported
@@ -758,7 +761,8 @@ class Device(abc.ABC):
         # expansion. Note that the application order is reversed compared to the expansion order,
         # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
         # results from the broadcast expansion first.
-        total_processing = lambda results: hamiltonian_fn(expanded_fn(results))
+        def total_processing(results):
+            return hamiltonian_fn(expanded_fn(results))
 
         return expanded_tapes, total_processing
 

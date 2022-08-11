@@ -22,7 +22,6 @@ from pennylane.operation import (
     expand_matrix,
     Tensor,
     OperatorPropertyUndefined,
-    MatrixUndefinedError,
 )
 from pennylane.wires import Wires
 
@@ -118,16 +117,21 @@ class Exp(SymbolicOp):
     def matrix(self, wire_order=None):
         if math.get_interface(self.coeff) == "autograd":
             # math.expm is not differentiable with autograd
+            # So we try to do a differentiable construction if possible
+            #
+            # This won't catch situations when the base matrix is autograd,
+            # but at least this provides as much trainablility as possible
             try:
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates)()
                 eigvals_mat = math.diag(self.eigvals())
-            except OperatorPropertyUndefined as e:
-                raise MatrixUndefinedError from e
-            mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
+                mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
+            except OperatorPropertyUndefined:
+                base_mat = qml.matrix(self.base)
+                mat = math.expm(self.coeff * base_mat)
         else:
             base_mat = qml.matrix(self.base)
             base_mat = math.convert_like(base_mat, self.coeff)
-            base_mat = math.cast(base_mat, "complex128")  # else tensorflow gets confused
+            base_mat = math.cast_like(base_mat, self.coeff)  # else tensorflow gets confused
             mat = math.expm(self.coeff * base_mat)
 
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
