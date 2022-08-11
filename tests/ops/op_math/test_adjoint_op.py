@@ -308,6 +308,15 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_with_adjoint_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.adjoint method."""
+        op = Adjoint(qml.T(0))
+        simplified_op = op.simplify()
+        assert isinstance(simplified_op, Adjoint)
+        assert op.data == simplified_op.data
+        assert op.wires == simplified_op.wires
+        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+
 
 class TestMiscMethods:
     """Test miscellaneous small methods on the Adjoint class."""
