@@ -26,7 +26,11 @@ from pennylane.operation import (
     Operation,
     Operator,
 )
-from pennylane.ops.op_math.controlled_class import Controlled, ControlledOp
+from pennylane.ops.op_math.controlled_class import (
+    Controlled,
+    ControlledOp,
+    _decompose_no_control_values,
+)
 from pennylane.wires import Wires
 
 base_num_control_mats = [
@@ -659,10 +663,38 @@ class TestMatrix:
         assert isinstance(lil_mat, sparse.lil_matrix)
 
 
+class TestHelperMethod:
+    """Unittests for the _decompose_no_control_values helper function."""
+
+    def test_crx(self):
+        """Test case with single control wire and defined _controlled"""
+        base = qml.RX(1.0, wires=0)
+        op = Controlled(base, 1)
+        new_op = _decompose_no_control_values(op)
+        assert qml.equal(new_op, qml.CRX(1.0, wires=(1, 0)))
+
+    def test_toffoli(self):
+        """Test case when PauliX with two controls."""
+        op = Controlled(qml.PauliX(2), (0, 1))
+        new_op = _decompose_no_control_values(op)
+        assert qml.equal(new_op, qml.Toffoli((0, 1, 2)))
+
+    def test_multicontrolledx(self):
+        """Test case when PauliX has many controls."""
+        op = Controlled(qml.PauliX(4), (0, 1, 2, 3))
+        new_op = _decompose_no_control_values(op)
+        assert qml.equal(new_op, qml.MultiControlledX((0, 1, 2, 3, 4)))
+
+    def test_None_default(self):
+        """Test that helper returns None if no special decomposition."""
+        op = Controlled(TempOperator(0), (1, 2))
+        assert _decompose_no_control_values(op) is None
+
+
 class TestDecomposition:
     """Test controlled's decomposition method."""
 
-    def test_control_values(self):
+    def test_control_values_no_special_decomp(self):
         """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
 
         control_wires = (0, 1, 2)
@@ -684,7 +716,26 @@ class TestDecomposition:
         assert isinstance(decomp[2], Controlled)
         assert decomp[2].control_values == [True, True, True]
 
-    def test_control_on_one_decomp_error(self):
+    def test_control_values_special_decomp(self):
+        """Test decomposition when needs control_values flips and special decomp exists."""
+
+        base = qml.PauliX(2)
+        op = Controlled(base, (0, 1), (True, False))
+
+        decomp = op.decomposition()
+        expected = [qml.PauliX(1), qml.Toffoli((0, 1, 2)), qml.PauliX(1)]
+        for op1, op2 in zip(decomp, expected):
+            assert qml.equal(op1, op2)
+
+    def test_no_control_values_special_decomp(self):
+
+        base = qml.RX(1.0, 2)
+        op = Controlled(base, 1)
+        decomp = op.decomposition()
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.CRX(1.0, (1, 2)))
+
+    def test_control_on_one_no_special_decomp(self):
         """Test if all control_values are true, decomp raises decomp error."""
 
         base = TempOperator("a")

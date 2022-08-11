@@ -29,6 +29,19 @@ from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
+# pylint: disable=protected-access
+def _decompose_no_control_values(op):
+    """Provides a decomposition without considering control values.  Returns None if
+    no decomposition.
+    """
+    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
+        return op.base._controlled(op.control_wires[0])
+    if isinstance(op.base, qml.PauliX):
+        if len(op.control_wires) == 2:
+            return qml.Toffoli(op.control_wires + op.target_wires)
+        return qml.MultiControlledX(op.control_wires + op.target_wires, work_wires=op.work_wires)
+    return None
+
 
 # pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(SymbolicOp):
@@ -315,14 +328,16 @@ class Controlled(SymbolicOp):
             d = [
                 qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val
             ]
-            d += [Controlled(self.base, self.control_wires, work_wires=self.work_wires)]
+            d.append(_decompose_no_control_values(self) or self)
             d += [
                 qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val
             ]
-
             return d
-        # More to come.  This will be an extensive PR in and of itself.
-        return super().decomposition()
+
+        decomp = _decompose_no_control_values(self)
+        if decomp is None:
+            raise qml.operation.DecompositionUndefinedError
+        return [decomp]
 
     def generator(self):
         sub_gen = self.base.generator()

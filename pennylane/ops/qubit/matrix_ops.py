@@ -176,7 +176,7 @@ class QubitUnitary(Operation):
         return super().pow(z)
 
     def _controlled(self, wire):
-        ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+        return ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -362,7 +362,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQubitUnitary(
+        return ControlledQubitUnitary(
             *self.parameters, control_wires=ctrl_wires, wires=self.hyperparameters["u_wires"]
         )
 
@@ -503,7 +503,7 @@ class DiagonalQubitUnitary(Operation):
         return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
 
     def _controlled(self, control):
-        DiagonalQubitUnitary(
+        return DiagonalQubitUnitary(
             qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )

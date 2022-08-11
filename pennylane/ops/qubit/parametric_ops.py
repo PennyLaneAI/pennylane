@@ -115,7 +115,7 @@ class RX(Operation):
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        CRX(*self.parameters, wires=wire + self.wires)
+        return CRX(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
@@ -204,7 +204,7 @@ class RY(Operation):
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        CRY(*self.parameters, wires=wire + self.wires)
+        return CRY(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
@@ -333,7 +333,7 @@ class RZ(Operation):
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        CRZ(*self.parameters, wires=wire + self.wires)
+        return CRZ(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
@@ -491,7 +491,7 @@ class PhaseShift(Operation):
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+        return ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
@@ -817,7 +817,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
     def _controlled(self, wire):
-        CRot(*self.parameters, wires=wire + self.wires)
+        return CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         return self.data
