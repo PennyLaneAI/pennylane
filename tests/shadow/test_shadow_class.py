@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Unit tests for the classical shadows class"""
+# pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 
 import pytest
 
-import numpy as _np
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
@@ -30,6 +31,7 @@ dev = qml.device("default.qubit", wires=wires, shots=shots)
 
 @qml.qnode(dev)
 def qnode(n_wires):
+    """Hadamard gate on all wires"""
     for i in range(n_wires):
         qml.Hadamard(i)
     return qml.classical_shadow(wires=range(n_wires))
@@ -117,6 +119,7 @@ class TestIntegrationShadows:
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
+    """Hadamard circuit to put all qubits in equal superposition (locally)"""
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
@@ -129,6 +132,7 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
 
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
+    """maximally entangled state preparation circuit"""
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
@@ -142,6 +146,7 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
 
 def qft_circuit(wires, shots=10000, interface="autograd"):
+    """Quantum Fourier Transform circuit"""
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     one_state = np.zeros(wires)
@@ -358,6 +363,7 @@ class TestExpvalEstimation:
 
 
 def convert_to_interface(arr, interface):
+    """Dispatch arrays for different interfaces"""
     import jax.numpy as jnp
     import tensorflow as tf
     import torch
