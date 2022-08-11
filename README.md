@@ -1,10 +1,4 @@
 <p align="center">
-  <a href="https://pennylane.ai">
-    <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
-  </a>
-</p>
-
-<p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
     <img src="https://img.shields.io/github/workflow/status/PennyLaneAI/pennylane/Tests/master?logo=github&style=flat-square" />
@@ -147,10 +141,8 @@ PennyLane is the work of [many contributors](https://github.com/PennyLaneAI/penn
 
 If you are doing research using PennyLane, please cite [our paper](https://arxiv.org/abs/1811.04968):
 
-> Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-> Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-> Zeyue Niu, Antal Száva, and Nathan Killoran.
-> *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. arXiv:1811.04968
+> Ville Bergholm et al. *PennyLane: Automatic differentiation of hybrid quantum-classical
+> computations.* 2018. arXiv:1811.04968
 
 ## License
 
