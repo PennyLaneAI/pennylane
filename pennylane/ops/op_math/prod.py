@@ -198,7 +198,7 @@ class Prod(Operator):
     @property
     def batch_size(self):
         """Batch size of input parameters."""
-        return None
+        return next((op.batch_size for op in self.factors if op.batch_size is not None), None)
 
     @property
     def num_params(self):
