@@ -38,8 +38,6 @@ U_x_02 = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]], dtype=np.complex128)
 U_z_12 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]], dtype=np.complex128)
 
 
-def include_inverses_with_test_data(test_data):
-    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
 
 def test_analytic_deprecation():
