@@ -612,7 +612,12 @@
 <h3>Breaking changes 💔</h3>
 
 * The deprecated `qml.hf` module is removed. The `qml.hf` functionality is now fully 
-  supported by `qml.qchem`.
+  supported by `qml.qchem`. More details are provided in the
+  [`qml.qchem`](https://pennylane.readthedocs.io/en/stable/code/qml_qchem.html) documentation page,
+  the [Quantum Chemistry](https://pennylane.readthedocs.io/en/stable/introduction/chemistry.html)
+  quickstart page and the
+  [Differentiable Hartree-Fock](https://pennylane.ai/qml/demos/tutorial_differentiable_HF.html)
+  demo. 
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
 * `DefaultQubit` now uses `stopping_condition` to specify support for anything with a matrix.
