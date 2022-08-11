@@ -81,8 +81,6 @@ class THermitian(Hermitian):
         """
         return Hermitian.compute_matrix(A)
 
-    # This overrides `Hermitian.eigendecomposition`, because keying into the dictionary `THermitian_eigs` directly
-    # does not work as expected and users need to key into `Hermitian._eigs` instead without this override.
     @property
     def eigendecomposition(self):
         """Return the eigendecomposition of the matrix specified by the Hermitian observable.
