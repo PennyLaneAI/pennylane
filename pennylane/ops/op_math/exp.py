@@ -26,6 +26,7 @@ from pennylane.operation import (
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+from .sprod import SProd
 
 
 class Exp(SymbolicOp):
@@ -173,3 +174,8 @@ class Exp(SymbolicOp):
 
     def pow(self, z):
         return Exp(self.base, self.coeff * z)
+
+    def simplify(self):
+        if isinstance(self.base, SProd):
+            return Exp(self.base.base.simplify(), self.base.scalar * self.coeff)
+        return Exp(self.base.simplify())
