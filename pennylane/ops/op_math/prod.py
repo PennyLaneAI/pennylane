@@ -319,6 +319,9 @@ class Prod(Operator):
         context.append(self, owns=self.factors)
         return self
 
+    def adjoint(self):
+        return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))
+
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(factor.arithmetic_depth for factor in self.factors)
