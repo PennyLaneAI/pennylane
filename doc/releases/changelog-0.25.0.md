@@ -28,10 +28,13 @@
   - [First quantization](https://en.wikipedia.org/wiki/First_quantization) using a plane-wave basis via the `FirstQuantization` class:
 
     ```python
-    >>> n = 100000        # number of plane waves
-    >>> eta = 156         # number of electrons
-    >>> omega = 1145.166  # unit cell volume in atomic units
-    >>> algo = FirstQuantization(n, eta, omega)
+    n = 100000        # number of plane waves
+    eta = 156         # number of electrons
+    omega = 1145.166  # unit cell volume in atomic units
+    algo = FirstQuantization(n, eta, omega)
+    ```
+    
+    ```pycon
     >>> algo.gates
     1.10e+13
     >>> algo.qubits
@@ -90,7 +93,7 @@
   noise_strength = 0.1
 
   # Load devices
-  dev_ideal = qml.device("default.mixed", wires=n_wires)
+  dev_ideal = qml.device("default.mixed", wires=1)
   dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
 
   scale_factors = [1, 2, 3]
@@ -155,10 +158,10 @@
   >>> x = np.array([np.pi/3, np.pi/2], requires_grad=True)
   >>> y = np.array([np.pi/6, np.pi/5], requires_grad=True)
   >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
-  (tensor([[-0.9330127,  0.       ],
-           [ 0.       , -0.9330127]], requires_grad=True),
-  tensor([[0.25, 0.  ],
-          [0.  , 0.25]], requires_grad=True))
+  (tensor([[-0.7795085,  0.       ],
+           [ 0.       , -0.7795085]], requires_grad=True),
+  tensor([[-0.125, 0.  ],
+          [0.  , -0.125]], requires_grad=True))
   ```
 
   The following simpler example also makes use of broadcasting:
@@ -268,9 +271,9 @@
   ```pycon
   >>> angles = np.array([1.23, 4.56], requires_grad=True)
   >>> circuit(angles)
-  0.33423772712450256
+  tensor(0.33423773, requires_grad=True)
   >>> qml.grad(circuit)(angles)
-  [-0.9424888  0.]
+  array([-0.9424888,  0.       ])
   ```
   
 * All PennyLane operators can now be added, subtracted, multiplied, scaled, and raised to 
@@ -411,7 +414,7 @@
   ... def circuit():
   ...     return qml.expval(qml.PauliZ(0))
   >>> circuit()
-  0.8
+  array(0.8)
   ```
   
 <h4>Relative entropy is now available in qml.qinfo 💥</h4>
