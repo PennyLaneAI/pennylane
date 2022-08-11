@@ -1958,6 +1958,9 @@ class TestOutputShape:
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
+        if shots is not None and measurement.return_type is qml.measurements.State:
+            pytest.skip("State and density matrix don't support finite shots and raise a warning.")
+
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors
         if (
