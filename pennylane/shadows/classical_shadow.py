@@ -80,11 +80,18 @@ class ClassicalShadow:
     value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means.
     """
 
-    def __init__(self, bitstrings, recipes):
+    def __init__(self, bitstrings, recipes, wire_map=None):
         self.bitstrings = bitstrings
         self.recipes = recipes
 
+        # the wires corresponding to the columns of bitstrings
+        if wire_map is None:
+            self.wire_map = list(range(bitstrings.shape[1]))
+        else:
+            self.wire_map = wire_map
+
         assert bitstrings.shape == recipes.shape
+        assert bitstrings.shape[1] == len(self.wire_map)
         self.snapshots = len(bitstrings)
 
         self.observables = [
@@ -196,16 +203,16 @@ class ClassicalShadow:
         """Given an observable, obtain a list of coefficients and Pauli words, the
         sum of which is equal to the observable"""
 
-        wires = observable.wires
+        num_wires = self.bitstrings.shape[1]
         obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
         def pauli_list_to_word(obs):
-            word = [-1] * len(wires)
+            word = [-1] * num_wires
             for ob in obs:
                 if ob.name not in obs_to_recipe_map:
                     raise ValueError("Observable must be a linear combination of Pauli observables")
 
-                word[wires.index(ob.wires[0])] = obs_to_recipe_map[ob.name]
+                word[self.wire_map.index(ob.wires[0])] = obs_to_recipe_map[ob.name]
 
             return word
 

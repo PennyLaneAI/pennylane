@@ -1234,7 +1234,7 @@ class QubitDevice(Device):
     def classical_shadow_expval(self, obs, circuit):
         """TODO: docs"""
         bits, recipes = self.classical_shadow(obs, circuit)
-        shadow = ClassicalShadow(bits, recipes)
+        shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         return shadow.expval(obs.H, obs.k)
 
     def analytic_probability(self, wires=None):
