@@ -625,7 +625,7 @@
 
 * The deprecated `qml.hf` module is removed. Users with code that calls `qml.hf` 
   can simply replace `qml.hf` with `qml.qchem` in most cases, or refer to the 
-  [documentation](https://pennylane.readthedocs.io/en/stable/code/qml_qchem.html) 
+  [qchem documentation](https://pennylane.readthedocs.io/en/stable/code/qml_qchem.html) 
   and [demos](https://pennylane.ai/qml/demos_quantum-chemistry.html) for more 
   information.
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
