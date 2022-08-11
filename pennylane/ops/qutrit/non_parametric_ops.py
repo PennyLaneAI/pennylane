@@ -180,9 +180,9 @@ class TClock(Operation):
         **Example**
 
         >>> print(qml.TClock.compute_eigvals())
-        [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
+        [ 1. +0.j        -0.5+0.8660254j -0.5-0.8660254j]
         """
-        return np.array([OMEGA, OMEGA**2, 1])
+        return np.array([1, OMEGA, OMEGA**2])
 
     # TODO: Add compute_decomposition() once parametric ops are added.
 
