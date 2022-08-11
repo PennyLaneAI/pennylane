@@ -502,6 +502,15 @@ class TestQueueing:
 class TestMatrix:
     """Test the matrix method for a variety of interfaces."""
 
+    def test_batching_error(self):
+        """Test that a MatrixUndefinedError is raised if the base is batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        base = qml.RX(x, wires=0)
+        op = Adjoint(base)
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
     def check_matrix(self, x, interface):
         """Compares matrices in a interface independent manner."""
         base = qml.RX(x, wires=0)
