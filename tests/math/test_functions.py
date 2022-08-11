@@ -1076,8 +1076,7 @@ class TestRequiresGrad:
         assert not fn.requires_grad(t)
 
     def test_tf(self):
-        """TensorFlow tensors will True *if* they are being watched by a
-        gradient tape or if they have a trainable attribute set to True"""
+        """TensorFlow tensors will True *if* they are being watched by a gradient tape"""
         t1 = tf.Variable([1.0, 2.0])
         t2 = tf.constant([1.0, 2.0])
         assert not fn.requires_grad(t1)
@@ -1094,9 +1093,6 @@ class TestRequiresGrad:
             tape.watch([t1, t2])
             assert fn.requires_grad(t1)
             assert fn.requires_grad(t2)
-
-        t3 = tf.Variable([1.0, 2.0], trainable=True)
-        assert fn.requires_grad(t3)
 
     def test_unknown_interface(self):
         """Test that an error is raised if the interface is unknown"""
