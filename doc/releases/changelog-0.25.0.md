@@ -555,7 +555,7 @@
 
   ```python
   max_iterations = 50
-  opt = qml.SPSA(maxiter=max_iterations) 
+  opt = qml.SPSAOptimizer(maxiter=max_iterations) 
 
   for _ in range(max_iterations):
       params, cost = opt.step_and_cost(cost, params)
