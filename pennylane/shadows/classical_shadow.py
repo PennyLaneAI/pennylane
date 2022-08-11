@@ -150,7 +150,7 @@ class ClassicalShadow:
         )
 
     def global_snapshots(self, wires=None, snapshots=None):
-        """Compute the T x 2**n x 2**n global snapshots
+        r"""Compute the T x 2**n x 2**n global snapshots
 
         .. warning::
 
@@ -278,7 +278,7 @@ class ClassicalShadow:
 
 # Util functions
 def median_of_means(arr, num_batches):
-    """
+    r"""
     The median of means of the given array.
 
     The array is split into the specified number of batches. The mean value
@@ -302,7 +302,7 @@ def median_of_means(arr, num_batches):
 
 
 def pauli_expval(bits, recipes, word):
-    """
+    r"""
     The approximate expectation value of a Pauli word given the bits and recipes
     from a classical shadow measurement.
 
