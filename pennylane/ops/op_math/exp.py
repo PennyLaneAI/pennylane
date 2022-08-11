@@ -26,7 +26,6 @@ from pennylane.operation import (
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
-from .sprod import SProd
 
 
 class Exp(SymbolicOp):
@@ -48,8 +47,8 @@ class Exp(SymbolicOp):
     This can even be used for more complicated generators:
 
     >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
-    >>> isingxy = Exp(t, 0.25j)
-    >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(1, wires=(0,1)).matrix())
+    >>> isingxy = Exp(t, 0.25j * x)
+    >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
     True
 
     If the coefficient is purely imaginary and the base operator is Hermitian, then
@@ -116,7 +115,8 @@ class Exp(SymbolicOp):
         return None
 
     def matrix(self, wire_order=None):
-        if math.get_interface(self.coeff) == "autograd":
+        coeff_interface = math.get_interface(self.coeff)
+        if coeff_interface == "autograd":
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
             #
@@ -131,8 +131,9 @@ class Exp(SymbolicOp):
                 mat = math.expm(self.coeff * base_mat)
         else:
             base_mat = qml.matrix(self.base)
-            base_mat = math.convert_like(base_mat, self.coeff)
-            base_mat = math.cast_like(base_mat, self.coeff)  # else tensorflow gets confused
+            if coeff_interface == "torch":
+                # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+                base_mat = math.convert_like(base_mat, self.coeff)
             mat = math.expm(self.coeff * base_mat)
 
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
@@ -176,6 +177,4 @@ class Exp(SymbolicOp):
         return Exp(self.base, self.coeff * z)
 
     def simplify(self):
-        if isinstance(self.base, SProd):
-            return Exp(self.base.base.simplify(), self.base.scalar * self.coeff)
-        return Exp(self.base.simplify())
+        return Exp(self.base.simplify(), self.coeff)

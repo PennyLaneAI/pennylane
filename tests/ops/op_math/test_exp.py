@@ -40,6 +40,8 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires("a")
 
+        assert op.control_wires == qml.wires.Wires([])
+
     def test_provided_coeff(self):
         """Test initialization with a provided coefficient and a Tensor base."""
         base = qml.PauliZ("b") @ qml.PauliZ("c")
@@ -156,16 +158,28 @@ class TestMatrix:
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.torch
-    def test_torch_matrix_ry(self):
-        """Test the matrix with a torch."""
+    def test_torch_matrix_rx(self):
+        """Test the matrix with torch."""
         import torch
 
-        phi = torch.tensor(0.4)
+        phi = torch.tensor(0.4, dtype=torch.complex128)
 
-        base = qml.PauliY(0)
+        base = qml.PauliX(0)
         op = Exp(base, -0.5j * phi)
-        compare = qml.RY(phi, 0)
+        compare = qml.RX(phi, 0)
 
+        assert qml.math.allclose(op.matrix(), compare.matrix())
+
+    @pytest.mark.tf
+    def test_tf_matrix_rx(self):
+        """Test the matrix with tensorflow."""
+
+        import tensorflow as tf
+
+        phi = tf.Variable(0.4, dtype=tf.complex128)
+        base = qml.PauliX(0)
+        op = Exp(base, -0.5j * phi)
+        compare = qml.RX(phi, wires=0)
         assert qml.math.allclose(op.matrix(), compare.matrix())
 
     def test_sparse_matrix(self):
@@ -203,6 +217,18 @@ class TestMatrix:
 class TestMiscMethods:
     """Test other representation methods."""
 
+    def test_repr_paulix(self):
+        """Test the __repr__ method when the base is a simple observable."""
+        op = Exp(qml.PauliX(0), 3)
+        assert repr(op) == "Exp(3 PauliX)"
+
+    def test_repr_tensor(self):
+        """Test the __repr__ method when the base is a tensor."""
+        t = qml.PauliX(0) @ qml.PauliX(1)
+        isingxx = Exp(t, 0.25j)
+
+        assert repr(isingxx) == "Exp(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
         base = qml.PauliX(0)
@@ -227,6 +253,15 @@ class TestMiscMethods:
         """Test that the label is always EXP"""
         op = Exp(qml.PauliZ(0), 2 + 3j)
         assert op.label(decimals=4) == "Exp"
+
+    def test_simplify(self):
+        """Test that the simplify method simplifies the base."""
+        orig_base = qml.adjoint(qml.adjoint(qml.PauliX(0)))
+
+        op = Exp(orig_base, coeff=0.2)
+        new_op = op.simplify()
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 0.2
 
 
 class TestIntegration:
@@ -394,3 +429,15 @@ class TestIntegration:
         x_grad = tape.gradient(res, x)
         expected_grad = 0.5 * (tf.exp(x) - tf.exp(-x))
         assert qml.math.allclose(x_grad, expected_grad)
+
+    def test_draw_integration(self):
+        """Test that Exp integrates with drawing."""
+
+        phi = qml.numpy.array(1.2)
+
+        with qml.tape.QuantumTape() as tape:
+            Exp(qml.PauliX(0), -0.5j * phi)
+
+        qml.drawer.tape_text(tape)
+
+        assert "0: ──Exp─┤  "
