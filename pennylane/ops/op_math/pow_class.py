@@ -30,7 +30,6 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.identity import Identity
-from pennylane.ops.op_math.controlled_class import Controlled
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
 
@@ -251,11 +250,9 @@ class Pow(SymbolicOp):
                 if len(self.wires) > 1
                 else qml.Identity(self.wires[0])
             )
-        if isinstance(self.base, Controlled):  # Pow(Controlled(base)) = Controlled(Pow(base))
-            return Controlled(
-                base=Pow(self.base.base.simplify(), z=self.z),
-                control_wires=self.base.control_wires,
-                control_values=self.base.control_values,
-                work_wires=self.base.work_wires,
-            )
-        return Pow(base=self.base.simplify(), z=self.z)
+        try:
+            op = self.base.pow(z=self.z)
+            op = qml.prod(*op) if len(op) > 1 else op[0]
+            return op.simplify()
+        except PowUndefinedError:
+            return Pow(base=self.base.simplify(), z=self.z)
