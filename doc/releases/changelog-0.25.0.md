@@ -541,7 +541,7 @@
     for wire in list(range(2)):
           qml.Hadamard(wires = wire)
     qml.FlipSign(basis_state, wires = list(range(2)))
-    return qml.sample()
+    return qml.state()
   ```
 
   ```pycon
