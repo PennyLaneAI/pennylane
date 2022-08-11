@@ -14,14 +14,10 @@
 """
 Unit tests and integration tests for the ``default.qubit.torch`` device.
 """
-import functools
 import math
-from itertools import product
 
 import numpy as np
 import pytest
-
-from pennylane import math
 
 pytestmark = pytest.mark.gpu
 
@@ -47,7 +43,6 @@ from gate_data import (
     DoubleExcitationMinus,
     DoubleExcitationPlus,
     H,
-    I,
     IsingXX,
     IsingYY,
     IsingZZ,
@@ -74,7 +69,6 @@ import pennylane as qml
 from pennylane import DeviceError
 from pennylane import numpy as pnp
 from pennylane.devices.default_qubit_torch import DefaultQubitTorch
-from pennylane.wires import Wires
 
 np.random.seed(42)
 
