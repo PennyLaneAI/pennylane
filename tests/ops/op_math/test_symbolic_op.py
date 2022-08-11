@@ -155,22 +155,6 @@ class TestProperties:
         op = SymbolicOp(t)
         assert op.num_wires == 3
 
-    def test_batching_properties(self):
-        """Test a symbolic operator inherits the batching properties of its base."""
-
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op = SymbolicOp(base)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
-
 
 class TestQueuing:
     """Test that Symbolic Operators queue and update base metadata."""

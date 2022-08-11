@@ -700,6 +700,10 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* Cleans up interactions between operator arithmetic and batching by
+  testing supported cases and adding errors when batching is not supported.
+  [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
+
 * Fixed a bug where the parameter-shift rule wasn't defined for `qml.kUpCCGSD`.
   [(#2913)](https://github.com/PennyLaneAI/pennylane/pull/2913)  
 
