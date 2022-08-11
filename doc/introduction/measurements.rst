@@ -131,10 +131,10 @@ Counts
 ------
 
 To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
- :func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the 
- possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
+:func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the 
+possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
 
- The previous example will be modified as follows:
+The previous example will be modified as follows:
 
 .. code-block:: python
 
