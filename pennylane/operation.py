@@ -1176,9 +1176,6 @@ class Operator(abc.ABC):
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
         Returns:
             The adjointed operation.
         """
