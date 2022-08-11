@@ -22,7 +22,7 @@ import pennylane as qml  # pylint: disable=unused-import
 from pennylane.operation import Operation
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
-ZETA = OMEGA ** (1 / 3)
+ZETA = OMEGA ** (1 / 3)  # ZETA will be used as a phase for later non-parametric operations
 
 # Note: When Operation.matrix() is used for qutrit operations, `wire_order` must be `None` as specifying
 # an order that is expected to return a permuted and expanded matrix different from the canonical matrix
@@ -180,9 +180,9 @@ class TClock(Operation):
         **Example**
 
         >>> print(qml.TClock.compute_eigvals())
-        [ 1. +0.j        -0.5+0.8660254j -0.5-0.8660254j]
+        [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
         """
-        return np.array([1, OMEGA, OMEGA**2])
+        return np.array([OMEGA, OMEGA**2, 1])
 
     # TODO: Add compute_decomposition() once parametric ops are added.
 
