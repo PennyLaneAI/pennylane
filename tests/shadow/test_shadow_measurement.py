@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the classical shadows measurement process"""
-
-import pytest
+# pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 import copy
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -108,6 +108,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
 
 
 class TestShadowMeasurement:
+    """Unit tests for classical_shadow measurement"""
 
     wires_list = [1, 2, 3, 5, 8]
     shots_list = [1, 10, 100]
@@ -118,7 +119,6 @@ class TestShadowMeasurement:
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_numeric_type(self, wires, shots, seed):
         """Test that the numeric type of the MeasurementProcess instance is correct"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
         assert res.numeric_type == int
 
