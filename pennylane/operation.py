@@ -142,13 +142,18 @@ def expand_matrix(base_matrix, wires, wire_order=None):
 
     **Example**
 
-    If the wire order is identical to ``wires``, the original matrix gets returned:
+    If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
     >>> base_matrix = np.array([[1, 2, 3, 4],
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
     >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
@@ -183,12 +188,6 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     torch.Tensor
     >>> res.requires_grad
     True
-
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
-    [[ 1  2  3  4]
-     [ 5  6  7  8]
-     [ 9 10 11 12]
-     [13 14 15 16]]
 
     """
 
