@@ -697,7 +697,7 @@
 
 <h3>Bug fixes 🐞</h3>
 
-* Cleans up interactions between operator arithmetic and batching by
+* Cleaned up interactions between operator arithmetic and batching by
   testing supported cases and adding errors when batching is not supported.
   [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
 
@@ -749,7 +749,7 @@
   using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
 
-* Calling `qml.equal` with nested operators now raises a NotImplementedError.
+* Calling `qml.equal` with nested operators now raises a `NotImplementedError`.
   [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
 <h3>Contributors</h3>
