@@ -478,8 +478,12 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-        self.is_sampled = any(m.return_type in [Sample, Shadow] for m in self.measurements)
-        self.all_sampled = all(m.return_type in [Sample, Shadow] for m in self.measurements)
+        self.is_sampled = any(
+            m.return_type in [Sample, Shadow, ShadowExpval] for m in self.measurements
+        )
+        self.all_sampled = all(
+            m.return_type in [Sample, Shadow, ShadowExpval] for m in self.measurements
+        )
 
     def _update_batch_size(self):
         """Infer the batch_size from the batch sizes of the tape operations and

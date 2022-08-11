@@ -528,9 +528,10 @@ class ShadowMeasurementProcess(MeasurementProcess):
     shadow protocol.
     """
 
-    def __init__(self, *args, seed=None, k=1, **kwargs):
+    def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
         super().__init__(*args, **kwargs)
         self.seed = seed
+        self.H = H
         self.k = k
 
     @property
@@ -574,9 +575,21 @@ class ShadowMeasurementProcess(MeasurementProcess):
         # and the second indicate the indices of the unitaries used
         return (2, device.shots, len(self.wires))
 
+    @property
+    def wires(self):
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
+        if self.return_type is Shadow:
+            return self._wires
+
+        return self.H.wires
+
     def __copy__(self):
         obj = super().__copy__()
         obj.seed = self.seed
+        obj.H = self.H
         obj.k = self.k
         return obj
 
@@ -1246,10 +1259,10 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-def classical_shadow_expval(H, k=1, seed_recipes=True):
+def classical_shadow_expval(obs, k=1, seed_recipes=True):
     """TODO: docs"""
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowExpval, obs=obs, seed=seed, k=k)
+    return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)
 
 
 T = TypeVar("T")

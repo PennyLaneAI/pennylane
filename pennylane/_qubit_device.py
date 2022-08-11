@@ -1235,7 +1235,7 @@ class QubitDevice(Device):
         """TODO: docs"""
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes)
-        return shadow.expval(obs.obs, obs.k)
+        return shadow.expval(obs.H, obs.k)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

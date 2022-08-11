@@ -196,16 +196,16 @@ class ClassicalShadow:
         """Given an observable, obtain a list of coefficients and Pauli words, the
         sum of which is equal to the observable"""
 
-        num_wires = self.bitstrings.shape[1]
+        wires = observable.wires
         obs_to_recipe_map = {"PauliX": 0, "PauliY": 1, "PauliZ": 2, "Identity": -1}
 
         def pauli_list_to_word(obs):
-            word = [-1] * num_wires
+            word = [-1] * len(wires)
             for ob in obs:
                 if ob.name not in obs_to_recipe_map:
                     raise ValueError("Observable must be a linear combination of Pauli observables")
 
-                word[ob.wires[0]] = obs_to_recipe_map[ob.name]
+                word[wires.index(ob.wires[0])] = obs_to_recipe_map[ob.name]
 
             return word
 
