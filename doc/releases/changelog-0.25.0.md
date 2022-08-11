@@ -161,6 +161,25 @@
           [0.  , 0.25]], requires_grad=True))
   ```
 
+  The following simpler example also makes use of broadcasting:
+
+  ```python
+  @qml.qnode(dev, diff_method="parameter-shift", broadcast=True)
+  def circuit(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> x = np.array(0.1, requires_grad=True)
+  >>> y = np.array(0.4, requires_grad=True)
+  >>> qml.grad(circuit)(x, y)
+  (array(-0.09195267), array(-0.38747287))
+  ```
+
+  where only 2, instead of 4 with `broadcast=False`, circuits are created internally.
+
   To illustrate the speedup, for a constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
   time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
   ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
