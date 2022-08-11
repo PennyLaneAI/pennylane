@@ -692,7 +692,7 @@ def counts(op=None, wires=None, all_outcomes=False):
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
         all_outcomes(bool): determines whether the returned dict will contain only the observed
-            states (default), or whether it will display all possible outcomes for the system
+            outcomes (default), or whether it will display all possible outcomes for the system
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -753,7 +753,7 @@ def counts(op=None, wires=None, all_outcomes=False):
         qml.PauliX(wires=0)
         return qml.counts()
 
-    Executing this QNode shows only the observed state:
+    Executing this QNode shows only the observed outcomes:
 
     >>> circuit()
     {'01': 4}

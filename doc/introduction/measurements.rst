@@ -169,10 +169,10 @@ And the result is:
 >>> print(result)
 {'00': 495, '11': 505}
 
-Per default, only observed outcomes are included in the dictionary. The kwarg all_outcomes=True can 
-be used to display all possible outcomes, including those that were observed 0 times in sampling.
+Per default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can 
+be used to display all possible outcomes, including those that were observed ``0`` times in sampling.
 
-For example, we could run the previous circuit with all_outcomes=True:
+For example, we could run the previous circuit with ``all_outcomes=True``:
 
 .. code-block:: python
 
@@ -188,11 +188,9 @@ def circuit():
 >>> print(result)
 {'00': 518, '01': 0, '10': 0, '11': 482}
 
-Note: For complicated Hamiltonians, this can add considerable overhead time (due to cost of calcuating 
-eigenvalues to determine possible outcomes), and as number of qubits increases, the length of the output 
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
+eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
 dictionary showing possible computational basis states grows rapidly. 
-
-
 
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
 a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
