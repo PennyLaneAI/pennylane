@@ -563,7 +563,7 @@ of operators.
 
   for _ in range(max_iterations):
       params, cost = opt.step_and_cost(cost, params)
-  ```
+  ```  
 
 <h4>More drawing styles 🎨</h4>
 
