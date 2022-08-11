@@ -573,6 +573,15 @@ of operators.
 
 <h3>Improvements 📈</h3>
 
+* A warning is emitted for measurements
+  - `qml.state`
+  - `qml.density_matrix`
+  - `qml.vn_entropy`
+  - `qml.mutual_info`
+  when using a device with finite shots or a shot list because the results of
+  these measurements are always analytic.
+  [(#2918)](https://github.com/PennyLaneAI/pennylane/pull/2918)
+
 * The efficiency of the Hartree-Fock workflow has been improved by removing 
   repetitive steps.
   [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
