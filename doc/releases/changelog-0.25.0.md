@@ -6,7 +6,7 @@
 
 <h4>Estimate computational resource requirements 🧠</h4>
 
-* Functionality for estimating molecular simulation computations has been added.
+* Functionality for estimating molecular simulation computations has been added with `qml.resource`.
   [(#2646)](https://github.com/PennyLaneAI/pennylane/pull/2646)
   [(#2653)](https://github.com/PennyLaneAI/pennylane/pull/2653)
   [(#2665)](https://github.com/PennyLaneAI/pennylane/pull/2665)
@@ -19,72 +19,57 @@
   [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
-  The new [`qml.resource`](https://pennylane.readthedocs.io/en/stable/code/qml_resource.html) module allows you to estimate the number of 
+  The new [resource](https://pennylane.readthedocs.io/en/stable/code/qml_resource.html) module allows you to estimate the number of 
   non-[Clifford gates](https://en.wikipedia.org/wiki/Clifford_gates) and logical 
   qubits needed to implement [quantum phase estimation](https://codebook.xanadu.ai/P.1) 
   algorithms for simulating materials and molecules. This includes support for quantum 
   algorithms using [first](https://en.wikipedia.org/wiki/First_quantization) and [second](https://en.wikipedia.org/wiki/Second_quantization) quantization with specific bases:
 
-  - [First quantization](https://en.wikipedia.org/wiki/First_quantization) using a plane-wave basis via the [`FirstQuantization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.FirstQuantization.html) class:
+  - [First quantization](https://en.wikipedia.org/wiki/First_quantization) using a plane-wave basis via the `FirstQuantization` class:
 
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  n = 100000        # number of plane waves
-  eta = 156         # number of electrons
-  omega = 1145.166  # unit cell volume in atomic units
-  
-  algo = FirstQuantization(n, eta, omega)
-  ```
-  
-  ```pycon
-  >>> print(algo.gates, algo.qubits)
-  1.10e+13, 4416
-  ```
+    ```python
+    >>> n = 100000        # number of plane waves
+    >>> eta = 156         # number of electrons
+    >>> omega = 1145.166  # unit cell volume in atomic units
+    >>> algo = FirstQuantization(n, eta, omega)
+    >>> algo.gates
+    1.10e+13
+    >>> algo.qubits
+    4416
+    ```
 
   - [Second quantization](https://en.wikipedia.org/wiki/Second_quantization) with a double-factorized Hamiltonian via the 
-  [`DoubleFactorization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.DoubleFactorization.html) class: 
+    `DoubleFactorization` class: 
  
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols  = ['O', 'H', 'H']
-  geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
-                       [0.00000000,  1.45278171, -1.00662237],
-                       [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
-  
-  mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-  core, one, two = qml.qchem.electron_integrals(mol)()
-  
-  algo = DoubleFactorization(one, two)
-  ```
+    ```python
+    symbols  = ['O', 'H', 'H']
+    geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+                        [0.00000000,  1.45278171, -1.00662237],
+                        [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+    
+    mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+    core, one, two = qml.qchem.electron_integrals(mol)()
+    
+    algo = DoubleFactorization(one, two)
+    ```
 
-  ```pycon
-  >>> print(algo.gates, algo.qubits)
-  103969925, 290
-  ```
-  
-  The methods of the [`FirstQuantization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.FirstQuantization.html) and the [`DoubleFactorization`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.resource.DoubleFactorization.html) classes 
+    ```pycon
+    >>> print(algo.gates, algo.qubits)
+    103969925, 290
+    ```
+    
+  The methods of the `FirstQuantization` and the `DoubleFactorization` classes 
   can be also accessed individually without instantiating an instance of the class:
 
-  - The number of logical qubits with `qubit_cost`
-  - The number of non-Clifford gates with `gate_cost`
+  + The number of logical qubits with `qubit_cost`
+  + The number of non-Clifford gates with `gate_cost`
 
-  ```python
-  n = 100000
-  eta = 156
-  omega = 169.69608
-  error = 0.01
-  ```
-  x
-  ```pycon
-  >>> qml.resource.FirstQuantization.qubit_cost(n, eta, omega, error)
-  4377
-  >>> qml.resource.FirstQuantization.gate_cost(n, eta, omega, error)
-  3676557345574 
-  ```
+    ```pycon
+    >>> qml.resource.FirstQuantization.qubit_cost(100000, 156, 169.69608, 0.01)
+    4377
+    >>> qml.resource.FirstQuantization.gate_cost(100000, 156, 169.69608, 0.01)
+    3676557345574 
+    ```
 
 <h4>Differentiable error mitigation ⚙️</h4>
 
@@ -94,8 +79,9 @@
   Elevate any variational quantum algorithm to a *mitigated* algorithm with improved 
   results on noisy hardware while maintaining differentiability throughout.
 
-  In order to do so, use the [`qml.transforms.mitigate_with_zne`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.mitigate_with_zne.html) transform on your QNode and provide the PennyLane proprietary
-  [`qml.transforms.fold_global`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.fold_global.html) folding function and [`qml.transforms.poly_extrapolate`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.poly_extrapolate.html) extrapolation function. Here is an example for a noisy simulation device where we mitigate a QNode and are still 
+  In order to do so, use the `qml.transforms.mitigate_with_zne` transform on your QNode and provide the PennyLane proprietary
+  `qml.transforms.fold_global` folding function and `qml.transforms.poly_extrapolate` extrapolation function. 
+  Here is an example for a noisy simulation device where we mitigate a QNode and are still 
   able to compute the gradient:
 
   ```python
@@ -127,17 +113,18 @@
 
 <h4>More native support for parameter broadcasting 📡</h4>
 
-* `DefaultQubit` devices now natively support parameter broadcasting, providing 
-  a faster way of executing the same circuit at various parameter positions
-  compared to using the [`qml.transforms.broadcast_expand`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.broadcast_expand.html) transform.
+* `default.qubit` now natively supports parameter broadcasting, providing 
+  increased performance when executing the same circuit at various parameter positions
+  compared to manually looping over parameters, or directly using the `qml.transforms.broadcast_expand` transform.
   [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
   
-* Parameter-shift gradients now allow for parameter broadcasting. 
+* Parameter-shift gradients now allow for parameter broadcasting internally,
+  which can result in a significant speedup when computing gradients of
+  circuits with many parameters.
   [(#2749)](https://github.com/PennyLaneAI/pennylane/pull/2749)
 
-  The gradient transform [`qml.gradients.param_shift`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.gradients.param_shift.html) 
-  now accepts the keyword argument `broadcast`. If set to `True`, broadcasting is 
-  used to compute the derivative:
+  The gradient transform `qml.gradients.param_shift` now accepts the keyword argument 
+  `broadcast`. If set to `True`, broadcasting is used to compute the derivative:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -312,7 +299,7 @@
   a controlled version of any operation. 
   [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
 
-  '''python
+  ```python
   from pennylane.ops.op_math import Controlled
 
   @qml.qnode(qml.device('default.qubit', wires=3))
@@ -320,16 +307,16 @@
       qml.PauliX(0)
       Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
       return qml.probs(wires=range(3))
-  '''
+  ```
 
-  '''pycon
+  ```pycon
   >>> circuit()
   tensor([0. , 0. , 0. , 0. , 0.5, 0.5, 0. , 0. ], requires_grad=True)
   >>> print(qml.draw(circuit)())
   0: ──X─╭●─┤ ╭Probs
   1: ────├○─┤ ├Probs
   2: ────╰H─┤ ╰Probs
-  '''
+  ```
 
 * Arithmetic operations can now be simplified using `qml.simplify`.
   [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
@@ -357,19 +344,19 @@
   of parametric operators.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
-  '''pycon
+  ```pycon
   >>> qml.equal(qml.RX(1.23, 0), qml.RX(1.23, 0))
   True
   >>> qml.equal(qml.RY(4.56, 0), qml.RY(7.89, 0))
   False
-  '''
+  ```
 
 * Added `expm` to the `qml.math` module for matrix exponentiation.
   [(#2890)](https://github.com/PennyLaneAI/pennylane/pull/2890)
 
 <h4>Backpropagation with Jax and readout error for `DefaultMixed` devices 🙌</h4>
 
-* The `DefaultMixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface.
+* The `default.mixed` device now supports [backpropagation](https://pennylane.readthedocs.io/en/stable/introduction/unsupported_gradients.html#backpropagation) with the `"jax"` interface, which can result in significant speedups.
   [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
   [(#2776)](https://github.com/PennyLaneAI/pennylane/pull/2776)
 
@@ -385,7 +372,7 @@
 
   ```pycon
   >>> angles = np.array([np.pi/6, np.pi/5], requires_grad=True)
-  >>> qml.grad(circuit)(params)
+  >>> qml.grad(circuit)(angles)
   array([-0.8660254 , -0.25881905])
   ```
   
@@ -393,11 +380,11 @@
   This allows quantum channels to be used inside QNodes decorated by `tf.function`, 
   `jax.jit`, or `jax.vmap`.
 
-* The `DefaultMixed` device now supports readout error.
+* The `default.mixed` device now supports readout error.
   [(#2786)](https://github.com/PennyLaneAI/pennylane/pull/2786)
 
   A new keyword argument called `readout_prob` can be specified when creating a
-  `DefaultMixed` device. Any circuits running on a `DefaultMixed` device with a 
+  `default.mixed` device. Any circuits running on a `default.mixed` device with a 
   finite `readout_prob` (upper-bounded by 1) will alter the measurements performed 
   at the end of the circuit similarly to how a `qml.BitFlip` channel would affect 
   circuit measurements:
@@ -448,16 +435,15 @@
 
 <h4>New measurement types and a new operator and optimizer ✨</h4>
 
-* A new measurement called [`qml.counts`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.counts.html) 
-  is available.
+* A new measurement called `qml.counts` is available.
   [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
   [(#2839)](https://github.com/PennyLaneAI/pennylane/pull/2839)
   [(#2876)](https://github.com/PennyLaneAI/pennylane/pull/2876)
 
-  QNodes with `shots != None` that return [`qml.counts`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.counts.html) 
-  will yield a dictionary whose keys are bitstrings representing computational basis 
-  states that were measured, and whose values are the corresponding counts (i.e., 
-  how many times that computational basis state was measured):
+  QNodes with `shots != None` that return `qml.counts` will yield a dictionary 
+  whose keys are bitstrings representing computational basis states that were measured, 
+  and whose values are the corresponding counts (i.e., how many times that computational 
+  basis state was measured):
 
   ```python
   dev = qml.device("default.qubit", wires=2, shots=1000)
@@ -519,12 +505,10 @@
   In addition, QNodes that utilize this new return type support backpropagation.
   This new return type can be disabled thereafter via `qml.disable_return()`.
 
-* An operator called [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html) 
-  is now available.
+* An operator called `qml.FlipSign` is now available.
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
-  Mathematically, [`qml.FlipSign`](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.FlipSign.html)  
-  functions as follows: 
+  Mathematically, `qml.FlipSign` functions as follows: 
   $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where 
   $\vert m \rangle$ is an arbitrary qubit state and $n$ is a qubit configuration:
 
@@ -547,7 +531,7 @@
   ```
 
 * The [simultaneous perturbation stochastic approximation (SPSA) optimizer](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF) 
-  is available via [`qml.SPSAOptimizer`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.SPSAOptimizer.html).
+  is available via `qml.SPSAOptimizer`.
   [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
   The SPSA optimizer is suitable for cost functions whose evaluation may involve
@@ -569,7 +553,7 @@
 
 <h3>Improvements 📈</h3>
 
-* The `DefaultQubit` device now natively executes any operation that defines a matrix except
+* `default.qubit` now natively executes any operation that defines a matrix except
   for trainable `Pow` operations. 
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
   
@@ -620,7 +604,7 @@
   demo. 
   [(#2795)](https://github.com/PennyLaneAI/pennylane/pull/2795)
 
-* `DefaultQubit` now uses `stopping_condition` to specify support for anything with a matrix.
+* `default.qubit` now uses `stopping_condition` to specify support for anything with a matrix.
   To override this behavior in inheriting devices and to support only a specific subset of operations,
   developers need to override `stopping_condition`.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
