@@ -186,7 +186,7 @@ class DefaultQutrit(QutritDevice):
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
 
     def _apply_phase(
-        self, state, axes, index, parameters, inverse=False
+        self, state, axes, index, phase, inverse=False
     ):  # pylint: disable=too-many-arguments
         """Applies a phase onto the specified index along the axis specified in ``axes``.
 
@@ -194,7 +194,7 @@ class DefaultQutrit(QutritDevice):
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             index (int): target index of axis to apply phase to
-            parameters (float): phase to apply
+            phase (float): phase to apply
             inverse (bool): whether to apply the inverse phase
 
         Returns:
@@ -203,7 +203,7 @@ class DefaultQutrit(QutritDevice):
         num_wires = len(state.shape)
         slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
 
-        phase = self._conj(parameters) if inverse else parameters
+        phase = self._conj(phase) if inverse else phase
         state_slices = [
             self._const_mul(phase if i == index else 1, state[slices[i]]) for i in range(3)
         ]
