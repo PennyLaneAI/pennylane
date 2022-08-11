@@ -834,9 +834,80 @@ class TestEqual:
             check_interface=False,
         )
 
-    def test_equal_with_different_arithmetic_depth(self):
-        """Test equal method with two operators with different arithmetic depth."""
-        assert not qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.adjoint(qml.PauliX(0))))
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
+    def test_equal_trainable_different_interface(self, op1):
+        """Test equal method with two operators with trainable inputs and
+        different interfaces.
+
+        This test case tests the 4 interface with each other pairwise,
+        totalling a 4*3/2=6 total assertions in the following order (assuming
+        symmetry doesn't affect the behaviour):
+
+        -JAX and Autograd
+        -JAX and TF
+        -JAX and Torch
+        -TF and Autograd
+        -TF and Torch
+        -Autograd and Torch
+        """
+        import jax
+        import tensorflow as tf
+        import torch
+
+        wire = 0
+
+        pl_tensor = qml.numpy.array(0.3, requires_grad=True)
+        jax_array = jax.core.Tracer(0.3)
+        tf_tensor = tf.Variable(0.3, trainable=True)
+        torch_tensor = torch.tensor(0.3, requires_grad=True)
+
+        non_jax_tensors = [pl_tensor, tf_tensor, torch_tensor]
+
+        # JAX and the others
+        # ------------------
+        # qml.math.requires_grad returns True for a Tracer with JAX, the
+        # assertion involves using a JAX function that transforms a JAX NumPy
+        # array into a Tracer
+        def jax_assertion_func(x, y):
+            op1 = qml.RY(jax.numpy.array(x), wires=1)
+            op2 = qml.RY(torch.tensor(y, requires_grad=True), wires=1)
+            assert qml.equal(op1, op2, check_interface=False, check_trainability=True)
+            return x
+
+        par = 0.3
+        for tensor in non_jax_tensors:
+            jax.grad(jax_assertion_func, argnums=0)(par, par)
+
+        # TF and Autograd
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(tf_tensor, wires=wire),
+                op1(pl_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+
+        # TF and Torch
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(tf_tensor, wires=wire),
+                op1(torch_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+
+        # Autograd and Torch
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(pl_tensor, wires=wire),
+                op1(torch_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
 
     def test_equal_with_nested_operators_raises_error(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) raises
