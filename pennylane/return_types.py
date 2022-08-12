@@ -66,7 +66,7 @@ def enable_return():
 
     The new return types system unlocks the use of `probs` mixed with diffrent measurements in backpropagation with Jax:
 
-    ```
+    ```python
     import jax
 
     qml.enable_return()
