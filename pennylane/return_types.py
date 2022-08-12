@@ -156,13 +156,13 @@ def active_return():
     True
     ```
 
-    And can also be deactivated:
+    And it can also be deactivated:
 
     ```pycon
     >>> enable_return()
     >>> active_return()
     True
-    >>> enable_return()
+    >>> disable_return()
     >>> active_return()
     False
     ```
