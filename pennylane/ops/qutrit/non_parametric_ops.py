@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the ternary discrete-variable quantum operations
+This submodule contains the qutrit quantum operations
 that do not depend on any parameters.
 """
 # pylint:disable=arguments-differ
