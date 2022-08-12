@@ -38,7 +38,7 @@ def enable_return():
     qnode = qml.QNode(circuit, dev)
     ```
 
-    ```pycon
+    ```python
     >>> res = qnode(0.5)
     >>> res
     tensor([0.5       , 0.5       , 0.08014815, 0.96939564, 0.03060436,
@@ -59,7 +59,7 @@ def enable_return():
     qnode = qml.QNode(circuit, dev)
     ```
 
-    ```pycon
+    ```python
     >>> res = qnode(0.5)
     >>> res
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
@@ -86,7 +86,7 @@ def enable_return():
     x = jax.numpy.array([0.1, 0.2, 0.3])
     ```
 
-    ```pycon
+    ```python
     res = jax.jacobian(circuit)(x)
     >>> res
     (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32),
@@ -121,7 +121,7 @@ def disable_return():
     qnode = qml.QNode(circuit, dev)
     ```
 
-    ```pycon
+    ```python
     >>> qml.enable_return()
     >>> res = qnode(0.5)
     >>> res
@@ -144,14 +144,14 @@ def active_return():
 
     By default, the new return types system is turned off:
 
-    ```pycon
+    ```python
     >>> active_return()
     False
     ```
 
     It can be activated:
 
-    ```pycon
+    ```python
     >>> enable_return()
     >>> active_return()
     True
@@ -159,7 +159,7 @@ def active_return():
 
     And it can also be deactivated:
 
-    ```pycon
+    ```python
     >>> enable_return()
     >>> active_return()
     True
