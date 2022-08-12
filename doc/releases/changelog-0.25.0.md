@@ -17,6 +17,7 @@
   [(#2796)](https://github.com/PennyLaneAI/pennylane/pull/2796)
   [(#2797)](https://github.com/PennyLaneAI/pennylane/pull/2797)
   [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
+  [(#2944)](https://github.com/PennyLaneAI/pennylane/pull/2944)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
   The new [`qml.resource`](https://pennylane.readthedocs.io/en/stable/code/qml_resource.html) module allows you to estimate the number of 
@@ -154,10 +155,10 @@
   >>> x = np.array([np.pi/3, np.pi/2], requires_grad=True)
   >>> y = np.array([np.pi/6, np.pi/5], requires_grad=True)
   >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
-  (tensor([[-0.9330127,  0.       ],
-           [ 0.       , -0.9330127]], requires_grad=True),
-  tensor([[0.25, 0.  ],
-          [0.  , 0.25]], requires_grad=True))
+  (tensor([[-0.7795085,  0.       ],
+          [ 0.       , -0.7795085]], requires_grad=True),
+  tensor([[-0.125,  0.   ],
+          [ 0.   , -0.125]], requires_grad=True))
   ```
 
   To illustrate the speedup, for a constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
@@ -772,6 +773,9 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* Fixes `qml.equal` so that operators with different inverse properties are not equal.
+  [(#2947)](https://github.com/PennyLaneAI/pennylane/pull/2947)
+
 * Cleans up interactions between operator arithmetic and batching by
   testing supported cases and adding errors when batching is not supported.
   [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
@@ -829,6 +833,13 @@ of operators.
 
 * Calling `qml.equal` with nested operators now raises a NotImplementedError.
   [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
+
+* Fixes a bug where a non-sensible error message was raised when using `qml.counts` with `shots=False`.
+  [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
+
+* Fixes a bug where no error was raised and a wrong value was returned when using `qml.counts`
+  with another non-commuting observable.
+  [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
 
 <h3>Contributors</h3>
 

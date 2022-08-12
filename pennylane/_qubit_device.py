@@ -25,25 +25,22 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane import DeviceError
-from pennylane.operation import operation_derivative
-from pennylane.measurements import (
-    Sample,
-    Counts,
-    Variance,
-    Expectation,
-    Probability,
-    State,
-    VnEntropy,
-    MutualInfo,
-)
-
-from pennylane import Device
-from pennylane.math import sum as qmlsum
+from pennylane import Device, DeviceError
 from pennylane.math import multiply as qmlmul
+from pennylane.math import sum as qmlsum
+from pennylane.measurements import (
+    Counts,
+    Expectation,
+    MeasurementProcess,
+    MutualInfo,
+    Probability,
+    Sample,
+    State,
+    Variance,
+    VnEntropy,
+)
+from pennylane.operation import operation_derivative
 from pennylane.wires import Wires
-
-from pennylane.measurements import MeasurementProcess
 
 
 class QubitDevice(Device):
@@ -331,7 +328,7 @@ class QubitDevice(Device):
                 if ret_types[0] is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
+                else:
                     # Measurements with expval, var or probs
                     try:
                         # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
@@ -349,7 +346,7 @@ class QubitDevice(Device):
                 # all the other cases except any counts
                 results = self._asarray(results)
 
-        elif circuit.all_sampled and not self._has_partitioned_shots():
+        elif circuit.all_sampled and not self._has_partitioned_shots() and not counts_exist:
             results = self._asarray(results)
         else:
             results = tuple(
