@@ -542,6 +542,7 @@ class TestOptimization:
         assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
+    @flaky(max_runs=5)
     @pytest.mark.slow
     def test_vqe_optimization(self):
         """Test that a simple VQE circuit can be optimized"""
