@@ -64,7 +64,7 @@ def enable_return():
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
     ```
 
-    The new return types unlocks the use of `probs` mixed with diffrent measurements in backpropagation with Jax:
+    The new return types system unlocks the use of `probs` mixed with diffrent measurements in backpropagation with Jax:
 
     ```
     import jax
