@@ -328,40 +328,10 @@
            [0.        +0.j        , 0.54030231+0.84147098j]])
     ```
 
-* A new class called `Controlled` is available in `qml.ops.op_math` to help represent 
-  a controlled version of any operation. 
+* A new class called `Controlled` is available in `qml.ops.op_math` to represent 
+  a controlled version of any operator. This will eventually be integrated into 
+  `qml.ctrl` to provide a performance increase and more feature coverage.
   [(#2634)](https://github.com/PennyLaneAI/pennylane/pull/2634)
-
-  ```python
-  from pennylane.ops.op_math import Controlled
-
-  controlled_op = Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
-
-  @qml.qnode(qml.device('default.qubit', wires=3))
-  def circuit():
-      qml.PauliX(0)
-      Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
-      return qml.probs(wires=range(3))
-  ```
-
-  ```pycon
-  >>> circuit()
-  tensor([0. , 0. , 0. , 0. , 0.5, 0.5, 0. , 0. ], requires_grad=True)
-  >>> print(qml.draw(circuit)())
-  0: ──X─╭●─┤ ╭Probs
-  1: ────├○─┤ ├Probs
-  2: ────╰H─┤ ╰Probs  
-  ```
-
-  The key difference between `Controlled` and `qml.ctrl` is that `Controlled` is
-  a full-fledged operation, meaning that, for example, its matrix and eigenvalues
-  can be accessed as per usual.
-
-  ```pycon
-  >>> controlled_op = Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
-  >>> print(controlled_op.eigvals(), controlled_op.matrix().shape)
-  [ 1.  1.  1.  1.  1.  1.  1. -1.] (8, 8)
-  ```
 
 * Arithmetic operations can now be simplified using `qml.simplify`.
   [(#2835)](https://github.com/PennyLaneAI/pennylane/pull/2835)
