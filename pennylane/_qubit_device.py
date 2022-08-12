@@ -1159,14 +1159,19 @@ class QubitDevice(Device):
         Returns the measured bits and recipes in the classical shadow protocol.
 
         The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-        This measurement process returns the randomized Pauli measurements that are
-        performed for each qubit and snapshot as an integer: 0 for Pauli X, 1 for Pauli Y,
-        and 2 for PauliZ. It also returns the measurement results: 0 if the 1 eigenvalue
-        is sampled and 1 if the -1 eigenvalue is sampled.
+        This measurement process returns the randomized Pauli measurements (the "recipes")
+        that are performed for each qubit and snapshot as an integer:
 
-        The device shots are used to specify the number of snapshots. If T is the number
-        of shots and n is the number of qubits, then both the measured bits and the
-        Pauli measurements have shape (T, n).
+        - 0 for Pauli X,
+        - 1 for Pauli Y, and
+        - 2 for PauliZ.
+
+        It also returns the measurement results (the "bits"); 0 if the 1 eigenvalue
+        is sampled, and 1 if the -1 eigenvalue is sampled.
+
+        The device shots are used to specify the number of snapshots. If ``T`` is the number
+        of shots and ``n`` is the number of qubits, then both the measured bits and the
+        Pauli measurements have shape ``(T, n)``.
 
         This implementation is device-agnostic and works by executing single-shot
         tapes containing randomized Pauli observables. Devices should override this
@@ -1180,7 +1185,7 @@ class QubitDevice(Device):
                 number generation for generating the Pauli measurements.
 
         Returns:
-            tensor_like[int]: A tensor with shape (2, T, n), where the first row represents
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
         if circuit is None:  # pragma: no cover
