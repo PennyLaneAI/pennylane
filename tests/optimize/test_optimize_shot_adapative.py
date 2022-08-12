@@ -29,6 +29,7 @@ def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
     return res
 
 
+@pytest.mark.xdist_group(name="shot_adaptive_optimizer")
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 
@@ -110,6 +111,7 @@ class TestExceptions:
         assert isinstance(new_x, np.tensor)
 
 
+@pytest.mark.xdist_group(name="shot_adaptive_optimizer")
 class TestSingleShotGradientIntegration:
     """Integration tests to ensure that the single shot gradient is correctly computed
     for a variety of argument types."""
@@ -408,6 +410,7 @@ class TestSingleShotGradientIntegration:
         assert np.allclose(grad_variance[1][1], np.var(single_shot_grads[1][:2, 1], ddof=1))
 
 
+@pytest.mark.xdist_group(name="shot_adaptive_optimizer")
 class TestWeightedRandomSampling:
     """Tests for weighted random Hamiltonian term sampling"""
 
@@ -507,6 +510,7 @@ class TestWeightedRandomSampling:
         assert grads[0].shape == (10, *weights.shape)
 
 
+@pytest.mark.xdist_group(name="shot_adaptive_optimizer")
 class TestOptimization:
     """Integration test to ensure that the optimizer
     minimizes simple examples"""
@@ -571,6 +575,7 @@ class TestOptimization:
         assert opt.shots_used > min_shots
 
 
+@pytest.mark.xdist_group(name="shot_adaptive_optimizer")
 class TestStepAndCost:
     """Tests for the step_and_cost method"""
 
