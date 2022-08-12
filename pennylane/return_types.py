@@ -20,7 +20,7 @@ __activated = False
 
 def enable_return():
     """Function that turns on the new return type system. The new system guarantees intuitive return types such that a
-    sequence (e.g., list or tuple) is returned based on the `return` statement of the quantum function. This system
+    sequence (e.g., list or tuple) is returned based on the ``return`` statement of the quantum function. This system
     avoids the creation of ragged arrays, where multiple measurements are stacked together.
 
     **Example**
@@ -65,7 +65,7 @@ def enable_return():
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
     ```
 
-    The new return types system unlocks the use of `probs` mixed with diffrent measurements in backpropagation with Jax:
+    The new return types system unlocks the use of ``probs`` mixed with diffrent measurements in backpropagation with Jax:
 
     ```python
     import jax
@@ -98,7 +98,10 @@ def enable_return():
     ```
 
     where before the following error was raised:
-    `ValueError: All input arrays must have the same shape.`
+
+    .. code-block:: text
+
+        ValueError: All input arrays must have the same shape.
     """
 
     global __activated
