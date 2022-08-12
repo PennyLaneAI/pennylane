@@ -771,7 +771,8 @@ of operators.
   [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
 
 * Fixes a bug where no error was raised and a wrong value was returned when using `qml.counts`
-  with another non-commuting observable. [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
+  with another non-commuting observable.
+  [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
 
 <h3>Contributors</h3>
 
