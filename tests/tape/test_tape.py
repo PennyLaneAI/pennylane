@@ -13,17 +13,24 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
-from this import d
 import warnings
 from collections import defaultdict
 
 import numpy as np
 import pytest
+from this import d
 
 import pennylane as qml
 from pennylane import CircuitGraph
+from pennylane.measurements import (
+    MeasurementProcess,
+    MeasurementShapeError,
+    counts,
+    expval,
+    sample,
+    var,
+)
 from pennylane.tape import QuantumTape, TapeError
-from pennylane.measurements import MeasurementProcess, expval, sample, var, MeasurementShapeError
 
 
 def TestOperationMonkeypatching():
@@ -1153,7 +1160,7 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2.graph.hash
 
-    @pytest.mark.parametrize("ret", [expval, var, sample])
+    @pytest.mark.parametrize("ret", [expval, var, sample, counts])
     def test_expand_tape_multiple_wires_non_commuting(self, ret):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables are on the same wire"""
