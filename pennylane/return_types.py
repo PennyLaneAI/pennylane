@@ -98,7 +98,7 @@ def enable_return():
     ```
 
     where before the following error was raised:
-    ```ValueError: All input arrays must have the same shape.```
+    `ValueError: All input arrays must have the same shape.`
     """
 
     global __activated
@@ -126,7 +126,6 @@ def disable_return():
     >>> res = qnode(0.5)
     >>> res
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
-
     >>> qml.disable_return()
     >>> res = qnode(0.5)
     >>> res
