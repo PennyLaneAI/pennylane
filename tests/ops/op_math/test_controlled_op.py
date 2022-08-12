@@ -670,20 +670,46 @@ class TestHelperMethod:
         """Test case with single control wire and defined _controlled"""
         base = qml.RX(1.0, wires=0)
         op = Controlled(base, 1)
-        new_op = _decompose_no_control_values(op)
-        assert qml.equal(new_op, qml.CRX(1.0, wires=(1, 0)))
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.CRX(1.0, wires=(1, 0)))
+
+    def test_inverts_decomp_if_target_inverted(self):
+
+        base = qml.RX(1.0, wires=0).inv()
+        op = Controlled(base, 1)
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert decomp[0].inverse
 
     def test_toffoli(self):
         """Test case when PauliX with two controls."""
         op = Controlled(qml.PauliX(2), (0, 1))
-        new_op = _decompose_no_control_values(op)
-        assert qml.equal(new_op, qml.Toffoli((0, 1, 2)))
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.Toffoli((0, 1, 2)))
 
     def test_multicontrolledx(self):
         """Test case when PauliX has many controls."""
         op = Controlled(qml.PauliX(4), (0, 1, 2, 3))
-        new_op = _decompose_no_control_values(op)
-        assert qml.equal(new_op, qml.MultiControlledX((0, 1, 2, 3, 4)))
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.MultiControlledX((0, 1, 2, 3, 4)))
+
+    def test_decomposes_target(self):
+        """Test that we decompose the target if we don't have a special case."""
+        target = qml.IsingXX(1.0, wires=(0, 1))
+        op = Controlled(target, (3, 4))
+
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 3
+
+        target_decomp = target.decomposition()
+        for op1, target in zip(decomp, target_decomp):
+            assert isinstance(op1, Controlled)
+            assert op1.control_wires == (3, 4)
+
+            assert qml.equal(op1.base, target)
 
     def test_None_default(self):
         """Test that helper returns None if no special decomposition."""

@@ -1938,8 +1938,8 @@ class MultiControlledX(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        wires=None,
         control_wires=None,
+        wires=None,
         control_values=None,
         work_wires=None,
         do_queue=True,
