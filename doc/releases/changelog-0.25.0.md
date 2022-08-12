@@ -161,7 +161,10 @@
           [0.  , -0.125]], requires_grad=True))
   ```
 
-  The following simpler example also makes use of broadcasting:
+  The following example highlights how to make use of broadcasting
+  gradients at the QNode level. Internally, broadcasting is used to
+  compute the parameter-shift rule when required, which may result in
+  performance improvements.
 
   ```python
   @qml.qnode(dev, diff_method="parameter-shift", broadcast=True)
@@ -178,7 +181,8 @@
   (array(-0.09195267), array(-0.38747287))
   ```
 
-  where only 2, instead of 4 with `broadcast=False`, circuits are created internally.
+  Here, only 2 circuits are created internally, rather than 4
+  with `broadcast=False`.
 
   To illustrate the speedup, for a constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
   time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
@@ -206,7 +210,7 @@
 
   The following functionalities have been added to facilitate creating new operators 
   whose matrix, terms, and eigenvalues can be accessed as per usual, while maintaining 
-  differentiability. operators created from these new features can be used within
+  differentiability. Operators created from these new features can be used within
   QNodes as operations or as observables (where physically applicable). 
 
   - Summing any number of operators via `qml.op_sum` results in a "summed" operator:
@@ -507,8 +511,8 @@
   [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
 
   Mathematically, `qml.FlipSign` functions as follows: 
-  $\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle$, where 
-  $\vert m \rangle$ is an arbitrary qubit state and $n$ is a qubit configuration:
+  :math:`\text{FlipSign}(n) \vert m \rangle = (-1)^\delta_{n,m} \vert m \rangle`, where 
+  :math:`\vert m \rangle` is an arbitrary qubit state and $n$ is a qubit configuration:
 
   ```python
   basis_state = [0, 1]
