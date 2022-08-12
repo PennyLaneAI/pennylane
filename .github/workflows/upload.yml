@@ -306,7 +306,7 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     # Make sure that the PennyLane is not released unless the tests are passing.
-    needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, device-tests]
+    needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, return-tests, device-tests]
     steps:
       - uses: actions/checkout@v2
         with:
