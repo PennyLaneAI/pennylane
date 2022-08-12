@@ -17,6 +17,7 @@
   [(#2796)](https://github.com/PennyLaneAI/pennylane/pull/2796)
   [(#2797)](https://github.com/PennyLaneAI/pennylane/pull/2797)
   [(#2874)](https://github.com/PennyLaneAI/pennylane/pull/2874)
+  [(#2944)](https://github.com/PennyLaneAI/pennylane/pull/2944)
   [(#2644)](https://github.com/PennyLaneAI/pennylane/pull/2644)
 
   The new [resource](https://pennylane.readthedocs.io/en/stable/code/qml_resource.html) module allows you to estimate the number of 
