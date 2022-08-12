@@ -46,7 +46,7 @@ class TestUnitTestClassicalShadows:
     @pytest.mark.parametrize("shadow", shadows)
     def test_unittest_snapshots(self, shadow):
         """Test the output shape of snapshots method"""
-        T, n = shadow.bitstrings.shape
+        T, n = shadow.bits.shape
         assert (T, n) == shadow.recipes.shape
         assert shadow.local_snapshots().shape == (T, n, 2, 2)
         assert shadow.global_snapshots().shape == (T, 2**n, 2**n)
@@ -96,8 +96,8 @@ class TestIntegrationShadows:
             return qml.classical_shadow(wires=range(n_wires))
 
         # should prepare the bell state
-        bitstrings, recipes = qnode(2)
-        shadow = ClassicalShadow(bitstrings, recipes)
+        bits, recipes = qnode(2)
+        shadow = ClassicalShadow(bits, recipes)
         global_snapshots = shadow.global_snapshots()
 
         state = np.sum(global_snapshots, axis=0) / shadow.snapshots
@@ -109,8 +109,8 @@ class TestIntegrationShadows:
         assert qml.math.allclose(np.mean(local_snapshots, axis=0)[0], 0.5 * np.eye(2), atol=1e-1)
 
         # alternative computation
-        bitstrings, recipes = qnode(1)
-        shadow = ClassicalShadow(bitstrings, recipes)
+        bits, recipes = qnode(1)
+        shadow = ClassicalShadow(bits, recipes)
         global_snapshots = shadow.global_snapshots()
         local_snapshots = shadow.local_snapshots(wires=[0])
 
