@@ -924,7 +924,9 @@ class DefaultQubit(QubitDevice):
 
         .. Note::
 
-            The classical shadow measurement for this device supports at most 52 qubits.
+            This method internally calls ``np.einsum`` which supports at most 52 indices,
+            thus the classical shadow measurement for this device supports at most 52
+            qubits.
 
         .. seealso:: :func:`~.classical_shadow`
 
