@@ -17,6 +17,8 @@ This submodule defines the symbolic operation that indicates the control of an o
 
 import warnings
 
+from inspect import signature
+
 import numpy as np
 from scipy import sparse
 
@@ -41,14 +43,25 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
+    .. note::
+        This class, ``Controlled``, denotes a controlled version of any individual operation.
+        :class:`~.ControlledOp` adds :class:`~.Operation` specific methods and properties to the
+        more general ``Controlled`` class.
+
+        The :class:`~.ControlledOperation` currently constructed by the :func:`~.ctrl` transform wraps
+        an entire tape and does not provide as many representations and attributes as ``Controlled``,
+        but :class:`~.ControlledOperation` does decompose.
+
+    .. seealso:: :class:`~.ControlledOp`, :class:`~.ControlledOperation`, and :func:`~.ctrl`
+
     **Example**
 
     >>> base = qml.RX(1.234, 1)
     >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
-    CRX(1.234, wires=[0, 2, 3, 1])
+    C(RX)(1.234, wires=[0, 2, 3, 1])
     >>> op = Controlled(base, 0, control_values=[0])
     >>> op
-    CRX(1.234, wires=[0, 1])
+    C(RX)(1.234, wires=[0, 1])
 
     The operation has both standard :class:`~.operation.Operator` properties
     and ``Controlled`` specific properties:
@@ -82,7 +95,7 @@ class Controlled(SymbolicOp):
            [0.    +0.j    , 0.    +0.j    , 0.    +0.j    , 1.    +0.j    ]])
     >>> qml.eigvals(op)
     array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
-    >>> qml.generator(op, format='observable')
+    >>> print(qml.generator(op, format='observable'))
     (-0.5) [Projector0 X1]
     >>> op.sparse_matrix()
     <4x4 sparse matrix of type '<class 'numpy.complex128'>'
@@ -93,11 +106,25 @@ class Controlled(SymbolicOp):
     methods and properties to the basic :class:`~.ops.op_math.Controlled` class.
 
     >>> type(op)
-    pennylane.ops.op_math.controlled_class.ControlledOp
+    <class 'pennylane.ops.op_math.controlled_class.ControlledOp'>
     >>> op.parameter_frequencies
     [(0.5, 1.0)]
 
     """
+
+    # pylint: disable=no-self-argument
+    @operation.classproperty
+    def __signature__(cls):  # pragma: no cover
+        # this method is defined so inspect.signature returns __init__ signature
+        # instead of __new__ signature
+        # See PEP 362
+
+        # use __init__ signature instead of __new__ signature
+        sig = signature(cls.__init__)
+        # get rid of self from signature
+        new_parameters = tuple(sig.parameters.values())[1:]
+        new_sig = sig.replace(parameters=new_parameters)
+        return new_sig
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
@@ -140,9 +167,14 @@ class Controlled(SymbolicOp):
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires
 
-        self._name = f"C{base.name}"
+        self._name = f"C({base.name})"
 
         super().__init__(base, do_queue, id)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix if self.base.batch_size is None else False
 
     # Properties on the control values ######################
     @property
@@ -211,6 +243,9 @@ class Controlled(SymbolicOp):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
     def matrix(self, wire_order=None):
+
+        if self.base.batch_size is not None:
+            raise qml.operation.MatrixUndefinedError
 
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
@@ -332,6 +367,8 @@ class ControlledOp(Controlled, operation.Operation):
 
     When we no longer rely on certain functionality through ``Operation``, we can get rid of this
     class.
+
+    .. seealso:: :class:`~.Controlled`
     """
 
     def __new__(cls, *_, **__):
@@ -346,17 +383,17 @@ class ControlledOp(Controlled, operation.Operation):
     def _inverse(self, boolean):
         self.base._inverse = boolean  # pylint: disable=protected-access
         # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
+        self._name = f"C({self.base.name})"
 
     def inv(self):
         self.base.inv()
         # refresh name as base_name got updated.
-        self._name = f"C{self.base.name}"
+        self._name = f"C({self.base.name})"
         return self
 
     @property
     def base_name(self):
-        return f"C{self.base.base_name}"
+        return f"C({self.base.base_name})"
 
     @property
     def name(self):

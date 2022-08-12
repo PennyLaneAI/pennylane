@@ -573,6 +573,15 @@ of operators.
 
 <h3>Improvements 📈</h3>
 
+* A warning is emitted for measurements
+  - `qml.state`
+  - `qml.density_matrix`
+  - `qml.vn_entropy`
+  - `qml.mutual_info`
+  when using a device with finite shots or a shot list because the results of
+  these measurements are always analytic.
+  [(#2918)](https://github.com/PennyLaneAI/pennylane/pull/2918)
+
 * The efficiency of the Hartree-Fock workflow has been improved by removing 
   repetitive steps.
   [(#2850)](https://github.com/PennyLaneAI/pennylane/pull/2850)
@@ -699,6 +708,13 @@ of operators.
   [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
 
 <h3>Bug fixes 🐞</h3>
+
+* Cleans up interactions between operator arithmetic and batching by
+  testing supported cases and adding errors when batching is not supported.
+  [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
+
+* Fixed a bug where the parameter-shift rule wasn't defined for `qml.kUpCCGSD`.
+  [(#2913)](https://github.com/PennyLaneAI/pennylane/pull/2913)  
 
 * Reworked the Hermiticity check in `qml.Hermitian` by using `qml.math` calls
   because calling `.conj()` on an `EagerTensor` from TensorFlow raised an

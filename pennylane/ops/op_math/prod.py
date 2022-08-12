@@ -87,7 +87,7 @@ class Prod(Operator):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1} \dot \hat{op}_{2}` which indicates
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
         in the decomposition of the operator.
 
@@ -198,7 +198,7 @@ class Prod(Operator):
     @property
     def batch_size(self):
         """Batch size of input parameters."""
-        return None
+        return next((op.batch_size for op in self.factors if op.batch_size is not None), None)
 
     @property
     def num_params(self):
@@ -318,6 +318,9 @@ class Prod(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.factors)
         return self
+
+    def adjoint(self):
+        return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))
 
     @property
     def arithmetic_depth(self) -> int:
