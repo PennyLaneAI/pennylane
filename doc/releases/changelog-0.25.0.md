@@ -27,14 +27,11 @@
 
   - [First quantization](https://en.wikipedia.org/wiki/First_quantization) using a plane-wave basis via the `FirstQuantization` class:
 
-    ```python
-    n = 100000        # number of plane waves
-    eta = 156         # number of electrons
-    omega = 1145.166  # unit cell volume in atomic units
-    algo = FirstQuantization(n, eta, omega)
-    ```
-    
     ```pycon
+    >>> n = 100000        # number of plane waves
+    >>> eta = 156         # number of electrons
+    >>> omega = 1145.166  # unit cell volume in atomic units
+    >>> algo = FirstQuantization(n, eta, omega)
     >>> algo.gates
     1.10e+13
     >>> algo.qubits
