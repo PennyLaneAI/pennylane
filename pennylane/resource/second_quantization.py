@@ -54,7 +54,7 @@ class DoubleFactorization(Operation):
     >>>       algo.gates, # estimated number of non-Clifford gates
     >>>       algo.qubits # estimated number of logical qubits
     >>>       )
-    >>> 53.62085493277858 103969925 290
+    53.62085493277858 103969925 290
 
     .. details::
         :title: Theory
