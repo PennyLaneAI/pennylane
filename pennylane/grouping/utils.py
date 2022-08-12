@@ -25,7 +25,7 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qml
-from pennylane import PauliX, PauliY, PauliZ, Identity
+from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -659,10 +659,11 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 
 def are_pauli_words_qwc(lst_pauli_words):
-    """Given a list of observables assumed to be valid Pauli words, determine if they
-     are pairwise qubit-wise commuting.
+    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
+    qubit-wise commuting.
 
-    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the number of distinct wire labels used to represent the Pauli words.
+    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the
+    number of distinct wire labels used to represent the Pauli words.
 
     Args:
         lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).

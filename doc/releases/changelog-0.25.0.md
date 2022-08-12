@@ -154,10 +154,10 @@
   >>> x = np.array([np.pi/3, np.pi/2], requires_grad=True)
   >>> y = np.array([np.pi/6, np.pi/5], requires_grad=True)
   >>> qml.gradients.param_shift(circuit, broadcast=True)(x, y)
-  (tensor([[-0.9330127,  0.       ],
-           [ 0.       , -0.9330127]], requires_grad=True),
-  tensor([[0.25, 0.  ],
-          [0.  , 0.25]], requires_grad=True))
+  (tensor([[-0.7795085,  0.       ],
+          [ 0.       , -0.7795085]], requires_grad=True),
+  tensor([[-0.125,  0.   ],
+          [ 0.   , -0.125]], requires_grad=True))
   ```
 
   To illustrate the speedup, for a constant-depth circuit with Pauli rotations and controlled Pauli rotations, the 
