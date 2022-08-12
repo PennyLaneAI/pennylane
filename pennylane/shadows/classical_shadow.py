@@ -103,6 +103,8 @@ class ClassicalShadow:
             wires (Iterable[int]): The wires over which to compute the snapshots. For ``wires=None``(default) all ``n`` qubits are used.
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None``(default), all local snapshots are taken. In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
 
+        Returns:
+            tensor: The local snapshots tensor of shape `(T, n, 2, 2)` containing the local local density matrices for each snapshot and each qubit.
         """
         bits = self.bits
         recipes = self.recipes
