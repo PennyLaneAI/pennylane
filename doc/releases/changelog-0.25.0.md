@@ -184,7 +184,7 @@
   time required to compute `qml.gradients.param_shift(circuit, broadcast=False)(params)`
   ("No broadcasting") and `qml.gradients.param_shift(circuit, broadcast=True)(params)` 
   ("Broadcasting") as a function of the number of qubits is given
-  [here](https://pennylane.readthedocs.io/en/stable/_images/default_qubit_native_broadcast_speedup.png).
+  [here](https://pennylane.readthedocs.io/en/stable/_images/param_shift_broadcast_speedup.png).
 
 * Operations for quantum chemistry now support parameter broadcasting.
   [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
