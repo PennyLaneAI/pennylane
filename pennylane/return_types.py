@@ -108,6 +108,7 @@ def disable_return():
     """Function that turns off the new return type system.
 
     **Example**
+
     ```python
     dev = qml.device("default.qubit", wires=2)
 
