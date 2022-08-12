@@ -32,13 +32,13 @@ def equal(
     Args:
         op1 (.Operator): First operator to compare
         op2 (.Operator): Second operator to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: `True`
-        check_trainability (bool, optional): Whether to compare trainability status. Default: `True`
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
         atol (float, optional): Absolute tolerance for parameters
 
     Returns:
-        bool: `True` if the operators are equal, else `False`
+        bool: ``True`` if the operators are equal, else ``False``
 
     **Example**
 
