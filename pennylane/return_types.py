@@ -137,5 +137,34 @@ def disable_return():
 
 
 def active_return():
-    """Function that checks if the new return types system is activated."""
+    """Function that checks if the new return types system is activated.
+
+    **Example**
+
+    By default, the new return types system is turned off:
+
+    ```pycon
+    >>> active_return()
+    False
+    ```
+
+    It can be activated:
+
+    ```pycon
+    >>> enable_return()
+    >>> active_return()
+    True
+    ```
+
+    And can also be deactivated:
+
+    ```pycon
+    >>> enable_return()
+    >>> active_return()
+    True
+    >>> enable_return()
+    >>> active_return()
+    False
+    ```
+    """
     return __activated
