@@ -98,4 +98,4 @@ def equal(
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
-    return True
+    return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)

@@ -928,3 +928,15 @@ class TestEqual:
             + " depth larger than 0 is not yet implemented.",
         ):
             qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)))
+
+    def test_equal_same_inversion(self):
+        """Test operations are equal if they are both inverted."""
+        op1 = qml.RX(1.2, wires=0).inv()
+        op2 = qml.RX(1.2, wires=0).inv()
+        assert qml.equal(op1, op2)
+
+    def test_not_equal_different_inversion(self):
+        """Test operations are not equal if one is inverted and the other is not."""
+        op1 = qml.PauliX(0)
+        op2 = qml.PauliX(0).inv()
+        assert not qml.equal(op1, op2)
