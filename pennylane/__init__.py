@@ -58,7 +58,6 @@ from pennylane.measurements import (
     mutual_info,
     classical_shadow,
     classical_shadow_expval,
-    classical_shadow_state,
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod

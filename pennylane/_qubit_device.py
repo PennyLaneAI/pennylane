@@ -38,7 +38,6 @@ from pennylane.measurements import (
     MutualInfo,
     Shadow,
     ShadowExpval,
-    ShadowState,
 )
 from pennylane.interfaces import set_shots
 from pennylane.shadows import ClassicalShadow
@@ -805,14 +804,6 @@ class QubitDevice(Device):
                     )
                 results.append(self.classical_shadow_expval(obs, circuit=circuit))
 
-            elif obs.return_type is ShadowState:
-                if len(observables) > 1:
-                    raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
-                    )
-                results.append(self.classical_shadow_state(obs, circuit=circuit))
-
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
@@ -1245,12 +1236,6 @@ class QubitDevice(Device):
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         return shadow.expval(obs.H, obs.k)
-
-    def classical_shadow_state(self, obs, circuit):
-        """TODO: docs"""
-        bits, recipes = self.classical_shadow(obs, circuit)
-        shadow = ClassicalShadow(bits, recipes)
-        return qml.math.mean(shadow.global_snapshots(), 0)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

@@ -48,7 +48,6 @@ class ObservableReturnTypes(Enum):
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
-    ShadowState = "shadowstate"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -92,12 +91,7 @@ Shadow = ObservableReturnTypes.Shadow
 the classical shadow protocol"""
 
 ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: An enumeration which represents returning the expval estimation from
-the classical shadow protocol"""
-
-ShadowState = ObservableReturnTypes.ShadowState
-"""Enum: An enumeration which represents returning the state reconstruction from
-the classical shadow protocol"""
+"""Enum: dummy hack test"""
 
 
 class MeasurementShapeError(ValueError):
@@ -549,12 +543,8 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         if self.return_type is Shadow:
             return int
-
-        if self.return_type is ShadowExpval:
+        elif self.return_type is ShadowExpval:
             return float
-
-        if self.return_type is ShadowState:
-            return complex
 
     def shape(self, device=None):
         """The expected output shape of the ShadowMeasurementProcess.
@@ -574,10 +564,6 @@ class ShadowMeasurementProcess(MeasurementProcess):
         if self.return_type is ShadowExpval:
             return ()
 
-        # the return value of ShadowState is a density matrix
-        if self.return_type is ShadowState:
-            return (2 ** len(self.wires), 2 ** len(self.wires))
-
         # otherwise, the return type requires a device
         if device is None:
             raise MeasurementShapeError(
@@ -595,10 +581,9 @@ class ShadowMeasurementProcess(MeasurementProcess):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.return_type in [Shadow, ShadowState]:
+        if self.return_type is Shadow:
             return self._wires
 
-        # ShadowExpval case
         return self.H.wires
 
     def __copy__(self):
@@ -1278,14 +1263,6 @@ def classical_shadow_expval(obs, k=1, seed_recipes=True):
     """TODO: docs"""
     seed = np.random.randint(2**30) if seed_recipes else None
     return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)
-
-
-def classical_shadow_state(wires, seed_recipes=True):
-    """TODO: docs"""
-    wires = qml.wires.Wires(wires)
-
-    seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowState, wires=wires, seed=seed)
 
 
 T = TypeVar("T")
