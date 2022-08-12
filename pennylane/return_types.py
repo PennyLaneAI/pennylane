@@ -26,6 +26,7 @@ def enable_return():
     **Example**
 
     The following example shows that for multiple measurements the current PennyLane system is creating a ragged tensor.
+
     ```python
     dev = qml.device("default.qubit", wires=2)
 
