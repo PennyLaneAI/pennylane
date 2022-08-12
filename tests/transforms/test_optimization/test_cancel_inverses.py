@@ -36,12 +36,51 @@ class TestCancelInverses:
 
         assert len(new_tape.operations) == 0
 
-    def test_one_qubit_cancel_adjacent_inverse(self):
+    def test_one_qubit_cancel_followed_inverse(self):
         """Test that a single-qubit circuit with adjacent inverse gate cancels."""
 
         def qfunc():
             qml.S(wires=0)
+            qml.S(wires=0).inv()
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_preceded_inverse(self):
+        """Test that a single-qubit circuit with adjacent inverse gate cancels."""
+
+        def qfunc():
+            qml.S(wires=0).inv()
+            qml.S(wires=0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_followed_adjoint(self):
+        """Test that a single-qubit circuit with adjacent adjoint gate cancels."""
+
+        def qfunc():
+            qml.S(wires=0)
             qml.adjoint(qml.S)(wires=0)
+
+        transformed_qfunc = cancel_inverses(qfunc)
+
+        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+
+        assert len(new_tape.operations) == 0
+
+    def test_one_qubit_cancel_preceded_adjoint(self):
+        """Test that a single-qubit circuit with adjacent adjoint gate cancels."""
+
+        def qfunc():
+            qml.adjoint(qml.S)(wires=0)
+            qml.S(wires=0)
 
         transformed_qfunc = cancel_inverses(qfunc)
 

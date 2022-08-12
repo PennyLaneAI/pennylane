@@ -146,12 +146,13 @@ class DefaultQubitTorch(DefaultQubit):
     )
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
-    _conj = staticmethod(torch.conj)
     _real = staticmethod(torch.real)
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
     _const_mul = staticmethod(torch.mul)
+    _size = staticmethod(torch.numel)
+    _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
@@ -239,9 +240,12 @@ class DefaultQubitTorch(DefaultQubit):
             if not isinstance(a[0], torch.Tensor):
                 res = np.asarray(a)
                 res = torch.from_numpy(res)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
+            elif len(a) == 1 and len(a[0].shape) > 1:
+                res = a[0]
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
-            res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
 

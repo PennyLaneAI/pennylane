@@ -507,6 +507,58 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
+def einsum(indices, *operands, like=None):
+    """Evaluates the Einstein summation convention on the operands.
+
+    Args:
+        indices (str): Specifies the subscripts for summation as comma separated list of
+            subscript labels. An implicit (classical Einstein summation) calculation is
+            performed unless the explicit indicator ‘->’ is included as well as subscript
+            labels of the precise output form.
+        operands (tuple[tensor_like]): The tensors for the operation.
+
+    Returns:
+        tensor_like: The calculation based on the Einstein summation convention.
+
+    **Examples**
+
+    >>> a = np.arange(25).reshape(5,5)
+    >>> b = np.arange(5)
+    >>> c = np.arange(6).reshape(2,3)
+
+    Trace of a matrix:
+
+    >>> qml.math.einsum('ii', a)
+    60
+
+    Extract the diagonal (requires explicit form):
+
+    >>> qml.math.einsum('ii->i', a)
+    array([ 0,  6, 12, 18, 24])
+
+    Sum over an axis (requires explicit form):
+
+    >>> qml.math.einsum('ij->i', a)
+    array([ 10,  35,  60,  85, 110])
+
+    Compute a matrix transpose, or reorder any number of axes:
+
+    >>> np.einsum('ij->ji', c)
+    array([[0, 3],
+           [1, 4],
+           [2, 5]])
+
+    Matrix vector multiplication:
+
+    >>> np.einsum('ij,j', a, b)
+    array([ 30,  80, 130, 180, 230])
+    """
+    if like is None:
+        like = _multi_dispatch(operands)
+    operands = np.coerce(operands, like=like)
+    return np.einsum(indices, *operands, like=like)
+
+
 def where(condition, x=None, y=None):
     """Returns elements chosen from x or y depending on a boolean tensor condition,
     or the indices of entries satisfying the condition.
@@ -572,13 +624,15 @@ def where(condition, x=None, y=None):
     """
     if x is None and y is None:
         interface = _multi_dispatch([condition])
-        return np.where(condition, like=interface)
+        res = np.where(condition, like=interface)
+
+        if interface == "tensorflow":
+            return np.transpose(np.stack(res))
+
+        return res
 
     interface = _multi_dispatch([condition, x, y])
     res = np.where(condition, x, y, like=interface)
-
-    if interface == "tensorflow":
-        return np.transpose(np.stack(res))
 
     return res
 
@@ -618,6 +672,33 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
         inner_product = inner_product / norm
 
     return inner_product
+
+
+@multi_dispatch(argnum=[1])
+def scatter(indices, array, new_dims, like=None):
+    """Scatters an array into a tensor of shape new_dims according to indices.
+
+    This operation is similar to scatter_element_add, except that the tensor
+    is zero-initialized. Calling scatter(indices, array, new_dims) is identical
+    to calling scatter_element_add(np.zeros(new_dims), indices, array)
+
+    Args:
+        indices (tensor_like[int]): Indices to update
+        array (tensor_like[float]): Values to assign to the new tensor
+        new_dims (int or tuple[int]): The shape of the new tensor
+        like (str): Manually chosen interface to dispatch to.
+    Returns:
+        tensor_like[float]: The tensor with the values modified the given indices.
+
+    **Example**
+
+    >>> indices = np.array([4, 3, 1, 7])
+    >>> updates = np.array([9, 10, 11, 12])
+    >>> shape = 8
+    >>> qml.math.scatter(indices, updates, shape)
+    array([ 0, 11,  0, 10,  9,  0,  0, 12])
+    """
+    return np.scatter(indices, array, new_dims, like=like)
 
 
 @multi_dispatch(argnum=[0, 2])
@@ -702,3 +783,56 @@ def unwrap(values, max_depth=None):
             res.append(a)
 
     return res
+
+
+def add(*args, **kwargs):
+    """Add arguments element-wise."""
+    try:
+        return np.add(*args, **kwargs)
+    except TypeError:
+        # catch arg1 = torch, arg2=numpy error
+        # works fine with opposite order
+        return np.add(args[1], args[0], *args[2:], **kwargs)
+
+
+@multi_dispatch()
+def iscomplex(tensor, like=None):
+    """Return True if the tensor has a non-zero complex component."""
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        imag_tensor = tf.math.imag(tensor)
+        return tf.math.count_nonzero(imag_tensor) > 0
+
+    if like == "torch":
+        import torch
+
+        if torch.is_complex(tensor):
+            imag_tensor = torch.imag(tensor)
+            return torch.count_nonzero(imag_tensor) > 0
+        return False
+
+    return np.iscomplex(tensor)
+
+
+@multi_dispatch()
+def expm(tensor, like=None):
+    """Compute the matrix exponential of an array :math:`e^{X}`.
+
+    ..note::
+        This function is not differentiable with Autograd, as it
+        relies on the scipy implementation.
+    """
+    if like == "torch":
+        return tensor.matrix_exp()
+    if like == "jax":
+        from jax.scipy.linalg import expm as jax_expm
+
+        return jax_expm(tensor)
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.linalg.expm(tensor)
+    from scipy.linalg import expm as scipy_expm
+
+    return scipy_expm(tensor)

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Identity Operator."""
+import pytest
 
 from pennylane import Identity
 import numpy as np
@@ -34,6 +35,16 @@ def test_decomposition():
 def test_label_method():
     """Test the label method for the Identity Operator"""
     assert Identity(wires=0).label() == "I"
+
+
+@pytest.mark.parametrize("n", (2, -3, 3.455, -1.29))
+def test_identity_pow(n):
+    """Test that the identity raised to any power is simply a single copy."""
+    op = Identity("b")
+    pow_ops = op.pow(n)
+    assert len(pow_ops) == 1
+    assert pow_ops[0].__class__ is Identity
+    assert pow_ops[0].wires == op.wires
 
 
 def test_matrix_representation(tol):

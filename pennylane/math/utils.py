@@ -135,7 +135,10 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    dtype = ar.to_numpy(tensor2).dtype.type
+    if not is_abstract(tensor2):
+        dtype = ar.to_numpy(tensor2).dtype.type
+    else:
+        dtype = tensor2.dtype
     return cast(tensor1, dtype)
 
 
@@ -318,7 +321,7 @@ def requires_grad(tensor, interface=None):
 
     .. warning::
 
-        The implemetation depends on the contained tensor type, and
+        The implementation depends on the contained tensor type, and
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
@@ -397,3 +400,52 @@ def requires_grad(tensor, interface=None):
         return isinstance(tensor, jax.core.Tracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
+
+
+def in_backprop(tensor, interface=None):
+    """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
+    Tensorflow and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
+    rather checking if the gradient is actually calculated.
+
+    Args:
+        tensor (tensor_like): input tensor
+        interface (str): The name of the interface. Will be determined automatically
+            if not provided.
+
+    **Example**
+
+    >>> x = tf.Variable([0.6, 0.1])
+    >>> requires_grad(x)
+    False
+    >>> with tf.GradientTape() as tape:
+    ...     print(requires_grad(x))
+    True
+
+    .. seealso:: :func:`~.requires_grad`
+    """
+    interface = interface or get_interface(tensor)
+
+    if interface == "tensorflow":
+        import tensorflow as tf
+
+        try:
+            from tensorflow.python.eager.tape import should_record_backprop
+        except ImportError:  # pragma: no cover
+            from tensorflow.python.eager.tape import (
+                should_record as should_record_backprop,
+            )
+
+        return should_record_backprop([tf.convert_to_tensor(tensor)])
+
+    if interface == "autograd":
+        return isinstance(tensor, ArrayBox)
+
+    if interface == "jax":
+        import jax
+
+        return isinstance(tensor, jax.core.Tracer)
+
+    if interface == "numpy":
+        return False
+
+    raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")

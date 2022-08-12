@@ -51,7 +51,7 @@ H_data = np.array(
         0.93441396 + 0.0j,
     ]
 )
-H_hydrogen = coo_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
+H_hydrogen = csr_matrix((H_data, (H_row, H_col)), shape=(16, 16)).toarray()
 
 
 class TestSparse:
@@ -59,29 +59,29 @@ class TestSparse:
 
     def test_label(self):
         """Test label method returns 𝓗"""
-        H = qml.SparseHamiltonian(coo_matrix(np.array([[1, 0], [-1.5, 0]])), 1)
+        H = qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1)
         assert H.label() == "𝓗"
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_typeerror(self, sparse_hamiltonian):
         """Test that the SparseHamiltonian class raises a TypeError on incorrect inputs."""
         mat = np.array([[1, 0], [-1.5, 0]])
-        sparse_hamiltonian = csr_matrix(mat)
+        sparse_hamiltonian = coo_matrix(mat)
 
-        with pytest.raises(TypeError, match="Observable must be a scipy sparse coo_matrix"):
+        with pytest.raises(TypeError, match="Observable must be a scipy sparse csr_matrix"):
             qml.SparseHamiltonian(sparse_hamiltonian)
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_matrix(self, sparse_hamiltonian, tol):
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian_coo = coo_matrix(sparse_hamiltonian)
+        sparse_hamiltonian_csr = csr_matrix(sparse_hamiltonian)
         res_dynamic = qml.SparseHamiltonian(
-            sparse_hamiltonian_coo, range(num_wires)
+            sparse_hamiltonian_csr, range(num_wires)
         ).sparse_matrix()
-        res_static = qml.SparseHamiltonian.compute_sparse_matrix(sparse_hamiltonian_coo)
-        assert isinstance(res_dynamic, coo_matrix)
-        assert isinstance(res_static, coo_matrix)
+        res_static = qml.SparseHamiltonian.compute_sparse_matrix(sparse_hamiltonian_csr)
+        assert isinstance(res_dynamic, csr_matrix)
+        assert isinstance(res_static, csr_matrix)
         assert np.allclose(res_dynamic.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
         assert np.allclose(res_static.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
 
@@ -89,9 +89,9 @@ class TestSparse:
     def test_matrix(self, sparse_hamiltonian, tol):
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian_coo = coo_matrix(sparse_hamiltonian)
-        res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_coo, range(num_wires)).matrix()
-        res_static = qml.SparseHamiltonian.compute_matrix(sparse_hamiltonian_coo)
+        sparse_hamiltonian_csr = csr_matrix(sparse_hamiltonian)
+        res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_csr, range(num_wires)).matrix()
+        res_static = qml.SparseHamiltonian.compute_matrix(sparse_hamiltonian_csr)
         assert isinstance(res_dynamic, np.ndarray)
         assert isinstance(res_static, np.ndarray)
         assert np.allclose(res_dynamic, sparse_hamiltonian, atol=tol, rtol=0)
@@ -105,7 +105,7 @@ class TestSparse:
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
+            return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -119,7 +119,7 @@ class TestSparse:
         """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
         dev = qml.device("default.qubit", wires=qubits, shots=None)
 
-        hamiltonian = coo_matrix(hamiltonian)
+        hamiltonian = csr_matrix(hamiltonian)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(param):
@@ -162,7 +162,7 @@ class TestSparse:
     def test_sparse_hamiltonian_expval(self, qubits, operations, hamiltonian, expected_output, tol):
         """Test that expectation values of sparse hamiltonians are properly calculated."""
 
-        hamiltonian = coo_matrix(hamiltonian)
+        hamiltonian = csr_matrix(hamiltonian)
 
         dev = qml.device("default.qubit", wires=qubits, shots=None)
         dev.apply(operations)
@@ -173,7 +173,7 @@ class TestSparse:
     def test_sparse_expval_error(self):
         """Test that a DeviceError is raised when the observable is SparseHamiltonian and finite
         shots is requested."""
-        hamiltonian = coo_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
+        hamiltonian = csr_matrix(np.array([[1.0, 0.0], [0.0, 1.0]]))
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 

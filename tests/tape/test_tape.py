@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
+from this import d
 import warnings
 from collections import defaultdict
 
@@ -77,10 +78,12 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.batch_size is None
         assert tape.interface is None
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
+        assert tape._batch_size is None
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""
@@ -193,6 +196,7 @@ class TestConstruction:
         assert tape.measurements == [D]
         assert tape.observables == [C]
         assert tape.output_dim == 1
+        assert tape.batch_size is None
 
     def test_multiple_contexts(self):
         """Test multiple contexts with a single tape."""
@@ -215,6 +219,7 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.batch_size is None
 
         assert a not in tape.operations
         assert b not in tape.operations
@@ -308,6 +313,66 @@ class TestConstruction:
         assert tape.circuit[3].then_op.wires == target_wire
 
         assert tape.circuit[4] is terminal_measurement
+
+    @pytest.mark.parametrize(
+        "x, rot, exp_batch_size",
+        [
+            (0.2, [0.1, -0.9, 2.1], None),
+            ([0.2], [0.1, -0.9, 2.1], 1),
+            ([0.2], [[0.1], [-0.9], 2.1], 1),
+            ([0.2] * 3, [0.1, [-0.9] * 3, 2.1], 3),
+        ],
+    )
+    def test_update_batch_size(self, x, rot, exp_batch_size):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size, when creating and when using `set_parameters`."""
+
+        # Test with tape construction
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.Rot(*rot, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+            qml.apply(qml.expval(qml.PauliX(1)))
+
+        assert tape.batch_size == exp_batch_size
+
+        # Test with set_parameters
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+            qml.apply(qml.expval(qml.PauliX(1)))
+
+        assert tape.batch_size is None
+
+        tape.set_parameters([x] + rot)
+        assert tape.batch_size == exp_batch_size
+
+    @pytest.mark.parametrize(
+        "x, rot, y",
+        [
+            (0.2, [[0.1], -0.9, 2.1], [0.1, 0.9]),
+            ([0.2], [0.1, [-0.9] * 2, 2.1], 0.1),
+        ],
+    )
+    def test_error_inconsistent_batch_sizes(self, x, rot, y):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size, when creating and when using `set_parameters`."""
+
+        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(x, wires=0)
+                qml.Rot(*rot, wires=1)
+                qml.RX(y, wires=1)
+                qml.apply(qml.expval(qml.PauliZ(0)))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
+            qml.RX(0.2, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+            tape.set_parameters([x] + rot + [y])
 
 
 class TestIteration:
@@ -606,12 +671,40 @@ class TestParameters:
 
         return tape, params
 
+    @pytest.fixture
+    def make_tape_with_hermitian(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        hermitian = qml.numpy.eye(2, requires_grad=False)
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.Rot(*params[1:4], wires=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(params[4], wires=4)
+            qml.expval(qml.Hermitian(hermitian, wires="a"))
+
+        return tape, params, hermitian
+
     def test_parameter_processing(self, make_tape):
         """Test that parameters are correctly counted and processed"""
         tape, params = make_tape
         assert tape.num_params == len(params)
         assert tape.trainable_params == list(range(len(params)))
         assert tape.get_parameters() == params
+
+    @pytest.mark.parametrize("operations_only", [False, True])
+    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
+        """Test the operations_only flag for getting the parameters on a tape with
+        qml.Hermitian is measured"""
+        tape, circuit_params, hermitian = make_tape_with_hermitian
+        num_all_params = len(circuit_params) + 1  # + 1 for hermitian
+        assert tape.num_params == num_all_params
+        assert tape.trainable_params == list(range(num_all_params))
+        assert (
+            tape.get_parameters(operations_only=operations_only) == circuit_params
+            if operations_only
+            else circuit_params + [hermitian]
+        )
 
     def test_set_trainable_params(self, make_tape):
         """Test that setting trainable parameters works as expected"""
@@ -787,7 +880,7 @@ class TestParameters:
         assert np.all(obs.data[0] == H2)
 
 
-class TestInverse:
+class TestInverseAdjoint:
     """Tests for tape inversion"""
 
     def test_inverse(self):
@@ -811,6 +904,35 @@ class TestInverse:
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
+
+    def test_adjoint(self):
+        """Test that tape.adjoint is a copy of in-place inversion."""
+
+        init_state = np.array([1, 1])
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with QuantumTape() as tape:
+            prep = qml.BasisState(init_state, wires=[0, "a"])
+            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            m1 = qml.probs(wires=0)
+            m2 = qml.probs(wires="a")
+
+        with QuantumTape() as tape2:
+            adjoint_tape = tape.adjoint()
+
+        assert tape2[0] is adjoint_tape
+
+        assert id(adjoint_tape) != id(tape)
+        assert isinstance(adjoint_tape, QuantumTape)
+
+        tape.inv()
+
+        for op1, op2 in zip(adjoint_tape.circuit, tape.circuit):
+            assert op1.__class__ is op2.__class__
+            if hasattr(op1, "inverse"):
+                assert op1.inverse == op2.inverse
+            if hasattr(op1, "data"):
+                assert qml.math.allclose(op1.data, op2.data)
 
     def test_parameter_transforms(self):
         """Test that inversion correctly changes trainable parameters"""
@@ -1086,6 +1208,7 @@ class TestExecution:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         assert tape.output_dim == 1
+        assert tape.batch_size is None
 
         # test execution with no parameters
         res1 = dev.execute(tape)
@@ -1176,6 +1299,7 @@ class TestExecution:
         expected = [np.cos(x), np.cos(y) ** 2]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and var outputs"""
@@ -1833,6 +1957,9 @@ class TestOutputShape:
         shape of a QNode for a single measurement."""
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
+
+        if shots is not None and measurement.return_type is qml.measurements.State:
+            pytest.skip("State and density matrix don't support finite shots and raise a warning.")
 
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors

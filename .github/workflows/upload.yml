@@ -4,24 +4,34 @@ on:
     types: [published]
 
 env:
-  TF_VERSION: 2.6
+  TF_VERSION: 2.6.0
   TORCH_VERSION: 1.10.0+cpu
 
 
 jobs:
 
-  core-tests:
+  core-and-interface-tests:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         config:
-          - { python-version: 3.7, interfaces: [ 'torch' ] }
-          - { python-version: 3.7, interfaces: [ 'tf' ] }
-          - { python-version: 3.8, interfaces: [ 'tf', 'torch', 'jax' ] }
-          - { python-version: 3.9, interfaces: [ ] }
-          - { python-version: '3.10', interfaces: [ ] }
+          - { python-version: 3.7, suite: 'torch' }
+          - { python-version: 3.7, suite: 'tf' }
+          - { python-version: 3.8, suite: 'tf' }
+          - { python-version: 3.8, suite: 'torch' }
+          - { python-version: 3.8, suite: 'jax' }
+          - { python-version: 3.7, suite: 'autograd' }
+          - { python-version: 3.8, suite: 'autograd' }
+          - { python-version: 3.9, suite: 'autograd' }
+          - { python-version: '3.10', suite: 'autograd' }
+          - { python-version: 3.7, suite: 'core' }
+          - { python-version: 3.8, suite: 'core' }
+          - { python-version: 3.9, suite: 'core' }
+          - { python-version: '3.10', suite: 'core' }
 
+    env:
+      SUITE: ${{ matrix.config.suite }}
 
     steps:
       - name: Cancel Previous Runs
@@ -30,6 +40,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -38,34 +50,26 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
-
-      - name: Conditionally install openfermionpyscf
-        if: contains(' 3.9', matrix.config.python-version)
-        run: pip3 install openfermionpyscf
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Conditionally install PyTorch
-        if: contains(matrix.config.interfaces, 'torch')
+        if: matrix.config.suite == 'torch'
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Conditionally install TensorFlow
-        if: contains(matrix.config.interfaces, 'tf')
-        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+        if: matrix.config.suite == 'tf'
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       # Jax releases new version very frequently, so we should always build
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
-        if: contains(matrix.config.interfaces, 'jax')
+        if: matrix.config.suite == 'jax'
         run: pip3 install jax jaxlib
-
-      - name: Install KaHyPar
-        run: pip3 install kahypar==1.1.7
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -73,7 +77,132 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests
+        run: python -m pytest tests -m "$SUITE" -n auto
+
+  all-interfaces-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests -m all_interfaces -n auto
+
+  qcut:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install KaHyPar
+        run: pip3 install kahypar==1.1.7
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests -m qcut -n auto
+
+  qchem:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          # Based on previous experience, PySCF installation might fail or take
+          # longer time with some python versions
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install openfermionpyscf
+        run: pip3 install openfermionpyscf
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests -m qchem -n auto
 
   device-tests:
     runs-on: ubuntu-latest
@@ -94,6 +223,8 @@ jobs:
           access_token: ${{ github.token }}
 
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -102,9 +233,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Conditionally install PyTorch
         if: contains(matrix.config.device, 'torch')
@@ -112,7 +243,7 @@ jobs:
 
       - name: Conditionally install TensorFlow
         if: contains(matrix.config.device, 'tf')
-        run: pip3 install tensorflow==$TF_VERSION
+        run: pip3 install tensorflow~=$TF_VERSION
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
@@ -120,7 +251,6 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -133,9 +263,11 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     # Make sure that the PennyLane is not released unless the tests are passing.
-    needs: [core-tests, device-tests]
+    needs: [core-and-interface-tests, all-interfaces-tests, qcut, qchem, device-tests]
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -145,7 +277,7 @@ jobs:
       - name: Build PennyLane wheel
         run: |
           python -m pip install --upgrade pip wheel
-          pip install -r requirements-ci.txt
+          pip install -r requirements-ci.txt --upgrade
           python setup.py bdist_wheel
 
       - name: Publish

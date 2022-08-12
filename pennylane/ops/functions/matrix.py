@@ -141,6 +141,6 @@ def _matrix(tape, wire_order=None):
 
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        unitary_matrix = qml.math.dot(U, unitary_matrix)
+        unitary_matrix = qml.math.tensordot(U, unitary_matrix, axes=[[-1], [-2]])
 
     return unitary_matrix

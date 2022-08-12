@@ -250,6 +250,52 @@ class TestAdjointJacobian:
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
+    def test_gradient_of_tape_with_hermitian(self, tol):
+        """Test that computing the gradient of a tape that obtains the
+        expectation value of a Hermitian operator works correctly."""
+        dev = qml.device("default.qubit", wires=3)
+
+        a, b, c = [0.5, 0.3, -0.7]
+
+        def ansatz(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        with qml.tape.QuantumTape() as tape:
+            ansatz(a, b, c)
+            qml.RX(a, wires=0)
+            qml.expval(qml.Hermitian(mx, wires=[0, 2]))
+
+        tape.trainable_params = {0, 1, 2}
+        res = dev.adjoint_jacobian(tape)
+
+        expected = [
+            np.cos(a) * np.sin(b) * np.sin(c),
+            np.cos(b) * np.sin(a) * np.sin(c),
+            np.cos(c) * np.sin(b) * np.sin(a),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_trainable_hermitian_warns(self, tol):
+        """Test attempting to compute the gradient of a tape that obtains the
+        expectation value of a Hermitian operator emits a warning if the
+        parameters to Hermitian are trainable."""
+        dev = qml.device("default.qubit", wires=3)
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.Hermitian(mx, wires=[0, 2]))
+
+        tape.trainable_params = {0}
+        with pytest.warns(
+            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
+        ):
+            res = dev.adjoint_jacobian(tape)
+
 
 class TestAdjointJacobianQNode:
     """Test QNode integration with the adjoint_jacobian method"""
@@ -478,3 +524,36 @@ class TestAdjointJacobianQNode:
         grad_backprop = jax.grad(qnode_backprop)(params1, params2)
 
         assert np.allclose(grad_adjoint, grad_backprop)
+
+    def test_gradient_of_qnode_with_hermitian(self, tol):
+        """Test that computing the gradient of a QNode that obtains the
+        expectation value of a Hermitian operator works correctly."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def ansatz(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+
+        @qml.qnode(dev, diff_method="adjoint")
+        def circ(a, b, c):
+            ansatz(a, b, c)
+            qml.RX(a, wires=0)
+            return qml.expval(qml.Hermitian(mx, wires=[0, 2]))
+
+        a = np.array(0.5, requires_grad=True)
+        b = np.array(0.3, requires_grad=True)
+        c = np.array(-0.7, requires_grad=True)
+
+        res = qml.grad(circ)(a, b, c)
+
+        expected = [
+            np.cos(a) * np.sin(b) * np.sin(c),
+            np.cos(b) * np.sin(a) * np.sin(c),
+            np.cos(c) * np.sin(b) * np.sin(a),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)

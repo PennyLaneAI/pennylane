@@ -707,7 +707,7 @@ def meanfield(
 
     package = package.strip().lower()
 
-    if package not in ("pyscf"):
+    if package not in "pyscf":
         error_message = (
             f"Integration with quantum chemistry package '{package}' is not available. \n Please set"
             f" 'package' to 'pyscf'."
@@ -892,6 +892,10 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
+
+    if method not in ["dhf", "pyscf"]:
+        raise ValueError("Only 'dhf' and 'pyscf' backends are supported.")
+
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
@@ -900,6 +904,10 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
+        if mapping != "jordan_wigner":
+            raise ValueError(
+                "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
+            )
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
@@ -916,7 +924,9 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
+            return qml.Hamiltonian(qml.numpy.real(h.coeffs, requires_grad=False), h.ops), 2 * len(
+                active
+            )
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
         return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
 

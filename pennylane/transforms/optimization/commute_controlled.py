@@ -194,9 +194,9 @@ def commute_controlled(tape, direction="right"):
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.5))
-     0: ──╭C──S──╭C─────╭C────────Rϕ(0.25)──╭C──T─────────┤ ⟨Z⟩
-     1: ──│──────╰X──Y──╰RY(0.5)────────────├C──RZ(0.25)──┤
-     2: ──╰Z──X─────────────────────────────╰X────────────┤
+    0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
+    1: ─│─────╰X──Y─╰RY(0.50)───────────├●──RZ(0.25)─┤
+    2: ─╰Z──X───────────────────────────╰X───────────┤
 
     Diagonal gates on either side of control qubits do not affect the outcome
     of controlled gates; thus we can push all the single-qubit gates on the
@@ -208,9 +208,10 @@ def commute_controlled(tape, direction="right"):
     >>> optimized_qfunc = commute_controlled(direction="right")(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(0.5))
-     0: ──╭C──╭C──╭C───────────╭C──S─────────Rϕ(0.25)──T──┤ ⟨Z⟩
-     1: ──│───╰X──╰RY(0.5)──Y──├C──RZ(0.25)───────────────┤
-     2: ──╰Z───────────────────╰X──X──────────────────────┤
+    0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
+    1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
+    2: ─╰Z─────────────────╰X──X─────────────────────┤
+
     """
     if direction not in ("left", "right"):
         raise ValueError("Direction for commute_controlled must be 'left' or 'right'")

@@ -226,7 +226,26 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
     with open(filename, "w") as f:
         f.write(file_content)
 
-    symbols, coordinates = qchem.read_structure(str(filename))
+    symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
     H, num_qubits = qchem.molecular_hamiltonian(symbols, coordinates)
     assert len(H.terms()) == 2
     assert num_qubits == 4
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+        ),
+    ],
+)
+def test_diff_hamiltonian_error(symbols, geometry):
+    r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
+
+    with pytest.raises(ValueError, match="Only 'jordan_wigner' mapping is supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping="bravyi_kitaev")[0]
+
+    with pytest.raises(ValueError, match="Only 'dhf' and 'pyscf' backends are supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, method="psi4")[0]

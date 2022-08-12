@@ -169,6 +169,16 @@ def _execute(
         tc.set_parameters(a)
         return tc
 
+    def array_if_not_counts(tape, r):
+        """Auxiliary function to convert the result of a tape to an array,
+        unless the tape had Counts measurements that are represented with
+        dictionaries. JAX NumPy arrays don't support dictionaries."""
+        return (
+            jnp.array(r)
+            if not any(m.return_type is qml.measurements.Counts for m in tape.measurements)
+            else r
+        )
+
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
@@ -176,9 +186,9 @@ def _execute(
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
         if len(tapes) > 1:
-            res = [jnp.array(r) for r in res]
+            res = [array_if_not_counts(tape, r) for tape, r in zip(tapes, res)]
         else:
-            res = jnp.array(res)
+            res = array_if_not_counts(tapes[0], res)
 
         return res
 
@@ -260,6 +270,36 @@ def _execute(
     return wrapped_exec(params)
 
 
+def _raise_vector_valued_fwd(tapes):
+    """Raises an error for vector-valued tapes in forward mode due to incorrect
+    results being produced.
+
+    There is an issue when jax.jacobian is being used, either due to issues
+    with tensor updating (TypeError: Updates tensor must be of rank 0; got 1)
+    or because jax.vmap introduces a redundant dimensionality in the result by
+    duplicating entries.
+
+    Example to the latter:
+
+    1. Output when using jax.jacobian:
+    DeviceArray([[-0.09983342,  0.01983384],\n
+                 [-0.09983342, 0.01983384]], dtype=float64),
+    DeviceArray([[ 0.        , -0.97517033],\n
+                 [ 0.        , -0.97517033]], dtype=float64)),
+
+    2. Expected output:
+    DeviceArray([[-0.09983342, 0.01983384],\n
+                [ 0.        , -0.97517033]]
+
+    The output produced by this function matches 1.
+    """
+    scalar_outputs = all(t.output_dim == 1 for t in tapes)
+    if not scalar_outputs:
+        raise InterfaceUnsupportedError(
+            "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+        )
+
+
 def _execute_with_fwd(
     params,
     tapes=None,
@@ -298,28 +338,7 @@ def _execute_with_fwd(
         # Use the jacobian that was computed on the forward pass
         jacs, params = params
 
-        # Note: there is an issue when jax.jacobian is being used, either due
-        # to issues with tensor updating (TypeError: Updates tensor must be of
-        # rank 0; got 1) or because jax.vmap introduces a redundant
-        # dimensionality in the result by duplicating entries
-        # Example to the latter:
-        #
-        # 1. Output when using jax.jacobian:
-        # DeviceArray([[-0.09983342,  0.01983384],\n
-        #              [-0.09983342, 0.01983384]], dtype=float64),
-        # DeviceArray([[ 0.        , -0.97517033],\n
-        #              [ 0.        , -0.97517033]], dtype=float64)),
-        #
-        # 2. Expected output:
-        # DeviceArray([[-0.09983342, 0.01983384],\n
-        #             [ 0.        , -0.97517033]]
-        #
-        # The output produced by this function matches 2.
-        scalar_outputs = all(t.output_dim == 1 for t in tapes)
-        if not scalar_outputs:
-            raise InterfaceUnsupportedError(
-                "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
-            )
+        _raise_vector_valued_fwd(tapes)
 
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases

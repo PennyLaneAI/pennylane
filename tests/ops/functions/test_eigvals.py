@@ -97,9 +97,10 @@ class TestSingleOperation:
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
+        rounding_precision = 6
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
         expected = op_class(-0.54, wires=0).eigvals()
-        assert np.allclose(res, expected)
+        assert set(np.around(res, rounding_precision)) == set(np.around(res, rounding_precision))
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
@@ -203,7 +204,7 @@ class TestSingleOperation:
     def test_sparse_hamiltonian(self, row, col, dat, val_ref):
         """Test that the eigenvalues of a sparse Hamiltonian are correctly returned"""
         # N x N matrix with N = 20
-        h_sparse = scipy.sparse.coo_matrix((dat, (row, col)), shape=(len(row), len(col)))
+        h_sparse = scipy.sparse.csr_matrix((dat, (row, col)), shape=(len(row), len(col)))
         h_sparse = qml.SparseHamiltonian(h_sparse, wires=all)
 
         # k = 1  (< N-1) scipy.sparse.linalg is used:

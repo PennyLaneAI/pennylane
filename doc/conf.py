@@ -43,7 +43,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
-    "m2r2"
+    "m2r2",
 ]
 
 os.environ["SPHINX_BUILD"] = "1"
@@ -53,11 +53,16 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 
+# Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
+bibtex_bibfiles = ["bibfile.bib"]
+
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {"https://pennylane.ai/qml/": None}
-mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
+mathjax_path = (
+    "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
+)
 ignore_warnings = [("code/api/qml_transforms*", "no module named pennylane.transforms")]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -125,20 +130,20 @@ todo_include_todos = False
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+# html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+# html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+# html_short_title = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+# html_logo = None
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -153,20 +158,20 @@ html_static_path = ["_static"]
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
-#html_extra_path = []
+# html_extra_path = []
 
 # If not "", a "Last updated on:" timestamp is inserted at every page bottom,
 # using the given strftime format.
-#html_last_updated_fmt = "%b %d, %Y"
+# html_last_updated_fmt = "%b %d, %Y"
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+# html_use_smartypants = True
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 html_sidebars = {
-    "**" : [
+    "**": [
         "searchbox.html",
         "globaltoc.html",
     ]
@@ -174,47 +179,47 @@ html_sidebars = {
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
-#html_additional_pages = {}
+# html_additional_pages = {}
 
 # If false, no module index is generated.
-#html_domain_indices = True
+# html_domain_indices = True
 
 # If false, no index is generated.
-#html_use_index = True
+# html_use_index = True
 
 # If true, the index is split into individual pages for each letter.
-#html_split_index = False
+# html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+# html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+# html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+# html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
 # base URL from which the finished HTML is served.
-#html_use_opensearch = ""
+# html_use_opensearch = ""
 
 # This is the file name suffix for HTML files (e.g., ".xhtml").
-#html_file_suffix = None
+# html_file_suffix = None
 
 # Language to be used for generating the HTML full-text search index.
 # Sphinx supports the following languages:
 #   "da", "de", "en", "es", "fi", "fr", "h", "it", "ja"
 #   "nl", "no", "pt", "ro", "r", "sv", "tr"
-#html_search_language = "en"
+# html_search_language = "en"
 
 # A dictionary with options for the search language support, empty by default.
 # Now only "ja" uses this config value
-#html_search_options = {"type": "default"}
+# html_search_options = {"type": "default"}
 
 # The name of a javascript file (relative to the configuration directory) that
 # implements a search results scorer. If empty, the default will be used.
-#html_search_scorer = "scorer.js"
+# html_search_scorer = "scorer.js"
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = "PennyLanedoc"
@@ -224,12 +229,11 @@ html_theme = "xanadu"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
-    "navbar_wordmark_path": "_static/pl_wordmark.png",
+    "navbar_logo_path": "_static/logo.png",
+    "navbar_wordmark_path": "_static/pennylane.svg",
     # Specifying #19b37b is more correct but does not match the other PL websites.
     "navbar_logo_colour": "#2d7c7f",
-
     "navbar_home_link": "https://pennylane.ai",
-
     "navbar_left_links": [
         {
             "name": "Quantum machine learning",
@@ -255,9 +259,8 @@ html_theme_options = {
         {
             "name": "Blog",
             "href": "https://pennylane.ai/blog/",
-        }
+        },
     ],
-
     "navbar_right_links": [
         {
             "name": "FAQ",
@@ -273,16 +276,12 @@ html_theme_options = {
             "name": "GitHub",
             "href": "https://github.com/PennyLaneAI/pennylane",
             "icon": "fab fa-github",
-        }
+        },
     ],
-
     "extra_copyrights": [
-        "TensorFlow, the TensorFlow logo, and any related marks are trademarks "
-        "of Google Inc."
+        "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
-
     "google_analytics_tracking_id": "UA-130507810-2",
-
     "border_colour": "#19b37b",
     "prev_next_button_colour": "#19b37b",
     "prev_next_button_hover_colour": "#0e714d",
@@ -300,15 +299,12 @@ latex_elements = {
     # The paper size ("letterpaper" or "a4paper").
     #
     # "papersize": "letterpaper",
-
     # The font size ("10pt", "11pt" or "12pt").
     #
     # "pointsize": "10pt",
-
     # Additional stuff for the LaTeX preamble.
     #
     # "preamble": "",
-
     # Latex figure (float) alignment
     #
     # "figure_align": "htbp",
@@ -320,8 +316,7 @@ latex_additional_files = ["macros.tex"]
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "PennyLane.tex", "PennyLane Documentation",
-     "Xanadu Inc.", "manual"),
+    (master_doc, "PennyLane.tex", "PennyLane Documentation", "Xanadu Inc.", "manual"),
 ]
 
 
@@ -329,10 +324,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, "pennylane", "PennyLane Documentation",
-     [author], 1)
-]
+man_pages = [(master_doc, "pennylane", "PennyLane Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -341,13 +333,19 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, "PennyLane", "PennyLane Documentation",
-     author, "PennyLane", "Xanadu quantum machine learning library.",
-     "Miscellaneous"),
+    (
+        master_doc,
+        "PennyLane",
+        "PennyLane Documentation",
+        author,
+        "PennyLane",
+        "Xanadu quantum machine learning library.",
+        "Miscellaneous",
+    ),
 ]
 
 
-#============================================================
+# ============================================================
 
 # the order in which autodoc lists the documented members
 autodoc_member_order = "bysource"

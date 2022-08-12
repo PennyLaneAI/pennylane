@@ -35,6 +35,7 @@ from .utils import (
     pauli_word_to_matrix,
     is_commuting,
     is_qwc,
+    are_pauli_words_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )

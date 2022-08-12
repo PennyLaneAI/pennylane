@@ -269,8 +269,8 @@ class TestOptimize:
         obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
         h = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
-
-        cost_fn = qml.ExpvalCost(ansatz=circuit, hamiltonian=h, device=dev)
+        with pytest.warns(UserWarning, match="is deprecated,"):
+            cost_fn = qml.ExpvalCost(ansatz=circuit, hamiltonian=h, device=dev)
 
         def gradient(params):
             """Returns the gradient"""

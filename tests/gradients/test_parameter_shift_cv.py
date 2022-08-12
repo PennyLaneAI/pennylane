@@ -415,6 +415,43 @@ class TestParameterShiftLogic:
         qml.gradients.param_shift_cv(tape, dev, force_order2=True)
         spy.assert_called()
 
+    def test_force_order2_dim_2(self, mocker, monkeypatch):
+        """Test that if the force_order2 keyword argument is provided, the
+        second order parameter shift rule is forced for an observable with
+        2-dimensional parameters"""
+        spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+
+        def _mock_transform_observable(obs, Z, device_wires):
+            """A mock version of the _transform_observable internal function
+            such that an operator ``transformed_obs`` of two-dimensions is
+            returned. This function is created such that when definining ``A =
+            transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
+            == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
+            iden = qml.Identity(0)
+            iden.data = [np.array([[1, 0], [0, 0]])]
+            return iden
+
+        monkeypatch.setattr(
+            qml.gradients.parameter_shift_cv,
+            "_transform_observable",
+            _mock_transform_observable,
+        )
+
+        dev = qml.device("default.gaussian", wires=1)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Displacement(1.0, 0.0, wires=[0])
+            qml.Rotation(2.0, wires=[0])
+            qml.expval(qml.X(0))
+
+        tape.trainable_params = {0, 1, 2}
+
+        qml.gradients.param_shift_cv(tape, dev, force_order2=False)
+        spy.assert_not_called()
+
+        qml.gradients.param_shift_cv(tape, dev, force_order2=True)
+        spy.assert_called()
+
     def test_no_poly_xp_support(self, mocker, monkeypatch, caplog):
         """Test that if a device does not support PolyXP
         and the second-order parameter-shift rule is required,

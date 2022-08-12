@@ -20,6 +20,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.operation import DecompositionUndefinedError
 
 from gate_data import (
     I,
@@ -34,8 +35,74 @@ from gate_data import (
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
 
+    def test_qubit_unitary_noninteger_pow(self):
+        """Test QubitUnitary raised to a non-integer power raises an error."""
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
+
+        op = qml.QubitUnitary(U, wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.123)
+
+    def test_qubit_unitary_noninteger_pow_broadcasted(self):
+        """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
+        U = np.array(
+            [
+                [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]],
+                [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]],
+            ]
+        )
+
+        op = qml.QubitUnitary(U, wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.123)
+
+    @pytest.mark.parametrize("n", (1, 3, -1, -3))
+    def test_qubit_unitary_pow(self, n):
+        """Test qubit unitary raised to an integer power."""
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
+
+        op = qml.QubitUnitary(U, wires="a")
+        new_ops = op.pow(n)
+
+        assert len(new_ops) == 1
+        assert new_ops[0].wires == op.wires
+
+        mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
+        new_mat = qml.matrix(new_ops[0])
+
+        assert qml.math.allclose(mat_to_pow, new_mat)
+
+    @pytest.mark.parametrize("n", (1, 3, -1, -3))
+    def test_qubit_unitary_pow_broadcasted(self, n):
+        """Test broadcasted qubit unitary raised to an integer power."""
+        U = np.array(
+            [
+                [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]],
+                [[0.4125124 + 0.0j, 0.0 - 0.91095199j], [0.0 - 0.91095199j, 0.4125124 + 0.0j]],
+            ]
+        )
+
+        op = qml.QubitUnitary(U, wires="a")
+        new_ops = op.pow(n)
+
+        assert len(new_ops) == 1
+        assert new_ops[0].wires == op.wires
+
+        mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
+        new_mat = qml.matrix(new_ops[0])
+
+        assert qml.math.allclose(mat_to_pow, new_mat)
+
     @pytest.mark.autograd
-    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    @pytest.mark.parametrize(
+        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+    )
     def test_qubit_unitary_autograd(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with autograd."""
@@ -50,7 +117,7 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U.copy()
@@ -63,7 +130,9 @@ class TestQubitUnitary:
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    @pytest.mark.parametrize(
+        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+    )
     def test_qubit_unitary_torch(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with torch."""
@@ -80,7 +149,7 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U.detach().clone()
@@ -93,7 +162,9 @@ class TestQubitUnitary:
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    @pytest.mark.parametrize(
+        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+    )
     def test_qubit_unitary_tf(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with tensorflow."""
@@ -110,7 +181,7 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = tf.Variable(U + 0.5)
@@ -122,7 +193,9 @@ class TestQubitUnitary:
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
+    @pytest.mark.parametrize(
+        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+    )
     def test_qubit_unitary_jax(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with jax."""
@@ -139,7 +212,7 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U + 0.5
@@ -151,8 +224,10 @@ class TestQubitUnitary:
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("U, num_wires", [(H, 1), (np.kron(H, H), 2)])
-    def test_qubit_unitary_jax(self, U, num_wires):
+    @pytest.mark.parametrize(
+        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
+    )
+    def test_qubit_unitary_jax_jit(self, U, num_wires):
         """Tests that QubitUnitary works with jitting."""
         import jax
         from jax import numpy as jnp
@@ -202,6 +277,17 @@ class TestQubitUnitary:
         assert isinstance(decomp2[0], expected_gate)
         assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
 
+    def test_error_qubit_unitary_decomposition_broadcasted(self):
+        """Tests that broadcasted QubitUnitary decompositions are not supported."""
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
+        U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
+        with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
+            qml.QubitUnitary.compute_decomposition(U, wires=0)
+        with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
+            qml.QubitUnitary(U, wires=0).decomposition()
+
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
         U = qml.Toffoli(wires=[0, 1, 2]).matrix()
@@ -220,6 +306,18 @@ class TestQubitUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    def test_matrix_representation_broadcasted(self, tol):
+        """Test that the matrix representation is defined correctly"""
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
+        U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
+        res_static = qml.QubitUnitary.compute_matrix(U)
+        res_dynamic = qml.QubitUnitary(U, wires=0).matrix()
+        expected = U
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
 
 class TestDiagonalQubitUnitary:
     """Test the DiagonalQubitUnitary operation."""
@@ -231,10 +329,26 @@ class TestDiagonalQubitUnitary:
         decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
         decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
 
+        assert len(decomp) == 1 == len(decomp2)
         assert decomp[0].name == "QubitUnitary" == decomp2[0].name
         assert decomp[0].wires == Wires([0, 1, 2]) == decomp2[0].wires
         assert np.allclose(decomp[0].data[0], np.diag(D))
         assert np.allclose(decomp2[0].data[0], np.diag(D))
+
+    def test_decomposition_broadcasted(self):
+        """Test that the broadcasted DiagonalQubitUnitary falls back to QubitUnitary."""
+        D = np.outer([1.0, -1.0], [1.0, -1.0, 1j, 1.0])
+
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1]).decomposition()
+
+        assert len(decomp) == 1 == len(decomp2)
+        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
+        assert decomp[0].wires == Wires([0, 1]) == decomp2[0].wires
+
+        expected = np.array([np.diag([1.0, -1.0, 1j, 1.0]), np.diag([-1.0, 1.0, -1j, -1.0])])
+        assert np.allclose(decomp[0].data[0], expected)
+        assert np.allclose(decomp2[0].data[0], expected)
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
@@ -247,6 +361,19 @@ class TestDiagonalQubitUnitary:
             mat, qml.math.diag(qml.math.append(qml.math.ones(8, dtype=complex), D))
         )
 
+    def test_controlled_broadcasted(self):
+        """Test that the correct controlled operation is created when
+        controlling a qml.DiagonalQubitUnitary with a broadcasted diagonal."""
+        D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
+        op = qml.DiagonalQubitUnitary(D, wires=[1, 2])
+        with qml.tape.QuantumTape() as tape:
+            op._controlled(control=0)
+        mat = qml.matrix(tape)
+        expected = np.array(
+            [np.diag([1, 1, 1, 1, 1j, 1, -1j, 1]), np.diag([1, 1, 1, 1, 1, -1, 1j, -1])]
+        )
+        assert qml.math.allclose(mat, expected)
+
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         diag = np.array([1, -1])
@@ -256,16 +383,53 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
-    def test_error_matrix_not_unitary(self):
+    def test_matrix_representation_broadcasted(self, tol):
+        """Test that the matrix representation is defined correctly for a broadcasted diagonal."""
+        diag = np.array([[1, -1], [1j, -1], [-1j, -1]])
+        res_static = qml.DiagonalQubitUnitary.compute_matrix(diag)
+        res_dynamic = qml.DiagonalQubitUnitary(diag, wires=0).matrix()
+        expected = np.array([[[1, 0], [0, -1]], [[1j, 0], [0, -1]], [[-1j, 0], [0, -1]]])
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
+    @pytest.mark.parametrize("n", (2, -1, 0.12345))
+    @pytest.mark.parametrize("diag", ([1.0, -1.0], np.array([1.0, -1.0])))
+    def test_pow(self, n, diag):
+        """Test pow method returns expected results."""
+        op = qml.DiagonalQubitUnitary(diag, wires="b")
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+
+        for x_op, x_pow in zip(op.data[0], pow_ops[0].data[0]):
+            assert (x_op + 0.0j) ** n == x_pow
+
+    @pytest.mark.parametrize("n", (2, -1, 0.12345))
+    @pytest.mark.parametrize(
+        "diag", ([[1.0, -1.0]] * 5, np.array([[1.0, -1j], [1j, 1j], [-1j, 1]]))
+    )
+    def test_pow_broadcasted(self, n, diag):
+        """Test pow method returns expected results for broadcasted diagonals."""
+        op = qml.DiagonalQubitUnitary(diag, wires="b")
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+
+        qml.math.allclose(np.array(op.data[0], dtype=complex) ** n, pow_ops[0].data[0])
+
+    @pytest.mark.parametrize("D", [[1, 2], [[0.2, 1.0, -1.0], [1.0, -1j, 1j]]])
+    def test_error_matrix_not_unitary(self, D):
         """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
         with pytest.raises(ValueError, match="Operator must be unitary"):
-            qml.DiagonalQubitUnitary.compute_matrix(np.array([1, 2]))
-
-    @pytest.mark.jax
-    def test_error_eigvals_not_unitary(self):
-        """Tests that error is raised by `compute_eigvals` if diagonal does not lead to a unitary"""
+            qml.DiagonalQubitUnitary.compute_matrix(np.array(D))
         with pytest.raises(ValueError, match="Operator must be unitary"):
-            qml.DiagonalQubitUnitary.compute_eigvals(np.array([1, 2]))
+            qml.DiagonalQubitUnitary(np.array(D), wires=1).matrix()
+
+    @pytest.mark.parametrize("D", [[1, 2], [[0.2, 1.0, -1.0], [1.0, -1j, 1j]]])
+    def test_error_eigvals_not_unitary(self, D):
+        """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary.compute_eigvals(np.array(D))
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary(np.array(D), wires=0).eigvals()
 
     @pytest.mark.jax
     def test_jax_jit(self):
@@ -289,6 +453,29 @@ class TestDiagonalQubitUnitary:
         grad = jax.grad(circuit)(x)
         expected = -jnp.sin(x)
         assert np.allclose(grad, expected)
+
+    @pytest.mark.jax
+    def test_jax_jit_broadcasted(self):
+        """Test that the diagonal matrix unitary operation works
+        within a QNode that uses the JAX JIT"""
+        import jax
+
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            diag = jnp.exp(1j * jnp.outer(x, jnp.array([1, -1])) / 2)
+            qml.Hadamard(wires=0)
+            qml.DiagonalQubitUnitary(diag, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        x = jnp.array([0.654, 0.321])
+        jac = jax.jacobian(circuit)(x)
+        expected = jnp.diag(-jnp.sin(x))
+        assert np.allclose(jac, expected)
 
     @pytest.mark.tf
     @pytest.mark.slow  # test takes 12 seconds due to tf.function
@@ -319,6 +506,7 @@ class TestDiagonalQubitUnitary:
 
 
 X = np.array([[0, 1], [1, 0]])
+X_broadcasted = np.array([X] * 3)
 
 
 class TestControlledQubitUnitary:
@@ -370,6 +558,42 @@ class TestControlledQubitUnitary:
         state_1 = f1()
         state_2 = f2()
 
+        assert np.allclose(state_1, state_2)
+
+    @pytest.mark.parametrize("target_wire", range(3))
+    def test_toffoli_broadcasted(self, target_wire):
+        """Test if ControlledQubitUnitary acts like a Toffoli gate when the input unitary is a
+        broadcasted single-qubit X. Allows the target wire to be any of the three wires."""
+        control_wires = list(range(3))
+        del control_wires[target_wire]
+
+        # pick some random unitaries (with a fixed seed) to make the circuit less trivial
+        U1 = unitary_group.rvs(8, random_state=1)
+        U2 = unitary_group.rvs(8, random_state=2)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def f1():
+            qml.QubitUnitary(U1, wires=range(3))
+            qml.ControlledQubitUnitary(
+                X_broadcasted, control_wires=control_wires, wires=target_wire
+            )
+            qml.QubitUnitary(U2, wires=range(3))
+            return qml.state()
+
+        @qml.qnode(dev)
+        def f2():
+            qml.QubitUnitary(U1, wires=range(3))
+            qml.Toffoli(wires=control_wires + [target_wire])
+            qml.QubitUnitary(U2, wires=range(3))
+            return qml.state()
+
+        state_1 = f1()
+        state_2 = f2()
+
+        assert np.shape(state_1) == (3, 8)
+        assert np.allclose(state_1, state_1[0])  # Check that all broadcasted results are equal
         assert np.allclose(state_1, state_2)
 
     def test_arbitrary_multiqubit(self):
@@ -532,12 +756,127 @@ class TestControlledQubitUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    def test_matrix_representation_broadcasted(self, tol):
+        """Test that the matrix representation is defined correctly"""
+        U = np.array(
+            [
+                [[0.94877869, 0.31594146], [-0.31594146, 0.94877869]],
+                [[0.4125124, -0.91095199], [0.91095199, 0.4125124]],
+                [[0.31594146, 0.94877869j], [0.94877869j, 0.31594146]],
+            ]
+        )
+
+        res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
+        res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
+        expected = np.array(
+            [
+                [
+                    [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.94877869 + 0.0j, 0.31594146 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, -0.31594146 + 0.0j, 0.94877869 + 0.0j],
+                ],
+                [
+                    [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.4125124 + 0.0j, -0.91095199 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.91095199 + 0.0j, 0.4125124 + 0.0j],
+                ],
+                [
+                    [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.31594146 + 0.0j, 0.0 + 0.94877869j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.94877869j, 0.31594146 + 0.0j],
+                ],
+            ]
+        )
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
     def test_no_decomp(self):
         """Test that ControlledQubitUnitary raises a decomposition undefined
         error."""
         mat = qml.PauliX(0).matrix()
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.ControlledQubitUnitary(mat, wires=0, control_wires=1).decomposition()
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            qml.ControlledQubitUnitary(X_broadcasted, wires=0, control_wires=1).decomposition()
+
+    @pytest.mark.parametrize("n", (2, -1, -2))
+    def test_pow(self, n):
+        """Tests the metadata and unitary for a ControlledQubitUnitary raised to a power."""
+        U1 = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+
+        assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_ops[0].control_wires == op.control_wires
+
+        op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
+        assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
+
+    @pytest.mark.parametrize("n", (2, -1, -2))
+    def test_pow_broadcasted(self, n):
+        """Tests the metadata and unitary for a broadcasted
+        ControlledQubitUnitary raised to a power."""
+        U1 = np.tensordot(
+            np.array([1j, -1.0, 1j]),
+            np.array(
+                [
+                    [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                    [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+                ]
+            ),
+            axes=0,
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+
+        assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_ops[0].control_wires == op.control_wires
+
+        op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
+        assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
+
+    def test_noninteger_pow(self):
+        """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""
+        U1 = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.12)
+
+    def test_noninteger_pow_broadcasted(self):
+        """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""
+        U1 = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+            * 3
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.12)
 
 
 label_data = [

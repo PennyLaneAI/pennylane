@@ -74,7 +74,7 @@ TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [-1.5, -6, -1.5, -8]
 
 
-class TestHamiltonianExpval:
+class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))

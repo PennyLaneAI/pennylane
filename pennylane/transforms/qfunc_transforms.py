@@ -146,7 +146,7 @@ class single_tape_transform:
     >>> new_tape = my_transform(tape, 1., 2.)
     >>> print(qml.drawer.tape_text(new_tape, decimals=1))
     0: ──H────────────────╭Z─┤
-    1: ──RX(0.5)──RY(1.0)─╰C─┤
+    1: ──RX(0.5)──RY(1.0)─╰●─┤
 
     """
 
@@ -181,7 +181,7 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
         new_dev = deepcopy(fn)
 
         @new_dev.custom_expand
-        def new_expand_fn(self, tape, *args, **kwargs):
+        def new_expand_fn(self, tape, *args, **kwargs):  # pylint: disable=unused-variable
             tape = tape_transform(tape, *transform_args, **transform_kwargs)
             return self.default_expand_fn(tape, *args, **kwargs)
 
@@ -260,7 +260,7 @@ def qfunc_transform(tape_transform):
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(2.5))
     0: ──H──────────────────╭Z─┤
-    1: ──RX(1.50)──RY(0.16)─╰C─┤
+    1: ──RX(1.50)──RY(0.16)─╰●─┤
 
     The transform weights provided to a qfunc transform are fully differentiable,
     allowing the transform itself to be differentiated and trained. For more details,
@@ -337,7 +337,7 @@ def qfunc_transform(tape_transform):
         >>> y = np.array([0.1, 0.2], requires_grad=True)
         >>> print(qml.draw(circuit)(x, y))
         0: ──RX(0.10)──H────────╭Z─┤
-        1: ──RX(0.05)──RY(0.14)─╰C─┤  <Z>
+        1: ──RX(0.05)──RY(0.14)─╰●─┤  <Z>
 
         Evaluating the QNode, as well as the derivative, with respect to the gate
         parameter *and* the transform weights:

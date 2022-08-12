@@ -412,6 +412,53 @@ class TestControlledGates:
         assert ax.texts[2].get_text() == "RX\n(1.23)"
         plt.close()
 
+    def test_control_values_str(self):
+        """Test control values get displayed correctly when they are provided as a string."""
+
+        with QuantumTape() as tape:
+            qml.ControlledQubitUnitary(
+                qml.matrix(qml.RX)(0, 0),
+                control_wires=[0, 1, 2, 3],
+                wires=[4],
+                control_values="1010",
+            )
+
+        self.check_tape_controlled_qubit_unitary(tape)
+
+    def test_control_values_bool(self):
+        """Test control_values get displayed correctly when they are provided as a list of bools."""
+
+        with QuantumTape() as tape:
+            qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
+            qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
+
+        self.check_tape_controlled_qubit_unitary(tape)
+
+    def check_tape_controlled_qubit_unitary(self, tape):
+        """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        # 5 wires -> 4 control, 1 target
+        assert len(ax.patches) == 5
+        # Circle for control values are positioned correctly
+        # Circle color matched according to the control value
+        assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[0].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[1].center == (layer, 1)
+        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["axes.facecolor"])
+        assert ax.patches[2].center == (layer, 2)
+        assert ax.patches[2].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[3].center == (layer, 3)
+        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["axes.facecolor"])
+
+        # five wires, one control line
+        assert len(ax.lines) == 6
+        control_line = ax.lines[5]
+        assert control_line.get_data() == ((layer, layer), (0, 4))
+
+        plt.close()
+
 
 general_op_data = [
     qml.RX(1.234, wires=0),

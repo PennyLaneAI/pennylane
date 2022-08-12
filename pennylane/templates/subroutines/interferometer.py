@@ -233,9 +233,9 @@ class Interferometer(CVOperation):
             if mesh == "rectangular":
                 # Apply the Clements beamsplitter array
                 # The array depth is N
-                for l, (k, (w1, w2)) in product(range(M), enumerate(zip(wires[:-1], wires[1:]))):
+                for m, (k, (w1, w2)) in product(range(M), enumerate(zip(wires[:-1], wires[1:]))):
                     # skip even or odd pairs depending on layer
-                    if (l + k) % 2 != 1:
+                    if (m + k) % 2 != 1:
                         if beamsplitter == "clements":
                             op_list.append(Rotation(phi[n], wires=Wires(w1)))
                             op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
@@ -248,8 +248,8 @@ class Interferometer(CVOperation):
             elif mesh == "triangular":
                 # apply the Reck beamsplitter array
                 # The array depth is 2*N-3
-                for l in range(2 * M - 3):
-                    for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
+                for m in range(2 * M - 3):
+                    for k in range(abs(m + 1 - (M - 1)), M - 1, 2):
                         if beamsplitter == "clements":
                             op_list.append(Rotation(phi[n], wires=wires[k]))
                             op_list.append(
@@ -287,15 +287,3 @@ class Interferometer(CVOperation):
         shapes = [(shape_theta_phi,)] * 2 + [(n_wires,)]
 
         return shapes
-
-    def adjoint(self):  # pylint: disable=arguments-differ
-        adjoint_op = Interferometer(
-            theta=self.parameters[0],
-            phi=self.parameters[1],
-            varphi=self.parameters[2],
-            mesh=self.hyperparameters["mesh"],
-            beamsplitter=self.hyperparameters["beamsplitter"],
-            wires=self.wires,
-        )
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op

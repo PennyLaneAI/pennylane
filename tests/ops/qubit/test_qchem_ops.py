@@ -16,7 +16,7 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 import pytest
 import numpy as np
-from scipy.linalg import expm
+from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -160,6 +160,16 @@ class TestSingleExcitation:
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
+    def test_single_excitation_matrix_broadcasted(self):
+        """Tests that the SingleExcitation operation calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.SingleExcitation(phi, wires=[0, 1])
+        res_dynamic = op.matrix()
+        res_static = qml.SingleExcitation.compute_matrix(phi)
+        exp = np.stack([SingleExcitation(_phi) for _phi in phi])
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
         """Tests that the SingleExcitation operation calculates the correct decomposition.
@@ -199,6 +209,21 @@ class TestSingleExcitation:
         exp = SingleExcitation(phi)
         assert np.allclose(res, exp)
 
+    @pytest.mark.parametrize("n", (2, -2, 1.3, -0.6))
+    def test_single_excitatation_pow(self, n):
+
+        op = qml.SingleExcitation(1.234, wires=(0, 1))
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        assert pow_ops[0].__class__ is qml.SingleExcitation
+
+        mat = qml.matrix(op)
+        pow_mat = qml.matrix(op.pow)(n)
+
+        mat_then_pow = fractional_matrix_power(mat, n)
+        assert qml.math.allclose(pow_mat, mat_then_pow)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus_matrix(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
@@ -206,6 +231,17 @@ class TestSingleExcitation:
         res_dynamic = op.matrix()
         res_static = qml.SingleExcitationPlus.compute_matrix(phi)
         exp = SingleExcitationPlus(phi)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
+    def test_single_excitation_plus_matrix_broadcasted(self):
+        """Tests that the SingleExcitationPlus operation
+        calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.SingleExcitationPlus(phi, wires=[0, 1])
+        res_dynamic = op.matrix()
+        res_static = qml.SingleExcitationPlus.compute_matrix(phi)
+        exp = np.stack([SingleExcitationPlus(_phi) for _phi in phi])
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
@@ -225,6 +261,17 @@ class TestSingleExcitation:
         res_dynamic = op.matrix()
         res_static = qml.SingleExcitationMinus.compute_matrix(phi)
         exp = SingleExcitationMinus(phi)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
+    def test_single_excitation_minus_matrix_broadcasted(self):
+        """Tests that the SingleExcitationMinus operation
+        calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.SingleExcitationMinus(phi, wires=[0, 1])
+        res_dynamic = op.matrix()
+        res_static = qml.SingleExcitationMinus.compute_matrix(phi)
+        exp = np.stack([SingleExcitationMinus(_phi) for _phi in phi])
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
@@ -349,6 +396,17 @@ class TestDoubleExcitation:
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
+    def test_double_excitation_matrix_broadcasted(self):
+        """Tests that the DoubleExcitation operation
+        calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+        res_dynamic = op.matrix()
+        res_static = qml.DoubleExcitation.compute_matrix(phi)
+        exp = np.stack([DoubleExcitation(_phi) for _phi in phi])
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_decomp(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct decomposition"""
@@ -372,6 +430,21 @@ class TestDoubleExcitation:
         exp = DoubleExcitation(phi)
 
         assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("n", (2, -2, 1.3, -0.6))
+    def test_double_excitatation_pow(self, n):
+        """Test the double excitation pow method."""
+        op = qml.DoubleExcitation(1.234, wires=(0, 1, 2, 3))
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        assert pow_ops[0].__class__ is qml.DoubleExcitation
+
+        mat = qml.matrix(op)
+        pow_mat = qml.matrix(op.pow)(n)
+
+        mat_then_pow = fractional_matrix_power(mat, n)
+        assert qml.math.allclose(pow_mat, mat_then_pow)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_double_excitation_decomp(self, phi):
@@ -432,6 +505,17 @@ class TestDoubleExcitation:
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
+    def test_double_excitation_plus_matrix_broadcasted(self):
+        """Tests that the DoubleExcitationPlus operation
+        calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
+        res_dynamic = op.matrix()
+        res_static = qml.DoubleExcitationPlus.compute_matrix(phi)
+        exp = np.stack([DoubleExcitationPlus(_phi) for _phi in phi])
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_plus_generator(self, phi):
         """Tests that the DoubleExcitationPlus operation calculates the correct generator"""
@@ -450,6 +534,17 @@ class TestDoubleExcitation:
         res_dynamic = op.matrix()
         res_static = qml.DoubleExcitationMinus.compute_matrix(phi)
         exp = DoubleExcitationMinus(phi)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
+    def test_double_excitation_minus_matrix_broadcasted(self):
+        """Tests that the DoubleExcitationMinus operation
+        calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
+        res_dynamic = op.matrix()
+        res_static = qml.DoubleExcitationMinus.compute_matrix(phi)
+        exp = np.stack([DoubleExcitationMinus(_phi) for _phi in phi])
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
@@ -646,6 +741,17 @@ class TestOrbitalRotation:
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
+    def test_orbital_rotation_matrix_broadcasted(self):
+        """Tests that the OrbitalRotation operation
+        calculates the correct broadcasted matrix"""
+        phi = np.array([-0.1, 0.2, np.pi / 4])
+        op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        res_dynamic = op.matrix()
+        res_static = qml.OrbitalRotation.compute_matrix(phi)
+        exp = np.stack([OrbitalRotation(_phi) for _phi in phi])
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_generator(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct generator"""
@@ -707,6 +813,15 @@ class TestOrbitalRotation:
             assert np.allclose(decomposed_matrix, exp)
 
     def test_adjoint(self):
+        """Test adjoint method for adjoint op decomposition."""
+
+        phi = 1.234
+        wires = (0, 1, 2, 3)
+        op = qml.OrbitalRotation(phi, wires=wires)
+        adj_op = qml.adjoint(op, lazy=False)
+        assert qml.equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
+
+    def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""
         dev = qml.device("default.qubit", wires=4)
 

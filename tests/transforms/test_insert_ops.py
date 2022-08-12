@@ -398,6 +398,7 @@ def test_insert_dev(mocker, monkeypatch):
         qml.RY(0.5, wires=0)
         qml.RX(0.6, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
 
     dev = qml.device("default.mixed", wires=2)
     res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
@@ -421,6 +422,7 @@ def test_insert_dev(mocker, monkeypatch):
         qml.RX(0.6, wires=1)
         qml.PhaseDamping(0.4, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
 
     assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
@@ -428,9 +430,43 @@ def test_insert_dev(mocker, monkeypatch):
         np.allclose(o1.parameters, o2.parameters)
         for o1, o2 in zip(tape.operations, tape_exp.operations)
     )
-    assert len(tape.measurements) == 1
+    assert len(tape.measurements) == 2
     assert tape.observables[0].name == ["PauliZ", "PauliZ"]
     assert tape.observables[0].wires.tolist() == [0, 1]
     assert tape.measurements[0].return_type is Expectation
+    assert tape.observables[1].name == "PauliZ"
+    assert tape.observables[1].wires.tolist() == [0]
+    assert tape.measurements[1].return_type is Expectation
 
     assert not np.allclose(res_without_noise, res_with_noise)
+
+
+def test_insert_template():
+    """Test that ops are inserted correctly into a decomposed template"""
+    dev = qml.device("default.mixed", wires=2)
+
+    @qml.qnode(dev)
+    @insert(qml.PhaseDamping, 0.3, position="all")
+    def f1(w1, w2):
+        qml.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
+
+    @qml.qnode(dev)
+    def f2(w1, w2):
+        qml.RY(w1[0], wires=0)
+        qml.PhaseDamping(0.3, wires=0)
+        qml.RY(w1[1], wires=1)
+        qml.PhaseDamping(0.3, wires=1)
+        qml.CZ(wires=[0, 1])
+        qml.PhaseDamping(0.3, wires=0)
+        qml.PhaseDamping(0.3, wires=1)
+        qml.RY(w2[0][0][0], wires=0)
+        qml.PhaseDamping(0.3, wires=0)
+        qml.RY(w2[0][0][1], wires=1)
+        qml.PhaseDamping(0.3, wires=1)
+        return qml.expval(qml.PauliZ(0))
+
+    w1 = np.random.random(2)
+    w2 = np.random.random((1, 1, 2))
+
+    assert np.allclose(f1(w1, w2), f2(w1, w2))

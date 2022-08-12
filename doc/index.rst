@@ -100,7 +100,7 @@ with our collection of
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
 more details on the :doc:`quantum operations <introduction/operations>`, and to explore
-the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane.
+the available :doc:`optimization tools <introduction/interfaces>` provided by PennyLane.
 We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
@@ -116,11 +116,9 @@ If you are doing research using PennyLane, please cite
 
 .. rst-class:: admonition warning
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-    Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-    Zeyue Niu, Antal Száva, and Nathan Killoran.
-    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
-    `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+    Ville Bergholm et al. *PennyLane: Automatic differentiation of hybrid
+    quantum-classical computations.* 2018. `arXiv:1811.04968
+    <https://arxiv.org/abs/1811.04968>`_
 
 Support and contribution
 ------------------------
@@ -155,9 +153,9 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/operations
    introduction/measurements
    introduction/templates
-   introduction/optimizers
+   introduction/inspecting_circuits
+   introduction/compiling_circuits
    introduction/chemistry
-   introduction/configuration
 
 .. toctree::
    :maxdepth: 1
@@ -183,11 +181,13 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_grouping
    code/qml_kernels
    code/qml_math
+   code/qml_ops_op_math
+   code/qml_qinfo
    code/qml_numpy
    code/qml_qaoa
-   code/qml_hf
    code/qml_qchem
    code/qml_qnn
+   code/qml_resource
    code/qml_tape
    code/qml_transforms
    code/qml_drawer
