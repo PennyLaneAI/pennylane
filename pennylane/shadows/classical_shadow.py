@@ -104,7 +104,7 @@ class ClassicalShadow:
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None``(default), all local snapshots are taken. In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
 
         Returns:
-            tensor: The local snapshots tensor of shape `(T, n, 2, 2)` containing the local local density matrices for each snapshot and each qubit.
+            tensor: The local snapshots tensor of shape ``(T, n, 2, 2)`` containing the local local density matrices for each snapshot and each qubit.
         """
         bits = self.bits
         recipes = self.recipes
@@ -158,6 +158,13 @@ class ClassicalShadow:
             Classical shadows are not intended to reconstruct global quantum states.
             This method requires exponential scaling of measurements for accurate representations. Further, the output scales exponentially in the output dimension,
             and is therefore not practical for larger systems. A warning is raised for systems of sizes ``n>16``.
+        
+        Args:
+            wires (Iterable[int]): The wires over which to compute the snapshots. For ``wires=None``(default) all ``n`` qubits are used.
+            snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None``(default), all local snapshots are taken. In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
+
+        Returns:
+            tensor: The global snapshots tensor of shape ``(T, 2**n, 2**n)`` containing the density matrices for each snapshot measurement.
 
         **Example**
 
@@ -240,6 +247,13 @@ class ClassicalShadow:
         Args:
             H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+
+        Args:
+            H (qml.Observable): Observable to compute the expectation value
+            k (int): Split the snapshots into ``k`` equal parts to compute the median of means.
+
+        Returns:
+            float: expectation value estimate.
 
         **Example**
 
