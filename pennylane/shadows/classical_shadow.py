@@ -158,7 +158,7 @@ class ClassicalShadow:
             Classical shadows are not intended to reconstruct global quantum states.
             This method requires exponential scaling of measurements for accurate representations. Further, the output scales exponentially in the output dimension,
             and is therefore not practical for larger systems. A warning is raised for systems of sizes ``n>16``.
-        
+
         Args:
             wires (Iterable[int]): The wires over which to compute the snapshots. For ``wires=None``(default) all ``n`` qubits are used.
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None``(default), all local snapshots are taken. In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
