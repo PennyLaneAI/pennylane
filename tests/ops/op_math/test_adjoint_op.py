@@ -233,22 +233,6 @@ class TestProperties:
         op = Adjoint(DummyOp(0))
         assert op.is_hermitian == value
 
-    def test_batching_properties(self):
-        """Test that Adjoint batching behavior mirrors that of the base."""
-
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op = Adjoint(base)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
-
 
 class TestSimplify:
     """Test Adjoint simplify method and depth property."""
@@ -527,6 +511,15 @@ class TestQueueing:
 class TestMatrix:
     """Test the matrix method for a variety of interfaces."""
 
+    def test_batching_error(self):
+        """Test that a MatrixUndefinedError is raised if the base is batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        base = qml.RX(x, wires=0)
+        op = Adjoint(base)
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
     def check_matrix(self, x, interface):
         """Compares matrices in a interface independent manner."""
         base = qml.RX(x, wires=0)
@@ -710,3 +703,18 @@ class TestIntegration:
         expected_grad = np.cos(x)
 
         assert qml.math.allclose(grad, expected_grad)
+
+    def test_adj_batching(self):
+        """Test execution of the adjoint of an operation with batched parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            Adjoint(qml.RX(x, wires=0))
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array([1.234, 2.34, 3.456])
+        res = circuit(x)
+
+        expected = np.sin(x)
+        assert qml.math.allclose(res, expected)

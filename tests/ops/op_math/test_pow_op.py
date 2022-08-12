@@ -727,9 +727,23 @@ class TestIntegration:
         expected_grad = -z * np.cos(x * z)
         assert qml.math.allclose(grad, expected_grad)
 
-    @pytest.mark.xfail
+    def test_batching_execution(self):
+        """Test Pow execution with batched base gate parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            Pow(qml.RX(x, wires=0), 2.5)
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array([1.234, 2.34, 3.456])
+        res = circuit(x)
+
+        expected = -np.sin(x * 2.5)
+        assert qml.math.allclose(res, expected)
+
     def test_non_decomposable_power(self):
-        """This test will fail until we improve device support for power operators."""
+        """Test execution of a pow operator that cannot be decomposed."""
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circ():

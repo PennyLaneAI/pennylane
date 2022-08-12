@@ -202,17 +202,14 @@ class TestInitialization:
         """Test that calling ndim_params raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
-        with pytest.raises(
-            ValueError,
-            match="Dimension of parameters is not currently implemented for Sum operators.",
-        ):
+        with pytest.raises(AttributeError):
             _ = sum_op.ndim_params
 
     def test_batch_size_raises_error(self):
         """Test that calling batch_size raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
-        with pytest.raises(ValueError, match="Batch size is not defined for Sum operators."):
+        with pytest.raises(AttributeError):
             _ = sum_op.batch_size
 
     def test_decomposition_raises_error(self):
