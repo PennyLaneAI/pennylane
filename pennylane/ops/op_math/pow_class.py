@@ -246,13 +246,13 @@ class Pow(SymbolicOp):
     def simplify(self) -> Union["Pow", Identity]:
         try:
             ops = self.base.pow(z=self.z)
-            if not op:
+            if not ops:
                 return (
                     qml.prod(*(qml.Identity(w) for w in self.wires))
                     if len(self.wires) > 1
                     else qml.Identity(self.wires[0])
                 )
-            op = qml.prod(*op) if len(op) > 1 else op[0]
+            op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:
             return Pow(base=self.base.simplify(), z=self.z)
