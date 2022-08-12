@@ -1159,14 +1159,14 @@ class QubitDevice(Device):
         Returns the measured bits and recipes in the classical shadow protocol.
 
         The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-        This measurement process returns the randomized Pauli measurements (the "recipes")
+        This measurement process returns the randomized Pauli measurements (the ``recipes``)
         that are performed for each qubit and snapshot as an integer:
 
         - 0 for Pauli X,
         - 1 for Pauli Y, and
         - 2 for PauliZ.
 
-        It also returns the measurement results (the "bits"); 0 if the 1 eigenvalue
+        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
         is sampled, and 1 if the -1 eigenvalue is sampled.
 
         The device shots are used to specify the number of snapshots. If ``T`` is the number
@@ -1176,6 +1176,8 @@ class QubitDevice(Device):
         This implementation is device-agnostic and works by executing single-shot
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
+
+        .. seealso:: :func:`~.classical_shadow`
 
         Args:
             wires (Sequence[int]): The wires to perform Pauli measurements on
