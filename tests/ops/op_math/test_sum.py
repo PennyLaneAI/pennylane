@@ -794,3 +794,23 @@ class TestIntegration:
 
         with pytest.raises(QuantumFunctionError, match="Sum is not an observable:"):
             my_circ()
+
+
+class TestArithmetic:
+    """Test arithmetic decomposition methods."""
+
+    def test_adjoint(self):
+        """Test the adjoint method for Sum Operators."""
+
+        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        final_op = Sum(qml.adjoint(qml.RX(1.23, wires=0)), qml.adjoint(qml.Identity(wires=1)))
+        adj_op = sum_op.adjoint()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(adj_op, Sum)
+        for s1, s2 in zip(final_op.summands, adj_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
