@@ -905,14 +905,14 @@ class DefaultQubit(QubitDevice):
         Returns the measured bits and recipes in the classical shadow protocol.
 
         The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-        This measurement process returns the randomized Pauli measurements (the "recipes")
+        This measurement process returns the randomized Pauli measurements (the ``recipes``)
         that are performed for each qubit and snapshot as an integer:
 
         - 0 for Pauli X,
         - 1 for Pauli Y, and
         - 2 for PauliZ.
 
-        It also returns the measurement results (the "bits"); 0 if the 1 eigenvalue
+        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
         is sampled, and 1 if the -1 eigenvalue is sampled.
 
         The device shots are used to specify the number of snapshots. If ``T`` is the number
@@ -921,6 +921,12 @@ class DefaultQubit(QubitDevice):
 
         This implementation leverages vectorization and offers a significant speed-up over
         the generic implementation.
+
+        .. Note::
+
+            The classical shadow measurement for this device supports at most 52 qubits.
+
+        .. seealso:: :func:`~.classical_shadow`
 
         Args:
             wires (Sequence[int]): The wires to perform Pauli measurements on
