@@ -62,18 +62,14 @@
     103969925, 290
     ```
     
-  The methods of the `FirstQuantization` and the `DoubleFactorization` classes 
-  can be also accessed individually without instantiating an instance of the class:
-
-  + The number of logical qubits with `qubit_cost`
-  + The number of non-Clifford gates with `gate_cost`
-
-    ```pycon
-    >>> qml.resource.FirstQuantization.qubit_cost(100000, 156, 169.69608, 0.01)
-    4377
-    >>> qml.resource.FirstQuantization.gate_cost(100000, 156, 169.69608, 0.01)
-    3676557345574 
-    ```
+  The methods of the `FirstQuantization` and the `DoubleFactorization` classes, such as `qubit_cost` (number of logical qubits) and `gate_cost` (number of non-Clifford gates), can be also accessed as static methods: 
+  
+  ```pycon 
+  >>> qml.resource.FirstQuantization.qubit_cost(100000, 156, 169.69608, 0.01) 
+  4377 
+  >>> qml.resource.FirstQuantization.gate_cost(100000, 156, 169.69608, 0.01) 
+  3676557345574
+  ```
 
 <h4>Differentiable error mitigation ⚙️</h4>
 
