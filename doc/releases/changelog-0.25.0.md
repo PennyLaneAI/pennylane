@@ -33,24 +33,27 @@
     >>> eta = 156         # number of electrons
     >>> omega = 1145.166  # unit cell volume in atomic units
     >>> algo = FirstQuantization(n, eta, omega)
-    >>> algo.gates
-    1.10e+13
-    >>> algo.qubits
-    4416
+    >>> print(algo.gates, algo.qubits)
+    1.10e+13, 4416
     ```
 
   - [Second quantization](https://en.wikipedia.org/wiki/Second_quantization) with a double-factorized Hamiltonian via the 
     `DoubleFactorization` class: 
  
     ```python
-    symbols  = ['O', 'H', 'H']
-    geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
-                        [0.00000000,  1.45278171, -1.00662237],
-                        [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
-    
-    mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+    symbols = ["O", "H", "H"]
+    geometry = np.array(
+        [
+            [0.00000000, 0.00000000, 0.28377432],
+            [0.00000000, 1.45278171, -1.00662237],
+            [0.00000000, -1.45278171, -1.00662237],
+        ],
+        requires_grad=False,
+    )
+
+    mol = qml.qchem.Molecule(symbols, geometry, basis_name="sto-3g")
     core, one, two = qml.qchem.electron_integrals(mol)()
-    
+
     algo = DoubleFactorization(one, two)
     ```
 
@@ -208,7 +211,7 @@
   The following functionalities have been added to facilitate creating new operators 
   whose matrix, terms, and eigenvalues can be accessed as per usual, while maintaining 
   differentiability. operators created from these new features can be used within
-  QNodes as Operations or as observables (where physically applicable). 
+  QNodes as operations or as observables (where physically applicable). 
 
   - Summing any number of operators via `qml.op_sum` results in a "summed" operator:
 
@@ -300,7 +303,7 @@
     array([[-0.18063077-0.99999968j,  0.05996401-0.57695852j],
            [-0.05996401-0.57695852j, -0.18063077+0.99999968j]])
     ```
-    Note that the behavior of `+` with *observables* is different; it still creates 
+    Note that the behavior of `+` and `-` with *observables* is different; it still creates 
     a Hamiltonian.
   
   - The `*` and `@` operators can be used to scale and compose all PennyLane operators.
@@ -593,13 +596,9 @@
   that all trainable operations have a generator.
   [(#2836)](https://github.com/PennyLaneAI/pennylane/pull/2836)
   
-* A warning is emitted for measurements
-  - `qml.state`
-  - `qml.density_matrix`
-  - `qml.vn_entropy`
-  - `qml.mutual_info`
-  when using a device with finite shots or a shot list because the results of
-  these measurements are always analytic.
+* A warning is now emitted for `qml.state`, `qml.density_matrix`, 
+  `qml.vn_entropy`, and `qml.mutual_info` when using a device with 
+  finite shots or a shot list since these measurements are always analytic.
   [(#2918)](https://github.com/PennyLaneAI/pennylane/pull/2918)
 
 * The efficiency of the Hartree-Fock workflow has been improved by removing 
@@ -776,7 +775,7 @@
   which were transformed using `qml.transform.insert()`.
   [(#2857)](https://github.com/PennyLaneAI/pennylane/pull/2857)
 
-* Fixes a bug where `qml.batch_input` raised an error when using a batched operator that was not
+* Fixed a bug where `qml.batch_input` raised an error when using a batched operator that was not
   located at the beginning of the circuit. In addition, now `qml.batch_input` raises an error when
   using trainable batched inputs, which avoids an unwanted behaviour with duplicated parameters.
   [(#2873)](https://github.com/PennyLaneAI/pennylane/pull/2873)
@@ -784,10 +783,10 @@
 * Calling `qml.equal` with nested operators now raises a `NotImplementedError`.
   [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
-* Fixes a bug where a non-sensible error message was raised when using `qml.counts` with `shots=False`.
+* Fixed a bug where a non-sensible error message was raised when using `qml.counts` with `shots=False`.
   [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
 
-* Fixes a bug where no error was raised and a wrong value was returned when using `qml.counts`
+* Fixed a bug where no error was raised and a wrong value was returned when using `qml.counts`
   with another non-commuting observable.
   [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
 
