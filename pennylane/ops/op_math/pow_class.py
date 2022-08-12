@@ -245,7 +245,7 @@ class Pow(SymbolicOp):
 
     def simplify(self) -> Union["Pow", Identity]:
         try:
-            op = self.base.pow(z=self.z)
+            ops = self.base.pow(z=self.z)
             if not op:
                 return (
                     qml.prod(*(qml.Identity(w) for w in self.wires))
