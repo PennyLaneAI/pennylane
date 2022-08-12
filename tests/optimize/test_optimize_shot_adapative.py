@@ -558,7 +558,7 @@ class TestOptimization:
             qml.Rot(*x[3], wires=1)
             qml.CNOT(wires=[0, 1])
 
-        cost = catch_warn_ExpvalCost(ansatz, H, dev)
+        cost = catch_warn_ExpvalCost(ansatz, H, dev, cache=False)
         params = np.random.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
