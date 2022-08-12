@@ -890,7 +890,7 @@ class TestIntegration:
             return qml.state()
 
         assert qnp.allclose(prod_state_circ(), true_state_circ())
-        
+
     def test_batched_operation(self):
         """Test that prod with batching gives expected results."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
