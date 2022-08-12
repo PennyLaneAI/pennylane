@@ -34,6 +34,15 @@
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
+* The `qml.simplify` method now can compute the adjoint and power of specific operators.
+  [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
+
+  ```pycon
+  >>> adj_op = qml.adjoint(qml.RX(1, 0))
+  >>> qml.simplify(adj_op)
+  RX(-1, wires=[0])
+  ```
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
