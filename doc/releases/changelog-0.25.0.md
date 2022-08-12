@@ -334,6 +334,8 @@
   ```python
   from pennylane.ops.op_math import Controlled
 
+  controlled_op = Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
+
   @qml.qnode(qml.device('default.qubit', wires=3))
   def circuit():
       qml.PauliX(0)
@@ -347,7 +349,17 @@
   >>> print(qml.draw(circuit)())
   0: ──X─╭●─┤ ╭Probs
   1: ────├○─┤ ├Probs
-  2: ────╰H─┤ ╰Probs
+  2: ────╰H─┤ ╰Probs  
+  ```
+
+  The key difference between `Controlled` and `qml.ctrl` is that `Controlled` is
+  a full-fledged operation, meaning that, for example, its matrix and eigenvalues
+  can be accessed as per usual.
+
+  ```pycon
+  >>> controlled_op = Controlled(qml.Hadamard(2), control_wires=(0,1), control_values=[1,0])
+  >>> print(controlled_op.eigvals(), controlled_op.matrix().shape)
+  [ 1.  1.  1.  1.  1.  1.  1. -1.] (8, 8)
   ```
 
 * Arithmetic operations can now be simplified using `qml.simplify`.
