@@ -30,29 +30,7 @@ class FirstQuantization(Operation):
     the number of electrons and the unit cell volume need to be defined. The costs can then be
     computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
     :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
-    value of 0.0016 Ha (chemical accuracy).
-
-    Following `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
-    , the target algorithm error, :math:`\epsilon`, is distributed among four different sources of
-    error using Eq. (131)
-
-    .. math::
-        \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
-
-    where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
-    :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in Eqs.
-    (132-134).
-
-    Here, we fix :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with
-    a default value of :math:`\alpha = 0.01` and obtain
-
-    .. math::
-        \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
-
-    Note that the user only needs to define the target algorithm error :math:`\epsilon`. The error
-    distribution takes place inside the functions.
-
-    Atomic units are used throughout the class.
+    value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
 
     Args:
         n (int): number of plane waves
@@ -62,28 +40,40 @@ class FirstQuantization(Operation):
         charge (int): total electric charge of the system
         br (int): number of bits for ancilla qubit rotation
 
+    **Example**
+
+    >>> n = 100000
+    >>> eta = 156
+    >>> omega = 1145.166
+    >>> algo = FirstQuantization(n, eta, omega)
+    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
+    >>>       algo.gates, # estimated number of non-Clifford gates
+    >>>       algo.qubits # estimated number of logical qubits
+    >>>       )
+    649912.4801542697 1.10e+13 4416
+
     .. details::
-        :title: Usage Details
+        :title: Theory
 
-        .. code-block:: python
+        Following `PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_
+        , the target algorithm error, :math:`\epsilon`, is distributed among four different sources
+        of error using Eq. (131)
 
-            import pennylane as qml
-            from pennylane import numpy as np
+        .. math::
+            \epsilon^2 \geq \epsilon_{qpe}^2 + (\epsilon_{\mathcal{M}} + \epsilon_R + \epsilon_T)^2,
 
-            n = 100000
-            eta = 156
-            omega = 1145.166
+        where :math:`\epsilon_{qpe}` is the quantum phase estimation error and
+        :math:`\epsilon_{\mathcal{M}}`, :math:`\epsilon_R`, and :math:`\epsilon_T` are defined in
+        Eqs. (132-134).
 
-            algo = FirstQuantization(n, eta, omega)
+        Here, we fix :math:`\epsilon_{\mathcal{M}} = \epsilon_R = \epsilon_T = \alpha \epsilon` with
+        a default value of :math:`\alpha = 0.01` and obtain
 
-        >>> algo.lamb  # the 1-Norm of the Hamiltonian
-        649912.4801542697
+        .. math::
+            \epsilon_{qpe} = \sqrt{\epsilon^2 [1 - (3 \alpha)^2]}.
 
-        >>> algo.gates  # estimated number of non-Clifford gates
-        1.10e+13
-
-        >>> algo.qubits  # estimated number of logical qubits
-        4416
+        Note that the user only needs to define the target algorithm error :math:`\epsilon`. The
+        error distribution takes place inside the functions.
     """
 
     num_wires = AnyWires
