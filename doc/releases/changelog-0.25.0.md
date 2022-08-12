@@ -710,6 +710,9 @@ of operators.
 
 <h3>Bug fixes 🐞</h3>
 
+* Fixes `qml.equal` so that operators with different inverse properties are not equal.
+  [(#2947)](https://github.com/PennyLaneAI/pennylane/pull/2947)
+
 * Cleans up interactions between operator arithmetic and batching by
   testing supported cases and adding errors when batching is not supported.
   [(#2900)](https://github.com/PennyLaneAI/pennylane/pull/2900)
