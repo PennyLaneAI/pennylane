@@ -574,9 +574,12 @@ class TestOptimization:
 class TestStepAndCost:
     """Tests for the step_and_cost method"""
 
+    @flaky(max_runs=3)
     def test_qnode_cost(self, tol):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
+        np.random.seed(0)
+
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev, cache=False)
