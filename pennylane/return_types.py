@@ -28,6 +28,7 @@ def enable_return():
     The following example shows that for multiple measurements the current PennyLane system is creating a ragged tensor.
 
     .. code-block:: python
+
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -108,6 +109,7 @@ def disable_return():
     **Example**
 
     .. code-block:: python
+
         dev = qml.device("default.qubit", wires=2)
 
         def circuit(x):
@@ -147,7 +149,6 @@ def active_return():
     >>> enable_return()
     >>> active_return()
     True
-
 
     And it can also be deactivated:
 
