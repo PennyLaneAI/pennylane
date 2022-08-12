@@ -767,6 +767,13 @@ of operators.
 * Calling `qml.equal` with nested operators now raises a NotImplementedError.
   [(#2877)](https://github.com/PennyLaneAI/pennylane/pull/2877)
 
+* Fixes a bug where a non-sensible error message was raised when using `qml.counts` with `shots=False`.
+  [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
+
+* Fixes a bug where no error was raised and a wrong value was returned when using `qml.counts`
+  with another non-commuting observable.
+  [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
