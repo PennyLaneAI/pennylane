@@ -3033,7 +3033,7 @@ class IsingXY(Operation):
 class PSWAP(Operation):
     r"""Phase SWAP gate
 
-    .. math:: \mathtt{PSWAP}(\phi) = \begin{bmatrix}
+    .. math:: PSWAP(\phi) = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 0 & e^{i \phi} & 0 \\
             0 & e^{i \phi} & 0 & 0 \\
@@ -3047,8 +3047,8 @@ class PSWAP(Operation):
     * Gradient recipe:
 
     .. math::
-        \frac{d}{d \phi} \mathtt{PSWAP}(\phi)
-        = \frac{1}{2} \left[ \mathtt{PSWAP}(\phi + \pi / 2) - \mathtt{PSWAP}(\phi - \pi / 2) \right]
+        \frac{d}{d \phi} PSWAP(\phi)
+        = \frac{1}{2} \left[ PSWAP(\phi + \pi / 2) - PSWAP(\phi - \pi / 2) \right]
 
     Args:
         phi (float): the phase angle
