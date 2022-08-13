@@ -37,6 +37,15 @@
 * Added `PSWAP` operator.
   [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
 
+* The `qml.simplify` method now can compute the adjoint and power of specific operators.
+  [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
+
+  ```pycon
+  >>> adj_op = qml.adjoint(qml.RX(1, 0))
+  >>> qml.simplify(adj_op)
+  RX(-1, wires=[0])
+  ```
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -51,6 +60,7 @@ This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo,
 Josh Izaac,
+Ankit Khandelwal,
 Korbinian Kottmann,
 Zeyue Niu,
 Mudit Pandey,
