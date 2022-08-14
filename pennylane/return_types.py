@@ -43,7 +43,7 @@ def enable_return():
     tensor([0.5       , 0.5       , 0.08014815, 0.96939564, 0.03060436,
         0.93879128], requires_grad=True)
 
-    when you activate the new return type the results are simply a tuple containing each measurement.
+    when you activate the new return type the result is simply a tuple containing each measurement.
 
     .. code-block:: python
 
@@ -62,7 +62,7 @@ def enable_return():
     >>> res
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
 
-    The new return types system unlocks the use of ``probs`` mixed with diffrent measurements in backpropagation with Jax:
+    The new return types system unlocks the use of ``probs`` mixed with different measurements in backpropagation with JAX:
 
     .. code-block:: python
 
