@@ -111,7 +111,10 @@ def _execute(
 
     for i, r in enumerate(res):
 
-        if any(m.return_type is qml.measurements.Counts for m in tapes[i].measurements):
+        if any(
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in tapes[i].measurements
+        ):
             continue
 
         if isinstance(r, np.ndarray):

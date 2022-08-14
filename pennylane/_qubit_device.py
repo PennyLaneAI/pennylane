@@ -30,6 +30,7 @@ from pennylane.operation import operation_derivative
 from pennylane.measurements import (
     Sample,
     Counts,
+    AllCounts,
     Variance,
     Expectation,
     Probability,
@@ -316,7 +317,9 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         ret_types = [m.return_type for m in circuit.measurements]
-        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        counts_exist = any(
+            ret in (qml.measurements.Counts, qml.measurements.AllCounts) for ret in ret_types
+        )
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -330,7 +333,11 @@ class QubitDevice(Device):
                 if ret_types[0] is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
+                # ToDo: still missing Counts here
+                elif circuit.measurements[0].return_type not in (
+                    qml.measurements.Counts,
+                    qml.measurements.AllCounts,
+                ):
                     # Measurements with expval, var or probs
                     try:
                         # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
@@ -444,7 +451,9 @@ class QubitDevice(Device):
         s1 = 0
 
         ret_types = [m.return_type for m in circuit.measurements]
-        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        counts_exist = any(
+            ret in (qml.measurements.Counts, qml.measurements.AllCounts) for ret in ret_types
+        )
         single_measurement = len(circuit.measurements) == 1
 
         for shot_tuple in self._shot_vector:
@@ -541,7 +550,7 @@ class QubitDevice(Device):
                 else:
                     result = r_[idx]
 
-                if not circuit.observables[idx2].return_type is Counts:
+                if not circuit.observables[idx2].return_type in (Counts, AllCounts):
                     result = self._asarray(result.T)
 
                 result_group.append(result)
@@ -740,7 +749,7 @@ class QubitDevice(Device):
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 )
 
-            elif obs.return_type is Counts:
+            elif obs.return_type in (Counts, AllCounts):
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
                 )
@@ -849,7 +858,7 @@ class QubitDevice(Device):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 result = qml.math.squeeze(samples)
 
-            elif obs.return_type is Counts:
+            elif obs.return_type in (Counts, AllCounts):
                 result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif obs.return_type is Probability:
@@ -1440,9 +1449,9 @@ class QubitDevice(Device):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
-        The format of the dictionary depends on obs.return_type.all_outcomes (bool),
-        which is set when calling measurements.counts. Per default, the dictionary
-        will only contain the observed outcomes. If obs.return_type.all_outcomes=True,
+        The format of the dictionary depends on obs.return_type, which is set when
+        calling measurements.counts by setting the kwarg all_outcomes (bool). Per default,
+        the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
 
@@ -1467,7 +1476,7 @@ class QubitDevice(Device):
             >>> self._samples_to_counts(samples, obs, num_wires)
             {'00': 2, '10': 1}
 
-            However, if obs.return_type.all_outcomes is set to True, this will return:
+            However, if obs.return_type is AllCounts, this will return:
             >>> self._samples_to_counts(samples, obs, num_wires)
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
@@ -1491,11 +1500,11 @@ class QubitDevice(Device):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
 
-            if obs.return_type.all_outcomes:
+            if obs.return_type is AllCounts:
                 outcomes = self.generate_basis_states(num_wires)
                 outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
         else:
-            if obs.return_type.all_outcomes:
+            if obs.return_type is AllCounts:
                 try:
                     outcomes = qml.eigvals(obs)
                 #  if observable has no info on eigenvalues, we cannot return this measurement

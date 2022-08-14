@@ -39,6 +39,7 @@ class ObservableReturnTypes(Enum):
 
     Sample = "sample"
     Counts = "counts"
+    AllCounts = "allcounts"
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
@@ -55,9 +56,14 @@ class ObservableReturnTypes(Enum):
 Sample = ObservableReturnTypes.Sample
 """Enum: An enumeration which represents sampling an observable."""
 
-Counts = ObservableReturnTypes.Counts
+Counts: ObservableReturnTypes = ObservableReturnTypes.Counts
 """Enum: An enumeration which represents returning the number of times
- each sample was obtained."""
+ each of the observed outcomes occurred in sampling."""
+
+AllCounts = ObservableReturnTypes.AllCounts
+"""Enum: An enumeration which represents returning the number of times
+ each of the possible outcomes occurred in sampling, including 0 counts
+ for unobserved outcomes."""
 
 Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
@@ -794,13 +800,10 @@ def counts(op=None, wires=None, all_outcomes=False):
             )
         wires = qml.wires.Wires(wires)
 
-    meas_process = MeasurementProcess(Counts, obs=op, wires=wires)
     if all_outcomes:
-        meas_process.return_type.all_outcomes = True
-    else:
-        meas_process.return_type.all_outcomes = False
+        return MeasurementProcess(AllCounts, obs=op, wires=wires)
 
-    return meas_process
+    return MeasurementProcess(Counts, obs=op, wires=wires)
 
 
 def probs(wires=None, op=None):
