@@ -414,6 +414,20 @@ class TestMatrix:
         true_mat = qnp.kron(U, qnp.eye(2)) @ qnp.eye(4)
         assert np.allclose(mat, true_mat)
 
+    def test_prod_hamiltonian(self):
+        """Test that a hamiltonian object can be composed."""
+        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        prod_op = Prod(qml.PauliZ(wires=0), U)
+        mat = prod_op.matrix()
+
+        true_mat = [
+            [0.0, 0.5, 0.0, 0.0],
+            [0.5, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, -0.5],
+            [0.0, 0.0, -0.5, 0.0],
+        ]
+        assert np.allclose(mat, true_mat)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
