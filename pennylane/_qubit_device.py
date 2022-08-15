@@ -1242,7 +1242,7 @@ class QubitDevice(Device):
 
         with set_shots(self, shots=1):
             # slow implementation but works for all devices
-            n_qubits = len(self.wires)
+            n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
 
             if seed is not None:
@@ -1260,19 +1260,16 @@ class QubitDevice(Device):
                 # compute rotations for the Pauli measurements
                 rotations = [
                     rot
-                    for wire in wires
-                    for rot in obs_list[
-                        recipes[t][self.wire_map[wire]]
-                    ].compute_diagonalizing_gates(wires=wire)
+                    for wire_idx, wire in enumerate(wires)
+                    for rot in obs_list[recipes[t][wire_idx]].compute_diagonalizing_gates(
+                        wires=wire
+                    )
                 ]
 
                 self.reset()
                 self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
 
-                outcomes[t] = self.generate_samples()[0]
-
-        outcomes = outcomes[:, mapped_wires]
-        recipes = recipes[:, mapped_wires]
+                outcomes[t] = self.generate_samples()[0][mapped_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
