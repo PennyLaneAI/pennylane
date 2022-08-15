@@ -121,7 +121,7 @@ class TClock(Operation):
                         0 & 0      & \omega^2
                     \end{bmatrix}
 
-    where :math:`\omega = e^{2 \pi i / 3}`
+    where :math:`\omega = e^{2 \pi i / 3}`.
 
     **Details:**
 
