@@ -24,11 +24,6 @@ from pennylane.operation import Operation
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 ZETA = OMEGA ** (1 / 3)  # ZETA will be used as a phase for later non-parametric operations
 
-# Note: When Operation.matrix() is used for qutrit operations, `wire_order` must be `None` as specifying
-# an order that is expected to return a permuted and expanded matrix different from the canonical matrix
-# will lead to errors as `expand_matrix()` in `pennylane/operation.py`, which is used to compute the
-# permuted and expanded matrix from the canonical matrix, is hard coded to work correctly for qubits.
-
 
 class TShift(Operation):
     r"""TShift(wires)
