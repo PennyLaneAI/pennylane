@@ -229,7 +229,10 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     batch_dim = shape[0] if len(shape) == 3 else None
 
     # Hotfix for function to work with qutrit operations. If `is_odd` is `True`,
-    # `base_matrix` is assumed to be for the qutrit case
+    # `base_matrix` is assumed to be for the qutrit case. This will likely be updated
+    # in the future if/when support for higher dimension devices is added to PennyLane,
+    # in which case, the best solution would be for `expand_matrix` to accept a `dim`
+    # keyword argument that specifies the qudit dimension.
     is_odd = (shape[1] if batch_dim else shape[0]) % 2
     dim = 3 if is_odd else 2
 

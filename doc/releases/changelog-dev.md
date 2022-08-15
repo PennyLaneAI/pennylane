@@ -7,10 +7,10 @@
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
-  
+
 * Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
-  
+
 * Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
   [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
 
@@ -45,6 +45,22 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
+
+* `qml.operation.expand_matrix` now supports qutrit matrices such that `Operator.matrix` is now able to permute and
+  expand qutrit matrices according to the given wire order.
+
+  ```pycon
+  >>> op = qml.TShift(wires=0)
+  >>> op.matrix(wire_order=[0, 1])
+  array([[0, 0, 0, 0, 0, 0, 1, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+         [1, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 1, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 1, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 1, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 1, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 1, 0, 0, 0]])
 
 <h3>Breaking changes</h3>
 
