@@ -103,10 +103,10 @@ def calculate_Xi_decomposition(hamiltonian):
       hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
 
     Returns:
-      dEs: The step separating the two eigenvalues (E_1-E-2)/2 of the spectrum
-      mus: The average between the two eigenvalues (E_1+E-2)/2
-      times: The time for this term group to be evaluated/evolved at
-      projs: The analytical observables associated with these groups, to be measured by qml.Hermitian
+      dEs (List[float]): The step separating the two eigenvalues (E_1-E-2)/2 of the spectrum
+      mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
+      times (List[float]): The time for this term group to be evaluated/evolved at
+      projs (List[np.array]): The analytical observables associated with these groups, to be measured by qml.Hermitian
     """
     mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
     size = len(mat)
@@ -150,7 +150,7 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis):
       phis (List[float]): Optimal phi values for the QSP part associated with the respective delta and J
 
     Returns:
-      tapes: Expanded tapes from the original tape that measures the terms via the approximate sgn decomposition
+      tapes (List[qml.tape]): Expanded tapes from the original tape that measures the terms via the approximate sgn decomposition
     """
     coeffs = hamiltonian.data
     tapes = []
