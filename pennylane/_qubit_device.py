@@ -814,9 +814,7 @@ class QubitDevice(Device):
                         " with other return types"
                     )
                 results.append(
-                    self.classical_shadow(
-                        wires=obs.wires, n_snapshots=self.shots, circuit=circuit, seed=obs.seed
-                    )
+                    self.classical_shadow(wires=obs.wires, circuit=circuit, seed=obs.seed)
                 )
 
             elif obs.return_type is not None:
@@ -1201,7 +1199,7 @@ class QubitDevice(Device):
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
-    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
+    def classical_shadow(self, wires, circuit, seed=None):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -1240,6 +1238,8 @@ class QubitDevice(Device):
         if circuit is None:  # pragma: no cover
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
+        n_snapshots = self.shots
+
         with set_shots(self, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(self.wires)
@@ -1261,15 +1261,18 @@ class QubitDevice(Device):
                 rotations = [
                     rot
                     for wire in wires
-                    for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
-                        wires=wire
-                    )
+                    for rot in obs_list[
+                        recipes[t][self.wire_map[wire]]
+                    ].compute_diagonalizing_gates(wires=wire)
                 ]
 
                 self.reset()
                 self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
 
                 outcomes[t] = self.generate_samples()[0]
+
+        outcomes = outcomes[:, device_wires]
+        recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 

@@ -900,7 +900,7 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
+    def classical_shadow(self, wires, circuit, seed=None):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -943,6 +943,7 @@ class DefaultQubit(QubitDevice):
         """
 
         n_qubits = len(self.wires)
+        n_snapshots = self.shots
         device_wires = np.array(self.map_wires(wires))
 
         if seed is not None:
