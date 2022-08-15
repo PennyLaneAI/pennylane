@@ -174,7 +174,10 @@ class Pow(SymbolicOp):
         return self.base.label(decimals, base_label, cache=cache) + z_string
 
     def matrix(self, wire_order=None):
-        base_matrix = qml.matrix(self.base)
+        if isinstance(self.base, qml.Hamiltonian):
+            base_matrix = qml.matrix(self.base)
+        else:
+            base_matrix = self.base.matrix()
 
         if isinstance(self.z, int):
             mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
