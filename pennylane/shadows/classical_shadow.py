@@ -15,6 +15,7 @@
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
+from pennylane.math import vn_entropy
 
 import pennylane.numpy as np
 import pennylane as qml
@@ -281,10 +282,47 @@ class ClassicalShadow:
             expval += coeff * median_of_means(expvals, k)
 
         return expval
+    
+    def entropy(self, wires=[0], snapshots=None, alpha=1, k=1, base=None, atol=1e-2):
+        """Compute entropies from classical shadow measurements"""
+        global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
+        rdm = median_of_means(global_snapshots, k, axis=0)
+
+        # Allow for different log base
+        if base:
+            div = np.log(base)
+        else:
+            div = 1
+
+        if alpha==2:
+            print("running alpha=2 purity")
+            # special case of purity
+            res = -qml.math.log(qml.math.trace(rdm@rdm))
+            res = qml.math.cast(res, dtype="real")
+            return res/div
+
+        else:
+            # Compute Eigenvalues and choose only those >>0
+            evs = qml.math.eigvalsh(rdm)
+            mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
+            mask1 = qml.math.where(evs>0, True, False)
+            mask = qml.math.logical_and(mask0, mask1)
+            # Renormalize
+            evs_nonzero = qml.math.gather(evs, mask)
+            evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+
+
+            if alpha==1:
+                # Special case of von Neumann entropy
+                return -qml.math.sum(evs_nonzero*qml.math.log(evs_nonzero)) / div
+            else:
+                # General Renyi-alpha entropy
+                return qml.math.log(qml.math.sum(evs_nonzero**alpha)) /(1-alpha) /div
+
 
 
 # Util functions
-def median_of_means(arr, num_batches):
+def median_of_means(arr, num_batches, axis=None):
     """
     The median of means of the given array.
 
@@ -305,7 +343,7 @@ def median_of_means(arr, num_batches):
     for i in range(num_batches):
         means.append(qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0))
 
-    return np.median(means)
+    return np.median(means, axis=axis)
 
 
 def pauli_expval(bits, recipes, word):

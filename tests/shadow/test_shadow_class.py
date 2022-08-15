@@ -461,3 +461,8 @@ class TestPauliExpval:
         actual = pauli_expval(bits, recipes, np.array(word))
         assert actual.shape == (self.multi_bits.shape[0],)
         assert np.all(actual == expected)
+
+class TestShadowEntropies:
+    """Tests for entropies in ClassicalShadow class"""
+    def test_constant_distribution(self):
+        """Test for state with constant eigenvalues of reduced state that all entropies are the same"""
