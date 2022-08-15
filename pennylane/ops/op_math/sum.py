@@ -295,7 +295,7 @@ class Sum(Operator):
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
             for op in summands:
-                yield op.matrix(wire_order=wire_order)
+                yield qml.matrix(op, wire_order=wire_order)
 
         if wire_order is None:
             wire_order = self.wires

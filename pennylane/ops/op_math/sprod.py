@@ -210,7 +210,7 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
-        return self.scalar * self.base.matrix(wire_order=wire_order)
+        return self.scalar * qml.matrix(self.base, wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
