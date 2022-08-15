@@ -283,7 +283,7 @@ class ClassicalShadow:
 
         return expval
     
-    def entropy(self, wires=[0], snapshots=None, alpha=1, k=1, base=None, atol=1e-2):
+    def entropy(self, wires=[0], snapshots=None, alpha=1, k=1, base=None, atol=1e-5):
         """Compute entropies from classical shadow measurements"""
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
@@ -298,7 +298,7 @@ class ClassicalShadow:
             print("running alpha=2 purity")
             # special case of purity
             res = -qml.math.log(qml.math.trace(rdm@rdm))
-            res = qml.math.cast(res, dtype="real")
+            res = qml.math.cast(res, dtype="float64")
             return res/div
 
         else:
