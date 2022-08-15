@@ -36,6 +36,7 @@ from pennylane.measurements import (
     MutualInfo,
     Probability,
     Sample,
+    Shadow,
     State,
     Variance,
     VnEntropy,
