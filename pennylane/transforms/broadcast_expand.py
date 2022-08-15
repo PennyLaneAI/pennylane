@@ -24,10 +24,7 @@ def broadcast_expand(tape):
 
     .. warning::
 
-        Currently, not all templates have been updated to support a batch
-        dimension. If you run into an error attempting to use a template
-        with this transform, please open a GitHub issue detailing
-        the error.
+        Currently, not all templates have been updated to support broadcasting.
 
     Args:
         tape (.QuantumTape): Broadcasted tape to be expanded
