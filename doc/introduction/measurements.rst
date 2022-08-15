@@ -31,6 +31,7 @@ The available measurement functions are
 
     ~pennylane.expval
     ~pennylane.sample
+    ~pennylane.counts
     ~pennylane.var
     ~pennylane.probs
     ~pennylane.state
@@ -131,7 +132,7 @@ Counts
 
 To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
 :func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the 
-measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
+possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
 
 The previous example will be modified as follows:
 
@@ -146,10 +147,9 @@ The previous example will be modified as follows:
         return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
 
 After executing the circuit, we can directly see how many times each measurement outcome occurred:
-        
->>> result = circuit()
->>> print(result)
-({1: 475, -1: 525}, {1: 475, -1: 525})
+
+>>> circuit()
+({-1: 496, 1: 504}, {-1: 496, 1: 504})
  
 Similarly, if the observable is not provided, the count of the observed computational basis state is returned.
 
@@ -165,8 +165,7 @@ Similarly, if the observable is not provided, the count of the observed computat
 
 And the result is:
            
->>> result = circuit()
->>> print(result)
+>>> circuit()
 {'00': 495, '11': 505}
 
 Per default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can 
@@ -204,9 +203,8 @@ a tuple is returned to provide differentiability for the outputs of QNodes.
         qml.PauliX(wires=1)
         return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
->>> result = circuit()
->>> print(result)
-(0.026, 0.026, {'001': 513, '111': 487})
+>>> circuit()
+(-0.036, 0.036, {'01': 482, '10': 518}) 
 
 Probability
 -----------

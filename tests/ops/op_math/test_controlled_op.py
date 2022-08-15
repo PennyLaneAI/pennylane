@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from copy import copy
+
+import pytest
+from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
 import pennylane as qml
@@ -21,14 +23,11 @@ from pennylane import numpy as np
 from pennylane.operation import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
-    Operator,
     Operation,
+    Operator,
 )
 from pennylane.ops.op_math.controlled_class import Controlled, ControlledOp
 from pennylane.wires import Wires
-
-
-from gate_data import CNOT, CZ, CSWAP, Toffoli, CRotx, CRoty, CRotz, CRot3
 
 base_num_control_mats = [
     (qml.PauliX("a"), 1, CNOT),
@@ -119,7 +118,7 @@ class TestInitialization:
 
         assert op.work_wires == Wires(("aux"))
 
-        assert op.name == "CTempOperator"
+        assert op.name == "C(TempOperator)"
         assert op.id == "something"
 
         assert op.num_params == 0
@@ -214,6 +213,14 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_matrix is value
 
+    def test_no_matrix_if_batching(self):
+        """Test that has_matrix is false if the base operator has batching."""
+
+        x = np.array([1.2, 3.4, 5.6])
+        base = qml.RX(x, wires=0)
+        op = Controlled(base, 1)
+        assert op.has_matrix is False
+
     @pytest.mark.parametrize("value", ("_ops", "_prep", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
@@ -236,22 +243,6 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.is_hermitian is value
 
-    def test_batching_properties(self):
-        """Test that Adjoint batching behavior mirrors that of the base."""
-
-        class DummyOp(Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op = Controlled(base, 1)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
-
     def test_private_wires_getter_setter(self):
         """Test that we can get and set private wires."""
 
@@ -272,7 +263,7 @@ class TestProperties:
         base = qml.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (3, 4), work_wires="aux")
 
-        with pytest.raises(AssertionError, match="CIsingXX needs at least 4 wires."):
+        with pytest.raises(AssertionError, match=r"C\(IsingXX\) needs at least 4 wires."):
             op._wires = ("a", "b")
 
     def test_private_wires_setter_no_work_wires(self):
@@ -384,14 +375,14 @@ class TestOperationProperties:
         op = Controlled(base, 2)
 
         assert op.inverse == base.inverse == False
-        assert op.name == "CS"
+        assert op.name == "C(S)"
 
         op.inv()
 
         assert op.inverse == False
         assert base.inverse == True
-        assert op.name == "CS.inv"
-        assert op.base_name == "CS"
+        assert op.name == "C(S.inv)"
+        assert op.base_name == "C(S)"
 
     def test_inverse_setter(self):
         """Teest that the inverse property can be set."""
@@ -399,14 +390,14 @@ class TestOperationProperties:
         op = Controlled(base, 1)
 
         assert op.inverse == base.inverse == False
-        assert op.name == "CT"
+        assert op.name == "C(T)"
 
         op.inverse = True
 
         assert op.inverse == False
         assert base.inverse == True
-        assert op.name == "CT.inv"
-        assert op.base_name == "CT"
+        assert op.name == "C(T.inv)"
+        assert op.base_name == "C(T)"
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -468,6 +459,50 @@ class TestOperationProperties:
             op.parameter_frequencies
 
 
+class TestSimplify:
+    """Test qml.op_sum simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        controlled_op = Controlled(qml.RZ(1.32, wires=0) + qml.Identity(wires=0), control_wires=1)
+        assert controlled_op.arithmetic_depth == 2
+
+    def test_simplify_method(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        controlled_op = Controlled(
+            qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1), control_wires=2
+        )
+        final_op = Controlled(
+            qml.op_sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1)),
+            control_wires=2,
+        )
+        simplified_op = controlled_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Controlled)
+        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_nested_controlled_ops(self):
+        """Test the simplify method with nested control operations on different wires."""
+        controlled_op = Controlled(Controlled(qml.PauliX(0), 1), 2)
+        final_op = Controlled(qml.PauliX(0), [2, 1])
+        simplified_op = controlled_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Controlled)
+        assert isinstance(simplified_op.base, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+
 class TestQueuing:
     """Test that Controlled operators queue and update base metadata."""
 
@@ -516,6 +551,15 @@ base_num_control_mats = [
 
 class TestMatrix:
     """Tests of Controlled.matrix and Controlled.sparse_matrix"""
+
+    def test_raises_error_if_batching(self):
+        """Test a MatrixUndefinedError is raised if the base is batched."""
+        x = np.array([1.0, 2.0, 3.0])
+        base = qml.RX(x, 0)
+        op = Controlled(base, 1)
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
 
     @pytest.mark.parametrize("base, num_control, mat", base_num_control_mats)
     def test_matrix_compare_with_gate_data(self, base, num_control, mat):
