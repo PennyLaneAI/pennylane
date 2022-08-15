@@ -333,7 +333,7 @@ class QubitDevice(Device):
                 if ret_types[0] is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                # ToDo: still missing Counts here
+
                 elif circuit.measurements[0].return_type not in (
                     qml.measurements.Counts,
                     qml.measurements.AllCounts,
