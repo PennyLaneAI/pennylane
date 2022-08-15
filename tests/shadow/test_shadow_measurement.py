@@ -109,6 +109,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
 
 wires_list = [1, 2, 3]
 
+
 @pytest.mark.parametrize("wires", wires_list)
 class TestShadowMeasurement:
     """Unit tests for classical_shadow measurement"""
