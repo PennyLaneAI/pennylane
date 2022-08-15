@@ -295,7 +295,6 @@ class ClassicalShadow:
             div = 1
 
         if alpha==2:
-            print("running alpha=2 purity")
             # special case of purity
             res = -qml.math.log(qml.math.trace(rdm@rdm))
             res = qml.math.cast(res, dtype="float64")
@@ -310,6 +309,7 @@ class ClassicalShadow:
             # Renormalize
             evs_nonzero = qml.math.gather(evs, mask)
             evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+            print("evs_nonzero: ", evs_nonzero)
 
 
             if alpha==1:
@@ -317,7 +317,7 @@ class ClassicalShadow:
                 return -qml.math.sum(evs_nonzero*qml.math.log(evs_nonzero)) / div
             else:
                 # General Renyi-alpha entropy
-                return qml.math.log(qml.math.sum(evs_nonzero**alpha)) /(1-alpha) /div
+                return qml.math.log(qml.math.sum(evs_nonzero**alpha)) /(1.-alpha) /div
 
 
 
