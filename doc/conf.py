@@ -53,6 +53,9 @@ autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
 automodsumm_inherited_members = True
 
+# Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
+bibtex_bibfiles = ["bibfile.bib"]
+
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
 
@@ -226,7 +229,8 @@ html_theme = "xanadu"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
-    "navbar_wordmark_path": "_static/pl_wordmark.png",
+    "navbar_logo_path": "_static/logo.png",
+    "navbar_wordmark_path": "_static/pennylane.svg",
     # Specifying #19b37b is more correct but does not match the other PL websites.
     "navbar_logo_colour": "#2d7c7f",
     "navbar_home_link": "https://pennylane.ai",

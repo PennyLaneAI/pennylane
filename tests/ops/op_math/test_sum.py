@@ -202,17 +202,14 @@ class TestInitialization:
         """Test that calling ndim_params raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
-        with pytest.raises(
-            ValueError,
-            match="Dimension of parameters is not currently implemented for Sum operators.",
-        ):
+        with pytest.raises(AttributeError):
             _ = sum_op.ndim_params
 
     def test_batch_size_raises_error(self):
         """Test that calling batch_size raises a ValueError."""
         sum_op = Sum(qml.PauliX(0), qml.Identity(1))
 
-        with pytest.raises(ValueError, match="Batch size is not defined for Sum operators."):
+        with pytest.raises(AttributeError):
             _ = sum_op.batch_size
 
     def test_decomposition_raises_error(self):
@@ -588,6 +585,32 @@ class TestProperties:
         assert np.allclose(eig_vecs, true_eigvecs)
 
 
+class TestSimplify:
+    """Test Sum simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        sum_op = (
+            qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1) + qml.PauliX(0)
+        )
+        assert sum_op.arithmetic_depth == 3
+
+    def test_simplify_method(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        sum_op = qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
+        final_op = Sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        simplified_op = sum_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+
 class TestWrapperFunc:
     """Test wrapper function."""
 
@@ -768,3 +791,23 @@ class TestIntegration:
 
         with pytest.raises(QuantumFunctionError, match="Sum is not an observable:"):
             my_circ()
+
+
+class TestArithmetic:
+    """Test arithmetic decomposition methods."""
+
+    def test_adjoint(self):
+        """Test the adjoint method for Sum Operators."""
+
+        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        final_op = Sum(qml.adjoint(qml.RX(1.23, wires=0)), qml.adjoint(qml.Identity(wires=1)))
+        adj_op = sum_op.adjoint()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(adj_op, Sum)
+        for s1, s2 in zip(final_op.summands, adj_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth

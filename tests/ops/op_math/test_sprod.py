@@ -470,6 +470,61 @@ class TestProperties:
         assert len(cache["matrices"]) == 1
 
 
+class TestSimplify:
+    """Test SProd simplify method and depth property."""
+
+    def test_depth_property(self):
+        """Test depth property."""
+        sprod_op = s_prod(5, s_prod(3, s_prod(-1, qml.RZ(1.32, wires=0))))
+        assert sprod_op.arithmetic_depth == 3
+
+    def test_simplify_method(self):
+        """Test that the simplify method reduces complexity to the minimum."""
+        sprod_op = SProd(
+            2, SProd(2, qml.RZ(1.32, wires=0)) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
+        )
+        final_op = qml.ops.Sum(
+            SProd(4, qml.RZ(1.32, wires=0)),
+            SProd(2, qml.Identity(wires=0)),
+            SProd(2, qml.RX(1.9, wires=1)),
+        )
+        simplified_op = sprod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert isinstance(s2, SProd)
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_scalar_equal_to_1(self):
+        """Test the simplify method when the scalar is 1."""
+        sprod_op = s_prod(1, qml.PauliX(0))
+        final_op = qml.PauliX(0)
+        simplified_op = sprod_op.simplify()
+
+        assert isinstance(simplified_op, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_simplify_nested_sprod_scalar_equal_to_1(self):
+        """Test the simplify method with nested SProd where the global scalar is 1."""
+        sprod_op = s_prod(3, s_prod(1 / 3, qml.PauliX(0)))
+        final_op = qml.PauliX(0)
+        simplified_op = sprod_op.simplify()
+
+        assert isinstance(simplified_op, qml.PauliX)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_s_prod_top_level(self, op_scalar_tup):
@@ -493,6 +548,8 @@ class TestWrapperFunc:
 
 
 class TestIntegration:
+    """Integration tests for SProd with a QNode."""
+
     def test_measurement_process_expval(self):
         """Test SProd class instance in expval measurement process."""
         dev = qml.device("default.qubit", wires=2)
@@ -612,3 +669,55 @@ class TestIntegration:
 
         with pytest.raises(QuantumFunctionError, match="SProd is not an observable:"):
             my_circ()
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_torch(self, diff_method):
+        """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
+        is requested for a given interface."""
+
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(torch.tensor(2))
+
+        assert qml.math.allclose(res, 2)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_torch(self, diff_method):
+        """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
+        is requested for a given interface."""
+
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(jnp.array(2))
+
+        assert qml.math.allclose(res, 2)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_tensorflow_qnode(self, diff_method):
+
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(tf.Variable(2))
+
+        assert qml.math.allclose(res, 2)

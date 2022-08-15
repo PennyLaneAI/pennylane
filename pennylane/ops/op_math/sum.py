@@ -16,6 +16,7 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from functools import reduce
+from typing import List
 
 import numpy as np
 
@@ -28,17 +29,17 @@ def op_sum(*summands, do_queue=True, id=None):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
-        id (str or None): id for the sum operator. Default is None.
+        id (str or None): id for the Sum operator. Default is None.
 
     Returns:
-        ~ops.op_math.Sum: the operator representing the sum of summands.
+        ~ops.op_math.Sum: The operator representing the sum of summands.
 
-    ..seealso:: :class:`~.ops.op_math.Sum`
+    .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
 
@@ -56,7 +57,7 @@ def _sum(mats_gen, dtype=None, cast_like=None):
     r"""Private method to compute the sum of matrices.
 
     Args:
-        mats_gen (Generator): a python generator which produces the matricies which
+        mats_gen (Generator): a python generator which produces the matrices which
             will be summed together.
 
     Keyword Args:
@@ -84,9 +85,13 @@ class Sum(Operator):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
+        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str or None): id for the sum operator. Default is None.
+
+    .. note::
+        Currently this operator can not be queued in a circuit as an operation, only measured terminally.
+
+    .. seealso:: :func:`~.ops.op_math.op_sum`
 
     **Example**
 
@@ -115,6 +120,27 @@ class Sum(Operator):
                 1.81677345+0.57695852j, 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 1.81677345+0.57695852j]])
+
+        The Sum operation can also be measured inside a qnode as an observable.
+        If the circuit is parameterized, then we can also differentiate through the
+        sum observable.
+
+        .. code-block:: python
+
+            sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, grad_method="best")
+            def circuit(weights):
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.RX(weights[2], wires=1)
+                return qml.expval(sum_op)
+
+        >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.grad(circuit)(weights)
+        tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
     """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
@@ -163,16 +189,6 @@ class Sum(Operator):
             op.data = new_entry
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        raise ValueError("Batch size is not defined for Sum operators.")
-
-    @property
-    def ndim_params(self):
-        """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Sum operators.")
-
-    @property
     def num_wires(self):
         return len(self.wires)
 
@@ -198,7 +214,7 @@ class Sum(Operator):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self.summands), self.summands
+        return [1.0] * len(self.summands), list(self.summands)
 
     @property
     def eigendecomposition(self):
@@ -210,7 +226,8 @@ class Sum(Operator):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
+            operator
         """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
@@ -268,7 +285,8 @@ class Sum(Operator):
         .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
 
         Returns:
             tensor_like: matrix representation
@@ -301,3 +319,39 @@ class Sum(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.summands)
         return self
+
+    def adjoint(self):
+        return Sum(*(qml.adjoint(summand) for summand in self.summands))
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(summand.arithmetic_depth for summand in self.summands)
+
+    @classmethod
+    def _simplify_summands(cls, sum_op: "Sum") -> List[Operator]:
+        """Reduces the depth of nested summands.
+
+        If ``depth`` is not provided or negative, then the summands list is completely flattenned.
+
+        Keyword Args:
+            depth (int): Reduced depth. Default is -1.
+
+        Returns:
+            List[~.operation.Operator]: reduced summands list
+        """
+        summands = []
+        for summand in sum_op.summands:
+            if isinstance(summand, Sum):
+                summands.extend(cls._simplify_summands(sum_op=summand))
+                continue
+            simplified_summand = summand.simplify()
+            if isinstance(simplified_summand, Sum):
+                summands.extend(simplified_summand.summands)
+            else:
+                summands.append(simplified_summand)
+
+        return summands
+
+    def simplify(self) -> "Sum":
+        summands = self._simplify_summands(sum_op=self)
+        return Sum(*summands)
