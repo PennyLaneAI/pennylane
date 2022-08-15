@@ -150,7 +150,12 @@ def test_allequal(t1, t2):
     assert res == expected
 
 
-@pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
+@pytest.mark.parametrize(
+    "t1,t2",
+    list(
+        itertools.combinations(test_data + [torch.tensor([1.0, 2.0, 3.0], requires_grad=True)], r=2)
+    ),
+)
 def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
     res = fn.allclose(t1, t2)
@@ -1098,6 +1103,118 @@ class TestRequiresGrad:
         """Test that an error is raised if the interface is unknown"""
         with pytest.raises(ValueError, match="unknown object"):
             fn.requires_grad(type("hello", tuple(), {})())
+
+
+class TestInBackprop:
+    """Tests for the in_backprop function"""
+
+    @pytest.mark.slow
+    def test_jax(self):
+        """The value of in_backprop for JAX DeviceArrays depends on the argnums argument"""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.in_backprop(t), fn.in_backprop(s)]
+            return jnp.sum(t * s)
+
+        t = jnp.array([1.0, 2.0, 3.0])
+        s = jnp.array([-2.0, -3.0, -4.0])
+
+        jax.grad(cost_fn, argnums=0)(t, s)
+        assert res == [True, False]
+
+        jax.grad(cost_fn, argnums=1)(t, s)
+        assert res == [False, True]
+
+        jax.grad(cost_fn, argnums=[0, 1])(t, s)
+        assert res == [True, True]
+
+    def test_autograd_backwards(self):
+        """The value of in_backprop for Autograd tensors corresponds to the requires_grad attribute during the backwards pass."""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.in_backprop(t), fn.in_backprop(s)]
+            return np.sum(t * s)
+
+        t = np.array([1.0, 2.0, 3.0], requires_grad=True)
+        s = np.array([-2.0, -3.0, -4.0], requires_grad=True)
+
+        qml.grad(cost_fn)(t, s)
+        assert res == [True, True]
+
+        t.requires_grad = False
+        s.requires_grad = True
+        qml.grad(cost_fn)(t, s)
+        assert res == [False, True]
+
+        t.requires_grad = True
+        s.requires_grad = False
+        qml.grad(cost_fn)(t, s)
+        assert res == [True, False]
+
+        t.requires_grad = False
+        s.requires_grad = False
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            qml.grad(cost_fn)(t, s)
+        assert res == [False, False]
+
+    def test_tf(self):
+        """The value of in_backprop for TensorFlow tensors is True *if* they are being watched by a gradient tape"""
+        t1 = tf.Variable([1.0, 2.0])
+        t2 = tf.constant([1.0, 2.0])
+        assert not fn.in_backprop(t1)
+        assert not fn.in_backprop(t2)
+
+        with tf.GradientTape():
+            # variables are automatically watched within a context,
+            # but constants are not
+            assert fn.in_backprop(t1)
+            assert not fn.in_backprop(t2)
+
+        with tf.GradientTape() as tape:
+            # watching makes all tensors trainable
+            tape.watch([t1, t2])
+            assert fn.in_backprop(t1)
+            assert fn.in_backprop(t2)
+
+    def test_tf_autograph(self):
+        """TensorFlow tensors will True *if* they are being watched by a gradient tape with Autograph."""
+        t1 = tf.Variable([1.0, 2.0])
+        t2 = tf.constant([1.0, 2.0])
+        assert not fn.in_backprop(t1)
+        assert not fn.in_backprop(t2)
+
+        @tf.function
+        def f_pow(x):
+            return tf.math.pow(x, 3)
+
+        with tf.GradientTape():
+            # variables are automatically watched within a context,
+            # but constants are not
+            y = f_pow(t1)
+            assert fn.in_backprop(t1)
+            assert not fn.in_backprop(t2)
+
+        with tf.GradientTape() as tape:
+            # watching makes all tensors trainable
+            tape.watch([t1, t2])
+            y = f_pow(t1)
+            assert fn.in_backprop(t1)
+            assert fn.in_backprop(t2)
+
+    @pytest.mark.torch
+    def test_unknown_interface_in_backprop(self):
+        """Test that an error is raised if the interface is unknown"""
+        import torch
+
+        with pytest.raises(ValueError, match="is in backpropagation."):
+            fn.in_backprop(torch.tensor([0.1]))
+
+        with pytest.raises(ValueError, match="is in backpropagation."):
+            fn.in_backprop(type("hello", tuple(), {})())
 
 
 shape_test_data = [

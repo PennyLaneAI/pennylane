@@ -240,7 +240,16 @@ class TestCapabilities:
 
             assert state is None
         else:
-            circuit()
+
+            if dev.shots is not None:
+                with pytest.warns(
+                    UserWarning,
+                    match="Requested state or density matrix with finite shots; the returned",
+                ):
+                    circuit()
+            else:
+                circuit()
+
             assert dev.state is not None
 
     def test_returns_probs(self, device_kwargs):
