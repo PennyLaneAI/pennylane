@@ -352,18 +352,25 @@ def classproperty(func):
 # =============================================================================
 
 
-def _process_data(op):
+def _process_data_for_hashing(op):
+
+    # TODO: This should not use hard-coded lists of operations but num_params, grad_recipes, or eigvals to determine what to do!
 
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
+        return tuple(qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data)
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
+        return tuple(qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data)
 
-    return str(op.data)
+    if hasattr(op.data, 'data'):
+        # in the case of numpy arrays we can return the bytes, which is faster
+        # than calling repr() and safer than str()
+        return op.data.data
+
+    return repr(op.data)
 
 
 class Operator(abc.ABC):
@@ -535,16 +542,18 @@ class Operator(abc.ABC):
         return copied_op
 
     @property
-    def hash(self):
-        """int: Integer hash that uniquely represents the operator."""
-        return hash(
-            (
+    def fingerprint(self):
+        return (
                 str(self.name),
                 tuple(self.wires.tolist()),
-                str(self.hyperparameters.values()),
-                _process_data(self),
+                repr(self.hyperparameters.values()),
+                _process_data_for_hashing(self),
             )
-        )
+
+    @property
+    def hash(self):
+        """int: Integer hash that uniquely represents the operator."""
+        return hash(self.fingerprint)
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument

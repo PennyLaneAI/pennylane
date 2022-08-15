@@ -504,19 +504,16 @@ class MeasurementProcess:
             fingerprint = (
                 str(self.name),
                 tuple(self.wires.tolist()),
-                str(self.data),
+                repr(self.data),
                 self.return_type,
             )
         else:
             fingerprint = (
-                str(self.obs.name),
-                tuple(self.wires.tolist()),
-                str(self.obs.data),
+                self.obs.hash,
                 self.return_type,
             )
 
         return hash(fingerprint)
-
 
 def expval(op):
     r"""Expectation value of the supplied observable.
