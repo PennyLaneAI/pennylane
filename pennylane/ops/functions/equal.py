@@ -32,13 +32,13 @@ def equal(
     Args:
         op1 (.Operator): First operator to compare
         op2 (.Operator): Second operator to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: `True`
-        check_trainability (bool, optional): Whether to compare trainability status. Default: `True`
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
         atol (float, optional): Absolute tolerance for parameters
 
     Returns:
-        bool: `True` if the operators are equal, else `False`
+        bool: ``True`` if the operators are equal, else ``False``
 
     **Example**
 
@@ -98,4 +98,4 @@ def equal(
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
-    return True
+    return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
