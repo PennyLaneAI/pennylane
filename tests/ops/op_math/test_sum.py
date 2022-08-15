@@ -447,11 +447,12 @@ class TestMatrix:
 
     def test_sum_hamiltonian(self):
         """Test that a hamiltonian object can be summed."""
-        U = 0.5 * (qml.PauliX(wires=0) @ qml.PauliZ(wires=0))
+        U = 0.5 * (qml.PauliX(wires=0) @ qml.PauliZ(wires=1))
         sum_op = Sum(U, qml.PauliX(wires=0))
         mat = sum_op.matrix()
 
-        true_mat = [[0, 0.5], [1.5, 0]]
+        true_mat = [[0, 0, 1.5, 0], [0, 0, 0, 0.5], [1.5, 0, 0, 0], [0, 0.5, 0, 0]]
+
         assert np.allclose(mat, true_mat)
 
     # Add interface tests for each interface !
