@@ -447,7 +447,7 @@ of operators. [(#2622)](https://github.com/PennyLaneAI/pennylane/pull/2622)
   >>> def circuit():
   ...     qml.Hadamard(wires=0)
   ...     qml.CNOT(wires=[0, 1])
-  ...     return qml.counts()
+  ...     return qml.counts(all_outcomes=True)
   >>> result = circuit()
   >>> print(result)
   {'00': 495, '01': 0, '10': 0,  '11': 505}
