@@ -538,6 +538,15 @@ class TestMatrix:
 
         assert qml.math.allclose(op_mat, compare_mat)
 
+    def test_pow_hamiltonian(self):
+        """Test that a hamiltonian object can be exponentiated."""
+        U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0)])
+        pow_op = Pow(base=U, z=2)
+        mat = pow_op.matrix()
+
+        true_mat = [[1, 0], [0, 1]]
+        assert np.allclose(mat, true_mat)
+
 
 class TestSparseMatrix:
     """Tests involving the sparse matrix method."""
