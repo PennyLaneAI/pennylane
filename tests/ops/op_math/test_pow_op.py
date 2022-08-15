@@ -330,13 +330,22 @@ class TestSimplify:
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(Pow(base=qml.PauliX(0), z=3), control_wires=1, id=3)
+        final_op = ControlledOp(base=qml.PauliX(0), control_wires=1, id=3)
         simplified_op = pow_op.simplify()
 
         assert isinstance(simplified_op, ControlledOp)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+    def test_simplify_with_adjoint_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.pow method."""
+        op = Pow(qml.U2(1, 1, 0), z=3)
+        simplified_op = op.simplify()
+        assert isinstance(simplified_op, Pow)
+        assert op.data == simplified_op.data
+        assert op.wires == simplified_op.wires
+        assert op.arithmetic_depth == simplified_op.arithmetic_depth
 
 
 class TestMiscMethods:

@@ -17,8 +17,6 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 import pennylane as qml
 from pennylane.math import conj, transpose
 from pennylane.operation import AdjointUndefinedError, Observable, Operation
-from pennylane.ops.op_math.prod import Prod
-from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
 
@@ -214,10 +212,12 @@ class Adjoint(SymbolicOp):
     def matrix(self, wire_order=None):
         if self.base.batch_size is not None:
             raise qml.operation.MatrixUndefinedError
+
         if isinstance(self.base, qml.Hamiltonian):
             base_matrix = qml.matrix(self.base, wire_order=wire_order)
         else:
             base_matrix = self.base.matrix(wire_order=wire_order)
+
         return transpose(conj(base_matrix))
 
     def decomposition(self):
@@ -244,12 +244,7 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        if isinstance(self.base, qml.Identity):
-            return self.base
-        if isinstance(self.base, Adjoint):  # Adj(Adj(A)) = A
-            return self.base.base.simplify()
-        if isinstance(self.base, Sum):  # Adj(A + B) = Adj(A) + Adj(B)
-            return Sum(*(Adjoint(summand) for summand in self.base.summands)).simplify()
-        if isinstance(self.base, Prod):  # Adj(AB) = Adj(B) @ Adj(A)
-            return Prod(*(Adjoint(factor) for factor in self.base.factors[::-1])).simplify()
-        return Adjoint(base=self.base.simplify())
+        try:
+            return self.base.adjoint().simplify()
+        except AdjointUndefinedError:
+            return Adjoint(base=self.base.simplify())

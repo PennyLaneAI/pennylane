@@ -323,6 +323,9 @@ class Sum(Operator):
         context.append(self, owns=self.summands)
         return self
 
+    def adjoint(self):
+        return Sum(*(qml.adjoint(summand) for summand in self.summands))
+
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(summand.arithmetic_depth for summand in self.summands)

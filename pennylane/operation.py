@@ -1130,7 +1130,7 @@ class Operator(abc.ABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z):
+    def pow(self, z) -> List["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1169,7 +1169,7 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
-    def adjoint(self):  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
