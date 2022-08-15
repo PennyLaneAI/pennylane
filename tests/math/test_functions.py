@@ -150,7 +150,12 @@ def test_allequal(t1, t2):
     assert res == expected
 
 
-@pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
+@pytest.mark.parametrize(
+    "t1,t2",
+    list(
+        itertools.combinations(test_data + [torch.tensor([1.0, 2.0, 3.0], requires_grad=True)], r=2)
+    ),
+)
 def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
     res = fn.allclose(t1, t2)
