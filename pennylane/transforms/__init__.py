@@ -82,7 +82,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
-    ~transforms.simplify
     ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
@@ -223,7 +222,6 @@ from .commutation_dag import (
     is_commuting,
     CommutationDAG,
     CommutationDAGNode,
-    simplify,
 )
 from .tape_expand import (
     expand_invalid_trainable,
