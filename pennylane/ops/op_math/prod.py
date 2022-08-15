@@ -198,7 +198,7 @@ class Prod(Operator):
     @property
     def batch_size(self):
         """Batch size of input parameters."""
-        return None
+        return next((op.batch_size for op in self.factors if op.batch_size is not None), None)
 
     @property
     def num_params(self):
@@ -318,6 +318,9 @@ class Prod(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.factors)
         return self
+
+    def adjoint(self):
+        return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))
 
     @property
     def arithmetic_depth(self) -> int:
