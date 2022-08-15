@@ -931,6 +931,23 @@ class TestCounts:
 
         assert res == {-1.0: 0, 1.0: n_shots}
 
+    def test_all_outcomes_multiple_measurements(self):
+        """Tests that the all_outcomes=True option for counts works when
+        multiple measurements are performed"""
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0)), qml.counts(), qml.counts(all_outcomes=True)
+
+        res = circuit()
+
+        assert len(res[0]) == 10
+        assert len(res[1]) == 1
+        assert len(res[2]) == 4
+        assert res[2]["00"] == 10
+
 
 class TestMeasure:
     """Tests for the measure function"""
