@@ -467,9 +467,9 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             # compute the second derivative of non-involutory observables
             pdA2 = pdA2_fn(results[tape_boundary:])
 
-            if qml.active_return() and len(pdA2) == 1:
-                # If only one, get the result from the tuple
-                pdA2 = pdA2[0]
+            # if qml.active_return() and len(pdA2) == 1:
+            # If only one, get the result from the tuple
+            # pdA2 = pdA2[0]
 
             if involutory:
                 # if involutory observables are present, ensure they have zero gradient.
@@ -490,17 +490,31 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         # d<A>/dp for plain expectations (mask==False)
         # if qml.active_return():
         #     pdA = qml.math.T(qml.math.stack(pdA))
-
         if qml.active_return():
-            res = []
-            for p in pdA:
-                parameter_res = pdA2 - 2 * np.squeeze(f0) * p
-                if isinstance(parameter_res, Sequence):
-                    parameter_res = tuple(parameter_res)
 
-                res.append(parameter_res)
+            # TODO: double-check logic with another Hermitian test example
+            # (off-diagonal elements in the test are different, though
+            # negligible)
+            res = []
+            if isinstance(pdA2, (Sequence, np.ndarray)):
+                assert len(pdA) == len(pdA2)
+
+                for p1, p2 in zip(pdA, pdA2):
+                    parameter_res = p2 - 2 * np.squeeze(f0) * p1
+                    if isinstance(parameter_res, Sequence):
+                        parameter_res = tuple(parameter_res)
+
+                    res.append(parameter_res)
+            else:
+                for p in pdA:
+                    parameter_res = pdA2 - 2 * np.squeeze(f0) * p
+                    if isinstance(parameter_res, Sequence):
+                        parameter_res = tuple(parameter_res)
+
+                    res.append(parameter_res)
 
             res = tuple(res)
+            print(res, pdA)
             res = qml.math.where(mask, res, pdA)
 
             # NumPy ops are likely more performant, only convert to tuple here

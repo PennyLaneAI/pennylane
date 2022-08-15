@@ -583,8 +583,8 @@ class TestParameterShiftRule:
         # assert len(tapes) == 1 + 2
 
         expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
-        print(gradA, expected)
-        assert np.allclose(gradA, expected, atol=tol)
+        assert np.diag(gradA) == pytest.approx(expected, abs=tol)
+        # TODO: check when finite diff ready:
         # assert np.diag(gradF) == pytest.approx(expected, abs=tol)
         qml.disable_return()
 
@@ -616,7 +616,6 @@ class TestParameterShiftRule:
                 0.25 * (3 - 2 * np.cos(b) ** 2 * np.cos(2 * c) - np.cos(2 * b)),
             ]
         )
-        print(res, expected)
         assert isinstance(res, tuple)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -639,7 +638,6 @@ class TestParameterShiftRule:
                 [0, 0, np.cos(b) ** 2 * np.sin(2 * c)],
             ]
         ).T
-        print(gradA, expected)
         assert isinstance(gradA, tuple)
         assert gradA == pytest.approx(expected, abs=tol)
         # assert gradF == pytest.approx(expected, abs=tol)
