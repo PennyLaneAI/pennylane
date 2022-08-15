@@ -189,11 +189,6 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     >>> res.requires_grad
     True
 
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
-    [[ 1  2  3  4]
-     [ 5  6  7  8]
-     [ 9 10 11 12]
-     [13 14 15 16]]
 
     If the base matrix has odd dimensions, it is assumed to have dimensions :math:`(3^n, 3^n)`
     for :math:`n` wires, for example:
