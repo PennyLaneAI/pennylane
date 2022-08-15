@@ -604,5 +604,5 @@ def PSWAP(phi):
     Returns:
         array[complex]: unitary 4x4 rotation matrix
     """
-    e = np.exp(1j * phi)
-    return np.array([[1, 0, 0, 0], [0, 0, e, 0], [0, e, 0, 0], [0, 0, 0, 1]])
+    e = math.exp(1j * phi)
+    return math.array([[1, 0, 0, 0], [0, 0, e, 0], [0, e, 0, 0], [0, 0, 0, 1]])
