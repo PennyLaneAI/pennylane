@@ -175,10 +175,15 @@ class TestInitialization:
         for f1, f2 in zip(prod_op.factors, prod_term_ops[0].factors):
             assert qml.equal(f1, f2)
 
-    def test_batch_size_is_None(self):
-        """Test that calling batch_size returns None
-        (i.e no batching with Prod)."""
-        prod_op = prod(qml.PauliX(0), qml.Identity(1))
+    def test_batch_size(self):
+        """Test that batch size returns the batch size of a base operation if it is batched."""
+        x = qml.numpy.array([1.0, 2.0, 3.0])
+        prod_op = prod(qml.PauliX(0), qml.RX(x, wires=0))
+        assert prod_op.batch_size == 3
+
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no factors have batching."""
+        prod_op = prod(qml.PauliX(0), qml.RX(1.0, wires=0))
         assert prod_op.batch_size is None
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -246,7 +251,7 @@ class TestMscMethods:
 
         for f1, f2 in zip(prod_op.factors, copied_op.factors):
             assert qml.equal(f1, f2)
-            assert not (f1 is f2)
+            assert f1 is not f2
 
 
 class TestMatrix:
@@ -698,8 +703,8 @@ class TestSimplify:
 
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
-        prod_op = Prod(qml.adjoint(Prod(qml.PauliX(0), qml.PauliY(0))), qml.PauliZ(0))
-        final_op = Prod(qml.adjoint(qml.PauliY(0)), qml.adjoint(qml.PauliX(0)), qml.PauliZ(0))
+        prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -731,16 +736,12 @@ class TestSimplify:
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -889,3 +890,25 @@ class TestIntegration:
             return qml.state()
 
         assert qnp.allclose(prod_state_circ(), true_state_circ())
+
+    def test_batched_operation(self):
+        """Test that prod with batching gives expected results."""
+        x = qml.numpy.array([1.0, 2.0, 3.0])
+        y = qml.numpy.array(0.5)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def batched_prod(x, y):
+            qml.prod(qml.RX(x, wires=0), qml.RY(y, wires=0))
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def batched_no_prod(x, y):
+            qml.RY(y, wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res1 = batched_prod(x, y)
+        res2 = batched_no_prod(x, y)
+        assert qml.math.allclose(res1, res2)
