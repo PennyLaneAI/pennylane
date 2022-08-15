@@ -120,7 +120,8 @@ class TClock(Operation):
                         0 & \omega & 0        \\
                         0 & 0      & \omega^2
                     \end{bmatrix}
-                    \omega = \exp{2 \cdot \pi \cdot i / 3}
+
+    where :math:`\omega = e^{2 \pi i / 3}`
 
     **Details:**
 
