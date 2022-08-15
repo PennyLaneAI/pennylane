@@ -1243,7 +1243,7 @@ class QubitDevice(Device):
         with set_shots(self, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(self.wires)
-            device_wires = np.array(self.map_wires(wires))
+            mapped_wires = np.array(self.map_wires(wires))
 
             if seed is not None:
                 # seed the random measurement generation so that recipes
@@ -1271,8 +1271,8 @@ class QubitDevice(Device):
 
                 outcomes[t] = self.generate_samples()[0]
 
-        outcomes = outcomes[:, device_wires]
-        recipes = recipes[:, device_wires]
+        outcomes = outcomes[:, mapped_wires]
+        recipes = recipes[:, mapped_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 

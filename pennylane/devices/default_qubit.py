@@ -945,7 +945,7 @@ class DefaultQubit(QubitDevice):
         n_qubits = len(wires)
         n_snapshots = self.shots
         device_qubits = len(self.wires)
-        device_wires = np.array(self.map_wires(wires))
+        mapped_wires = np.array(self.map_wires(wires))
 
         if seed is not None:
             # seed the random measurement generation so that recipes
@@ -990,8 +990,8 @@ class DefaultQubit(QubitDevice):
         # to a significant speed-up.
 
         # transpose the state so that the measured wires appear first
-        unmeasured_wires = [i for i in range(len(self.wires)) if i not in device_wires]
-        transposed_state = np.transpose(self._state, axes=device_wires.tolist() + unmeasured_wires)
+        unmeasured_wires = [i for i in range(len(self.wires)) if i not in mapped_wires]
+        transposed_state = np.transpose(self._state, axes=mapped_wires.tolist() + unmeasured_wires)
 
         outcomes = np.zeros((n_snapshots, n_qubits))
         stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
