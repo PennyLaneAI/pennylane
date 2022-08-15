@@ -22,6 +22,13 @@ def broadcast_expand(tape):
     r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 
+    .. warning::
+
+        Currently, not all templates have been updated to support a batch
+        dimension. If you run into an error attempting to use a template
+        with this transform, please open a GitHub issue detailing
+        the error.
+
     Args:
         tape (.QuantumTape): Broadcasted tape to be expanded
 
