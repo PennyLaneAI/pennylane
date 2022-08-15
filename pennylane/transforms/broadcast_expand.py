@@ -25,6 +25,13 @@ def broadcast_expand(tape):
     Args:
         tape (.QuantumTape): Broadcasted tape to be expanded
 
+    .. warning::
+
+        Currently, not all templates have been updated to support a batch
+        dimension. If you run into an error attempting to use a template
+        with this transform, please open a GitHub issue detailing
+        the error.
+
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
         quantum tapes that produce one of the results of the broadcasted tape each,
