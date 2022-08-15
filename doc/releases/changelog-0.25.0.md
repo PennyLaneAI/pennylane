@@ -765,6 +765,9 @@
   with another non-commuting observable.
   [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
 
+* Operator Arithmetic now allows `Hamiltonian` objects to be used and produces correct matrices.
+  [(#2957)](https://github.com/PennyLaneAI/pennylane/pull/2957)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

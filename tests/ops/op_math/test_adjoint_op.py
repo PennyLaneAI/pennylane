@@ -559,6 +559,15 @@ class TestMatrix:
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).matrix()
 
+    def test_adj_hamiltonian(self):
+        """Test that a we can take the adjoint of a hamiltonian."""
+        U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])
+        adj_op = Adjoint(base=U)  # hamiltonian = hermitian = self-adjoint
+        mat = adj_op.matrix()
+
+        true_mat = qml.matrix(U)
+        assert np.allclose(mat, true_mat)
+
 
 def test_sparse_matrix():
     """Test that the spare_matrix method returns the adjoint of the base sparse matrix."""
