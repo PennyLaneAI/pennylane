@@ -97,7 +97,7 @@ def evolve_under(ops, coeffs, time):
 
 def calculate_Xi_decomposition(hamiltonian):
     """
-    Evolves under the given Hamiltonian deconstructed into its pauliwords
+    Calculates the Xi-decomposition from the given hamiltonian by constructing the sparse matrix representing the hamiltonian, finding its spectrum and then construct projectors and eigenvalue spacings
 
     Args:
       hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
@@ -140,14 +140,14 @@ def calculate_Xi_decomposition(hamiltonian):
 # pylint: disable=too-many-function-args)
 def construct_sgn_circuit(hamiltonian, tape, mus, times, phis):
     """
-    Evolves under the given Hamiltonian deconstructed into its pauliwords
+    Takes a tape with state prep and ansatz and constructs the individual tapes approximating/estimating the individual terms of your decomposition
 
     Args:
       hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
       tape (qml.QuantumTape: Tape containing the circuit to be expanded into the new circuits
       mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
       times (List[float]): The time for this term group to be evaluated/evolved at
-      phis (List(float)): Optimal phi values for the QSP part associated with the respective delta and J
+      phis (List[float]): Optimal phi values for the QSP part associated with the respective delta and J
 
     Returns:
       tapes: Expanded tapes from the original tape that measures the terms via the approximate sgn decomposition
