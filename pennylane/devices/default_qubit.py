@@ -942,8 +942,9 @@ class DefaultQubit(QubitDevice):
             the measured bits and the second represents the recipes used.
         """
 
-        n_qubits = len(self.wires)
+        n_qubits = len(wires)
         n_snapshots = self.shots
+        device_qubits = len(self.wires)
         device_wires = np.array(self.map_wires(wires))
 
         if seed is not None:
@@ -971,9 +972,6 @@ class DefaultQubit(QubitDevice):
         obs = obs_list[recipes]
         uni = uni_list[recipes]
 
-        outcomes = np.zeros((n_snapshots, n_qubits))
-        stacked_state = self._stack([self._state for _ in range(n_snapshots)])
-
         # There's a significant speedup if we use the following iterative
         # process to perform the randomized Pauli measurements:
         #   1. Randomly generate Pauli observables for all snapshots for
@@ -991,12 +989,19 @@ class DefaultQubit(QubitDevice):
         # the partial traces are computed over iteratively smaller subsystems, leading
         # to a significant speed-up.
 
+        # transpose the state so that the measured wires appear first
+        unmeasured_wires = [i for i in range(len(self.wires)) if i not in device_wires]
+        transposed_state = np.transpose(self._state, axes=device_wires.tolist() + unmeasured_wires)
+
+        outcomes = np.zeros((n_snapshots, n_qubits))
+        stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
+
         for i in range(n_qubits):
 
             # trace out every qubit except the first
             first_qubit_state = self._einsum(
-                f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
-                f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
+                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
+                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
                 stacked_state,
                 self._conj(stacked_state),
             )
@@ -1013,11 +1018,10 @@ class DefaultQubit(QubitDevice):
 
             # re-normalize the collapsed state
             norms = np.sqrt(
-                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
+                np.sum(
+                    np.abs(stacked_state) ** 2, tuple(range(1, device_qubits - i)), keepdims=True
+                )
             )
             stacked_state /= norms
-
-        outcomes = outcomes[:, device_wires]
-        recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
