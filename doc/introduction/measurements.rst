@@ -131,7 +131,7 @@ Counts
 
 To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
 :func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the 
-possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
+measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
 
 The previous example will be modified as follows:
 
@@ -193,7 +193,7 @@ eigenvalues to determine possible outcomes), and as the number of qubits increas
 dictionary showing possible computational basis states grows rapidly. 
 
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
-a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
+a tuple is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
 
@@ -206,8 +206,7 @@ a tensor of tensors is returned to provide differentiability for the outputs of 
 
 >>> result = circuit()
 >>> print(result)
-[tensor(0.026, requires_grad=True) tensor(0.026, requires_grad=True)
- tensor({'001': 513, '111': 487}, dtype=object, requires_grad=True)]
+(0.026, 0.026, {'001': 513, '111': 487})
 
 Probability
 -----------
