@@ -132,6 +132,8 @@
   >>> circuit(np.array([0.1, 0.3, 0.2]))
   tensor([0.99500417, 0.95533649, 0.98006658], requires_grad=True) 
   ```
+  
+  Currently, not all templates have been updated to support broadcasting.
 
 * Parameter-shift gradients now allow for parameter broadcasting internally,
   which can result in a significant speedup when computing gradients of
