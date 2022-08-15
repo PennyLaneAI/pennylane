@@ -14,7 +14,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 """
 # pylint: disable=protected-access
 import json
-import os
+from os import path
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -260,8 +260,8 @@ def sign_expand(tape, circuit=False, J=10, delta=0.0):
         dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
         res = dev.batch_execute(tapes)
     """
-    path = os.path.dirname(__file__)
-    with open(path + "/sign_expand_data.json", "r", encoding="utf-8") as f:
+    path_str = path.dirname(__file__)
+    with open(path_str + "/sign_expand_data.json", "r", encoding="utf-8") as f:
         data = json.load(f)
     phis = list(filter(lambda data: data["delta"] == delta and data["order"] == J, data))[0][
         "opt_params"
