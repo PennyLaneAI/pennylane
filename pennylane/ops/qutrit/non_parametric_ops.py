@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the ternary discrete-variable quantum operations
+This submodule contains the qutrit quantum operations
 that do not depend on any parameters.
 """
 # pylint:disable=arguments-differ
@@ -136,6 +136,8 @@ class TClock(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    """int: Number of wires that the operator acts on."""
+
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 

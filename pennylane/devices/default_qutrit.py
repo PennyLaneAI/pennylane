@@ -171,7 +171,7 @@ class DefaultQutrit(QutritDevice):
         return self._roll(state, shift, axes[0])
 
     def _apply_tclock(self, state, axes, inverse=False):
-        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 index
+        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 indices
         along the axis specified in ``axes``
 
         Args:

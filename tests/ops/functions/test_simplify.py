@@ -26,15 +26,19 @@ class TestSimplify:
         op = qml.adjoint(
             qml.adjoint(
                 qml.op_sum(
-                    qml.ops.Pow(qml.RX(1, wires=0)),
+                    qml.RX(1, wires=0) ** 1,
                     qml.PauliX(0),
                     qml.op_sum(qml.adjoint(qml.PauliX(0)), qml.PauliZ(0)),
                 )
             )
         )
+        final_op = qml.op_sum(qml.RX(1, wires=0), qml.PauliX(0), qml.PauliX(0), qml.PauliZ(0))
 
-        sim_op = qml.simplify(op)
-        assert sim_op.arithmetic_depth == 2
+        simplified_op = qml.simplify(op)
+        assert isinstance(simplified_op, qml.ops.Sum)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_with_queuing(self):
         """Test the simplify method while queuing."""

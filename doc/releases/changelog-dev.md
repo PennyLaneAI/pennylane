@@ -27,8 +27,8 @@
 
   * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
   ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
-  * Added `qml.TShift` operation for qutrit devices, which is the generalized analog of the Pauli X operation.
-  * Added `qml.Clock` operation for qutrit devices, which is the generalized analog of the Pauli Z operation.
+  * Added `qml.TShift` operation for qutrit devices, which is the qutrit analog of the Pauli X operation.
+  * Added `qml.TClock` operation for qutrit devices, which is the qutrit analog of the Pauli Z operation.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
 
 <h3>Improvements</h3>
@@ -36,6 +36,15 @@
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
+
+* The `qml.simplify` method now can compute the adjoint and power of specific operators.
+  [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
+
+  ```pycon
+  >>> adj_op = qml.adjoint(qml.RX(1, 0))
+  >>> qml.simplify(adj_op)
+  RX(-1, wires=[0])
+  ```
 
 <h3>Breaking changes</h3>
 

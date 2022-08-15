@@ -22,9 +22,8 @@ from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
 from pennylane.wires import Wires, WireError
 
-from gate_data import TSHIFT, TCLOCK, TSWAP, TADD
+from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD
 
-OMEGA = np.exp(2 * np.pi * 1j / 3)
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),

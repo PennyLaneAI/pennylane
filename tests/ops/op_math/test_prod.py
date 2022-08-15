@@ -703,8 +703,8 @@ class TestSimplify:
 
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
-        prod_op = Prod(qml.adjoint(Prod(qml.PauliX(0), qml.PauliY(0))), qml.PauliZ(0))
-        final_op = Prod(qml.adjoint(qml.PauliY(0)), qml.adjoint(qml.PauliX(0)), qml.PauliZ(0))
+        prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -736,16 +736,12 @@ class TestSimplify:
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -916,3 +912,23 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+
+class TestArithmetic:
+    """Test arithmetic decomposition methods."""
+
+    def test_adjoint(self):
+        """Test the adjoint method for Sum Operators."""
+
+        sum_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        final_op = Prod(qml.adjoint(qml.Identity(wires=1)), qml.adjoint(qml.RX(1.23, wires=0)))
+        adj_op = sum_op.adjoint()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(adj_op, Prod)
+        for s1, s2 in zip(final_op.factors, adj_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
