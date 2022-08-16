@@ -19,6 +19,7 @@ import numpy as np
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane.ops.qubit.matrix_ops import ControlledQubitUnitary
 from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
 
@@ -317,6 +318,19 @@ class TestQubitUnitary:
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_controlled(self, inverse):
+        """Test QubitUnitary's controlled method."""
+        U = qml.PauliX.compute_matrix()
+        base = qml.QubitUnitary(U, wires=0)
+        base.inverse = inverse
+
+        expected = ControlledQubitUnitary(U, control_wires="a", wires=0)
+        expected.inverse = inverse
+
+        out = base._controlled("a")
+        assert qml.equal(out, expected)
 
 
 class TestDiagonalQubitUnitary:
@@ -877,6 +891,20 @@ class TestControlledQubitUnitary:
 
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
+
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_controlled(self, inverse):
+        """Test the _controlled method for ControlledQubitUnitary."""
+
+        U = qml.PauliX(0).compute_matrix()
+
+        original = qml.ControlledQubitUnitary(U, control_wires=(0, 1), wires=4)
+        original.inverse = inverse
+        expected = qml.ControlledQubitUnitary(U, control_wires=(0, 1, "a"), wires=4)
+        expected.inverse = inverse
+
+        out = original._controlled("a")
+        assert qml.equal(out, expected)
 
 
 label_data = [

@@ -17,6 +17,7 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
+from copy import copy
 import warnings
 import numpy as np
 from scipy.linalg import block_diag
@@ -2250,13 +2251,13 @@ class Barrier(Operation):
         return "||"
 
     def _controlled(self, _):
-        return Barrier(wires=self.wires)
+        return copy(self)
 
     def adjoint(self):
-        return Barrier(wires=self.wires)
+        return copy(self)
 
     def pow(self, z):
-        return [self.__copy__()]
+        return [copy(self)]
 
 
 class WireCut(Operation):
@@ -2315,4 +2316,4 @@ class WireCut(Operation):
         return WireCut(wires=self.wires)
 
     def pow(self, z):
-        return [self.__copy__()]
+        return [copy(self)]

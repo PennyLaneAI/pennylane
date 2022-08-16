@@ -675,7 +675,7 @@ class TestHelperMethod:
         assert qml.equal(decomp[0], qml.CRX(1.0, wires=(1, 0)))
 
     def test_inverts_decomp_if_target_inverted(self):
-
+        """Tests that the method preserves the inverse parameter."""
         base = qml.RX(1.0, wires=0).inv()
         op = Controlled(base, 1)
         decomp = _decompose_no_control_values(op)
@@ -694,17 +694,19 @@ class TestHelperMethod:
         op = Controlled(qml.PauliX(4), (0, 1, 2, 3))
         decomp = _decompose_no_control_values(op)
         assert len(decomp) == 1
-        assert qml.equal(decomp[0], qml.MultiControlledX((0, 1, 2, 3, 4)))
+        assert qml.equal(decomp[0], qml.MultiControlledX(wires=(0, 1, 2, 3, 4)))
 
-    def test_decomposes_target(self):
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_decomposes_target(self, inverse):
         """Test that we decompose the target if we don't have a special case."""
         target = qml.IsingXX(1.0, wires=(0, 1))
+        target.inverse = inverse
         op = Controlled(target, (3, 4))
 
         decomp = _decompose_no_control_values(op)
         assert len(decomp) == 3
 
-        target_decomp = target.decomposition()
+        target_decomp = target.expand().circuit
         for op1, target in zip(decomp, target_decomp):
             assert isinstance(op1, Controlled)
             assert op1.control_wires == (3, 4)

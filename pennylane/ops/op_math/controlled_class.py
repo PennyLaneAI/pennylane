@@ -35,10 +35,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     no decomposition.
     """
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
-        new_op = op.base._controlled(op.control_wires[0])
-        if getattr(op.base, "inverse", False):
-            new_op.inverse = True
-        return [new_op]
+        return [op.base._controlled(op.control_wires[0])]
     if isinstance(op.base, qml.PauliX):
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
@@ -47,7 +44,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     try:
         # Need to use expand because of in-place inversion
         # revert to decomposition once in-place inversion removed
-        base_decomp = op.base.expand().operations
+        base_decomp = op.base.expand().circuit
     except qml.operation.DecompositionUndefinedError:
         return None
 
