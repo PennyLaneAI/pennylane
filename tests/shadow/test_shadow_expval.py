@@ -349,6 +349,8 @@ class TestExpvalBackward:
         out.backward()
         actual = x.grad
 
+        # use torch.autograd.functional.jacobian(circuit, (x, obs)) but the problem is that obs is a list and torch wants tensors. need to define a partial
+
         out2 = exact_circuit(x, obs)
         out2.backward()
         expected = x.grad
