@@ -22,22 +22,21 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import State, VnEntropy, MutualInfo
+from pennylane.measurements import MutualInfo, State, VnEntropy
 
-from .gradient_transform import (
-    gradient_transform,
-    grad_method_validation,
-    choose_grad_methods,
-    gradient_analysis,
-)
 from .finite_difference import finite_diff
 from .general_shift_rules import (
-    process_shifts,
     _iterate_shift_rule,
     frequencies_to_period,
     generate_shifted_tapes,
+    process_shifts,
 )
-
+from .gradient_transform import (
+    choose_grad_methods,
+    grad_method_validation,
+    gradient_analysis,
+    gradient_transform,
+)
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
@@ -705,6 +704,7 @@ def param_shift(
         circuit evaluations for each operation are batched together, resulting in
         broadcasted tapes:
 
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> with qml.tape.QuantumTape() as tape:
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
@@ -719,15 +719,15 @@ def param_shift(
         The postprocessing function will know that broadcasting is used and handle
         the results accordingly:
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        [-0.38751721 -0.18884787 -0.38355704]
+        array([[-0.3875172 , -0.18884787, -0.38355704]])
 
         An advantage of using ``broadcast=True`` is a speedup:
 
         >>> number = 100
-        >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(x, y)"
-        >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
+        >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(params)"
+        >>> timeit.timeit(serial_call, globals=globals(), number=number) / number
         0.020183045039993887
-        >>> broadcasted_call = "qml.gradients.param_shift(circuit, broadcast=True)(x, y)"
+        >>> broadcasted_call = "qml.gradients.param_shift(circuit, broadcast=True)(params)"
         >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
         0.01244492811998498
 

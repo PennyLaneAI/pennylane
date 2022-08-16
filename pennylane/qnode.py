@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
 from collections.abc import Sequence
 import functools
 import inspect

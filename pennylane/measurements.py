@@ -1142,14 +1142,14 @@ def classical_shadow(wires, seed_recipes=True):
     The classical shadow measurement protocol.
 
     The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-    This measurement process returns the randomized Pauli measurements that are
-    performed for each qubit and snapshot as an integer:
+    This measurement process returns the randomized Pauli measurements (the ``recipes``)
+    that are performed for each qubit and snapshot as an integer:
 
     - 0 for Pauli X,
     - 1 for Pauli Y, and
-    - 2 for PauliZ.
+    - 2 for Pauli Z.
 
-    It also returns the measurement results; 0 if the 1 eigenvalue
+    It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
     is sampled, and 1 if the -1 eigenvalue is sampled.
 
     The device shots are used to specify the number of snapshots. If ``T`` is the number
