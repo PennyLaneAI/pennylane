@@ -1209,7 +1209,7 @@ class QubitDevice(Device):
 
         - 0 for Pauli X,
         - 1 for Pauli Y, and
-        - 2 for PauliZ.
+        - 2 for Pauli Z.
 
         It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
         is sampled, and 1 if the -1 eigenvalue is sampled.
