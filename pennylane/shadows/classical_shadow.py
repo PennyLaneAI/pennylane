@@ -87,13 +87,13 @@ class ClassicalShadow:
 
         # the wires corresponding to the columns of bitstrings
         if wire_map is None:
-            self.wire_map = list(range(bitstrings.shape[1]))
+            self.wire_map = list(range(bits.shape[1]))
         else:
             self.wire_map = wire_map
 
         assert bits.shape == recipes.shape
         assert bits.shape[1] == len(self.wire_map)
-        self.snapshots = len(bitstrings)
+        self.snapshots = len(bits)
 
         self.observables = [
             qml.matrix(qml.PauliX(0)),
