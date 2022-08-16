@@ -100,6 +100,7 @@ class ClassicalShadow:
             qml.matrix(qml.PauliY(0)),
             qml.matrix(qml.PauliZ(0)),
         ]
+        print("asd")
 
     def local_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x n x 2 x 2 local snapshots
