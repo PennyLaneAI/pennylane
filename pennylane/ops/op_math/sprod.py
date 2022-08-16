@@ -210,6 +210,8 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
+        if isinstance(self.base, qml.Hamiltonian):
+            return self.scalar * qml.matrix(self.base, wire_order=wire_order)
         return self.scalar * self.base.matrix(wire_order=wire_order)
 
     @property
