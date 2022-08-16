@@ -250,7 +250,7 @@ class Prod(Operator):
         Hmat = math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in self._eigs:
-            w, U = np.linalg.eigh(Hmat) if self.is_hermitian else np.linalg.eig(Hmat)
+            w, U = np.linalg.eigh(Hmat)
             self._eigs[Hkey] = {"eigvec": U, "eigval": w}
         return self._eigs[Hkey]
 
