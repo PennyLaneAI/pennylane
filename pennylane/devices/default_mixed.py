@@ -150,7 +150,9 @@ class DefaultMixed(QubitDevice):
         is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
 
         if not is_ragged:
-            res = qnp.cast(qnp.stack(array), dtype=dtype)
+            res = qnp.stack(array)
+            if dtype is not None:
+                res = qnp.cast(res, dtype=dtype)
 
         if is_ragged or res.dtype is np.dtype("O"):
             return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
