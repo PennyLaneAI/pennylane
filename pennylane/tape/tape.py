@@ -200,7 +200,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_tape._measurements += expanded_tape._measurements
 
     # Update circuit info
-    new_tape._update_circuit_info() #TODOPR: Do we need to update the wires/the is_sampled/all_sampled attrs?
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
     new_tape._qfunc_output = tape._qfunc_output
@@ -329,7 +332,7 @@ class QuantumTape(AnnotatedQueue):
         self._specs = None
         self._depth = None
         self._output_dim = 0
-        self._batch_size = None #TODOPR: This was 0, why?
+        self._batch_size = None
         self._qfunc_output = None
 
         self.wires = qml.wires.Wires([])
@@ -536,7 +539,7 @@ class QuantumTape(AnnotatedQueue):
         self._obs_sharing_wires_id = []
 
         if len(obs_wires) != len(set(obs_wires)):
-            c = Counter(obs_wires) #TODOPR: Can we use this in the Wires class?
+            c = Counter(obs_wires)
             repeated_wires = {w for w in obs_wires if c[w] > 1}
 
             for i, m in enumerate(self.measurements):
@@ -578,12 +581,12 @@ class QuantumTape(AnnotatedQueue):
         self._graph = None
         self._specs = None
         self._depth = None
-        self._update_circuit_info() # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
-        self._update_par_info() # Updates the _par_info dictionary; O(ops+obs)
-        self._update_trainable_params() # Updates the _trainable_params; O(1)
-        self._update_observables() # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        self._update_batch_size() # Updates _batch_size; O(ops)
-        self._update_output_dim() # Updates _output_dim; O(obs)
+        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
+        self._update_trainable_params()  # Updates the _trainable_params; O(1)
+        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        self._update_batch_size()  # Updates _batch_size; O(ops)
+        self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -636,7 +639,7 @@ class QuantumTape(AnnotatedQueue):
         new_tape = expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
-        new_tape._update() #TODOPR: This seems very wasteful
+        new_tape._update()
         return new_tape
 
     def inv(self):
@@ -809,7 +812,7 @@ class QuantumTape(AnnotatedQueue):
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be non-negative integers.")
 
-        if max(param_indices) > len(self._par_info):
+        if max(param_indices, default=0) > len(self._par_info):
             raise ValueError(f"Tape only has {self.num_params} parameters.")
 
         self._trainable_params = sorted(set(param_indices))
