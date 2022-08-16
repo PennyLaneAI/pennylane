@@ -2251,7 +2251,7 @@ class Barrier(Operation):
         return "||"
 
     def _controlled(self, _):
-        return copy(self)
+        return copy(self).queue()
 
     def adjoint(self):
         return copy(self)
