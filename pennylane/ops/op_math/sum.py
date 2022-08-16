@@ -295,7 +295,10 @@ class Sum(Operator):
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
             for op in summands:
-                yield op.matrix(wire_order=wire_order)
+                if isinstance(op, qml.Hamiltonian):
+                    yield qml.matrix(op, wire_order=wire_order)
+                else:
+                    yield op.matrix(wire_order=wire_order)
 
         if wire_order is None:
             wire_order = self.wires
@@ -319,6 +322,9 @@ class Sum(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.summands)
         return self
+
+    def adjoint(self):
+        return Sum(*(qml.adjoint(summand) for summand in self.summands))
 
     @property
     def arithmetic_depth(self) -> int:

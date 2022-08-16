@@ -445,6 +445,16 @@ class TestMatrix:
         true_mat = qnp.kron(U, qnp.eye(2)) + qnp.eye(4)
         assert np.allclose(mat, true_mat)
 
+    def test_sum_hamiltonian(self):
+        """Test that a hamiltonian object can be summed."""
+        U = 0.5 * (qml.PauliX(wires=0) @ qml.PauliZ(wires=1))
+        sum_op = Sum(U, qml.PauliX(wires=0))
+        mat = sum_op.matrix()
+
+        true_mat = [[0, 0, 1.5, 0], [0, 0, 0, 0.5], [1.5, 0, 0, 0], [0, 0.5, 0, 0]]
+
+        assert np.allclose(mat, true_mat)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
@@ -791,3 +801,23 @@ class TestIntegration:
 
         with pytest.raises(QuantumFunctionError, match="Sum is not an observable:"):
             my_circ()
+
+
+class TestArithmetic:
+    """Test arithmetic decomposition methods."""
+
+    def test_adjoint(self):
+        """Test the adjoint method for Sum Operators."""
+
+        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        final_op = Sum(qml.adjoint(qml.RX(1.23, wires=0)), qml.adjoint(qml.Identity(wires=1)))
+        adj_op = sum_op.adjoint()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(adj_op, Sum)
+        for s1, s2 in zip(final_op.summands, adj_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth

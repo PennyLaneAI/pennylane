@@ -414,6 +414,20 @@ class TestMatrix:
         true_mat = qnp.kron(U, qnp.eye(2)) @ qnp.eye(4)
         assert np.allclose(mat, true_mat)
 
+    def test_prod_hamiltonian(self):
+        """Test that a hamiltonian object can be composed."""
+        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        prod_op = Prod(qml.PauliZ(wires=0), U)
+        mat = prod_op.matrix()
+
+        true_mat = [
+            [0.0, 0.5, 0.0, 0.0],
+            [0.5, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, -0.5],
+            [0.0, 0.0, -0.5, 0.0],
+        ]
+        assert np.allclose(mat, true_mat)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
@@ -703,8 +717,8 @@ class TestSimplify:
 
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
-        prod_op = Prod(qml.adjoint(Prod(qml.PauliX(0), qml.PauliY(0))), qml.PauliZ(0))
-        final_op = Prod(qml.adjoint(qml.PauliY(0)), qml.adjoint(qml.PauliX(0)), qml.PauliZ(0))
+        prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -736,16 +750,12 @@ class TestSimplify:
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)

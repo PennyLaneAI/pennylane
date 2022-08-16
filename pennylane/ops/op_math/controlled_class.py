@@ -73,16 +73,16 @@ class Controlled(SymbolicOp):
         an entire tape and does not provide as many representations and attributes as ``Controlled``,
         but :class:`~.ControlledOperation` does decompose.
 
-    .. seealso:: :class:`~.ControlledOp` and ::class:`~.ControlledOperation`
+    .. seealso:: :class:`~.ControlledOp`, :class:`~.ControlledOperation`, and :func:`~.ctrl`
 
     **Example**
 
     >>> base = qml.RX(1.234, 1)
     >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
-    CRX(1.234, wires=[0, 2, 3, 1])
+    C(RX)(1.234, wires=[0, 2, 3, 1])
     >>> op = Controlled(base, 0, control_values=[0])
     >>> op
-    CRX(1.234, wires=[0, 1])
+    C(RX)(1.234, wires=[0, 1])
 
     The operation has both standard :class:`~.operation.Operator` properties
     and ``Controlled`` specific properties:
@@ -116,7 +116,7 @@ class Controlled(SymbolicOp):
            [0.    +0.j    , 0.    +0.j    , 0.    +0.j    , 1.    +0.j    ]])
     >>> qml.eigvals(op)
     array([1.    +0.j    , 1.    +0.j    , 0.8156+0.5786j, 0.8156-0.5786j])
-    >>> qml.generator(op, format='observable')
+    >>> print(qml.generator(op, format='observable'))
     (-0.5) [Projector0 X1]
     >>> op.sparse_matrix()
     <4x4 sparse matrix of type '<class 'numpy.complex128'>'
@@ -127,7 +127,7 @@ class Controlled(SymbolicOp):
     methods and properties to the basic :class:`~.ops.op_math.Controlled` class.
 
     >>> type(op)
-    pennylane.ops.op_math.controlled_class.ControlledOp
+    <class 'pennylane.ops.op_math.controlled_class.ControlledOp'>
     >>> op.parameter_frequencies
     [(0.5, 1.0)]
 
