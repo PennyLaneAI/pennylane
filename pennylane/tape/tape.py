@@ -812,7 +812,7 @@ class QuantumTape(AnnotatedQueue):
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be non-negative integers.")
 
-        if max(param_indices, default=0) > len(self._par_info):
+        if any(i > self.num_params for i in param_indices):
             raise ValueError(f"Tape only has {self.num_params} parameters.")
 
         self._trainable_params = sorted(set(param_indices))
