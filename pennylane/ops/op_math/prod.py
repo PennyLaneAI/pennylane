@@ -235,7 +235,7 @@ class Prod(Operator):
 
     @property
     def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the operator.
+        """Return the eigendecomposition of the matrix specified by the operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -250,9 +250,8 @@ class Prod(Operator):
         Hmat = math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in self._eigs:
-            w, U = np.linalg.eigh(Hmat)
+            w, U = np.linalg.eigh(Hmat) if self.is_hermitian else np.linalg.eig(Hmat)
             self._eigs[Hkey] = {"eigvec": U, "eigval": w}
-
         return self._eigs[Hkey]
 
     def diagonalizing_gates(self):

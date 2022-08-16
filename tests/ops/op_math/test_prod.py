@@ -835,8 +835,8 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=2)
+        """Test Prod class instance in sample measurement process."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2, shots=10)
         prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
 
         @qml.qnode(dev)
@@ -844,11 +844,12 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.sample(op=prod_op)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for sampling yet.",
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 10
+        # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
+        assert 1 in results.astype(np.float32).tolist()
+        assert -1 in results.astype(np.float32).tolist()
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -867,7 +868,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -877,7 +878,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
+        with pytest.warns(UserWarning, match="Prod might not be an observable."):
             my_circ()
 
     def test_operation_integration(self):
