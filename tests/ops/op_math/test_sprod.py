@@ -604,8 +604,8 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test SProd class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
+        """Test SProd class instance in sample measurement process."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2, shots=10)
         sprod_op = SProd(1.23, qml.Hadamard(1))
 
         @qml.qnode(dev)
@@ -613,14 +613,15 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.sample(op=sprod_op)
 
-        with pytest.raises(
-            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 10
+        assert 1.23 in results.tolist()
+        assert -1.23 in results.tolist()
 
     def test_measurement_process_count(self):
-        """Test SProd class instance in counts measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
+        """Test SProd class instance in counts measurement process."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2, shots=100)
         sprod_op = SProd(1.23, qml.Hadamard(1))
 
         @qml.qnode(dev)
@@ -628,10 +629,11 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.counts(op=sprod_op)
 
-        with pytest.raises(
-            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert sum(results.values()) == 100
+        assert 1.23 in list(results.keys())
+        assert -1.23 in list(results.keys())
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
@@ -666,7 +668,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
@@ -676,7 +678,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sprod_op)
 
-        with pytest.raises(QuantumFunctionError, match="SProd is not an observable:"):
+        with pytest.warns(UserWarning, match="SProd might not be an observable."):
             my_circ()
 
     @pytest.mark.torch
