@@ -24,20 +24,40 @@ def test_simple_circuit():
     """Test that batching works for a simple circuit"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input(argnum=0)
+    @qml.batch_input(argnum=1)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
-        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
         qml.RY(weights[0], wires=0)
+        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
 
     batch_size = 5
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2))
-    inputs.requires_grad = False
+    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     res = circuit(inputs, weights)
+    assert res.shape == (batch_size,)
+
+
+def test_circuit_non_param_operator_before_batched_operator():
+    """Test a circuit where a non-parametric operation is located before a batched operator."""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=0)
+    @qml.qnode(dev)
+    def circuit(input):
+        qml.CNOT(wires=[0, 1])
+        qml.RY(input, wires=1)
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    batch_size = 3
+
+    input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
+
+    res = circuit(input)
+
     assert res.shape == (batch_size,)
 
 
@@ -55,25 +75,48 @@ def test_value_error():
         def ndim_params(self):
             return self._ndim_params
 
-    @qml.batch_input(argnum=[0, 1])
+    @qml.batch_input(argnum=[0, 2])
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(input1, input2, weights):
         Embedding(input1, wires=range(2), rotation="Y")
-        qml.RY(input2[0], wires=0)
         qml.RY(weights[0], wires=0)
+        qml.RY(input2[0], wires=0)
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
 
     np.random.seed(42)
     batch_size = 5
-    input1 = np.random.uniform(0, np.pi, (batch_size, 2))
-    input1.requires_grad = False
-    input2 = np.random.uniform(0, np.pi, (4, 1))
-    input2.requires_grad = False
+    input1 = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
+    input2 = np.random.uniform(0, np.pi, (4, 1), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
     with pytest.raises(ValueError, match="Batch dimension for all gate arguments"):
         res = circuit(input1, input2, weights)
+
+
+def test_batch_input_with_trainable_parameters_raises_error():
+    """Test that using the batch_input method with trainable parameters raises a ValueError."""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=0)
+    @qml.qnode(dev)
+    def circuit(input):
+        qml.RY(input, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(0.1, wires=0)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    batch_size = 3
+
+    input = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+
+    with pytest.raises(
+        ValueError,
+        match="Batched inputs must be non-trainable."
+        + " Please make sure that the parameters indexed by "
+        + "'argnum' are not marked as trainable.",
+    ):
+        circuit(input)
 
 
 def test_mottonenstate_preparation(mocker):
@@ -120,20 +163,22 @@ def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_input
+    @qml.batch_input(argnum=0)
     @qml.qnode(dev, diff_method=diff_method)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
+    def circuit(input, x):
+        qml.RY(input, wires=1)
         qml.CNOT(wires=[0, 1])
+        qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    def cost(x):
-        return np.sum(circuit(x))
-
     batch_size = 3
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
-    res = qml.grad(cost)(x)
-    expected = -np.sin(0.1) * np.sin(x)
+    def cost(input, x):
+        return np.sum(circuit(input, x))
+
+    input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
+    x = np.array(0.1, requires_grad=True)
+
+    res = qml.grad(cost)(input, x)
+    expected = -np.sin(0.1) * sum(np.sin(input))
     assert np.allclose(res, expected, atol=tol, rtol=0)
