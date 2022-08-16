@@ -739,8 +739,8 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=100)
-        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        sum_op = Sum(qml.PauliX(0), qml.PauliX(1))
 
         @qml.qnode(dev)
         def my_circ():
@@ -749,7 +749,7 @@ class TestIntegration:
 
         results = my_circ()
 
-        assert len(results) == 100
+        assert len(results) == 10
         assert 2 in results.astype(np.float32).tolist()
         assert -2 in results.astype(np.float32).tolist()
 

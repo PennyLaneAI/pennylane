@@ -837,7 +837,7 @@ class TestIntegration:
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""  # currently can't support due to bug
         dev = qml.device("default.qubit", wires=2, shots=10)
-        prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
