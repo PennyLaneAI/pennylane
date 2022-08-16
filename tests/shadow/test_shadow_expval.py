@@ -60,28 +60,6 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-    @qml.qnode(dev, interface=interface)
-    def circuit(x, obs, k):
-        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
-        return qml.shadow_expval(obs, k=k)
-
-    return circuit
-
-
-def strongly_entangling_circuit_exact(wires, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires)
-
-    @qml.qnode(dev, interface=interface)
-    def circuit(x, obs):
-        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
-        return qml.expval(obs)
-
-    return circuit
-
-
 @pytest.mark.autograd
 class TestExpvalMeasurement:
     @pytest.mark.parametrize("wires", [1, 2, 3])
@@ -150,90 +128,84 @@ class TestExpvalMeasurement:
             shadow = circuit()
 
 
+obs_hadamard = [
+    qml.PauliX(1),
+    qml.PauliX(0) @ qml.PauliX(2),
+    qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
+    qml.PauliY(2),
+    qml.PauliY(1) @ qml.PauliZ(2),
+    qml.PauliX(0) @ qml.PauliY(1),
+    qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2)
+]
+expected_hadamard = [1, 1, 1, 0, 0, 0, 0]
+
+obs_max_entangled = [
+    qml.PauliX(1),
+    qml.PauliX(0) @ qml.PauliX(2),
+    qml.PauliZ(2),
+    qml.Identity(1) @ qml.PauliZ(2),
+    qml.PauliZ(1) @ qml.PauliZ(2),
+    qml.PauliX(0) @ qml.PauliY(1),
+    qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
+    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2)
+]
+expected_max_entangled = [0, 0, 0, 0, 1, 0, 0, -1]
+
+obs_qft = [
+    qml.PauliX(0),
+    qml.PauliX(0) @ qml.PauliX(1),
+    qml.PauliX(0) @ qml.PauliX(2),
+    qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
+    qml.PauliZ(2),
+    qml.PauliX(1) @ qml.PauliY(2),
+    qml.PauliY(1) @ qml.PauliX(2),
+    qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2),
+    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2),
+    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2),
+]
+expected_qft = [-1, 0,  -1 / np.sqrt(2),  -1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2),  1 / np.sqrt(2), - 1 / np.sqrt(2), 0]
+
 @pytest.mark.all_interfaces
 class TestExpvalForward:
     """Test the shadow_expval measurement process forward pass"""
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliX(1), 1),
-            (qml.PauliX(0) @ qml.PauliX(2), 1),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), 1),
-            (qml.PauliY(2), 0),
-            (qml.PauliY(1) @ qml.PauliZ(2), 0),
-            (qml.PauliX(0) @ qml.PauliY(1), 0),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
-        ],
-    )
-    @pytest.mark.parametrize("k", [1, 5, 10])
-    def test_hadamard_expval(self, interface, obs, expected, k):
+    def test_hadamard_expval(self, interface, k=1, obs=obs_hadamard, expected=expected_hadamard):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
         import torch
 
         circuit = hadamard_circuit(3, shots=100000, interface=interface)
-        actual = circuit(obs, k=k)
+        actuals = circuit(obs, k=k)
 
-        assert actual.shape == ()
-        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert all([actual.shape == () for actual in actuals])
+        assert all([actual.dtype == torch.float64 if interface == "torch" else np.float64 for actual in actuals])
+        assert qml.math.allclose(actuals, expected, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliX(1), 0),
-            (qml.PauliX(0) @ qml.PauliX(2), 0),
-            (qml.PauliZ(2), 0),
-            (qml.Identity(1) @ qml.PauliZ(2), 0),
-            (qml.PauliZ(1) @ qml.PauliZ(2), 1),
-            (qml.PauliX(0) @ qml.PauliY(1), 0),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
-            (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2), -1),
-        ],
-    )
-    @pytest.mark.parametrize("k", [1, 5, 10])
-    def test_max_entangled_expval(self, interface, obs, expected, k):
+    def test_max_entangled_expval(self, interface, obs=obs_max_entangled, expected=expected_max_entangled, k=1):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
         import torch
 
         circuit = max_entangled_circuit(3, shots=100000, interface=interface)
-        actual = circuit(obs, k=k)
+        actuals = circuit(obs, k=k)
 
-        assert actual.shape == ()
-        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert all([actual.shape == () for actual in actuals])
+        assert all([actual.dtype == torch.float64 if interface == "torch" else np.float64 for actual in actuals])
+        assert qml.math.allclose(actuals, expected, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliX(0), -1),
-            (qml.PauliX(0) @ qml.PauliX(1), 0),
-            (qml.PauliX(0) @ qml.PauliX(2), -1 / np.sqrt(2)),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), -1 / np.sqrt(2)),
-            (qml.PauliZ(2), 0),
-            (qml.PauliX(1) @ qml.PauliY(2), 0),
-            (qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
-            (qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2), -1 / np.sqrt(2)),
-            (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2), 0),
-        ],
-    )
-    @pytest.mark.parametrize("k", [1, 5, 10])
-    def test_qft_expval(self, interface, obs, expected, k):
+    def test_qft_expval(self, interface, obs=obs_qft, expected=expected_qft, k=1):
         """Test that the expval estimation is correct for a QFT state"""
         import torch
 
         circuit = qft_circuit(3, shots=100000, interface=interface)
-        actual = circuit(obs, k=k)
+        actuals = circuit(obs, k=k)
 
-        assert actual.shape == ()
-        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert all([actual.shape == () for actual in actuals])
+        assert all([actual.dtype == torch.float64 if interface == "torch" else np.float64 for actual in actuals])
+        assert qml.math.allclose(actuals, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
@@ -243,24 +215,42 @@ class TestExpvalForward:
         with pytest.raises(ValueError, match=msg):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
+obs_strongly_entangled = [
+    qml.PauliX(1),
+    qml.PauliX(0) @ qml.PauliX(2),
+    qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
+    qml.PauliY(2),
+    qml.PauliY(1) @ qml.PauliZ(2),
+    qml.PauliX(0) @ qml.PauliY(1),
+    qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
+]
+
+def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(x, obs, k):
+        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
+        return qml.shadow_expval(obs, k=k)
+
+    return circuit
+
+
+def strongly_entangling_circuit_exact(wires, interface="autograd"):
+    dev = qml.device("default.qubit", wires=wires)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(x, obs):
+        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
+        return [qml.expval(o) for o in obs]
+
+    return circuit
 
 class TestExpvalBackward:
     """Test the shadow_expval measurement process backward pass"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            (qml.PauliX(1)),
-            (qml.PauliX(0) @ qml.PauliX(2)),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2)),
-            (qml.PauliY(2)),
-            (qml.PauliY(1) @ qml.PauliZ(2)),
-            (qml.PauliX(0) @ qml.PauliY(1)),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2)),
-        ],
-    )
-    def test_backward_autograd(self, obs):
+    def test_backward_autograd(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the autograd interface"""
         shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="autograd")
@@ -271,25 +261,13 @@ class TestExpvalBackward:
             0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
         )
 
-        actual = qml.grad(shadow_circuit)(x, obs, k=10)
-        expected = qml.grad(exact_circuit)(x, obs)
+        actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
+        expected = qml.jacobian(exact_circuit)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            (qml.PauliX(1)),
-            (qml.PauliX(0) @ qml.PauliX(2)),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2)),
-            (qml.PauliY(2)),
-            (qml.PauliY(1) @ qml.PauliZ(2)),
-            (qml.PauliX(0) @ qml.PauliY(1)),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2)),
-        ],
-    )
-    def test_backward_jax(self, obs):
+    def test_backward_jax(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the jax interface"""
         import jax
@@ -305,25 +283,13 @@ class TestExpvalBackward:
             )
         )
 
-        actual = jax.grad(shadow_circuit)(x, obs, k=10)
-        expected = jax.grad(exact_circuit)(x, obs)
+        actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
+        expected = qml.jacobian(exact_circuit)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            (qml.PauliX(1)),
-            (qml.PauliX(0) @ qml.PauliX(2)),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2)),
-            (qml.PauliY(2)),
-            (qml.PauliY(1) @ qml.PauliZ(2)),
-            (qml.PauliX(0) @ qml.PauliY(1)),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2)),
-        ],
-    )
-    def test_backward_tf(self, obs):
+    def test_backward_tf(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the tensorflow interface"""
         import tensorflow as tf
@@ -341,12 +307,12 @@ class TestExpvalBackward:
         with tf.GradientTape() as tape:
             out = shadow_circuit(x, obs, k=10)
 
-        actual = tape.gradient(out, x)
+        actual = tape.jacobian(out, x)
 
         with tf.GradientTape() as tape2:
             out2 = exact_circuit(x, obs)
 
-        expected = tape2.gradient(out2, x)
+        expected = tape2.jacobian(out2, x)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
