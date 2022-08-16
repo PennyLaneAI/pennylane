@@ -257,10 +257,6 @@ class ClassicalShadow:
             H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
-        Args:
-            H (qml.Observable): Observable to compute the expectation value
-            k (int): Split the snapshots into ``k`` equal parts to compute the median of means.
-
         Returns:
             float: expectation value estimate.
 

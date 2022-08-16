@@ -27,7 +27,7 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
     def circuit(obs, k=1):
         for i in range(wires):
             qml.Hadamard(wires=i)
-        return qml.classical_shadow_expval(obs, k=k)
+        return qml.shadow_expval(obs, k=k)
 
     return circuit
 
@@ -40,7 +40,7 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
         qml.Hadamard(wires=0)
         for i in range(1, wires):
             qml.CNOT(wires=[0, i])
-        return qml.classical_shadow_expval(obs, k=k)
+        return qml.shadow_expval(obs, k=k)
 
     return circuit
 
@@ -55,7 +55,7 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     def circuit(obs, k=1):
         qml.BasisState(one_state, wires=range(wires))
         qml.QFT(wires=range(wires))
-        return qml.classical_shadow_expval(obs, k=k)
+        return qml.shadow_expval(obs, k=k)
 
     return circuit
 
@@ -66,7 +66,7 @@ def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
     @qml.qnode(dev, interface=interface)
     def circuit(x, obs, k):
         qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
-        return qml.classical_shadow_expval(obs, k=k)
+        return qml.shadow_expval(obs, k=k)
 
     return circuit
 
@@ -90,7 +90,7 @@ class TestExpvalMeasurement:
         """Test that the numeric type of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
-        res = qml.classical_shadow_expval(H)
+        res = qml.shadow_expval(H)
         assert res.numeric_type == float
 
     @pytest.mark.parametrize("wires", [1, 2, 3])
@@ -99,7 +99,7 @@ class TestExpvalMeasurement:
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
-        res = qml.classical_shadow_expval(H)
+        res = qml.shadow_expval(H)
         assert res.shape() == ()
         assert res.shape(dev) == ()
 
@@ -110,7 +110,7 @@ class TestExpvalMeasurement:
         correctly copied"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
-        res = qml.classical_shadow_expval(H, k=10)
+        res = qml.shadow_expval(H, k=10)
 
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)
@@ -143,7 +143,7 @@ class TestExpvalMeasurement:
             for target in range(1, wires):
                 qml.CNOT(wires=[0, target])
 
-            return qml.classical_shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
 
         msg = "Classical shadows cannot be returned in combination with other return types"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
@@ -152,7 +152,7 @@ class TestExpvalMeasurement:
 
 @pytest.mark.all_interfaces
 class TestExpvalForward:
-    """Test the classical_shadow_expval measurement process forward pass"""
+    """Test the shadow_expval measurement process forward pass"""
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize(
@@ -245,7 +245,7 @@ class TestExpvalForward:
 
 
 class TestExpvalBackward:
-    """Test the classical_shadow_expval measurement process backward pass"""
+    """Test the shadow_expval measurement process backward pass"""
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(

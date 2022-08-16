@@ -1259,7 +1259,7 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-def classical_shadow_expval(obs, k=1, seed_recipes=True):
+def shadow_expval(obs, k=1, seed_recipes=True):
     """TODO: docs"""
     seed = np.random.randint(2**30) if seed_recipes else None
     return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)

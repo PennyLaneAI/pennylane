@@ -826,7 +826,7 @@ class QubitDevice(Device):
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
-                results.append(self.classical_shadow_expval(obs, circuit=circuit))
+                results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -1286,8 +1286,52 @@ class QubitDevice(Device):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def classical_shadow_expval(self, obs, circuit):
-        """TODO: docs"""
+    def shadow_expval(self, obs, circuit):
+        r"""Compute expectation values using classical shadows in a differentiable manner.
+
+        The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
+        This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+
+        One of the main perks of classical shadows is being able to compute many different expectation values by classically post-processing the same measurements. This is helpful in general as it may help
+        save quantum circuit executions.
+
+        Args:
+            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+
+        Returns:
+            float: expectation value estimate.
+        
+        .. note:: 
+            
+            This measurement uses the measurement :func:`~.pennylane.classical_shadow` and :class:`~.pennylane.ClassicalShadow` for post-processing
+            internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
+            you need to use this measurement.
+
+        **Example**
+
+        .. code-block:: python3
+
+            H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+
+            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            @qml.qnode(dev)
+            def qnode(x):
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                qml.RX(x, wires=0)
+                return shadow_expval(H)
+            
+            x = np.array(0.5, requires_grad=True)
+
+        We can compute the expectation value of H as well as its gradient in the usual way.
+
+        >>> qnode(x)
+        tensor(1.827, requires_grad=True)
+        >>> qml.grad(qnode)(x)
+        -0.44999999999999984
+        """
+
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         return shadow.expval(obs.H, obs.k)
