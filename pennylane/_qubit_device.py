@@ -1209,7 +1209,11 @@ class QubitDevice(Device):
 
         - 0 for Pauli X,
         - 1 for Pauli Y, and
+<<<<<<< HEAD
         - 2 for PauliZ.
+=======
+        - 2 for Pauli Z.
+>>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
 
         It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
         is sampled, and 1 if the -1 eigenvalue is sampled.
@@ -1271,7 +1275,11 @@ class QubitDevice(Device):
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
 
+<<<<<<< HEAD
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
+=======
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+>>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

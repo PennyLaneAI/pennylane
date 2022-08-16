@@ -910,7 +910,11 @@ class DefaultQubit(QubitDevice):
 
         - 0 for Pauli X,
         - 1 for Pauli Y, and
+<<<<<<< HEAD
         - 2 for PauliZ.
+=======
+        - 2 for Pauli Z.
+>>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
 
         It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
         is sampled, and 1 if the -1 eigenvalue is sampled.
@@ -1014,7 +1018,11 @@ class DefaultQubit(QubitDevice):
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
             rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
+<<<<<<< HEAD
             stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.int8)]
+=======
+            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
+>>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
 
             # re-normalize the collapsed state
             norms = np.sqrt(
@@ -1024,4 +1032,8 @@ class DefaultQubit(QubitDevice):
             )
             stacked_state /= norms
 
+<<<<<<< HEAD
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
+=======
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+>>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
