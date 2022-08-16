@@ -19,7 +19,6 @@ import numpy as np
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.ops.qubit.matrix_ops import ControlledQubitUnitary
 from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
 
@@ -326,7 +325,7 @@ class TestQubitUnitary:
         base = qml.QubitUnitary(U, wires=0)
         base.inverse = inverse
 
-        expected = ControlledQubitUnitary(U, control_wires="a", wires=0)
+        expected = qml.ControlledQubitUnitary(U, control_wires="a", wires=0)
         expected.inverse = inverse
 
         out = base._controlled("a")

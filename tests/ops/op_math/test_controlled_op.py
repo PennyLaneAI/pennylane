@@ -733,16 +733,14 @@ class TestDecomposition:
 
         decomp = op.decomposition()
 
-        for i in (0, 3):
-            assert isinstance(decomp[i], qml.PauliX)
-            assert decomp[i].wires == qml.wires.Wires(1)
-
-        for i in (1, 4):
-            assert isinstance(decomp[i], qml.PauliX)
-            assert decomp[i].wires == qml.wires.Wires(2)
+        assert qml.equal(decomp[0], qml.PauliX(1))
+        assert qml.equal(decomp[1], qml.PauliX(2))
 
         assert isinstance(decomp[2], Controlled)
         assert decomp[2].control_values == [True, True, True]
+
+        assert qml.equal(decomp[3], qml.PauliX(1))
+        assert qml.equal(decomp[4], qml.PauliX(2))
 
     def test_control_values_special_decomp(self):
         """Test decomposition when needs control_values flips and special decomp exists."""
@@ -756,18 +754,31 @@ class TestDecomposition:
             assert qml.equal(op1, op2)
 
     def test_no_control_values_special_decomp(self):
-
+        """Test a case with no control values but a special decomposition."""
         base = qml.RX(1.0, 2)
         op = Controlled(base, 1)
         decomp = op.decomposition()
         assert len(decomp) == 1
         assert qml.equal(decomp[0], qml.CRX(1.0, (1, 2)))
 
-    def test_control_on_one_no_special_decomp(self):
-        """Test if all control_values are true, decomp raises decomp error."""
+    def test_no_control_values_target_decomposition(self):
+        """Tests a case with no control values and no special decomposition but
+        the ability to decompose the target."""
+        base = qml.IsingXX(1.23, wires=(0, 1))
+        op = Controlled(base, "a")
+
+        decomp = op.decomposition()
+        base_decomp = base.decomposition()
+        for cop, base_op in zip(decomp, base_decomp):
+            assert isinstance(cop, Controlled)
+            assert qml.equal(cop.base, base_op)
+
+    def test_no_control_values_no_special_decomp(self):
+        """Test if all control_values are true and no special decomposition exists,
+        the method raises a DecompositionUndefinedError."""
 
         base = TempOperator("a")
-        op = Controlled(base, (0, 1, 2), [1, 1, 1])
+        op = Controlled(base, (0, 1, 2))
 
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
