@@ -232,6 +232,53 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     return mat
 
 
+def expand_sparse_matrix(base_matrix, wires, wire_order=None):
+    """"""
+    if (wire_order is None) or (wire_order == wires):
+        return base_matrix
+
+    wire_order = Wires(wire_order)
+    n = len(wires)
+    shape = qml.math.shape(base_matrix)
+    batch_dim = shape[0] if len(shape) == 3 else None
+    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
+
+    print(interface)
+    # operator's wire positions relative to wire ordering
+    op_wire_pos = wire_order.indices(wires)
+
+    identity = qml.math.reshape(
+        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
+    )
+    print(f"-----identity:-----\n{identity}")
+    # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
+    axes = (list(range(-n, 0)), op_wire_pos)
+
+    # reshape op.matrix()
+    print(f"-----base:-----\n{base_matrix}")
+    op_matrix_interface = qml.math.convert_like(base_matrix, identity)
+    print(f"op_matrix_interface: \n{op_matrix_interface}\n")
+    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
+    mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
+    mat_tensordot = qml.math.tensordot(
+        mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
+    )
+
+    unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
+    # permute matrix axes to match wire ordering
+    perm = op_wire_pos + unused_idxs
+    sources = wire_order.indices(wire_order)
+    if batch_dim:
+        perm = [p + 1 for p in perm]
+        sources = [s + 1 for s in sources]
+
+    mat = qml.math.moveaxis(mat_tensordot, sources, perm)
+    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
+    mat = qml.math.reshape(mat, shape)
+
+    return mat
+
+
 # =============================================================================
 # Errors
 # =============================================================================
