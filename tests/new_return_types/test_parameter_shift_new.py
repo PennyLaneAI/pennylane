@@ -668,8 +668,9 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute_new(tapes))
 
-        tapes, fn = qml.gradients.finite_diff(tape)
-        gradF = fn(dev.batch_execute_new(tapes))
+        # TODO: check when finite diff ready:
+        # tapes, fn = qml.gradients.finite_diff(tape)
+        # gradF = fn(dev.batch_execute_new(tapes))
 
         expected = np.array(
             [
@@ -679,8 +680,9 @@ class TestParameterShiftRule:
                 ]
             ]
         )
-        assert gradA == pytest.approx(expected, abs=tol)
-        assert gradF == pytest.approx(expected, abs=tol)
+        assert np.allclose(gradA, expected, atol=tol, rtol=0)
+        # TODO: check when finite diff ready:
+        # assert gradF == pytest.approx(expected, abs=tol)
         qml.disable_return()
 
     def cost1(x):
