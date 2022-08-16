@@ -21,6 +21,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 import abc
 import itertools
 import warnings
+from collections.abc import Iterable
 
 import numpy as np
 
@@ -1314,27 +1315,39 @@ class QubitDevice(Device):
 
             H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
 
-            dev = qml.device("default.qubit", wires=range(2), shots=1000)
+            dev = qml.device("default.qubit", wires=range(2), shots=10000)
             @qml.qnode(dev)
-            def qnode(x):
+            def qnode(x, obs):
                 qml.Hadamard(0)
                 qml.CNOT((0,1))
                 qml.RX(x, wires=0)
-                return shadow_expval(H)
+                return shadow_expval(obs)
             
             x = np.array(0.5, requires_grad=True)
 
         We can compute the expectation value of H as well as its gradient in the usual way.
 
-        >>> qnode(x)
+        >>> qnode(x, H)
         tensor(1.827, requires_grad=True)
-        >>> qml.grad(qnode)(x)
+        >>> qml.grad(qnode)(x, H)
         -0.44999999999999984
+
+        One of the main perks of the classical shadows formalism is that we can estimate multiple expectation values from a single quantum measurement (:func:`~.pennylane.classical_shadow`).
+        In `shadow_expval`, we can therefore pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
+        to include all observables that you want to estimate from a single measurement in the same execution.
+
+        >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        >>> qnode(x, Hs)
+        [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
+        >>> qml.jacobian(qnode)(x, Hs)
+        [-0.48312, -0.00198, -0.00375,  0.00168]
         """
 
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
-        return shadow.expval(obs.H, obs.k)
+        if not isinstance(obs.H, Iterable):
+            obs.H = [obs.H]
+        return qml.math.squeeze(qml.math.stack([shadow.expval(h, obs.k) for h in obs.H]))
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

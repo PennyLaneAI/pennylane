@@ -21,6 +21,7 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
+from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -583,6 +584,9 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         if self.return_type is Shadow:
             return self._wires
+
+        if isinstance(self.H, Iterable):
+            return qml.wires.Wires.all_wires([h.wires for h in self.H])
 
         return self.H.wires
 
