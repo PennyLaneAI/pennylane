@@ -1302,9 +1302,9 @@ class QubitDevice(Device):
 
         Returns:
             float: expectation value estimate.
-        
-        .. note:: 
-            
+
+        .. note::
+
             This measurement uses the measurement :func:`~.pennylane.classical_shadow` and :class:`~.pennylane.ClassicalShadow` for post-processing
             internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
             you need to use this measurement.
@@ -1322,7 +1322,7 @@ class QubitDevice(Device):
                 qml.CNOT((0,1))
                 qml.RX(x, wires=0)
                 return shadow_expval(obs)
-            
+
             x = np.array(0.5, requires_grad=True)
 
         We can compute the expectation value of H as well as its gradient in the usual way.
@@ -1359,6 +1359,7 @@ class QubitDevice(Device):
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
+
 
         .. note::
 

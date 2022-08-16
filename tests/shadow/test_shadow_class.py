@@ -419,9 +419,9 @@ class TestPauliExpval:
         bits = convert_to_interface(np.array([[0, 0, 0]]), interface)
         recipes = convert_to_interface(np.array([[0, 0, 0]]), interface)
 
-        actual = pauli_expval(bits, recipes, np.array(word))
-        assert actual.shape == (1,)
-        assert actual[0] == 0
+        actual = pauli_expval(bits, recipes, np.array([word]))
+        assert actual.shape == (1, 1)
+        assert actual[0][0] == 0
 
     single_bits = np.array([[1, 0, 1]])
     single_recipes = np.array([[0, 1, 2]])
@@ -435,9 +435,9 @@ class TestPauliExpval:
         bits = convert_to_interface(self.single_bits, interface)
         recipes = convert_to_interface(self.single_recipes, interface)
 
-        actual = pauli_expval(bits, recipes, np.array(word))
-        assert actual.shape == (1,)
-        assert actual[0] == expected
+        actual = pauli_expval(bits, recipes, np.array([word]))
+        assert actual.shape == (1, 1)
+        assert actual[0][0] == expected
 
     multi_bits = np.array([[1, 0, 1], [0, 0, 1], [1, 1, 1]])
     multi_recipes = np.array([[0, 1, 2], [0, 1, 2], [0, 1, 0]])
@@ -448,7 +448,7 @@ class TestPauliExpval:
             ([0, 1, 2], [27, -27, 0]),
             ([0, 1, -1], [-9, 9, 9]),
             ([-1, -1, 2], [-3, -3, 0]),
-            ([-1, -1, -1], [1, 1, 1]),
+            ([-1, -1, -1], [[1, 1, 1]]),
         ],
     )
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -458,6 +458,6 @@ class TestPauliExpval:
         bits = convert_to_interface(self.multi_bits, interface)
         recipes = convert_to_interface(self.multi_recipes, interface)
 
-        actual = pauli_expval(bits, recipes, np.array(word))
-        assert actual.shape == (self.multi_bits.shape[0],)
-        assert np.all(actual == expected)
+        actual = pauli_expval(bits, recipes, np.array([word]))
+        assert actual.shape == (self.multi_bits.shape[0], 1)
+        assert np.all(actual[:, 0] == expected)
