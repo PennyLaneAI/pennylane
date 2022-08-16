@@ -107,7 +107,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     return circuit
 
 
-wires_list = [1, 2, 3]
+wires_list = [1, 3]
 
 
 @pytest.mark.parametrize("wires", wires_list)
