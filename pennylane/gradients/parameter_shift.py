@@ -288,6 +288,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
                     res = qml.math.stack(res)
                     g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
+                    g = np.squeeze(g)
 
                     if unshifted_coeff is not None:
                         # add the unshifted term
@@ -490,43 +491,38 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         # d<A>/dp for plain expectations (mask==False)
         # if qml.active_return():
         #     pdA = qml.math.T(qml.math.stack(pdA))
+
+        def get_var(pdA2, f0, pdA):
+            return pdA2 - 2 * f0 * pdA
+
         if qml.active_return():
 
-            # TODO: double-check logic with another Hermitian test example
-            # (off-diagonal elements in the test are different, though
-            # negligible)
-            res = []
-            if isinstance(pdA2, (Sequence, np.ndarray)):
-                assert len(pdA) == len(pdA2)
+            if len(mask.shape) > 1:
+                # 1. How to compute correct variance
+                res = []
+                for idx, m in enumerate(mask):
 
-                for p1, p2 in zip(pdA, pdA2):
-                    parameter_res = p2 - 2 * np.squeeze(f0) * p1
-                    if isinstance(parameter_res, Sequence):
-                        parameter_res = tuple(parameter_res)
-
-                    res.append(parameter_res)
-            else:
-                for p in pdA:
-                    parameter_res = pdA2 - 2 * np.squeeze(f0) * p
-                    if isinstance(parameter_res, Sequence):
-                        parameter_res = tuple(parameter_res)
-
-                    res.append(parameter_res)
-
-            res = tuple(res)
-            print(res, pdA)
-            res = qml.math.where(mask, res, pdA)
-
-            # NumPy ops are likely more performant, only convert to tuple here
-
-            if len(res.shape) > 1:
-                res = tuple(tuple(r) for r in res)
-
-            elif len(res.shape) == 1 and res.shape[0] > 1:
+                    # TODO: when is pdA2 scalar/sequence?
+                    if isinstance(pdA2, np.ndarray):
+                        this_pda = pdA[idx]
+                        r = get_var(pdA2[idx], f0[idx], this_pda) if m else this_pda
+                    elif isinstance(pdA, tuple) and isinstance(pdA[0], tuple):
+                        par_r = []
+                        if m:
+                            r = [get_var(pdA2, f0[idx], pdA[i][idx]) for i in range(len(pdA))]
+                        else:
+                            r = [pdA[i][idx] for i in range(len(pdA))]
+                    else:
+                        r = get_var(pdA2, f0[idx], pdA[idx]) if m else pdA[idx]
+                    res.append(r)
                 res = tuple(res)
 
+            else:
+                # Scalar
+                res = pdA2 - 2 * f0 * pdA
+
         else:
-            res = qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
+            res = qml.math.where(mask, get_var(pdA2, f0, pdA), pdA)
 
         return res
 
