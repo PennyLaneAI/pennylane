@@ -47,6 +47,7 @@ class ObservableReturnTypes(Enum):
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
+    Shadow = "shadow"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -85,6 +86,10 @@ VnEntropy = ObservableReturnTypes.VnEntropy
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
 
+Shadow = ObservableReturnTypes.Shadow
+"""Enum: An enumeration which represents returning the bitstrings and recipes from
+the classical shadow protocol"""
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -110,15 +115,7 @@ class MeasurementProcess:
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 
-    def __init__(
-        self,
-        return_type,
-        obs=None,
-        wires=None,
-        eigvals=None,
-        id=None,
-        log_base=None,
-    ):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None):
         self.return_type = return_type
         self.obs = obs
         self.id = id
@@ -517,6 +514,59 @@ class MeasurementProcess:
             )
 
         return hash(fingerprint)
+
+
+class ShadowMeasurementProcess(MeasurementProcess):
+    """Represents a classical shadow measurement process occurring at the end of a
+    quantum variational circuit.
+
+    This has the same arguments as the base class MeasurementProcess, along with
+    a seed that is used to seed the random measurement selection for the classical
+    shadow protocol.
+    """
+
+    def __init__(self, *args, seed=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.seed = seed
+
+    @property
+    def numeric_type(self):
+        """The Python numeric type of the measurement result.
+
+        Returns:
+            type: This is always ``int``.
+        """
+        return int
+
+    def shape(self, device=None):
+        """The expected output shape of the ShadowMeasurementProcess.
+
+        Args:
+            device (.Device): a PennyLane device to use for determining the shape
+
+        Returns:
+            tuple: the output shape; this is always ``(2, T, n)``, where ``T`` is the
+                number of device shots and ``n`` is the number of measured wires.
+
+        Raises:
+            MeasurementShapeError: when a device is not provided, since the output
+                shape is dependent on the device.
+        """
+        # the return type requires a device
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of a classical "
+                "shadow measurement process."
+            )
+
+        # the first entry of the tensor represents the measured bits,
+        # and the second indicate the indices of the unitaries used
+        return (2, device.shots, len(self.wires))
+
+    def __copy__(self):
+        obj = super().__copy__()
+        obj.seed = self.seed
+        return obj
 
 
 def expval(op):
@@ -1047,6 +1097,128 @@ def mutual_info(wires0, wires1, log_base=None):
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+
+
+def classical_shadow(wires, seed_recipes=True):
+    """
+    The classical shadow measurement protocol.
+
+    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    This measurement process returns the randomized Pauli measurements (the ``recipes``)
+    that are performed for each qubit and snapshot as an integer:
+
+    - 0 for Pauli X,
+    - 1 for Pauli Y, and
+    - 2 for Pauli Z.
+
+    It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
+    is sampled, and 1 if the -1 eigenvalue is sampled.
+
+    The device shots are used to specify the number of snapshots. If ``T`` is the number
+    of shots and ``n`` is the number of qubits, then both the measured bits and the
+    Pauli measurements have shape ``(T, n)``.
+
+    Args:
+        wires (Sequence[int]): the wires to perform Pauli measurements on
+        seed_recipes (bool): If True, a seed will be generated that
+            is used for the randomly sampled Pauli measurements. This is to
+            ensure that the same recipes are used when a tape containing this
+            measurement is copied. Different seeds are still generated for
+            different constructed tapes.
+
+    **Example**
+
+    Consider the following QNode that prepares a Bell state and performs a classical
+    shadow measurement:
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.classical_shadow(wires=[0, 1])
+
+    Executing this QNode produces the sampled bits and the Pauli measurements used:
+
+    >>> bits, recipes = circuit()
+    >>> bits
+    tensor([[0, 0],
+            [1, 0],
+            [1, 0],
+            [0, 0],
+            [0, 1]], dtype=uint8, requires_grad=True)
+    >>> recipes
+    tensor([[2, 2],
+            [0, 2],
+            [1, 0],
+            [0, 2],
+            [0, 2]], dtype=uint8, requires_grad=True)
+
+    .. details::
+        :title: Usage Details
+
+        Consider again the QNode in the above example. Since the Pauli observables are
+        randomly sampled, executing this QNode again would produce different bits and Pauli recipes:
+
+        >>> bits, recipes = circuit()
+        >>> bits
+        tensor([[0, 1],
+                [0, 1],
+                [0, 0],
+                [0, 1],
+                [1, 1]], dtype=uint8, requires_grad=True)
+        >>> recipes
+        tensor([[1, 0],
+                [2, 1],
+                [2, 2],
+                [1, 0],
+                [0, 0]], dtype=uint8, requires_grad=True)
+
+        To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
+        interface should be used instead:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2, shots=5)
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.classical_shadow(wires=[0, 1])
+
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> np.all(recipes1 == recipes2)
+        True
+        >>> np.all(bits1 == bits2)
+        False
+
+        If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
+        the ``seed_recipes`` flag should be explicitly set to ``False``:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2, shots=5)
+
+            with qml.tape.QuantumTape() as tape:
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.classical_shadow(wires=[0, 1], seed_recipes=False)
+
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> np.all(recipes1 == recipes2)
+        False
+        >>> np.all(bits1 == bits2)
+        False
+    """
+    wires = qml.wires.Wires(wires)
+
+    seed = np.random.randint(2**30) if seed_recipes else None
+    return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
 T = TypeVar("T")

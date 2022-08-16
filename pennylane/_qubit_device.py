@@ -26,6 +26,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device, DeviceError
+from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -35,6 +36,7 @@ from pennylane.measurements import (
     MutualInfo,
     Probability,
     Sample,
+    Shadow,
     State,
     Variance,
     VnEntropy,
@@ -320,7 +322,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit.observables)
+            results = self.statistics(circuit.observables, circuit=circuit)
 
         if not circuit.is_sampled:
 
@@ -360,6 +362,7 @@ class QubitDevice(Device):
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
+
         return results
 
     def execute_new(self, circuit, **kwargs):
@@ -674,7 +677,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables, shot_range=None, bin_size=None):
+    def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -802,6 +805,16 @@ class QubitDevice(Device):
                 wires0, wires1 = obs.raw_wires
                 results.append(
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+                )
+
+            elif obs.return_type is Shadow:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "Classical shadows cannot be returned in combination"
+                        " with other return types"
+                    )
+                results.append(
+                    self.classical_shadow(wires=obs.wires, circuit=circuit, seed=obs.seed)
                 )
 
             elif obs.return_type is not None:
@@ -1185,6 +1198,80 @@ class QubitDevice(Device):
         return qml.math.mutual_info(
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
+
+    def classical_shadow(self, wires, circuit, seed=None):
+        """
+        Returns the measured bits and recipes in the classical shadow protocol.
+
+        The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+        This measurement process returns the randomized Pauli measurements (the ``recipes``)
+        that are performed for each qubit and snapshot as an integer:
+
+        - 0 for Pauli X,
+        - 1 for Pauli Y, and
+        - 2 for Pauli Z.
+
+        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
+        is sampled, and 1 if the -1 eigenvalue is sampled.
+
+        The device shots are used to specify the number of snapshots. If ``T`` is the number
+        of shots and ``n`` is the number of qubits, then both the measured bits and the
+        Pauli measurements have shape ``(T, n)``.
+
+        This implementation is device-agnostic and works by executing single-shot
+        tapes containing randomized Pauli observables. Devices should override this
+        if they can offer cleaner or faster implementations.
+
+        .. seealso:: :func:`~.classical_shadow`
+
+        Args:
+            wires (Sequence[int]): The wires to perform Pauli measurements on
+            n_snapshots (int): The number of snapshots
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            seed (Union[int, None]): If provided, it is used to seed the random
+                number generation for generating the Pauli measurements.
+
+        Returns:
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
+            the measured bits and the second represents the recipes used.
+        """
+        if circuit is None:  # pragma: no cover
+            raise ValueError("Circuit must be provided when measuring classical shadows")
+
+        n_snapshots = self.shots
+
+        with set_shots(self, shots=1):
+            # slow implementation but works for all devices
+            n_qubits = len(wires)
+            mapped_wires = np.array(self.map_wires(wires))
+
+            if seed is not None:
+                # seed the random measurement generation so that recipes
+                # are the same for different executions with the same seed
+                rng = np.random.RandomState(seed)
+                recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+            else:
+                recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+
+            outcomes = np.zeros((n_snapshots, n_qubits))
+
+            for t in range(n_snapshots):
+                # compute rotations for the Pauli measurements
+                rotations = [
+                    rot
+                    for wire_idx, wire in enumerate(wires)
+                    for rot in obs_list[recipes[t][wire_idx]].compute_diagonalizing_gates(
+                        wires=wire
+                    )
+                ]
+
+                self.reset()
+                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
+
+                outcomes[t] = self.generate_samples()[0][mapped_wires]
+
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
