@@ -1347,6 +1347,7 @@ class QubitDevice(Device):
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
 
+
         .. note::
 
             :meth:`marginal_prob` may be used as a utility method

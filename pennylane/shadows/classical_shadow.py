@@ -288,16 +288,16 @@ class ClassicalShadow:
         """
         coeffs_and_words = self._convert_to_pauli_words(H)
 
-        expval = 0
-        for coeff, word in coeffs_and_words:
-            expvals = pauli_expval(self.bits, self.recipes, np.array(word))
-            expval += coeff * median_of_means(expvals, k)
+        expvals = pauli_expval(
+            self.bits, self.recipes, np.array([word for _, word in coeffs_and_words])
+        )
+        expvals = median_of_means(expvals, k, axis=0)
 
-        return expval
+        return np.dot(expvals, np.array([coeff for coeff, _ in coeffs_and_words]))
 
 
 # Util functions
-def median_of_means(arr, num_batches):
+def median_of_means(arr, num_batches, axis=0):
     r"""
     The median of means of the given array.
 
@@ -318,7 +318,7 @@ def median_of_means(arr, num_batches):
     for i in range(num_batches):
         means.append(qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0))
 
-    return np.median(means)
+    return np.median(means, axis=axis)
 
 
 def pauli_expval(bits, recipes, word):
@@ -345,29 +345,30 @@ def pauli_expval(bits, recipes, word):
             of the Pauli observable for each snapshot. The expectation can be
             found by averaging across the snapshots.
     """
-    T = recipes.shape[0]
+    T, n = recipes.shape
+    b = word.shape[0]
+
+    bits = qml.math.cast(bits, np.int64)
+    recipes = qml.math.cast(recipes, np.int64)
 
     word = qml.math.convert_like(qml.math.cast_like(word, bits), bits)
 
     # -1 in the word indicates an identity observable on that qubit
     id_mask = word == -1
 
-    # nothing to do if every observable is the identity
-    if qml.math.allequal(id_mask, True):
-        return np.ones(T)
-
     # determine snapshots and qubits that match the word
-    # indices = recipes == word
-    indices = qml.math.equal(recipes, word)
-    indices = np.logical_or(indices, np.tile(id_mask, (T, 1)))
-    indices = np.all(indices, axis=1)
+    indices = qml.math.equal(
+        qml.math.reshape(recipes, (T, 1, n)), qml.math.reshape(word, (1, b, n))
+    )
+    indices = np.logical_or(indices, qml.math.tile(qml.math.reshape(id_mask, (1, b, n)), (T, 1, 1)))
+    indices = qml.math.all(indices, axis=2)
 
-    non_id_bits = qml.math.where(np.logical_not(id_mask))
-    bits = qml.math.T(qml.math.gather(qml.math.T(bits), non_id_bits))
+    # mask identity bits (set to 0)
+    bits = qml.math.where(id_mask, 0, qml.math.tile(qml.math.expand_dims(bits, 1), (1, b, 1)))
 
-    # this reshape is necessary since the interfaces have different gather behaviours
-    bits = qml.math.reshape(bits, (T, np.count_nonzero(np.logical_not(id_mask))))
+    bits = qml.math.sum(bits, axis=2) % 2
 
-    bits = qml.math.sum(bits, axis=1) % 2
-
-    return np.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(np.logical_not(id_mask))
+    expvals = qml.math.where(indices, 1 - 2 * bits, 0) * 3 ** np.count_nonzero(
+        np.logical_not(id_mask), axis=1
+    )
+    return qml.math.cast(expvals, np.float64)
