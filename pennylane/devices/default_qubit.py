@@ -30,7 +30,6 @@ from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Sn
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
-from collections.abc import Iterable
 
 ABC_ARRAY = np.array(list(ABC))
 

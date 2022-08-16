@@ -45,25 +45,9 @@ from pennylane.shadows import ClassicalShadow
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
-from pennylane.math import sum as qmlsum
-from pennylane.measurements import (
-    Counts,
-    Expectation,
-    MeasurementProcess,
-    MutualInfo,
-    Probability,
-    Sample,
-    Shadow,
-    State,
-    Variance,
-    VnEntropy,
-)
-from pennylane.operation import operation_derivative
 from pennylane.wires import Wires
 
 from pennylane.measurements import MeasurementProcess
-
-from collections.abc import Iterable
 
 
 class QubitDevice(Device):

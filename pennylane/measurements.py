@@ -543,8 +543,8 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         if self.return_type is Shadow:
             return int
-        elif self.return_type is ShadowExpval:
-            return float
+
+        return float
 
     def shape(self, device=None):
         """The expected output shape of the ShadowMeasurementProcess.
