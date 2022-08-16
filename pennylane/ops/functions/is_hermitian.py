@@ -23,4 +23,6 @@ from pennylane.operation import Operator
 
 def is_hermitian(op: Operator):
     """Check if the operation is hermitian."""
+    if op.is_hermitian is True:
+        return True
     return np.allclose(op.matrix(), qml.adjoint(op).matrix())
