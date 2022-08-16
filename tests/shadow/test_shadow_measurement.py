@@ -107,19 +107,6 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     return circuit
 
 
-<<<<<<< HEAD
-class TestShadowMeasurement:
-    """Unit tests for classical_shadow measurement"""
-
-    wires_list = [1, 2, 3, 4]
-    shots_list = [1, 10, 100]
-    seed_recipes_list = [True, False]
-
-    @pytest.mark.parametrize("wires", wires_list)
-    @pytest.mark.parametrize("shots", shots_list)
-    @pytest.mark.parametrize("seed", seed_recipes_list)
-    def test_measurement_process_numeric_type(self, wires, shots, seed):
-=======
 wires_list = [1, 3]
 
 
@@ -132,15 +119,10 @@ class TestShadowMeasurement:
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_numeric_type(self, wires, seed):
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
         """Test that the numeric type of the MeasurementProcess instance is correct"""
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
         assert res.numeric_type == int
 
-<<<<<<< HEAD
-    @pytest.mark.parametrize("wires", wires_list)
-=======
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_shape(self, wires, shots, seed):
@@ -154,20 +136,10 @@ class TestShadowMeasurement:
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
             res.shape(device=None)
 
-<<<<<<< HEAD
-    @pytest.mark.parametrize("wires", wires_list)
-    @pytest.mark.parametrize("shots", shots_list)
-    @pytest.mark.parametrize("seed", seed_recipes_list)
-    def test_measurement_process_copy(self, wires, shots, seed):
-        """Test that the attributes of the MeasurementProcess instance are
-        correctly copied"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
-=======
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_copy(self, wires, seed):
         """Test that the attributes of the MeasurementProcess instance are
         correctly copied"""
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
 
         copied_res = copy.copy(res)
@@ -177,10 +149,6 @@ class TestShadowMeasurement:
         assert copied_res.seed == res.seed
 
     @pytest.mark.all_interfaces
-<<<<<<< HEAD
-    @pytest.mark.parametrize("wires", wires_list)
-=======
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
@@ -188,32 +156,14 @@ class TestShadowMeasurement:
     def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
-<<<<<<< HEAD
-        import tensorflow as tf
-=======
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
         import torch
 
         circuit = get_circuit(wires, shots, seed, interface, device)
         shadow = circuit()
 
-<<<<<<< HEAD
-        # test shape is correct
-        assert shadow.shape == (2, shots, wires)
-
-        # test dtype is correct
-        expected_dtype = np.int8
-        if interface == "tf":
-            expected_dtype = tf.int8
-        elif interface == "torch":
-            expected_dtype = torch.int8
-
-        assert shadow.dtype == expected_dtype
-=======
         # test shape and dtype are correct
         assert shadow.shape == (2, shots, wires)
         assert shadow.dtype == np.uint8 if interface != "torch" else torch.uint8
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
 
         bits, recipes = shadow
 
@@ -222,10 +172,6 @@ class TestShadowMeasurement:
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
     @pytest.mark.all_interfaces
-<<<<<<< HEAD
-    @pytest.mark.parametrize("wires", wires_list)
-=======
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", None])
     @pytest.mark.parametrize(
@@ -257,10 +203,6 @@ class TestShadowMeasurement:
         ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
         assert np.allclose(ratios2, 1 / 2, atol=1e-1)
 
-<<<<<<< HEAD
-    @pytest.mark.parametrize("wires", wires_list)
-=======
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_shots_none_error(self, wires, seed):
         """Test that an error is raised when a device with shots=None is used
@@ -271,10 +213,6 @@ class TestShadowMeasurement:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             shadow = circuit()
 
-<<<<<<< HEAD
-    @pytest.mark.parametrize("wires", wires_list)
-=======
->>>>>>> 7e4f2c86affe423f525b4b894f1d45a12c4b6fc6
     @pytest.mark.parametrize("shots", shots_list)
     def test_multi_measurement_error(self, wires, shots):
         """Test that an error is raised when classical shadows is returned
