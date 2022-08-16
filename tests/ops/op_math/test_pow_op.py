@@ -330,13 +330,22 @@ class TestSimplify:
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(Pow(base=qml.PauliX(0), z=3), control_wires=1, id=3)
+        final_op = ControlledOp(base=qml.PauliX(0), control_wires=1, id=3)
         simplified_op = pow_op.simplify()
 
         assert isinstance(simplified_op, ControlledOp)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+    def test_simplify_with_adjoint_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.pow method."""
+        op = Pow(qml.U2(1, 1, 0), z=3)
+        simplified_op = op.simplify()
+        assert isinstance(simplified_op, Pow)
+        assert op.data == simplified_op.data
+        assert op.wires == simplified_op.wires
+        assert op.arithmetic_depth == simplified_op.arithmetic_depth
 
 
 class TestMiscMethods:
@@ -718,9 +727,23 @@ class TestIntegration:
         expected_grad = -z * np.cos(x * z)
         assert qml.math.allclose(grad, expected_grad)
 
-    @pytest.mark.xfail
+    def test_batching_execution(self):
+        """Test Pow execution with batched base gate parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            Pow(qml.RX(x, wires=0), 2.5)
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array([1.234, 2.34, 3.456])
+        res = circuit(x)
+
+        expected = -np.sin(x * 2.5)
+        assert qml.math.allclose(res, expected)
+
     def test_non_decomposable_power(self):
-        """This test will fail until we improve device support for power operators."""
+        """Test execution of a pow operator that cannot be decomposed."""
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circ():

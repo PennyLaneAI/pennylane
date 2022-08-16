@@ -189,16 +189,6 @@ class Sum(Operator):
             op.data = new_entry
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        raise ValueError("Batch size is not defined for Sum operators.")
-
-    @property
-    def ndim_params(self):
-        """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Sum operators.")
-
-    @property
     def num_wires(self):
         return len(self.wires)
 
@@ -329,6 +319,9 @@ class Sum(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.summands)
         return self
+
+    def adjoint(self):
+        return Sum(*(qml.adjoint(summand) for summand in self.summands))
 
     @property
     def arithmetic_depth(self) -> int:

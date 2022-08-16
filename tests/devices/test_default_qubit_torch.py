@@ -14,13 +14,10 @@
 """
 Unit tests and integration tests for the ``default.qubit.torch`` device.
 """
-from itertools import product
+import math
 
 import numpy as np
 import pytest
-from pennylane import math
-import math
-import functools
 
 pytestmark = pytest.mark.gpu
 
@@ -32,48 +29,46 @@ if torch.cuda.is_available():
     torch_devices.append("cuda")
 
 
-import pennylane as qml
-from pennylane import numpy as pnp
-from pennylane import DeviceError
-from pennylane.wires import Wires
-from pennylane.devices.default_qubit_torch import DefaultQubitTorch
 from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    S,
-    T,
     CNOT,
+    CSWAP,
     CZ,
     SWAP,
-    CNOT,
-    Toffoli,
-    CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
+    ControlledPhaseShift,
+    CRot3,
     CRotx,
     CRoty,
     CRotz,
-    CRot3,
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    H,
     IsingXX,
     IsingYY,
     IsingZZ,
     MultiRZ1,
     MultiRZ2,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
     OrbitalRotation,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+    T,
+    Toffoli,
+    X,
+    Y,
+    Z,
 )
+
+import pennylane as qml
+from pennylane import DeviceError
+from pennylane import numpy as pnp
+from pennylane.devices.default_qubit_torch import DefaultQubitTorch
 
 np.random.seed(42)
 
@@ -2537,5 +2532,20 @@ class TestHighLevelIntegration:
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The number of shots has to be explicitly set on the device",
+        ):
+            res = circuit()
+
+    def test_sampling_analytic_mode_with_counts(self, torch_device):
+        """Test that when sampling with counts and shots=None an error is raised."""
+        dev = qml.device("default.qubit.torch", wires=1, shots=None, torch_device=torch_device)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit():
+            return qml.counts(qml.PauliZ(wires=0))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The number of shots has to be explicitly set on the device "
+            "when using sample-based measurements.",
         ):
             res = circuit()

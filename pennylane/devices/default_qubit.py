@@ -900,7 +900,7 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, n_snapshots, circuit, seed=None):
+    def classical_shadow(self, wires, circuit, seed=None):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -924,7 +924,9 @@ class DefaultQubit(QubitDevice):
 
         .. Note::
 
-            The classical shadow measurement for this device supports at most 52 qubits.
+            This method internally calls ``np.einsum`` which supports at most 52 indices,
+            thus the classical shadow measurement for this device supports at most 52
+            qubits.
 
         .. seealso:: :func:`~.classical_shadow`
 
@@ -939,8 +941,11 @@ class DefaultQubit(QubitDevice):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-        n_qubits = len(self.wires)
-        device_wires = np.array(self.map_wires(wires))
+
+        n_qubits = len(wires)
+        n_snapshots = self.shots
+        device_qubits = len(self.wires)
+        mapped_wires = np.array(self.map_wires(wires))
 
         if seed is not None:
             # seed the random measurement generation so that recipes
@@ -967,9 +972,6 @@ class DefaultQubit(QubitDevice):
         obs = obs_list[recipes]
         uni = uni_list[recipes]
 
-        outcomes = np.zeros((n_snapshots, n_qubits))
-        stacked_state = self._stack([self._state for _ in range(n_snapshots)])
-
         # There's a significant speedup if we use the following iterative
         # process to perform the randomized Pauli measurements:
         #   1. Randomly generate Pauli observables for all snapshots for
@@ -987,12 +989,19 @@ class DefaultQubit(QubitDevice):
         # the partial traces are computed over iteratively smaller subsystems, leading
         # to a significant speed-up.
 
+        # transpose the state so that the measured wires appear first
+        unmeasured_wires = [i for i in range(len(self.wires)) if i not in mapped_wires]
+        transposed_state = np.transpose(self._state, axes=mapped_wires.tolist() + unmeasured_wires)
+
+        outcomes = np.zeros((n_snapshots, n_qubits))
+        stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
+
         for i in range(n_qubits):
 
             # trace out every qubit except the first
             first_qubit_state = self._einsum(
-                f"{ABC[n_qubits - i + 1]}{ABC[:n_qubits - i]},{ABC[n_qubits - i + 1]}{ABC[n_qubits - i]}{ABC[1:n_qubits - i]}"
-                f"->{ABC[n_qubits - i + 1]}a{ABC[n_qubits - i]}",
+                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
+                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
                 stacked_state,
                 self._conj(stacked_state),
             )
@@ -1009,11 +1018,10 @@ class DefaultQubit(QubitDevice):
 
             # re-normalize the collapsed state
             norms = np.sqrt(
-                np.sum(np.abs(stacked_state) ** 2, tuple(range(1, n_qubits - i)), keepdims=True)
+                np.sum(
+                    np.abs(stacked_state) ** 2, tuple(range(1, device_qubits - i)), keepdims=True
+                )
             )
             stacked_state /= norms
-
-        outcomes = outcomes[:, device_wires]
-        recipes = recipes[:, device_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
