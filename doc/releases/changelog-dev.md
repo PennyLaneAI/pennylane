@@ -25,11 +25,53 @@
   [0.5 0.5 0. ]
   ```
 
-  * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
+* Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
   ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
-  * Added `qml.TShift` operation for qutrit devices, which is the qutrit analog of the Pauli X operation.
-  * Added `qml.TClock` operation for qutrit devices, which is the qutrit analog of the Pauli Z operation.
+* Added `qml.TShift` operation for qutrit devices, which is the qutrit analog of the Pauli X operation.
+* Added `qml.TClock` operation for qutrit devices, which is the qutrit analog of the Pauli Z operation.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+
+**Classical shadows**
+
+* Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
+
+  The measurement protocol is described in detail in the
+  [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
+  will return the randomized Pauli measurements (the `recipes`) that are performed
+  for each qubit, identified as a unique integer:
+
+  - 0 for Pauli X
+  - 1 for Pauli Y
+  - 2 for Pauli Z
+
+  It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
+  is sampled, and `1` if the -1 eigenvalue is sampled.
+
+  For example,
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=5)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.classical_shadow(wires=[0, 1])
+  ```
+  ```pycon
+  >>> bits, recipes = circuit()
+  tensor([[0, 0],
+          [1, 0],
+          [1, 0],
+          [0, 0],
+          [0, 1]], dtype=uint8, requires_grad=True)
+  >>> recipes
+  tensor([[2, 2],
+          [0, 2],
+          [1, 0],
+          [0, 2],
+          [0, 2]], dtype=uint8, requires_grad=True)
+  ```
 
 <h3>Improvements</h3>
 
@@ -76,6 +118,7 @@ This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo,
 Josh Izaac,
+Edward Jiang,
 Korbinian Kottmann,
 Zeyue Niu,
 Mudit Pandey,
