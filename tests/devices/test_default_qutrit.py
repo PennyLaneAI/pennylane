@@ -22,12 +22,15 @@ from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
 from pennylane.wires import Wires, WireError
 
-from gate_data import TSHIFT, TCLOCK, TSWAP, TADD
-
-OMEGA = np.exp(2 * np.pi * 1j / 3)
+from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD
 
 
-U_thadamard_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
+U_thadamard_01 = np.multiply(
+    1 / np.sqrt(2),
+    np.array(
+        [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]],
+    ),
+)
 
 U_x_02 = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]], dtype=np.complex128)
 
@@ -375,27 +378,27 @@ class TestExpval:
     # TODO: Add test for expval of non-parametrized observables
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
-            (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
+            (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
             (
                 qml.THermitian,
                 [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
-                1,
-                [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
+                0,
+                [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
             ),
         ],
     )
     def test_expval_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0])
+        obs = observable(np.array(mat), wires=[0])
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(input).reshape([3])
+        qutrit_device_1_wire._state = np.array(state).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.expval(obs)
 
@@ -403,61 +406,74 @@ class TestExpval:
 
     A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
     B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
-    obs = np.kron(A, B)
+    obs_1 = np.kron(A, B)
+
+    C = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+    D = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
+    obs_2 = np.kron(C, D)
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (
                 qml.THermitian,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
                 1 / 3,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
                 2,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
                 1,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
-                [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
-                -1.5,
-                obs,
+                [
+                    3.73671170e-01 - 0.00000000e00j,
+                    3.73671170e-01 - 8.75889651e-19j,
+                    4.69829451e-01 + 7.59104364e-19j,
+                    -2.74458036e-17 - 3.73671170e-01j,
+                    -1.98254112e-18 - 3.73671170e-01j,
+                    1.04702953e-17 - 4.69829451e-01j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                ],
+                -6.772,
+                obs_2,
             ),
             (
                 qml.THermitian,
-                np.array([1 / 3] * 9),
-                2 / 3,
-                obs,
+                [1 / 3] * 9,
+                0,
+                obs_2,
             ),
             (
                 qml.THermitian,
-                [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
-                -11 / 4,
-                obs,
+                [0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0],
+                0,
+                obs_2,
             ),
         ],
     )
     def test_expval_two_wires_with_parameters(
-        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+        self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
     ):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0, 1])
+        obs = observable(np.array(mat), wires=[0, 1])
 
         qutrit_device_2_wires.reset()
-        qutrit_device_2_wires._state = np.array(input).reshape([3] * 2)
+        qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.expval(obs)
-        print(res, expected_output)
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_expval_estimate(self):
@@ -467,13 +483,13 @@ class TestExpval:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), wires=0))
+            return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
         expval = circuit()
 
         # With 3 samples we are guaranteed to see a difference between
-        # an estimated variance an an analytically calculated one
-        assert expval != 1.0
+        # an estimated expectation value and an analytically calculated one
+        assert not np.isclose(expval, 0.0)
 
 
 class TestVar:
@@ -482,7 +498,7 @@ class TestVar:
     # TODO: Add test for var of non-parametrized observables
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
@@ -495,77 +511,79 @@ class TestVar:
         ],
     )
     def test_var_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0])
+        obs = observable(np.array(mat), wires=[0])
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(input).reshape([3])
+        qutrit_device_1_wire._state = np.array(state).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.var(obs)
-        print(res, expected_output)
 
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
     B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
-    obs = np.kron(A, B)
+    obs_1 = np.kron(A, B)
+
+    C = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+    D = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
+    obs_2 = np.kron(C, D)
 
     @pytest.mark.parametrize(
-        "operation,input,expected_output,par",
+        "observable,state,expected_output,mat",
         [
             (
                 qml.THermitian,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
                 10.88888889,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
                 0,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
                 9,
-                obs,
+                obs_1,
             ),
             (
                 qml.THermitian,
                 [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
-                6.25,
-                obs,
+                18,
+                obs_2,
             ),
             (
                 qml.THermitian,
-                np.array([1 / 3] * 9),
-                13.55555556,
-                obs,
+                [1 / 3] * 9,
+                30.22222,
+                obs_2,
             ),
             (
                 qml.THermitian,
                 [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
-                1.6875,
-                obs,
+                20,
+                obs_2,
             ),
         ],
     )
     def test_var_two_wires_with_parameters(
-        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+        self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
     ):
         """Tests that variances are properly calculated for two-wire observables with parameters."""
 
-        obs = operation(np.array(par), wires=[0, 1])
+        obs = observable(np.array(mat), wires=[0, 1])
 
         qutrit_device_2_wires.reset()
-        qutrit_device_2_wires._state = np.array(input).reshape([3] * 2)
+        qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
-        print(res, expected_output)
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_var_estimate(self):
@@ -575,13 +593,13 @@ class TestVar:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]]), wires=0))
+            return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
 
         var = circuit()
 
         # With 3 samples we are guaranteed to see a difference between
-        # an estimated variance an an analytically calculated one
-        assert var != 1.0
+        # an estimated variance and an analytically calculated one
+        assert not np.isclose(var, 1.0)
 
 
 class TestSample:
@@ -717,9 +735,9 @@ class TestTensorExpval:
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qutrit", wires=3)
 
-        A1 = np.array([[3, 0, 0], [0, -3, 0], [0, 0, -2]])
+        A1 = np.array([[1, 2, 3], [2, 1, 3], [3, 3, 2]])
 
-        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        A = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
         B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
         A2 = np.kron(A, B)
 
@@ -736,11 +754,11 @@ class TestTensorExpval:
 
         res = dev.expval(obs)
 
-        expected = 8
+        expected = 0.0
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_hermitian_two_wires_identity_expectation(self, tol):
-        """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
+        """Test that a tensor product involving a Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qutrit", wires=3)
 
         A = np.array([[-2, 0, 0], [0, 8, 0], [0, 0, -1]])
