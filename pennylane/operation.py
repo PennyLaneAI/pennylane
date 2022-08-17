@@ -852,6 +852,10 @@ class Operator(abc.ABC):
         param_string = ",\n".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
 
+    def _validate_wires(self, wires):
+        if wires == []:
+            raise ValueError("require valid wires.")
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
@@ -890,6 +894,10 @@ class Operator(abc.ABC):
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
+
+       if self.num_wires in {AllWires, AnyWires}:
+            if not isinstance(self, qml.Barrier):
+                self._validate_wires(wires)
 
         self._check_batching(params)
 
