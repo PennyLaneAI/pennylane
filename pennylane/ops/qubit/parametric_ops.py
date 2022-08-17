@@ -2672,7 +2672,18 @@ class IsingYY(Operation):
             s = qml.math.cast_like(s, 1j)
 
         js = 1j * s
-        r_term = qml.math.cast_like(qml.math.array([[0., 0., 0., 1.], [0., 0., -1., 0.], [0., -1., 0., 0.], [1., 0., 0., 0.]], like=js), 1j)
+        r_term = qml.math.cast_like(
+            qml.math.array(
+                [
+                    [0.0, 0.0, 0.0, 1.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, -1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                ],
+                like=js,
+            ),
+            1j,
+        )
         if qml.math.ndim(phi) == 0:
             return c * qml.math.cast_like(qml.math.eye(4, like=c), c) + js * r_term
 
