@@ -181,6 +181,9 @@ class TRY(Operation):
     given as a keyword argument and determines which two of three single-qutrit
     basis states the operation applies to.
 
+    The construction of this operator is based on section 3 of
+    `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
+
     .. math:: TR_y^{jk}(\phi) = \exp(-i\phi\sigma_y^{jk}/2),
                 \sigma_y^{jk} = -i |j\rangle\langle k| + i |k\rangle\langle j|,
                 j, k \in \{0, 1, 2\}, j \neq k
