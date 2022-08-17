@@ -895,8 +895,8 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-       if self.num_wires in {AllWires, AnyWires}:
-            if not isinstance(self, qml.Barrier):
+        if self.num_wires in {AllWires, AnyWires}:
+            if not isinstance(self, (qml.Barrier, qml.Snapshot)):
                 self._validate_wires(wires)
 
         self._check_batching(params)
