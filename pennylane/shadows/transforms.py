@@ -31,12 +31,14 @@ def __replace_obs(tape, obs, *args, **kwargs):
         obs(*args, **kwargs)
 
     def processing_fn(res):
-        return qml.math.squeeze(qml.math.stack(x))
+        return qml.math.squeeze(qml.math.stack(res))
 
-    return [new_tape], lambda x: qml.math.squeeze(qml.math.stack(x))
+    return [new_tape], processing_fn
 
 
 def shadow_expval(H, k=1):
+    """TODO: docs"""
+
     def decorator(qnode):
         def wrapper(*args, **kwargs):
             new_qnode = __replace_obs(qnode, qml.shadow_expval, H, k=k)
@@ -48,6 +50,7 @@ def shadow_expval(H, k=1):
 
 
 def shadow_state(wires):
+    """TODO: docs"""
 
     # all pauli observables
     observables = []
