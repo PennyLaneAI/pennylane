@@ -456,6 +456,7 @@ def get_trainable_indices(values, like=None):
             # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
             def trainable(p, **kwargs):
                 return isinstance(p, jax.numpy.DeviceArray)
+
         else:
             # JAX tracing is occuring; use the default behaviour (only traced arrays
             # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
