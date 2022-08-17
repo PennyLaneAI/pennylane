@@ -337,6 +337,7 @@ def finite_diff(
             start = start + s
 
             # compute the linear combination of results and coefficients
+            res = qml.math.stack(res)
             g = sum([c * r for c, r in zip(coeffs, res)])
 
             if c0 is not None:
