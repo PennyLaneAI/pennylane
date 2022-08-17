@@ -2112,6 +2112,22 @@ class TestPassthruIntegration:
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
+    def test_hermitian_backprop(self, tol):
+        """Test that backprop with qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        K = tf.linalg.diag([1, 2, 3, 4])
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(op):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            return qml.expval(op)
+
+        res = circuit(qml.Hermitian(K, wires=range(2)))
+        assert isinstance(res, tf.Tensor)
+        assert res == 4.0
+
 
 @pytest.mark.tf
 class TestSamples:

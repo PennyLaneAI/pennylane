@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for qutrit observables."""
 import functools
+from unittest.mock import PropertyMock, patch
+
 import pytest
 import pennylane as qml
 import numpy as np
@@ -66,6 +68,17 @@ EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [X_12, np.eye(3), Z_0
 @pytest.mark.usefixtures("tear_down_thermitian")
 class TestTHermitian:
     """Test the THermitian observable"""
+
+    def setup_method(self):
+        """Patch the _eigs class attribute of the Hermitian class before every test."""
+        self.patched_eigs = patch(
+            "pennylane.ops.qutrit.observables.THermitian._eigs", PropertyMock(return_value={})
+        )
+        self.patched_eigs.start()
+
+    def tear_down_method(self):
+        """Stop patch after every test."""
+        self.patched_eigs.stop()
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_thermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
@@ -262,7 +275,7 @@ class TestTHermitian:
         assert np.allclose(np.diag(np.sort(eigvals)), x, atol=tol, rtol=0)
 
     def test_thermitian_matrix(self, tol):
-        """Test that the hermitian matrix method produces the correct output."""
+        """Test that the Hermitian matrix method produces the correct output."""
         H_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
         out = qml.THermitian(H_01, wires=0).matrix()
 
@@ -273,7 +286,7 @@ class TestTHermitian:
         assert np.allclose(out, H_01, atol=tol, rtol=0)
 
     def test_thermitian_exceptions(self):
-        """Tests that the hermitian matrix method raises the proper errors."""
+        """Tests that the Hermitian matrix method raises the proper errors."""
         H_01 = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
 
         # test non-square matrix
