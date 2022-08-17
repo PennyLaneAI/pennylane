@@ -290,7 +290,7 @@ from . import finite_difference
 
 from .gradient_transform import gradient_transform
 from .hessian_transform import hessian_transform
-from .finite_difference import finite_diff, finite_diff_coeffs
+from .finite_difference import finite_diff, finite_diff_new, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian

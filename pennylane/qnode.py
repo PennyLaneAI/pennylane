@@ -313,6 +313,10 @@ class QNode:
             return QNode._validate_parameter_shift(device)
 
         if diff_method == "finite-diff":
+
+            if qml.active_return():
+                return qml.gradients.finite_diff_new, {}, device
+
             return qml.gradients.finite_diff, {}, device
 
         if isinstance(diff_method, str):
