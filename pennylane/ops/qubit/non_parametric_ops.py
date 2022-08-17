@@ -1835,42 +1835,41 @@ class Toffoli(Operation):
 
         **Example:**
 
-        >>> print(qml.Toffoli.compute_decomposition((0,1,2)))
+        >>> qml.Toffoli.compute_decomposition((0,1,2))
         [Hadamard(wires=[2]),
         CNOT(wires=[1, 2]),
-        T.inv(wires=[2]),
+        Adjoint(T)(wires=[2]),
         CNOT(wires=[0, 2]),
         T(wires=[2]),
         CNOT(wires=[1, 2]),
-        T.inv(wires=[2]),
+        Adjoint(T)(wires=[2]),
         CNOT(wires=[0, 2]),
         T(wires=[2]),
         T(wires=[1]),
         CNOT(wires=[0, 1]),
         Hadamard(wires=[2]),
         T(wires=[0]),
-        T.inv(wires=[1]),
+        Adjoint(T)(wires=[1]),
         CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
+        return [
             Hadamard(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
-            T(wires=wires[2]).inv(),
+            qml.adjoint(T(wires=wires[2])),
             CNOT(wires=[wires[0], wires[2]]),
             T(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
-            T(wires=wires[2]).inv(),
+            qml.adjoint(T(wires=wires[2])),
             CNOT(wires=[wires[0], wires[2]]),
             T(wires=wires[2]),
             T(wires=wires[1]),
             CNOT(wires=[wires[0], wires[1]]),
             Hadamard(wires=wires[2]),
             T(wires=wires[0]),
-            T(wires=wires[1]).inv(),
+            qml.adjoint(T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return Toffoli(wires=self.wires)

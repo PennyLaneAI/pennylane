@@ -85,6 +85,8 @@
   RX(-1, wires=[0])
   ```
 
+* Internal use of in-place inversion is eliminated in preparation of its deprecation.
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
