@@ -67,6 +67,7 @@ class DefaultQutrit(QutritDevice):
     observables = {
         "Identity",
         "THermitian",
+        "Hamiltonian",
         "GellMannObs",
     }
 
@@ -121,6 +122,7 @@ class DefaultQutrit(QutritDevice):
         rotations = rotations or []
 
         # apply the circuit operations
+
         # Operations are enumerated so that the order of operations can eventually be used
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
@@ -157,12 +159,12 @@ class DefaultQutrit(QutritDevice):
         return self._apply_unitary(state, matrix, wires)
 
     def _apply_tshift(self, state, axes, inverse=False):
-        """Applies a Shift gate by rolling 1 unit along the axis specified in ``axes``.
+        """Applies a ternary Shift gate by rolling 1 unit along the axis specified in ``axes``.
 
         Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
         shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
         the last index loops back to the first, :math:`|2 \rangle` is transformed to
-        :math:`|0\rangle`.
+        :math:`|0 \rangle`.
 
         Args:
             state (array[complex]): input state
@@ -176,8 +178,8 @@ class DefaultQutrit(QutritDevice):
         return self._roll(state, shift, axes[0])
 
     def _apply_tclock(self, state, axes, inverse=False):
-        """Applies a ternary Clock gate by adding a phase of :math:`\omega` to the 1 index and
-        :math:`\omega^{2}` to the 2 index along the axis specified in ``axes``
+        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 indices
+        along the axis specified in ``axes``
 
         Args:
             state (array[complex]): input state
@@ -246,7 +248,7 @@ class DefaultQutrit(QutritDevice):
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             index (int): target index of axis to apply phase to
-            parameters (float): phase to apply
+            phase (float): phase to apply
             inverse (bool): whether to apply the inverse phase
 
         Returns:
@@ -255,7 +257,7 @@ class DefaultQutrit(QutritDevice):
         num_wires = len(state.shape)
         slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
 
-        phase = self._conj(parameters) if inverse else parameters
+        phase = self._conj(phase) if inverse else phase
         state_slices = [
             self._const_mul(phase if i == index else 1, state[slices[i]]) for i in range(3)
         ]

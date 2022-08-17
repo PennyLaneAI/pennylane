@@ -575,12 +575,7 @@ class TestTensorFlowExecuteIntegration:
                 U3(p[0], p[1], p[2], wires=0)
                 qml.expval(qml.PauliX(0))
 
-            qtape = qtape.expand()
             res = execute([qtape], dev, **execute_kwargs)[0]
-
-            assert qtape.trainable_params == [1, 2, 3, 4]
-            assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
-            assert np.all(qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
             tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])

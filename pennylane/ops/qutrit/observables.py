@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the discrete-variable quantum observables,
-excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
+This submodule contains the qutrit quantum observables.
 """
 import numpy as np
 
@@ -36,8 +35,7 @@ gm_mats[7] = np.diag([1, 1, -2]) / np.sqrt(3)
 
 
 class THermitian(Hermitian):
-    r"""
-    An arbitrary Hermitian observable for qutrits.
+    r"""An arbitrary Hermitian observable for qutrits.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
 
@@ -56,12 +54,19 @@ class THermitian(Hermitian):
     * Gradient recipe: None
 
     Args:
-        A (array): square hermitian matrix
+        A (array): square Hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
+
+    .. note::
+        :class:`Hermitian` cannot be used with qutrit devices due to its use of
+        :class:`QubitUnitary` in :meth:`~.Hermitian.compute_diagonalizing_gates`.
+
     """
+
+    _eigs = {}
 
     # This method is overridden to update the docstring.
     @staticmethod
@@ -74,7 +79,7 @@ class THermitian(Hermitian):
         .. seealso:: :meth:`~.THermitian.matrix`
 
         Args:
-            A (tensor_like): hermitian matrix
+            A (tensor_like): Hermitian matrix
 
         Returns:
             tensor_like: canonical matrix
@@ -82,15 +87,13 @@ class THermitian(Hermitian):
         **Example**
 
         >>> A = np.array([[6+0j, 1-2j, 0],[1+2j, -1, 0], [0, 0, 1]])
-        >>> qml.Hermitian.compute_matrix(A)
+        >>> qml.THermitian.compute_matrix(A)
         [[ 6.+0.j  1.-2.j  0.+0.j]
          [ 1.+2.j -1.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  1.+0.j]]
         """
         return Hermitian.compute_matrix(A)
 
-    # This overrides `Hermitian.eigendecomposition`, because keying into the dictionary `THermitian_eigs` directly
-    # does not work as expected and users need to key into `Hermitian._eigs` instead without this override.
     @property
     def eigendecomposition(self):
         """Return the eigendecomposition of the matrix specified by the Hermitian observable.
@@ -101,7 +104,8 @@ class THermitian(Hermitian):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
+                Hermitian observable
         """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
