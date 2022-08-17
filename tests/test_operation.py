@@ -15,23 +15,20 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-from functools import reduce
 import warnings
-
-import pytest
-from scipy.sparse import csr_matrix
+from functools import reduce
 
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+from gate_data import CNOT, II, SWAP, I, Toffoli, X
 from numpy.linalg import multi_dot
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import Tensor, operation_derivative, Operator, Operation
-
-from gate_data import I, X, CNOT, Toffoli, SWAP, II
+from pennylane import numpy as pnp
+from pennylane.operation import Operation, Operator, Tensor, operation_derivative
 from pennylane.ops import cv
 from pennylane.wires import Wires
-
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
@@ -768,6 +765,17 @@ class TestOperatorIntegration:
             match=f"Operator {DummyOp.__name__} must act on all wires",
         ):
             circuit()
+
+    def test_pow_method_with_non_numeric_power_raises_error(self):
+        """Test that when raising an Operator to a power that is not a number raises
+        a ValueError."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        with pytest.raises(ValueError, match="Cannot raise an Operator"):
+            _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
 
 
 class TestInverse:

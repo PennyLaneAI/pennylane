@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for the Pow arithmetic class of qubit operations
+"""
+from copy import copy
 
 import pytest
-from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -22,17 +25,26 @@ from pennylane.ops.op_math.pow_class import Pow, PowOperation
 
 
 class TempOperator(qml.operation.Operator):
+    """Dummy operator"""
+
     num_wires = 1
 
 
+def pow_using_dunder_method(base, z, do_queue=True, id=None):
+    """Helper function which computes the base raised to the power invoking the __pow__ dunder
+    method."""
+    return base**z
+
+
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestInheritanceMixins:
     """Test the inheritance structure and mixin addition through dynamic __new__ method."""
 
-    def test_plain_operator(self):
+    def test_plain_operator(self, power_method):
         """Test when base directly inherits from Operator only inherits from Operator."""
 
         base = TempOperator(1.234, wires=0)
-        op = Pow(base, 1.2)
+        op: Pow = power_method(base=base, z=1.2)
 
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
@@ -43,7 +55,7 @@ class TestInheritanceMixins:
         # checking we can call `dir` without problems
         assert "num_params" in dir(op)
 
-    def test_operation(self):
+    def test_operation(self, power_method):
         """When the operation inherits from `Operation`, the `PowOperation` mixin should
         be added and the Pow should now have Operation functionality."""
 
@@ -52,7 +64,7 @@ class TestInheritanceMixins:
             num_params = 1
 
         base = CustomOp(1.234, wires=0)
-        op = Pow(base, 6.5)
+        op: Pow = power_method(base=base, z=6.5)
 
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
@@ -64,7 +76,7 @@ class TestInheritanceMixins:
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
 
-    def test_observable(self):
+    def test_observable(self, power_method):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
         class CustomObs(qml.operation.Observable):
@@ -72,7 +84,7 @@ class TestInheritanceMixins:
             num_params = 0
 
         base = CustomObs(wires=0)
-        ob = Pow(base, -1.2)
+        ob: Pow = power_method(base=base, z=-1.2)
 
         assert isinstance(ob, Pow)
         assert isinstance(ob, qml.operation.Operator)
@@ -89,21 +101,23 @@ class TestInheritanceMixins:
         assert "grad_recipe" not in dir(ob)
 
 
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    def test_nonparametric_ops(self):
+    def test_nonparametric_ops(self, power_method):
         """Test pow initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op = Pow(base, -4.2, id="something")
+        op: Pow = power_method(base=base, z=-4.2, id="something")
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
         assert op.name == "PauliX**-4.2"
-        assert op.id == "something"
+        if power_method.__name__ == Pow.__name__:
+            assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -112,19 +126,20 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("a")
         assert op.num_wires == 1
 
-    def test_parametric_ops(self):
+    def test_parametric_ops(self, power_method):
         """Test pow initialization for a standard parametric operation."""
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op = Pow(base, -0.766, id="id")
+        op: Pow = power_method(base=base, z=-0.766, id="id")
 
         assert op.base is base
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
         assert op.name == "Rot**-0.766"
-        assert op.id == "id"
+        if power_method.__name__ == Pow.__name__:
+            assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -133,14 +148,14 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("b")
         assert op.num_wires == 1
 
-    def test_template_base(self):
+    def test_template_base(self, power_method):
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
         base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
-        op = Pow(base, 2.67)
+        op: Pow = power_method(base=base, z=2.67)
 
         assert op.base is base
         assert op.z == 2.67
@@ -155,11 +170,11 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires((0, 1))
         assert op.num_wires == 2
 
-    def test_hamiltonian_base(self):
+    def test_hamiltonian_base(self, power_method):
         """Test pow initialization for a hamiltonian."""
         base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
 
-        op = Pow(base, 3.4)
+        op: Pow = power_method(base=base, z=3.4)
 
         assert op.base is base
         assert op.z == 3.4
@@ -175,15 +190,16 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestProperties:
     """Test Pow properties."""
 
-    def test_data(self):
+    def test_data(self, power_method):
         """Test base data can be get and set through Pow class."""
         x = np.array(1.234)
 
         base = qml.RX(x, wires="a")
-        op = Pow(base, 3.21)
+        op: Pow = power_method(base=base, z=3.21)
 
         assert op.data == [x]
 
@@ -198,11 +214,11 @@ class TestProperties:
         base.data = [x_new2]
         assert op.data == [x_new2]
 
-    def test_private_wires_getter_setter(self):
+    def test_private_wires_getter_setter(self, power_method):
         """Test that we can get and set the private _wires."""
         wires0 = qml.wires.Wires("a")
         base = qml.PauliZ(wires0)
-        op = Pow(base, -2.1)
+        op: Pow = power_method(base=base, z=-2.1)
 
         assert op._wires == base._wires == wires0
 
@@ -210,42 +226,44 @@ class TestProperties:
         op._wires = wires1
         assert op._wires == base._wires == wires1
 
-    def test_has_matrix_true(self):
+    def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
         base = qml.PauliX(0)
-        op = Pow(base, -1.1)
+        op: Pow = power_method(base=base, z=-1.1)
 
         assert op.has_matrix
 
-    def test_has_matrix_false(self):
+    def test_has_matrix_false(self, power_method):
         """Test has_matrix property carries over when base op does not define a matrix."""
 
-        op = Pow(TempOperator(wires=0), 2.0)
+        op: Pow = power_method(base=TempOperator(wires=0), z=2.0)
 
         assert not op.has_matrix
 
     @pytest.mark.parametrize("value", (True, False))
-    def test_is_hermitian(self, value):
+    def test_is_hermitian(self, value, power_method):
         """Test that if the base is hermitian, then the power is hermitian."""
 
         class DummyOp(qml.operation.Operator):
+            """Dummy operator."""
+
             num_wires = 1
             is_hermitian = value
 
-        op = Pow(DummyOp(1), 2.5)
+        op: Pow = power_method(base=DummyOp(1), z=2.5)
         assert op.is_hermitian is value
 
-    def test_queue_category(self):
+    def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
-        op = Pow(qml.PauliX(0), 3.5)
+        op: Pow = power_method(base=qml.PauliX(0), z=3.5)
         assert op._queue_category == "_ops"
 
-    def test_queue_category_None(self):
+    def test_queue_category_None(self, power_method):
         """Test that the queue category `None` for some observables carries over."""
-        op = Pow(qml.PauliX(0) @ qml.PauliY(1), -1.1)
+        op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
         assert op._queue_category is None
 
-    def test_batching_properties(self):
+    def test_batching_properties(self, power_method):
         """Test that Pow batching behavior mirrors that of the base."""
 
         class DummyOp(qml.operation.Operator):
@@ -256,7 +274,7 @@ class TestProperties:
         param2 = [[[0.3, 1.2]]] * 3
 
         base = DummyOp(param1, param2, wires=0)
-        op = Pow(base, 3)
+        op: Pow = power_method(base=base, z=3)
 
         assert op.ndim_params == (0, 2)
         assert op.batch_size == 3
@@ -491,7 +509,7 @@ class TestSparseMatrix:
 
     def test_base_no_sparse_matrix(self):
         """Test that if the base doesn't define a sparse matrix, then the power won't either."""
-        op = Pow(TempOperator(0.1), 2)
+        op: Pow = Pow(TempOperator(0.1), 2)
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
@@ -597,21 +615,22 @@ class TestInverse:
             op.inverse = True
 
 
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
 class TestOperationProperties:
     """Test Operation specific properties."""
 
-    def test_basis(self):
+    def test_basis(self, power_method):
         """Test that the basis attribute is the same as the base op's basis attribute."""
         base = qml.RX(1.2, wires=0)
-        op = Pow(base, 2.1)
+        op: Pow = power_method(base, 2.1)
 
         assert base.basis == op.basis
 
-    def test_control_wires(self):
+    def test_control_wires(self, power_method):
         """Test that the control wires of a Pow operator are the same as the control wires of the base op."""
 
         base = qml.Toffoli(wires=(0, 1, 2))
-        op = Pow(base, 3.5)
+        op: Pow = power_method(base, 3.5)
 
         assert base.control_wires == op.control_wires
 
@@ -628,7 +647,7 @@ class TestIntegration:
 
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x, z):
-            Pow(qml.RX(x, wires=0), z)
+            Pow(base=qml.RX(x, wires=0), z=z)
             return qml.expval(qml.PauliY(0))
 
         x = qml.numpy.array(1.234, requires_grad=True)

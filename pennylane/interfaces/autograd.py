@@ -171,13 +171,35 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
+    cached_jac = {}
+
+    def _get_jac_with_caching():
+
+        if "jacobian" in cached_jac:
+            return cached_jac["jacobian"]
+
+        jacs = []
+        for t in tapes:
+            g_tapes, fn = gradient_fn(t, **gradient_kwargs)
+
+            with qml.tape.Unwrap(*g_tapes):
+                res, _ = execute_fn(g_tapes, **gradient_kwargs)
+                jacs.append(fn(res))
+
+        cached_jac["jacobian"] = jacs
+        return jacs
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
         dy = [qml.math.T(d) for d in dy[0]]
-        jacs = ans[1]
+
+        computing_jacobian = _n == max_diff
+        if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
+            jacs = _get_jac_with_caching()
+        else:
+            jacs = ans[1]
 
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward")

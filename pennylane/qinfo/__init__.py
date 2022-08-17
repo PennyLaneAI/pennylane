@@ -20,4 +20,5 @@ from .transforms import (
     classical_fisher,
     quantum_fisher,
     fidelity,
+    relative_entropy,
 )

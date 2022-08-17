@@ -18,12 +18,11 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import numbers
-from copy import copy
 from collections.abc import Iterable
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 

@@ -579,7 +579,7 @@ class QubitDevice(Device):
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return QubitDevice.states_to_binary(samples, self.num_wires)
+        return self.states_to_binary(samples, self.num_wires)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -605,8 +605,7 @@ class QubitDevice(Device):
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
 
-    @staticmethod
-    def generate_basis_states(num_wires, dtype=np.uint32):
+    def generate_basis_states(self, num_wires, dtype=np.uint32):
         """
         Generates basis states in binary representation according to the number
         of wires specified.
@@ -634,7 +633,7 @@ class QubitDevice(Device):
         """
         if 2 < num_wires < 32:
             states_base_ten = np.arange(2**num_wires, dtype=dtype)
-            return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
+            return self.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
         basis_states_generator = itertools.product((0, 1), repeat=num_wires)
@@ -973,6 +972,27 @@ class QubitDevice(Device):
         return np.squeeze(np.var(samples, axis=0))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        """Return samples of an observable.
+
+        Args:
+            observable (Observable): the observable to sample
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+            counts (bool): whether counts (``True``) or raw samples (``False``)
+                should be returned
+
+        Raises:
+            EigvalsUndefinedError: if no information is available about the
+                eigenvalues of the observable
+
+        Returns:
+            Union[array[float], dict, list[dict]]: samples in an array of
+            dimension ``(shots,)`` or counts
+        """
+
         def _samples_to_counts(samples, no_observable_provided):
             """Group the obtained samples into a dictionary.
 

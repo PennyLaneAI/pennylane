@@ -37,6 +37,7 @@ from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_opera
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
+from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
