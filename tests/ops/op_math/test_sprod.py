@@ -326,6 +326,15 @@ class TestMatrix:
 
         assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
 
+    def test_sprod_hamiltonian(self):
+        """Test that a hamiltonian object can be scaled."""
+        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=0)])
+        sprod_op = SProd(-4, U)
+        mat = sprod_op.matrix()
+
+        true_mat = [[0, -2], [-2, 0]]
+        assert np.allclose(mat, true_mat)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
