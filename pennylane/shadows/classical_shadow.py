@@ -120,9 +120,9 @@ class ClassicalShadow:
                 # snapshots is an iterable that determines the indices
                 pick_snapshots = snapshots
 
-            pick_snapshots = qml.math.convert_like(pick_snapshots, bits)
-            bits = qml.math.gather(bits, pick_snapshots)
-            recipes = qml.math.gather(recipes, pick_snapshots)
+            pick_snapshots = qml.math.convert_like(pick_snapshots, self.bits)
+            bits = qml.math.gather(self.bits, pick_snapshots)
+            recipes = qml.math.gather(self.recipes, pick_snapshots)
 
         if isinstance(wires, Iterable):
             bits = bits[:, wires]
@@ -312,8 +312,7 @@ def median_of_means(arr, num_batches):
     means = []
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
 
-    for i in range(num_batches):
-        means.append(qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0))
+    means = [qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)]
 
     return np.median(means)
 

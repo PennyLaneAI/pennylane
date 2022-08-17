@@ -19,8 +19,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.shadows import ClassicalShadow
-from pennylane.shadows import median_of_means, pauli_expval
+from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 
 np.random.seed(777)
 
