@@ -76,6 +76,25 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+
+def array(*args, like=None, **kwargs):
+    """The autoray.numpy.array method with the extension that the Torch devices
+    are preserved."""
+    res = ar.numpy.array(*args, like=like, **kwargs)
+    if like is not None and get_interface(like) == "torch":
+        res = res.to(device=like.device)
+    return res
+
+
+def eye(*args, like=None, **kwargs):
+    """The autoray.numpy.eye method with the extension that the Torch devices
+    are preserved."""
+    res = ar.numpy.eye(*args, like=like, **kwargs)
+    if like is not None and get_interface(like) == "torch":
+        res = res.to(device=like.device)
+    return res
+
+
 # small constant for numerical stability that the user can modify
 eps = 1e-14
 
