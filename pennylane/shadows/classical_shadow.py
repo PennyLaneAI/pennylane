@@ -98,6 +98,12 @@ class ClassicalShadow:
 
     @property
     def snapshots(self):
+        """
+        The number of snapshots in the classical shadow measurement.
+
+        Returns:
+            int: The number of snapshots
+        """
         return len(self.bits)
 
     def local_snapshots(self, wires=None, snapshots=None):
@@ -139,6 +145,8 @@ class ClassicalShadow:
         U = np.empty((T, n, 2, 2), dtype="complex")
         for i, u in enumerate(self.observables):
             U[np.where(recipes == i)] = u
+
+        # U = np.array([[self.observables[idx] for idx in recipe] for recipe in recipes], dtype="complex")
 
         state = (qml.math.cast((1 - 2 * bits[:, :, None, None]), np.complex64) * U + np.eye(2)) / 2
 
