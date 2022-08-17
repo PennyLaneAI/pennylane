@@ -181,6 +181,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
     return decorator
 
+
 # pylint:disable=redefined-outer-name
 @multi_dispatch(argnum=[0], tensor_list=[0])
 def array(*args, like=None, **kwargs):
