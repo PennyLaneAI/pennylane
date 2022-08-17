@@ -2672,10 +2672,9 @@ class IsingYY(Operation):
             s = qml.math.cast_like(s, 1j)
 
         js = 1j * s
-        arr = np.array([[0, 0, 0, 1], [0, 0, -1, 0], [0, -1, 0, 0], [1, 0, 0, 0]])
-        r_term = qml.math.convert_like(arr, phi)
+        r_term = qml.math.cast_like(qml.math.array([[0., 0., 0., 1.], [0., 0., -1., 0.], [0., -1., 0., 0.], [1., 0., 0., 0.]], like=js), 1j)
         if qml.math.ndim(phi) == 0:
-            return c * qml.math.eye(4, like=c) + js * r_term
+            return c * qml.math.cast_like(qml.math.eye(4, like=c), c) + js * r_term
 
         return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(js, r_term, axes=0)
 
