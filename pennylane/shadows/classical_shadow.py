@@ -126,6 +126,9 @@ class ClassicalShadow:
             pick_snapshots = qml.math.convert_like(pick_snapshots, self.bits)
             bits = qml.math.gather(self.bits, pick_snapshots)
             recipes = qml.math.gather(self.recipes, pick_snapshots)
+        else:
+            bits = self.bits
+            recipes = self.recipes
 
         if isinstance(wires, Iterable):
             bits = bits[:, wires]
