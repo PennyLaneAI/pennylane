@@ -29,6 +29,9 @@ class TShift(Operation):
     r"""TShift(wires)
     The qutrit shift operator
 
+    The construction of this operator is based on equation 1 from
+    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
+
     .. math:: TShift = \begin{bmatrix}
                         0 & 0 & 1 \\
                         1 & 0 & 0 \\
@@ -114,6 +117,9 @@ class TShift(Operation):
 class TClock(Operation):
     r"""TClock(wires)
     Ternary Clock gate
+
+    The construction of this operator is based on equation 1 from
+    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
 
     .. math:: TClock = \begin{bmatrix}
                         1 & 0      & 0        \\
