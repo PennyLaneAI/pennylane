@@ -590,7 +590,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
     def _controlled(self, wire):
-        return CZ(wires=Wires(wire) + self.wires)
+        return CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -985,7 +985,7 @@ class CNOT(Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        return Toffoli(wires=Wires(wire) + self.wires)
+        return Toffoli(wires=wire + self.wires)
 
     @property
     def control_wires(self):

@@ -507,7 +507,7 @@ class DiagonalQubitUnitary(Operation):
     def _controlled(self, control):
         new_op = DiagonalQubitUnitary(
             qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
-            wires=Wires(control) + self.wires,
+            wires=control + self.wires,
         )
         return new_op.inv() if self.inverse else new_op
 
