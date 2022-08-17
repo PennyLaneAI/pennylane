@@ -37,6 +37,18 @@ test_multi_dispatch_stack_data = [
 ]
 
 
+@pytest.mark.gpu
+@pytest.mark.parametrize("dev", ["cpu", "cuda"])
+@pytest.mark.parametrize("func", [fn.array, fn.eye])
+def test_array_cuda(func, dev):
+    """Test that a new Torch tensor created with math.array/math.eye preserves
+    the Torch device"""
+    original = torch.tensor(3, device=dev)
+    new = func(2, like=original)
+    assert isinstance(new, torch.Tensor)
+    assert new.device == original.device
+
+
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
 def test_multi_dispatch_stack(x):
     """Test that the decorated autoray function stack can handle all inputs"""
