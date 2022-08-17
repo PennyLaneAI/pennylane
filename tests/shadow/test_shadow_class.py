@@ -47,8 +47,19 @@ class TestUnitTestClassicalShadows:
         """Test the output shape of snapshots method"""
         T, n = shadow.bits.shape
         assert (T, n) == shadow.recipes.shape
+        assert shadow.snapshots == T
         assert shadow.local_snapshots().shape == (T, n, 2, 2)
         assert shadow.global_snapshots().shape == (T, 2**n, 2**n)
+
+    def test_shape_mismatch_error(self):
+        """Test than an error is raised when a ClassicalShadow object
+        is created using bits and recipes with different shapes"""
+        bits = np.random.randint(0, 1, size=(3, 4))
+        recipes = np.random.randint(0, 2, size=(3, 5))
+
+        msg = "Bits and recipes but have the same shape"
+        with pytest.raises(ValueError, match=msg):
+            ClassicalShadow(bits, recipes)
 
 
 class TestIntegrationShadows:

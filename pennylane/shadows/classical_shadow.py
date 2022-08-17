@@ -85,14 +85,20 @@ class ClassicalShadow:
         self.bits = bits
         self.recipes = recipes
 
-        assert bits.shape == recipes.shape
-        self.snapshots = len(bits)
+        if bits.shape != recipes.shape:
+            raise ValueError(
+                f"Bits and recipes but have the same shape, got {bits.shape} and {recipes.shape}."
+            )
 
         self.observables = [
             qml.matrix(qml.PauliX(0)),
             qml.matrix(qml.PauliY(0)),
             qml.matrix(qml.PauliZ(0)),
         ]
+
+    @property
+    def snapshots(self):
+        return len(self.bits)
 
     def local_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x n x 2 x 2 local snapshots
@@ -107,9 +113,6 @@ class ClassicalShadow:
         Returns:
             tensor: The local snapshots tensor of shape ``(T, n, 2, 2)`` containing the local local density matrices for each snapshot and each qubit.
         """
-        bits = self.bits
-        recipes = self.recipes
-
         if snapshots is not None:
             if isinstance(snapshots, int):
                 # choose the given number of random snapshots
@@ -247,12 +250,8 @@ class ClassicalShadow:
         save quantum circuit executions.
 
         Args:
-            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
-            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
-
-        Args:
             H (qml.Observable): Observable to compute the expectation value
-            k (int): Split the snapshots into ``k`` equal parts to compute the median of means.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
         Returns:
             float: expectation value estimate.
@@ -312,7 +311,9 @@ def median_of_means(arr, num_batches):
     means = []
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
 
-    means = [qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)]
+    means = [
+        qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)
+    ]
 
     return np.median(means)
 
