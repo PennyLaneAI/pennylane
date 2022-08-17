@@ -26,33 +26,6 @@ class DoubleFactorization(Operation):
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
     algorithm in second quantization with a double-factorized Hamiltonian.
 
-    To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to be
-    factorized using the :func:`~.pennylane.qchem.factorize` function following
-    [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
-    The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
-    such that the two-electron integral tensor in
-    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
-    :math:`V`, can be computed as
-
-    .. math::
-
-           V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
-
-    with the rank :math:`R \leq n^2`, where :math:`n` is the number of molecular orbitals. The
-    matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
-    smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
-    average number of the retained eigenvalues, :math:`M`, determines the rank of the second
-    factorization step. The 1-norm of the Hamiltonian can then be computed using the
-    :func:`~.pennylane.resource.DoubleFactorization.norm` function from the electron integrals and
-    the eigenvalues of the matrices :math:`L^{(r)}`.
-
-    The total number of gates and qubits for implementing the quantum phase estimation algorithm
-    for the given Hamiltonian can then be computed using the functions
-    :func:`~.pennylane.resource.DoubleFactorization.gate_cost` and
-    :func:`~.pennylane.resource.DoubleFactorization.qubit_cost` with a target error that has the
-    default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
-    of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
-
     Atomic units are used throughout the class.
 
     Args:
@@ -68,32 +41,50 @@ class DoubleFactorization(Operation):
         beta (int): number of bits for the rotation angles
         chemist_notation (bool): if True, the two-electron integrals need to be in chemist notation
 
+    **Example**
+
+    >>> symbols  = ['O', 'H', 'H']
+    >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+    >>>                      [0.00000000,  1.45278171, -1.00662237],
+    >>>                      [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> algo = DoubleFactorization(one, two)
+    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
+    >>>       algo.gates, # estimated number of non-Clifford gates
+    >>>       algo.qubits # estimated number of logical qubits
+    >>>       )
+    53.62085493277858 103969925 290
+
     .. details::
-        :title: Usage Details
+        :title: Theory
 
-        .. code-block:: python
+        To estimate the gate and qubit costs for implementing this method, the Hamiltonian needs to
+        be factorized using the :func:`~.pennylane.qchem.factorize` function following
+        [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
+        The objective of the factorization is to find a set of symmetric matrices, :math:`L^{(r)}`,
+        such that the two-electron integral tensor in
+        `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_,
+        :math:`V`, can be computed as
 
-            import pennylane as qml
-            from pennylane import numpy as np
+        .. math::
 
-            symbols  = ['O', 'H', 'H']
-            geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
-                                 [0.00000000,  1.45278171, -1.00662237],
-                                 [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+               V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-            mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        with the rank :math:`R \leq n^2`, where :math:`n` is the number of molecular orbitals. The
+        matrices :math:`L^{(r)}` are diagonalized and for each matrix the eigenvalues that are
+        smaller than a given threshold (and their corresponding eigenvectors) are discarded. The
+        average number of the retained eigenvalues, :math:`M`, determines the rank of the second
+        factorization step. The 1-norm of the Hamiltonian can then be computed using the
+        :func:`~.pennylane.resource.DoubleFactorization.norm` function from the electron integrals
+        and the eigenvalues of the matrices :math:`L^{(r)}`.
 
-            core, one, two = qml.qchem.electron_integrals(mol)()
-            algo = DoubleFactorization(one, two)
-
-        >>> algo.lamb  # the 1-Norm of the Hamiltonian
-        53.62085493277858
-
-        >>> algo.gates  # estimated number of non-Clifford gates
-        103969925
-
-        >>> algo.qubits  # estimated number of logical qubits
-        290
+        The total number of gates and qubits for implementing the quantum phase estimation algorithm
+        for the given Hamiltonian can then be computed using the functions
+        :func:`~.pennylane.resource.DoubleFactorization.gate_cost` and
+        :func:`~.pennylane.resource.DoubleFactorization.qubit_cost` with a target error that has the
+        default value of 0.0016 Ha (chemical accuracy). The costs are computed using Eqs. (C39-C40)
+        of [`PRX Quantum 2, 030305 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_].
     """
     num_wires = AnyWires
     grad_method = None

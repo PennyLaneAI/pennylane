@@ -67,11 +67,9 @@ class TestCreateExpandFn:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
-        spy_device = mocker.spy(dev, "supports_operation")
         new_tape = expand_fn(tape)
-        spy_device.assert_called()
 
-        assert new_tape.operations[0].name == "PhaseShift"
+        assert new_tape.operations[0].name == "U1"
         assert [op.name for op in new_tape.operations[1:]] == ["RZ", "RY", "RZ"]
 
     def test_device_only_expansion(self, mocker):
@@ -84,12 +82,10 @@ class TestCreateExpandFn:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
-        spy_device = mocker.spy(dev, "supports_operation")
         new_tape = expand_fn(tape)
-        spy_device.assert_called()
 
         assert len(new_tape.operations) == 2
-        assert new_tape.operations[0].name == "PhaseShift"
+        assert new_tape.operations[0].name == "U1"
         assert new_tape.operations[1].name == "Rot"
 
     def test_depth_only_expansion(self):
@@ -653,7 +649,7 @@ class TestCreateCustomDecompExpandFn:
 
         def circuit():
             # Adjoint is RX(-0.2), so expect RY(-0.2) H
-            qml.adjoint(qml.RX)(0.2, wires="a")
+            qml.adjoint(qml.RX, lazy=False)(0.2, wires="a")
             return qml.expval(qml.PauliZ("a"))
 
         custom_decomps = {qml.RX: custom_rx}
