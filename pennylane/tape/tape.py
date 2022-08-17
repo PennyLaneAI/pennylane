@@ -1582,9 +1582,9 @@ class QuantumTape(AnnotatedQueue):
             tape._ops = self._ops.copy()
             tape._measurements = self._measurements.copy()
 
-        tape._graph = None
-        tape._specs = None
-        tape._depth = None
+        tape._graph = self._graph
+        tape._specs = self._specs
+        tape._depth = self._depth
         tape.wires = copy.copy(self.wires)
         tape.num_wires = self.num_wires
         tape.is_sampled = self.is_sampled
