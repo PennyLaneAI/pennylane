@@ -191,20 +191,36 @@ class QNSPSAOptimizer:
         return params_next, loss_curr
 
     def _step_core(self, cost, args, kwargs):
+        all_grad_tapes = []
+        all_grad_dirs = []
+        all_metric_tapes = []
+        all_tensor_dirs = []
         for i in range(self.resamplings):
+            # grad_tapes contains 2 tapes for the gradient estimation
             grad_tapes, grad_dirs = self._get_spsa_grad_tapes(cost, args, kwargs)
+            # metric_tapes contains 4 tapes for tensor estimation
             metric_tapes, tensor_dirs = self._get_tensor_tapes(cost, args, kwargs)
-            raw_results = qml.execute(grad_tapes + metric_tapes, cost.device, None)
+            all_grad_tapes += grad_tapes
+            all_metric_tapes += metric_tapes
+            all_grad_dirs.append(grad_dirs)
+            all_tensor_dirs.append(tensor_dirs)
 
-            grad = self._post_process_grad(raw_results[:2], grad_dirs)
-            metric_tensor = self._post_process_tensor(raw_results[2:], tensor_dirs)
-
-            if i == 0:
-                grad_avg = grad
-                tensor_avg = metric_tensor
-
-            grad_avg = [grad_avg[j] * i / (i + 1) + grad[j] / (i + 1) for j in range(len(grad))]
-            tensor_avg = tensor_avg * i / (i + 1) + metric_tensor / (i + 1)
+        raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device, None)
+        grads = [
+            self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
+            for i in range(self.resamplings)
+        ]
+        grads = np.array(grads)
+        metric_tensors = [
+            self._post_process_tensor(
+                raw_results[2 * self.resamplings + 4 * i : 2 * self.resamplings + 4 * i + 4],
+                all_tensor_dirs[i],
+            )
+            for i in range(self.resamplings)
+        ]
+        metric_tensors = np.array(metric_tensors)
+        grad_avg = np.mean(grads, axis=0)
+        tensor_avg = np.mean(metric_tensors, axis=0)
 
         self._update_tensor(tensor_avg)
         params_next = self._get_next_params(args, grad_avg)
