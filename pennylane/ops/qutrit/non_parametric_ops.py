@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the ternary discrete-variable quantum operations
+This submodule contains the qutrit quantum operations
 that do not depend on any parameters.
 """
 # pylint:disable=arguments-differ
@@ -23,17 +23,15 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
-ZETA = OMEGA ** (1 / 3)
-
-# Note: When Operation.matrix() is used for qutrit operations, `wire_order` must be `None` as specifying
-# an order that is expected to return a permuted and expanded matrix different from the canonical matrix
-# will lead to errors as `expand_matrix()` in `pennylane/operation.py`, which is used to compute the
-# permuted and expanded matrix from the canonical matrix, is hard coded to work correctly for qubits.
+ZETA = OMEGA ** (1 / 3)  # ZETA will be used as a phase for later non-parametric operations
 
 
 class TShift(Operation):
     r"""TShift(wires)
     The qutrit shift operator
+
+    The construction of this operator is based on equation 1 from
+    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
 
     .. math:: TShift = \begin{bmatrix}
                         0 & 0 & 1 \\
@@ -121,12 +119,16 @@ class TClock(Operation):
     r"""TClock(wires)
     Ternary Clock gate
 
+    The construction of this operator is based on equation 1 from
+    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
+
     .. math:: TClock = \begin{bmatrix}
                         1 & 0      & 0        \\
                         0 & \omega & 0        \\
                         0 & 0      & \omega^2
                     \end{bmatrix}
-                    \omega = \exp{2 \cdot \pi \cdot i / 3}
+
+    where :math:`\omega = e^{2 \pi i / 3}`.
 
     **Details:**
 
@@ -137,6 +139,8 @@ class TClock(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    """int: Number of wires that the operator acts on."""
+
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 

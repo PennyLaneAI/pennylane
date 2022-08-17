@@ -142,13 +142,18 @@ def expand_matrix(base_matrix, wires, wire_order=None):
 
     **Example**
 
-    If the wire order is identical to ``wires``, the original matrix gets returned:
+    If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
     >>> base_matrix = np.array([[1, 2, 3, 4],
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
     >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
@@ -184,11 +189,29 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     >>> res.requires_grad
     True
 
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
-    [[ 1  2  3  4]
-     [ 5  6  7  8]
-     [ 9 10 11 12]
-     [13 14 15 16]]
+
+    If the base matrix has odd dimensions, it is assumed to have dimensions :math:`(3^n, 3^n)`
+    for :math:`n` wires, for example:
+
+    >>> base_matrix = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
+    ...                         [0, 1, 0, 0, 0, 0, 0, 0, 0],
+    ...                         [0, 0, 1, 0, 0, 0, 0, 0, 0],
+    ...                         [0, 0, 0, 0, 0, 1, 0, 0, 0],
+    ...                         [0, 0, 0, 1, 0, 0, 0, 0, 0],
+    ...                         [0, 0, 0, 0, 1, 0, 0, 0, 0],
+    ...                         [0, 0, 0, 0, 0, 0, 0, 1, 0],
+    ...                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ...                         [0, 0, 0, 0, 0, 0, 1, 0, 0]])
+    >>> print(expand_matrix(base_matrix, wires=[0, 1], wire_order=[1, 0]))
+    [[1 0 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 1 0]
+     [0 0 0 0 0 1 0 0 0]
+     [0 0 0 1 0 0 0 0 0]
+     [0 1 0 0 0 0 0 0 0]
+     [0 0 0 0 0 0 0 0 1]
+     [0 0 0 0 0 0 1 0 0]
+     [0 0 0 0 1 0 0 0 0]
+     [0 0 1 0 0 0 0 0 0]]
 
     """
 
@@ -199,20 +222,29 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     n = len(wires)
     shape = qml.math.shape(base_matrix)
     batch_dim = shape[0] if len(shape) == 3 else None
+
+    # Hotfix for function to work with qutrit operations. If `is_odd` is `True`,
+    # `base_matrix` is assumed to be for the qutrit case. This will likely be updated
+    # in the future if/when support for higher dimension devices is added to PennyLane,
+    # in which case, the best solution would be for `expand_matrix` to accept a `dim`
+    # keyword argument that specifies the qudit dimension.
+    is_odd = (shape[1] if batch_dim else shape[0]) % 2
+    dim = 3 if is_odd else 2
+
     interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
 
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
 
     identity = qml.math.reshape(
-        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
+        qml.math.eye(dim ** len(wire_order), like=interface), [dim] * (len(wire_order) * 2)
     )
     # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
     axes = (list(range(-n, 0)), op_wire_pos)
 
     # reshape op.matrix()
     op_matrix_interface = qml.math.convert_like(base_matrix, identity)
-    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
+    shape = [batch_dim] + [dim] * (n * 2) if batch_dim else [dim] * (n * 2)
     mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
     mat_tensordot = qml.math.tensordot(
         mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
@@ -227,7 +259,9 @@ def expand_matrix(base_matrix, wires, wire_order=None):
         sources = [s + 1 for s in sources]
 
     mat = qml.math.moveaxis(mat_tensordot, sources, perm)
-    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
+    shape = (
+        [batch_dim] + [dim ** len(wire_order)] * 2 if batch_dim else [dim ** len(wire_order)] * 2
+    )
     mat = qml.math.reshape(mat, shape)
 
     return mat
@@ -1131,7 +1165,7 @@ class Operator(abc.ABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z):
+    def pow(self, z) -> List["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1170,15 +1204,12 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
-    def adjoint(self):  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
 
         Returns:
             The adjointed operation.

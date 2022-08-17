@@ -66,6 +66,7 @@ class DefaultQutrit(QutritDevice):
     observables = {
         "Identity",
         "THermitian",
+        "Hamiltonian",
     }
 
     def __init__(
@@ -175,7 +176,7 @@ class DefaultQutrit(QutritDevice):
         return self._roll(state, shift, axes[0])
 
     def _apply_tclock(self, state, axes, inverse=False):
-        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 index
+        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 indices
         along the axis specified in ``axes``
 
         Args:
@@ -245,7 +246,7 @@ class DefaultQutrit(QutritDevice):
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
             index (int): target index of axis to apply phase to
-            parameters (float): phase to apply
+            phase (float): phase to apply
             inverse (bool): whether to apply the inverse phase
 
         Returns:
@@ -254,7 +255,7 @@ class DefaultQutrit(QutritDevice):
         num_wires = len(state.shape)
         slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
 
-        phase = self._conj(parameters) if inverse else parameters
+        phase = self._conj(phase) if inverse else phase
         state_slices = [
             self._const_mul(phase if i == index else 1, state[slices[i]]) for i in range(3)
         ]
