@@ -85,7 +85,8 @@
   RX(-1, wires=[0])
   ```
 
-* Internal use of in-place inversion is eliminated in preparation of its deprecation.
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
 <h3>Breaking changes</h3>
 
