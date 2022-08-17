@@ -209,6 +209,9 @@ class TAdd(Operation):
     r"""TAdd(wires)
     The 2-qutrit controlled add gate
 
+    The construction of this operator is based on definition 7 from
+    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
+
     .. math:: TAdd = \begin{bmatrix}
                         1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
                         0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
