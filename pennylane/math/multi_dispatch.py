@@ -183,6 +183,36 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
+def array(*args, like=None, **kwargs):
+    """Creates an array or tensor object of the target framework.
+
+    This method preserves the Torch device used.
+
+    Returns:
+        tensor_like: the tensor_like object of the framework
+    """
+    res = np.array(*args, like=like, **kwargs)
+    if like is not None and get_interface(like) == "torch":
+        res = res.to(device=like.device)
+    return res
+
+
+@multi_dispatch(argnum=[0], tensor_list=[0])
+def eye(*args, like=None, **kwargs):
+    """Creates an identity array or tensor object of the target framework.
+
+    This method preserves the Torch device used.
+
+    Returns:
+        tensor_like: the tensor_like object of the framework
+    """
+    res = np.eye(*args, like=like, **kwargs)
+    if like is not None and get_interface(like) == "torch":
+        res = res.to(device=like.device)
+    return res
+
+
+@multi_dispatch(argnum=[0], tensor_list=[0])
 def block_diag(values, like=None):
     """Combine a sequence of 2D tensors to form a block diagonal tensor.
 
