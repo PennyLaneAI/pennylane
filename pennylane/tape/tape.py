@@ -444,6 +444,13 @@ class QuantumTape(AnnotatedQueue):
     def _process_queue(self):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
+
+        Sets:
+            _prep (list[~.Operation]): Preparation operations
+            _ops (list[~.Operation]): Main tape operations
+            _measurements (list[~.MeasurementProcess]): Tape measurements
+
+        Also calls `_update()` which sets many attributes.
         """
         self._prep = []
         self._ops = []
