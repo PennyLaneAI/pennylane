@@ -43,6 +43,9 @@ test_multi_dispatch_stack_data = [
 def test_array_cuda(func, dev):
     """Test that a new Torch tensor created with math.array/math.eye preserves
     the Torch device"""
+    if not torch.cuda.is_available() and dev == "cuda":
+        pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
+
     original = torch.tensor(3, device=dev)
     new = func(2, like=original)
     assert isinstance(new, torch.Tensor)
