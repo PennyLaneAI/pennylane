@@ -836,20 +836,35 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2, shots=20)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
             return qml.sample(op=prod_op)
 
         results = my_circ()
 
-        assert len(results) == 10
+        assert len(results) == 20
         # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
         assert 1 in results.astype(np.float32).tolist()
         assert -1 in results.astype(np.float32).tolist()
+
+    def test_measurement_process_counts(self):
+        """Test Prod class instance in sample measurement process."""  # currently can't support due to bug
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            return qml.counts(op=prod_op)
+
+        results = my_circ()
+
+        assert sum(results.values()) == 20
+        # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
+        assert 1 in list(results.keys())
+        assert -1 in list(results.keys())
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""

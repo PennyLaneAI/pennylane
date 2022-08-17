@@ -605,33 +605,31 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit", wires=2, shots=20)
         sprod_op = SProd(1.23, qml.PauliX(1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
             return qml.sample(op=sprod_op)
 
         results = my_circ()
 
-        assert len(results) == 10
+        assert len(results) == 20
         assert 1.23 in results.tolist()
         assert -1.23 in results.tolist()
 
     def test_measurement_process_count(self):
         """Test SProd class instance in counts measurement process."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=100)
-        sprod_op = SProd(1.23, qml.Hadamard(1))
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        sprod_op = SProd(1.23, qml.PauliX(1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
             return qml.counts(op=sprod_op)
 
         results = my_circ()
 
-        assert sum(results.values()) == 100
+        assert sum(results.values()) == 20
         assert 1.23 in list(results.keys())
         assert -1.23 in list(results.keys())
 
