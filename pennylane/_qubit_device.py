@@ -41,7 +41,6 @@ from pennylane.measurements import (
     ShadowExpval,
 )
 from pennylane.interfaces import set_shots
-from pennylane.shadows import ClassicalShadow
 
 from pennylane import Device
 from pennylane.math import sum as qmlsum
@@ -1344,7 +1343,7 @@ class QubitDevice(Device):
         """
 
         bits, recipes = self.classical_shadow(obs, circuit)
-        shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         if not isinstance(obs.H, Iterable):
             obs.H = [obs.H]
         return qml.math.squeeze(qml.math.stack([shadow.expval(h, obs.k) for h in obs.H]))

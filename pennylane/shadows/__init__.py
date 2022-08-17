@@ -14,3 +14,4 @@
 """Differentiable classical shadows module"""
 
 from .classical_shadow import *
+from .transforms import *

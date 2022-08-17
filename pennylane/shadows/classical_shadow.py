@@ -15,6 +15,8 @@
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
+from itertools import product
+from functools import reduce
 
 import pennylane.numpy as np
 import pennylane as qml
