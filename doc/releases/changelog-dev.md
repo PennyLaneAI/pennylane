@@ -27,6 +27,7 @@
 
 * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
   ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+
 * Added `qml.TShift` operation for qutrit devices, which is the qutrit analog of the Pauli X operation.
 * Added `qml.TClock` operation for qutrit devices, which is the qutrit analog of the Pauli Z operation.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
