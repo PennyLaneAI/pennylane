@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
 from collections.abc import Sequence
 import functools
 import inspect
@@ -711,6 +711,11 @@ class QNode:
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
+
+        if self._qfunc_output.return_type is qml.measurements.Shadow:
+            # if classical shadows is returned, then don't squeeze the
+            # last axis corresponding to the number of qubits
+            return qml.math.squeeze(res, axis=0)
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)
