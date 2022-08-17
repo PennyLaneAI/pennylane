@@ -14,22 +14,26 @@
 """
 This submodule defines the symbolic operation that stands for the power of an operator.
 """
+import copy
+from typing import Union
+
 from scipy.linalg import fractional_matrix_power
 
+import pennylane as qml
+from pennylane import math as qmlmath
 from pennylane.operation import (
     DecompositionUndefinedError,
-    SparseMatrixUndefinedError,
-    PowUndefinedError,
-    Operation,
     Observable,
+    Operation,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
     expand_matrix,
 )
+from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingContext, apply
 from pennylane.wires import Wires
-from pennylane import math as qmlmath
 
 from .symbolicop import SymbolicOp
-
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -112,8 +116,9 @@ class Pow(SymbolicOp):
     def __new__(cls, base=None, z=1, do_queue=True, id=None):
         """Mixes in parents based on inheritance structure of base.
 
-        Though all the types will be named "Pow", their *identity* and location in memory will be different
-        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
+        Though all the types will be named "Pow", their *identity* and location in memory will be
+        different based on ``base``'s inheritance.  We cache the different types in private class
+        variables so that:
 
         """
 
@@ -155,12 +160,23 @@ class Pow(SymbolicOp):
         """The exponent."""
         return self.hyperparameters["z"]
 
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         return self.base.label(decimals, base_label, cache=cache) + z_string
 
     def matrix(self, wire_order=None):
-        base_matrix = self.base.matrix()
+        if isinstance(self.base, qml.Hamiltonian):
+            base_matrix = qml.matrix(self.base)
+        else:
+            base_matrix = self.base.matrix()
 
         if isinstance(self.z, int):
             mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
@@ -187,7 +203,7 @@ class Pow(SymbolicOp):
             if isinstance(self.z, int) and self.z > 0:
                 if QueuingContext.recording():
                     return [apply(self.base) for _ in range(self.z)]
-                return [self.base.__copy__() for _ in range(self.z)]
+                return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
@@ -237,3 +253,17 @@ class Pow(SymbolicOp):
         See also :func:`~.generator`
         """
         return self.z * self.base.generator()
+
+    def simplify(self) -> Union["Pow", Identity]:
+        try:
+            ops = self.base.pow(z=self.z)
+            if not ops:
+                return (
+                    qml.prod(*(qml.Identity(w) for w in self.wires))
+                    if len(self.wires) > 1
+                    else qml.Identity(self.wires[0])
+                )
+            op = qml.prod(*ops) if len(ops) > 1 else ops[0]
+            return op.simplify()
+        except PowUndefinedError:
+            return Pow(base=self.base.simplify(), z=self.z)
