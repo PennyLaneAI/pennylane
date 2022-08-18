@@ -172,7 +172,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 tape._measurements[i] = new_m
 
     for queue, new_queue in [
-        (tape._prep, new_prep), (tape._ops, new_ops), (tape._measurements, new_measurements)
+        (tape._prep, new_prep),
+        (tape._ops, new_ops),
+        (tape._measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
