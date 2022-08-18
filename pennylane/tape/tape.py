@@ -90,7 +90,7 @@ def get_active_tape():
     return QueuingContext.active_context()
 
 
-def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
+def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False, iterative_call=False):
     """Expand all objects in a tape to a specific depth.
 
     Args:
