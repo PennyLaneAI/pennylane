@@ -14,9 +14,12 @@
 """
 Unit tests for the qml.is_hermitian function
 """
+from typing import List
+
 import pytest
 
 import pennylane as qml
+from pennylane.operation import Operator
 
 hermitian_ops = (
     qml.Identity(0),
@@ -70,17 +73,19 @@ class TestIsHermitian:
     """Tests for the qml.is_hermitian function."""
 
     @pytest.mark.parametrize("op", hermitian_ops)
-    def test_hermitian_ops(self, op):
+    def test_hermitian_ops(self, op: Operator):
         """Test that all the non-parametric ops are hermitian."""
         assert qml.is_hermitian(op)
+        assert op.is_hermitian
 
     @pytest.mark.parametrize("op", non_hermitian_ops)
-    def test_non_hermitian_ops(self, op):
+    def test_non_hermitian_ops(self, op: Operator):
         """Test that all the non-parametric ops are hermitian."""
         assert not qml.is_hermitian(op)
+        assert not op.is_hermitian
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
-    def test_arithmetic_ops(self, arithmetic_ops):
+    def test_arithmetic_ops(self, arithmetic_ops: List[Operator]):
         """Test that provided arithmetic op cases are non-hermitian."""
         assert not qml.is_hermitian(qml.prod(*arithmetic_ops))
         assert not qml.is_hermitian(qml.op_sum(*arithmetic_ops))
