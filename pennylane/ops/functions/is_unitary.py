@@ -34,6 +34,9 @@ def is_unitary(op: Operator):
     Returns:
         bool: True if the operation is unitary, False otherwise
 
+    .. note::
+        This check might be expensive for large operators.
+
     **Example**
 
     >>> op = qml.RX(0.54, wires=0)

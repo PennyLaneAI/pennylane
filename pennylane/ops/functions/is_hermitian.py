@@ -34,6 +34,9 @@ def is_hermitian(op: Operator):
     Returns:
         bool: True if the operation is hermitian, False otherwise
 
+    .. note::
+        This check might be expensive for large operators.
+
     **Example**
 
     >>> op = qml.PauliX(wires=0)
