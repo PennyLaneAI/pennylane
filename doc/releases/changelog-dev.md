@@ -28,7 +28,7 @@
 * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
   [#2784](https://github.com/PennyLaneAI/pennylane/pull/2784)
 
-* Added 'qml.sign_expand' tape tranforms which implements the the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 <h3>Improvements</h3>
