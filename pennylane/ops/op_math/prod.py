@@ -292,7 +292,12 @@ class Prod(Operator):
         if wire_order is None:
             wire_order = self.wires
 
-        mats = (expand_matrix(op.matrix(), op.wires, wire_order=wire_order) for op in self.factors)
+        mats = (
+            expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            if not isinstance(op, qml.Hamiltonian)
+            else expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            for op in self.factors
+        )
         return reduce(math.dot, mats)
 
     # pylint: disable=protected-access
