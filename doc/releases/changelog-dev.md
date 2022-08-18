@@ -37,9 +37,9 @@
   will return the randomized Pauli measurements (the `recipes`) that are performed
   for each qubit, identified as a unique integer:
 
-  - 0 for Pauli X
-  - 1 for Pauli Y
-  - 2 for Pauli Z
+  * 0 for Pauli X
+  * 1 for Pauli Y
+  * 2 for Pauli Z
 
   It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
   is sampled, and `1` if the -1 eigenvalue is sampled.
@@ -55,6 +55,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.classical_shadow(wires=[0, 1])
   ```
+
   ```pycon
   >>> bits, recipes = circuit()
   tensor([[0, 0],
@@ -85,7 +86,22 @@
   RX(-1, wires=[0])
   ```
 
+* Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+  ```pycon
+  >>> op = qml.PauliX(wires=0)
+  >>> qml.is_hermitian(op)
+  True
+  >>> op2 = qml.RX(0.54, wires=0)
+  >>> qml.is_hermitian(op2)
+  False
+  ```
+
 <h3>Breaking changes</h3>
+
+* Using an operator that might not be hermitian as an observable now raises a warning instead of an
+  error. [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
 <h3>Deprecations</h3>
 
@@ -101,6 +117,7 @@ Olivia Di Matteo,
 Josh Izaac,
 Edward Jiang,
 Korbinian Kottmann,
+Albert Mitjans Coma,
 Zeyue Niu,
 Mudit Pandey,
 Antal Száva
