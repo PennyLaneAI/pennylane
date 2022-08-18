@@ -85,11 +85,13 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
 
     if callable(input):
 
-        @wraps(input)
+        func = input.func if isinstance(input, QNode) else input
+
+        @wraps(func)
         def qfunc(*args, **kwargs):
             tape = QuantumTape()
             with stop_recording(), tape:
-                input(*args, **kwargs)
+                func(*args, **kwargs)
 
             _ = [qml.simplify(op) for op in tape.operations]
             return tuple(qml.simplify(m) for m in tape.measurements)
