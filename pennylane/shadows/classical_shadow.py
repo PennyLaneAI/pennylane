@@ -152,19 +152,6 @@ class ClassicalShadow:
 
         return 3 * state - np.eye(2)[None, None, :, :]
 
-    @staticmethod
-    def _obtain_global_snapshots(local_snapshot):
-        T, n = local_snapshot.shape[:2]
-
-        transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
-
-        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
-        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
-
-        return np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots).reshape(
-            T, 2**n, 2**n
-        )
-
     def global_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x 2**n x 2**n global snapshots
 
@@ -205,7 +192,6 @@ class ClassicalShadow:
             True
 
         """
-
         local_snapshot = self.local_snapshots(wires, snapshots)
 
         if local_snapshot.shape[1] > 16:
@@ -214,7 +200,17 @@ class ClassicalShadow:
                 UserWarning,
             )
 
-        return self._obtain_global_snapshots(local_snapshot)
+        T, n = local_snapshot.shape[:2]
+
+        transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
+
+        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
+        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
+
+        return np.reshape(
+            np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots),
+            (T, 2**n, 2**n),
+        )
 
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the

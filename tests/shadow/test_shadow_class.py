@@ -177,7 +177,7 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
 class TestStateReconstruction:
     """Test that the state reconstruction is correct for a variety of states"""
 
-    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("wires", [1, 3])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_hadamard_reconstruction(self, wires, interface):
         """Test that the state reconstruction is correct for a uniform
@@ -194,7 +194,7 @@ class TestStateReconstruction:
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
-    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("wires", [1, 3])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_max_entangled_reconstruction(self, wires, interface):
         """Test that the state reconstruction is correct for a maximally
@@ -212,7 +212,7 @@ class TestStateReconstruction:
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
-    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("wires", [1, 3])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_qft_reconstruction(self, wires, interface):
         """Test that the state reconstruction is correct for a QFT state"""
@@ -229,9 +229,9 @@ class TestStateReconstruction:
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
-    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("wires", [1, 3])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("snapshots", [10, 100, 1000])
+    @pytest.mark.parametrize("snapshots", [1, 100])
     def test_subset_reconstruction_integer(self, wires, interface, snapshots):
         """Test that the state reconstruction is correct for different numbers
         of used snapshots"""
@@ -242,7 +242,7 @@ class TestStateReconstruction:
         state = shadow.global_snapshots(snapshots=snapshots)
         assert state.shape == (snapshots, 2**wires, 2**wires)
 
-    @pytest.mark.parametrize("wires", [1, 2, 3, 4])
+    @pytest.mark.parametrize("wires", [1, 3])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_subset_reconstruction_iterable(self, wires, interface):
         """Test that the state reconstruction is correct for different indices
@@ -271,7 +271,8 @@ class TestStateReconstruction:
 
         with monkeypatch.context() as m:
             # don't run the actual state computation since we only want the warning
-            m.setattr(ClassicalShadow, "_obtain_global_snapshots", lambda *args, **kwargs: None)
+            m.setattr(np, "einsum", lambda *args, **kwargs: None)
+            m.setattr(np, "reshape", lambda *args, **kwargs: None)
 
             with pytest.warns(UserWarning, match=msg):
                 shadow.global_snapshots()
