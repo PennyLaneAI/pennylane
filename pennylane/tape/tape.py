@@ -227,6 +227,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False, iterativ
     new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
+
 _empty_wires = qml.wires.Wires([])
 
 # pylint: disable=too-many-public-methods
