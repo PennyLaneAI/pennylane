@@ -139,7 +139,7 @@ class TestInputs:
         "features", [[1.0, 2.0], [1.0, 2.0, 3.0, 4.0], [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]]
     )
     def test_exception_wrong_number_of_features(self, features):
-        """Verifies that an exception is raised if 'features' has the wrong shape."""
+        """Verifies that an exception is raised if 'features' has the wrong trailing dimension."""
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -148,7 +148,23 @@ class TestInputs:
             qml.IQPEmbedding(features=f, wires=range(3))
             return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-        with pytest.raises(ValueError, match="Features must be"):
+        with pytest.raises(ValueError, match="Features must be of length"):
+            circuit(f=features)
+
+    @pytest.mark.parametrize("shape", [(2, 3, 4), ()])
+    def test_exception_wrong_ndim(self, shape):
+        """Verifies that an exception is raised if 'features' has the wrong number of dimensions."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(f=None):
+            qml.IQPEmbedding(features=f, wires=range(3))
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        features = np.ones(shape)
+
+        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
 
     def test_id(self):
