@@ -136,7 +136,7 @@ class Hermitian(Observable):
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
@@ -407,7 +407,7 @@ class Projector(Observable):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -437,7 +437,7 @@ class Projector(Observable):
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 

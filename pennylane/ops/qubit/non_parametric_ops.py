@@ -81,7 +81,7 @@ class Hadamard(Observable, Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -103,7 +103,7 @@ class Hadamard(Observable, Operation):
     def compute_diagonalizing_gates(wires):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
@@ -219,7 +219,7 @@ class PauliX(Observable, Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -241,7 +241,7 @@ class PauliX(Observable, Operation):
     def compute_diagonalizing_gates(wires):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
@@ -363,7 +363,7 @@ class PauliY(Observable, Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -385,7 +385,7 @@ class PauliY(Observable, Operation):
     def compute_diagonalizing_gates(wires):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
@@ -505,7 +505,7 @@ class PauliZ(Observable, Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -527,7 +527,7 @@ class PauliZ(Observable, Operation):
     def compute_diagonalizing_gates(wires):  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
@@ -646,7 +646,7 @@ class S(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -754,7 +754,7 @@ class T(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -862,7 +862,7 @@ class SX(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -1050,7 +1050,7 @@ class CZ(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -1322,7 +1322,7 @@ class ECR(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -1439,7 +1439,7 @@ class ISWAP(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -1561,7 +1561,7 @@ class SISWAP(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 

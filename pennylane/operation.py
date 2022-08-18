@@ -677,7 +677,7 @@ class Operator(abc.ABC):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
         can be reconstructed as
 
-        .. math:: O = U \Sigma U^{\dagger},
+        .. math:: O = U^{\dagger} \Sigma U,
 
         where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
@@ -1067,7 +1067,7 @@ class Operator(abc.ABC):
     ):  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
@@ -1089,7 +1089,7 @@ class Operator(abc.ABC):
     def diagonalizing_gates(self):  # pylint:disable=no-self-use
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 

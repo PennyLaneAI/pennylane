@@ -107,7 +107,7 @@ class THermitian(Hermitian):
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U^{\dagger} \Sigma U` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
 
