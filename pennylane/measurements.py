@@ -27,6 +27,7 @@ from typing import Generic, TypeVar
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -114,7 +115,9 @@ class MeasurementProcess:
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None):
+    def __init__(
+        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+    ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
@@ -513,6 +516,17 @@ class MeasurementProcess:
             )
 
         return hash(fingerprint)
+
+    def simplify(self):
+        """Reduce the depth of the observable to the minimum.
+
+        Returns:
+            .Operator: simplified operator
+        """
+        if self.obs is None:
+            return self
+
+        return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
 
 
 class ShadowMeasurementProcess(MeasurementProcess):

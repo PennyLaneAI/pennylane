@@ -15,13 +15,18 @@
 This module contains the qml.simplify function.
 """
 from copy import copy
+from functools import wraps
+from typing import Callable, Union
 
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
+from pennylane.qnode import QNode
+from pennylane.queuing import QueuingContext
+from pennylane.tape import QuantumTape, stop_recording
 
 
-@qml.op_transform
-def simplify(op: Operator):
+def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
     """Simplifies the operator by reducing arithmetic depth or number of rotation
     parameters.
 
@@ -63,9 +68,44 @@ def simplify(op: Operator):
     Adjoint(RX)(1.5707963267948966, wires=[0]) + Adjoint(PauliX)(wires=[0])
 
     """
-    if qml.queuing.QueuingContext.recording():
-        with qml.tape.stop_recording():
-            new_op = copy(op.simplify())
-        qml.queuing.QueuingContext.safe_update_info(op, owner=new_op)
-        return qml.apply(new_op)
-    return op.simplify()
+    if isinstance(input, (Operator, MeasurementProcess)):
+        if QueuingContext.recording():
+            with stop_recording():
+                new_op = copy(input.simplify())
+            QueuingContext.safe_update_info(input, owner=new_op)
+            return qml.apply(new_op)
+        return input.simplify()
+
+    if isinstance(input, QuantumTape):
+        with QuantumTape() as new_tape:
+            for op in list(input):
+                _ = qml.simplify(op)
+
+        return new_tape
+
+    if callable(input):
+
+        @wraps(input)
+        def qfunc(*args, **kwargs):
+            tape = QuantumTape()
+            with stop_recording(), tape:
+                input(*args, **kwargs)
+
+            _ = [qml.simplify(op) for op in tape.operations]
+            return tuple(qml.simplify(m) for m in tape.measurements)
+
+        return (
+            QNode(
+                func=qfunc,
+                device=input.device,
+                interface=input.interface,
+                diff_method=input.diff_method,
+                expansion_strategy=input.expansion_strategy,
+                **input.execute_kwargs,
+                **input.gradient_kwargs,
+            )
+            if isinstance(input, QNode)
+            else qfunc
+        )
+
+    raise ValueError(f"Cannot simplify the object {input} of type {type(input)}.")
