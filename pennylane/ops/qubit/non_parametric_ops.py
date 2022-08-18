@@ -2221,6 +2221,10 @@ class MultiControlledX(Operation):
 
         return gates
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Barrier(Operation):
     r"""Barrier(wires)
