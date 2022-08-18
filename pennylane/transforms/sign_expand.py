@@ -22,15 +22,16 @@ from pennylane import numpy as np
 
 
 def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
-    r"""Controlled Evolution under generic pauli words, adapted from the decomposition of qml.PauliRot to suit our needs
+    r"""Controlled Evolution under generic pauli words, adapted from the decomposition of
+    qml.PauliRot to suit our needs
 
 
     Args:
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Iterable, Wires): the wires the operation acts on
-        ancillas (list[ancilla1, ancilla2]): The two additional ancillas to implement the Hadamard test and the
-          quantum signal processing part on
+        ancillas (list[ancilla1, ancilla2]): The two additional ancillas to implement the
+          Hadamard test and the quantum signal processing part on
 
     Returns:
         list[Operator]: decomposition that make up the controlled evolution
@@ -46,9 +47,9 @@ def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
         elif gate == "Y":
             ops.append(qml.RX(np.pi / 2, wires=[wire]))
 
-    qml.CNOT(wires=[ancillas[1], wires[0]])
+    ops.append(qml.CNOT(wires=[ancillas[1], wires[0]]))
     ops.append(MultiCRZ(theta, wires=list(active_wires), control=ancillas[0]))
-    qml.CNOT(wires=[ancillas[1], wires[0]])
+    ops.append(qml.CNOT(wires=[ancillas[1], wires[0]]))
 
     for wire, gate in zip(active_wires, active_gates):
         if gate == "X":
@@ -97,7 +98,9 @@ def evolve_under(ops, coeffs, time):
 
 def calculate_Xi_decomposition(hamiltonian):
     """
-    Calculates the Xi-decomposition from the given hamiltonian by constructing the sparse matrix representing the hamiltonian, finding its spectrum and then construct projectors and eigenvalue spacings
+    Calculates the Xi-decomposition from the given hamiltonian by constructing the sparse matrix
+    representing the hamiltonian, finding its spectrum and then construct projectors and
+    eigenvalue spacings
 
     Args:
       hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
@@ -106,7 +109,8 @@ def calculate_Xi_decomposition(hamiltonian):
       dEs (List[float]): The step separating the two eigenvalues (E_1-E-2)/2 of the spectrum
       mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
       times (List[float]): The time for this term group to be evaluated/evolved at
-      projs (List[np.array]): The analytical observables associated with these groups, to be measured by qml.Hermitian
+      projs (List[np.array]): The analytical observables associated with these groups,
+       to be measured by qml.Hermitian
     """
     mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
     size = len(mat)
@@ -140,17 +144,20 @@ def calculate_Xi_decomposition(hamiltonian):
 # pylint: disable=too-many-function-args)
 def construct_sgn_circuit(hamiltonian, tape, mus, times, phis):
     """
-    Takes a tape with state prep and ansatz and constructs the individual tapes approximating/estimating the individual terms of your decomposition
+    Takes a tape with state prep and ansatz and constructs the individual tapes
+    approximating/estimating the individual terms of your decomposition
 
     Args:
       hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
       tape (qml.QuantumTape: Tape containing the circuit to be expanded into the new circuits
       mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
       times (List[float]): The time for this term group to be evaluated/evolved at
-      phis (List[float]): Optimal phi values for the QSP part associated with the respective delta and J
+      phis (List[float]): Optimal phi values for the QSP part associated with the respective
+        delta and J
 
     Returns:
-      tapes (List[qml.tape]): Expanded tapes from the original tape that measures the terms via the approximate sgn decomposition
+      tapes (List[qml.tape]): Expanded tapes from the original tape that measures the terms
+        via the approximate sgn decomposition
     """
     coeffs = hamiltonian.data
     tapes = []
@@ -182,24 +189,26 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis):
 
 def sign_expand(tape, circuit=False, J=10, delta=0.0):
     r"""
-    Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of the Xi or sgn decomposition,
-    and provides a function to recombine the results.
+    Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
+    the Xi or sgn decomposition, and provides a function to recombine the results.
 
     Implementation of ideas from arXiv:2207.09479
 
-    For the calculation of variances, one assumes an even distribution of shots among the groups as an adaptive shot allocation onto tapes is not implemented in Pennylane yet.
+    For the calculation of variances, one assumes an even distribution of shots among the groups
+    as an adaptive shot allocation onto tapes is not implemented in Pennylane yet.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
-            of the Hamiltonian
-        circuit (bool): Toggle the calculation of the analytical Xi decomposition or if True constructs the circuits of the approximate sign decomposition
-            to measure the expectation value
-        J (int): The times the time evolution of the hamiltonian is repeated in the quantum signal processing approximation of the sgn-decomposition
+        tape (.QuantumTape): the tape used when calculating the expectation value of the Hamiltonian
+        circuit (bool): Toggle the calculation of the analytical Xi decomposition or if True
+          constructs the circuits of the approximate sign decomposition to measure the expectation
+          value
+        J (int): The times the time evolution of the hamiltonian is repeated in the quantum signal
+          processing approximation of the sgn-decomposition
         delta (float): The minimal
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to compute the expectation value.
+        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of quantum tapes
+          to be evaluated, and a function to be applied to these tape executions to compute the
+          expectation value.
 
     **Example**
 
