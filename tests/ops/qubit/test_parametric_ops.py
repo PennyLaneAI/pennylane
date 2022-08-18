@@ -2585,6 +2585,12 @@ class TestPauliRot:
         ):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
+    """def test_empty_wire_list_error(self):
+        Test that an error is raised when len(wires)==0.
+
+        with pytest.raises(ValueError, match="require valid wires"):
+            qml.PauliRot(0.5, 'X', wires=[])
+    """
     @pytest.mark.parametrize(
         "pauli_word,wires",
         [

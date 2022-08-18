@@ -853,7 +853,7 @@ class Operator(abc.ABC):
         return op_label + f"\n({param_string})"
 
     def _validate_wires(self, wires):
-        if wires == []:
+        if len(qml.wires.Wires(wires)) == 0:
             raise ValueError("require valid wires.")
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
