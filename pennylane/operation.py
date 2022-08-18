@@ -853,6 +853,7 @@ class Operator(abc.ABC):
         return op_label + f"\n({param_string})"
 
     def _validate_wires(self, wires):
+        # Raise an error is wires object is an empty list.
         if len(qml.wires.Wires(wires)) == 0:
             raise ValueError("require valid wires.")
 
@@ -895,6 +896,7 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
+        # Check that the wires is not an empty list for operators for which it is not a valid input.
         if self.num_wires in {AllWires, AnyWires}:
             if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
                 self._validate_wires(wires)
