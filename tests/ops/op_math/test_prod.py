@@ -893,7 +893,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.warns(UserWarning, match="Prod might not be an observable."):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             my_circ()
 
     def test_operation_integration(self):

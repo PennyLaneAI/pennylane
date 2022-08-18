@@ -797,7 +797,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sum_op)
 
-        with pytest.warns(UserWarning, match="Sum might not be an observable."):
+        with pytest.warns(UserWarning, match="Sum might not be hermitian."):
             my_circ()
 
 

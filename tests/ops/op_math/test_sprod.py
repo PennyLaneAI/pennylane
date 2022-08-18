@@ -676,7 +676,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sprod_op)
 
-        with pytest.warns(UserWarning, match="SProd might not be an observable."):
+        with pytest.warns(UserWarning, match="SProd might not be hermitian."):
             my_circ()
 
     @pytest.mark.torch

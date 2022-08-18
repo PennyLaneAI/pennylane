@@ -597,7 +597,7 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be an observable.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     return MeasurementProcess(Expectation, obs=op)
 
@@ -630,7 +630,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be an observable.")
+        warnings.warn(f"{op.name} might not be hermitian.")
     return MeasurementProcess(Variance, obs=op)
 
 
@@ -708,7 +708,7 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be an observable.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -792,7 +792,7 @@ def counts(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be an observable.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
