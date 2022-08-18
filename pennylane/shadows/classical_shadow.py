@@ -322,7 +322,7 @@ def median_of_means(arr, num_batches, axis=0):
         qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)
     ]
 
-    return np.median(means, axis=0)
+    return np.median(means, axis=axis)
 
 
 def pauli_expval(bits, recipes, word):
