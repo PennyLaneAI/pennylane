@@ -23,6 +23,11 @@ from pennylane.operation import Operator
 
 def is_unitary(op: Operator):
     """Check if the operation is unitary."""
-    return np.allclose(
-        qml.prod(op, qml.adjoint(op)).matrix(), np.identity(2**op.num_wires)
-    ) and np.allclose(qml.prod(qml.adjoint(op), op).matrix(), np.identity(2**op.num_wires))
+    identity_mat = np.identity(2**op.num_wires)
+    adj_op = qml.adjoint(op)
+    
+    op_prod_adjoint_matrix = qml.prod(op, adj_op).matrix()
+    if not qml.math.allclose(op_prod_adjoint_matrix, identity_mat):
+        return False
+    adj_prod_op_matrix = qml.prod(adj_op, op).matrix()
+    return qml.math.allclose(adj_prod_op_matrix , identity_mat)
