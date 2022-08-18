@@ -896,7 +896,7 @@ class Operator(abc.ABC):
             )
 
         if self.num_wires in {AllWires, AnyWires}:
-            if not isinstance(self, (qml.Barrier, qml.Snapshot)):
+            if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
                 self._validate_wires(wires)
 
         self._check_batching(params)
