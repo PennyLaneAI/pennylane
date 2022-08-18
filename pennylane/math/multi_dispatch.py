@@ -28,7 +28,9 @@ from .utils import cast, get_interface, requires_grad
 # pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
     """Creates an array or tensor object of the target framework.
+
     This method preserves the Torch device used.
+
     Returns:
         tensor_like: the tensor_like object of the framework
     """
@@ -40,7 +42,9 @@ def array(*args, like=None, **kwargs):
 
 def eye(*args, like=None, **kwargs):
     """Creates an identity array or tensor object of the target framework.
+
     This method preserves the Torch device used.
+
     Returns:
         tensor_like: the tensor_like object of the framework
     """
