@@ -852,11 +852,6 @@ class Operator(abc.ABC):
         param_string = ",\n".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
 
-    def _validate_wires(self, wires):
-        # Raise an error is wires object is an empty list.
-        if len(qml.wires.Wires(wires)) == 0:
-            raise ValueError("require valid wires.")
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
@@ -899,7 +894,8 @@ class Operator(abc.ABC):
         # Check that the wires is not an empty list for operators for which it is not a valid input.
         if self.num_wires in {AllWires, AnyWires}:
             if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
-                self._validate_wires(wires)
+                if len(qml.wires.Wires(wires)) == 0:
+                    raise ValueError("require valid wires.")
 
         self._check_batching(params)
 
