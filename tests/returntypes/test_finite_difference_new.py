@@ -14,6 +14,7 @@
 """
 Tests for the gradients.finite_difference module.
 """
+import numpy
 import pytest
 
 from pennylane import numpy as np
@@ -137,8 +138,13 @@ class TestFiniteDiff:
 
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = finite_diff_new(tape)
-        res = fn(dev.batch_execute(tapes))
-        assert res.shape == (1, 2)
+        res = fn(dev.batch_execute_new(tapes))
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert isinstance(res[1], numpy.ndarray)
 
         assert len(spy.call_args_list) == 1
 
@@ -251,7 +257,55 @@ class TestFiniteDiff:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.finite_diff_new(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 3
+
+        assert isinstance(result[0], numpy.ndarray)
+        assert result[0].shape == (4,)
+
+        assert isinstance(result[1], numpy.ndarray)
+        assert result[0].shape == (4,)
+
+        assert isinstance(result[2], numpy.ndarray)
+        assert result[0].shape == (4,)
+
+        tapes, _ = qml.gradients.finite_diff_new(circuit.tape)
+        assert tapes == []
+
+    def test_all_zero_diff_methods_multiple_returns(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return qml.probs([2, 3]), qml.expval(qml.PauliZ(wires=1))
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        result = qml.gradients.finite_diff_new(circuit)(params)
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 3
+
+        assert isinstance(result[0], tuple)
+        assert len(result[0]) == 2
+        assert result[0][0].shape == (4,)
+        assert result[0][1].shape == (1,)
+
+        assert isinstance(result[1], tuple)
+        assert len(result[1]) == 2
+        assert result[1][0].shape == (4,)
+        assert result[1][1].shape == (1,)
+
+        assert isinstance(result[2], tuple)
+        assert len(result[2]) == 2
+        assert result[2][0].shape == (4,)
+        assert result[2][1].shape == (1,)
 
         tapes, _ = qml.gradients.finite_diff_new(circuit.tape)
         assert tapes == []
@@ -284,7 +338,7 @@ class TestFiniteDiff:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        f0 = dev.execute(tape)
+        f0 = dev.execute_new(tape)
         tapes, fn = finite_diff_new(tape, approx_order=1, f0=f0)
 
         # one tape per parameter, plus one global call
@@ -306,13 +360,13 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = finite_diff_new(tape1, approx_order=1)
-        j1 = fn(dev.batch_execute(tapes))
+        j1 = fn(dev.batch_execute_new(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
         assert dev.num_executions == 2
 
-        tapes, fn = finite_diff(tape2, approx_order=1)
-        j2 = fn(dev.batch_execute(tapes))
+        tapes, fn = finite_diff_new(tape2, approx_order=1)
+        j2 = fn(dev.batch_execute_new(tapes))
 
         exp = -np.sin(1)
 
@@ -345,86 +399,13 @@ class TestFiniteDiff:
 
         def cost6(x):
             qml.Rot(*x, wires=0)
-            return [qml.probs([0, 1]), qml.probs([2, 3])]
+            return qml.probs([0, 1]), qml.probs([2, 3])
 
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.finite_diff_new(c)(x)) for c in circuits]
-        # The output shape of transforms for 2D qnode outputs (cost5 & cost6) is currently
-        # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
-        # TODO: fix qnode/expected once #2296 is resolved
-        qnode = [qml.math.shape(c(x)) + (3,) for c in circuits[:4]] + [(4, 1, 3), (4, 2, 3)]
-        expected = [(3,), (1, 3), (2, 3), (4, 3), (4, 1, 3), (4, 2, 3)]
-
-        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
-
-    def test_special_observable_qnode_differentiation(self):
-        """Test differentiation of a QNode on a device supporting a
-        special observable that returns an object rather than a number."""
-
-        class SpecialObject:
-            """SpecialObject
-
-            A special object that conveniently encapsulates the return value of
-            a special observable supported by a special device and which supports
-            multiplication with scalars and addition.
-            """
-
-            def __init__(self, val):
-                self.val = val
-
-            def __mul__(self, other):
-                return SpecialObject(self.val * other)
-
-            def __add__(self, other):
-                new = self.val + other.val if isinstance(other, self.__class__) else other
-                return SpecialObject(new)
-
-        class SpecialObservable(Observable):
-            """SpecialObservable"""
-
-            num_wires = AnyWires
-
-            def diagonalizing_gates(self):
-                """Diagonalizing gates"""
-                return []
-
-        class DeviceSupportingSpecialObservable(DefaultQubit):
-            name = "Device supporting SpecialObservable"
-            short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
-
-            @staticmethod
-            def _asarray(arr, dtype=None):
-                return arr
-
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.R_DTYPE = SpecialObservable
-
-            def expval(self, observable, **kwargs):
-                if self.analytic and isinstance(observable, SpecialObservable):
-                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
-                    return SpecialObject(val)
-
-                return super().expval(observable, **kwargs)
-
-        dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def qnode(x):
-            qml.RY(x, wires=0)
-            return qml.expval(SpecialObservable(wires=0))
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def reference_qnode(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(wires=0))
-
-        par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+        print(transform)
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
@@ -801,3 +782,70 @@ class TestFiniteDiffGradients:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rather than a number."""
+
+        class SpecialObject:
+            """SpecialObject
+
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
+
+            def __init__(self, val):
+                self.val = val
+
+            def __mul__(self, other):
+                return SpecialObject(self.val * other)
+
+            def __add__(self, other):
+                new = self.val + other.val if isinstance(other, self.__class__) else other
+                return SpecialObject(new)
+
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
+
+            num_wires = AnyWires
+
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
+
+        class DeviceSupportingSpecialObservable(DefaultQubit):
+            name = "Device supporting SpecialObservable"
+            short_name = "default.qubit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
+
+            @staticmethod
+            def _asarray(arr, dtype=None):
+                return arr
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.R_DTYPE = SpecialObservable
+
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
+
+                return super().expval(observable, **kwargs)
+
+        dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        par = np.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))

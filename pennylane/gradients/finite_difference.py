@@ -488,7 +488,23 @@ def finite_diff_new(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        output_dims = []
+        for m in tape.measurements:
+            if m.return_type is qml.measurements.Probability:
+                output_dims.append(2 ** len(m.wires))
+            else:
+                output_dims.append(1)
+        list_zeros = []
+
+        for i, _ in enumerate(tape.trainable_params):
+            if len(output_dims) > 1:
+                sub_list = []
+                for j in output_dims:
+                    sub_list.append(np.zeros(j))
+                list_zeros.append(tuple(sub_list))
+            else:
+                list_zeros.append(np.zeros(output_dims[0]))
+        return [], lambda _: tuple(list_zeros)
 
     gradient_tapes = []
     shapes = []
@@ -542,29 +558,35 @@ def finite_diff_new(
             # First compute the multiplication with coeff
             l = []
             for i, c in enumerate(coeffs):
-                elem = [c * r for r in res[i]]
+                if isinstance(res[i], (tuple, list)):
+                    elem = [r * c for r in res[i]]
+                else:
+                    elem = [res[i] * c]
                 l.append(elem)
-            print(l)
             # Second add all the term for each measurement separately
             g = []
+
             for i in range(0, len(tape.measurements)):
                 elem = sum([r[i] for r in l])
                 g.append(elem)
-            print(g)
+
             # Add on the unshifted term
             if c0 is not None:
                 # unshifted term
-                c0r0 = [c0 * r for r in r0]
+                if isinstance(r0, (tuple, list)):
+                    c0r0 = [c0 * r for r in r0]
+                else:
+                    c0r0 = [c0 * r0]
                 g = [i + j for i, j in zip(g, c0r0)]
 
             if len(g) > 1:
-                grads.append(tuple(i / (h**n) for i in g))
+                grads.append(tuple(np.array(i / (h**n)) for i in g))
             else:
-                grads.append(g[0] / (h**n))
+                grads.append(np.array(g[0] / (h**n)))
 
-        if len(tape.measurements) > 1:
+        if len(tape.trainable_params) > 1:
             return tuple(grads)
 
-        return grads
+        return grads[0]
 
     return gradient_tapes, processing_fn
