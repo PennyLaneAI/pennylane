@@ -126,6 +126,7 @@ class TestIntegrationShadows:
 
         state = np.sum(global_snapshots, axis=0) / shadow.snapshots
         assert qml.math.allclose(state, 0.5 * np.eye(2), atol=1e-1)
+        assert np.all(local_snapshots[:, 0] == global_snapshots)
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
