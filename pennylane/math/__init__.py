@@ -36,11 +36,13 @@ import autoray as ar
 from .multi_dispatch import (
     _multi_dispatch,
     multi_dispatch,
+    array,
     block_diag,
     concatenate,
     diag,
     dot,
     einsum,
+    eye,
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
@@ -76,6 +78,7 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+
 # small constant for numerical stability that the user can modify
 eps = 1e-14
 
@@ -89,6 +92,7 @@ __all__ = [
     "multi_dispatch",
     "allclose",
     "allequal",
+    "array",
     "block_diag",
     "cast",
     "cast_like",
@@ -98,6 +102,7 @@ __all__ = [
     "diag",
     "dot",
     "einsum",
+    "eye",
     "fidelity",
     "frobenius_inner_product",
     "get_interface",
