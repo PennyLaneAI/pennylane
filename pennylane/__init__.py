@@ -56,6 +56,7 @@ from pennylane.measurements import (
     var,
     vn_entropy,
     mutual_info,
+    classical_shadow,
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod

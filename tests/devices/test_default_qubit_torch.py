@@ -14,13 +14,10 @@
 """
 Unit tests and integration tests for the ``default.qubit.torch`` device.
 """
-from itertools import product
+import math
 
 import numpy as np
 import pytest
-from pennylane import math
-import math
-import functools
 
 pytestmark = pytest.mark.gpu
 
@@ -32,48 +29,46 @@ if torch.cuda.is_available():
     torch_devices.append("cuda")
 
 
-import pennylane as qml
-from pennylane import numpy as pnp
-from pennylane import DeviceError
-from pennylane.wires import Wires
-from pennylane.devices.default_qubit_torch import DefaultQubitTorch
 from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    S,
-    T,
     CNOT,
+    CSWAP,
     CZ,
     SWAP,
-    CNOT,
-    Toffoli,
-    CSWAP,
-    Rphi,
-    Rotx,
-    Roty,
-    Rotz,
-    Rot3,
+    ControlledPhaseShift,
+    CRot3,
     CRotx,
     CRoty,
     CRotz,
-    CRot3,
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    H,
     IsingXX,
     IsingYY,
     IsingZZ,
     MultiRZ1,
     MultiRZ2,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
     OrbitalRotation,
+    Rot3,
+    Rotx,
+    Roty,
+    Rotz,
+    Rphi,
+    S,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+    T,
+    Toffoli,
+    X,
+    Y,
+    Z,
 )
+
+import pennylane as qml
+from pennylane import DeviceError
+from pennylane import numpy as pnp
+from pennylane.devices.default_qubit_torch import DefaultQubitTorch
 
 np.random.seed(42)
 
@@ -740,7 +735,9 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor([func(t) for t in theta], dtype=torch.complex128, device=torch_device)
+        op_mat = torch.tensor(
+            np.array([func(t) for t in theta]), dtype=torch.complex128, device=torch_device
+        )
         expected = qml.math.einsum("lij,j->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -759,7 +756,9 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor([func(t) for t in theta], dtype=torch.complex128, device=torch_device)
+        op_mat = torch.tensor(
+            np.array([func(t) for t in theta]), dtype=torch.complex128, device=torch_device
+        )
         expected = qml.math.einsum("lij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1141,10 +1140,10 @@ class TestExpval:
 
         dev = device(wires=2, torch_device=torch_device)
 
-        par1 = theta.to(device=torch_device)
-        par2 = phi.to(device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
         with qml.tape.QuantumTape() as tape:
-            queue = [qml.RY(par1, wires=0), qml.RY(par2, wires=1), qml.CNOT(wires=[0, 1])]
+            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(Hermit_mat2, wires=[0, 1]))]
 
         res = dev.execute(tape)
@@ -1165,6 +1164,9 @@ class TestExpval:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = device(wires=3, torch_device=torch_device)
         dev.reset()
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -1189,6 +1191,8 @@ class TestExpval:
         """Test that a tensor product involving PauliZ and Identity works correctly"""
         dev = device(wires=3, torch_device=torch_device)
         dev.reset()
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
 
         obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
 
@@ -1212,6 +1216,10 @@ class TestExpval:
     def test_pauliz_hadamard(self, device, torch_device, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = device(wires=3, torch_device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
+
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
         dev.reset()
@@ -1238,6 +1246,9 @@ class TestExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = device(wires=3, torch_device=torch_device)
         dev.reset()
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
 
         Hermit_mat3 = torch.tensor(
             [
@@ -1277,6 +1288,10 @@ class TestExpval:
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = device(wires=3, torch_device=torch_device)
 
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
+
         A1 = torch.tensor([[1, 2], [2, 4]], dtype=torch.complex128)
 
         A2 = torch.tensor(
@@ -1288,6 +1303,8 @@ class TestExpval:
             ],
             dtype=torch.complex128,
         )
+        A1 = A1.to(device=torch_device)
+        A2 = A2.to(device=torch_device)
 
         obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
 
@@ -1333,10 +1350,14 @@ class TestExpval:
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = device(wires=2, torch_device=torch_device)
 
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+
         A = torch.tensor(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
         )
+        A = A.to(device=torch_device)
 
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
 
@@ -1361,12 +1382,18 @@ class TestExpval:
     ):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = device(wires=3, torch_device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
 
         A = torch.tensor(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
         )
+        A = A.to(device=torch_device)
+
         Identity = torch.tensor([[1, 0], [0, 1]])
+        Identity = Identity.to(device=torch_device)
+
         H = torch.kron(torch.kron(Identity, Identity), A)
         obs = qml.Hermitian(H, wires=[2, 1, 0])
 
@@ -1402,12 +1429,12 @@ class TestVar:
         """Tests for variance calculation"""
         dev = device(wires=1, torch_device=torch_device)
 
-        par1 = theta.to(device=torch_device)
-        par2 = phi.to(device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
 
         # test correct variance for <Z> of a rotated state
         with qml.tape.QuantumTape() as tape:
-            queue = [qml.RX(par1, wires=0), qml.RY(par2, wires=0)]
+            queue = [qml.RX(theta, wires=0), qml.RY(phi, wires=0)]
             observables = [qml.var(qml.PauliZ(wires=[0]))]
 
         res = dev.execute(tape)
@@ -1752,6 +1779,7 @@ class TestQNodeIntegration:
 
         # Pass a Torch Variable to the qfunc
         params = torch.tensor([theta], device=torch_device)
+        params = params.to(device=torch_device)
         circuit(params)
         res = dev.state
         expected = torch.tensor(func(theta), dtype=torch.complex128, device=torch_device) @ state
@@ -2537,5 +2565,20 @@ class TestHighLevelIntegration:
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The number of shots has to be explicitly set on the device",
+        ):
+            res = circuit()
+
+    def test_sampling_analytic_mode_with_counts(self, torch_device):
+        """Test that when sampling with counts and shots=None an error is raised."""
+        dev = qml.device("default.qubit.torch", wires=1, shots=None, torch_device=torch_device)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit():
+            return qml.counts(qml.PauliZ(wires=0))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The number of shots has to be explicitly set on the device "
+            "when using sample-based measurements.",
         ):
             res = circuit()

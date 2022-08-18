@@ -124,10 +124,11 @@ class Prod(Operator):
                 qml.prod(qml.PauliZ(0), qml.RX(theta, 1))
                 return qml.expval(qml.PauliZ(1))
 
-        >>> circuit(1.23)
+        >>> par = np.array(1.23, requires_grad=True)
+        >>> circuit(par)
         tensor(0.33423773, requires_grad=True)
-        >>> qml.grad(circuit)(1.23)
-        -0.9424888019316975
+        >>> qml.grad(circuit)(par)
+        tensor(-0.9424888, requires_grad=True)
 
         The Prod operation can also be measured as an observable.
         If the circuit is parameterized, then we can also differentiate through the
@@ -143,9 +144,9 @@ class Prod(Operator):
                 qml.RX(weights[0], wires=0)
                 return qml.expval(prod_op)
 
-        >>> weights = qnp.array([0.1], requires_grad=True)
+        >>> weights = np.array([0.1], requires_grad=True)
         >>> qml.grad(circuit)(weights)
-        tensor([-0.07059288589999416], requires_grad=True)
+        array([-0.07059289])
     """
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
@@ -291,7 +292,12 @@ class Prod(Operator):
         if wire_order is None:
             wire_order = self.wires
 
-        mats = (expand_matrix(op.matrix(), op.wires, wire_order=wire_order) for op in self.factors)
+        mats = (
+            expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            if not isinstance(op, qml.Hamiltonian)
+            else expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            for op in self.factors
+        )
         return reduce(math.dot, mats)
 
     # pylint: disable=protected-access
