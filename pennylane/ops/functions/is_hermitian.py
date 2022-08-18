@@ -22,7 +22,27 @@ from pennylane.operation import Operator
 
 
 def is_hermitian(op: Operator):
-    """Check if the operation is hermitian."""
+    """Check if the operation is hermitian.
+
+    A hermitian matrix is a complex square matrix that is equal to its own
+
+    .. math:: O† = O
+
+    Args:
+        op (~.operation.Operator): the operator to check against
+
+    Returns:
+        bool: True if the operation is hermitian, False otherwise
+
+    **Example**
+
+    >>> op = qml.PauliX(wires=0)
+    >>> qml.is_hermitian(op)
+    True
+    >>> op2 = qml.RX(0.54, wires=0)
+    >>> qml.is_hermitian(op2)
+    False
+    """
     if op.is_hermitian is True:
         return True
     return np.allclose(op.matrix(), qml.adjoint(op).matrix())

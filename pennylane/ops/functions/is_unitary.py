@@ -22,12 +22,28 @@ from pennylane.operation import Operator
 
 
 def is_unitary(op: Operator):
-    """Check if the operation is unitary."""
+    """Check if the operation is unitary.
+
+    A matrix is unitary if its adjoint is also its inverse, that is, if
+
+    .. math:: O†O = OO† = I
+
+    Args:
+        op (~.operation.Operator): the operator to check against
+
+    Returns:
+        bool: True if the operation is unitary, False otherwise
+
+    **Example**
+
+    >>> op = qml.RX(0.54, wires=0)
+    >>> qml.is_unitary(op)
+    True
+    >>> op2 = op + op
+    >>> qml.is_unitary(op2)
+    False
+    """
     identity_mat = np.identity(2**op.num_wires)
     adj_op = qml.adjoint(op)
-    
     op_prod_adjoint_matrix = qml.prod(op, adj_op).matrix()
-    if not qml.math.allclose(op_prod_adjoint_matrix, identity_mat):
-        return False
-    adj_prod_op_matrix = qml.prod(adj_op, op).matrix()
-    return qml.math.allclose(adj_prod_op_matrix , identity_mat)
+    return bool(qml.math.allclose(op_prod_adjoint_matrix, identity_mat))
