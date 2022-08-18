@@ -523,8 +523,6 @@ def finite_diff_new(
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
-        print(results)
-        print(shapes)
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -539,7 +537,6 @@ def finite_diff_new(
 
             res = results[start : start + s]
             start = start + s
-
             # compute the linear combination of results and coefficients
 
             # First compute the multiplication with coeff
@@ -547,21 +544,27 @@ def finite_diff_new(
             for i, c in enumerate(coeffs):
                 elem = [c * r for r in res[i]]
                 l.append(elem)
-
+            print(l)
             # Second add all the term for each measurement separately
             g = []
             for i in range(0, len(tape.measurements)):
                 elem = sum([r[i] for r in l])
                 g.append(elem)
-
+            print(g)
             # Add on the unshifted term
             if c0 is not None:
                 # unshifted term
                 c0r0 = [c0 * r for r in r0]
                 g = [i + j for i, j in zip(g, c0r0)]
 
-            grads.append(tuple(i / (h**n) for i in g))
+            if len(g) > 1:
+                grads.append(tuple(i / (h**n) for i in g))
+            else:
+                grads.append(g[0] / (h**n))
 
-        return tuple(grads)
+        if len(tape.measurements) > 1:
+            return tuple(grads)
+
+        return grads
 
     return gradient_tapes, processing_fn
