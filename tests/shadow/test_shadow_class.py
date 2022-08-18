@@ -172,18 +172,15 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-# marked slow because state reconstruction for high number of qubits is slow
-@pytest.mark.slow
-@pytest.mark.all_interfaces
+@pytest.mark.autograd
 class TestStateReconstruction:
     """Test that the state reconstruction is correct for a variety of states"""
 
     @pytest.mark.parametrize("wires", [1, 3])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_hadamard_reconstruction(self, wires, interface):
+    def test_hadamard_reconstruction(self, wires):
         """Test that the state reconstruction is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(wires, interface=interface)
+        circuit = hadamard_circuit(wires)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -196,11 +193,10 @@ class TestStateReconstruction:
         assert qml.math.allclose(state, expected, atol=1e-1)
 
     @pytest.mark.parametrize("wires", [1, 3])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_max_entangled_reconstruction(self, wires, interface):
+    def test_max_entangled_reconstruction(self, wires):
         """Test that the state reconstruction is correct for a maximally
         entangled state"""
-        circuit = max_entangled_circuit(wires, interface=interface)
+        circuit = max_entangled_circuit(wires)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -214,29 +210,11 @@ class TestStateReconstruction:
         assert qml.math.allclose(state, expected, atol=1e-1)
 
     @pytest.mark.parametrize("wires", [1, 3])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_qft_reconstruction(self, wires, interface):
-        """Test that the state reconstruction is correct for a QFT state"""
-        circuit = qft_circuit(wires, interface=interface)
-        bits, recipes = circuit()
-        shadow = ClassicalShadow(bits, recipes)
-
-        state = shadow.global_snapshots()
-        assert state.shape == (10000, 2**wires, 2**wires)
-
-        state = np.mean(state, axis=0)
-        expected = np.exp(np.arange(2**wires) * 2j * np.pi / (2**wires)) / (2 ** (wires / 2))
-        expected = np.outer(expected, np.conj(expected))
-
-        assert qml.math.allclose(state, expected, atol=1e-1)
-
-    @pytest.mark.parametrize("wires", [1, 3])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("snapshots", [1, 100])
-    def test_subset_reconstruction_integer(self, wires, interface, snapshots):
+    def test_subset_reconstruction_integer(self, wires, snapshots):
         """Test that the state reconstruction is correct for different numbers
         of used snapshots"""
-        circuit = hadamard_circuit(wires, interface=interface)
+        circuit = hadamard_circuit(wires)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -244,11 +222,10 @@ class TestStateReconstruction:
         assert state.shape == (snapshots, 2**wires, 2**wires)
 
     @pytest.mark.parametrize("wires", [1, 3])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_subset_reconstruction_iterable(self, wires, interface):
+    def test_subset_reconstruction_iterable(self, wires):
         """Test that the state reconstruction is correct for different indices
         of considered snapshots"""
-        circuit = hadamard_circuit(wires, interface=interface)
+        circuit = hadamard_circuit(wires)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
@@ -280,84 +257,73 @@ class TestStateReconstruction:
 
 
 @pytest.mark.all_interfaces
+class TestStateReconstructionInterfaces:
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_qft_reconstruction(self, interface):
+        """Test that the state reconstruction is correct for a QFT state"""
+        circuit = qft_circuit(3, interface=interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        state = shadow.global_snapshots()
+        assert state.shape == (10000, 8, 8)
+
+        state = np.mean(state, axis=0)
+        expected = np.exp(np.arange(8) * 2j * np.pi / 8) / np.sqrt(8)
+        expected = np.outer(expected, np.conj(expected))
+
+        assert qml.math.allclose(state, expected, atol=1e-1)
+
+
+@pytest.mark.autograd
 class TestExpvalEstimation:
     """Test that the expval estimation is correct for a variety of observables"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliX(1), 1),
-            (qml.PauliX(0) @ qml.PauliX(2), 1),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), 1),
-            (qml.PauliY(2), 0),
-            (qml.PauliY(1) @ qml.PauliZ(2), 0),
-            (qml.PauliX(0) @ qml.PauliY(1), 0),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
-        ],
-    )
-    def test_hadamard_expval(self, interface, obs, expected):
+    def test_hadamard_expval(self):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(3, shots=100000, interface=interface)
+        circuit = hadamard_circuit(3, shots=100000)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
+        obs = [
+            qml.PauliX(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+            qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
+            qml.PauliY(2),
+            qml.PauliY(1) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
+        ]
+        expected = [1, 1, 1, 0, 0, 0, 0]
+
         actual = shadow.expval(obs, k=10)
-        assert actual.shape == ()
+        assert actual.shape == (7,)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliX(1), 0),
-            (qml.PauliX(0) @ qml.PauliX(2), 0),
-            (qml.PauliZ(2), 0),
-            (qml.Identity(1) @ qml.PauliZ(2), 0),
-            (qml.PauliZ(1) @ qml.PauliZ(2), 1),
-            (qml.PauliX(0) @ qml.PauliY(1), 0),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2), 0),
-            (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2), -1),
-        ],
-    )
-    def test_max_entangled_expval(self, interface, obs, expected):
+    def test_max_entangled_expval(self):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
-        circuit = max_entangled_circuit(3, shots=100000, interface=interface)
+        circuit = max_entangled_circuit(3, shots=100000)
         bits, recipes = circuit()
         shadow = ClassicalShadow(bits, recipes)
 
-        actual = shadow.expval(obs, k=10)
-        assert actual.shape == ()
-        assert actual.dtype == np.float64
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        obs = [
+            qml.PauliX(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+            qml.PauliZ(2),
+            qml.Identity(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.PauliY(1),
+            qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
+            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2),
+        ]
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliX(0), -1),
-            (qml.PauliX(0) @ qml.PauliX(1), 0),
-            (qml.PauliX(0) @ qml.PauliX(2), -1 / np.sqrt(2)),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2), -1 / np.sqrt(2)),
-            (qml.PauliZ(2), 0),
-            (qml.PauliX(1) @ qml.PauliY(2), 0),
-            (qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
-            (qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2), 1 / np.sqrt(2)),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2), -1 / np.sqrt(2)),
-            (qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2), 0),
-        ],
-    )
-    def test_qft_expval(self, interface, obs, expected):
-        """Test that the expval estimation is correct for a QFT state"""
-        circuit = qft_circuit(3, shots=100000, interface=interface)
-        bits, recipes = circuit()
-        shadow = ClassicalShadow(bits, recipes)
+        expected = [0, 0, 0, 0, 1, 0, 0, -1]
 
         actual = shadow.expval(obs, k=10)
-        assert actual.shape == ()
+        assert actual.shape == (8,)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -372,6 +338,47 @@ class TestExpvalEstimation:
         msg = "Observable must be a linear combination of Pauli observables"
         with pytest.raises(ValueError, match=msg):
             shadow.expval(H, k=10)
+
+
+@pytest.mark.all_interfaces
+class TestExpvalEstimationInterfaces:
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_qft_expval(self, interface):
+        """Test that the expval estimation is correct for a QFT state"""
+        circuit = qft_circuit(3, shots=100000, interface=interface)
+        bits, recipes = circuit()
+        shadow = ClassicalShadow(bits, recipes)
+
+        obs = [
+            qml.PauliX(0),
+            qml.PauliX(0) @ qml.PauliX(1),
+            qml.PauliX(0) @ qml.PauliX(2),
+            qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
+            qml.PauliZ(2),
+            qml.PauliX(1) @ qml.PauliY(2),
+            qml.PauliY(1) @ qml.PauliX(2),
+            qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2),
+            qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2),
+            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2),
+        ]
+
+        expected = [
+            -1,
+            0,
+            -1 / np.sqrt(2),
+            -1 / np.sqrt(2),
+            0,
+            0,
+            1 / np.sqrt(2),
+            1 / np.sqrt(2),
+            -1 / np.sqrt(2),
+            0,
+        ]
+
+        actual = shadow.expval(obs, k=10)
+        assert actual.shape == (10,)
+        assert actual.dtype == np.float64
+        assert qml.math.allclose(actual, expected, atol=1e-1)
 
 
 def convert_to_interface(arr, interface):

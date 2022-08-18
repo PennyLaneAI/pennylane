@@ -289,14 +289,23 @@ class ClassicalShadow:
         >>> shadow.expval(H, k=1)
         (2.2319999999999998+0j)
         """
-        coeffs_and_words = self._convert_to_pauli_words(H)
+        if not isinstance(H, Iterable):
+            H = [H]
 
+        coeffs_and_words = [self._convert_to_pauli_words(h) for h in H]
         expvals = pauli_expval(
-            self.bits, self.recipes, np.array([word for _, word in coeffs_and_words])
+            self.bits, self.recipes, np.array([word for cw in coeffs_and_words for _, word in cw])
         )
         expvals = median_of_means(expvals, k, axis=0)
+        expvals = expvals * np.array([coeff for cw in coeffs_and_words for coeff, _ in cw])
 
-        return np.dot(expvals, np.array([coeff for coeff, _ in coeffs_and_words]))
+        start = 0
+        results = []
+        for i in range(len(H)):
+            results.append(np.sum(expvals[start : start + len(coeffs_and_words[i])]))
+            start += len(coeffs_and_words[i])
+
+        return qml.math.squeeze(results)
 
 
 # Util functions
