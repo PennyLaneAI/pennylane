@@ -16,6 +16,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 import json
 from os import path
 import pennylane as qml
+from .batch_transform import batch_transform
 from pennylane import numpy as np
 
 # TODO: This part up here (ControlledPauliEvolution and MultiCRZ) probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
@@ -48,7 +49,7 @@ def ControlledPauliEvolution(theta, wires, pauli_word, ancillas):
             ops.append(qml.RX(np.pi / 2, wires=[wire]))
 
     ops.append(qml.CNOT(wires=[ancillas[1], wires[0]]))
-    ops.append(MultiCRZ(theta, wires=list(active_wires), control=ancillas[0]))
+    ops.extend(MultiCRZ(theta, wires=list(active_wires), control=ancillas[0]))
     ops.append(qml.CNOT(wires=[ancillas[1], wires[0]]))
 
     for wire, gate in zip(active_wires, active_gates):
@@ -186,7 +187,7 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis):
         tapes.append(new_tape)
     return tapes
 
-
+@batch_transform
 def sign_expand(tape, circuit=False, J=10, delta=0.0):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
