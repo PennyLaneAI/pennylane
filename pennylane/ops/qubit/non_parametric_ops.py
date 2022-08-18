@@ -580,7 +580,7 @@ class PauliZ(Observable, Operation):
         if z_mod2 == 0:
             return []
         if z_mod2 == 1:
-            return [copy.copy(self)]
+            return [copy(self)]
 
         if abs(z_mod2 - 0.5) < 1e-6:
             return [S(wires=self.wires)]
@@ -693,7 +693,7 @@ class S(Operation):
         pow_map = {
             0: lambda op: [],
             0.5: lambda op: [T(wires=op.wires)],
-            1: lambda op: [copy.copy(op)],
+            1: lambda op: [copy(op)],
             2: lambda op: [PauliZ(wires=op.wires)],
         }
         return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
@@ -800,7 +800,7 @@ class T(Operation):
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
-            1: lambda op: [copy.copy(op)],
+            1: lambda op: [copy(op)],
             2: lambda op: [S(wires=op.wires)],
             4: lambda op: [PauliZ(wires=op.wires)],
         }
@@ -2257,7 +2257,7 @@ class Barrier(Operation):
         return Barrier(wires=self.wires)
 
     def pow(self, z):
-        return [copy.copy(self)]
+        return [copy(self)]
 
 
 class WireCut(Operation):
@@ -2316,4 +2316,4 @@ class WireCut(Operation):
         return WireCut(wires=self.wires)
 
     def pow(self, z):
-        return [copy.copy(self)]
+        return [copy(self)]
