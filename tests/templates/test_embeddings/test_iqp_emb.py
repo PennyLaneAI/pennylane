@@ -66,7 +66,7 @@ class TestDecomposition:
             assert gate.wires.labels == tuple(expected_wires[i])
             if gate.name == "RZ":
                 assert gate.batch_size == 3
-                assert gate.data[0] == features[:, j]
+                assert np.allclose(gate.data[0], features[:, j])
                 j += 1
 
     def test_repeat(self):

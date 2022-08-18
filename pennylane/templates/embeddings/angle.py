@@ -126,6 +126,6 @@ class AngleEmbedding(Operation):
         batched = qml.math.ndim(features) > 1
         # We will iterate over the first axis of `features` together with iterating over the wires.
         # If the leading dimension is a batch dimension, exchange the wire and batching axes.
-        features = features.T if batched else features
+        features = qml.math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]

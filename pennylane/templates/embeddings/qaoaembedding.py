@@ -256,7 +256,7 @@ class QAOAEmbedding(Operation):
         if qml.math.ndim(features) > 1:
             # If the features are broadcasted, move the broadcasting axis to the last place
             # in order to propagate broadcasted parameters to the gates in the decomposition.
-            features = features.T
+            features = qml.math.T(features)
         if qml.math.ndim(weights) > 2:
             # If the weights are broadcasted, move the broadcasting axis to the last place
             weights = qml.math.moveaxis(weights, 0, -1)

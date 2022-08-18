@@ -234,7 +234,7 @@ class IQPEmbedding(Operation):
         if qml.math.ndim(features) > 1:
             # If broadcasting is used, we want to iterate over the wires axis of the features,
             # not over the broadcasting dimension. The latter is passed on to the rotations.
-            features = features.T
+            features = qml.math.T(features)
 
         for _ in range(n_repeats):
 
