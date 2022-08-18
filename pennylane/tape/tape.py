@@ -330,7 +330,6 @@ class QuantumTape(AnnotatedQueue):
         self._trainable_params = []
         self._graph = None
         self._specs = None
-        self._depth = None
         self._output_dim = 0
         self._batch_size = None
         self._qfunc_output = None
@@ -490,6 +489,60 @@ class QuantumTape(AnnotatedQueue):
         self.is_sampled = any(is_sample_type)
         self.all_sampled = all(is_sample_type)
 
+    def _update_par_info(self):
+        """Update the parameter information dictionary.
+
+        Sets:
+            _par_info (dict): Parameter information dictionary
+        """
+        param_count = 0
+
+        for obj in self.operations + self.observables:
+
+            for p in range(len(obj.data)):
+                info = self._par_info.get(param_count, {})
+                info.update({"op": obj, "p_idx": p})
+
+                self._par_info[param_count] = info
+                param_count += 1
+
+    def _update_trainable_params(self):
+        """Set the trainable parameters
+
+        Sets:
+            _trainable_params (list[int]): Tape parameter indices of trainable parameters
+
+        self._par_info.keys() is assumed to be sorted and up to date when calling
+        this method. This assumes that self._par_info was created in a sorted manner,
+        as in _update_par_info.
+
+        Call `_update_par_info` before `_update_trainable_params`
+        """
+        self._trainable_params = list(self._par_info)
+
+    def _update_observables(self):
+        """Update information about observables, including the wires that are acted upon and
+        identifying any observables that share wires.
+
+        Sets:
+            _obs_sharing_wires (list[~.Observable]): Observables that share wires with
+                any other observable
+            _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
+                the observables in _obs_sharing_wires
+        """
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        self._obs_sharing_wires = []
+        self._obs_sharing_wires_id = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
+                    self._obs_sharing_wires.append(m.obs)
+                    self._obs_sharing_wires_id.append(i)
+
     def _update_batch_size(self):
         """Infer the batch_size of the tape from the batch sizes of its operations
         and check the latter for consistency.
@@ -518,6 +571,10 @@ class QuantumTape(AnnotatedQueue):
 
         Sets:
             self._output_dim (int): Size of the tape output (when flattened)
+
+        This method makes use of `self.batch_size`, so that `self._batch_size`
+        needs to be up to date when calling it.
+        Call `_update_batch_size` before `_update_output_dim`
         """
         self._output_dim = 0
         for m in self.measurements:
@@ -531,68 +588,20 @@ class QuantumTape(AnnotatedQueue):
         if self.batch_size:
             self._output_dim *= self.batch_size
 
-    def _update_observables(self):
-        """Update information about observables, including the wires that are acted upon and
-        identifying any observables that share wires.
-
-        Sets:
-            _obs_sharing_wires (list[~.Observable]): Observables that share wires with
-                any other observable
-            _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
-                the observables in _obs_sharing_wires
-        """
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
-        self._obs_sharing_wires = []
-        self._obs_sharing_wires_id = []
-
-        if len(obs_wires) != len(set(obs_wires)):
-            c = Counter(obs_wires)
-            repeated_wires = {w for w in obs_wires if c[w] > 1}
-
-            for i, m in enumerate(self.measurements):
-                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
-                    self._obs_sharing_wires.append(m.obs)
-                    self._obs_sharing_wires_id.append(i)
-
-    def _update_par_info(self):
-        """Update the parameter information dictionary.
-
-        Sets:
-            _par_info (dict): Parameter information dictionary
-        """
-        param_count = 0
-
-        for obj in self.operations + self.observables:
-
-            for p in range(len(obj.data)):
-                info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p})
-
-                self._par_info[param_count] = info
-                param_count += 1
-
-    def _update_trainable_params(self):
-        """Set the trainable parameters
-
-        Sets:
-            _trainable_params (list[int]): Tape parameter indices of trainable parameters
-
-        self._par_info.keys() is assumed to be sorted
-        As its order is maintained, this assumes that self._par_info
-        is created in a sorted manner, as in _update_par_info
-        """
-        self._trainable_params = list(self._par_info)
-
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._depth = None
         self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
         self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
+
+        # The following line requires _par_info to be up to date
         self._update_trainable_params()  # Updates the _trainable_params; O(1)
+
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
         self._update_batch_size()  # Updates _batch_size; O(ops)
+
+        # The following line requires _batch_size to be up to date
         self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
@@ -1589,9 +1598,8 @@ class QuantumTape(AnnotatedQueue):
             tape._ops = self._ops.copy()
             tape._measurements = self._measurements.copy()
 
-        tape._graph = self._graph
-        tape._specs = self._specs
-        tape._depth = self._depth
+        tape._graph = None
+        tape._specs = None
         tape.wires = copy.copy(self.wires)
         tape.num_wires = self.num_wires
         tape.is_sampled = self.is_sampled
