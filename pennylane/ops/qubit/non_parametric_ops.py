@@ -18,6 +18,7 @@ not depend on any parameters.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
 import warnings
+from copy import copy
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -580,7 +581,7 @@ class PauliZ(Observable, Operation):
         if z_mod2 == 0:
             return []
         if z_mod2 == 1:
-            return [self.__copy__()]
+            return [copy(self)]
 
         if abs(z_mod2 - 0.5) < 1e-6:
             return [S(wires=self.wires)]
@@ -693,7 +694,7 @@ class S(Operation):
         pow_map = {
             0: lambda op: [],
             0.5: lambda op: [T(wires=op.wires)],
-            1: lambda op: [op.__copy__()],
+            1: lambda op: [copy(op)],
             2: lambda op: [PauliZ(wires=op.wires)],
         }
         return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
@@ -800,7 +801,7 @@ class T(Operation):
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
-            1: lambda op: [op.__copy__()],
+            1: lambda op: [copy(op)],
             2: lambda op: [S(wires=op.wires)],
             4: lambda op: [PauliZ(wires=op.wires)],
         }
@@ -2281,7 +2282,7 @@ class Barrier(Operation):
         return Barrier(wires=self.wires)
 
     def pow(self, z):
-        return [self.__copy__()]
+        return [copy(self)]
 
 
 class WireCut(Operation):
@@ -2340,4 +2341,4 @@ class WireCut(Operation):
         return WireCut(wires=self.wires)
 
     def pow(self, z):
-        return [self.__copy__()]
+        return [copy(self)]
