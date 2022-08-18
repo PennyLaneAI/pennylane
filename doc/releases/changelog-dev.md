@@ -122,6 +122,7 @@ Olivia Di Matteo,
 Josh Izaac,
 Edward Jiang,
 Korbinian Kottmann,
+Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
 Antal Száva
