@@ -112,6 +112,8 @@
 
 <h3>Documentation</h3>
 
+* Corrects the docstring for diagonalizing gates in all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original operation and $\Sigma$ the diagonal matrix. However, the diagonalizing gate actually implements $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
+
 <h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
@@ -125,5 +127,6 @@ Korbinian Kottmann,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva
+Antal Száva,
+Cody Wang,
 David Wierichs
