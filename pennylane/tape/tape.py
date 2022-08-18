@@ -1590,6 +1590,7 @@ class QuantumTape(AnnotatedQueue):
             tape._prep = [copy.copy(op) for op in self._prep]
             tape._ops = [copy.copy(op) for op in self._ops]
             tape._measurements = [copy.copy(op) for op in self._measurements]
+            tape._graph = None
         else:
             # Perform a shallow copy of the state prep, operation, and measurement queues. The
             # operations within the queues will be references to the original tape operations;
@@ -1597,8 +1598,8 @@ class QuantumTape(AnnotatedQueue):
             tape._prep = self._prep.copy()
             tape._ops = self._ops.copy()
             tape._measurements = self._measurements.copy()
+            tape._graph = self._graph
 
-        tape._graph = None
         tape._specs = None
         tape.wires = copy.copy(self.wires)
         tape.num_wires = self.num_wires
