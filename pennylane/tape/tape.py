@@ -136,6 +136,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     RY(0.2, wires=['a'])]
     """
     if depth == 0:
+        if iterative_call:
+            return tape._prep, tape._ops, tape._measurements
         return tape
 
     if stop_at is None:
@@ -143,7 +145,9 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         def stop_at(obj):  # pylint: disable=unused-argument
             return False
 
-    new_tape = QuantumTape()
+    new_prep = []
+    new_ops = []
+    new_measurements = []
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -167,8 +171,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
                 tape._measurements[i] = new_m
 
-    for queue in ("_prep", "_ops", "_measurements"):
-        for obj in getattr(tape, queue):
+    for queue, new_queue in [
+        (tape._prep, new_prep), (tape._ops, new_ops), (tape._measurements, new_measurements)
+    ]:
+        for obj in queue:
             stop = stop_at(obj)
 
             if not expand_measurements:
@@ -179,7 +185,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if stop:
                 # do not expand out the object; append it to the
                 # new tape, and continue to the next object in the queue
-                getattr(new_tape, queue).append(obj)
+                new_queue.append(obj)
                 continue
 
             if isinstance(obj, (qml.operation.Operator, qml.measurements.MeasurementProcess)):
@@ -189,15 +195,25 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 except DecompositionUndefinedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
-                    getattr(new_tape, queue).append(obj)
+                    new_queue.append(obj)
                     continue
 
             # recursively expand out the newly created tape
-            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
+            exp_prep, exp_ops, exp_measurements = expand_tape(
+                obj, stop_at=stop_at, depth=depth - 1, iterative_call=True
+            )
 
-            new_tape._prep += expanded_tape._prep
-            new_tape._ops += expanded_tape._ops
-            new_tape._measurements += expanded_tape._measurements
+            new_prep.extend(exp_prep)
+            new_ops.extend(exp_ops)
+            new_measurements.extend(exp_measurements)
+
+    if iterative_call:
+        return new_prep, new_ops, new_measurements
+
+    new_tape = QuantumTape()
+    new_tape._prep = new_prep
+    new_tape._ops = new_ops
+    new_tape._measurements = new_measurements
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -334,7 +350,7 @@ class QuantumTape(AnnotatedQueue):
         self._batch_size = None
         self._qfunc_output = None
 
-        self.wires = qml.wires.Wires([])
+        self.wires = []
         self.num_wires = 0
 
         self.is_sampled = False
@@ -362,7 +378,8 @@ class QuantumTape(AnnotatedQueue):
     def __exit__(self, exception_type, exception_value, traceback):
         try:
             super().__exit__(exception_type, exception_value, traceback)
-            self._process_queue()
+            if exception_type is None:
+                self._process_queue()
         finally:
             QuantumTape._lock.release()
 
