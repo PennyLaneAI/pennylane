@@ -227,6 +227,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False, iterativ
     new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
+_empty_wires = qml.wires.Wires([])
 
 # pylint: disable=too-many-public-methods
 class QuantumTape(AnnotatedQueue):
@@ -352,7 +353,7 @@ class QuantumTape(AnnotatedQueue):
         self._batch_size = None
         self._qfunc_output = None
 
-        self.wires = []
+        self.wires = _empty_wires
         self.num_wires = 0
 
         self.is_sampled = False
