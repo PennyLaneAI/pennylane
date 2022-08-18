@@ -4,6 +4,27 @@
 
 <h3>New features since last release</h3>
 
+* Embedding templates now support parameter broadcasting.
+  [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
+  
+  Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
+  parameter broadcasting with a leading broadcasting dimension in their variational
+  parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
+  vector of features. With broadcasting, we now also can compute
+
+  ```pycon
+  >>> features = np.array([
+  ...     [0.5, 0.5, 0., 0., 0.5, 0., 0.5, 0.],
+  ...     [1., 0., 0., 0., 0., 0., 0., 0.],
+  ...     [0.5, 0.5, 0., 0., 0., 0., 0.5, 0.5],
+  ... ])
+  >>> op = qml.AmplitudeEmbedding(features, wires=[1, 5, 2])
+  >>> op.batch_size
+  3
+  ```
+
+  An exception is `BasisEmbedding`, which is not broadcastable.
+  
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
@@ -93,11 +114,6 @@
 
 <h3>Bug fixes</h3>
 
-* Fixed Torch device discrepencies for certain parametrized operations by
-  updating `qml.math.array` and `qml.math.eye` to preserve the Torch device
-  used.
-  [(#2967)](https://github.com/PennyLaneAI/pennylane/pull/2967)
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -110,3 +126,4 @@ Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
 Antal Száva
+David Wierichs
