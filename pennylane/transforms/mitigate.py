@@ -373,7 +373,7 @@ def mitigate_with_zne(
         dev = qml.device("default.mixed", wires=2)
         dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
 
-    We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides propriertary
+    We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
     allow for differentiating through them. Custom functions, as well as functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
     are supported as well (see usage details below).

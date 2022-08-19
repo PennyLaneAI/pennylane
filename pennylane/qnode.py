@@ -14,7 +14,7 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
 from collections.abc import Sequence
 import functools
 import inspect
@@ -630,24 +630,31 @@ class QNode:
 
             res = res[0]
 
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list):
+                if len(self._qfunc_output) == 1:
+                    return [res]
+
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
-            if not isinstance(self._qfunc_output, qml.measurements.MeasurementProcess):
+            if not isinstance(
+                self._qfunc_output, qml.measurements.MeasurementProcess
+            ) and self.interface in ("tf", "autograd"):
                 if isinstance(res, qml.numpy.ndarray) and res.shape == ():
                     backprop = qml.math.in_backprop(res)
                 else:
                     backprop = any(qml.math.in_backprop(x) for x in res)
-
-            if self.interface in ("tf", "autograd") and self.gradient_fn == "backprop" and backprop:
+            if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 
-            # If the return type is not tuple (list or ndarray)
-            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+            if (
+                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
+                and not backprop
+            ):
                 if not self.device._shot_vector:
                     if isinstance(res, qml.numpy.ndarray) and res.shape == ():
                         res = [res.tolist()]
-
-                    print(res, type(res))
                     res = type(self.tape._qfunc_output)(res)
                 else:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
@@ -709,6 +716,11 @@ class QNode:
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
+
+        if self._qfunc_output.return_type is qml.measurements.Shadow:
+            # if classical shadows is returned, then don't squeeze the
+            # last axis corresponding to the number of qubits
+            return qml.math.squeeze(res, axis=0)
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)

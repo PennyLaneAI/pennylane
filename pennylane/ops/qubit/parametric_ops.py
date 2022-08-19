@@ -822,6 +822,28 @@ class Rot(Operation):
     def single_qubit_rot_angles(self):
         return self.data
 
+    def simplify(self):
+        """Simplifies into single-rotation gates or a Hadamard if possible.
+
+        >>> qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0).simplify()
+        RX(0.1, wires=[0])
+        >>> qml.Rot(np.pi, np.pi/2, 0, 0).simplify()
+        Hadamard(wires=[0])
+
+        """
+        p0, p1, p2 = np.mod(self.data, 2 * np.pi)
+
+        if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
+            return qml.RX(self.data[1], wires=self.wires)
+        if np.allclose(p0, 0) and np.allclose(p2, 0):
+            return qml.RY(self.data[1], wires=self.wires)
+        if np.allclose(p1, 0):
+            return qml.RZ(self.data[0] + self.data[2], wires=self.wires)
+        if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
+            return qml.Hadamard(wires=self.wires)
+
+        return self
+
 
 class MultiRZ(Operation):
     r"""
@@ -1963,6 +1985,33 @@ class CRot(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    def simplify(self):
+        """Simplifies into single controlled rotations or a controlled-Hadamard if possible.
+
+        >>> qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=(0,1)).simplify()
+        CRX(0.1, wires=[0, 1])
+        >>> qml.CRot(0, 0.2, 0, wires=(0,1)).simplify()
+        CRY(0.2, wires=[0, 1])
+
+        """
+        target_wires = [w for w in self.wires if w not in self.control_wires]
+        wires = self.wires
+        params = self.parameters
+
+        p0, p1, p2 = np.mod(params, 2 * np.pi)
+
+        if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
+            return qml.CRX(self.data[1], wires=wires)
+        if np.allclose(p0, 0) and np.allclose(p2, 0):
+            return qml.CRY(self.data[1], wires=wires)
+        if np.allclose(p1, 0):
+            return qml.CRZ(self.data[0] + self.data[2], wires=wires)
+        if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
+            hadamard = qml.Hadamard
+            return qml.ctrl(hadamard, control=self.control_wires)(wires=target_wires)
+
+        return self
+
 
 class U1(Operation):
     r"""
@@ -2199,6 +2248,21 @@ class U2(Operation):
         new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
         return U2(new_phi, new_delta, wires=self.wires)
 
+    def simplify(self):
+        """Simplifies the gate into RX or RY gates if possible."""
+        wires = self.wires
+
+        if np.allclose(np.mod(self.data[1], 2 * np.pi), 0) and np.allclose(
+            np.mod(self.data[0] + self.data[1], 2 * np.pi), 0
+        ):
+            return qml.RY(np.pi / 2, wires=wires)
+        if np.allclose(np.mod(self.data[1], np.pi / 2), 0) and np.allclose(
+            np.mod(self.data[0] + self.data[1], 2 * np.pi), 0
+        ):
+            return qml.RX(self.data[1], wires=wires)
+
+        return self
+
 
 class U3(Operation):
     r"""
@@ -2341,6 +2405,32 @@ class U3(Operation):
         new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
         new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
         return U3(theta, new_phi, new_delta, wires=self.wires)
+
+    def simplify(self):
+        """Simplifies into :class:`~.RX`, :class:`~.RY`, or :class:`~.PhaseShift` gates
+        if possible.
+
+        >>> qml.U3(0.1, 0, 0, wires=0).simplify()
+        RY(0.1, wires=[0])
+
+        """
+        wires = self.wires
+        params = self.parameters
+
+        p0, p1, p2 = np.mod(params, 2 * np.pi)
+
+        if np.allclose(p0, 0) and not np.allclose(p1, 0) and np.allclose(p2, 0):
+            return qml.PhaseShift(self.data[1], wires=wires)
+        if (
+            np.allclose(p2, np.pi / 2)
+            and np.allclose(np.mod(self.data[1] + self.data[2], 2 * np.pi), 0)
+            and not np.allclose(p0, 0)
+        ):
+            return qml.RX(self.data[0], wires=wires)
+        if not np.allclose(p0, 0) and np.allclose(p1, 0) and np.allclose(p2, 0):
+            return qml.RY(self.data[0], wires=wires)
+
+        return self
 
 
 class IsingXX(Operation):
@@ -2582,12 +2672,22 @@ class IsingYY(Operation):
             s = qml.math.cast_like(s, 1j)
 
         js = 1j * s
-        if qml.math.ndim(phi) == 0:
-            return c * np.eye(4) + js * np.diag([1, -1, -1, 1])[::-1]
-
-        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(
-            js, np.diag([1, -1, -1, 1])[::-1], axes=0
+        r_term = qml.math.cast_like(
+            qml.math.array(
+                [
+                    [0.0, 0.0, 0.0, 1.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, -1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                ],
+                like=js,
+            ),
+            1j,
         )
+        if qml.math.ndim(phi) == 0:
+            return c * qml.math.cast_like(qml.math.eye(4, like=c), c) + js * r_term
+
+        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(js, r_term, axes=0)
 
     def adjoint(self):
         (phi,) = self.parameters

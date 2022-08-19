@@ -18,7 +18,11 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable,unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements
+
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
+# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
+# pylint: disable=too-many-statements, invalid-unary-operand-type
+
 from functools import wraps
 import warnings
 import inspect
@@ -50,6 +54,27 @@ INTERFACE_MAP = {
 #: list[str]: allowed interface strings
 SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
+
+
+def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
+    """Performs adjoint jacobian specific expansion.  Expands so that every
+    trainable operation has a generator.
+
+    TODO: Let the device specify any gradient-specific expansion logic.  This
+    function will be removed once the device-support pipeline is improved.
+    """
+    if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+        # qml.math.is_trainable doesn't work with jax on the forward pass
+        non_trainable = qml.operation.has_nopar
+    else:
+        non_trainable = ~qml.operation.is_trainable
+
+    stop_at = ~qml.operation.is_measurement & (non_trainable | qml.operation.has_unitary_gen)
+    for i, tape in enumerate(tapes):
+        if any(not stop_at(op) for op in tape.operations):
+            tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
+
+    return tapes
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
@@ -361,6 +386,9 @@ def execute(
         for i, tape in enumerate(tapes):
             tapes[i] = expand_fn(tape)
 
+        if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+            tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
+
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
@@ -570,12 +598,12 @@ def execute_new(
 
     if gradient_fn is None:
         # don't unwrap if it's an interface device
-        # if "passthru_interface" in device.capabilities():
-        #     return batch_fn(
-        #         qml.interfaces.cache_execute(
-        #             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-        #         )(tapes)
-        #     )
+        if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
+            return batch_fn(
+                qml.interfaces.cache_execute(
+                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                )(tapes)
+            )
         with qml.tape.Unwrap(*tapes):
             res = qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn

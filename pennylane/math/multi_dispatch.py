@@ -25,6 +25,35 @@ from . import single_dispatch  # pylint:disable=unused-import
 from .utils import cast, get_interface, requires_grad
 
 
+# pylint:disable=redefined-outer-name
+def array(*args, like=None, **kwargs):
+    """Creates an array or tensor object of the target framework.
+
+    This method preserves the Torch device used.
+
+    Returns:
+        tensor_like: the tensor_like object of the framework
+    """
+    res = np.array(*args, like=like, **kwargs)
+    if like is not None and get_interface(like) == "torch":
+        res = res.to(device=like.device)
+    return res
+
+
+def eye(*args, like=None, **kwargs):
+    """Creates an identity array or tensor object of the target framework.
+
+    This method preserves the Torch device used.
+
+    Returns:
+        tensor_like: the tensor_like object of the framework
+    """
+    res = np.eye(*args, like=like, **kwargs)
+    if like is not None and get_interface(like) == "torch":
+        res = res.to(device=like.device)
+    return res
+
+
 def _multi_dispatch(values):
     """Determines the correct framework to dispatch to given a
     sequence of tensor-like objects.
@@ -425,7 +454,11 @@ def get_trainable_indices(values, like=None):
 
         if not any(isinstance(v, jax.core.Tracer) for v in values):
             # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
-            trainable = lambda p, **kwargs: isinstance(p, jax.numpy.DeviceArray)
+
+            # pylint: disable=function-redefined,unused-argument
+            def trainable(p, **kwargs):
+                return isinstance(p, jax.numpy.DeviceArray)
+
         else:
             # JAX tracing is occuring; use the default behaviour (only traced arrays
             # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
@@ -813,3 +846,26 @@ def iscomplex(tensor, like=None):
         return False
 
     return np.iscomplex(tensor)
+
+
+@multi_dispatch()
+def expm(tensor, like=None):
+    """Compute the matrix exponential of an array :math:`e^{X}`.
+
+    ..note::
+        This function is not differentiable with Autograd, as it
+        relies on the scipy implementation.
+    """
+    if like == "torch":
+        return tensor.matrix_exp()
+    if like == "jax":
+        from jax.scipy.linalg import expm as jax_expm
+
+        return jax_expm(tensor)
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.linalg.expm(tensor)
+    from scipy.linalg import expm as scipy_expm
+
+    return scipy_expm(tensor)

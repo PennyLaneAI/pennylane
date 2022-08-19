@@ -30,6 +30,7 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
+import pennylane.resource
 import pennylane.templates
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
@@ -45,6 +46,7 @@ from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import (
+    counts,
     density_matrix,
     measure,
     expval,
@@ -54,9 +56,10 @@ from pennylane.measurements import (
     var,
     vn_entropy,
     mutual_info,
+    classical_shadow,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, op_sum
+from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -89,7 +92,6 @@ from pennylane.transforms import (
     is_commuting,
     pattern_matching,
     pattern_matching_optimization,
-    simplify,
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *

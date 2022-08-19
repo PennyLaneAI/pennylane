@@ -91,6 +91,8 @@ class QutritUnitary(Operation):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
+        .. seealso:: :meth:`~.QutritUnitary.matrix`
+
         Args:
             U (tensor_like): unitary matrix
 

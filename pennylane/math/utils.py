@@ -59,7 +59,7 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         # Some frameworks may provide their own allclose implementation.
         # Try and use it if available.
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
-    except (TypeError, AttributeError, ImportError):
+    except (TypeError, AttributeError, ImportError, RuntimeError):
         # Otherwise, convert the input to NumPy arrays.
         #
         # TODO: replace this with a bespoke, framework agnostic
@@ -321,7 +321,7 @@ def requires_grad(tensor, interface=None):
 
     .. warning::
 
-        The implemetation depends on the contained tensor type, and
+        The implementation depends on the contained tensor type, and
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
@@ -403,7 +403,26 @@ def requires_grad(tensor, interface=None):
 
 
 def in_backprop(tensor, interface=None):
-    """Returns True if the tensor is considered to be in a backpropagation environment."""
+    """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
+    Tensorflow and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
+    rather checking if the gradient is actually calculated.
+
+    Args:
+        tensor (tensor_like): input tensor
+        interface (str): The name of the interface. Will be determined automatically
+            if not provided.
+
+    **Example**
+
+    >>> x = tf.Variable([0.6, 0.1])
+    >>> requires_grad(x)
+    False
+    >>> with tf.GradientTape() as tape:
+    ...     print(requires_grad(x))
+    True
+
+    .. seealso:: :func:`~.requires_grad`
+    """
     interface = interface or get_interface(tensor)
 
     if interface == "tensorflow":
@@ -421,4 +440,12 @@ def in_backprop(tensor, interface=None):
     if interface == "autograd":
         return isinstance(tensor, ArrayBox)
 
-    return False
+    if interface == "jax":
+        import jax
+
+        return isinstance(tensor, jax.core.Tracer)
+
+    if interface == "numpy":
+        return False
+
+    raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
