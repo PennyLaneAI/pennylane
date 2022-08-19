@@ -34,7 +34,7 @@ from pennylane import (
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import Counts, MutualInfo, Sample, State, VnEntropy
+from pennylane.measurements import Counts, AllCounts, MutualInfo, Sample, State, VnEntropy
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -577,7 +577,7 @@ class DefaultMixed(QubitDevice):
                     # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
-                if obs.return_type in (Sample, Counts):
+                if obs.return_type in (Sample, Counts, AllCounts):
                     if obs.name == "Identity" and obs.wires in (qml.wires.Wires([]), self.wires):
                         # Sample, Counts: Readout error applied to all device wires when wires
                         # not specified or all wires specified.

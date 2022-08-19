@@ -31,7 +31,6 @@ from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     Counts,
     AllCounts,
-    Variance,
     Expectation,
     MeasurementProcess,
     MutualInfo,

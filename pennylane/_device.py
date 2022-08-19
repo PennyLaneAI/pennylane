@@ -730,6 +730,7 @@ class Device(abc.ABC):
             and qml.measurements.Sample not in return_types
             and qml.measurements.Probability not in return_types
             and qml.measurements.Counts not in return_types
+            and qml.measurements.AllCounts not in return_types
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
             # TODO: allow for Hamiltonians in list of observables as well.
