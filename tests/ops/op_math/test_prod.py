@@ -846,12 +846,11 @@ class TestIntegration:
         results = my_circ()
 
         assert len(results) == 20
-        # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
-        assert 1 in results.astype(np.float32).tolist()
-        assert -1 in results.astype(np.float32).tolist()
+        assert 1 in results.tolist()
+        assert -1 in results.tolist()
 
     def test_measurement_process_counts(self):
-        """Test Prod class instance in sample measurement process."""  
+        """Test Prod class instance in sample measurement process."""
         dev = qml.device("default.qubit", wires=2, shots=20)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
