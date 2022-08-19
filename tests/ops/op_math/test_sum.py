@@ -722,7 +722,7 @@ class TestIntegration:
     #     assert qnp.allclose(my_circ(), returned_probs)
 
     def test_measurement_process_probs(self):
-        """Test Sum class instance in probs measurement process raises error."""  # currently can't support due to bug
+        """Test Sum class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
 
