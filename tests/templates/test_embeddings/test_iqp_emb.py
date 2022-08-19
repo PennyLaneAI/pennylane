@@ -42,9 +42,32 @@ class TestDecomposition:
         op = qml.IQPEmbedding(features, wires=range(n_wires))
         tape = op.expand()
 
+        j = 0
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
+            if gate.name == "RZ":
+                assert gate.data[0] == features[j]
+                j += 1
+
+    @pytest.mark.parametrize("n_wires, expected_names, expected_wires", QUEUES)
+    def test_expansion_broadcasted(self, n_wires, expected_names, expected_wires):
+        """Checks the queue for the default settings."""
+
+        features = np.arange(n_wires * 3).reshape((3, n_wires))
+
+        op = qml.IQPEmbedding(features, wires=range(n_wires))
+        assert op.batch_size == 3
+        tape = op.expand()
+
+        j = 0
+        for i, gate in enumerate(tape.operations):
+            assert gate.name == expected_names[i]
+            assert gate.wires.labels == tuple(expected_wires[i])
+            if gate.name == "RZ":
+                assert gate.batch_size == 3
+                assert np.allclose(gate.data[0], features[:, j])
+                j += 1
 
     def test_repeat(self):
         """Checks the queue for repetition of the template."""
@@ -116,7 +139,7 @@ class TestInputs:
         "features", [[1.0, 2.0], [1.0, 2.0, 3.0, 4.0], [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]]]
     )
     def test_exception_wrong_number_of_features(self, features):
-        """Verifies that an exception is raised if 'features' has the wrong shape."""
+        """Verifies that an exception is raised if 'features' has the wrong trailing dimension."""
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -125,7 +148,23 @@ class TestInputs:
             qml.IQPEmbedding(features=f, wires=range(3))
             return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
-        with pytest.raises(ValueError, match="Features must be"):
+        with pytest.raises(ValueError, match="Features must be of length"):
+            circuit(f=features)
+
+    @pytest.mark.parametrize("shape", [(2, 3, 4), ()])
+    def test_exception_wrong_ndim(self, shape):
+        """Verifies that an exception is raised if 'features' has the wrong number of dimensions."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(f=None):
+            qml.IQPEmbedding(features=f, wires=range(3))
+            return [qml.expval(qml.PauliZ(w)) for w in range(3)]
+
+        features = np.ones(shape)
+
+        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
 
     def test_id(self):
@@ -139,7 +178,7 @@ def circuit_template(features):
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_decomposed(features):
+def circuit_decomposed_lists(features):
     qml.Hadamard(wires=0)
     qml.RZ(features[0], wires=0)
     qml.Hadamard(wires=1)
@@ -148,33 +187,47 @@ def circuit_decomposed(features):
     return qml.expval(qml.PauliZ(0))
 
 
+def circuit_decomposed(features):
+    qml.Hadamard(wires=0)
+    qml.RZ(features[..., 0], wires=0)
+    qml.Hadamard(wires=1)
+    qml.RZ(features[..., 1], wires=1)
+    qml.MultiRZ(features[..., 0] * features[..., 1], wires=[0, 1])
+    return qml.expval(qml.PauliZ(0))
+
+
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
+    @pytest.mark.parametrize(
+        "features",
+        [[0.1, -1.3], [np.array([0.5, 2.0]), np.array([1.2, 0.6]), np.array([-0.7, 0.3])]],
+    )
+    def test_list_and_tuples(self, tol, features):
         """Tests common iterables as inputs."""
-
-        features = [0.1, -1.3]
 
         dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
         res = circuit(features)
+        if isinstance(features[0], np.ndarray):
+            circuit2 = qml.QNode(circuit_decomposed, dev)
+            features = np.array(features)  # circuit_decomposed does not work with broadcasting
+        else:
+            circuit2 = qml.QNode(circuit_decomposed_lists, dev)
+
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         res = circuit(tuple(features))
-        res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd(self, tol):
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
+    def test_autograd(self, tol, features):
         """Tests the autograd interface."""
 
-        features = np.random.random(size=(2,))
         features = pnp.array(features, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
@@ -186,22 +239,23 @@ class TestInterfaces:
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(circuit)
+        grad_fn = qml.jacobian(circuit)
         grads = grad_fn(features)
 
-        grad_fn2 = qml.grad(circuit2)
+        grad_fn2 = qml.jacobian(circuit2)
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, tol):
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
+    def test_jax(self, tol, features):
         """Tests the jax interface."""
 
         import jax
         import jax.numpy as jnp
 
-        features = jnp.array(np.random.random(size=(2,)))
+        features = jnp.array(features)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -212,21 +266,22 @@ class TestInterfaces:
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = jax.jacobian(circuit)
         grads = grad_fn(features)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = jax.jacobian(circuit2)
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.tf
-    def test_tf(self, tol):
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
+    def test_tf(self, tol, features):
         """Tests the tf interface."""
 
         import tensorflow as tf
 
-        features = tf.Variable(np.random.random(size=(2,)))
+        features = tf.Variable(features)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -239,21 +294,22 @@ class TestInterfaces:
 
         with tf.GradientTape() as tape:
             res = circuit(features)
-        grads = tape.gradient(res, [features])
+        grads = tape.jacobian(res, [features])
 
         with tf.GradientTape() as tape2:
             res2 = circuit2(features)
-        grads2 = tape2.gradient(res2, [features])
+        grads2 = tape2.jacobian(res2, [features])
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, tol):
+    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
+    def test_torch(self, tol, features):
         """Tests the torch interface."""
 
         import torch
 
-        features = torch.tensor(np.random.random(size=(2,)), requires_grad=True)
+        features = torch.tensor(features, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -264,12 +320,8 @@ class TestInterfaces:
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        res = circuit(features)
-        res.backward()
-        grads = [features.grad]
+        grads = torch.autograd.functional.jacobian(circuit, features)
 
-        res2 = circuit2(features)
-        res2.backward()
-        grads2 = [features.grad]
+        grads2 = torch.autograd.functional.jacobian(circuit2, features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)

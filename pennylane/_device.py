@@ -18,21 +18,16 @@ This module contains the :class:`Device` abstract base class.
 import abc
 import types
 import warnings
-from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
+from collections.abc import Iterable, Sequence
 from functools import lru_cache
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
-from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
-from pennylane.wires import Wires, WireError
-
+from pennylane.measurements import Expectation, MidMeasure, Probability, Sample, State, Variance
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -732,8 +727,9 @@ class Device(abc.ABC):
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
-            and not qml.measurements.Sample in return_types
-            and not qml.measurements.Probability in return_types
+            and qml.measurements.Sample not in return_types
+            and qml.measurements.Probability not in return_types
+            and qml.measurements.Counts not in return_types
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
             # TODO: allow for Hamiltonians in list of observables as well.
@@ -741,10 +737,10 @@ class Device(abc.ABC):
 
         else:
             # otherwise, return the output of an identity transform
+            circuits = [circuit]
+
             def hamiltonian_fn(res):
                 return res[0]
-
-            circuits = [circuit]
 
         # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
         # ones will be as well) and whether broadcasting is supported
