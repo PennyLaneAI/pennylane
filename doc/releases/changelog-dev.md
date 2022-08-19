@@ -105,6 +105,9 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
+  
+* Added `sparse_matrix()` support for single qubit observables and aritmetic operators.
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 <h3>Breaking changes</h3>
 
@@ -125,5 +128,6 @@ Korbinian Kottmann,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
+Jay Soni,
 Antal Száva
 David Wierichs
