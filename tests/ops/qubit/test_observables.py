@@ -359,6 +359,13 @@ class TestHermitian:
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix()
 
+    def test_hermitian_empty_wire_list_error(self):
+        """Tests that the hermitian operator raises an error when instantiated with wires=[]."""
+        herm_mat = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
+        with pytest.raises(ValueError, match="require valid wires"):
+            qml.Hermitian(herm_mat, wires=[])
+
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         A = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])

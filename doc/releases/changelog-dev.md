@@ -114,6 +114,10 @@
 
 <h3>Bug fixes</h3>
 
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+  certain exceptions, when instantiated with `wires=[]`.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -121,6 +125,7 @@ This release contains contributions from (in alphabetical order):
 Olivia Di Matteo,
 Josh Izaac,
 Edward Jiang,
+Meenu Kumari,
 Korbinian Kottmann,
 Rashid N H M,
 Zeyue Niu,
