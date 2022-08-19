@@ -14,6 +14,8 @@
 """
 Unit tests for the qml.simplify function
 """
+import pytest
+
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
@@ -56,6 +58,11 @@ class TestSimplifyOperators:
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is s_op
         assert tape._queue[op]["owner"] is s_op
+
+    def test_simplify_unsupported_object_raises_error(self):
+        """Test that an error is raised when trying to simplify an unsupported object."""
+        with pytest.raises(ValueError, match="Cannot simplify the object"):
+            qml.simplify("unsupported type")
 
 
 class TestSimplifyTapes:
