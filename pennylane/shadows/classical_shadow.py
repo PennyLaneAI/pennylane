@@ -46,7 +46,7 @@ class ClassicalShadow:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
 
-    .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadows`
+    .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -91,15 +91,28 @@ class ClassicalShadow:
         else:
             self.wire_map = wire_map
 
-        assert bits.shape == recipes.shape
-        assert bits.shape[1] == len(self.wire_map)
-        self.snapshots = len(bits)
+        if bits.shape != recipes.shape:
+            raise ValueError(
+                f"Bits and recipes but have the same shape, got {bits.shape} and {recipes.shape}."
+            )
+
+        if bits.shape[1] != len(self.wire_map):
+            raise ValueError(
+                f"The first axis of bits must have the same size as wire_map, got {bits.shape[1]} and {len(self.wire_map)}."
+            )
 
         self.observables = [
             qml.matrix(qml.PauliX(0)),
             qml.matrix(qml.PauliY(0)),
             qml.matrix(qml.PauliZ(0)),
         ]
+
+    @property
+    def snapshots(self):
+        """
+        The number of snapshots in the classical shadow measurement.
+        """
+        return len(self.bits)
 
     def local_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x n x 2 x 2 local snapshots
@@ -114,9 +127,6 @@ class ClassicalShadow:
         Returns:
             tensor: The local snapshots tensor of shape ``(T, n, 2, 2)`` containing the local local density matrices for each snapshot and each qubit.
         """
-        bits = self.bits
-        recipes = self.recipes
-
         if snapshots is not None:
             if isinstance(snapshots, int):
                 # choose the given number of random snapshots
@@ -127,9 +137,12 @@ class ClassicalShadow:
                 # snapshots is an iterable that determines the indices
                 pick_snapshots = snapshots
 
-            pick_snapshots = qml.math.convert_like(pick_snapshots, bits)
-            bits = qml.math.gather(bits, pick_snapshots)
-            recipes = qml.math.gather(recipes, pick_snapshots)
+            pick_snapshots = qml.math.convert_like(pick_snapshots, self.bits)
+            bits = qml.math.gather(self.bits, pick_snapshots)
+            recipes = qml.math.gather(self.recipes, pick_snapshots)
+        else:
+            bits = self.bits
+            recipes = self.recipes
 
         if isinstance(wires, Iterable):
             bits = bits[:, wires]
@@ -144,19 +157,6 @@ class ClassicalShadow:
         state = (qml.math.cast((1 - 2 * bits[:, :, None, None]), np.complex64) * U + np.eye(2)) / 2
 
         return 3 * state - np.eye(2)[None, None, :, :]
-
-    @staticmethod
-    def _obtain_global_snapshots(local_snapshot):
-        T, n = local_snapshot.shape[:2]
-
-        transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
-
-        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
-        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
-
-        return np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots).reshape(
-            T, 2**n, 2**n
-        )
 
     def global_snapshots(self, wires=None, snapshots=None):
         r"""Compute the T x 2**n x 2**n global snapshots
@@ -198,7 +198,6 @@ class ClassicalShadow:
             True
 
         """
-
         local_snapshot = self.local_snapshots(wires, snapshots)
 
         if local_snapshot.shape[1] > 16:
@@ -207,7 +206,17 @@ class ClassicalShadow:
                 UserWarning,
             )
 
-        return self._obtain_global_snapshots(local_snapshot)
+        T, n = local_snapshot.shape[:2]
+
+        transposed_snapshots = np.transpose(local_snapshot, axes=(1, 0, 2, 3))
+
+        old_indices = [f"a{ABC[1 + 2 * i: 3 + 2 * i]}" for i in range(n)]
+        new_indices = f"a{ABC[1:2 * n + 1:2]}{ABC[2:2 * n + 1:2]}"
+
+        return np.reshape(
+            np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots),
+            (T, 2**n, 2**n),
+        )
 
     def _convert_to_pauli_words(self, observable):
         """Given an observable, obtain a list of coefficients and Pauli words, the
@@ -254,7 +263,7 @@ class ClassicalShadow:
         save quantum circuit executions.
 
         Args:
-            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+            H (qml.Observable): Observable to compute the expectation value
             k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
         Returns:
@@ -286,14 +295,23 @@ class ClassicalShadow:
         >>> shadow.expval(H, k=1)
         (2.2319999999999998+0j)
         """
-        coeffs_and_words = self._convert_to_pauli_words(H)
+        if not isinstance(H, Iterable):
+            H = [H]
 
+        coeffs_and_words = [self._convert_to_pauli_words(h) for h in H]
         expvals = pauli_expval(
-            self.bits, self.recipes, np.array([word for _, word in coeffs_and_words])
+            self.bits, self.recipes, np.array([word for cw in coeffs_and_words for _, word in cw])
         )
         expvals = median_of_means(expvals, k, axis=0)
+        expvals = expvals * np.array([coeff for cw in coeffs_and_words for coeff, _ in cw])
 
-        return np.dot(expvals, np.array([coeff for coeff, _ in coeffs_and_words]))
+        start = 0
+        results = []
+        for i in range(len(H)):
+            results.append(np.sum(expvals[start : start + len(coeffs_and_words[i])]))
+            start += len(coeffs_and_words[i])
+
+        return qml.math.squeeze(results)
 
 
 # Util functions
@@ -312,11 +330,10 @@ def median_of_means(arr, num_batches, axis=0):
     Returns:
         float: The median of means
     """
-    means = []
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
-
-    for i in range(num_batches):
-        means.append(qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0))
+    means = [
+        qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)
+    ]
 
     return np.median(means, axis=axis)
 
@@ -325,6 +342,16 @@ def pauli_expval(bits, recipes, word):
     r"""
     The approximate expectation value of a Pauli word given the bits and recipes
     from a classical shadow measurement.
+
+    The expectation value can be computed using
+
+    .. math::
+
+        \alpha = \frac{1}{|T_{match}|}\sum_{T_{match}}\left(1 - 2\left(\sum b \text{  mod }2\right)\right)
+
+    where :math:`T_{match}` denotes the snapshots with recipes that match the Pauli word,
+    and the right-most sum is taken over all bits in the snapshot where the observable
+    in the Pauli word for that bit is not the identity.
 
     Args:
         bits (tensor-like[int]): An array with shape ``(T, n)``, where ``T`` is the
@@ -342,8 +369,8 @@ def pauli_expval(bits, recipes, word):
 
     Returns:
         tensor-like[float]: An array with shape ``(T,)`` containing the value
-            of the Pauli observable for each snapshot. The expectation can be
-            found by averaging across the snapshots.
+        of the Pauli observable for each snapshot. The expectation can be
+        found by averaging across the snapshots.
     """
     T, n = recipes.shape
     b = word.shape[0]
