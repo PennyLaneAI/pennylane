@@ -112,23 +112,6 @@
   RX(-1, wires=[0])
   ```
 
-* `qml.operation.expand_matrix` now supports qutrit matrices such that `Operator.matrix` is now able to permute and
-  expand qutrit matrices according to the given wire order.
-
-  ```pycon
-  >>> op = qml.TShift(wires=0)
-  >>> op.matrix(wire_order=[0, 1])
-  array([[0, 0, 0, 0, 0, 0, 1, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 1, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 1],
-         [1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 1, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 1, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 1, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 1, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 1, 0, 0, 0]])
-    ```
-
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
