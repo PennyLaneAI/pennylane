@@ -2588,7 +2588,7 @@ class TestPauliRot:
     def test_empty_wire_list_error_paulirot(self):
         """Test that PauliRot operator raises an error when instantiated with wires=[]."""
 
-        with pytest.raises(ValueError, match="require valid wires"):
+        with pytest.raises(ValueError, match="wrong number of wires"):
             qml.PauliRot(0.5, "X", wires=[])
 
     @pytest.mark.parametrize(
@@ -2864,7 +2864,7 @@ class TestMultiRZ:
     def test_empty_wire_list_error_multirz(self):
         """Test that MultiRZ operator raises an error when instantiated with wires=[]."""
 
-        with pytest.raises(ValueError, match="require valid wires"):
+        with pytest.raises(ValueError, match="wrong number of wires"):
             qml.MultiRZ(0.5, wires=[])
 
 

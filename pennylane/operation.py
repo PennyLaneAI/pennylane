@@ -898,7 +898,10 @@ class Operator(abc.ABC):
                 # Barrier, Snapshot: Applied to all wires if instantiated with wires = [].
                 # Hamiltonian: Possible to be empty with simplify().
                 if len(qml.wires.Wires(wires)) == 0:
-                    raise ValueError("require valid wires.")
+                    raise ValueError(
+                        f"{self.name}: wrong number of wires. "
+                        f"At least one wire has to be given."
+                    )
 
         self._check_batching(params)
 
