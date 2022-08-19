@@ -36,11 +36,11 @@ class NullQubit(DefaultQubit):
     author = "Xanadu Inc."
 
     def __init__(self, wires, *args, **kwargs):
-        defaultKwargs = { 'shots': 0 }
-        kwargs = { **defaultKwargs, **kwargs }
+        defaultKwargs = {"shots": 0}
+        kwargs = {**defaultKwargs, **kwargs}
 
         self._gatecalls = defaultdict(int)
-        self._shots = kwargs['shots']
+        self._shots = kwargs["shots"]
         self._shot_vector = None
         self.custom_expand_fn = None
         super().__init__(wires=wires, shots=self._shots)
