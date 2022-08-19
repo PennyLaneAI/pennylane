@@ -46,7 +46,7 @@ class ClassicalShadow:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
 
-    .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadows`
+    .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadow`
 
     **Example**
 
@@ -100,9 +100,6 @@ class ClassicalShadow:
     def snapshots(self):
         """
         The number of snapshots in the classical shadow measurement.
-
-        Returns:
-            int: The number of snapshots
         """
         return len(self.bits)
 
@@ -343,7 +340,7 @@ def pauli_expval(bits, recipes, word):
 
     .. math::
 
-        \alpha = \frac{1}{|T_{match}|}\sum_{T_{\match}}\left(1 - 2\left(\sum b \text{  mod }2\right)\right)
+        \alpha = \frac{1}{|T_{match}|}\sum_{T_{match}}\left(1 - 2\left(\sum b \text{  mod }2\right)\right)
 
     where :math:`T_{match}` denotes the snapshots with recipes that match the Pauli word,
     and the right-most sum is taken over all bits in the snapshot where the observable
@@ -365,8 +362,8 @@ def pauli_expval(bits, recipes, word):
 
     Returns:
         tensor-like[float]: An array with shape ``(T,)`` containing the value
-            of the Pauli observable for each snapshot. The expectation can be
-            found by averaging across the snapshots.
+        of the Pauli observable for each snapshot. The expectation can be
+        found by averaging across the snapshots.
     """
     T, n = recipes.shape
     b = word.shape[0]
