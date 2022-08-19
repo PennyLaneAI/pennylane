@@ -51,12 +51,6 @@
 
 * Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
-  * Added `qml.TAdd` operation for qutrit devices, which is the generalized analog of the CX operation.
-  ([#2842](https://github.com/PennyLaneAI/pennylane/pull/2842))
-  * Added `qml.TSWAP` operation for qutrit devices, which swaps the state between two wires.
-  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
-  * Added `qml.ControlledQutritUnitary` operation for qutrit devices, which allows users to apply a controlled arbitrary unitary operation.
-  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 * Added `qml.ControlledQutritUnitary` operation for qutrit devices, which allows users to apply a controlled arbitrary unitary operation.
   ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
