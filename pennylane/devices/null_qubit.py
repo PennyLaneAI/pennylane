@@ -14,19 +14,10 @@
 r"""
 The null.qubit device is a no-op device for benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-import itertools
-import functools
-from string import ascii_letters as ABC
-
-import numpy as np
-from scipy.sparse import coo_matrix
-
-import pennylane as qml
-from pennylane.devices import DefaultQubit
-from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from pennylane.wires import WireError
-from .._version import __version__
 from collections import defaultdict
+
+from pennylane.devices import DefaultQubit
+from .._version import __version__
 
 # pylint: disable=unused-argument
 class NullQubit(DefaultQubit):
@@ -44,11 +35,15 @@ class NullQubit(DefaultQubit):
     version = __version__
     author = "Xanadu Inc."
 
-    def __init__(self, wires, shots=0, *args, **kwargs):
+    def __init__(self, wires, *args, **kwargs):
+        defaultKwargs = { 'shots': 0 }
+        kwargs = { **defaultKwargs, **kwargs }
+
         self._gatecalls = defaultdict(int)
-        self._shots = shots
+        self._shots = kwargs['shots']
         self._shot_vector = None
         self.custom_expand_fn = None
+        super().__init__(wires=wires, shots=self._shots)
 
     # pylint: disable=arguments-differ
     def apply(self, operations, *args, **kwargs):
@@ -144,6 +139,7 @@ class NullQubit(DefaultQubit):
         pass
 
     def gatecalls(self):
+        """Call the specified gate"""
         return self._gatecalls
 
     def execute(self, circuit, **kwargs):
