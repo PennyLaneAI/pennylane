@@ -93,7 +93,8 @@ class TestExpvalMeasurement:
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)
         assert copied_res.return_type == res.return_type
-        assert copied_res.obs == res.obs
+        assert copied_res.H == res.H
+        assert copied_res.k == res.k
         assert copied_res.seed == res.seed
 
     @pytest.mark.parametrize("wires", [1, 2, 3])
@@ -135,7 +136,7 @@ obs_hadamard = [
     qml.PauliY(2),
     qml.PauliY(1) @ qml.PauliZ(2),
     qml.PauliX(0) @ qml.PauliY(1),
-    qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2)
+    qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
 ]
 expected_hadamard = [1, 1, 1, 0, 0, 0, 0]
 
@@ -147,7 +148,7 @@ obs_max_entangled = [
     qml.PauliZ(1) @ qml.PauliZ(2),
     qml.PauliX(0) @ qml.PauliY(1),
     qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
-    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2)
+    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2),
 ]
 expected_max_entangled = [0, 0, 0, 0, 1, 0, 0, -1]
 
@@ -163,7 +164,19 @@ obs_qft = [
     qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2),
     qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2),
 ]
-expected_qft = [-1, 0,  -1 / np.sqrt(2),  -1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2),  1 / np.sqrt(2), - 1 / np.sqrt(2), 0]
+expected_qft = [
+    -1,
+    0,
+    -1 / np.sqrt(2),
+    -1 / np.sqrt(2),
+    0,
+    0,
+    1 / np.sqrt(2),
+    1 / np.sqrt(2),
+    -1 / np.sqrt(2),
+    0,
+]
+
 
 @pytest.mark.all_interfaces
 class TestExpvalForward:
@@ -176,36 +189,38 @@ class TestExpvalForward:
         import torch
 
         circuit = hadamard_circuit(3, shots=100000, interface=interface)
-        actuals = circuit(obs, k=k)
+        actual = circuit(obs, k=k)
 
-        assert all([actual.shape == () for actual in actuals])
-        assert all([actual.dtype == torch.float64 if interface == "torch" else np.float64 for actual in actuals])
-        assert qml.math.allclose(actuals, expected, atol=1e-1)
+        assert actual.shape == (len(obs_hadamard),)
+        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
+        assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_max_entangled_expval(self, interface, obs=obs_max_entangled, expected=expected_max_entangled, k=1):
+    def test_max_entangled_expval(
+        self, interface, k=1, obs=obs_max_entangled, expected=expected_max_entangled
+    ):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
         import torch
 
         circuit = max_entangled_circuit(3, shots=100000, interface=interface)
-        actuals = circuit(obs, k=k)
+        actual = circuit(obs, k=k)
 
-        assert all([actual.shape == () for actual in actuals])
-        assert all([actual.dtype == torch.float64 if interface == "torch" else np.float64 for actual in actuals])
-        assert qml.math.allclose(actuals, expected, atol=1e-1)
+        assert actual.shape == (len(obs_max_entangled),)
+        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
+        assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_qft_expval(self, interface, obs=obs_qft, expected=expected_qft, k=1):
+    def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):
         """Test that the expval estimation is correct for a QFT state"""
         import torch
 
         circuit = qft_circuit(3, shots=100000, interface=interface)
-        actuals = circuit(obs, k=k)
+        actual = circuit(obs, k=k)
 
-        assert all([actual.shape == () for actual in actuals])
-        assert all([actual.dtype == torch.float64 if interface == "torch" else np.float64 for actual in actuals])
-        assert qml.math.allclose(actuals, expected, atol=1e-1)
+        assert actual.shape == (len(obs_qft),)
+        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
+        assert qml.math.allclose(actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
@@ -214,6 +229,7 @@ class TestExpvalForward:
         msg = "Observable must be a linear combination of Pauli observables"
         with pytest.raises(ValueError, match=msg):
             circuit(qml.Hadamard(0) @ qml.Hadamard(2))
+
 
 obs_strongly_entangled = [
     qml.PauliX(1),
@@ -224,6 +240,7 @@ obs_strongly_entangled = [
     qml.PauliX(0) @ qml.PauliY(1),
     qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
 ]
+
 
 def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -245,6 +262,7 @@ def strongly_entangling_circuit_exact(wires, interface="autograd"):
         return [qml.expval(o) for o in obs]
 
     return circuit
+
 
 class TestExpvalBackward:
     """Test the shadow_expval measurement process backward pass"""
@@ -317,19 +335,7 @@ class TestExpvalBackward:
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            (qml.PauliX(1)),
-            (qml.PauliX(0) @ qml.PauliX(2)),
-            (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2)),
-            (qml.PauliY(2)),
-            (qml.PauliY(1) @ qml.PauliZ(2)),
-            (qml.PauliX(0) @ qml.PauliY(1)),
-            (qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2)),
-        ],
-    )
-    def test_backward_torch(self, obs):
+    def test_backward_torch(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the pytorch interface"""
         import torch
@@ -345,14 +351,7 @@ class TestExpvalBackward:
             requires_grad=True,
         )
 
-        out = shadow_circuit(x, obs, k=10)
-        out.backward()
-        actual = x.grad
-
-        # use torch.autograd.functional.jacobian(circuit, (x, obs)) but the problem is that obs is a list and torch wants tensors. need to define a partial
-
-        out2 = exact_circuit(x, obs)
-        out2.backward()
-        expected = x.grad
+        actual = torch.autograd.functional.jacobian(lambda x: shadow_circuit(x, obs, k=10), x)
+        expected = torch.autograd.functional.jacobian(lambda x: exact_circuit(x, obs), x)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)

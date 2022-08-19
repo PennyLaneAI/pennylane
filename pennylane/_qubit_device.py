@@ -1342,12 +1342,9 @@ class QubitDevice(Device):
         >>> qml.jacobian(qnode)(x, Hs)
         [-0.48312, -0.00198, -0.00375,  0.00168]
         """
-
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
-        if not isinstance(obs.H, Iterable):
-            obs.H = [obs.H]
-        return qml.math.squeeze(qml.math.stack([shadow.expval(h, obs.k) for h in obs.H]))
+        return shadow.expval(obs.H, obs.k)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
