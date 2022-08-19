@@ -136,7 +136,7 @@ def calculate_Xi_decomposition(hamiltonian):
         times.append(time)
 
         for j in range(last_i, index + 1):
-            proj += -2 * np.outer(np.conjugate(eigvecs[:, j]), eigvecs[:, j])
+            proj += -2 * Pi(j)
             last_i = index + 1
 
         projs.append(proj.copy() * dE)
