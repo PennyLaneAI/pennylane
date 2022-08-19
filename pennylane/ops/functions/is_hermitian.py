@@ -48,4 +48,4 @@ def is_hermitian(op: Operator):
     """
     if op.is_hermitian is True:
         return True
-    return np.allclose(op.matrix(), qml.adjoint(op).matrix())
+    return qml.math.allclose(op.matrix(), qml.adjoint(op).matrix())
