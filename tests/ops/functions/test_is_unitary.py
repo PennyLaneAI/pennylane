@@ -73,6 +73,6 @@ class TestIsUnitary:
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
     def test_arithmetic_ops(self, arithmetic_ops):
-        """Test that all the non-parametric ops are unitary."""
+        """Test unitary check with Prod and Sum arithmetic operations."""
         assert qml.is_unitary(qml.prod(*arithmetic_ops))
         assert not qml.is_unitary(qml.op_sum(*arithmetic_ops))
