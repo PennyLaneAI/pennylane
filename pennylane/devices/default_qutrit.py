@@ -238,7 +238,9 @@ class DefaultQutrit(QutritDevice):
         all_axes[axes[1]] = axes[0]
         return self._transpose(state, all_axes)
 
-    def _apply_phase(self, state, axes, index, parameters, inverse=False):
+    def _apply_phase(
+        self, state, axes, index, phase, inverse=False
+    ):  # pylint: disable=too-many-arguments
         """Applies a phase onto the specified index along the axis specified in ``axes``.
 
         Args:

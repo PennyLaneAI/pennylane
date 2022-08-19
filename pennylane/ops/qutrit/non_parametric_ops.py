@@ -95,7 +95,7 @@ class TShift(Operation):
         **Example**
 
         >>> print(qml.TShift.compute_eigvals())
-        [ -0.5+0.8660254j -0.5-0.8660254j  1. +0.j       ]
+        [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
         """
         return np.array([OMEGA, OMEGA**2, 1])
 
