@@ -71,6 +71,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
     # TODO: Update set of supported observables as new observables are added
     observables = {
         "Identity",
+        "THermitian",
     }
 
     @classmethod
