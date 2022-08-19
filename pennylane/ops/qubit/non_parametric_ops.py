@@ -18,8 +18,10 @@ not depend on any parameters.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
 import warnings
-from copy import copy
 import numpy as np
+
+from copy import copy
+
 from scipy import sparse
 from scipy.linalg import block_diag
 
