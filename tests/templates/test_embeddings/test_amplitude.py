@@ -25,17 +25,23 @@ FEATURES = [
     np.array([complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3), complex(0, -np.sqrt(0.1)), np.sqrt(0.5)]),
 ]
 
+BROADCASTED_FEATURES = [np.eye(4)[:3], np.ones((5, 4)) / 2]
+
 NOT_ENOUGH_FEATURES = [
     np.array([0, 1, 0]),
     1 / np.sqrt(3) * np.array([1, 1, 1]),
     np.array([complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3), complex(0, -np.sqrt(0.6))]),
 ]
 
+NOT_ENOUGH_BROADCASTED_FEATURES = [np.eye(4)[:3, :3], np.ones((5, 2)) / np.sqrt(2)]
+
 TOO_MANY_FEATURES = [
     [0, 0, 0, 1, 0],
     1 / np.sqrt(8) * np.array([1] * 8),
     [complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3), complex(0, -np.sqrt(0.6)), 0.0, 0.0],
 ]
+
+TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
 class TestDecomposition:
@@ -49,6 +55,18 @@ class TestDecomposition:
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "QubitStateVector"
+        assert tape.batch_size is None
+
+    def test_expansion_broadcasted(self):
+        """Checks the queue for the default settings."""
+
+        op = qml.AmplitudeEmbedding(features=BROADCASTED_FEATURES[0], wires=range(2))
+        assert op.batch_size == 3
+        tape = op.expand()
+
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "QubitStateVector"
+        assert tape.batch_size == 3
 
     @pytest.mark.parametrize("normalize", (True, False))
     @pytest.mark.parametrize("inpt", FEATURES)
@@ -67,6 +85,22 @@ class TestDecomposition:
         state = circuit.device.state.ravel()
         assert np.allclose(state, inpt)
 
+    @pytest.mark.parametrize("normalize", (True, False))
+    @pytest.mark.parametrize("inpt", BROADCASTED_FEATURES)
+    def test_prepares_correct_broadcasted_state(self, inpt, normalize):
+        """Checks the state for real and complex inputs."""
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=normalize)
+            return qml.state()
+
+        state = circuit(x=inpt)
+        assert np.allclose(state, inpt)
+
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
     @pytest.mark.parametrize("pad", [complex(0.1, 0.1), 0.0, 1.0])
     def test_prepares_padded_state(self, inpt, pad):
@@ -82,7 +116,27 @@ class TestDecomposition:
 
         circuit(x=inpt)
         state = circuit.device.state.ravel()
+        # Make sure all padded values are the same constant
+        # by checking how many different values there are
         assert len(set(state[len(inpt) :])) == 1
+
+    @pytest.mark.parametrize("inpt", NOT_ENOUGH_BROADCASTED_FEATURES)
+    @pytest.mark.parametrize("pad", [complex(0.1, 0.1), 0.0, 1.0])
+    def test_prepares_padded_state_broadcasted(self, inpt, pad):
+        """Checks the state for real and complex padding constants."""
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=pad, normalize=False)
+            return qml.state()
+
+        state = circuit(x=inpt)
+        # Make sure all padded values are the same constant
+        # by checking how many different values there are
+        assert len(np.unique(state[:, inpt.shape[1] :])) == 1
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -110,7 +164,7 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize("inpt", FEATURES)
+    @pytest.mark.parametrize("inpt", FEATURES + BROADCASTED_FEATURES)
     def test_throws_exception_if_not_normalized(self, inpt):
         """Checks exception when state is not normalized and `normalize=False`."""
         not_nrmlzd = 2 * inpt
@@ -141,7 +195,13 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
             circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
-    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES + TOO_MANY_FEATURES)
+    @pytest.mark.parametrize(
+        "inpt",
+        NOT_ENOUGH_FEATURES
+        + TOO_MANY_FEATURES
+        + NOT_ENOUGH_BROADCASTED_FEATURES
+        + TOO_MANY_BROADCASTED_FEATURES,
+    )
     def test_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
         """Checks exception if the number of features is wrong and
         no automatic padding is chosen."""
@@ -159,7 +219,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be of length"):
             circuit(x=inpt)
 
-    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
+    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES + TOO_MANY_BROADCASTED_FEATURES)
     def test_throws_exception_if_more_features_than_amplitudes_padding(self, inpt):
         """Checks exception if the number of features is larger than the number of amplitudes, and
         automatic padding is chosen."""
@@ -238,13 +298,22 @@ def circuit_decomposed(features):
     return qml.state()
 
 
+all_features = [
+    [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+    [
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+    ],
+]
+
+
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces."""
 
-    def test_list_and_tuples(self, tol):
+    @pytest.mark.parametrize("features", all_features)
+    def test_list_and_tuples(self, tol, features):
         """Tests common iterables as inputs."""
-
-        features = [1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0]
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -260,10 +329,11 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd(self, tol):
+    @pytest.mark.parametrize("features", all_features)
+    def test_autograd(self, tol, features):
         """Tests autograd tensors."""
 
-        features = pnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
+        features = pnp.array(features, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -276,13 +346,14 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, tol):
+    @pytest.mark.parametrize("features", all_features)
+    def test_jax(self, tol, features):
         """Tests jax tensors."""
 
         import jax
         import jax.numpy as jnp
 
-        features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+        features = jnp.array(features)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -295,13 +366,14 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax_jit(self, tol):
+    @pytest.mark.parametrize("features", all_features)
+    def test_jax_jit(self, tol, features):
         """Tests jax tensors when using JIT."""
 
         import jax
         import jax.numpy as jnp
 
-        features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+        features = jnp.array(features)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -319,7 +391,7 @@ class TestInterfaces:
 
         import tensorflow as tf
 
-        features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+        features = tf.Variable(all_features[0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -332,12 +404,27 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
+    def test_tf_error_when_batching(self, tol):
+        """Tests batched tf tensors raising an error."""
+
+        import tensorflow as tf
+
+        features = tf.Variable(all_features[1])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="tf")
+
+        with pytest.raises(ValueError, match="does not support batched Tensorflow features"):
+            circuit(features)
+
+    @pytest.mark.tf
     def test_tf_jit(self, tol):
         """Tests tf tensors when using JIT."""
 
         import tensorflow as tf
 
-        features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+        features = tf.Variable(all_features[0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -350,12 +437,13 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, tol):
+    @pytest.mark.parametrize("features", all_features)
+    def test_torch(self, tol, features):
         """Tests torch tensors."""
 
         import torch
 
-        features = torch.tensor([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
+        features = torch.tensor(features, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
