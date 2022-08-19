@@ -151,8 +151,8 @@ class QNSPSAOptimizer:
 
         Args:
             cost (QNode): the QNode wrapper for the objective function for optimization
-            *args : variable length argument list for qnode
-            **kwargs : variable length of keyword arguments for the qnode
+            args : variable length argument list for qnode
+            kwargs : variable length of keyword arguments for the qnode
 
         Returns:
             np.array: the new variable values after step-wise update :math:`x^{(t+1)}`
@@ -174,8 +174,8 @@ class QNSPSAOptimizer:
 
         Args:
             cost (QNode): the QNode wrapper for the objective function for optimization
-            *args : variable length argument list for qnode
-            **kwargs : variable length of keyword arguments for the qnode
+            args : variable length argument list for qnode
+            kwargs : variable length of keyword arguments for the qnode
 
         Returns:
             (np.array, float): the new variable values :math:`x^{(t+1)}` and the objective
