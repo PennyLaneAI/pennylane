@@ -15,7 +15,7 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 import functools
 import warnings
 from collections.abc import Sequence
@@ -424,8 +424,7 @@ def finite_diff_new(
     ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.jacobian(circuit)(params)
-    tensor([[-0.38751725, -0.18884792, -0.38355708],
-            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
 
 
     .. details::
@@ -580,9 +579,15 @@ def finite_diff_new(
                 g = [i + j for i, j in zip(g, c0r0)]
 
             if len(g) > 1:
-                grads.append(tuple(np.array(i / (h**n)) for i in g))
+                if isinstance(results[0], numpy.ndarray):
+                    grads.append(tuple(numpy.array(i / (h**n)) for i in g))
+                else:
+                    grads.append(tuple(i / (h**n) for i in g))
             else:
-                grads.append(np.array(g[0] / (h**n)))
+                if isinstance(results[0], numpy.ndarray):
+                    grads.append(numpy.array(g[0] / (h**n)))
+                else:
+                    grads.append(g[0] / (h**n))
 
         if len(tape.trainable_params) > 1:
             return tuple(grads)
