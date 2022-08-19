@@ -753,7 +753,7 @@ class TestIntegration:
         assert -2 in results.astype(np.float32).tolist()
 
     def test_measurement_process_count(self):
-        """Test Sum class instance in counts measurement process."""  # currently can't support due to bug
+        """Test Sum class instance in counts measurement process."""
         dev = qml.device("default.qubit", wires=2, shots=20)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
