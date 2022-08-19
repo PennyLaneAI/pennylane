@@ -750,7 +750,7 @@ class TestIntegration:
         results = my_circ()
 
         assert len(results) == 20
-        assert (results == 2).al()
+        assert (results == 2).all()
 
     def test_measurement_process_count(self):
         """Test Sum class instance in counts measurement process."""
