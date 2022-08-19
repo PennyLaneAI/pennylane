@@ -254,6 +254,9 @@ class Pow(SymbolicOp):
         """
         return self.z * self.base.generator()
 
+    def adjoint(self):
+        return Pow(base=qml.adjoint(self.base), z=self.z)
+
     def simplify(self) -> Union["Pow", Identity]:
         try:
             ops = self.base.pow(z=self.z)
