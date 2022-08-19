@@ -861,7 +861,6 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
         assert 1 in list(results.keys())
         assert -1 in list(results.keys())
 
