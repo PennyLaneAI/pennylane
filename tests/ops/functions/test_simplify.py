@@ -128,3 +128,37 @@ class TestSimplifyQNodes:
         assert s_obs.data == simplified_tape_op.data
         assert s_obs.wires == simplified_tape_op.wires
         assert s_obs.arithmetic_depth == simplified_tape_op.arithmetic_depth
+
+
+class TestSimplifyCallables:
+    """Tests for the qml.simplify method used with callables."""
+
+    def test_simplify_qfunc(self):
+        """Test the simplify method with a qfunc."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def qfunc():
+            qml.prod(qml.prod(qml.PauliX(0) ** 1, qml.PauliY(0)), qml.PauliZ(0))
+            return qml.expval(
+                op=qml.prod(qml.prod(qml.PauliX(0) ** 1, qml.PauliY(0)), qml.PauliZ(0))
+            )
+
+        simplified_tape_op = qml.prod(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0))
+
+        s_qfunc = qml.simplify(qfunc)
+
+        qnode = qml.QNode(qfunc, dev)
+        s_qnode = qml.QNode(s_qfunc, dev)
+
+        assert s_qnode() == qnode()
+        assert len(s_qnode.tape) == 2
+        s_op = s_qnode.tape.operations[0]
+        s_obs = s_qnode.tape.observables[0]
+        assert isinstance(s_op, qml.ops.Prod)
+        assert s_op.data == simplified_tape_op.data
+        assert s_op.wires == simplified_tape_op.wires
+        assert s_op.arithmetic_depth == simplified_tape_op.arithmetic_depth
+        assert isinstance(s_obs, qml.ops.Prod)
+        assert s_obs.data == simplified_tape_op.data
+        assert s_obs.wires == simplified_tape_op.wires
+        assert s_obs.arithmetic_depth == simplified_tape_op.arithmetic_depth
