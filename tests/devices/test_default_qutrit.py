@@ -950,6 +950,14 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
+        # Test reversed wire order to see if axes are stacked correctly
+        state_out = method(self.state, axes=[1, 0], inverse=inverse)
+        op = op(wires=[1, 0])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
 
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
