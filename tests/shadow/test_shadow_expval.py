@@ -178,38 +178,43 @@ expected_qft = [
 ]
 
 
-@pytest.mark.all_interfaces
+@pytest.mark.autograd
 class TestExpvalForward:
     """Test the shadow_expval measurement process forward pass"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_hadamard_expval(self, interface, k=1, obs=obs_hadamard, expected=expected_hadamard):
+    def test_hadamard_expval(self, k=1, obs=obs_hadamard, expected=expected_hadamard):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
-        import torch
-
-        circuit = hadamard_circuit(3, shots=100000, interface=interface)
+        circuit = hadamard_circuit(3, shots=100000)
         actual = circuit(obs, k=k)
 
         assert actual.shape == (len(obs_hadamard),)
-        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
+        assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_max_entangled_expval(
-        self, interface, k=1, obs=obs_max_entangled, expected=expected_max_entangled
+        self, k=1, obs=obs_max_entangled, expected=expected_max_entangled
     ):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
-        import torch
-
-        circuit = max_entangled_circuit(3, shots=100000, interface=interface)
+        circuit = max_entangled_circuit(3, shots=100000)
         actual = circuit(obs, k=k)
 
         assert actual.shape == (len(obs_max_entangled),)
-        assert actual.dtype == torch.float64 if interface == "torch" else np.float64
+        assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
+    def test_non_pauli_error(self):
+        """Test that an error is raised when a non-Pauli observable is passed"""
+        circuit = hadamard_circuit(3)
+
+        msg = "Observable must be a linear combination of Pauli observables"
+        with pytest.raises(ValueError, match=msg):
+            circuit(qml.Hadamard(0) @ qml.Hadamard(2))
+
+
+@pytest.mark.all_interfaces
+class TestExpvalForwardInterfaces:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):
         """Test that the expval estimation is correct for a QFT state"""
@@ -221,14 +226,6 @@ class TestExpvalForward:
         assert actual.shape == (len(obs_qft),)
         assert actual.dtype == torch.float64 if interface == "torch" else np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
-
-    def test_non_pauli_error(self):
-        """Test that an error is raised when a non-Pauli observable is passed"""
-        circuit = hadamard_circuit(3)
-
-        msg = "Observable must be a linear combination of Pauli observables"
-        with pytest.raises(ValueError, match=msg):
-            circuit(qml.Hadamard(0) @ qml.Hadamard(2))
 
 
 obs_strongly_entangled = [
