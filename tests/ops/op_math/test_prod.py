@@ -528,6 +528,15 @@ class TestMatrix:
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
+    def test_sparse_wire_error(self):
+        """Test that an error is raised when wire_order is provided."""
+        op = Prod(qml.PauliX(wires=1), qml.PauliZ(wires=0))
+
+        with pytest.raises(
+            NotImplementedError, match="The wire_order argument is not yet implemented"
+        ):
+            op.sparse_matrix(wire_order=[0, 1])
+
 
 class TestProperties:
     """Test class properties."""
