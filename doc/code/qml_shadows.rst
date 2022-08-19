@@ -1,4 +1,4 @@
-qml.resource
+qml.shadows
 =============
 
 Overview
