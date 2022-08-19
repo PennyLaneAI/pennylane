@@ -88,14 +88,16 @@ def evolve_under(ops, coeffs, time, controls):
         coeffs (List[int]): List of the respective coefficients of the Pauliwords of the Hamiltonian
         time (float): At what time to evaluate these Pauliwords
     """
+    ops_temp = []
     for op, coeff in zip(ops, coeffs):
-        ControlledPauliEvolution(
+        pauli_word = qml.grouping.pauli_word_to_string(op)
+        ops_temp.append(ControlledPauliEvolution(
             coeff * time,
             wires=op.wires,
-            pauli_word=qml.grouping.pauli_word_to_string(op),
+            pauli_word=pauli_word,
             controls=controls,
-        )
-
+        ))
+    return ops_temp
 
 def calculate_Xi_decomposition(hamiltonian):
     """
