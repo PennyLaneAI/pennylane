@@ -1549,15 +1549,7 @@ class QubitDevice(Device):
                 outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
         else:
             if obs.return_type is AllCounts:
-                try:
-                    outcomes = qml.eigvals(obs)
-                #  if observable has no info on eigenvalues, we cannot return this measurement
-                except qml.operation.EigvalsUndefinedError:
-                    warnings.warn(
-                        f"Warning: Error occurred in attempting to generate all outcomes."
-                        f"Cannot find outcomes for {obs.name} (EigvalsUndefinedError). "
-                        f"Only observed outcomes will be returned."
-                    )
+                outcomes = qml.eigvals(obs)
 
         # generate empty outcome dict, populate values with state counts
         outcome_dict = {k: np.int64(0) for k in outcomes}
