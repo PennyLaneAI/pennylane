@@ -841,13 +841,13 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.sample(op=prod_op)
 
         results = my_circ()
 
         assert len(results) == 20
-        assert 1 in results.tolist()
-        assert -1 in results.tolist()
+        assert (results == 1).all()
 
     def test_measurement_process_counts(self):
         """Test Prod class instance in sample measurement process."""
@@ -856,13 +856,14 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.counts(op=prod_op)
 
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in list(results.keys())
-        assert -1 in list(results.keys())
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
