@@ -735,7 +735,9 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor([func(t) for t in theta], dtype=torch.complex128, device=torch_device)
+        op_mat = torch.tensor(
+            np.array([func(t) for t in theta]), dtype=torch.complex128, device=torch_device
+        )
         expected = qml.math.einsum("lij,j->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -754,7 +756,9 @@ class TestApplyBroadcasted:
         dev.apply(queue)
 
         res = dev.state
-        op_mat = torch.tensor([func(t) for t in theta], dtype=torch.complex128, device=torch_device)
+        op_mat = torch.tensor(
+            np.array([func(t) for t in theta]), dtype=torch.complex128, device=torch_device
+        )
         expected = qml.math.einsum("lij,lj->li", op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1136,10 +1140,10 @@ class TestExpval:
 
         dev = device(wires=2, torch_device=torch_device)
 
-        par1 = theta.to(device=torch_device)
-        par2 = phi.to(device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
         with qml.tape.QuantumTape() as tape:
-            queue = [qml.RY(par1, wires=0), qml.RY(par2, wires=1), qml.CNOT(wires=[0, 1])]
+            queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(Hermit_mat2, wires=[0, 1]))]
 
         res = dev.execute(tape)
@@ -1160,6 +1164,9 @@ class TestExpval:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = device(wires=3, torch_device=torch_device)
         dev.reset()
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -1184,6 +1191,8 @@ class TestExpval:
         """Test that a tensor product involving PauliZ and Identity works correctly"""
         dev = device(wires=3, torch_device=torch_device)
         dev.reset()
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
 
         obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
 
@@ -1207,6 +1216,10 @@ class TestExpval:
     def test_pauliz_hadamard(self, device, torch_device, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = device(wires=3, torch_device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
+
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
         dev.reset()
@@ -1233,6 +1246,9 @@ class TestExpval:
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = device(wires=3, torch_device=torch_device)
         dev.reset()
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
 
         Hermit_mat3 = torch.tensor(
             [
@@ -1272,6 +1288,10 @@ class TestExpval:
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = device(wires=3, torch_device=torch_device)
 
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+        varphi = varphi.to(device=torch_device)
+
         A1 = torch.tensor([[1, 2], [2, 4]], dtype=torch.complex128)
 
         A2 = torch.tensor(
@@ -1283,6 +1303,8 @@ class TestExpval:
             ],
             dtype=torch.complex128,
         )
+        A1 = A1.to(device=torch_device)
+        A2 = A2.to(device=torch_device)
 
         obs = qml.Hermitian(A1, wires=[0]) @ qml.Hermitian(A2, wires=[1, 2])
 
@@ -1328,10 +1350,14 @@ class TestExpval:
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = device(wires=2, torch_device=torch_device)
 
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
+
         A = torch.tensor(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
         )
+        A = A.to(device=torch_device)
 
         obs = qml.Hermitian(A, wires=[0]) @ qml.Identity(wires=[1])
 
@@ -1356,12 +1382,18 @@ class TestExpval:
     ):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = device(wires=3, torch_device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
 
         A = torch.tensor(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
         )
+        A = A.to(device=torch_device)
+
         Identity = torch.tensor([[1, 0], [0, 1]])
+        Identity = Identity.to(device=torch_device)
+
         H = torch.kron(torch.kron(Identity, Identity), A)
         obs = qml.Hermitian(H, wires=[2, 1, 0])
 
@@ -1397,12 +1429,12 @@ class TestVar:
         """Tests for variance calculation"""
         dev = device(wires=1, torch_device=torch_device)
 
-        par1 = theta.to(device=torch_device)
-        par2 = phi.to(device=torch_device)
+        theta = theta.to(device=torch_device)
+        phi = phi.to(device=torch_device)
 
         # test correct variance for <Z> of a rotated state
         with qml.tape.QuantumTape() as tape:
-            queue = [qml.RX(par1, wires=0), qml.RY(par2, wires=0)]
+            queue = [qml.RX(theta, wires=0), qml.RY(phi, wires=0)]
             observables = [qml.var(qml.PauliZ(wires=[0]))]
 
         res = dev.execute(tape)
@@ -1747,6 +1779,7 @@ class TestQNodeIntegration:
 
         # Pass a Torch Variable to the qfunc
         params = torch.tensor([theta], device=torch_device)
+        params = params.to(device=torch_device)
         circuit(params)
         res = dev.state
         expected = torch.tensor(func(theta), dtype=torch.complex128, device=torch_device) @ state

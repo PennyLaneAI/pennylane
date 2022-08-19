@@ -4,6 +4,27 @@
 
 <h3>New features since last release</h3>
 
+* Embedding templates now support parameter broadcasting.
+  [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
+  
+  Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
+  parameter broadcasting with a leading broadcasting dimension in their variational
+  parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
+  vector of features. With broadcasting, we now also can compute
+
+  ```pycon
+  >>> features = np.array([
+  ...     [0.5, 0.5, 0., 0., 0.5, 0., 0.5, 0.],
+  ...     [1., 0., 0., 0., 0., 0., 0., 0.],
+  ...     [0.5, 0.5, 0., 0., 0., 0., 0.5, 0.5],
+  ... ])
+  >>> op = qml.AmplitudeEmbedding(features, wires=[1, 5, 2])
+  >>> op.batch_size
+  3
+  ```
+
+  An exception is `BasisEmbedding`, which is not broadcastable.
+  
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
@@ -76,6 +97,9 @@
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
+* Added `PSWAP` operator.
+  [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
+
 * The `qml.simplify` method now can compute the adjoint and power of specific operators.
   [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
 
@@ -100,7 +124,10 @@ This release contains contributions from (in alphabetical order):
 Olivia Di Matteo,
 Josh Izaac,
 Edward Jiang,
+Ankit Khandelwal,
 Korbinian Kottmann,
+Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
 Antal Száva
+David Wierichs
