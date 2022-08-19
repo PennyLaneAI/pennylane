@@ -76,3 +76,9 @@ class TestIsUnitary:
         """Test unitary check with Prod and Sum arithmetic operations."""
         assert qml.is_unitary(qml.prod(*arithmetic_ops))
         assert not qml.is_unitary(qml.op_sum(*arithmetic_ops))
+
+    @pytest.mark.parametrize("op", unitary_ops)
+    def test_s_prod(self, op):
+        """Test the hermitian check with scalar products of hermitian operators."""
+        assert qml.is_unitary(qml.s_prod(1, op))
+        assert not qml.is_unitary(qml.s_prod(2, op))
