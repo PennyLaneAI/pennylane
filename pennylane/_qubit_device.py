@@ -21,7 +21,6 @@ This module contains the :class:`QubitDevice` abstract base class.
 import abc
 import itertools
 import warnings
-from collections.abc import Iterable
 
 import numpy as np
 
