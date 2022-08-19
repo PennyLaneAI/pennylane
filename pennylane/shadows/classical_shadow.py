@@ -98,7 +98,7 @@ class ClassicalShadow:
 
         if bits.shape[1] != len(self.wire_map):
             raise ValueError(
-                f"The first axis of bits must have the same size as wire_map, got {bits.shape[1]} and {len(self.wire_map)}."
+                f"The 1st axis of bits must have the same size as wire_map, got {bits.shape[1]} and {len(self.wire_map)}."
             )
 
         self.observables = [
