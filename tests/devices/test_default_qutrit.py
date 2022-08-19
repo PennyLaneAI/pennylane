@@ -944,18 +944,18 @@ class TestApplyOps:
     def test_apply_two_qutrit_op(self, op, method, inverse):
         """Test if the application of two qutrit operations is correct."""
         state_out = method(self.state, axes=[0, 1], inverse=inverse)
-        op = op(wires=[0, 1])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        op1 = op(wires=[0, 1])
+        matrix = op1.inv().matrix() if inverse else op1.matrix()
         matrix = matrix.reshape((3, 3, 3, 3))
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
         # Test reversed wire order to see if axes are stacked correctly
         state_out = method(self.state, axes=[1, 0], inverse=inverse)
-        op = op(wires=[1, 0])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        op2 = op(wires=[1, 0])
+        matrix = op2.inv().matrix() if inverse else op2.matrix()
         matrix = matrix.reshape((3, 3, 3, 3))
-        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        state_out_einsum = np.einsum("badc,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
 
