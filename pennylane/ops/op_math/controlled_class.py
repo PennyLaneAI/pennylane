@@ -337,8 +337,8 @@ class Controlled(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     def decomposition(self):
-        decomp = _decompose_no_control_values(self)
         if all(self.control_values):
+            decomp = _decompose_no_control_values(self)
             if decomp is None:
                 raise qml.operation.DecompositionUndefinedError
             return decomp
@@ -346,8 +346,9 @@ class Controlled(SymbolicOp):
         # We need to add paulis to flip some control wires
         d = [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
 
+        decomp = _decompose_no_control_values(self)
         if decomp is None:
-            no_control_values = copy(self)
+            no_control_values = copy(self).queue()
             no_control_values.hyperparameters["control_values"] = [1] * len(self.control_wires)
             d.append(no_control_values)
         else:
