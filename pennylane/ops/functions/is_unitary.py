@@ -46,7 +46,7 @@ def is_unitary(op: Operator):
     >>> qml.is_unitary(op2)
     False
     """
-    identity_mat = np.identity(2 ** len(op.wires))
+    identity_mat = qml.math.eye(2 ** len(op.wires))
     adj_op = qml.adjoint(op)
     op_prod_adjoint_matrix = qml.prod(op, adj_op).matrix()
     return bool(qml.math.allclose(op_prod_adjoint_matrix, identity_mat))
