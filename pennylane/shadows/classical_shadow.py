@@ -339,6 +339,16 @@ def pauli_expval(bits, recipes, word):
     The approximate expectation value of a Pauli word given the bits and recipes
     from a classical shadow measurement.
 
+    The expectation value can be computed using
+
+    .. math::
+
+        \alpha = \frac{1}{|T_{match}|}\sum_{T_{\match}}\left(1 - 2\left(\sum b \text{  mod }2\right)\right)
+
+    where :math:`T_{match}` denotes the snapshots with recipes that match the Pauli word,
+    and the right-most sum is taken over all bits in the snapshot where the observable
+    in the Pauli word for that bit is not the identity.
+
     Args:
         bits (tensor-like[int]): An array with shape ``(T, n)``, where ``T`` is the
             number of snapshots and ``n`` is the number of measured qubits. Each
