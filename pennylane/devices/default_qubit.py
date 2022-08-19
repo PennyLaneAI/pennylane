@@ -110,6 +110,7 @@ class DefaultQubit(QubitDevice):
         "CNOT",
         "SWAP",
         "ISWAP",
+        "PSWAP",
         "Adjoint(ISWAP)",
         "SISWAP",
         "Adjoint(SISWAP)",
