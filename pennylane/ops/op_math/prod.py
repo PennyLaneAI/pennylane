@@ -300,15 +300,6 @@ class Prod(Operator):
         )
         return reduce(math.dot, mats)
 
-    def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the product op
-        in csr representation."""
-        if wire_order is not None:
-            raise NotImplementedError("The wire_order argument is not yet implemented")
-
-        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
-        return reduce(math.dot, mats_gen)
-
     # pylint: disable=protected-access
     @property
     def _queue_category(self):
