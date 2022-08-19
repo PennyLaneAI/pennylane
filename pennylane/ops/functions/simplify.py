@@ -27,15 +27,15 @@ from pennylane.tape import QuantumTape, stop_recording
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
-    """Simplifies the operator by reducing arithmetic depth or number of rotation
-    parameters.
-
+    """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
+    or number of rotation parameters.
 
     Args:
-        op (.Operator): an operator
+        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
+            tape or function that applies quantum operations
 
     Returns:
-        .Operator: simplified operator
+        (.Operator, pennylane.QNode, .QuantumTape, or Callable): Simplified input.
 
     **Example**
 
@@ -54,7 +54,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     Adjoint(PauliX)(wires=[0]),
     Adjoint(PauliZ)(wires=[1]))
 
-    This function also can simplify the number of rotation gate parameters:
+    This function can also simplify the number of rotation gate parameters:
 
     >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
     RX(0.1, wires=[0])
@@ -67,6 +67,18 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     >>> qml.simplify(op)
     Adjoint(RX)(1.5707963267948966, wires=[0]) + Adjoint(PauliX)(wires=[0])
 
+    Moreover, ``qml.simplify`` can be used to simplify QNodes or quantum functions:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.simplify
+        @qml.qnode(dev)
+        def circuit():
+            qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+            return qml.probs(wires=0)
+    >>> circuit()
+    tensor([[0.64596329, 0.35403671]], requires_grad=True)
+    >>> list(circuit.tape)
+    [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingContext.recording():
