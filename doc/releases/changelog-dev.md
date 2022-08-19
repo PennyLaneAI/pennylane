@@ -124,8 +124,9 @@
 
 <h3>Breaking changes</h3>
 
-* Using an operator that might not be hermitian as an observable now raises a warning instead of an
-  error. [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
+  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
 <h3>Deprecations</h3>
 
