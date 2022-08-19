@@ -20,6 +20,7 @@ from typing import Tuple
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 import pennylane.numpy as qnp
@@ -530,6 +531,27 @@ class TestMatrix:
         assert isinstance(mat, tf.Tensor)
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
+
+    sparse_ops = (
+        qml.Identity(wires=0),
+        qml.PauliX(wires=0),
+        qml.PauliY(wires=0),
+        qml.PauliZ(wires=0),
+        qml.Hadamard(wires=0),
+    )
+
+    def test_sparse_matrix(self):
+        """Test the sparse_matrix representation of sum of ops."""
+        sum_op = Sum(*self.sparse_ops)
+        sparse_matrix = sum_op.sparse_matrix()
+        sparse_matrix.sort_indices()
+
+        expected_sparse_matrix = csr_matrix(sum_op.matrix())
+        expected_sparse_matrix.sort_indices()
+
+        assert type(sparse_matrix) == type(expected_sparse_matrix)
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
 
 class TestProperties:

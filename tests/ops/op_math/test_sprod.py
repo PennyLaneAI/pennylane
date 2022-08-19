@@ -299,18 +299,29 @@ class TestMatrix:
         true_mat = 42 * U
         assert np.allclose(mat, true_mat)
 
-    # TODO[Jay]: remove xfail once there is support for sparse matrices for most operations
-    @pytest.mark.xfail
-    @pytest.mark.parametrize("scalar, op", ops)
-    def test_sparse_matrix(self, op, scalar):
+    sparse_ops = (
+        qml.Identity(wires=0),
+        qml.PauliX(wires=0),
+        qml.PauliY(wires=0),
+        qml.PauliZ(wires=0),
+        qml.Hadamard(wires=0),
+    )
+
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix(self, op):
         """Test the sparse_matrix representation of scaled ops."""
+        scalar = 1 + 2j
         sprod_op = SProd(scalar, op)
         sparse_matrix = sprod_op.sparse_matrix()
+        sparse_matrix.sort_indices()
 
         expected_sparse_matrix = scalar * op.matrix()
         expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+        expected_sparse_matrix.sort_indices()
 
-        assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
+        assert type(sparse_matrix) == type(expected_sparse_matrix)
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
     def test_sparse_matrix_sparse_hamiltonian(self):
         """Test the sparse_matrix representation of scaled ops."""
