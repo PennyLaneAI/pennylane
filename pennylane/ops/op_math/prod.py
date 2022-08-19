@@ -15,6 +15,7 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+import ast
 import itertools
 from copy import copy
 from functools import reduce
@@ -27,6 +28,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, expand_matrix
 from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
 
 def prod(*ops, do_queue=True, id=None):
@@ -150,6 +152,25 @@ class Prod(Operator):
     """
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
+    _pauli_mult = {
+        "II": (1.0, "I"),
+        "IX": (1.0, "X"),
+        "IY": (1.0, "Y"),
+        "IZ": (1.0, "Z"),
+        "XI": (1.0, "X"),
+        "XX": (1.0, "I"),
+        "XY": (1.0j, "Z"),
+        "XZ": (-1.0j, "Y"),
+        "YI": (1.0, "Y"),
+        "YX": (-1.0j, "Z"),
+        "YY": (1.0, "I"),
+        "YZ": (1.0j, "X"),
+        "ZI": (1.0, "Z"),
+        "ZX": (1.0j, "Y"),
+        "ZY": (-1.0j, "X"),
+        "ZZ": (1.0, "I"),
+    }
+    _paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
     def __init__(
         self, *factors: Operator, do_queue=True, id=None
@@ -291,13 +312,13 @@ class Prod(Operator):
         """Representation of the operator as a matrix in the computational basis."""
         if wire_order is None:
             wire_order = self.wires
-
         mats = (
-            expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
-            if not isinstance(op, qml.Hamiltonian)
-            else expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            if isinstance(op, qml.Hamiltonian)
+            else expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
             for op in self.factors
         )
+
         return reduce(math.dot, mats)
 
     # pylint: disable=protected-access
@@ -341,6 +362,7 @@ class Prod(Operator):
             factors
         """
         new_factors = ()
+        pauli_tuples = {}  # pauli_tuples = {wire: (pauli_coeff, pauli_word)}
 
         for factor in factors:
             if isinstance(factor, Prod):
@@ -353,7 +375,24 @@ class Prod(Operator):
             elif isinstance(simplified_factor, Sum):
                 new_factors += (simplified_factor.summands,)
             elif not isinstance(simplified_factor, qml.Identity):
-                new_factors += ((simplified_factor,),)
+                label = simplified_factor.label()
+                if label in ["I", "X", "Y", "Z"]:
+                    wire = simplified_factor.wires[0]
+                    if wire not in pauli_tuples:
+                        pauli_tuples[wire] = (1, "I")
+                    old_coeff, old_word = pauli_tuples[wire]
+                    coeff, new_word = cls._pauli_mult[old_word + label]
+                    pauli_tuples[wire] = (old_coeff * coeff, new_word)
+                else:
+                    new_factors += ((simplified_factor,),)
+
+        for wire, pauli_tuple in pauli_tuples.items():
+            pauli_coeff = pauli_tuple[0]
+            pauli_word = pauli_tuple[1]
+            if pauli_word != "I":
+                pauli_op = cls._paulis[pauli_word](wire)
+                op = pauli_op if pauli_coeff == 1 else qml.s_prod(pauli_coeff, pauli_op)
+                new_factors += ((op,),)
 
         return new_factors
 
@@ -362,6 +401,12 @@ class Prod(Operator):
         factors = list(itertools.product(*factors))
         if len(factors) == 1:
             factor = factors[0]
+            if len(factor) == 0:
+                return (
+                    qml.prod(*(qml.Identity(w) for w in self.wires))
+                    if len(self.wires) > 1
+                    else qml.Identity(self.wires[0])
+                )
             return factor[0] if len(factor) == 1 else Prod(*factor)
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
 
