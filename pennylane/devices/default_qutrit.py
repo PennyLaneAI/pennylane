@@ -222,7 +222,7 @@ class DefaultQutrit(QutritDevice):
         state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=not inverse)
         return self._stack([state[slices[0]], state_1, state_2], axis=axes[0])
 
-    def _apply_tswap(self, state, axes, **kwargs):
+    def _apply_tswap(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a ternary SWAP gate by performing a partial transposition along the
         specified axes.
 
