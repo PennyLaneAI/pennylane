@@ -32,6 +32,8 @@ ops = {
     "ControlledQutritUnitary",
     "TShift",
     "TClock",
+    "TAdd",
+    "TSWAP",
 }
 
 obs = {
