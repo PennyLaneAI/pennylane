@@ -175,13 +175,13 @@ For example, we could run the previous circuit with ``all_outcomes=True``:
 
 .. code-block:: python
 
-dev = qml.device("default.qubit", wires=2, shots=1000)
+    dev = qml.device("default.qubit", wires=2, shots=1000)
 
-@qml.qnode(dev)
-def circuit():
-    qml.Hadamard(wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.counts(all_outcomes=True)
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.counts(all_outcomes=True)
 
 >>> result = circuit()
 >>> print(result)
