@@ -15,6 +15,7 @@
 from pennylane import Snapshot
 import pennylane as qml
 
+
 def test_decomposition():
     """Test the decomposition of the Snapshot operation."""
 
@@ -38,6 +39,7 @@ def test_adjoint():
     """Test the adjoint method for the Snapshot operation."""
     assert isinstance(Snapshot().adjoint(), Snapshot)
     assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
+
 
 def test_snapshot_no_empty_wire_list_error():
     """Test that Snapshot does not raise an empty wire error."""
