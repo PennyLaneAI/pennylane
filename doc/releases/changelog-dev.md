@@ -135,6 +135,8 @@
 
 <h3>Documentation</h3>
 
+* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
+
 <h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
@@ -149,5 +151,6 @@ Korbinian Kottmann,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva
+Antal Száva,
+Cody Wang,
 David Wierichs
