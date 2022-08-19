@@ -71,6 +71,8 @@ Operator to Other functions
 
     ~pennylane.matrix
     ~pennylane.eigvals
+    ~pennylane.is_hermitian
+    ~pennylane.is_unitary
 
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.
