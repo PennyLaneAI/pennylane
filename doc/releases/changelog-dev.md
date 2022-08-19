@@ -97,6 +97,9 @@
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
+* Added `PSWAP` operator.
+  [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
+
 * The `qml.simplify` method now can compute the adjoint and power of specific operators.
   [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
 
@@ -124,6 +127,7 @@ This release contains contributions from (in alphabetical order):
 Olivia Di Matteo,
 Josh Izaac,
 Edward Jiang,
+Ankit Khandelwal,
 Korbinian Kottmann,
 Rashid N H M,
 Zeyue Niu,
