@@ -604,7 +604,7 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test SProd class instance in sample measurement process."""  # currently can't support due to bug
+        """Test SProd class instance in sample measurement process.""" 
         dev = qml.device("default.qubit", wires=2, shots=20)
         sprod_op = SProd(1.23, qml.PauliX(1))
 
