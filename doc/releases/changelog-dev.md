@@ -112,7 +112,7 @@
   RX(-1, wires=[0])
   ```
   
-* Added `sparse_matrix()` support for single qubit observables and aritmetic operators.
+* Added `sparse_matrix()` support for single qubit observables
   [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 <h3>Breaking changes</h3>
