@@ -1993,6 +1993,7 @@ class TestParamShiftGradients:
                 [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
             ]
         )
+        print(res, expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf

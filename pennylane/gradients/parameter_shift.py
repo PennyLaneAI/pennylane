@@ -143,27 +143,27 @@ def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape)
 def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
     """Use shifted tape evaluations and parameter-shift rule coefficients
     to evaluate a gradient result."""
-
     _, coeffs, fn, unshifted_coeff, batch_size = data
 
     # individual post-processing of e.g. Hamiltonian grad tapes
     if fn is not None:
         res = fn(res)
 
+    axis = 0
+    if not broadcast and not qml.active_return():
+        res = qml.math.stack(res)
+    elif (
+        qml.math.get_interface(res[0]) != "torch"
+        and batch_size is not None
+        and not scalar_qfunc_output
+    ):
+        # If the original output is not scalar and broadcasting is used, the second axis
+        # (index 1) needs to be contracted. For Torch, this is not true because the
+        # output of the broadcasted tape is flat due to the behaviour of the Torch device.
+        axis = 1
+
     if not qml.active_return():
         # compute the linear combination of results and coefficients
-        axis = 0
-        if not broadcast:
-            res = qml.math.stack(res)
-        elif (
-            qml.math.get_interface(res[0]) != "torch"
-            and batch_size is not None
-            and not scalar_qfunc_output
-        ):
-            # If the original output is not scalar and broadcasting is used, the second axis
-            # (index 1) needs to be contracted. For Torch, this is not true because the
-            # output of the broadcasted tape is flat due to the behaviour of the Torch device.
-            axis = 1
         g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
 
         if unshifted_coeff is not None:
@@ -177,8 +177,8 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
         if not multi_measure:
 
             res = qml.math.stack(res)
-            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
-            g = np.squeeze(g)
+            res = qml.math.squeeze(res)
+            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
 
             if unshifted_coeff is not None:
                 # add the unshifted term
@@ -351,7 +351,6 @@ def expval_param_shift(
         return qml.math.T(qml.math.stack(grads))
 
     def processing_fn(results):
-
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(
@@ -524,10 +523,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         if non_involutory:
             # compute the second derivative of non-involutory observables
             pdA2 = pdA2_fn(results[tape_boundary:])
-
-            # if qml.active_return() and len(pdA2) == 1:
-            # If only one, get the result from the tuple
-            # pdA2 = pdA2[0]
 
             if involutory:
                 # if involutory observables are present, ensure they have zero gradient.

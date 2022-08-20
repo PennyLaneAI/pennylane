@@ -43,7 +43,6 @@ class TestParameterShiftRule:
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
-        qml.enable_return()
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
 
@@ -76,13 +75,11 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute_new(tapes))
         assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
-        qml.disable_return()
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
-        qml.enable_return()
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -129,12 +126,10 @@ class TestParameterShiftRule:
         for a_val, n_val in zip(autograd_val, numeric_val):
             assert np.allclose(a_val, n_val, atol=tol, rtol=0)
 
-        qml.disable_return()
 
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled rotation gates"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         b = 0.123
 
@@ -157,13 +152,11 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute_new(tapes))
         assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
-        qml.disable_return()
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
         gate is correct."""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
@@ -199,12 +192,10 @@ class TestParameterShiftRule:
         numeric_val = np.squeeze(fn(dev.batch_execute_new(tapes)))
         for idx, g in enumerate(grad):
             assert np.allclose(g, numeric_val[idx], atol=tol, rtol=0)
-        qml.disable_return()
 
     def test_gradients_agree_finite_differences(self, tol):
         """Tests that the parameter-shift rule agrees with the first and second
         order finite differences"""
-        qml.enable_return()
         params = np.array([0.1, -1.6, np.pi / 5])
 
         with qml.tape.QuantumTape() as tape:
@@ -229,14 +220,12 @@ class TestParameterShiftRule:
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
-        qml.disable_return()
 
     # TODO: remove xfail when var/finite diff works
     @pytest.mark.xfail
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
-        qml.enable_return()
         params = np.array([0.1, -1.6, np.pi / 5])
 
         with qml.tape.QuantumTape() as tape:
@@ -261,14 +250,12 @@ class TestParameterShiftRule:
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
-        qml.disable_return()
 
     # TODO: remove xfail when var/finite diff works
     @pytest.mark.autograd
     @pytest.mark.xfail
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
-        qml.enable_return()
         spy = mocker.spy(qml.gradients, "finite_diff")
         dev = qml.device("default.qubit.autograd", wires=2)
         x = 0.543
@@ -306,14 +293,12 @@ class TestParameterShiftRule:
         jac = qml.jacobian(cost_fn)(params)
         assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
         assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
-        qml.disable_return()
 
     @pytest.mark.autograd
     @pytest.mark.xfail
     def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
-        qml.enable_return()
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
@@ -351,7 +336,6 @@ class TestParameterShiftRule:
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -373,12 +357,10 @@ class TestParameterShiftRule:
         expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-        qml.disable_return()
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -401,12 +383,10 @@ class TestParameterShiftRule:
         expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-        qml.disable_return()
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
         y = -0.654
@@ -430,12 +410,10 @@ class TestParameterShiftRule:
 
         for a, e in zip(res, expected):
             assert np.allclose(np.squeeze(np.stack(a)), e, atol=tol, rtol=0)
-        qml.disable_return()
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        qml.enable_return()
 
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
@@ -489,11 +467,9 @@ class TestParameterShiftRule:
         # Probs
         assert np.allclose(res[0][1], probs_expected[:, 0])
         assert np.allclose(res[1][1], probs_expected[:, 1])
-        qml.disable_return()
 
     def test_involutory_variance(self, tol):
         """Tests qubit observables that are involutory"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
 
@@ -519,11 +495,9 @@ class TestParameterShiftRule:
 
         # assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
-        qml.disable_return()
 
     def test_non_involutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=1)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
@@ -551,12 +525,10 @@ class TestParameterShiftRule:
         expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
         assert gradA == pytest.approx(expected, abs=tol)
         # assert gradF == pytest.approx(expected, abs=tol)
-        qml.disable_return()
 
     def test_involutory_and_noninvolutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
@@ -587,12 +559,10 @@ class TestParameterShiftRule:
         assert np.diag(gradA) == pytest.approx(expected, abs=tol)
         # TODO: check when finite diff ready:
         # assert np.diag(gradF) == pytest.approx(expected, abs=tol)
-        qml.disable_return()
 
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
         values and variances"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54
@@ -643,11 +613,9 @@ class TestParameterShiftRule:
         for a, e in zip(gradA, expected):
             assert np.allclose(np.squeeze(np.stack(a)), e, atol=tol, rtol=0)
         # assert gradF == pytest.approx(expected, abs=tol)
-        qml.disable_return()
 
     def test_projector_variance(self, tol):
         """Test that the variance of a projector is correctly returned"""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         P = np.array([1])
         x, y = 0.765, -0.654
@@ -683,7 +651,6 @@ class TestParameterShiftRule:
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
         # TODO: check when finite diff ready:
         # assert gradF == pytest.approx(expected, abs=tol)
-        qml.disable_return()
 
     def cost1(x):
         qml.Rot(*x, wires=0)
@@ -718,7 +685,6 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_expval)
     def test_output_shape_matches_qnode_expval(self, cost, expected_shape, list_output):
         """Test that the transform output shape matches that of the QNode."""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
@@ -733,8 +699,6 @@ class TestParameterShiftRule:
                 assert isinstance(r, tuple)
                 assert len(r) == expected_shape[1]
 
-        qml.disable_return()
-
     costs_and_expected_probs = [
         (cost4, [3, 4], False),
         (cost5, [3, 4], True),
@@ -747,7 +711,6 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, expected_shape, list_output):
         """Test that the transform output shape matches that of the QNode."""
-        qml.enable_return()
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
@@ -771,13 +734,9 @@ class TestParameterShiftRule:
                 assert isinstance(r, qml.numpy.ndarray)
                 assert len(r) == expected_shape[1]
 
-        qml.disable_return()
-
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
-        qml.enable_return()
-
         class SpecialObject:
             """SpecialObject
 
@@ -840,18 +799,23 @@ class TestParameterShiftRule:
         par = np.array(0.2, requires_grad=True)
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
-        qml.disable_return()
 
 
+@pytest.mark.parametrize(
+    "broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))]
+)
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, tol):
+    # TODO: support Hessian with the new return types
+    @pytest.mark.skip
+    def test_autograd(self, tol, broadcast, expected):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
+        exp_num_tapes, exp_batch_sizes = expected
 
         def cost_fn(x):
             with qml.tape.QuantumTape() as tape:
@@ -861,8 +825,10 @@ class TestParamShiftGradients:
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.param_shift(tape)
-            jac = fn(dev.batch_execute_new(tapes))
+            tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
+            assert len(tapes) == exp_num_tapes
+            assert [t.batch_size for t in tapes] == exp_batch_sizes
+            jac = fn(dev.batch_execute(tapes))
             return jac
 
         res = qml.jacobian(cost_fn)(params)
@@ -874,7 +840,6 @@ class TestParamShiftGradients:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
-        qml.disable_return()
 
 
 # class TestHamiltonianExpvalGradients:
