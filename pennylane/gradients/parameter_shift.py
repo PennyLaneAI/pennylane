@@ -177,7 +177,10 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
         if not multi_measure:
 
             res = qml.math.stack(res)
-            res = qml.math.squeeze(res)
+
+            if tape.measurements[0].return_type == qml.measurements.Probability:
+                res = qml.math.squeeze(res)
+
             g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
 
             if unshifted_coeff is not None:
