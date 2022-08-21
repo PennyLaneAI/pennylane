@@ -1115,7 +1115,6 @@ class TestParameterShiftRule:
         assert len(tapes) == 1 + 2
 
         expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
-        print(gradA, expected)
         assert np.diag(gradA) == pytest.approx(expected, abs=tol)
         assert np.diag(gradF) == pytest.approx(expected, abs=tol)
 
@@ -1993,7 +1992,6 @@ class TestParamShiftGradients:
                 [np.sin(2 * x) * np.sin(2 * y), -2 * np.cos(x) ** 2 * np.cos(2 * y)],
             ]
         )
-        print(res, expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf

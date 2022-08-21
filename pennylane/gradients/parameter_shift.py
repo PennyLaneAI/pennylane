@@ -149,20 +149,21 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
     if fn is not None:
         res = fn(res)
 
-    axis = 0
-    if not broadcast and not qml.active_return():
-        res = qml.math.stack(res)
-    elif (
-        qml.math.get_interface(res[0]) != "torch"
-        and batch_size is not None
-        and not scalar_qfunc_output
-    ):
-        # If the original output is not scalar and broadcasting is used, the second axis
-        # (index 1) needs to be contracted. For Torch, this is not true because the
-        # output of the broadcasted tape is flat due to the behaviour of the Torch device.
-        axis = 1
-
     if not qml.active_return():
+
+        axis = 0
+        if not broadcast and not qml.active_return():
+            res = qml.math.stack(res)
+        elif (
+            qml.math.get_interface(res[0]) != "torch"
+            and batch_size is not None
+            and not scalar_qfunc_output
+        ):
+            # If the original output is not scalar and broadcasting is used, the second axis
+            # (index 1) needs to be contracted. For Torch, this is not true because the
+            # output of the broadcasted tape is flat due to the behaviour of the Torch device.
+            axis = 1
+
         # compute the linear combination of results and coefficients
         g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
 
@@ -171,17 +172,18 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
             g = g + unshifted_coeff * r0
 
     else:
-        #### New logic: merge with old one:
-
         multi_measure = len(tape.measurements) > 1
         if not multi_measure:
 
             res = qml.math.stack(res)
 
-            if tape.measurements[0].return_type == qml.measurements.Probability:
+            if (
+                tape.measurements[0].return_type == qml.measurements.Probability
+                or len(res.shape) > 1
+            ):
                 res = qml.math.squeeze(res)
 
-            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[axis], [0]])
+            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
 
             if unshifted_coeff is not None:
                 # add the unshifted term
@@ -400,6 +402,151 @@ def expval_param_shift(
     return gradient_tapes, processing_fn
 
 
+def _get_var_with_second_order(pdA2, f0, pdA):
+    """Auxiliary function to compute d(var(A))/dp = d<A^2>/dp -2 * <A> *
+    d<A>/dp for the variances"""
+    return pdA2 - 2 * f0 * pdA
+
+
+def _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
+    """Auxiliary function to get the partial derivative of <A^2>."""
+    pdA2 = 0
+
+    if non_involutory:
+        # compute the second derivative of non-involutory observables
+        pdA2 = pdA2_fn(results[tape_boundary:])
+
+        # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
+        involutory = set(var_idx) - set(non_involutory)
+
+        if involutory:
+            # if involutory observables are present, ensure they have zero gradient.
+            #
+            # For the pdA2_tapes, we have replaced non-involutory
+            # observables with their square (A -> A^2). However,
+            # involutory observables have been left as-is (A), and have
+            # not been replaced by their square (A^2 = I). As a result,
+            # components of the gradient vector will not be correct. We
+            # need to replace the gradient value with 0 (the known,
+            # correct gradient for involutory variables).
+            zero = qml.math.convert_like(0, pdA2)
+            new_pdA2 = []
+            for i, obs in enumerate(tape.observables):
+                obs_name = obs.name
+                if i in var_idx:
+                    if isinstance(obs_name, list):
+                        obs_involutory = any(n not in NONINVOLUTORY_OBS for n in obs_name)
+                    else:
+                        obs_involutory = obs_name not in NONINVOLUTORY_OBS
+
+                    if obs_involutory:
+                        new_pdA2.append(zero)
+                    else:
+                        new_pdA2.append(pdA2[i])
+            pdA2 = qml.math.array(new_pdA2)
+    return pdA2
+
+
+def _create_variance_proc_fn(
+    tape, var_mask, var_idx, pdA_fn, pdA2_fn, tape_boundary, non_involutory
+):
+    """Auxiliary function to define the processing function for computing the
+    derivative of variances using the parameter-shift rule.
+
+    Args:
+
+        var_mask (list): The mask of variance measurements in the measurement queue.
+        var_idx (list): The indices of variance measurements in the measurement queue.
+        pdA_fn (callable): The function required to evaluate the analytic derivative of <A>.
+        pdA2_fn (callable): If not None, non-involutory observables are
+            present; the partial derivative of <A^2> may be non-zero. Here, we
+            calculate the analytic derivatives of the <A^2> observables.
+        tape_boundary (callable): the number of first derivative tapes used to
+            determine the number of results to post-process later
+        non_involutory (list): the indices in the measurement queue of all non-involutory
+            observables
+    """
+
+    def processing_fn(results):
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if (
+            not qml.active_return()
+            and tape._qfunc_output is not None
+            and not isinstance(tape._qfunc_output, Sequence)
+        ):
+            results = [qml.math.squeeze(res) for res in results]
+
+        # We need to expand the dimensions of the variance mask,
+        # and convert it to be the same type as the results.
+        res = results[0]
+
+        mask = []
+        for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
+            array_func = np.ones if m else np.zeros
+            shape = qml.math.shape(r)
+            mask.append(array_func(shape, dtype=bool))
+
+        ragged = getattr(results[0], "dtype", None) is np.dtype("object")
+        if not qml.active_return() and ragged and qml.math.ndim(res) > 0:
+            res = qml.math.hstack(res)
+            mask = qml.math.hstack(mask)
+
+        f0 = qml.math.expand_dims(res, -1)
+        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
+
+        pdA = pdA_fn(results[1:tape_boundary])
+        assert len(f0) == len(mask)
+
+        pdA2 = _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
+
+        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
+        # d<A>/dp for plain expectations (mask==False)
+        if isinstance(pdA2, int) and pdA2 != 0:
+            assert len(pdA2) == len(pdA)
+
+        if qml.active_return():
+            multi_measure = len(tape.measurements) > 1
+            if multi_measure:
+
+                res = []
+                for idx, m in enumerate(mask):
+
+                    if isinstance(pdA2, np.ndarray):
+                        # Note: it is assumed that pdA is also a sequence and
+                        # we can index into it
+                        r = (
+                            _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx])
+                            if m
+                            else pdA[idx]
+                        )
+                    elif isinstance(pdA, tuple):
+                        r = (
+                            [
+                                _get_var_with_second_order(pdA2, f0[idx], pdA[i][idx])
+                                for i in range(len(pdA))
+                            ]
+                            if m
+                            else [pdA[i][idx] for i in range(len(pdA))]
+                        )
+                    else:
+                        r = _get_var_with_second_order(pdA2, f0[idx], pdA[idx]) if m else pdA[idx]
+
+                    res.append(r)
+                res = tuple(res)
+
+            else:
+                # Scalar
+                res = _get_var_with_second_order(pdA2, f0, pdA) if mask else pdA
+
+        else:
+            res = qml.math.where(mask, _get_var_with_second_order(pdA2, f0, pdA), pdA)
+
+        return res
+
+    return processing_fn
+
+
 def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
@@ -452,10 +599,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     )
     gradient_tapes.extend(pdA_tapes)
 
-    # Store the number of first derivative tapes, so that we know
-    # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
-
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
     # observables.
@@ -472,9 +615,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         elif obs_name in NONINVOLUTORY_OBS:
             non_involutory.append(i)
 
-    # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
-    involutory = set(var_idx) - set(non_involutory)
-
+    pdA2_fn = None
     if non_involutory:
         expval_sq_tape = tape.copy(copy_operations=True)
 
@@ -494,93 +635,12 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         )
         gradient_tapes.extend(pdA2_tapes)
 
-    def processing_fn(results):
-        if not qml.active_return():
-            # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-            # pylint: disable=protected-access
-            if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-                results = [qml.math.squeeze(res) for res in results]
-
-        # We need to expand the dimensions of the variance mask,
-        # and convert it to be the same type as the results.
-        res = results[0]
-
-        mask = []
-        for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
-            array_func = np.ones if m else np.zeros
-            shape = qml.math.shape(r)
-            mask.append(array_func(shape, dtype=bool))
-
-        if not qml.active_return():
-            ragged = getattr(results[0], "dtype", None) is np.dtype("object")
-            if ragged and qml.math.ndim(res) > 0:
-                res = qml.math.hstack(res)
-                mask = qml.math.hstack(mask)
-
-        f0 = qml.math.expand_dims(res, -1)
-        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
-
-        pdA = pdA_fn(results[1:tape_boundary])
-        pdA2 = 0
-
-        if non_involutory:
-            # compute the second derivative of non-involutory observables
-            pdA2 = pdA2_fn(results[tape_boundary:])
-
-            if involutory:
-                # if involutory observables are present, ensure they have zero gradient.
-                #
-                # For the pdA2_tapes, we have replaced non-involutory
-                # observables with their square (A -> A^2). However,
-                # involutory observables have been left as-is (A), and have
-                # not been replaced by their square (A^2 = I). As a result,
-                # components of the gradient vector will not be correct. We
-                # need to replace the gradient value with 0 (the known,
-                # correct gradient for involutory variables).
-
-                m = [tape.observables[i].name not in NONINVOLUTORY_OBS for i in var_idx]
-                m = qml.math.convert_like(m, pdA2)
-                pdA2 = qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
-
-        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
-        # d<A>/dp for plain expectations (mask==False)
-        # if qml.active_return():
-        #     pdA = qml.math.T(qml.math.stack(pdA))
-
-        def get_var(pdA2, f0, pdA):
-            return pdA2 - 2 * f0 * pdA
-
-        if qml.active_return():
-
-            if len(mask.shape) > 1:
-                # 1. How to compute correct variance
-                res = []
-                for idx, m in enumerate(mask):
-
-                    # TODO: when is pdA2 scalar/sequence?
-                    if isinstance(pdA2, np.ndarray):
-                        this_pda = pdA[idx]
-                        r = get_var(pdA2[idx], f0[idx], this_pda) if m else this_pda
-                    elif isinstance(pdA, tuple) and isinstance(pdA[0], tuple):
-                        par_r = []
-                        if m:
-                            r = [get_var(pdA2, f0[idx], pdA[i][idx]) for i in range(len(pdA))]
-                        else:
-                            r = [pdA[i][idx] for i in range(len(pdA))]
-                    else:
-                        r = get_var(pdA2, f0[idx], pdA[idx]) if m else pdA[idx]
-                    res.append(r)
-                res = tuple(res)
-
-            else:
-                # Scalar
-                res = pdA2 - 2 * f0 * pdA
-
-        else:
-            res = qml.math.where(mask, get_var(pdA2, f0, pdA), pdA)
-
-        return res
-
+    # Store the number of first derivative tapes, so that we know
+    # the number of results to post-process later.
+    tape_boundary = len(pdA_tapes) + 1
+    processing_fn = _create_variance_proc_fn(
+        tape, var_mask, var_idx, pdA_fn, pdA2_fn, tape_boundary, non_involutory
+    )
     return gradient_tapes, processing_fn
 
 
