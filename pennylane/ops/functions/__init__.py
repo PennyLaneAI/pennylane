@@ -28,5 +28,7 @@ This module contains functions that act on operators and tapes.
 from .eigvals import eigvals
 from .equal import equal
 from .generator import generator
+from .is_hermitian import is_hermitian
+from .is_unitary import is_unitary
 from .matrix import matrix
 from .simplify import simplify
