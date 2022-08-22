@@ -20,13 +20,16 @@ Overview
     .. autosummary::
         :toctree:
 
-        pennylane.classical_shadow
+        pennylane.measurements.classical_shadow
         pennylane.shadow_expval
 
 Classical Shadows formalism
 ---------------------------
 
-A :class:`ClassicalShadow` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+.. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, in most cases it is advisable to directly estimate the desired observables by simultaneously measuring
+    qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``.
+
+A :class:`ClassicalShadow` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
 The idea is to capture :math:`T` local snapshots (given by the ``shots`` set in the device) of the state by performing measurements in random Pauli bases at each qubit.
 The measurement outcomes, denoted ``bits``, as well as the choices of measurement bases, ``recipes``, are recorded in two ``(T, len(wires))`` integer tensors, respectively.
@@ -53,7 +56,7 @@ There are two ways of computing expectation values with classical shadows in Pen
 
 .. code-block:: python3
 
-    H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+    H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
 
     dev = qml.device("default.qubit", wires=range(2), shots=10000)
     @qml.qnode(dev)

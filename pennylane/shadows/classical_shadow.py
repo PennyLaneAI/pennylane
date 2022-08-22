@@ -42,6 +42,9 @@ class ClassicalShadow:
 
     One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to its exponential scaling.
 
+    .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, in most cases it is advisable to directly estimate the desired observables by simultaneously measuring
+        qubit-wise-commuting terms. This can be done using :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``.
+
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
@@ -73,7 +76,7 @@ class ClassicalShadow:
 
     or of a Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
     >>> shadow.expval(H, k=1)
     (2.2319999999999998+0j)
 
