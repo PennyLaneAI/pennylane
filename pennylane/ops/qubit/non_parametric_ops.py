@@ -18,7 +18,6 @@ not depend on any parameters.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
 import warnings
-
 from copy import copy
 
 import numpy as np
@@ -1012,6 +1011,10 @@ class CNOT(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class CZ(Operation):
     r"""CZ(wires)
@@ -1100,6 +1103,10 @@ class CZ(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class CY(Operation):
@@ -1196,6 +1203,10 @@ class CY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -1278,6 +1289,10 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class ECR(Operation):
@@ -1766,6 +1781,10 @@ class CSWAP(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Toffoli(Operation):
     r"""Toffoli(wires)
@@ -1903,6 +1922,10 @@ class Toffoli(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[:2])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class MultiControlledX(Operation):
@@ -2216,6 +2239,10 @@ class MultiControlledX(Operation):
         ]
 
         return gates
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class Barrier(Operation):
