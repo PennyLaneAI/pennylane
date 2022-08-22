@@ -426,3 +426,14 @@ class Prod(Operator):
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
 
         return Sum(*factors) if global_phase == 1 else qml.s_prod(global_phase, Sum(*factors))
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                tuple(self.wires.tolist()),
+                str(self.data),
+                str([factor.hash for factor in self.factors]),
+            )
+        )

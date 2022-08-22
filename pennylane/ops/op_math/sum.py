@@ -331,30 +331,55 @@ class Sum(Operator):
         return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
     @classmethod
-    def _simplify_summands(cls, sum_op: "Sum") -> List[Operator]:
+    def _simplify_summands(cls, summands: List[Operator]) -> List[Operator]:
         """Reduces the depth of nested summands.
 
-        If ``depth`` is not provided or negative, then the summands list is completely flattenned.
-
         Keyword Args:
-            depth (int): Reduced depth. Default is -1.
+            summands (List[~.operation.Operator]): summands list to simplify
 
         Returns:
             List[~.operation.Operator]: reduced summands list
         """
-        summands = []
-        for summand in sum_op.summands:
+        new_summands = {}  # {hash: [coeff, summand]}
+        for summand in summands:
             if isinstance(summand, Sum):
-                summands.extend(cls._simplify_summands(sum_op=summand))
+                sum_summands = cls._simplify_summands(summands=summand.summands)
+                for sum_summand in sum_summands:
+                    if sum_summand.hash in new_summands:
+                        new_summands[sum_summand.hash][0] += 1
+                    else:
+                        new_summands[sum_summand.hash] = [1, sum_summand]
                 continue
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
-                summands.extend(simplified_summand.summands)
+                sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
+                for sum_summand in sum_summands:
+                    if sum_summand.hash in new_summands:
+                        new_summands[sum_summand.hash][0] += 1
+                    else:
+                        new_summands[sum_summand.hash] = [1, sum_summand]
+            elif simplified_summand.hash in new_summands:
+                new_summands[simplified_summand.hash][0] += 1
             else:
-                summands.append(simplified_summand)
+                new_summands[simplified_summand.hash] = [1, simplified_summand]
 
-        return summands
+        return new_summands
 
     def simplify(self) -> "Sum":
-        summands = self._simplify_summands(sum_op=self)
-        return Sum(*summands)
+        summands = self._simplify_summands(summands=self.summands)
+        summands = [
+            qml.s_prod(coeff, summand) if coeff != 1 else summand
+            for coeff, summand in summands.values()
+        ]
+        return Sum(*summands) if len(summands) > 1 else summands[0]
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                tuple(self.wires.tolist()),
+                str(self.data),
+                str([summand.hash for summand in self.summands]),
+            )
+        )
