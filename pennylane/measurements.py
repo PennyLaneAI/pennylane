@@ -1295,8 +1295,7 @@ def shadow_expval(obs, k=1, seed_recipes=True):
         >>> qml.grad(qnode)(x, H)
         -0.44999999999999984
 
-        One of the main perks of the classical shadows formalism is that we can estimate multiple expectation values from a single quantum measurement (:func:`~.pennylane.classical_shadow`).
-        In `shadow_expval`, we can therefore pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
+        In `shadow_expval`, we can pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
         to include all observables that you want to estimate from a single measurement in the same execution.
 
         >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
