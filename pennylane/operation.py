@@ -1069,7 +1069,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1091,7 +1091,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1465,6 +1465,10 @@ class Operation(Operator):
 
     @inverse.setter
     def inverse(self, boolean):
+        warnings.warn(
+            "In-place inversion with inverse is deprecated. Please use qml.adjoint instead.",
+            UserWarning,
+        )
         self._inverse = boolean
 
     def inv(self):
@@ -1479,6 +1483,10 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
+        warnings.warn(
+            "In-place inversion with inv is deprecated. Please use qml.adjoint instead.",
+            UserWarning,
+        )
         self.inverse = not self._inverse
         return self
 
