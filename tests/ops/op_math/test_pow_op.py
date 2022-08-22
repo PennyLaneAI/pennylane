@@ -232,14 +232,40 @@ class TestProperties:
         base = qml.PauliX(0)
         op: Pow = power_method(base=base, z=-1.1)
 
-        assert op.has_matrix
+        assert op.has_matrix is True
 
     def test_has_matrix_false(self, power_method):
         """Test has_matrix property carries over when base op does not define a matrix."""
 
         op: Pow = power_method(base=TempOperator(wires=0), z=2.0)
 
-        assert not op.has_matrix
+        assert op.has_matrix is False
+
+    @pytest.mark.parametrize("z", [1, 3])
+    def test_has_decomposition_true_via_int(self, power_method, z):
+        """Test `has_decomposition` property is true if the power is an interger."""
+        base = qml.PauliX(0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_decomposition is True
+
+    @pytest.mark.parametrize("z", [1, 3, -0.2, 1.9])
+    def test_has_decomposition_true_via_base(self, power_method, z):
+        """Test `has_decomposition` property is true if the base operation
+        has a working `pow` method, even for non-integer powers."""
+        base = qml.RX(0.7, 0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_decomposition is True
+
+    @pytest.mark.parametrize("z", [-0.2, 1.9])
+    def test_has_decomposition_false_non_int_no_base_pow(self, power_method, z):
+        """Test `has_decomposition` property is false for non-integer powers
+        if the base operation does not have a working `pow` method."""
+        base = qml.Hadamard(0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_decomposition is False
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value, power_method):

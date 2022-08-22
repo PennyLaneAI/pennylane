@@ -221,6 +221,33 @@ class TestProperties:
         op = Controlled(base, 1)
         assert op.has_matrix is False
 
+
+    @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
+    def test_has_decomposition_true(self, cwires, cvalues):
+        """Test that controlled claims `has_decomposition` to be true if there are
+        any negated control values."""
+
+        op = Controlled(qml.RX(0.2, wires=1), cwires, cvalues)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_false(self):
+        """Test that controlled claims `has_decomposition` to be false if
+        all control values are `1` (the default)."""
+
+        op = Controlled(qml.RX(0.2, wires=1), 4)
+        assert op.has_decomposition is False
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_adjoint(self, value):
+        """Test that controlled defers has_adjoint to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_adjoint = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_adjoint is value
+
     @pytest.mark.parametrize("value", ("_ops", "_prep", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""

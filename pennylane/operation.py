@@ -573,29 +573,6 @@ class Operator(abc.ABC):
         """
         return cls.compute_matrix != Operator.compute_matrix
 
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_decomposition(cls):
-        r"""Bool: Whether or not the Operator returns a defined decomposition.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
-        # Currently, those are mostly classes from the operator arithmetic module.
-        return (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-        )
-
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_adjoint(cls):
-        r"""Bool: Whether or not the Operator can compute its own adjoint.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        return cls.adjoint != Operator.adjoint
-
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -1043,6 +1020,20 @@ class Operator(abc.ABC):
         """This property determines if an operator is hermitian."""
         return False
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_decomposition(cls):
+        r"""Bool: Whether or not the Operator returns a defined decomposition.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        )
+
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
 
@@ -1090,7 +1081,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1112,7 +1103,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1189,6 +1180,15 @@ class Operator(abc.ABC):
             * `None`
         """
         return "_ops"
+
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_adjoint(cls):
+        r"""Bool: Whether or not the Operator can compute its own adjoint.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.adjoint != Operator.adjoint
 
     def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.

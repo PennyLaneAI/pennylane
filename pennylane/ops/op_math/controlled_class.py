@@ -281,7 +281,8 @@ class Controlled(SymbolicOp):
         except operation.SparseMatrixUndefinedError as e:
             if self.base.has_matrix:
                 target_mat = sparse.lil_matrix(self.base.matrix())
-            raise operation.SparseMatrixUndefinedError from e
+            else:
+                raise operation.SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
@@ -311,7 +312,7 @@ class Controlled(SymbolicOp):
 
     @property
     def has_decomposition(self):
-        return not all(self.control_values) or super().has_decomposition
+        return not all(self.control_values)
 
     def decomposition(self):
         if not all(self.control_values):
