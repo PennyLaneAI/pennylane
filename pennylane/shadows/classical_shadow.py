@@ -110,7 +110,6 @@ class ClassicalShadow:
             qml.matrix(qml.PauliY(0)),
             qml.matrix(qml.PauliZ(0)),
         ]
-        print("asd")
 
     @property
     def snapshots(self):
