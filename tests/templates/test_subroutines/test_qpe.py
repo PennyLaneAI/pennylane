@@ -36,6 +36,7 @@ class TestDecomposition:
             qml.adjoint(qml.QFT(wires=[1, 2]))
 
         assert len(tape2.queue) == len(tape.queue)
+        # qml.equal doesn't work for Adjoint op yet, so we stop before we get to it.
         for op1, op2 in zip(tape.queue[:-1], tape2.queue[:-1]):
             assert qml.equal(op1, op2)
 
