@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
-#pylint: disable = dangerous-default-value, too-many-arguments
+# pylint: disable = dangerous-default-value, too-many-arguments
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
@@ -319,10 +319,10 @@ class ClassicalShadow:
         return qml.math.squeeze(results)
 
     def entropy(self, wires=[0], snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
-        """Compute entropies from classical shadow measurements.
+        r"""Compute entropies from classical shadow measurements.
 
-        Compute general Renyi entropies of order :math:`\alpha` for a reduced denity matrix :math:`\rho` in terms of 
-        
+        Compute general Renyi entropies of order :math:`\alpha` for a reduced denity matrix :math:`\rho` in terms of
+
         .. math:: S_\alpha(\rho) = \frac{1}{1-\alpha} \log\left(\text{tr}\left[\rho^\alpha \right] \right).
 
         There are two interesting special cases: In the limit :math:`\alpha \rightarrow 1`, we find the von Neumann entropy
@@ -333,12 +333,12 @@ class ClassicalShadow:
 
         .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right)
 
-        .. warning:: 
-        
+        .. warning::
+
             Entropies are non-linear functions of the quantum state. Accuracy bounds on entropies with classical shadows are not known exactly,
             but scale exponentially in the subsystem size. It is advisable to only compute entropies for small subsystems of a few qubits.
             Further, entropies as post-processed by this class method are currently not differentiable.
-        
+
         Args:
             wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Defaults to ``[0]``.
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None`` (default), all local snapshots are taken.
@@ -353,7 +353,7 @@ class ClassicalShadow:
 
         Returns:
             float: Entropy of the chosen subsystem.
-        
+
         **Example**
 
         For the maximally entangled state of ``n`` qubits, the reduced state has two constant eigenvalues :math:`\frac{1}{2}`. For constant distributions, all Renyi entropies are
@@ -374,7 +374,7 @@ class ClassicalShadow:
             shadow = ClassicalShadow(bits, recipes)
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
-        
+
         >>> np.isclose(entropies, entropies[0], atol=1e-2)
         [ True,  True,  True]
 
@@ -396,10 +396,10 @@ class ClassicalShadow:
             shadow = ClassicalShadow(bitstrings, recipes)
 
             entropies = [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
-        
+
         >>> print(entropies)
         [0.6727522114759635, 0.6252047673044356, 0.5996592216299593]
-        
+
         """
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
