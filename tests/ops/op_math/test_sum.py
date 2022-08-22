@@ -722,7 +722,7 @@ class TestIntegration:
     #     assert qnp.allclose(my_circ(), returned_probs)
 
     def test_measurement_process_probs(self):
-        """Test Sum class instance in probs measurement process raises error."""  # currently can't support due to bug
+        """Test Sum class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
 
@@ -738,36 +738,35 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test Sum class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
-        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+        """Test Sum class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            qml.prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.sample(op=sum_op)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for sampling yet.",
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 20
+        assert (results == 2).all()
 
     def test_measurement_process_count(self):
-        """Test Sum class instance in counts measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
-        sum_op = Sum(qml.PauliX(0), qml.Hadamard(1))
+        """Test Sum class instance in counts measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            qml.prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.counts(op=sum_op)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for sampling yet.",
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert sum(results.values()) == 20
+        assert 2 in results
+        assert -2 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Sum op in the measurement process."""
@@ -789,7 +788,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -799,7 +798,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sum_op)
 
-        with pytest.raises(QuantumFunctionError, match="Sum is not an observable:"):
+        with pytest.warns(UserWarning, match="Sum might not be hermitian."):
             my_circ()
 
 

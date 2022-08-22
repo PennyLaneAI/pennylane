@@ -21,6 +21,7 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
+import warnings
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -596,9 +597,7 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with expval"
-        )
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     return MeasurementProcess(Expectation, obs=op)
 
@@ -631,8 +630,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
-
+        warnings.warn(f"{op.name} might not be hermitian.")
     return MeasurementProcess(Variance, obs=op)
 
 
@@ -710,12 +708,7 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with sample"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -799,12 +792,7 @@ def counts(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with counts"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:

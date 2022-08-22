@@ -133,6 +133,10 @@ class AmplitudeEmbedding(Operation):
     def num_params(self):
         return 1
 
+    @property
+    def ndim_params(self):
+        return (1,)
+
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
@@ -164,21 +168,25 @@ class AmplitudeEmbedding(Operation):
 
         * If features is batched, the processing that follows is applied to each feature set in the batch.
         * Check that the features tensor is one-dimensional.
-        * If pad_with is None, check that the first dimension of the features tensor
+        * If pad_with is None, check that the last dimension of the features tensor
           has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
-          first dimension of the features tensor is not larger than :math:`2^n` and pad features
+          last dimension of the features tensor is not larger than :math:`2^n` and pad features
           with value if necessary.
-        * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
+        * If normalize is false, check that last dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
 
         # check if features is batched
-        batched = len(qml.math.shape(features)) > 1
+        batched = qml.math.ndim(features) > 1
+
+        if batched and qml.math.get_interface(features) == "tensorflow":
+            raise ValueError("AmplitudeEmbedding does not support batched Tensorflow features.")
 
         features_batch = features if batched else [features]
 
+        new_features_batch = []
         # apply pre-processing to each features tensor in the batch
-        for i, feature_set in enumerate(features_batch):
+        for feature_set in features_batch:
             shape = qml.math.shape(feature_set)
 
             # check shape
@@ -186,29 +194,31 @@ class AmplitudeEmbedding(Operation):
                 raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
 
             n_features = shape[0]
-            if pad_with is None and n_features != 2 ** len(wires):
+            dim = 2 ** len(wires)
+            if pad_with is None and n_features != dim:
                 raise ValueError(
-                    f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
+                    f"Features must be of length {dim}; got length {n_features}. "
                     f"Use the 'pad_with' argument for automated padding."
                 )
 
-            if pad_with is not None and n_features > 2 ** len(wires):
-                raise ValueError(
-                    f"Features must be of length {2 ** len(wires)} or "
-                    f"smaller to be padded; got length {n_features}."
-                )
+            if pad_with is not None:
+                if n_features > dim:
+                    raise ValueError(
+                        f"Features must be of length {dim} or "
+                        f"smaller to be padded; got length {n_features}."
+                    )
 
-            # pad
-            if pad_with is not None and n_features < 2 ** len(wires):
-                padding = [pad_with] * (2 ** len(wires) - n_features)
-                if (
-                    hasattr(feature_set, "device") and feature_set.device.type == "cuda"
-                ):  # pragma: no cover
-                    ## Torch tensor, send to same GPU
-                    dat_type = type(feature_set)
-                    padding = dat_type(padding).to(feature_set.device)
+                # pad
+                if n_features < dim:
+                    padding = [pad_with] * (dim - n_features)
+                    if (
+                        hasattr(feature_set, "device") and feature_set.device.type == "cuda"
+                    ):  # pragma: no cover
+                        ## Torch tensor, send to same GPU
+                        dat_type = type(feature_set)
+                        padding = dat_type(padding).to(feature_set.device)
 
-                feature_set = qml.math.concatenate([feature_set, padding], axis=0)
+                    feature_set = qml.math.concatenate([feature_set, padding], axis=0)
 
             # normalize
             norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
@@ -226,6 +236,8 @@ class AmplitudeEmbedding(Operation):
                         "Use 'normalize=True' to automatically normalize."
                     )
 
-            features_batch[i] = feature_set
+            new_features_batch.append(feature_set)
 
-        return qml.math.cast(features_batch if batched else features_batch[0], np.complex128)
+        return qml.math.cast(
+            qml.math.stack(new_features_batch) if batched else new_features_batch[0], np.complex128
+        )
