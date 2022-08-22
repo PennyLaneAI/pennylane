@@ -142,13 +142,18 @@ def expand_matrix(base_matrix, wires, wire_order=None):
 
     **Example**
 
-    If the wire order is identical to ``wires``, the original matrix gets returned:
+    If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
     >>> base_matrix = np.array([[1, 2, 3, 4],
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
     >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
@@ -183,12 +188,6 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     torch.Tensor
     >>> res.requires_grad
     True
-
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
-    [[ 1  2  3  4]
-     [ 5  6  7  8]
-     [ 9 10 11 12]
-     [13 14 15 16]]
 
     """
 
@@ -1070,7 +1069,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1092,7 +1091,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1131,7 +1130,7 @@ class Operator(abc.ABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z):
+    def pow(self, z) -> List["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1170,15 +1169,12 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
-    def adjoint(self):  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
 
         Returns:
             The adjointed operation.

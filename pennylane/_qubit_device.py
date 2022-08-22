@@ -49,8 +49,6 @@ from pennylane.wires import Wires
 
 from pennylane.measurements import MeasurementProcess
 
-from collections.abc import Iterable
-
 
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
@@ -337,7 +335,7 @@ class QubitDevice(Device):
                 if ret_types[0] is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
+                else:
                     # Measurements with expval, var or probs
                     try:
                         # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
@@ -355,7 +353,7 @@ class QubitDevice(Device):
                 # all the other cases except any counts
                 results = self._asarray(results)
 
-        elif circuit.all_sampled and not self._has_partitioned_shots():
+        elif circuit.all_sampled and not self._has_partitioned_shots() and not counts_exist:
             results = self._asarray(results)
         else:
             results = tuple(
@@ -767,6 +765,14 @@ class QubitDevice(Device):
                         " with other return types"
                     )
 
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested state or density matrix with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
@@ -776,6 +782,15 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested Von Neumann entropy with finite shots; the returned "
+                        "result is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
             elif obs.return_type is MutualInfo:
@@ -783,6 +798,15 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested mutual information with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 wires0, wires1 = obs.raw_wires
                 results.append(
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
@@ -802,7 +826,7 @@ class QubitDevice(Device):
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
-                results.append(self.classical_shadow_expval(obs, circuit=circuit))
+                results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -886,6 +910,14 @@ class QubitDevice(Device):
                         " with other return types"
                     )
 
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested state or density matrix with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 state = self.access_state(wires=obs.wires)
@@ -896,12 +928,28 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested Von Neumann entropy with finite shots; the returned "
+                        "result is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
             elif obs.return_type is MutualInfo:
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
+                    )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested mutual information with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
                     )
                 wires0, wires1 = obs.raw_wires
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
@@ -1167,18 +1215,25 @@ class QubitDevice(Device):
         Returns the measured bits and recipes in the classical shadow protocol.
 
         The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-        This measurement process returns the randomized Pauli measurements that are
-        performed for each qubit and snapshot as an integer: 0 for Pauli X, 1 for Pauli Y,
-        and 2 for PauliZ. It also returns the measurement results: 0 if the 1 eigenvalue
-        is sampled and 1 if the -1 eigenvalue is sampled.
+        This measurement process returns the randomized Pauli measurements (the ``recipes``)
+        that are performed for each qubit and snapshot as an integer:
 
-        The device shots are used to specify the number of snapshots. If T is the number
-        of shots and n is the number of qubits, then both the measured bits and the
-        Pauli measurements have shape (T, n).
+        - 0 for Pauli X,
+        - 1 for Pauli Y, and
+        - 2 for Pauli Z.
+
+        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
+        is sampled, and 1 if the -1 eigenvalue is sampled.
+
+        The device shots are used to specify the number of snapshots. If ``T`` is the number
+        of shots and ``n`` is the number of qubits, then both the measured bits and the
+        Pauli measurements have shape ``(T, n)``.
 
         This implementation is device-agnostic and works by executing single-shot
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
+
+        .. seealso:: :func:`~.classical_shadow`
 
         Args:
             wires (Sequence[int]): The wires to perform Pauli measurements on
@@ -1188,7 +1243,7 @@ class QubitDevice(Device):
                 number generation for generating the Pauli measurements.
 
         Returns:
-            tensor_like[int]: A tensor with shape (2, T, n), where the first row represents
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
         if circuit is None:  # pragma: no cover
@@ -1200,8 +1255,8 @@ class QubitDevice(Device):
 
         with set_shots(self, shots=1):
             # slow implementation but works for all devices
-            n_qubits = len(self.wires)
-            device_wires = np.array(self.map_wires(wires))
+            n_qubits = len(wires)
+            mapped_wires = np.array(self.map_wires(wires))
 
             if seed is not None:
                 # seed the random measurement generation so that recipes
@@ -1218,8 +1273,8 @@ class QubitDevice(Device):
                 # compute rotations for the Pauli measurements
                 rotations = [
                     rot
-                    for wire in wires
-                    for rot in obs_list[recipes[t][device_wires[wire]]].compute_diagonalizing_gates(
+                    for wire_idx, wire in enumerate(wires)
+                    for rot in obs_list[recipes[t][wire_idx]].compute_diagonalizing_gates(
                         wires=wire
                     )
                 ]
@@ -1227,12 +1282,65 @@ class QubitDevice(Device):
                 self.reset()
                 self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
 
-                outcomes[t] = self.generate_samples()[0]
+                outcomes[t] = self.generate_samples()[0][mapped_wires]
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def classical_shadow_expval(self, obs, circuit):
-        """TODO: docs"""
+    def shadow_expval(self, obs, circuit):
+        r"""Compute expectation values using classical shadows in a differentiable manner.
+
+        The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
+        This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+
+        One of the main perks of classical shadows is being able to compute many different expectation values by classically post-processing the same measurements. This is helpful in general as it may help
+        save quantum circuit executions.
+
+        Args:
+            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+
+        Returns:
+            float: expectation value estimate.
+
+        .. note::
+
+            This measurement uses the measurement :func:`~.pennylane.classical_shadow` and :class:`~.pennylane.ClassicalShadow` for post-processing
+            internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
+            you need to use this measurement.
+
+        **Example**
+
+        .. code-block:: python3
+
+            H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+
+            dev = qml.device("default.qubit", wires=range(2), shots=10000)
+            @qml.qnode(dev)
+            def qnode(x, obs):
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                qml.RX(x, wires=0)
+                return shadow_expval(obs)
+
+            x = np.array(0.5, requires_grad=True)
+
+        We can compute the expectation value of H as well as its gradient in the usual way.
+
+        >>> qnode(x, H)
+        tensor(1.827, requires_grad=True)
+        >>> qml.grad(qnode)(x, H)
+        -0.44999999999999984
+
+        One of the main perks of the classical shadows formalism is that we can estimate multiple expectation values from a single quantum measurement (:func:`~.pennylane.classical_shadow`).
+        In `shadow_expval`, we can therefore pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
+        to include all observables that you want to estimate from a single measurement in the same execution.
+
+        >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        >>> qnode(x, Hs)
+        [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
+        >>> qml.jacobian(qnode)(x, Hs)
+        [-0.48312, -0.00198, -0.00375,  0.00168]
+        """
         bits, recipes = self.classical_shadow(obs, circuit)
         shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         return shadow.expval(obs.H, obs.k)
@@ -1247,6 +1355,7 @@ class QubitDevice(Device):
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
+
 
         .. note::
 

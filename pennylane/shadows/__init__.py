@@ -13,4 +13,4 @@
 # limitations under the License.
 """Differentiable classical shadows module"""
 
-from .classical_shadow import *
+from .classical_shadow import ClassicalShadow, median_of_means, pauli_expval

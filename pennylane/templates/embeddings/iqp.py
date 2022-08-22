@@ -170,10 +170,13 @@ class IQPEmbedding(Operation):
 
         shape = qml.math.shape(features)
 
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        if len(shape) not in {1, 2}:
+            raise ValueError(
+                "Features must be a one-dimensional tensor, or two-dimensional "
+                f"when broadcasting; got shape {shape}."
+            )
 
-        n_features = shape[0]
+        n_features = shape[-1]
         if n_features != len(wires):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
@@ -188,6 +191,10 @@ class IQPEmbedding(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def ndim_params(self):
+        return (1,)
 
     @staticmethod
     def compute_decomposition(
@@ -224,6 +231,11 @@ class IQPEmbedding(Operation):
         """
         wires = qml.wires.Wires(wires)
         op_list = []
+        if qml.math.ndim(features) > 1:
+            # If broadcasting is used, we want to iterate over the wires axis of the features,
+            # not over the broadcasting dimension. The latter is passed on to the rotations.
+            features = qml.math.T(features)
+
         for _ in range(n_repeats):
 
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate

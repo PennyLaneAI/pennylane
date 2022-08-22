@@ -175,10 +175,15 @@ class TestInitialization:
         for f1, f2 in zip(prod_op.factors, prod_term_ops[0].factors):
             assert qml.equal(f1, f2)
 
-    def test_batch_size_is_None(self):
-        """Test that calling batch_size returns None
-        (i.e no batching with Prod)."""
-        prod_op = prod(qml.PauliX(0), qml.Identity(1))
+    def test_batch_size(self):
+        """Test that batch size returns the batch size of a base operation if it is batched."""
+        x = qml.numpy.array([1.0, 2.0, 3.0])
+        prod_op = prod(qml.PauliX(0), qml.RX(x, wires=0))
+        assert prod_op.batch_size == 3
+
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no factors have batching."""
+        prod_op = prod(qml.PauliX(0), qml.RX(1.0, wires=0))
         assert prod_op.batch_size is None
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -246,7 +251,7 @@ class TestMscMethods:
 
         for f1, f2 in zip(prod_op.factors, copied_op.factors):
             assert qml.equal(f1, f2)
-            assert not (f1 is f2)
+            assert f1 is not f2
 
 
 class TestMatrix:
@@ -409,6 +414,20 @@ class TestMatrix:
         true_mat = qnp.kron(U, qnp.eye(2)) @ qnp.eye(4)
         assert np.allclose(mat, true_mat)
 
+    def test_prod_hamiltonian(self):
+        """Test that a hamiltonian object can be composed."""
+        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        prod_op = Prod(qml.PauliZ(wires=0), U)
+        mat = prod_op.matrix()
+
+        true_mat = [
+            [0.0, 0.5, 0.0, 0.0],
+            [0.5, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, -0.5],
+            [0.0, 0.0, -0.5, 0.0],
+        ]
+        assert np.allclose(mat, true_mat)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
@@ -520,7 +539,6 @@ class TestProperties:
         assert prod_op.is_hermitian == hermitian_status
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf
@@ -533,10 +551,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
         import jax.numpy as jnp
@@ -549,10 +566,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_torch(self):
         """Test that is_hermitian works when a torch type scalar is provided."""
         import torch
@@ -565,7 +581,7 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):
@@ -698,8 +714,8 @@ class TestSimplify:
 
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
-        prod_op = Prod(qml.adjoint(Prod(qml.PauliX(0), qml.PauliY(0))), qml.PauliZ(0))
-        final_op = Prod(qml.adjoint(qml.PauliY(0)), qml.adjoint(qml.PauliX(0)), qml.PauliZ(0))
+        prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -731,16 +747,12 @@ class TestSimplify:
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.RX(1, 0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.PauliX(1)),
-            Prod(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), 5 * qml.RX(1, 1)),
-            Prod(
-                qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)), qml.s_prod(5, qml.PauliX(1))
-            ),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -804,7 +816,7 @@ class TestIntegration:
         assert qnp.allclose(var, true_var)
 
     def test_measurement_process_probs(self):
-        """Test Prod class instance in probs measurement process raises error."""  # currently can't support due to bug
+        """Test Prod class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
 
@@ -820,20 +832,35 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=2)
-        prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
+        """Test Prod class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.sample(op=prod_op)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for sampling yet.",
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 20
+        assert (results == 1).all()
+
+    def test_measurement_process_counts(self):
+        """Test Prod class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
+            return qml.counts(op=prod_op)
+
+        results = my_circ()
+
+        assert sum(results.values()) == 20
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -852,7 +879,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -862,7 +889,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             my_circ()
 
     def test_operation_integration(self):
@@ -889,3 +916,25 @@ class TestIntegration:
             return qml.state()
 
         assert qnp.allclose(prod_state_circ(), true_state_circ())
+
+    def test_batched_operation(self):
+        """Test that prod with batching gives expected results."""
+        x = qml.numpy.array([1.0, 2.0, 3.0])
+        y = qml.numpy.array(0.5)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def batched_prod(x, y):
+            qml.prod(qml.RX(x, wires=0), qml.RY(y, wires=0))
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def batched_no_prod(x, y):
+            qml.RY(y, wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res1 = batched_prod(x, y)
+        res2 = batched_no_prod(x, y)
+        assert qml.math.allclose(res1, res2)

@@ -233,6 +233,11 @@ supports_broadcasting = Attribute(
         "DoubleExcitationPlus",
         "DoubleExcitationMinus",
         "OrbitalRotation",
+        "QubitStateVector",
+        "AmplitudeEmbedding",
+        "AngleEmbedding",
+        "IQPEmbedding",
+        "QAOAEmbedding",
     ]
 )
 """Attribute: Operations that support parameter broadcasting.

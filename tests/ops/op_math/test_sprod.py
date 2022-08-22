@@ -326,6 +326,15 @@ class TestMatrix:
 
         assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
 
+    def test_sprod_hamiltonian(self):
+        """Test that a hamiltonian object can be scaled."""
+        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=0)])
+        sprod_op = SProd(-4, U)
+        mat = sprod_op.matrix()
+
+        true_mat = [[0, -2], [-2, 0]]
+        assert np.allclose(mat, true_mat)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
@@ -548,6 +557,8 @@ class TestWrapperFunc:
 
 
 class TestIntegration:
+    """Integration tests for SProd with a QNode."""
+
     def test_measurement_process_expval(self):
         """Test SProd class instance in expval measurement process."""
         dev = qml.device("default.qubit", wires=2)
@@ -593,34 +604,35 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test SProd class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.Hadamard(1))
+        """Test SProd class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        sprod_op = SProd(1.23, qml.PauliX(1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            qml.Hadamard(1)
             return qml.sample(op=sprod_op)
 
-        with pytest.raises(
-            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 20
+        assert (results == 1.23).all()
 
     def test_measurement_process_count(self):
-        """Test SProd class instance in counts measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2)
-        sprod_op = SProd(1.23, qml.Hadamard(1))
+        """Test SProd class instance in counts measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        sprod_op = SProd(1.23, qml.PauliX(1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            qml.Hadamard(1)
             return qml.counts(op=sprod_op)
 
-        with pytest.raises(
-            QuantumFunctionError, match="Symbolic Operations are not supported for sampling yet."
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert sum(results.values()) == 20
+        assert 1.23 in results
+        assert -1.23 not in results
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
@@ -655,7 +667,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         sprod_op = SProd(1.0 + 2.0j, qml.RX(1.23, wires=0))
@@ -665,5 +677,57 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sprod_op)
 
-        with pytest.raises(QuantumFunctionError, match="SProd is not an observable:"):
+        with pytest.warns(UserWarning, match="SProd might not be hermitian."):
             my_circ()
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_torch(self, diff_method):
+        """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
+        is requested for a given interface."""
+
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(torch.tensor(2))
+
+        assert qml.math.allclose(res, 2)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_torch(self, diff_method):
+        """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
+        is requested for a given interface."""
+
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(jnp.array(2))
+
+        assert qml.math.allclose(res, 2)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
+    def test_tensorflow_qnode(self, diff_method):
+
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        def circuit(s):
+            return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
+
+        res = circuit(tf.Variable(2))
+
+        assert qml.math.allclose(res, 2)

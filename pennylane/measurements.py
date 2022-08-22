@@ -21,6 +21,8 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
+from collections.abc import Iterable
+import warnings
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -543,8 +545,8 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         if self.return_type is Shadow:
             return int
-        elif self.return_type is ShadowExpval:
-            return float
+
+        return float
 
     def shape(self, device=None):
         """The expected output shape of the ShadowMeasurementProcess.
@@ -584,6 +586,9 @@ class ShadowMeasurementProcess(MeasurementProcess):
         if self.return_type is Shadow:
             return self._wires
 
+        if isinstance(self.H, Iterable):
+            return qml.wires.Wires.all_wires([h.wires for h in self.H])
+
         return self.H.wires
 
     def __copy__(self):
@@ -622,9 +627,7 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with expval"
-        )
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     return MeasurementProcess(Expectation, obs=op)
 
@@ -657,8 +660,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
-
+        warnings.warn(f"{op.name} might not be hermitian.")
     return MeasurementProcess(Variance, obs=op)
 
 
@@ -736,12 +738,7 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with sample"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -825,12 +822,7 @@ def counts(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with counts"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -1142,14 +1134,14 @@ def classical_shadow(wires, seed_recipes=True):
     The classical shadow measurement protocol.
 
     The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-    This measurement process returns the randomized Pauli measurements that are
-    performed for each qubit and snapshot as an integer:
+    This measurement process returns the randomized Pauli measurements (the ``recipes``)
+    that are performed for each qubit and snapshot as an integer:
 
     - 0 for Pauli X,
     - 1 for Pauli Y, and
-    - 2 for PauliZ.
+    - 2 for Pauli Z.
 
-    It also returns the measurement results; 0 if the 1 eigenvalue
+    It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
     is sampled, and 1 if the -1 eigenvalue is sampled.
 
     The device shots are used to specify the number of snapshots. If ``T`` is the number
@@ -1259,7 +1251,7 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-def classical_shadow_expval(obs, k=1, seed_recipes=True):
+def shadow_expval(obs, k=1, seed_recipes=True):
     """TODO: docs"""
     seed = np.random.randint(2**30) if seed_recipes else None
     return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)

@@ -189,16 +189,6 @@ class Sum(Operator):
             op.data = new_entry
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        raise ValueError("Batch size is not defined for Sum operators.")
-
-    @property
-    def ndim_params(self):
-        """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Sum operators.")
-
-    @property
     def num_wires(self):
         return len(self.wires)
 
@@ -253,7 +243,7 @@ class Sum(Operator):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -305,7 +295,10 @@ class Sum(Operator):
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
             for op in summands:
-                yield op.matrix(wire_order=wire_order)
+                if isinstance(op, qml.Hamiltonian):
+                    yield qml.matrix(op, wire_order=wire_order)
+                else:
+                    yield op.matrix(wire_order=wire_order)
 
         if wire_order is None:
             wire_order = self.wires
@@ -329,6 +322,9 @@ class Sum(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.summands)
         return self
+
+    def adjoint(self):
+        return Sum(*(qml.adjoint(summand) for summand in self.summands))
 
     @property
     def arithmetic_depth(self) -> int:
