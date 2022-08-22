@@ -15,13 +15,14 @@
 Unit tests for the available non-parametric qubit operations
 """
 import itertools
-import re
 import pytest
 import copy
 import numpy as np
+from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane import math
 from pennylane.wires import Wires
 
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
@@ -41,6 +42,14 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.Toffoli, Toffoli),
     (qml.ECR, ECR),
 ]
+
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
+    (qml.Identity(wires=0), I),
+    (qml.Hadamard(wires=0), H),
+    (qml.PauliZ(wires=0), Z),
+    (qml.PauliX(wires=0), X),
+    (qml.PauliY(wires=0), Y),
+)
 
 
 class TestOperations:
@@ -1158,6 +1167,17 @@ class TestPowMethod:
         """Assert that the pow-independent ops WireCut and Barrier can be raised
         to any power and just return a copy."""
         assert op.pow(n)[0].__class__ is op.__class__
+
+
+class TestSparseMatrix:
+    @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
+    def test_sparse_matrix(self, op, mat):
+        expected_sparse_mat = csr_matrix(mat)
+        sparse_mat = op.sparse_matrix()
+
+        assert type(sparse_mat) == type(expected_sparse_mat)
+        assert all(sparse_mat.data == expected_sparse_mat.data)
+        assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
 
 label_data = [
