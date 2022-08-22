@@ -11,7 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Differentiable classical shadows module
+r"""Differentiable classical shadows module
+
+.. currentmodule:: pennylane
+
+Measurements
+------------
+
+.. autosummary::
+    :toctree: api
+
+    ~classical_shadow
+    ~shadow_expval
+
+Shadow class for classical post-processing
+------------------------------------------
+
+.. autosummary::
+    :toctree: api
+    
+    ~ClassicalShadow
 
 Classical Shadows formalism
 ---------------------------

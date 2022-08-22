@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 class ClassicalShadow:
-    r"""Class for classical shadow post-processing
+    r"""Class for classical shadow post-processing expectation values, approximate states, and entropies.
 
     A ``ClassicalShadow`` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
