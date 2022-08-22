@@ -315,8 +315,89 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires=[0], snapshots=None, alpha=1, k=1, base=None, atol=1e-5):
-        """Compute entropies from classical shadow measurements"""
+    def entropy(self, wires=[0], snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
+        """Compute entropies from classical shadow measurements.
+
+        Compute general Renyi entropies of order :math:`\alpha` for a reduced denity matrix :math:`\rho` in terms of 
+        
+        .. math:: S_\alpha(\rho) = \frac{1}{1-\alpha} \log\left(\text{tr}\left[\rho^\alpha \right] \right).
+
+        There are two interesting special cases: In the limit :math:`\alpha \rightarrow 1`, we find the von Neumann entropy
+
+        .. math:: S_{\alpha=1}(\rho) = -\text{tr}(\rho \log(\rho)).
+
+        In the case of :math:`\alpha = 2`, the Renyi entropy becomes the logarithm of the purity of the reduced state
+
+        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right)
+
+        .. warning:: 
+        
+            Entropies are non-linear functions of the quantum state. Accuracy bounds on entropies with classical shadows are not known exactly,
+            but scale exponentially in the subsystem size. It is advisable to only compute entropies for small subsystems of a few qubits.
+            Further, entropies as post-processed by this class method are currently not differentiable.
+        
+        Args:
+            wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Defaults to ``[0]``.
+            snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None`` (default), all local snapshots are taken.
+                In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
+            alpha (float): order of the Renyi-entropy. Defaults to ``alpha=2``, which corresponds to the purity of the reduced state. This case is straight forward to compute.
+                All other cases ``alpha!=2`` necessitate computing the eigenvalues of the reduced state and thus may lead to longer computations times.
+                Another special case is ``alpha=1``, which corresponds to the von Neumann entropy.
+            k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
+                Thus, ``k=1`` is default and advised.
+            base (float): Base to the logarithm used for the entropies.
+            atol (float): Absolute tolerance for Eigenvalues close to 0 that are taken into account.
+
+        Returns:
+            float: Entropy of the chosen subsystem.
+        
+        **Example**
+
+        For the maximally entangled state of ``n`` qubits, the reduced state has two constant eigenvalues :math:`\frac{1}{2}`. For constant distributions, all Renyi entropies are
+        equivalent:
+
+        .. code-block:: python3
+
+            wires=4
+
+            @qml.qnode(dev)
+            def max_entangled_circuit():
+                qml.Hadamard(wires=0)
+                for i in range(1, wires):
+                    qml.CNOT(wires=[0, i])
+                return qml.classical_shadow(wires=range(wires))
+
+            bits, recipes = max_entangled_circuit()
+            shadow = ClassicalShadow(bits, recipes)
+
+            entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
+        
+        >>> np.isclose(entropies, entropies[0], atol=1e-2)
+        [ True,  True,  True]
+
+        For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def qnode(x):
+                for i in range(n_wires):
+                    qml.RY(x[i], wires=i)
+
+                for i in range(n_wires-1):
+                    qml.CNOT((i,i+1))
+
+                return classical_shadow(wires=dev.wires)
+
+            bitstrings, recipes = qnode(x)
+            shadow = ClassicalShadow(bitstrings, recipes)
+
+            entropies = [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
+        
+        >>> print(entropies)
+        [0.6727522114759635, 0.6252047673044356, 0.5996592216299593]
+        
+        """
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
 
