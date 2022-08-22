@@ -1268,7 +1268,7 @@ def shadow_expval(obs, k=1, seed_recipes=True):
 
     .. note::
 
-        This measurement uses the measurement :func:`~.pennylane.classical_shadow` and :class:`~.pennylane.ClassicalShadow` for post-processing
+        This measurement uses the measurement :func:`~.pennylane.classical_shadow` and the class :class:`~.pennylane.ClassicalShadow` for post-processing
         internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
         you need to use this measurement.
 
