@@ -49,7 +49,9 @@ class TestShadowEntropies:
         bits, recipes = max_entangled_circuit(wires=n_wires)()
         shadow = ClassicalShadow(bits, recipes)
 
-        entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]]
+        entropies = [
+            shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]
+        ]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
 
     def test_non_constant_distribution(
