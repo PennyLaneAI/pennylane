@@ -723,7 +723,7 @@ class Operator(abc.ABC):
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
         except EigvalsUndefinedError as e:
             # By default, compute the eigenvalues from the matrix representation if one is defined.
-            if self.has_matrix: # pylint: disable=using-constant-test
+            if self.has_matrix:  # pylint: disable=using-constant-test
                 return qml.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
