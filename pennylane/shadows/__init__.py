@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Differentiable classical shadows module
-
+r"""
 .. currentmodule:: pennylane
 
 Measurements
@@ -93,7 +92,7 @@ Note that to avoid unnecessary device executions you can provide a list of obser
 [-0.48312, -0.00198, -0.00375,  0.00168]
 
 Alternatively, you can compute expectation values by first performing the shadow measurement and then perform classical post-processing using the :class:`ClassicalShadow`
-methods.
+class methods.
 
 .. code-block:: python3
 
