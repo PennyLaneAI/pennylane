@@ -65,12 +65,15 @@ def shadow_state(wires):
         def wrapper(*args, **kwargs):
             results = new_qnode(*args, **kwargs)
 
+            # cast to complex
+            results = qml.math.cast(results, np.complex64)
+
             # reconstruct the state given the observables and the expectations of
             # those observables
             state = qml.matrix(
                 qml.ops.op_math.Sum(
                     *[
-                        qml.ops.op_math.SProd(res, qml.ops.op_math.Prod(*(obs.obs)))
+                        qml.ops.op_math.SProd(res, qml.ops.op_math.Prod(*(obs.obs)) if isinstance(obs, qml.operation.Tensor) else obs)
                         for res, obs in zip(results, observables)
                     ]
                 )

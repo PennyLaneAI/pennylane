@@ -14,4 +14,7 @@
 """Differentiable classical shadows module"""
 
 from .classical_shadow import ClassicalShadow, median_of_means, pauli_expval
-from .transforms import shadow_expval, shadow_state
+
+# allow aliasing in the module namespace
+from .transforms import shadow_expval as expval
+from .transforms import shadow_state as state
