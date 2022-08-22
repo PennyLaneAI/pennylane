@@ -310,22 +310,16 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)), 2)
+        final_op = Pow(qml.s_prod(3, qml.PauliX(0)), 2)
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Pow)
+        assert isinstance(simplified_op.base, qml.ops.SProd)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        assert isinstance(simplified_op.base, qml.ops.Sum)
-        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""

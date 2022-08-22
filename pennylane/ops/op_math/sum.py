@@ -344,20 +344,20 @@ class Sum(Operator):
         for summand in summands:
             if isinstance(summand, Sum):
                 sum_summands = cls._simplify_summands(summands=summand.summands)
-                for sum_summand in sum_summands:
-                    if sum_summand.hash in new_summands:
-                        new_summands[sum_summand.hash][0] += 1
+                for hash, [coeff, sum_summand] in sum_summands.items():
+                    if hash in new_summands:
+                        new_summands[hash][0] += coeff
                     else:
-                        new_summands[sum_summand.hash] = [1, sum_summand]
+                        new_summands[hash] = [coeff, sum_summand]
                 continue
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
                 sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
-                for sum_summand in sum_summands:
-                    if sum_summand.hash in new_summands:
-                        new_summands[sum_summand.hash][0] += 1
+                for hash, [coeff, sum_summand] in sum_summands.items():
+                    if hash in new_summands:
+                        new_summands[hash][0] += coeff
                     else:
-                        new_summands[sum_summand.hash] = [1, sum_summand]
+                        new_summands[hash] = [coeff, sum_summand]
             elif simplified_summand.hash in new_summands:
                 new_summands[simplified_summand.hash][0] += 1
             else:
