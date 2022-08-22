@@ -541,7 +541,8 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """The Python numeric type of the measurement result.
 
         Returns:
-            type: This is always ``int``.
+            type: This is ``int`` when the return type is ``Shadow``,
+            and ``float`` when the return type is ``ShadowExpval``.
         """
         if self.return_type is Shadow:
             return int
@@ -555,12 +556,14 @@ class ShadowMeasurementProcess(MeasurementProcess):
             device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
-            tuple: the output shape; this is always ``(2, T, n)``, where ``T`` is the
-                number of device shots and ``n`` is the number of measured wires.
+            tuple: the output shape; this is ``(2, T, n)`` when the return type
+            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
+            the number of measured wires, and is a scalar when the return type
+            is ``ShadowExpval``
 
         Raises:
-            MeasurementShapeError: when a device is not provided, since the output
-                shape is dependent on the device.
+            MeasurementShapeError: when a device is not provided and the return
+            type is ``Shadow``, since the output shape is dependent on the device.
         """
         # the return value of expval is always a scalar
         if self.return_type is ShadowExpval:
