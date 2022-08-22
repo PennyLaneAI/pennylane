@@ -1015,7 +1015,7 @@ class DefaultQubit(QubitDevice):
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
             rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
+            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.int8)]
 
             # re-normalize the collapsed state
             norms = np.sqrt(
@@ -1025,4 +1025,4 @@ class DefaultQubit(QubitDevice):
             )
             stacked_state /= norms
 
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)

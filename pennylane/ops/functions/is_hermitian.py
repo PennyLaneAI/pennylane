@@ -14,9 +14,6 @@
 """
 This module contains the qml.is_hermitian function.
 """
-
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 
@@ -24,7 +21,7 @@ from pennylane.operation import Operator
 def is_hermitian(op: Operator):
     """Check if the operation is hermitian.
 
-    A hermitian matrix is a complex square matrix that is equal to its own
+    A hermitian matrix is a complex square matrix that is equal to its own adjoint
 
     .. math:: O† = O
 
@@ -48,4 +45,4 @@ def is_hermitian(op: Operator):
     """
     if op.is_hermitian is True:
         return True
-    return np.allclose(op.matrix(), qml.adjoint(op).matrix())
+    return qml.math.allclose(qml.matrix(op), qml.matrix(qml.adjoint(op)))

@@ -47,7 +47,10 @@
   ```
 
 * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
-  [#2784](https://github.com/PennyLaneAI/pennylane/pull/2784)
+  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+
+* Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
+  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
 
 **Classical shadows**
 
@@ -124,12 +127,15 @@
 
 <h3>Breaking changes</h3>
 
-* Using an operator that might not be hermitian as an observable now raises a warning instead of an
-  error. [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
+  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
+
+* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
 
@@ -146,5 +152,6 @@ Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva
+Antal Száva,
+Cody Wang,
 David Wierichs
