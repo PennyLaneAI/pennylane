@@ -25,29 +25,27 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane import DeviceError
-from pennylane.operation import operation_derivative
+from pennylane import Device, DeviceError
+from pennylane.interfaces import set_shots
+from pennylane.math import multiply as qmlmul
+from pennylane.math import sum as qmlsum
+
 from pennylane.measurements import (
-    Sample,
     Counts,
-    Variance,
     Expectation,
-    Probability,
-    State,
-    VnEntropy,
+    MeasurementProcess,
     MutualInfo,
+    Probability,
+    Sample,
     Shadow,
     ShadowExpval,
+    State,
+    Variance,
+    VnEntropy,
 )
-from pennylane.interfaces import set_shots
+from pennylane.operation import operation_derivative
 from pennylane.shadows import ClassicalShadow
-
-from pennylane import Device
-from pennylane.math import sum as qmlsum
-from pennylane.math import multiply as qmlmul
 from pennylane.wires import Wires
-
-from pennylane.measurements import MeasurementProcess
 
 
 class QubitDevice(Device):
