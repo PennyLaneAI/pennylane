@@ -214,6 +214,7 @@ class TestMscMethods:
 
         class MyOp(qml.RX):
             """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+
             has_matrix = False
 
         sprod_op = SProd(0.4, MyOp(0.23, wires="a"))

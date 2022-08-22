@@ -224,6 +224,7 @@ class TestProperties:
     def test_has_decomposition_false(self):
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
+
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -234,8 +235,10 @@ class TestProperties:
 
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
+
         class MyOp(qml.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
+
             num_wires = 1
 
         base = MyOp(0)

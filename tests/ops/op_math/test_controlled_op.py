@@ -221,7 +221,6 @@ class TestProperties:
         op = Controlled(base, 1)
         assert op.has_matrix is False
 
-
     @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
     def test_has_decomposition_true(self, cwires, cvalues):
         """Test that controlled claims `has_decomposition` to be true if there are

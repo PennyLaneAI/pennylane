@@ -114,11 +114,14 @@ def compare_and_expand_mat(mat1, mat2):
 
     return smaller_mat, larger_mat
 
+
 class MyOp(qml.RX):
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+
     has_matrix = False
     has_adjoint = False
     has_decomposition = False
+
 
 class TestInitialization:
     """Test the initialization."""
@@ -269,7 +272,7 @@ class TestInitialization:
                 qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
             ],
             [MyOp(3.1, 0), qml.CNOT([0, 2])],
-        )
+        ),
     )
     def test_has_adjoint_true_always(self, factors):
         """Test that a product of operators that have `has_matrix=True`
@@ -288,7 +291,7 @@ class TestInitialization:
                 qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
             ],
             [MyOp(3.1, 0), qml.CNOT([0, 2])],
-        )
+        ),
     )
     def test_has_decomposition_true_always(self, factors):
         """Test that a product of operators that have `has_matrix=True`
