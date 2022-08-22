@@ -17,9 +17,12 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
-from copy import copy
 import warnings
+from copy import copy
+
 import numpy as np
+
+from scipy import sparse
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -74,6 +77,11 @@ class Hadamard(Observable, Operation):
          [ 0.70710678 -0.70710678]]
         """
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        """Compute the sparse matrix representation"""
+        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -212,6 +220,10 @@ class PauliX(Observable, Operation):
          [1 0]]
         """
         return np.array([[0, 1], [1, 0]])
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[0, 1], [1, 0]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -358,6 +370,10 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[0, -1j], [1j, 0]])
+
+    @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -498,6 +514,10 @@ class PauliZ(Observable, Operation):
          [ 0 -1]]
         """
         return np.array([[1, 0], [0, -1]])
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[1, 0], [0, -1]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -991,6 +1011,10 @@ class CNOT(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class CZ(Operation):
     r"""CZ(wires)
@@ -1079,6 +1103,10 @@ class CZ(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class CY(Operation):
@@ -1175,6 +1203,10 @@ class CY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -1257,6 +1289,10 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class ECR(Operation):
@@ -1745,6 +1781,10 @@ class CSWAP(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Toffoli(Operation):
     r"""Toffoli(wires)
@@ -1882,6 +1922,10 @@ class Toffoli(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[:2])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class MultiControlledX(Operation):
@@ -2195,6 +2239,10 @@ class MultiControlledX(Operation):
         ]
 
         return gates
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class Barrier(Operation):
