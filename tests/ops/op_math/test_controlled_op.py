@@ -684,10 +684,10 @@ class TestHelperMethod:
 
     def test_toffoli(self):
         """Test case when PauliX with two controls."""
-        op = Controlled(qml.PauliX(2), (0, 1))
+        op = Controlled(qml.PauliX("c"), ("a", 2))
         decomp = _decompose_no_control_values(op)
         assert len(decomp) == 1
-        assert qml.equal(decomp[0], qml.Toffoli((0, 1, 2)))
+        assert qml.equal(decomp[0], qml.Toffoli(("a", 2, "c")))
 
     def test_multicontrolledx(self):
         """Test case when PauliX has many controls."""
