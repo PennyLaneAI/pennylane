@@ -15,7 +15,6 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
-import ast
 import itertools
 from copy import copy
 from functools import reduce
@@ -27,6 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, expand_matrix
+from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
@@ -361,12 +361,14 @@ class Prod(Operator):
             Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
             factors
         """
+        global_phase = 1
         new_factors = ()
         pauli_tuples = {}  # pauli_tuples = {wire: (pauli_coeff, pauli_word)}
 
         for factor in factors:
             if isinstance(factor, Prod):
-                tmp_factors = cls._simplify_factors(factors=factor.factors)
+                coeff, tmp_factors = cls._simplify_factors(factors=factor.factors)
+                global_phase *= coeff
                 new_factors += tmp_factors
                 continue
             simplified_factor = factor.simplify()
@@ -375,39 +377,52 @@ class Prod(Operator):
             elif isinstance(simplified_factor, Sum):
                 new_factors += (simplified_factor.summands,)
             elif not isinstance(simplified_factor, qml.Identity):
+                if isinstance(simplified_factor, SProd):
+                    global_phase *= simplified_factor.scalar
+                    simplified_factor = simplified_factor.base
                 label = simplified_factor.label()
+                wires = simplified_factor.wires
                 if label in ["I", "X", "Y", "Z"]:
-                    wire = simplified_factor.wires[0]
-                    if wire not in pauli_tuples:
-                        pauli_tuples[wire] = (1, "I")
-                    old_coeff, old_word = pauli_tuples[wire]
+                    wire = wires[0]
+                    old_coeff, old_word = pauli_tuples.get(wire, (1, "I"))
                     coeff, new_word = cls._pauli_mult[old_word + label]
-                    pauli_tuples[wire] = (old_coeff * coeff, new_word)
+                    pauli_tuples[wire] = old_coeff * coeff, new_word
                 else:
+                    for wire in wires:
+                        pauli_coeff, pauli_word = pauli_tuples.get(wire, (1, "I"))
+                        if pauli_word != "I":
+                            pauli_op = cls._paulis[pauli_word](wire)
+                            op = pauli_op
+                            new_factors += ((op,),)
+                            global_phase *= pauli_coeff
+                        pauli_tuples.pop(wire, None)
                     new_factors += ((simplified_factor,),)
 
-        for wire, pauli_tuple in pauli_tuples.items():
-            pauli_coeff = pauli_tuple[0]
-            pauli_word = pauli_tuple[1]
+        for wire, (pauli_coeff, pauli_word) in pauli_tuples.items():
             if pauli_word != "I":
                 pauli_op = cls._paulis[pauli_word](wire)
-                op = pauli_op if pauli_coeff == 1 else qml.s_prod(pauli_coeff, pauli_op)
+                op = pauli_op
                 new_factors += ((op,),)
+                global_phase *= pauli_coeff
 
-        return new_factors
+        return global_phase, new_factors
 
     def simplify(self) -> Union["Prod", Sum]:
-        factors = self._simplify_factors(factors=self.factors)
+        global_phase, factors = self._simplify_factors(factors=self.factors)
+
         factors = list(itertools.product(*factors))
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                return (
-                    qml.prod(*(qml.Identity(w) for w in self.wires))
+                op = (
+                    Prod(*(qml.Identity(w) for w in self.wires))
                     if len(self.wires) > 1
                     else qml.Identity(self.wires[0])
                 )
-            return factor[0] if len(factor) == 1 else Prod(*factor)
+            else:
+                op = factor[0] if len(factor) == 1 else Prod(*factor)
+            return op if global_phase == 1 else qml.s_prod(global_phase, op)
+
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
 
-        return Sum(*factors)
+        return Sum(*factors) if global_phase == 1 else qml.s_prod(global_phase, Sum(*factors))

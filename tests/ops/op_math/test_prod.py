@@ -703,7 +703,7 @@ class TestSimplify:
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
-            qml.PauliX(0) @ qml.RX(1, 1),
+            qml.RX(1, 1) @ qml.PauliX(0),
             qml.RX(1, 0) @ qml.PauliX(1),
             qml.RX(1, 0) @ qml.RX(1, 1),
         )
@@ -748,14 +748,14 @@ class TestSimplify:
         )
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
-            qml.PauliX(0) @ (5 * qml.RX(1, 1)),
-            qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
+            5 * Prod(qml.RX(1, 1), qml.PauliX(0)),
+            5 * Prod(qml.PauliX(0), qml.PauliX(1)),
             Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(1),
+            5 * qml.RX(1, 1),
+            qml.s_prod(5, qml.PauliX(1)),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -764,6 +764,20 @@ class TestSimplify:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_pauli_words(self):
+        """Test that the simplify method groups pauli words."""
+        prod_op = qml.prod(
+            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+        )
+        final_op = qml.s_prod(-1j, Prod(qml.PauliX(1), qml.PauliX(0)))
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert isinstance(simplified_op.base, qml.ops.Sum)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
 
 class TestWrapperFunc:
