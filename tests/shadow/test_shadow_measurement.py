@@ -156,14 +156,23 @@ class TestShadowMeasurement:
     def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
+        import tensorflow as tf
         import torch
 
         circuit = get_circuit(wires, shots, seed, interface, device)
         shadow = circuit()
 
-        # test shape and dtype are correct
+        # test shape is correct
         assert shadow.shape == (2, shots, wires)
-        assert shadow.dtype == np.uint8 if interface != "torch" else torch.uint8
+
+        # test dtype is correct
+        expected_dtype = np.int8
+        if interface == "tf":
+            expected_dtype = tf.int8
+        elif interface == "torch":
+            expected_dtype = torch.int8
+
+        assert shadow.dtype == expected_dtype
 
         bits, recipes = shadow
 
