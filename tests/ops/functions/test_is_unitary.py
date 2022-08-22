@@ -73,6 +73,26 @@ class TestIsUnitary:
 
     @pytest.mark.parametrize("arithmetic_ops", ops)
     def test_arithmetic_ops(self, arithmetic_ops):
-        """Test that all the non-parametric ops are unitary."""
+        """Test unitary check with Prod and Sum arithmetic operations."""
         assert qml.is_unitary(qml.prod(*arithmetic_ops))
         assert not qml.is_unitary(qml.op_sum(*arithmetic_ops))
+
+    @pytest.mark.parametrize("op", unitary_ops)
+    def test_s_prod(self, op):
+        """Test the hermitian check with scalar products of hermitian operators."""
+        assert qml.is_unitary(qml.s_prod(1, op))
+        assert not qml.is_unitary(qml.s_prod(2, op))
+
+    @pytest.mark.all_interfaces
+    def test_all_interfaces(self):
+        """Test unitary check with all available interfaces."""
+        import jax
+        import tensorflow as tf
+        import torch
+
+        torch_param = torch.tensor(1.23)
+        jax_param = jax.numpy.array(1.23)
+        tf_param = tf.Variable(1.23)
+
+        for param in [torch_param, jax_param, tf_param]:
+            assert qml.is_unitary(qml.RX(param, 0))

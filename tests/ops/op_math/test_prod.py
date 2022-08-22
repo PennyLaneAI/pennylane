@@ -539,7 +539,6 @@ class TestProperties:
         assert prod_op.is_hermitian == hermitian_status
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf
@@ -552,10 +551,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
         import jax.numpy as jnp
@@ -568,10 +566,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_torch(self):
         """Test that is_hermitian works when a torch type scalar is provided."""
         import torch
@@ -584,7 +581,7 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):
@@ -819,7 +816,7 @@ class TestIntegration:
         assert qnp.allclose(var, true_var)
 
     def test_measurement_process_probs(self):
-        """Test Prod class instance in probs measurement process raises error."""  # currently can't support due to bug
+        """Test Prod class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
 
@@ -835,36 +832,35 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test Prod class instance in sample measurement process."""  # currently can't support due to bug
+        """Test Prod class instance in sample measurement process."""
         dev = qml.device("default.qubit", wires=2, shots=20)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.sample(op=prod_op)
 
         results = my_circ()
 
         assert len(results) == 20
-        # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
-        assert 1 in results.astype(np.float32).tolist()
-        assert -1 in results.astype(np.float32).tolist()
+        assert (results == 1).all()
 
     def test_measurement_process_counts(self):
-        """Test Prod class instance in sample measurement process."""  # currently can't support due to bug
+        """Test Prod class instance in sample measurement process."""
         dev = qml.device("default.qubit", wires=2, shots=20)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.counts(op=prod_op)
 
         results = my_circ()
 
         assert sum(results.values()) == 20
-        # FIXME: results.tolist() changes the values! (maybe related to the number of float bits?)
-        assert 1 in list(results.keys())
-        assert -1 in list(results.keys())
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""

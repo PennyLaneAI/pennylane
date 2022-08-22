@@ -17,7 +17,6 @@ Unit tests for the qml.simplify function
 import pytest
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
 
 
 def build_op():

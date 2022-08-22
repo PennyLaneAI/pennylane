@@ -90,3 +90,23 @@ class TestIsHermitian:
         """Test that provided arithmetic op cases are non-hermitian."""
         assert not qml.is_hermitian(qml.prod(*arithmetic_ops))
         assert not qml.is_hermitian(qml.op_sum(*arithmetic_ops))
+
+    @pytest.mark.parametrize("op", hermitian_ops)
+    def test_s_prod(self, op):
+        """Test the hermitian check with scalar products of hermitian operators."""
+        assert qml.is_hermitian(qml.s_prod(6, op))
+        assert not qml.is_hermitian(qml.s_prod(1j, op))
+
+    @pytest.mark.all_interfaces
+    def test_all_interfaces(self):
+        """Test hermitian check with all available interfaces."""
+        import jax
+        import tensorflow as tf
+        import torch
+
+        torch_param = torch.tensor(1.23)
+        jax_param = jax.numpy.array(1.23)
+        tf_param = tf.Variable(1.23)
+
+        for param in [torch_param, jax_param, tf_param]:
+            assert not qml.is_hermitian(qml.RX(param, 0))
