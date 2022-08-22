@@ -29,7 +29,7 @@ Shadow class for classical post-processing
 
 .. autosummary::
     :toctree: api
-    
+
     ~ClassicalShadow
 
 Classical Shadows formalism
