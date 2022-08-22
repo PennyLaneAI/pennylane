@@ -315,7 +315,6 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    
     def entropy(self, wires=[0], snapshots=None, alpha=1, k=1, base=None, atol=1e-5):
         """Compute entropies from classical shadow measurements"""
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
@@ -327,49 +326,47 @@ class ClassicalShadow:
         else:
             div = 1
 
-        if alpha==2:
+        if alpha == 2:
             # special case of purity
-            res = -qml.math.log(qml.math.trace(rdm@rdm))
+            res = -qml.math.log(qml.math.trace(rdm @ rdm))
             res = qml.math.cast(res, dtype="float64")
-            return res/div
+            return res / div
 
         else:
             # Compute Eigenvalues and choose only those >>0
             evs = qml.math.eigvalsh(rdm)
             mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
-            mask1 = qml.math.where(evs>0, True, False)
+            mask1 = qml.math.where(evs > 0, True, False)
             mask = qml.math.logical_and(mask0, mask1)
             # Renormalize
             evs_nonzero = qml.math.gather(evs, mask)
             evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
             print("evs_nonzero: ", evs_nonzero)
 
-
-            if alpha==1:
+            if alpha == 1:
                 # Special case of von Neumann entropy
-                return -qml.math.sum(evs_nonzero*qml.math.log(evs_nonzero)) / div
+                return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
             else:
                 # General Renyi-alpha entropy
-                return qml.math.log(qml.math.sum(evs_nonzero**alpha)) /(1.-alpha) /div
-
+                return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
 
 # Util functions
 def median_of_means(arr, num_batches, axis=0):
     r"""
->>>>>>> 6b86039b071393f9b29f3d1f20225cd488ec33cb
-    The median of means of the given array.
+    >>>>>>> 6b86039b071393f9b29f3d1f20225cd488ec33cb
+        The median of means of the given array.
 
-    The array is split into the specified number of batches. The mean value
-    of each batch is taken, then the median of the mean values is returned.
+        The array is split into the specified number of batches. The mean value
+        of each batch is taken, then the median of the mean values is returned.
 
-    Args:
-        arr (tensor-like[float]): The 1-D array for which the median of means
-            is determined
-        num_batches (int): The number of batches to split the array into
+        Args:
+            arr (tensor-like[float]): The 1-D array for which the median of means
+                is determined
+            num_batches (int): The number of batches to split the array into
 
-    Returns:
-        float: The median of means
+        Returns:
+            float: The median of means
     """
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
     means = [
