@@ -23,7 +23,8 @@ import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
 from pennylane import QutritDevice
-from pennylane.wires import WireError  # pylint: disable=unused-import
+from pennylane.wires import WireError
+from pennylane.devices.default_qubit import _get_slice
 from .._version import __version__
 
 # tolerance for numerical errors
@@ -54,6 +55,8 @@ class DefaultQutrit(QutritDevice):
     operations = {
         "Identity",
         "QutritUnitary",
+        "TShift",
+        "TClock",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
@@ -83,7 +86,9 @@ class DefaultQutrit(QutritDevice):
         # TODO: Add operations
         self._apply_ops = {
             # All operations that can be applied on the `default.qutrit` device by directly
-            # manipulating the internal state array will be included in this set
+            # manipulating the internal state array will be included in this dictionary
+            "TShift": self._apply_tshift,
+            "TClock": self._apply_tclock,
         }
 
     @functools.lru_cache()
@@ -110,6 +115,7 @@ class DefaultQutrit(QutritDevice):
         rotations = rotations or []
 
         # apply the circuit operations
+
         # Operations are enumerated so that the order of operations can eventually be used
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
@@ -144,6 +150,64 @@ class DefaultQutrit(QutritDevice):
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _apply_tshift(self, state, axes, inverse=False):
+        """Applies a ternary Shift gate by rolling 1 unit along the axis specified in ``axes``.
+
+        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
+        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
+        the last index loops back to the first, :math:`|2 \rangle` is transformed to
+        :math:`|0 \rangle`.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            inverse (bool): whether to apply the inverse operation
+
+        Returns:
+            array[complex]: output state
+        """
+        shift = -1 if inverse else 1
+        return self._roll(state, shift, axes[0])
+
+    def _apply_tclock(self, state, axes, inverse=False):
+        """Applies a ternary Clock gate by adding appropriate phases to the 1 and 2 indices
+        along the axis specified in ``axes``
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            inverse (bool): whether to apply the inverse operation
+
+        Returns:
+            array[complex]: output state
+        """
+        partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
+        return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
+
+    def _apply_phase(
+        self, state, axes, index, phase, inverse=False
+    ):  # pylint: disable=too-many-arguments
+        """Applies a phase onto the specified index along the axis specified in ``axes``.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            index (int): target index of axis to apply phase to
+            phase (float): phase to apply
+            inverse (bool): whether to apply the inverse phase
+
+        Returns:
+            array[complex]: output state
+        """
+        num_wires = len(state.shape)
+        slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
+
+        phase = self._conj(phase) if inverse else phase
+        state_slices = [
+            self._const_mul(phase if i == index else 1, state[slices[i]]) for i in range(3)
+        ]
+        return self._stack(state_slices, axis=axes[0])
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
