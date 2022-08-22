@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
+#pylint: disable = dangerous-default-value, too-many-arguments
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
-from pennylane.math import vn_entropy
 
 import pennylane.numpy as np
 import pennylane as qml
@@ -332,23 +332,23 @@ class ClassicalShadow:
             res = qml.math.cast(res, dtype="float64")
             return res / div
 
-        else:
-            # Compute Eigenvalues and choose only those >>0
-            evs = qml.math.eigvalsh(rdm)
-            mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
-            mask1 = qml.math.where(evs > 0, True, False)
-            mask = qml.math.logical_and(mask0, mask1)
-            # Renormalize
-            evs_nonzero = qml.math.gather(evs, mask)
-            evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
-            print("evs_nonzero: ", evs_nonzero)
+        # Else
+        # Compute Eigenvalues and choose only those >>0
+        evs = qml.math.eigvalsh(rdm)
+        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
+        mask1 = qml.math.where(evs > 0, True, False)
+        mask = qml.math.logical_and(mask0, mask1)
+        # Renormalize
+        evs_nonzero = qml.math.gather(evs, mask)
+        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+        print("evs_nonzero: ", evs_nonzero)
 
-            if alpha == 1:
-                # Special case of von Neumann entropy
-                return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
-            else:
-                # General Renyi-alpha entropy
-                return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+        if alpha == 1:
+            # Special case of von Neumann entropy
+            return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
+        # else:
+        # General Renyi-alpha entropy
+        return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
 
 # Util functions
