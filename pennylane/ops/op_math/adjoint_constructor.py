@@ -16,7 +16,7 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 """
 from functools import wraps
 
-from pennylane.operation import Operator, AdjointUndefinedError
+from pennylane.operation import Operator
 from pennylane.queuing import QueuingContext
 from pennylane.tape import QuantumTape, stop_recording
 
@@ -24,14 +24,13 @@ from .adjoint_class import Adjoint
 
 
 def _single_op_eager(op, update_queue=False):
-    try:
+    if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
             QueuingContext.safe_update_info(op, owner=adj)
             QueuingContext.append(adj, owns=op)
         return adj
-    except AdjointUndefinedError:
-        return Adjoint(op)
+    return Adjoint(op)
 
 
 # pylint: disable=no-member

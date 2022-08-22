@@ -222,6 +222,11 @@ class Prod(Operator):
                 return False
         return all(op.is_hermitian for op in self.factors)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return True
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -287,6 +292,11 @@ class Prod(Operator):
         """
         return self.eigendecomposition["eigval"]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self.factors)
+
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         if wire_order is None:
@@ -324,6 +334,10 @@ class Prod(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.factors)
         return self
+
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))

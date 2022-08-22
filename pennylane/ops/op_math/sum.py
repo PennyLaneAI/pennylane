@@ -270,6 +270,11 @@ class Sum(Operator):
         """
         return self.eigendecomposition["eigval"]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self.summands)
+
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -322,6 +327,10 @@ class Sum(Operator):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.summands)
         return self
+
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self.summands))

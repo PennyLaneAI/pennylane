@@ -196,6 +196,17 @@ class Pow(SymbolicOp):
             return base_matrix**z
         raise SparseMatrixUndefinedError
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        if isinstance(self.z, int) and self.z > 0:
+            return True
+        try:
+            self.base.pow(self.z)
+        except PowUndefinedError:
+            return False
+        return True
+
     def decomposition(self):
         try:
             return self.base.pow(self.z)

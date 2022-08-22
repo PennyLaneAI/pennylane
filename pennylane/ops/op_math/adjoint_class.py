@@ -16,7 +16,7 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 """
 import pennylane as qml
 from pennylane.math import conj, transpose
-from pennylane.operation import AdjointUndefinedError, Observable, Operation
+from pennylane.operation import Observable, Operation
 
 from .symbolicop import SymbolicOp
 
@@ -220,12 +220,15 @@ class Adjoint(SymbolicOp):
 
         return transpose(conj(base_matrix))
 
+    @property
+    def has_decomposition(self):
+        return self.base.has_adjoint or self.base.has_decomposition
+
     def decomposition(self):
-        try:
+        if self.base.has_adjoint:
             return [self.base.adjoint()]
-        except AdjointUndefinedError:
-            base_decomp = self.base.decomposition()
-            return [Adjoint(op) for op in reversed(base_decomp)]
+        base_decomp = self.base.decomposition()
+        return [Adjoint(op) for op in reversed(base_decomp)]
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -240,11 +243,14 @@ class Adjoint(SymbolicOp):
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
+    @property
+    def has_adjoint(self):
+        return True
+
     def adjoint(self):
         return self.base.queue()
 
     def simplify(self):
-        try:
+        if self.base.has_adjoint:
             return self.base.adjoint().simplify()
-        except AdjointUndefinedError:
-            return Adjoint(base=self.base.simplify())
+        return Adjoint(base=self.base.simplify())

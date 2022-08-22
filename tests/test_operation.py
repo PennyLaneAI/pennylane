@@ -366,6 +366,62 @@ class TestOperatorConstruction:
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
         assert not op.has_matrix
 
+    def test_has_adjoint_true(self):
+        """Test has_adjoint property detects overriding of `adjoint` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            adjoint = lambda self: self
+
+        assert MyOp.has_adjoint
+        assert MyOp(wires=0).has_adjoint
+
+    def test_has_adjoint_false(self):
+        """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert not MyOp.has_adjoint
+        assert not MyOp(wires=0).has_adjoint
+
+    def test_has_decomposition_true_compute_decomposition(self):
+        """Test has_decomposition property detects overriding of `compute_decomposition` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            @staticmethod
+            def compute_decomposition(x, wires=None):
+                return [qml.RX(x, wires=wires)]
+
+        assert MyOp.has_decomposition
+        assert MyOp(0.2, wires=1).has_decomposition
+
+    def test_has_decomposition_true_decomposition(self):
+        """Test has_decomposition property detects overriding of `decomposition` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            def decomposition(self):
+                return [qml.RX(self.parameters[0], wires=self.wires)]
+
+        assert MyOp.has_decomposition
+        assert MyOp(0.2, wires=1).has_decomposition
+
+    def test_has_decomposition_false(self):
+        """Test has_decomposition property defaults to false if neither
+        `decomposition` nor `compute_decomposition` are overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert not MyOp.has_decomposition
+        assert not MyOp(wires=0).has_decomposition
+
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_with_tf_function(self, jit_compile):

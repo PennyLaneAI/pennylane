@@ -703,9 +703,9 @@ class QuantumTape(AnnotatedQueue):
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
         for idx, op in enumerate(self._ops):
-            try:
+            if op.has_adjoint:
                 self._ops[idx] = op.adjoint()
-            except qml.operation.AdjointUndefinedError:
+            else:
                 op.inverse = not op.inverse
 
         self._ops = list(reversed(self._ops))

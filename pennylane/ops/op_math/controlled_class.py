@@ -278,11 +278,10 @@ class Controlled(SymbolicOp):
 
         try:
             target_mat = self.base.sparse_matrix()
-        except operation.SparseMatrixUndefinedError:
-            try:
+        except operation.SparseMatrixUndefinedError as e:
+            if self.base.has_matrix:
                 target_mat = sparse.lil_matrix(self.base.matrix())
-            except operation.MatrixUndefinedError as e:
-                raise operation.SparseMatrixUndefinedError from e
+            raise operation.SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
@@ -310,6 +309,10 @@ class Controlled(SymbolicOp):
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
+    @property
+    def has_decomposition(self):
+        return not all(self.control_values) or super().has_decomposition
+
     def decomposition(self):
         if not all(self.control_values):
             d = [
@@ -328,6 +331,10 @@ class Controlled(SymbolicOp):
         sub_gen = self.base.generator()
         proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
         return 1.0 * proj_tensor @ sub_gen
+
+    @property
+    def has_adjoint(self):
+        return self.base.has_adjoint
 
     def adjoint(self):
         return Controlled(
