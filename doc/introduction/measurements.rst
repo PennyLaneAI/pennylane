@@ -38,13 +38,15 @@ The available measurement functions are
     ~pennylane.density_matrix
     ~pennylane.vn_entropy
     ~pennylane.mutual_info
+    ~pennylane.classical_shadow
 
 :html:`</div>`
 
 .. note::
 
     All measurement functions support analytic differentiation, with the
-    exception of :func:`~.pennylane.sample`, as it returns *stochastic*
+    exception of :func:`~.pennylane.sample`, :func:`~.pennylane.counts`, and
+    :func:`~.pennylane.classical_shadow`, as they return *stochastic*
     results.
 
 Combined measurements
@@ -131,8 +133,8 @@ Counts
 ------
 
 To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
-:func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the 
-possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes. 
+:func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the
+possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes.
 
 The previous example will be modified as follows:
 
@@ -150,7 +152,7 @@ After executing the circuit, we can directly see how many times each measurement
 
 >>> circuit()
 ({-1: 496, 1: 504}, {-1: 496, 1: 504})
- 
+
 Similarly, if the observable is not provided, the count of the observed computational basis state is returned.
 
 .. code-block:: python
@@ -164,7 +166,7 @@ Similarly, if the observable is not provided, the count of the observed computat
         return qml.counts()
 
 And the result is:
-           
+
 >>> circuit()
 {'00': 495, '11': 505}
 

@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.25.0 (current release)
+# Release 0.25.0
 
 <h3>New features since last release</h3>
 
@@ -132,6 +132,8 @@
   >>> circuit(np.array([0.1, 0.3, 0.2]))
   tensor([0.99500417, 0.95533649, 0.98006658], requires_grad=True) 
   ```
+  
+  Currently, not all templates have been updated to support broadcasting.
 
 * Parameter-shift gradients now allow for parameter broadcasting internally,
   which can result in a significant speedup when computing gradients of
@@ -762,6 +764,9 @@
 * Fixed a bug where no error was raised and a wrong value was returned when using `qml.counts`
   with another non-commuting observable.
   [(#2928)](https://github.com/PennyLaneAI/pennylane/pull/2928)
+
+* Operator Arithmetic now allows `Hamiltonian` objects to be used and produces correct matrices.
+  [(#2957)](https://github.com/PennyLaneAI/pennylane/pull/2957)
 
 <h3>Contributors</h3>
 
