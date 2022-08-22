@@ -42,13 +42,14 @@ class TestShadowEntropies:
     """Tests for entropies in ClassicalShadow class"""
 
     @pytest.mark.parametrize("n_wires", [2, 4])
-    def test_constant_distribution(self, n_wires):
+    @pytest.mark.parametrize("base", [np.exp(1), 2])
+    def test_constant_distribution(self, n_wires, base):
         """Test for state with constant eigenvalues of reduced state that all entropies are the same"""
 
         bits, recipes = max_entangled_circuit(wires=n_wires)()
         shadow = ClassicalShadow(bits, recipes)
 
-        entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1, 2, 3]]
+        entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
 
     def test_non_constant_distribution(
