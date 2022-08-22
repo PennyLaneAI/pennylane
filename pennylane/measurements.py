@@ -1264,7 +1264,59 @@ def classical_shadow(wires, seed_recipes=True):
 
 
 def shadow_expval(obs, k=1, seed_recipes=True):
-    """TODO: docs"""
+    r"""Compute expectation values using classical shadows in a differentiable manner.
+
+        The canonical way of computing expectation values is to simply average the expectation values for each local snapshot,
+        :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`. This corresponds to the case ``k=1``.
+        However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute
+        the median of means, see `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+
+        Args:
+            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+
+        Returns:
+            float: expectation value estimate.
+
+        .. note::
+
+            This measurement uses the measurement :func:`~.pennylane.classical_shadow` and :class:`~.pennylane.ClassicalShadow` for post-processing
+            internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
+            you need to use this measurement.
+
+        **Example**
+
+        .. code-block:: python3
+
+            H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+
+            dev = qml.device("default.qubit", wires=range(2), shots=10000)
+            @qml.qnode(dev)
+            def qnode(x, obs):
+                qml.Hadamard(0)
+                qml.CNOT((0,1))
+                qml.RX(x, wires=0)
+                return shadow_expval(obs)
+
+            x = np.array(0.5, requires_grad=True)
+
+        We can compute the expectation value of H as well as its gradient in the usual way.
+
+        >>> qnode(x, H)
+        tensor(1.827, requires_grad=True)
+        >>> qml.grad(qnode)(x, H)
+        -0.44999999999999984
+
+        One of the main perks of the classical shadows formalism is that we can estimate multiple expectation values from a single quantum measurement (:func:`~.pennylane.classical_shadow`).
+        In `shadow_expval`, we can therefore pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
+        to include all observables that you want to estimate from a single measurement in the same execution.
+
+        >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        >>> qnode(x, Hs)
+        [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
+        >>> qml.jacobian(qnode)(x, Hs)
+        [-0.48312, -0.00198, -0.00375,  0.00168]
+        """
     seed = np.random.randint(2**30) if seed_recipes else None
     return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)
 
