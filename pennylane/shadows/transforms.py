@@ -65,12 +65,16 @@ def shadow_state(wires):
         def wrapper(*args, **kwargs):
             results = new_qnode(*args, **kwargs)
 
-            # fix when np.array(0.3) * qml.PauliX(0) is fixed
-            # state = qml.matrix(reduce(lambda x, y: x + y, [res * obs for res, obs in zip(results, observables)])) / (2 ** len(wires))
-
-            state = np.zeros((2 ** len(wires), 2 ** len(wires)))
-            for res, obs in zip(results, observables):
-                state = state + res * qml.matrix(obs) / (2 ** len(wires))
+            # reconstruct the state given the observables and the expectations of
+            # those observables
+            state = qml.matrix(
+                qml.ops.op_math.Sum(
+                    *[
+                        qml.ops.op_math.SProd(res, qml.ops.op_math.Prod(*(obs.obs)))
+                        for res, obs in zip(results, observables)
+                    ]
+                )
+            ) / (2 ** len(wires))
 
             return state
 
