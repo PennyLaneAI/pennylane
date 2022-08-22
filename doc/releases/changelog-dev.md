@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint`
+  that indicate whether a corresponding `decomposition` or `adjoint` method
+  is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
+
+  By default, these attributes are determined based on whether there is a
+  custom implementation of `decomposition` or `compute_decomposition`
+  (for `has_decomposition`) or of `adjoint` (for `has_adjoint`).
+  Some `Operator` classes (like `qml.ops.Prod`) provide custom implementations
+  of the new attribute as well.
+
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
   
