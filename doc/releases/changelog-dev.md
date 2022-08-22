@@ -89,6 +89,25 @@
 
 <h3>Deprecations</h3>
 
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+
+  Instead use:
+
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>

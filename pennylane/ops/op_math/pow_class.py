@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
+from warnings import warn
 
 from scipy.linalg import fractional_matrix_power
 
@@ -53,6 +54,10 @@ class PowOperation(Operation):
     grad_method = None
 
     def inv(self):
+        warn(
+            "In-place inversion with inv is deprecated. Please use qml.adjoint instead.",
+            UserWarning,
+        )
         self.hyperparameters["z"] *= -1
         self._name = f"{self.base.name}**{self.z}"
         return self

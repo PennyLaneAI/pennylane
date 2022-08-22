@@ -19,7 +19,6 @@ These operators can be used in quantum functions, like shown in the following ex
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        qml.T(wires=0).inv()
         qml.AmplitudeDamping(0.1, wires=0)
         return qml.expval(qml.PauliZ(1))
 
