@@ -539,7 +539,6 @@ class TestProperties:
         assert prod_op.is_hermitian == hermitian_status
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf
@@ -552,10 +551,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
         import jax.numpy as jnp
@@ -568,10 +566,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_torch(self):
         """Test that is_hermitian works when a torch type scalar is provided."""
         import torch
@@ -584,7 +581,7 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):

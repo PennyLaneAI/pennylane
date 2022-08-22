@@ -17,7 +17,6 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
-from copy import copy
 import warnings
 from copy import copy
 
