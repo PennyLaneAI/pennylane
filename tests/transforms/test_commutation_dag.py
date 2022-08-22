@@ -77,10 +77,9 @@ class TestCommutingFunction:
     def test_cz_mcz(self, wires, res):
         """Commutation between CZ and MCZ."""
 
-        def z():
-            qml.PauliZ(wires=wires[1][2])
-
-        commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.ctrl(z, control=wires[1][:-1])())
+        op1 = qml.CZ(wires=wires[0])
+        op2 = qml.ctrl(qml.PauliZ(wires[1][2]), control=wires[1][:-1])()
+        commutation = qml.is_commuting(op1, op2)
         assert commutation == res
 
     @pytest.mark.parametrize(

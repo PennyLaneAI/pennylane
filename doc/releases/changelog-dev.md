@@ -97,6 +97,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.ctrl` now uses `Controlled` instead of `ControlledOperation`.  The new `Controlled` class
+  wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
+
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
@@ -136,6 +139,9 @@
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+* The `ControlledOperation` class is removed.  This was a developer-only class, so the change should not be evident to
+  any users. It is replaced by `Controlled`.
 
 <h3>Deprecations</h3>
 

@@ -171,6 +171,8 @@ class Controlled(SymbolicOp):
                 )
                 control_values = [(x == "1") for x in control_values]
 
+            control_values = [control_values] if isinstance(control_values, int) else control_values
+
             if len(control_values) != len(control_wires):
                 raise ValueError("control_values should be the same length as control_wires")
             if not set(control_values).issubset({False, True}):
@@ -407,6 +409,16 @@ class ControlledOp(Controlled, operation.Operation):
     def __new__(cls, *_, **__):
         # overrides dispatch behavior of ``Controlled``
         return object.__new__(cls)
+
+    # pylint: disable=too-many-function-args
+    def __init__(
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+    ):
+        super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
+        # check the grad_recipe validity
+        if self.grad_recipe is None:
+            # Make sure grad_recipe is an iterable of correct length instead of None
+            self.grad_recipe = [None] * self.num_params
 
     @property
     def _inverse(self):

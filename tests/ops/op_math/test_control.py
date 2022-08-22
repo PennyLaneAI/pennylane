@@ -6,16 +6,7 @@ import pytest
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.tape.tape import expand_tape
-from pennylane.ops.op_math import ControlledOperation, ctrl
-
-
-def assert_equal_operations(ops1, ops2):
-    """Assert that two list of operations are equivalent"""
-    assert len(ops1) == len(ops2)
-    for op1, op2 in zip(ops1, ops2):
-        assert type(op1) == type(op2)
-        assert op1.wires == op2.wires
-        np.testing.assert_allclose(op1.parameters, op2.parameters)
+from pennylane.ops.op_math import ctrl, Controlled
 
 
 def test_control_sanity_check():
@@ -35,6 +26,8 @@ def test_control_sanity_check():
         # Execute controlled version.
         cmake_ops()
 
+    expanded_tape = tape.expand()
+
     expected = [
         qml.CRX(0.123, wires=[1, 0]),
         qml.CRY(0.456, wires=[1, 2]),
@@ -44,11 +37,9 @@ def test_control_sanity_check():
         qml.CY(wires=[1, 4]),
         qml.CZ(wires=[1, 0]),
     ]
-    assert len(tape.operations) == 1
-    ctrl_op = tape.operations[0]
-    assert isinstance(ctrl_op, ControlledOperation)
-    expanded = ctrl_op.expand()
-    assert_equal_operations(expanded.operations, expected)
+    assert len(tape.operations) == 7
+    for op1, op2 in zip(expanded_tape, expected):
+        assert qml.equal(op1, op2)
 
 
 def test_adjoint_of_control():
@@ -74,59 +65,9 @@ def test_adjoint_of_control():
         qml.CRY(-0.123, wires=[5, 3]),
         qml.CRX(-0.789, wires=[5, 2]),
     ]
-    for tape in [tape1.expand(depth=2), tape2.expand(depth=1)]:
-        assert_equal_operations(tape.circuit, expected)
-
-
-class TestAdjointOutsideQueuing:
-    """Test calling the adjoint method of ControlledOperation outside of a
-    queuing context"""
-
-    def test_single_par_op(self):
-        """Test a single parametrized operation for the adjoint method of
-        ControlledOperation"""
-        op, par, control_wires, wires = qml.RY, np.array(0.3), qml.wires.Wires(1), [2]
-        adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(par, wires=wires).adjoint()
-
-        assert adjoint_of_controlled_op.control_wires == control_wires
-        res_ops = adjoint_of_controlled_op.subtape.operations
-        op1 = res_ops[0]
-        op2 = qml.adjoint(op)(par, wires=wires)
-
-        assert type(op1) == type(op2)
-        assert op1.parameters == op2.parameters
-        assert op1.wires == op2.wires
-
-    def test_template(self):
-        """Test a template for the adjoint method of ControlledOperation"""
-        op, par = qml.templates.StronglyEntanglingLayers, np.ones((1, 2, 3))
-        control_wires, wires = qml.wires.Wires(1), [2, 3]
-        adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(par, wires=wires).adjoint()
-
-        assert adjoint_of_controlled_op.control_wires == control_wires
-        res_ops = adjoint_of_controlled_op.subtape.operations
-        subtape_op = res_ops[0]
-
-        assert isinstance(subtape_op, qml.ops.op_math.Adjoint)
-        assert isinstance(subtape_op.base, qml.StronglyEntanglingLayers)
-        assert subtape_op.parameters == [par]
-        assert subtape_op.wires == qml.wires.Wires(wires)
-
-    def test_cv_template(self):
-        """Test a CV template that returns a list of operations for the adjoint
-        method of ControlledOperation"""
-        op, par = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]]
-        control_wires, wires = qml.wires.Wires(1), [2, 3]
-        adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(*par, wires=wires).adjoint()
-
-        assert adjoint_of_controlled_op.control_wires == control_wires
-        res_ops = adjoint_of_controlled_op.subtape.operations[0].expand().operations
-        expected = qml.adjoint(op)(*par, wires=wires).expand().operations
-
-        for op1, op2 in zip(res_ops, expected):
-            assert type(op1) == type(op2)
-            assert op1.parameters == op2.parameters
-            assert op1.wires == op2.wires
+    for tape in [tape1.expand(depth=2), tape2.expand(depth=2)]:
+        for op1, op2 in zip(tape, expected):
+            assert qml.equal(op1, op2)
 
 
 def test_nested_control():
@@ -136,9 +77,9 @@ def test_nested_control():
         CCX(wires=0)
     assert len(tape.operations) == 1
     op = tape.operations[0]
-    assert isinstance(op, ControlledOperation)
-    new_tape = expand_tape(tape, 2)
-    assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
+    assert isinstance(op, Controlled)
+    new_tape = tape.expand(depth=2)
+    assert qml.equal(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
 
 
 def test_multi_control():
@@ -148,9 +89,9 @@ def test_multi_control():
         CCX(wires=0)
     assert len(tape.operations) == 1
     op = tape.operations[0]
-    assert isinstance(op, ControlledOperation)
-    new_tape = expand_tape(tape, 1)
-    assert_equal_operations(new_tape.operations, [qml.Toffoli(wires=[7, 3, 0])])
+    assert isinstance(op, Controlled)
+    new_tape = tape.expand(depth=1)
+    assert qml.equal(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
 
 
 def test_control_with_qnode():
@@ -183,7 +124,7 @@ def test_control_with_qnode():
     circuit2 = qml.qnode(dev)(partial(circuit, ansatz=controlled_ansatz))
     res1 = circuit1(params=params)
     res2 = circuit2(params=params)
-    np.testing.assert_allclose(res1, res2)
+    assert qml.math.allclose(res1, res2)
 
 
 def test_ctrl_within_ctrl():
@@ -199,55 +140,50 @@ def test_ctrl_within_ctrl():
     with QuantumTape() as tape:
         controlled_ansatz([0.123, 0.456])
 
-    tape = expand_tape(tape, 2, stop_at=lambda op: not isinstance(op, ControlledOperation))
+    tape = tape.expand(2, stop_at=lambda op: not isinstance(op, Controlled))
 
     expected = [
         qml.CRX(0.123, wires=[2, 0]),
-        qml.Toffoli(wires=[0, 2, 1]),
+        qml.Toffoli(wires=[2, 0, 1]),
         qml.CRX(0.456, wires=[2, 0]),
     ]
-    assert_equal_operations(tape.operations, expected)
+    for op1, op2 in zip(tape, expected):
+        assert qml.equal(op1, op2)
 
 
 def test_diagonal_ctrl():
     """Test ctrl on diagonal gates."""
     with QuantumTape() as tape:
         ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
-    tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
-    assert_equal_operations(
-        tape.operations, [qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])]
+    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+    assert qml.equal(
+        tape[0], qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
     )
 
 
 def test_qubit_unitary():
     """Test ctrl on QubitUnitary and ControlledQubitUnitary"""
+    M = np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0)
     with QuantumTape() as tape:
-        ctrl(qml.QubitUnitary, 1)(np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), wires=0)
+        ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
-    tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
-    assert_equal_operations(
-        tape.operations,
-        [
-            qml.ControlledQubitUnitary(
-                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=1, wires=0
-            )
-        ],
-    )
+    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
 
+    expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
+
+    assert qml.equal(tape[0], expected)
+
+
+def test_controlledqubitunitary():
+    """Test ctrl on ControlledQubitUnitary."""
+    M = np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0)
     with QuantumTape() as tape:
-        ctrl(qml.ControlledQubitUnitary, 1)(
-            np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=2, wires=0
-        )
+        ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
 
-    tape = expand_tape(tape, 3, stop_at=lambda op: not isinstance(op, ControlledOperation))
-    assert_equal_operations(
-        tape.operations,
-        [
-            qml.ControlledQubitUnitary(
-                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=[2, 1], wires=0
-            )
-        ],
-    )
+    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+
+    expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0)
+    qml.equal(tape[0], expected)
 
 
 def test_no_control_defined():
@@ -255,7 +191,7 @@ def test_no_control_defined():
     # QFT has no control rule defined.
     with QuantumTape() as tape:
         ctrl(qml.templates.QFT, 2)(wires=[0, 1])
-    tape = expand_tape(tape)
+    tape = tape.expand(depth=3, stop_at=lambda op: not isinstance(op, Controlled))
     assert len(tape.operations) == 12
     # Check that all operations are updated to their controlled version.
     for op in tape.operations:
@@ -269,10 +205,10 @@ def test_no_decomposition_defined():
     with QuantumTape() as tape:
         ctrl(qml.CZ, 0)(wires=[1, 2])
 
-    tape = expand_tape(tape)
+    tape = tape.expand()
 
     assert len(tape.operations) == 1
-    assert tape.operations[0].name == "ControlledQubitUnitary"
+    assert tape.operations[0].name == "C(CZ)"
 
 
 def test_controlled_template():
@@ -284,8 +220,8 @@ def test_controlled_template():
     with QuantumTape() as tape:
         ctrl(qml.templates.BasicEntanglerLayers, 0)(weights, wires=[1, 2])
 
-    tape = expand_tape(tape)
-    assert len(tape.operations) == 9
+    tape = expand_tape(tape, depth=2)
+    assert len(tape) == 9
     assert all(o.name in {"CRX", "Toffoli"} for o in tape.operations)
 
 
@@ -302,7 +238,7 @@ def test_controlled_template_and_operations():
     with QuantumTape() as tape:
         ctrl(ansatz, 0)(weights, wires=[1, 2])
 
-    tape = expand_tape(tape)
+    tape = tape.expand(depth=2, stop_at=lambda obj: not isinstance(obj, Controlled))
     assert len(tape.operations) == 10
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
@@ -358,9 +294,6 @@ class TestDifferentiation:
     @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
-
-        if diff_method == "backprop" and jax_interface != "jax":
-            pytest.skip("The backprop case only accepts interface='jax'")
 
         import jax
 
@@ -434,11 +367,10 @@ def test_control_values_sanity_check():
         qml.CZ(wires=[1, 0]),
         qml.PauliX(wires=1),
     ]
-    assert len(tape.operations) == 1
-    ctrl_op = tape.operations[0]
-    assert isinstance(ctrl_op, ControlledOperation)
-    expanded = ctrl_op.expand()
-    assert_equal_operations(expanded.operations, expected)
+    assert len(tape) == 9
+    expanded = tape.expand(stop_at=lambda obj: not isinstance(obj, Controlled))
+    for op1, op2 in zip(expanded, expected):
+        assert qml.equal(op1, op2)
 
 
 @pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
@@ -451,7 +383,7 @@ def test_multi_control_values(ctrl_values):
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
-        exp_op.append(qml.Toffoli(wires=[7, 3, 0]))
+        exp_op.append(qml.Toffoli(wires=[3, 7, 0]))
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
@@ -463,6 +395,7 @@ def test_multi_control_values(ctrl_values):
         CCX(wires=0)
     assert len(tape.operations) == 1
     op = tape.operations[0]
-    assert isinstance(op, ControlledOperation)
+    assert isinstance(op, Controlled)
     new_tape = expand_tape(tape, 1)
-    assert_equal_operations(new_tape.operations, expected_ops(ctrl_values))
+    for op1, op2 in zip(new_tape, expected_ops(ctrl_values)):
+        assert qml.equal(op1, op2)
