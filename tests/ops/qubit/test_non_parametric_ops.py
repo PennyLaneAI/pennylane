@@ -1205,7 +1205,6 @@ class TestControlledMethod:
 
 
 class TestSparseMatrix:
-
     @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
     def test_sparse_matrix(self, op, mat):
         expected_sparse_mat = csr_matrix(mat)
