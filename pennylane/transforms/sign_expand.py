@@ -197,8 +197,8 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
     return tapes
 
 
-@batch_transform
 # pylint: disable=too-many-function-args)
+@batch_transform
 def sign_expand(tape, circuit=False, J=10, delta=0.0, controls=('Hadamard','Target')):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
