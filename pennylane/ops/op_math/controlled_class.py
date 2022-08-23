@@ -48,7 +48,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     except qml.operation.DecompositionUndefinedError:
         return None
 
-    return [Controlled(x, op.control_wires, work_wires=op.work_wires) for x in base_decomp]
+    return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
