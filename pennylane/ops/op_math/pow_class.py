@@ -254,6 +254,9 @@ class Pow(SymbolicOp):
         """
         return self.z * self.base.generator()
 
+    def pow(self, z):
+        return [Pow(base=self.base, z=self.z * z)]
+
     def adjoint(self):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
