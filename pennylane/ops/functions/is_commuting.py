@@ -390,8 +390,9 @@ def is_commuting(operation1, operation2):
         return True
 
     # Simplify the rotations if possible
-    operation1 = qml.simplify(operation1)
-    operation2 = qml.simplify(operation2)
+    with qml.tape.stop_recording():
+        operation1 = qml.simplify(operation1)
+        operation2 = qml.simplify(operation2)
 
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
