@@ -187,11 +187,8 @@ class TestStateBackward:
             ).astype(np.complex64)
         )
 
-        actual = jax.jacrev(shadow_circuit, holomorphic=True)(x)
-        expected = jax.jacrev(exact_circuit, holomorphic=True)(x)
-
-        print('actual', actual[0][0])
-        print('expected', expected[0][0])
+        actual = qml.math.real(jax.jacrev(shadow_circuit, holomorphic=True)(x))
+        expected = qml.math.real(jax.jacrev(exact_circuit, holomorphic=True)(x))
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -220,5 +217,27 @@ class TestStateBackward:
             out2 = exact_circuit(x)
 
         expected = tape2.jacobian(out2, x)
+
+        assert qml.math.allclose(actual, expected, atol=1e-1)
+
+    @pytest.mark.torch
+    def test_backward_torch(self):
+        """Test the gradient of the state for the torch interface"""
+        import torch
+
+        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="torch")
+        shadow_circuit = qml.shadows.state(wires=[0, 1, 2])(shadow_circuit)
+        exact_circuit = strongly_entangling_circuit_exact_state(3, "torch")
+
+        # make rotations close to pi / 2 to ensure gradients are not too small
+        x = torch.tensor(
+            np.random.uniform(
+                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
+            ),
+            requires_grad=True,
+        )
+
+        actual = torch.autograd.functional.jacobian(shadow_circuit, x)
+        expected = torch.autograd.functional.jacobian(exact_circuit, x)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)

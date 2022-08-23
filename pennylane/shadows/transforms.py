@@ -70,14 +70,12 @@ def shadow_state(wires):
 
             # reconstruct the state given the observables and the expectations of
             # those observables
-            state = qml.matrix(
-                qml.ops.op_math.Sum(
-                    *[
-                        qml.ops.op_math.SProd(res, qml.ops.op_math.Prod(*(obs.obs)) if isinstance(obs, qml.operation.Tensor) else obs)
-                        for res, obs in zip(results, observables)
-                    ]
+            state = 0
+            for res, obs in zip(results, observables):
+                state = state + res * qml.math.cast_like(
+                    qml.math.convert_like(qml.matrix(obs), res), res
                 )
-            ) / (2 ** len(wires))
+            state = state / 2 ** len(wires)
 
             return state
 
