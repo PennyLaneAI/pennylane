@@ -213,7 +213,7 @@ class Pow(SymbolicOp):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates of an operator to a power is the same as the diagonalizing
         gates as the original operator. As we can see,
@@ -253,6 +253,9 @@ class Pow(SymbolicOp):
         See also :func:`~.generator`
         """
         return self.z * self.base.generator()
+
+    def adjoint(self):
+        return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
         try:

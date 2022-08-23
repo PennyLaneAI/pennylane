@@ -124,6 +124,9 @@ class QubitStateVector(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (1,)
+    """int: Number of dimensions per trainable parameter of the operator."""
+
     grad_method = None
 
     # This is a temporary attribute to fix the operator queuing behaviour

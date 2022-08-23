@@ -172,30 +172,36 @@ class QAOAEmbedding(Operation):
 
         shape = qml.math.shape(features)
 
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        if len(shape) not in {1, 2}:
+            raise ValueError(
+                "Features must be a one-dimensional tensor or two-dimensional with broadcasting;"
+                f" got shape {shape}."
+            )
 
-        n_features = shape[0]
+        n_features = shape[-1]
         if n_features > len(wires):
             raise ValueError(
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
         shape = qml.math.shape(weights)
-        repeat = shape[0]
+        if len(shape) not in {2, 3}:
+            raise ValueError(
+                "Weights must be a two-dimensional tensor or three-dimensional with broadcasting;"
+                f" got shape {shape}."
+            )
+
+        # Either the first or the second axis (with broadcasting) gives the number of repetitions
+        repeat = shape[-2]
 
         if len(wires) == 1:
-            if shape != (repeat, 1):
-                raise ValueError(f"Weights tensor must be of shape {(repeat, 1)}; got {shape}")
-
+            exp_shape = (repeat, 1)
         elif len(wires) == 2:
-            if shape != (repeat, 3):
-                raise ValueError(f"Weights tensor must be of shape {(repeat, 3)}; got {shape}")
+            exp_shape = (repeat, 3)
         else:
-            if shape != (repeat, 2 * len(wires)):
-                raise ValueError(
-                    f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
-                )
+            exp_shape = (repeat, 2 * len(wires))
+        if shape[-2:] != exp_shape:
+            raise ValueError(f"Weights tensor must be of shape {exp_shape}; got {shape}")
 
         self._hyperparameters = {"local_field": local_field}
         super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
@@ -203,6 +209,11 @@ class QAOAEmbedding(Operation):
     @property
     def num_params(self):
         return 2
+
+    @property
+    def ndim_params(self):
+        # The feature vector has one dimension, the weights tensor has two.
+        return (1, 2)
 
     @staticmethod
     def compute_decomposition(
@@ -237,11 +248,18 @@ class QAOAEmbedding(Operation):
         RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b'])]
         """
         wires = qml.wires.Wires(wires)
-        # first dimension of the weights tensor determines
+        # second to last dimension of the weights tensor determines
         # the number of layers
-        repeat = qml.math.shape(weights)[0]
+        repeat = qml.math.shape(weights)[-2]
         op_list = []
-        n_features = qml.math.shape(features)[0]
+        n_features = qml.math.shape(features)[-1]
+        if qml.math.ndim(features) > 1:
+            # If the features are broadcasted, move the broadcasting axis to the last place
+            # in order to propagate broadcasted parameters to the gates in the decomposition.
+            features = qml.math.T(features)
+        if qml.math.ndim(weights) > 2:
+            # If the weights are broadcasted, move the broadcasting axis to the last place
+            weights = qml.math.moveaxis(weights, 0, -1)
 
         for l in range(repeat):
             # ---- apply encoding Hamiltonian
@@ -262,14 +280,16 @@ class QAOAEmbedding(Operation):
                 op_list.append(local_field(weights[l][2], wires=wires[1:2]))
 
             else:
-                for i in range(len(wires)):
-                    op_list.append(
-                        qml.MultiRZ(
-                            weights[l][i], wires=wires.subset([i, i + 1], periodic_boundary=True)
-                        )
-                    )
-                for i in range(len(wires)):
-                    op_list.append(local_field(weights[l][len(wires) + i], wires=wires[i]))
+                multirz_gates = (
+                    qml.MultiRZ(weights[l][i], wires.subset([i, i + 1], periodic_boundary=True))
+                    for i in range(len(wires))
+                )
+                op_list.extend(multirz_gates)
+                local_field_gates = (
+                    local_field(weights[l][len(wires) + i], wires=wires[i])
+                    for i in range(len(wires))
+                )
+                op_list.extend(local_field_gates)
 
         # repeat the feature encoding once more at the end
         for i in range(n_features):
@@ -280,7 +300,7 @@ class QAOAEmbedding(Operation):
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires):
+    def shape(n_layers, n_wires, n_broadcast=None):
         r"""Returns the shape of the weight tensor required for this template.
 
         Args:
@@ -290,11 +310,14 @@ class QAOAEmbedding(Operation):
         Returns:
             tuple[int]: shape
         """
-
         if n_wires == 1:
-            return n_layers, 1
+            wire_dim = 1
+        elif n_wires == 2:
+            wire_dim = 3
+        else:
+            wire_dim = 2 * n_wires
 
-        if n_wires == 2:
-            return n_layers, 3
+        if n_broadcast:
+            return n_broadcast, n_layers, wire_dim
 
-        return n_layers, 2 * n_wires
+        return n_layers, wire_dim
