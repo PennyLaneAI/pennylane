@@ -342,28 +342,32 @@ class Sum(Operator):
         """
         new_summands = {}  # {hash: [coeff, summand]}
         for summand in summands:
-            if isinstance(summand, Sum):
-                sum_summands = cls._simplify_summands(summands=summand.summands)
-                for hash, [coeff, sum_summand] in sum_summands.items():
-                    if hash in new_summands:
-                        new_summands[hash][0] += coeff
-                    else:
-                        new_summands[hash] = [coeff, sum_summand]
-                continue
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
                 sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
-                for hash, [coeff, sum_summand] in sum_summands.items():
-                    if hash in new_summands:
-                        new_summands[hash][0] += coeff
-                    else:
-                        new_summands[hash] = [coeff, sum_summand]
-            elif simplified_summand.hash in new_summands:
-                new_summands[simplified_summand.hash][0] += 1
+                for op_hash, [coeff, sum_summand] in sum_summands.items():
+                    cls._add_summand(
+                        sum_dict=new_summands, op=sum_summand, coeff=coeff, op_hash=op_hash
+                    )
+            elif isinstance(simplified_summand, qml.ops.SProd):  # pylint: disable=no-member
+                cls._add_summand(
+                    sum_dict=new_summands,
+                    op=simplified_summand.base,
+                    coeff=simplified_summand.scalar,
+                )
             else:
-                new_summands[simplified_summand.hash] = [1, simplified_summand]
+                cls._add_summand(new_summands, simplified_summand)
 
         return new_summands
+
+    @classmethod
+    def _add_summand(cls, sum_dict: dict, op: Operator, coeff=1, op_hash=None):
+        """Add summand."""
+        op_hash = op.hash if op_hash is None else op_hash
+        if op_hash in sum_dict:
+            sum_dict[op_hash][0] += coeff
+        else:
+            sum_dict[op_hash] = [coeff, op]
 
     def simplify(self) -> "Sum":
         summands = self._simplify_summands(summands=self.summands)
