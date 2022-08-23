@@ -13,7 +13,6 @@
 # limitations under the License.
 """Classical shadow transforms"""
 
-from collections.abc import Iterable
 from itertools import product
 from functools import reduce
 
