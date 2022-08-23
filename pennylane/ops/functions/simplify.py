@@ -108,8 +108,8 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             _ = [qml.simplify(op) for op in tape.operations]
             return tuple(qml.simplify(m) for m in tape.measurements)
 
-        return (
-            QNode(
+        if isinstance(input, QNode):
+            return QNode(
                 func=qfunc,
                 device=input.device,
                 interface=input.interface,
@@ -118,8 +118,6 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
                 **input.execute_kwargs,
                 **input.gradient_kwargs,
             )
-            if isinstance(input, QNode)
-            else qfunc
-        )
+        return qfunc
 
     raise ValueError(f"Cannot simplify the object {input} of type {type(input)}.")

@@ -97,6 +97,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.ops.op_math.Controlled` now has basic decomposition functionality.
+  [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
+
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
@@ -112,6 +115,9 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
+  
+* Added `sparse_matrix()` support for single qubit observables
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 * Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
@@ -123,6 +129,27 @@
   >>> op2 = qml.RX(0.54, wires=0)
   >>> qml.is_hermitian(op2)
   False
+  ```
+
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
+
+* `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
+  [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
+
+  ```python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit():
+      qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> circuit()
+  >>> list(circuit.tape)
+  [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
 
 <h3>Breaking changes</h3>
@@ -139,6 +166,10 @@
 
 <h3>Bug fixes</h3>
 
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+  certain exceptions, when instantiated with `wires=[]`.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -148,10 +179,13 @@ Josh Izaac,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
+Christina Lee,
+Meenu Kumari,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva,
+Jay Soni,
+Antal Száva
 Cody Wang,
 David Wierichs
