@@ -29,6 +29,9 @@ requirements = [
     "autoray>=0.3.1",
     "cachetools",
     "pennylane-lightning>=0.26",
+    "dill",
+    "zstd",
+    "requests",
 ]
 
 info = {

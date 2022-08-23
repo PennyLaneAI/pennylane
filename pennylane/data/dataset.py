@@ -16,6 +16,8 @@ Contains the :class:`~pennylane.data.Dataset` class and its associated functions
 """
 
 from abc import ABC
+from glob import glob
+import os
 import dill
 import zstd
 
@@ -73,25 +75,23 @@ class Dataset(ABC):
         + (1) [Z1]
     """
 
-    def __init__(self, dtype=None, **kwargs):
-        self.dtype = dtype
-        self.__doc__ = ""
+    def __init__(self, **kwargs):
         for key, val in kwargs.items():
             setattr(self, key, val)
 
-    def __eq__(self, __o):
-        return self.__dict__ == __o.__dict__
+    @property
+    def attrs(self):
+        """Returns attributes of the dataset"""
+        return {k: v for k, v in vars(self).items() if k[0] != "_"}
 
     @staticmethod
     def _read_file(filepath):
-        """Loads data previously saved with :func:`~pennylane.data.dataset.write`.
-        Data is read as a dictionary."""
+        """Reading the data from a saved file. Returns a dictionary."""
         with open(filepath, "rb") as file:
             compressed_pickle = file.read()
 
         depressed_pickle = zstd.decompress(compressed_pickle)
-        data = dill.loads(depressed_pickle)
-        return data
+        return dill.loads(depressed_pickle)
 
     def read(self, filepath):
         """Loads data from a saved file to the current dataset.
@@ -108,16 +108,8 @@ class Dataset(ABC):
         for (key, val) in data.items():
             setattr(self, f"{key}", val)
 
-    @staticmethod
-    def _write_file(filepath, data, protocol=4):
-        """Writes the input data to a file as a dictionary."""
-        pickled_data = dill.dumps(data, protocol=protocol)  # returns data as a bytes object
-        compressed_pickle = zstd.compress(pickled_data)
-        with open(filepath, "wb") as file:
-            file.write(compressed_pickle)
-
     def write(self, filepath, protocol=4):
-        """Writes a dataset to a file as a dictionary.
+        """Writes the dataset to a file as a dictionary.
 
         Args:
             filepath (string): the desired save location and file name
@@ -127,10 +119,14 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.write('./path/to/file/file_name.dat')
         """
-        dataset = {}
-        for (key, val) in self.__dict__.items():
-            dataset.update({key: val})
-        self._write_file(filepath=filepath, data=dataset, protocol=protocol)
+        pickled_data = dill.dumps(self.attrs, protocol=protocol)  # returns data as a bytes object
+        compressed_pickle = zstd.compress(pickled_data)
+        with open(filepath, "wb") as file:
+            file.write(compressed_pickle)
+
+    def list_attributes(self):
+        """List the attributes saved on the Dataset"""
+        return list(self.attrs)
 
     @classmethod
     def from_dataset(cls, dataset):
@@ -151,5 +147,54 @@ class Dataset(ABC):
             >>> print(vars(new_dataset))
             {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
         """
-        kwargs = {key: val for (key, val) in dataset.__dict__.items() if key not in ["dtype"]}
-        return cls(dtype=dataset.dtype, **kwargs)
+        return cls(**dataset.attrs)
+
+
+class RemoteDataset(Dataset):
+    """A dataset object that provides additional utility, given that the data comes
+    from the PennyLane remote dataset source."""
+
+    def __init__(self, dtype, folder, attr_prefix, **kwargs):
+        self._dtype = dtype
+        self._folder = folder.rstrip("/")
+        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/")) + "_{}.dat"
+        self.__doc__ = ""
+
+        self._fullfile = self._prefix.format("full")
+        if not os.path.exists(self._fullfile):
+            self._fullfile = None
+
+        for f in glob(self._folder + "/*.dat"):
+            print(f)
+            data = self._read_file(f)
+            for attr, value in data.items():
+                setattr(self, f"{attr}", value)
+
+        super().__init__(**kwargs)
+
+    def __get_filename_for_attribute(self, attribute):
+        return self._fullfile if self._fullfile else self._prefix.format(attribute)
+
+    def __getattribute__(self, name):
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            pass
+        filepath = self.__get_filename_for_attribute(name)
+        if os.path.exists(filepath):
+            # TODO: setattr?
+            return self._read_file(filepath)[name]
+        # TODO: download the file here?
+        raise AttributeError(
+            f"'Dataset' object has no attribute {name} and no matching file was found"
+        )
+
+    def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
+        """Build the docstring for the Dataset class"""
+        docstring = f"{docstr}\n\n"
+        if args and argsdocs and argtypes:
+            docstring += "Args:\n"
+            for arg, argdoc, argtype in zip(args, argsdocs, argtypes):
+                docstring += f"\t{arg} ({argtype}): {argdoc}\n"
+            docstring += f"\nReturns:\n\tDataset({self._dtype})"
+        self.__doc__ = docstring
