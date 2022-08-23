@@ -148,8 +148,9 @@ class ClassicalShadow:
             recipes = self.recipes
 
         if isinstance(wires, Iterable):
-            bits = bits[:, wires]
-            recipes = recipes[:, wires]
+            wires = qml.math.convert_like(wires, bits)
+            bits = qml.math.T(qml.math.gather(qml.math.T(bits), wires))
+            recipes = qml.math.T(qml.math.gather(qml.math.T(recipes), wires))
 
         T, n = bits.shape
 

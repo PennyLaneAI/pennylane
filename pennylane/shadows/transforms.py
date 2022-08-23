@@ -13,6 +13,7 @@
 # limitations under the License.
 """Classical shadow transforms"""
 
+from collections.abc import Iterable
 from itertools import product
 from functools import reduce
 
@@ -36,7 +37,7 @@ def __replace_obs(tape, obs, *args, **kwargs):
     return [new_tape], processing_fn
 
 
-def shadow_expval(H, k=1):
+def _shadow_expval_diffable(H, k=1):
     """TODO: docs"""
 
     def decorator(qnode):
@@ -50,7 +51,30 @@ def shadow_expval(H, k=1):
     return decorator
 
 
-def shadow_state(wires):
+def _shadow_expval_undiffable(H, k=1):
+    """TODO: docs"""
+    if isinstance(H, Iterable):
+        wires = qml.wires.Wires.all_wires([h.wires for h in H])
+    else:
+        wires = H.wires
+
+    def decorator(qnode):
+        def wrapper(*args, **kwargs):
+            bits, recipes = qnode(*args, **kwargs)
+            shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=wires.tolist())
+            return shadow.expval(H, k=k)
+
+        return wrapper
+
+    return decorator
+
+
+def shadow_expval(H, k=1, diffable=False):
+    """TODO: docs"""
+    return _shadow_expval_diffable(H, k=1) if diffable else _shadow_expval_undiffable(H, k=1)
+
+
+def _shadow_state_diffable(wires):
     """TODO: docs"""
 
     # all pauli observables
@@ -84,3 +108,22 @@ def shadow_state(wires):
         return wrapper
 
     return decorator
+
+
+def _shadow_state_undiffable(wires):
+    """TODO: docs"""
+
+    def decorator(qnode):
+        def wrapper(*args, **kwargs):
+            bits, recipes = qnode(*args, **kwargs)
+            shadow = qml.shadows.ClassicalShadow(bits, recipes)
+            return qml.math.mean(shadow.global_snapshots(wires=wires), 0)
+
+        return wrapper
+
+    return decorator
+
+
+def shadow_state(wires, diffable=False):
+    """TODO: docs"""
+    return _shadow_state_diffable(wires) if diffable else _shadow_state_undiffable(wires)
