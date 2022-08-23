@@ -134,6 +134,9 @@
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
+* `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+
 * `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
   [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
 
