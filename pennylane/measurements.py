@@ -522,7 +522,7 @@ class MeasurementProcess:
         """Reduce the depth of the observable to the minimum.
 
         Returns:
-            .Operator: simplified operator
+            .MeasurementProcess: A measurement process with a simplified observable.
         """
         if self.obs is None:
             return self
