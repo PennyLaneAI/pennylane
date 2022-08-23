@@ -599,6 +599,11 @@ class TestBarrier:
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"
 
+    def test_barrier_empty_wire_list_no_error(self):
+        """Test that barrier does not raise an error when instantiated with wires=[]."""
+        barrier = qml.Barrier(wires=[])
+        assert isinstance(barrier, qml.Barrier)
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""
