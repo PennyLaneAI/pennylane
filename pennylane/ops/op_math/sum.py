@@ -342,6 +342,15 @@ class Sum(Operator):
         """
         new_summands = {}  # {hash: [coeff, summand]}
         for summand in summands:
+            # This code block is not needed but it speeds things up when having a lot of  stacked Sums
+            if isinstance(summand, Sum):
+                sum_summands = cls._simplify_summands(summands=summand.summands)
+                for op_hash, [coeff, sum_summand] in sum_summands.items():
+                    cls._add_summand(
+                        sum_dict=new_summands, op=sum_summand, coeff=coeff, op_hash=op_hash
+                    )
+                continue
+
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
                 sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
@@ -362,7 +371,17 @@ class Sum(Operator):
 
     @classmethod
     def _add_summand(cls, sum_dict: dict, op: Operator, coeff=1, op_hash=None):
-        """Add summand."""
+        """Add operator to the summands dictionary.
+
+        If the operator hash is already in the dictionary, the coefficient is increased instead.
+
+        Args:
+            sum_dict (dict): Dictionary of the summands. Its keys are the hashes of all the summands
+                and its values contain a tuple with the coefficient and the summand's class.
+            op (Operator): Operator to add to the summands dictionary.
+            coeff (int, optional): Coefficient of the operator. Defaults to 1.
+            op_hash (int, optional): Hash of the operator. Defaults to None.
+        """
         op_hash = op.hash if op_hash is None else op_hash
         if op_hash in sum_dict:
             sum_dict[op_hash][0] += coeff

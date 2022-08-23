@@ -19,7 +19,7 @@ import itertools
 from copy import copy
 from functools import reduce
 from itertools import combinations
-from typing import Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -378,29 +378,64 @@ class Prod(Operator):
                 label = simplified_factor.label()
                 wires = simplified_factor.wires
                 if label in ["I", "X", "Y", "Z"]:
-                    wire = wires[0]
-                    old_coeff, old_word = pauli_tuples.get(wire, (1, "I"))
-                    coeff, new_word = cls._pauli_mult[old_word + label]
-                    pauli_tuples[wire] = old_coeff * coeff, new_word
+                    pauli_tuples = cls._add_pauli_word(
+                        pauli_tuples=pauli_tuples, pauli_word=label, wire=wires[0]
+                    )
                 else:
-                    for wire in wires:
-                        pauli_coeff, pauli_word = pauli_tuples.get(wire, (1, "I"))
-                        if pauli_word != "I":
-                            pauli_op = cls._paulis[pauli_word](wire)
-                            op = pauli_op
-                            new_factors += ((op,),)
-                            global_phase *= pauli_coeff
-                        pauli_tuples.pop(wire, None)
+                    pauli_tuples, phase, pauli_ops = cls._get_pauli_operators(
+                        pauli_tuples=pauli_tuples, wires=wires
+                    )
+                    global_phase *= phase
+                    new_factors += pauli_ops
                     new_factors += ((simplified_factor,),)
 
         for wire, (pauli_coeff, pauli_word) in pauli_tuples.items():
             if pauli_word != "I":
                 pauli_op = cls._paulis[pauli_word](wire)
-                op = pauli_op
-                new_factors += ((op,),)
+                new_factors += ((pauli_op,),)
                 global_phase *= pauli_coeff
 
         return global_phase, new_factors
+
+    @classmethod
+    def _add_pauli_word(cls, pauli_tuples: dict, pauli_word: str, wire: int):
+        """Add pauli word to the given dictionary.
+
+        Args:
+            pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
+                operator and its values are tuples containing the coefficient and the Pauli word.
+            pauli_word (str): Pauli word.
+            wire (int): Wire where the Pauli word is acting on.
+        """
+        old_coeff, old_word = pauli_tuples.get(wire, (1, "I"))
+        coeff, new_word = cls._pauli_mult[old_word + pauli_word]
+        pauli_tuples[wire] = old_coeff * coeff, new_word
+        return pauli_tuples
+
+    @classmethod
+    def _get_pauli_operators(cls, pauli_tuples: dict, wires: List[int]):
+        """Get the pauli operators that act on the specified wires from the ``pauli_tuples``
+        dictionary.
+
+        Args:
+            pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
+                operator and its values are tuples containing the coefficient and the Pauli word.
+            wires (List[int]): Wires of the operators we want to get.
+
+        Returns:
+            tuple(complex, tuple(.Operator)): Tuple containing the global_phase and the pauli
+                operators.
+        """
+        pauli_operators = ()
+        global_phase = 1
+        for wire in wires:
+            pauli_coeff, pauli_word = pauli_tuples.pop(wire, (1, "I"))
+            if pauli_word != "I":
+                pauli_op = cls._paulis[pauli_word](wire)
+                pauli_operators += ((pauli_op,),)
+                global_phase *= pauli_coeff
+
+        return pauli_tuples, global_phase, pauli_operators
 
     def simplify(self) -> Union["Prod", Sum]:
         global_phase, factors = self._simplify_factors(factors=self.factors)
