@@ -71,7 +71,7 @@ def _shadow_expval_undiffable(H, k=1):
 
 def shadow_expval(H, k=1, diffable=False):
     """TODO: docs"""
-    return _shadow_expval_diffable(H, k=1) if diffable else _shadow_expval_undiffable(H, k=1)
+    return _shadow_expval_diffable(H, k=k) if diffable else _shadow_expval_undiffable(H, k=k)
 
 
 def _shadow_state_diffable(wires):
