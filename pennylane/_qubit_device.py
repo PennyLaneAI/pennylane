@@ -44,7 +44,6 @@ from pennylane.measurements import (
     VnEntropy,
 )
 from pennylane.operation import operation_derivative
-from pennylane.shadows import ClassicalShadow
 from pennylane.wires import Wires
 
 
