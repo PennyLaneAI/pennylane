@@ -53,10 +53,6 @@ def _shadow_expval_diffable(H, k=1):
 
 def _shadow_expval_undiffable(H, k=1):
     """TODO: docs"""
-    if isinstance(H, Iterable):
-        wires = qml.wires.Wires.all_wires([h.wires for h in H])
-    else:
-        wires = H.wires
 
     def decorator(qnode):
         def wrapper(*args, **kwargs):
