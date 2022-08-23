@@ -120,7 +120,12 @@ def calculate_Xi_decomposition(hamiltonian):
     eigs, eigvecs = np.linalg.eigh(mat)
     norm = eigs[-1]
     proj = np.identity(size, dtype="complex64")
-    proj += -2 * np.outer(np.conjugate(eigvecs[:, 0]), eigvecs[:, 0])
+
+    def Pi(j):
+        """Projector on eigenspace of eigenvalue E_i"""
+        return np.outer(np.conjugate(eigvecs[:,j]), eigvecs[:,j] )
+
+    proj += -2 * Pi(0)
     last_i = 1
 
     dEs, mus, projs, times = [], [], [], []
