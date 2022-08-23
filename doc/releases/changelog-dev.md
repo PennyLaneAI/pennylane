@@ -131,10 +131,24 @@
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
-<h3>Breaking changes</h3>
+* `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
+  [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
 
-* Using an operator that might not be hermitian as an observable now raises a warning instead of an
-  error. [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+  ```python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit():
+      qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> list(circuit.tape)
+  [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+  ```
+
+<h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
