@@ -137,6 +137,24 @@
 * `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
   [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
 
+* `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
+  [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
+
+  ```python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit():
+      qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> circuit()
+  >>> list(circuit.tape)
+  [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+  ```
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
