@@ -210,7 +210,7 @@ class Adjoint(SymbolicOp):
         return self.base.has_matrix if self.base.batch_size is None else False
 
     def matrix(self, wire_order=None):
-        if self.base.batch_size is not None:
+        if getattr(self.base, "batch_size", None) is not None:
             raise qml.operation.MatrixUndefinedError
 
         if isinstance(self.base, qml.Hamiltonian):

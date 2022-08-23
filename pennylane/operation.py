@@ -891,6 +891,18 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
+        # Check that the wires is not an empty list for operators that have
+        # `num_wires` as `AnyWires` or `AllWires`.
+        if self.num_wires in {AllWires, AnyWires}:
+            if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
+                # Barrier, Snapshot: Applied to all wires if instantiated with wires = [].
+                # Hamiltonian: Possible to be empty with simplify().
+                if len(qml.wires.Wires(wires)) == 0:
+                    raise ValueError(
+                        f"{self.name}: wrong number of wires. "
+                        f"At least one wire has to be given."
+                    )
+
         self._check_batching(params)
 
         self.data = list(params)  #: list[Any]: parameters of the operator

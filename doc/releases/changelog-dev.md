@@ -64,9 +64,9 @@
   will return the randomized Pauli measurements (the `recipes`) that are performed
   for each qubit, identified as a unique integer:
 
-  - 0 for Pauli X
-  - 1 for Pauli Y
-  - 2 for Pauli Z
+  * 0 for Pauli X
+  * 1 for Pauli Y
+  * 2 for Pauli Z
 
   It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
   is sampled, and `1` if the -1 eigenvalue is sampled.
@@ -82,6 +82,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.classical_shadow(wires=[0, 1])
   ```
+
   ```pycon
   >>> bits, recipes = circuit()
   tensor([[0, 0],
@@ -99,6 +100,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.ops.op_math.Controlled` now has basic decomposition functionality.
+  [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
+
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
@@ -114,8 +118,30 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
+  
+* Added `sparse_matrix()` support for single qubit observables
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
+
+* Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+  ```pycon
+  >>> op = qml.PauliX(wires=0)
+  >>> qml.is_hermitian(op)
+  True
+  >>> op2 = qml.RX(0.54, wires=0)
+  >>> qml.is_hermitian(op2)
+  False
+  ```
+
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
 <h3>Breaking changes</h3>
+
+* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
+  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
 <h3>Deprecations</h3>
 
@@ -124,6 +150,10 @@
 * Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
+
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+  certain exceptions, when instantiated with `wires=[]`.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
 <h3>Contributors</h3>
 
@@ -134,9 +164,13 @@ Josh Izaac,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
+Christina Lee,
+Meenu Kumari,
+Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva,
+Jay Soni,
+Antal Száva
 Cody Wang,
 David Wierichs

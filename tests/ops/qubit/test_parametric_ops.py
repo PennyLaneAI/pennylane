@@ -2829,6 +2829,12 @@ class TestPauliRot:
         ):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
+    def test_empty_wire_list_error_paulirot(self):
+        """Test that PauliRot operator raises an error when instantiated with wires=[]."""
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.PauliRot(0.5, "X", wires=[])
+
     @pytest.mark.parametrize(
         "pauli_word,wires",
         [
@@ -3099,6 +3105,12 @@ class TestMultiRZ:
         eigvals = op.eigvals()
         assert np.allclose(eigvals, expected)
 
+    def test_empty_wire_list_error_multirz(self):
+        """Test that MultiRZ operator raises an error when instantiated with wires=[]."""
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.MultiRZ(0.5, wires=[])
+
 
 class TestSimplify:
     """Test rotation simplification methods."""
@@ -3223,6 +3235,26 @@ class TestSimplify:
         assert u3_not_simplified.name == "U3"
         assert u3_not_simplified.data == [0.1, 0.2, 0.3]
         assert np.allclose(u3_not_simplified.matrix(), u3.matrix())
+
+
+controlled_data = [
+    (qml.RX(1.234, wires=0), qml.CRX(1.234, wires=("a", 0))),
+    (qml.RY(1.234, wires=0), qml.CRY(1.234, wires=("a", 0))),
+    (qml.RZ(1.234, wires=0), qml.CRZ(1.234, wires=("a", 0))),
+    (qml.PhaseShift(1.234, wires=0), qml.ControlledPhaseShift(1.234, wires=("a", 0))),
+    (qml.Rot(1.2, 2.3, 3.4, wires=0), qml.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
+]
+
+
+@pytest.mark.parametrize("inverse", (True, False))
+@pytest.mark.parametrize("base, cbase", controlled_data)
+def test_controlled_method(inverse, base, cbase):
+    """Tests the _controlled method for parametric ops."""
+    base.inverse = inverse
+    cbase.inverse = inverse
+    assert qml.equal(base._controlled("a"), cbase)
+    base.inverse = True
+    cbase.inverse = True
 
 
 label_data = [

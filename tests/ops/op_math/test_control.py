@@ -244,7 +244,7 @@ def test_qubit_unitary():
         tape.operations,
         [
             qml.ControlledQubitUnitary(
-                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=[1, 2], wires=0
+                np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0), control_wires=[2, 1], wires=0
             )
         ],
     )
