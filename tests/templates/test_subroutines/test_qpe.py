@@ -33,11 +33,16 @@ class TestDecomposition:
             qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
             qml.Hadamard(2),
             qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
-            qml.QFT(wires=[1, 2]).inv()
+            qml.adjoint(qml.QFT(wires=[1, 2]))
 
         assert len(tape2.queue) == len(tape.queue)
-        assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
-        assert all([op1.wires == op2.wires for op1, op2 in zip(tape.queue, tape2.queue)])
+        # qml.equal doesn't work for Adjoint op yet, so we stop before we get to it.
+        for op1, op2 in zip(tape.queue[:-1], tape2.queue[:-1]):
+            assert qml.equal(op1, op2)
+
+        assert isinstance(tape[-1], qml.ops.op_math.Adjoint)
+        assert qml.equal(tape[-1].base, qml.QFT(wires=(1, 2)))
+
         assert np.allclose(tape.queue[1].matrix(), tape2.queue[1].matrix())
         assert np.allclose(tape.queue[3].matrix(), tape2.queue[3].matrix())
 
