@@ -37,6 +37,7 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
     return circuit
 
+
 def expected_entropy_ising_xx(param, alpha):
     """
     Return the analytical entropy for the IsingXX.
@@ -49,7 +50,8 @@ def expected_entropy_ising_xx(param, alpha):
     if alpha == 1 or qml.math.isclose(alpha, 1):
         return qml.math.entr(eigs)
 
-    return qml.math.log(qml.math.sum(eigs**alpha))/(1-alpha)
+    return qml.math.log(qml.math.sum(eigs**alpha)) / (1 - alpha)
+
 
 class TestShadowEntropies:
     """Tests for entropies in ClassicalShadow class"""
@@ -66,7 +68,7 @@ class TestShadowEntropies:
             shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]
         ]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
-        expected = np.log(2)/np.log(base)
+        expected = np.log(2) / np.log(base)
         assert np.allclose(entropies, expected, atol=1e-2)
 
     def test_non_constant_distribution(
@@ -127,7 +129,7 @@ class TestShadowEntropies:
             ]
 
             assert np.allclose(entropies, exact, atol=1e-1)
-    
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
     def test_analytic_entropy(self, interface):
