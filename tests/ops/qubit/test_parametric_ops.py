@@ -3237,6 +3237,26 @@ class TestSimplify:
         assert np.allclose(u3_not_simplified.matrix(), u3.matrix())
 
 
+controlled_data = [
+    (qml.RX(1.234, wires=0), qml.CRX(1.234, wires=("a", 0))),
+    (qml.RY(1.234, wires=0), qml.CRY(1.234, wires=("a", 0))),
+    (qml.RZ(1.234, wires=0), qml.CRZ(1.234, wires=("a", 0))),
+    (qml.PhaseShift(1.234, wires=0), qml.ControlledPhaseShift(1.234, wires=("a", 0))),
+    (qml.Rot(1.2, 2.3, 3.4, wires=0), qml.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
+]
+
+
+@pytest.mark.parametrize("inverse", (True, False))
+@pytest.mark.parametrize("base, cbase", controlled_data)
+def test_controlled_method(inverse, base, cbase):
+    """Tests the _controlled method for parametric ops."""
+    base.inverse = inverse
+    cbase.inverse = inverse
+    assert qml.equal(base._controlled("a"), cbase)
+    base.inverse = True
+    cbase.inverse = True
+
+
 label_data = [
     (
         qml.Rot(1.23456, 2.3456, 3.45678, wires=0),
