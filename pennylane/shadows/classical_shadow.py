@@ -421,7 +421,6 @@ class ClassicalShadow:
         # Renormalize
         evs_nonzero = qml.math.gather(evs, mask)
         evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
-        print("evs_nonzero: ", evs_nonzero)
 
         if alpha == 1:
             # Special case of von Neumann entropy
