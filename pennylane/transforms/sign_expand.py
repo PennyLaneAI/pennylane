@@ -198,7 +198,7 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
 
 
 @batch_transform
-def sign_expand(tape, circuit=False, J=10, delta=0.0, controls=['Hadamard','Target']):
+def sign_expand(tape, circuit=False, J=10, delta=0.0, controls=('Hadamard','Target')):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.
