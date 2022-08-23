@@ -41,6 +41,7 @@ def shadow_expval(H, k=1):
 
     def decorator(qnode):
         def wrapper(*args, **kwargs):
+            # pylint: disable=not-callable
             new_qnode = __replace_obs(qnode, qml.shadow_expval, H, k=k)
             return new_qnode(*args, **kwargs)
 
@@ -63,6 +64,7 @@ def shadow_state(wires):
         new_qnode = __replace_obs(qnode, qml.shadow_expval, observables)
 
         def wrapper(*args, **kwargs):
+            # pylint: disable=not-callable
             results = new_qnode(*args, **kwargs)
 
             # cast to complex
