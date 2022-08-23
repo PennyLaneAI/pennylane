@@ -404,11 +404,6 @@ class ClassicalShadow:
         """
         if wires is None:
             wires = [0]
-        
-        wires = qml.math.convert_like(wires, self.bits)
-        wires = qml.math.cast(wires, dtype="int32")
-
-        print(wires)
 
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
