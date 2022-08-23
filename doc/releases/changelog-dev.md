@@ -131,6 +131,9 @@
   False
   ```
 
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -145,6 +148,10 @@
 
 <h3>Bug fixes</h3>
 
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+  certain exceptions, when instantiated with `wires=[]`.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -155,6 +162,7 @@ Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
 Christina Lee,
+Meenu Kumari,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
