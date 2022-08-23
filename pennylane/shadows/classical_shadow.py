@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
-# pylint: disable = dangerous-default-value, too-many-arguments
+# pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
@@ -317,7 +317,7 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires=[0], snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
+    def entropy(self, wires=None, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
         r"""Compute entropies from classical shadow measurements.
 
         Compute general Renyi entropies of order :math:`\alpha` for a reduced denity matrix :math:`\rho` in terms of
@@ -339,7 +339,8 @@ class ClassicalShadow:
             Further, entropies as post-processed by this class method are currently not differentiable.
 
         Args:
-            wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Defaults to ``[0]``.
+            wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Defaults to ``[0]`` when ``None`` is passed
+                to avoid computing potentially exponentially large quantities.
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None`` (default), all local snapshots are taken.
                 In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
             alpha (float): order of the Renyi-entropy. Defaults to ``alpha=2``, which corresponds to the purity of the reduced state. This case is straight forward to compute.
@@ -400,6 +401,9 @@ class ClassicalShadow:
         [0.6727522114759635, 0.6252047673044356, 0.5996592216299593]
 
         """
+        if wires is None:
+            wires = [0]
+
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
 
@@ -437,19 +441,18 @@ class ClassicalShadow:
 # Util functions
 def median_of_means(arr, num_batches, axis=0):
     r"""
-    >>>>>>> 6b86039b071393f9b29f3d1f20225cd488ec33cb
-        The median of means of the given array.
+    The median of means of the given array.
 
-        The array is split into the specified number of batches. The mean value
-        of each batch is taken, then the median of the mean values is returned.
+    The array is split into the specified number of batches. The mean value
+    of each batch is taken, then the median of the mean values is returned.
 
-        Args:
-            arr (tensor-like[float]): The 1-D array for which the median of means
-                is determined
-            num_batches (int): The number of batches to split the array into
+    Args:
+        arr (tensor-like[float]): The 1-D array for which the median of means
+            is determined
+        num_batches (int): The number of batches to split the array into
 
-        Returns:
-            float: The median of means
+    Returns:
+        float: The median of means
     """
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
     means = [
