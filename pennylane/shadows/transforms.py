@@ -71,16 +71,20 @@ def shadow_expval(H, k=1, diffable=False):
 
 def _shadow_state_diffable(wires):
     """TODO: docs"""
+    wires_list = [wires] if not isinstance(wires[0], list) else wires
 
     # all pauli observables
-    observables = []
-    for obs in product(
-        *[[qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ] for _ in range(len(wires))]
-    ):
-        observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, wires)]))
+    all_observables = []
+    for w in wires_list:
+        observables = []
+        for obs in product(
+            *[[qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ] for _ in range(len(w))]
+        ):
+            observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
+        all_observables.extend(observables)
 
     def decorator(qnode):
-        new_qnode = __replace_obs(qnode, qml.shadow_expval, observables)
+        new_qnode = __replace_obs(qnode, qml.shadow_expval, all_observables)
 
         def wrapper(*args, **kwargs):
             # pylint: disable=not-callable
@@ -89,16 +93,24 @@ def _shadow_state_diffable(wires):
             # cast to complex
             results = qml.math.cast(results, np.complex64)
 
-            # reconstruct the state given the observables and the expectations of
-            # those observables
-            state = 0
-            for res, obs in zip(results, observables):
-                state = state + res * qml.math.cast_like(
-                    qml.math.convert_like(qml.matrix(obs), res), res
-                )
-            state = state / 2 ** len(wires)
+            states = []
+            start = 0
+            for w in wires_list:
+                # reconstruct the state given the observables and the expectations of
+                # those observables
+                state = 0
+                for res, obs in zip(
+                    results[start : start + 4 ** len(w)], observables[start : start + 4 ** len(w)]
+                ):
+                    state = state + res * qml.math.cast_like(
+                        qml.math.convert_like(qml.matrix(obs), res), res
+                    )
+                state = state / 2 ** len(w)
 
-            return state
+                states.append(state)
+                start += 4 ** len(w)
+
+            return states[0] if not isinstance(wires[0], list) else states
 
         return wrapper
 
@@ -107,12 +119,15 @@ def _shadow_state_diffable(wires):
 
 def _shadow_state_undiffable(wires):
     """TODO: docs"""
+    wires_list = [wires] if not isinstance(wires[0], list) else wires
 
     def decorator(qnode):
         def wrapper(*args, **kwargs):
             bits, recipes = qnode(*args, **kwargs)
             shadow = qml.shadows.ClassicalShadow(bits, recipes)
-            return qml.math.mean(shadow.global_snapshots(wires=wires), 0)
+
+            states = [qml.math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
+            return states[0] if not isinstance(wires[0], list) else states
 
         return wrapper
 
