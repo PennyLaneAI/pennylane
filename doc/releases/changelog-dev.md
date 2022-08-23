@@ -112,6 +112,9 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
+  
+* Added `sparse_matrix()` support for single qubit observables
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 * Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
@@ -124,6 +127,9 @@
   >>> qml.is_hermitian(op2)
   False
   ```
+
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
 <h3>Breaking changes</h3>
 
@@ -139,6 +145,10 @@
 
 <h3>Bug fixes</h3>
 
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+  certain exceptions, when instantiated with `wires=[]`.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -148,10 +158,12 @@ Josh Izaac,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
+Meenu Kumari,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva,
+Jay Soni,
+Antal Száva
 Cody Wang,
 David Wierichs
