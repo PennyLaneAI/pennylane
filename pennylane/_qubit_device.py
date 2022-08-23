@@ -25,29 +25,26 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane import DeviceError
-from pennylane.operation import operation_derivative
+from pennylane import Device, DeviceError
+from pennylane.interfaces import set_shots
+from pennylane.math import multiply as qmlmul
+from pennylane.math import sum as qmlsum
+
 from pennylane.measurements import (
-    Sample,
     Counts,
-    Variance,
     Expectation,
-    Probability,
-    State,
-    VnEntropy,
+    MeasurementProcess,
     MutualInfo,
+    Probability,
+    Sample,
     Shadow,
     ShadowExpval,
+    State,
+    Variance,
+    VnEntropy,
 )
-from pennylane.interfaces import set_shots
-from pennylane.shadows import ClassicalShadow
-
-from pennylane import Device
-from pennylane.math import sum as qmlsum
-from pennylane.math import multiply as qmlmul
+from pennylane.operation import operation_derivative
 from pennylane.wires import Wires
-
-from pennylane.measurements import MeasurementProcess
 
 
 class QubitDevice(Device):
@@ -1299,7 +1296,7 @@ class QubitDevice(Device):
             float: expectation value estimate.
         """
         bits, recipes = self.classical_shadow(obs, circuit)
-        shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         return shadow.expval(obs.H, obs.k)
 
     def analytic_probability(self, wires=None):

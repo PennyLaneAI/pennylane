@@ -16,6 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 import numpy as np
+from scipy import sparse
 
 from pennylane.operation import CVObservable, Operation
 
@@ -90,6 +91,10 @@ class Identity(CVObservable, Operation):
          [0. 1.]]
         """
         return np.eye(2)
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[1, 0], [0, 1]])
 
     @staticmethod
     def _heisenberg_rep(p):

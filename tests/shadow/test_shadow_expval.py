@@ -298,8 +298,8 @@ class TestExpvalBackward:
             )
         )
 
-        actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
-        expected = qml.jacobian(exact_circuit)(x, obs)
+        actual = jax.jacrev(shadow_circuit)(x, obs, k=1)
+        expected = jax.jacrev(exact_circuit)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
