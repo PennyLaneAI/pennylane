@@ -132,6 +132,7 @@
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
 * `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
 
 <h3>Breaking changes</h3>
 
