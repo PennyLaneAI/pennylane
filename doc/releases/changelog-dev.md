@@ -112,6 +112,9 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
+  
+* Added `sparse_matrix()` support for single qubit observables
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 * Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
@@ -124,6 +127,9 @@
   >>> qml.is_hermitian(op2)
   False
   ```
+
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
 <h3>Breaking changes</h3>
 
@@ -155,6 +161,7 @@ Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
-Antal Száva,
+Jay Soni,
+Antal Száva
 Cody Wang,
 David Wierichs
