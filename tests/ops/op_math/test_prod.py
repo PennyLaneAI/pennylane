@@ -747,7 +747,7 @@ class TestSimplify:
             6 * Prod(qml.PauliX(0), qml.PauliX(1)),
             5 * Prod(qml.RX(1, 1), qml.PauliX(0)),
             6 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
-            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.RX(-1, 0), qml.RX(1, 1), qml.PauliX(0)),
             qml.s_prod(6, qml.PauliX(1)),
             5 * qml.RX(1, 1),
         )

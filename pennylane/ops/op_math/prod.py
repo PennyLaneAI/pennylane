@@ -367,50 +367,63 @@ class Prod(Operator):
 
         for factor in factors:
             simplified_factor = factor.simplify()
-            if isinstance(simplified_factor, Prod):
-                new_factors += tuple((factor,) for factor in simplified_factor.factors)
-            elif isinstance(simplified_factor, Sum):
-                new_factors += (simplified_factor.summands,)
-            elif not isinstance(simplified_factor, qml.Identity):
-                if isinstance(simplified_factor, SProd):
-                    global_phase *= simplified_factor.scalar
-                    simplified_factor = simplified_factor.base
-                label = simplified_factor.label()
-                wires = simplified_factor.wires
-                if label in ["I", "X", "Y", "Z"]:
-                    pauli_tuples = cls._add_pauli_word(
-                        pauli_tuples=pauli_tuples, pauli_word=label, wire=wires[0]
-                    )
-                else:
-                    pauli_tuples, phase, pauli_ops = cls._get_pauli_operators(
-                        pauli_tuples=pauli_tuples, wires=wires
-                    )
-                    global_phase *= phase
-                    new_factors += pauli_ops
-                    new_factors += ((simplified_factor,),)
+            pauli_tuples, phase, new_operators = cls._expand_operator(
+                pauli_tuples=pauli_tuples, op=simplified_factor
+            )
+            global_phase *= phase
+            new_factors += new_operators
 
-        for wire, (pauli_coeff, pauli_word) in pauli_tuples.items():
-            if pauli_word != "I":
-                pauli_op = cls._paulis[pauli_word](wire)
-                new_factors += ((pauli_op,),)
-                global_phase *= pauli_coeff
+        _, phase, pauli_ops = cls._get_pauli_operators(
+            pauli_tuples=pauli_tuples, wires=list(pauli_tuples.keys())
+        )
 
-        return global_phase, new_factors
+        return global_phase * phase, new_factors + pauli_ops
 
     @classmethod
-    def _add_pauli_word(cls, pauli_tuples: dict, pauli_word: str, wire: int):
-        """Add pauli word to the given dictionary.
+    def _expand_operator(cls, pauli_tuples: dict, op: Operator):
+        """This method expands the given operator (if possible) and keeps track of all
+        Pauli operators.
 
         Args:
             pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
                 operator and its values are tuples containing the coefficient and the Pauli word.
-            pauli_word (str): Pauli word.
-            wire (int): Wire where the Pauli word is acting on.
+            op (Operator): Operator to expand.
+
+        Returns:
+            Tuple[dict, complex, tuple(.Operator)]: Tuple containing the modified ``pauli_tuples``
+                dictionary, the added global_phase of the operator and a tuple containing the
+                expansion of the operator.
         """
-        old_coeff, old_word = pauli_tuples.get(wire, (1, "I"))
-        coeff, new_word = cls._pauli_mult[old_word + pauli_word]
-        pauli_tuples[wire] = old_coeff * coeff, new_word
-        return pauli_tuples
+        global_phase = 1
+        new_operators = ()
+        if isinstance(op, Prod):
+            for factor in op.factors:
+                pauli_tuples, phase, factor_operators = cls._expand_operator(
+                    pauli_tuples=pauli_tuples, op=factor
+                )
+                global_phase *= phase
+                new_operators += factor_operators
+        elif isinstance(op, Sum):
+            new_operators += (op.summands,)
+        elif not isinstance(op, qml.Identity):
+            if isinstance(op, SProd):
+                global_phase *= op.scalar
+                op = op.base
+            label = op.label()
+            wires = op.wires
+            if label in ["I", "X", "Y", "Z"]:
+                old_coeff, old_word = pauli_tuples.get(wires[0], (1, "I"))
+                coeff, new_word = cls._pauli_mult[old_word + label]
+                pauli_tuples[wires[0]] = old_coeff * coeff, new_word
+            else:
+                pauli_tuples, phase, pauli_ops = cls._get_pauli_operators(
+                    pauli_tuples=pauli_tuples, wires=wires
+                )
+                global_phase *= phase
+                new_operators += pauli_ops
+                new_operators += ((op,),)
+
+        return pauli_tuples, global_phase, new_operators
 
     @classmethod
     def _get_pauli_operators(cls, pauli_tuples: dict, wires: List[int]):
