@@ -149,8 +149,8 @@ def calculate_Xi_decomposition(hamiltonian):
     return dEs, mus, times, projs
 
 
-# pylint: disable=too-many-function-args)
-def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
+def construct_sgn_circuit( # pylint: disable=too-many-arguments
+        hamiltonian, tape, mus, times, phis, controls):
     """
     Takes a tape with state prep and ansatz and constructs the individual tapes
     approximating/estimating the individual terms of your decomposition
@@ -197,9 +197,9 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
     return tapes
 
 
-# pylint: disable=too-many-function-args)
 @batch_transform
-def sign_expand(tape, circuit=False, J=10, delta=0.0, controls=('Hadamard','Target')):
+def sign_expand(# pylint: disable=too-many-arguments
+        tape, circuit=False, J=10, delta=0.0, controls=('Hadamard','Target')):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.
