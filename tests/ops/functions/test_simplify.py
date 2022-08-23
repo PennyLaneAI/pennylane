@@ -15,7 +15,6 @@
 Unit tests for the qml.simplify function
 """
 import pennylane as qml
-from pennylane.tape import QuantumTape
 
 
 class TestSimplify:

@@ -210,9 +210,14 @@ class Adjoint(SymbolicOp):
         return self.base.has_matrix if self.base.batch_size is None else False
 
     def matrix(self, wire_order=None):
-        if self.base.batch_size is not None:
+        if getattr(self.base, "batch_size", None) is not None:
             raise qml.operation.MatrixUndefinedError
-        base_matrix = self.base.matrix(wire_order=wire_order)
+
+        if isinstance(self.base, qml.Hamiltonian):
+            base_matrix = qml.matrix(self.base, wire_order=wire_order)
+        else:
+            base_matrix = self.base.matrix(wire_order=wire_order)
+
         return transpose(conj(base_matrix))
 
     def decomposition(self):

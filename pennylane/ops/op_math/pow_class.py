@@ -173,7 +173,10 @@ class Pow(SymbolicOp):
         return self.base.label(decimals, base_label, cache=cache) + z_string
 
     def matrix(self, wire_order=None):
-        base_matrix = self.base.matrix()
+        if isinstance(self.base, qml.Hamiltonian):
+            base_matrix = qml.matrix(self.base)
+        else:
+            base_matrix = self.base.matrix()
 
         if isinstance(self.z, int):
             mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
@@ -210,7 +213,7 @@ class Pow(SymbolicOp):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates of an operator to a power is the same as the diagonalizing
         gates as the original operator. As we can see,

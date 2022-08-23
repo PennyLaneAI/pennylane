@@ -56,6 +56,7 @@ from pennylane.measurements import (
     var,
     vn_entropy,
     mutual_info,
+    classical_shadow,
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod
@@ -96,6 +97,7 @@ from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
+from pennylane.shadows import ClassicalShadow
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
