@@ -241,6 +241,6 @@ class SProd(SymbolicOp):
                     for summand in new_base.summands
                 )
             )
-        elif isinstance(new_base, SProd):
+        if isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
