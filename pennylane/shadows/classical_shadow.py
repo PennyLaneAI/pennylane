@@ -408,10 +408,7 @@ class ClassicalShadow:
         rdm = median_of_means(global_snapshots, k, axis=0)
 
         # Allow for different log base
-        if base:
-            div = np.log(base)
-        else:
-            div = 1
+        div = np.log(base) if base else 1
 
         if alpha == 2:
             # special case of purity
@@ -428,7 +425,6 @@ class ClassicalShadow:
         # Renormalize
         evs_nonzero = qml.math.gather(evs, mask)
         evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
-        print("evs_nonzero: ", evs_nonzero)
 
         if alpha == 1:
             # Special case of von Neumann entropy
