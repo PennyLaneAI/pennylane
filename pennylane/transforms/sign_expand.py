@@ -91,13 +91,16 @@ def evolve_under(ops, coeffs, time, controls):
     ops_temp = []
     for op, coeff in zip(ops, coeffs):
         pauli_word = qml.grouping.pauli_word_to_string(op)
-        ops_temp.append(ControlledPauliEvolution(
-            coeff * time,
-            wires=op.wires,
-            pauli_word=pauli_word,
-            controls=controls,
-        ))
+        ops_temp.append(
+            ControlledPauliEvolution(
+                coeff * time,
+                wires=op.wires,
+                pauli_word=pauli_word,
+                controls=controls,
+            )
+        )
     return ops_temp
+
 
 def calculate_Xi_decomposition(hamiltonian):
     """
@@ -123,7 +126,7 @@ def calculate_Xi_decomposition(hamiltonian):
 
     def Pi(j):
         """Projector on eigenspace of eigenvalue E_i"""
-        return np.outer(np.conjugate(eigvecs[:,j]), eigvecs[:,j] )
+        return np.outer(np.conjugate(eigvecs[:, j]), eigvecs[:, j])
 
     proj += -2 * Pi(0)
     last_i = 1
@@ -149,8 +152,9 @@ def calculate_Xi_decomposition(hamiltonian):
     return dEs, mus, times, projs
 
 
-def construct_sgn_circuit( # pylint: disable=too-many-arguments
-        hamiltonian, tape, mus, times, phis, controls):
+def construct_sgn_circuit(  # pylint: disable=too-many-arguments
+    hamiltonian, tape, mus, times, phis, controls
+):
     """
     Takes a tape with state prep and ansatz and constructs the individual tapes
     approximating/estimating the individual terms of your decomposition
@@ -198,8 +202,9 @@ def construct_sgn_circuit( # pylint: disable=too-many-arguments
 
 
 @batch_transform
-def sign_expand(# pylint: disable=too-many-arguments
-        tape, circuit=False, J=10, delta=0.0, controls=('Hadamard','Target')):
+def sign_expand(  # pylint: disable=too-many-arguments
+    tape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
+):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.
