@@ -16,8 +16,8 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 import json
 from os import path
 import pennylane as qml
-from .batch_transform import batch_transform
 from pennylane import numpy as np
+from .batch_transform import batch_transform
 
 # TODO: This part up here (ControlledPauliEvolution and MultiCRZ) probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
 
@@ -198,6 +198,7 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
 
 
 @batch_transform
+# pylint: disable=too-many-function-args)
 def sign_expand(tape, circuit=False, J=10, delta=0.0, controls=('Hadamard','Target')):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
