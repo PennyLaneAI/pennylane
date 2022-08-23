@@ -620,6 +620,31 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_grouping(self):
+        """Test that the simplify method groups equal terms."""
+        sum_op = op_sum(
+            qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
+            qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
+            qml.op_sum(qml.PauliX(0), qml.PauliZ(1)),
+            qml.PauliX(0),
+            qml.PauliZ(1),
+        )
+        final_op = op_sum(
+            qml.s_prod(2, qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1))),
+            qml.s_prod(2, qml.PauliX(0)),
+            qml.s_prod(2, qml.PauliZ(1)),
+        )
+        simplified_op = sum_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
 
 class TestWrapperFunc:
     """Test wrapper function."""

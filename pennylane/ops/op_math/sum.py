@@ -395,14 +395,3 @@ class Sum(Operator):
             for coeff, summand in summands.values()
         ]
         return Sum(*summands) if len(summands) > 1 else summands[0]
-
-    @property
-    def hash(self):
-        return hash(
-            (
-                str(self.name),
-                tuple(self.wires.tolist()),
-                str(self.data),
-                str([summand.hash for summand in self.summands]),
-            )
-        )

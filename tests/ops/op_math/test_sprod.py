@@ -533,6 +533,18 @@ class TestSimplify:
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
+    def test_simplify_with_sum_operator(self):
+        """Test the simplify method a scalar product of a Sum operator."""
+        sprod_op = s_prod(-3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        final_op = s_prod(-6j, qml.PauliX(0))
+        simplified_op = sprod_op.simplify()
+
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
 
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)

@@ -232,15 +232,15 @@ class SProd(SymbolicOp):
             if scalar == 1:
                 return self.base.base.simplify()
             return SProd(scalar=scalar, base=self.base.base.simplify())
-        if isinstance(self.base, Sum):
-            simplified_sum = self.base.simplify()
+
+        new_base = self.base.simplify()
+        if isinstance(new_base, Sum):
             return Sum(
                 *(
                     SProd(scalar=self.scalar, base=summand).simplify()
-                    for summand in simplified_sum.summands
+                    for summand in new_base.summands
                 )
             )
-        new_base = self.base.simplify()
-        if isinstance(new_base, SProd):
+        elif isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
