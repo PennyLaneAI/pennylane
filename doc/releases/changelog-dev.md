@@ -147,6 +147,7 @@
   ```
 
   ```pycon
+  >>> circuit()
   >>> list(circuit.tape)
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
