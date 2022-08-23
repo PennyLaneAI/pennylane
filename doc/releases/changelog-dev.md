@@ -97,6 +97,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.ops.op_math.Controlled` now has basic decomposition functionality.
+  [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
+
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
@@ -175,6 +178,7 @@ Josh Izaac,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
+Christina Lee,
 Meenu Kumari,
 Albert Mitjans Coma,
 Rashid N H M,
