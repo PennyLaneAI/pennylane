@@ -300,6 +300,17 @@ class TestExpvalForward:
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
+    def test_hadamard_expval_single(self, diffable):
+        """Test that the expval estimation is correct for a single observable"""
+        obs = qml.PauliX(1)
+        expected = 1
+
+        circuit = hadamard_circuit(3, shots=100000)
+        circuit = qml.shadows.expval(obs, diffable=diffable)(circuit)
+        actual = circuit()
+
+        assert qml.math.allclose(actual, expected, atol=1e-1)
+
 
 @pytest.mark.all_interfaces
 class TestExpvalForwardInterfaces:

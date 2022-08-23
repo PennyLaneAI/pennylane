@@ -61,7 +61,7 @@ def _shadow_expval_undiffable(H, k=1):
     def decorator(qnode):
         def wrapper(*args, **kwargs):
             bits, recipes = qnode(*args, **kwargs)
-            shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=wires.tolist())
+            shadow = qml.shadows.ClassicalShadow(bits, recipes)
             return shadow.expval(H, k=k)
 
         return wrapper
