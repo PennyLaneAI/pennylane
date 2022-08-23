@@ -366,11 +366,6 @@ class Prod(Operator):
         pauli_tuples = {}  # pauli_tuples = {wire: (pauli_coeff, pauli_word)}
 
         for factor in factors:
-            if isinstance(factor, Prod):
-                coeff, tmp_factors = cls._simplify_factors(factors=factor.factors)
-                global_phase *= coeff
-                new_factors += tmp_factors
-                continue
             simplified_factor = factor.simplify()
             if isinstance(simplified_factor, Prod):
                 new_factors += tuple((factor,) for factor in simplified_factor.factors)
