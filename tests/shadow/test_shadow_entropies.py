@@ -37,6 +37,19 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
     return circuit
 
+def expected_entropy_ising_xx(param, alpha):
+    """
+    Return the analytical entropy for the IsingXX.
+    """
+    eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+    eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+    eigs = [eig_1, eig_2]
+    eigs = np.array([eig for eig in eigs if eig > 0])
+
+    if alpha == 1 or qml.math.isclose(alpha, 1):
+        return qml.math.entr(eigs)
+
+    return qml.math.log(qml.math.sum(eigs**alpha))/(1-alpha)
 
 class TestShadowEntropies:
     """Tests for entropies in ClassicalShadow class"""
@@ -53,11 +66,13 @@ class TestShadowEntropies:
             shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]
         ]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
+        expected = np.log(2)/np.log(base)
+        assert np.allclose(entropies, expected, atol=1e-2)
 
     def test_non_constant_distribution(
         self,
     ):
-        """Test entropies match roughly with exact solution for a non-constant distribution"""
+        """Test entropies match roughly with exact solution for a non-constant distribution using other PennyLane functionalities"""
         n_wires = 4
         # exact solution
         dev = qml.device("default.qubit", wires=range(n_wires), shots=100000)
@@ -112,3 +127,29 @@ class TestShadowEntropies:
             ]
 
             assert np.allclose(entropies, exact, atol=1e-1)
+    
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
+    def test_analytic_entropy(self, interface):
+        """Test entropies on analytic results"""
+        dev = qml.device("default.qubit", wires=2, shots=100000)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            qml.IsingXX(0.5, wires=[0, 1])
+            return qml.classical_shadow(wires=range(2))
+
+        param = 0.5
+        bits, recipes = circuit()
+        shadow = qml.ClassicalShadow(bits, recipes)
+
+        # explicitly not use pytest parametrize to reuse the same measurements
+        for alpha in [1, 2, 3]:
+            for base in [2, np.exp(1)]:
+                for reduced_wires in [[0], [1]]:
+
+                    entropy = shadow.entropy(wires=reduced_wires, base=base, alpha=alpha)
+
+                    expected_entropy = expected_entropy_ising_xx(param, alpha) / np.log(base)
+
+                    assert qml.math.allclose(entropy, expected_entropy, atol=1e-1)
