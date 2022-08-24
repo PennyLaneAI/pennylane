@@ -17,17 +17,15 @@ Unit tests for the :mod:`pennylane.utils` module.
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 import functools
 import itertools
-import pytest
 
 import numpy as np
+import pytest
+import scipy.sparse
 
 import pennylane as qml
 import pennylane.utils as pu
-import scipy.sparse
-
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Tensor
-
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -514,3 +512,61 @@ class TestWarnings:
             match="qml.utils.expand is deprecated; using qml.operation.expand_matrix instead.",
         ):
             pu.expand(U, [9], [0, 4, 9])
+
+
+class TestSortWires:
+    """Tests for the wire sorting algorithm."""
+
+    def test_sorting_operators_with_one_wire(self):
+        """Test that the sorting alforithm works for operators that act on one wire."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliZ(2),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(3),
+            qml.PauliX(5),
+        ]
+        sorted_list = pu.sort_wires(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(2),
+            qml.PauliX(3),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+            qml.PauliX(5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_multiple_wires(self):
+        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliX(5),
+            qml.Toffoli([2, 3, 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.PauliZ(3),
+            qml.CRY(1, [1, 2]),
+        ]
+        sorted_list = pu.sort_wires(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX(3),
+            qml.Toffoli([2, 3, 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, [1, 2]),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)

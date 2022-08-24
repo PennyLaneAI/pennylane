@@ -396,7 +396,7 @@ def expand_vector(vector, original_wires, expanded_wires):
 
 
 def sort_wires(op_list):
-    """Merge Sort algorithm that sorts a list of operators by their wire indices.
+    """Insertion sort algorithm that sorts a list of operators by their wire indices.
 
     Args:
         op_list (List[.Operator]): list of operators to be sorted
@@ -404,30 +404,17 @@ def sort_wires(op_list):
     Returns:
         List[.Operator]: sorted list of operators
     """
-    if len(op_list) < 2:
-        return op_list
-    results = []
+    for i in range(1, len(op_list)):
 
-    midpoint = len(op_list) // 2
-    lefts = sort_wires(op_list[:midpoint])
-    rights = sort_wires(op_list[midpoint:])
+        left_op = op_list[i]
 
-    l = r = 0
+        j = i - 1
+        while j >= 0 and swappable_ops(op_list[j], left_op):
+            op_list[j + 1] = op_list[j]
+            j -= 1
+        op_list[j + 1] = left_op
 
-    while l < len(lefts) and r < len(rights):
-        if swappable_ops(lefts[l], rights[r]):
-            results.append(rights[r])
-            r += 1
-        else:
-            results.append(lefts[l])
-            l += 1
-
-    if l < len(lefts):
-        results += lefts[l:]
-    elif r < len(rights):
-        results += rights[r:]
-
-    return results
+    return op_list
 
 
 def swappable_ops(op1, op2) -> bool:
