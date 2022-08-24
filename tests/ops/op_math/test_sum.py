@@ -624,7 +624,7 @@ class TestSimplify:
         """Test that the simplify method groups equal terms."""
         sum_op = op_sum(
             qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
-            qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
+            qml.prod(qml.RX(1.0, 0), qml.PauliX(0), qml.PauliZ(1)),
             qml.op_sum(qml.PauliX(0), qml.PauliZ(1)),
             qml.PauliX(0),
             qml.PauliZ(1),

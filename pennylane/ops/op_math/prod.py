@@ -482,8 +482,6 @@ class Prod(Operator):
         return hash(
             (
                 str(self.name),
-                tuple(self.wires.tolist()),
-                str(self.data),
                 str([factor.hash for factor in self.factors]),
             )
         )
