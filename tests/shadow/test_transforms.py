@@ -63,23 +63,23 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
+def basic_entangler_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit(x):
-        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
+        qml.BasicEntanglerLayers(weights=x, wires=range(wires))
         return qml.classical_shadow(wires=range(wires))
 
     return circuit
 
 
-def strongly_entangling_circuit_exact_state(wires, interface="autograd"):
+def basic_entangler_circuit_exact_state(wires, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires)
 
     @qml.qnode(dev, interface=interface)
     def circuit(x):
-        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
+        qml.BasicEntanglerLayers(weights=x, wires=range(wires))
         return qml.state()
 
     def state_to_dm(state):
@@ -88,12 +88,12 @@ def strongly_entangling_circuit_exact_state(wires, interface="autograd"):
     return lambda x: state_to_dm(circuit(x))
 
 
-def strongly_entangling_circuit_exact_expval(wires, interface="autograd"):
+def basic_entangler_circuit_exact_expval(wires, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires)
 
     @qml.qnode(dev, interface=interface)
     def circuit(x, obs):
-        qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
+        qml.BasicEntanglerLayers(weights=x, wires=range(wires))
         return [qml.expval(ob) for ob in obs]
 
     return circuit
@@ -128,18 +128,23 @@ class TestStateForward:
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    @pytest.mark.parametrize("wires", [1, 2])
-    def test_partial_state(self, wires, diffable):
+    def test_partial_state(self, diffable):
         """Test that the state reconstruction is correct for a subset
         of the qubits"""
+        wires_list = [[0], [0, 1]]
+
         circuit = max_entangled_circuit(3)
-        circuit = qml.shadows.state(wires=range(wires), diffable=diffable)(circuit)
+        circuit = qml.shadows.state(wires=wires_list, diffable=diffable)(circuit)
 
         actual = circuit()
-        expected = np.zeros((2**wires, 2**wires))
-        expected[np.array([0, -1]), np.array([0, -1])] = 0.5
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        expected = [
+            np.array([[0.5, 0], [0, 0.5]]),
+            np.array([[0.5, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0.5]]),
+        ]
+
+        assert qml.math.allclose(actual[0], expected[0], atol=1e-1)
+        assert qml.math.allclose(actual[1], expected[1], atol=1e-1)
 
 
 @pytest.mark.all_interfaces
@@ -166,14 +171,12 @@ class TestStateBackward:
     @pytest.mark.autograd
     def test_backward_autograd(self):
         """Test the gradient of the state for the autograd interface"""
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="autograd")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
         shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_state(3, "autograd")
+        exact_circuit = basic_entangler_circuit_exact_state(3, "autograd")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
-        x = np.random.uniform(
-            0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-        )
+        x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
         # for autograd in particular, take only the real part since it doesn't
         # support complex differentiation
@@ -188,14 +191,14 @@ class TestStateBackward:
         import jax
         from jax import numpy as jnp
 
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="jax")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
         shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_state(3, "jax")
+        exact_circuit = basic_entangler_circuit_exact_state(3, "jax")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = jnp.array(
             np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
+                0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)
             ).astype(np.complex64)
         )
 
@@ -209,15 +212,13 @@ class TestStateBackward:
         """Test the gradient of the state for the tensorflow interface"""
         import tensorflow as tf
 
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="tf")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
         shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_state(3, "tf")
+        exact_circuit = basic_entangler_circuit_exact_state(3, "tf")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = tf.Variable(
-            np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-            )
+            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
         )
 
         with tf.GradientTape() as tape:
@@ -237,15 +238,13 @@ class TestStateBackward:
         """Test the gradient of the state for the torch interface"""
         import torch
 
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="torch")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="torch")
         shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_state(3, "torch")
+        exact_circuit = basic_entangler_circuit_exact_state(3, "torch")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = torch.tensor(
-            np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-            ),
+            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)),
             requires_grad=True,
         )
 
@@ -358,14 +357,12 @@ class TestExpvalBackward:
     @pytest.mark.autograd
     def test_backward_autograd(self):
         """Test the gradient of the expval for the autograd interface"""
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="autograd")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
         shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_expval(3, "autograd")
+        exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
-        x = np.random.uniform(
-            0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-        )
+        x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
         # for autograd in particular, take only the real part since it doesn't
         # support complex differentiation
@@ -380,15 +377,13 @@ class TestExpvalBackward:
         import jax
         from jax import numpy as jnp
 
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="jax")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
         shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_expval(3, "jax")
+        exact_circuit = basic_entangler_circuit_exact_expval(3, "jax")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = jnp.array(
-            np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-            )
+            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
         )
 
         actual = jax.jacrev(shadow_circuit)(x)
@@ -401,15 +396,13 @@ class TestExpvalBackward:
         """Test the gradient of the state for the tensorflow interface"""
         import tensorflow as tf
 
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="tf")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
         shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_expval(3, "tf")
+        exact_circuit = basic_entangler_circuit_exact_expval(3, "tf")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = tf.Variable(
-            np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-            )
+            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
         )
 
         with tf.GradientTape() as tape:
@@ -429,15 +422,13 @@ class TestExpvalBackward:
         """Test the gradient of the state for the torch interface"""
         import torch
 
-        shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="torch")
+        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="torch")
         shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
-        exact_circuit = strongly_entangling_circuit_exact_expval(3, "torch")
+        exact_circuit = basic_entangler_circuit_exact_expval(3, "torch")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = torch.tensor(
-            np.random.uniform(
-                0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-            ),
+            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)),
             requires_grad=True,
         )
 

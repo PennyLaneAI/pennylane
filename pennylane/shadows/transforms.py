@@ -100,7 +100,8 @@ def _shadow_state_diffable(wires):
                 # those observables
                 state = 0
                 for res, obs in zip(
-                    results[start : start + 4 ** len(w)], observables[start : start + 4 ** len(w)]
+                    results[start : start + 4 ** len(w)],
+                    all_observables[start : start + 4 ** len(w)],
                 ):
                     state = state + res * qml.math.cast_like(
                         qml.math.convert_like(qml.matrix(obs), res), res
