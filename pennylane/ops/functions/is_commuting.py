@@ -95,13 +95,6 @@ def _create_commute_function():
     for op in identity_only:
         commutation_map[op] = {"Identity", op}
 
-    no_commutation = {
-        "Barrier",
-        "WireCut",
-    }
-    for op in no_commutation:
-        commutation_map[op] = {}
-
     commutation_map["Identity"] = pauliz_group.union(
         swap_group, paulix_group, pauliy_group, identity_only
     )
