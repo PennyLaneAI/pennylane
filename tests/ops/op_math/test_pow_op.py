@@ -289,6 +289,14 @@ class TestSimplify:
         pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
         assert pow_op.arithmetic_depth == 2
 
+    def test_simplify_nested_pow_ops(self):
+        """Test the simplify method with nested pow operations."""
+        pow_op = Pow(base=Pow(base=Pow(base=qml.RX(1, 0), z=3), z=2), z=5)
+        final_op = qml.RX(30, 0)
+        simplified_op = pow_op.simplify()
+
+        assert qml.equal(final_op, simplified_op)
+
     def test_simplify_zero_power(self):
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
         assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
