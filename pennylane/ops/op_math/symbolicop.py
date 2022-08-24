@@ -133,8 +133,6 @@ class SymbolicOp(Operator):
         return hash(
             (
                 str(self.name),
-                tuple(self.wires.tolist()),
-                str(self.data),
                 self.base.hash,
             )
         )

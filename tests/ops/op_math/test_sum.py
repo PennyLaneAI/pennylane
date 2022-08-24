@@ -625,13 +625,13 @@ class TestSimplify:
         sum_op = op_sum(
             qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
             qml.prod(qml.RX(1.0, 0), qml.PauliX(0), qml.PauliZ(1)),
-            qml.op_sum(qml.PauliX(0), qml.PauliZ(1)),
-            qml.PauliX(0),
-            qml.PauliZ(1),
+            qml.adjoint(qml.op_sum(qml.RY(1, 0), qml.PauliZ(1))),
+            qml.adjoint(qml.RY(1, 0)),
+            qml.adjoint(qml.PauliZ(1)),
         )
         final_op = op_sum(
             qml.s_prod(2, qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1))),
-            qml.s_prod(2, qml.PauliX(0)),
+            qml.s_prod(2, qml.RY(-1, 0)),
             qml.s_prod(2, qml.PauliZ(1)),
         )
         simplified_op = sum_op.simplify()
