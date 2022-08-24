@@ -570,3 +570,34 @@ class TestSortWires:
 
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_wire_map(self):
+        """Test that the sorting alforithm works using a wire map."""
+        op_list = [
+            qml.PauliX("three"),
+            qml.PauliX(5),
+            qml.Toffoli([2, "three", 4]),
+            qml.CNOT([2, 5]),
+            qml.RX("test", 5),
+            qml.PauliY(0),
+            qml.CRX("test", [0, 2]),
+            qml.PauliZ("three"),
+            qml.CRY("test", ["test", 2]),
+        ]
+        sorted_list = pu.sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX("three"),
+            qml.Toffoli([2, "three", 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX("test", [0, 2]),
+            qml.CRY("test", ["test", 2]),
+            qml.PauliZ("three"),
+            qml.RX("test", 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert op1.name == op2.name
+            assert op1.wires == op2.wires
+            assert op1.data == op2.data
