@@ -160,7 +160,8 @@
 
 <h3>Deprecations</h3>
 
-* The unused `supports_reversible_diff` device capability has been removed in [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
+* The `supports_reversible_diff` device capability is unused and has been removed.
+  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
 <h3>Documentation</h3>
 
