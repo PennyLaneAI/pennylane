@@ -203,10 +203,6 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
     Returns:
          Bool: True if commutation, False otherwise, None if not two rotations.
     """
-    # Two non simplified rotations
-    allowed_ops = {"U2", "U3", "Rot", "CRot"}
-    if operation1.name not in allowed_ops or operation2.name not in allowed_ops:
-        return None
 
     target_wires_1 = qml.wires.Wires(
         [w for w in operation1.wires if w not in operation1.control_wires]
