@@ -355,7 +355,7 @@ class Prod(Operator):
 
     @classmethod
     def _simplify_factors(cls, factors: Tuple[Operator]) -> Tuple[Operator]:
-        """Reduces the depth of nested factors.
+        """Reduces the depth of nested factors and computes the product of all pauli operators.
 
         Returns:
             Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum

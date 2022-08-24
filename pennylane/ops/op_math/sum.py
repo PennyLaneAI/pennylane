@@ -332,7 +332,7 @@ class Sum(Operator):
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]) -> List[Operator]:
-        """Reduces the depth of nested summands.
+        """Reduces the depth of nested summands and groups equal terms together.
 
         Keyword Args:
             summands (List[~.operation.Operator]): summands list to simplify
@@ -346,7 +346,7 @@ class Sum(Operator):
             if isinstance(summand, Sum):
                 sum_summands = cls._simplify_summands(summands=summand.summands)
                 for op_hash, [coeff, sum_summand] in sum_summands.items():
-                    cls._add_summand(
+                    new_summands = cls._add_summand(
                         sum_dict=new_summands, op=sum_summand, coeff=coeff, op_hash=op_hash
                     )
                 continue
@@ -355,17 +355,17 @@ class Sum(Operator):
             if isinstance(simplified_summand, Sum):
                 sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
                 for op_hash, [coeff, sum_summand] in sum_summands.items():
-                    cls._add_summand(
+                    new_summands = cls._add_summand(
                         sum_dict=new_summands, op=sum_summand, coeff=coeff, op_hash=op_hash
                     )
             elif isinstance(simplified_summand, qml.ops.SProd):  # pylint: disable=no-member
-                cls._add_summand(
+                new_summands = cls._add_summand(
                     sum_dict=new_summands,
                     op=simplified_summand.base,
                     coeff=simplified_summand.scalar,
                 )
             else:
-                cls._add_summand(new_summands, simplified_summand)
+                new_summands = cls._add_summand(new_summands, simplified_summand)
 
         return new_summands
 
@@ -387,6 +387,8 @@ class Sum(Operator):
             sum_dict[op_hash][0] += coeff
         else:
             sum_dict[op_hash] = [coeff, op]
+
+        return sum_dict
 
     def simplify(self) -> "Sum":
         summands = self._simplify_summands(summands=self.summands)
