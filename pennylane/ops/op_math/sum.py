@@ -378,7 +378,7 @@ class Sum(Operator):
         Args:
             sum_dict (dict): Dictionary of the summands. Its keys are the hashes of all the summands
                 and its values contain a tuple with the coefficient and the summand's class.
-            op (Operator): Operator to add to the summands dictionary.
+            op (Operator): operator to add to the summands dictionary
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """

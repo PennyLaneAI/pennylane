@@ -355,11 +355,11 @@ class Prod(Operator):
 
     @classmethod
     def _simplify_factors(cls, factors: Tuple[Operator]) -> Tuple[Operator]:
-        """Reduces the depth of nested factors and computes the product of all pauli operators.
+        """Reduces the depth of nested factors and groups pauli operators that act on the same wires.
 
         Returns:
-            Tuple[List[~.operation.Operator], List[~.operation.Operator]: reduced sum and non-sum
-            factors
+            Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
+            of the simplified factors
         """
         global_phase = 1
         new_factors = ()
@@ -381,8 +381,8 @@ class Prod(Operator):
 
     @classmethod
     def _expand_operator(cls, pauli_tuples: dict, op: Operator):
-        """This method expands the given operator (if possible) and keeps track of all
-        Pauli operators.
+        """This method expands the given operator (if possible) and groups all pauli operators that
+        act on the same wire.
 
         Args:
             pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
