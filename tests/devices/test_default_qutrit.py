@@ -950,7 +950,10 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
-        # Test reversed wire order to see if axes are stacked correctly
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op_reverse(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct when the
+        applied wires are reverse."""
         state_out = method(self.state, axes=[1, 0], inverse=inverse)
         op2 = op(wires=[1, 0])
         matrix = op2.inv().matrix() if inverse else op2.matrix()
