@@ -470,6 +470,8 @@ class TestCommutingFunction:
         """Commutation between CRX(0.0) and PauliZ."""
         commutation = qml.is_commuting(qml.CRX(0.0, wires=wires[0]), qml.PauliZ(wires=wires[1]))
         assert commutation == res
+        commutation = qml.is_commuting(qml.PauliZ(wires=wires[1]), qml.CRX(0.0, wires=wires[0]))
+        assert commutation == res
 
     @pytest.mark.parametrize(
         "wires,res",
