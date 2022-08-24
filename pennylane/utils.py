@@ -16,12 +16,12 @@ This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
 # pylint: disable=protected-access,too-many-branches
-from collections.abc import Iterable
 import functools
 import inspect
 import itertools
 import numbers
 import warnings
+from collections.abc import Iterable
 from operator import matmul
 
 import numpy as np
@@ -393,3 +393,56 @@ def expand_vector(vector, original_wires, expanded_wires):
     )
 
     return qml.math.reshape(expanded_tensor, 2**M)
+
+
+def sort_wires(op_list):
+    """Merge Sort algorithm that sorts a list of operators by their wire indices.
+
+    Args:
+        op_list (List[.Operator]): list of operators to be sorted
+
+    Returns:
+        List[.Operator]: sorted list of operators
+    """
+    if len(op_list) < 2:
+        return op_list
+    results = []
+
+    midpoint = len(op_list) // 2
+    lefts = sort_wires(op_list[:midpoint])
+    rights = sort_wires(op_list[midpoint:])
+
+    l = r = 0
+
+    while l < len(lefts) and r < len(rights):
+        if swappable_ops(lefts[l], rights[r]):
+            results.append(rights[r])
+            r += 1
+        else:
+            results.append(lefts[l])
+            l += 1
+
+    if l < len(lefts):
+        results += lefts[l:]
+    elif r < len(rights):
+        results += rights[r:]
+
+    return results
+
+
+def swappable_ops(op1, op2) -> bool:
+    """Boolean expression that indicates if op1 and op2 are commutative and should be swapped in
+    a sorting algorithm.
+
+    Args:
+        op1 (.Operator): First operator.
+        op2 (.Operator): Second operator.
+
+    Returns:
+        bool: True if operators should be swapped, False otherwise.
+    """
+    wires1 = op1.wires
+    wires2 = op2.wires
+    if np.intersect1d(wires1, wires2):
+        return False
+    return np.min(wires1) > np.min(wires2)
