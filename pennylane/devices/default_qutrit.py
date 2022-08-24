@@ -191,9 +191,9 @@ class DefaultQutrit(QutritDevice):
 
     def _apply_tadd(self, state, axes, inverse=False):
         """Applies a controlled add gate by slicing along the first axis specified in ``axes`` and
-        applying a TShift transformation along the second axis. The ternary add gate acts on the 
-        computational basis states like :math:`\vert i, j\rangle \rightarrow \vert i, i+j \rangle`, where 
-        addition is taken modulo 3. 
+        applying a TShift transformation along the second axis. The ternary add gate acts on the
+        computational basis states like :math:`\vert i, j\rangle \rightarrow \vert i, i+j \rangle`, where
+        addition is taken modulo 3.
 
         By slicing along the first axis, we are able to select all of the amplitudes with corresponding
         :math:`|1\rangle` and :math:`|2\rangle` for the control qutrit. This means we just need to apply
