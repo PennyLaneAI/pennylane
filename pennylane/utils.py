@@ -395,8 +395,9 @@ def expand_vector(vector, original_wires, expanded_wires):
     return qml.math.reshape(expanded_tensor, 2**M)
 
 
-def sort(op_list, wire_map: dict = None):
-    """Insertion sort algorithm that sorts a list of operators by their wire indices.
+def prod_sort(op_list, wire_map: dict = None):
+    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
+    into account the operator commutivity.
 
     Args:
         op_list (List[.Operator]): list of operators to be sorted
@@ -420,8 +421,8 @@ def sort(op_list, wire_map: dict = None):
 
 
 def swappable_ops(op1, op2, wire_map: dict) -> bool:
-    """Boolean expression that indicates if op1 and op2 are commutative and should be swapped in
-    a sorting algorithm.
+    """Boolean expression that indicates if op1 and op2 are commutative and should be swapped when
+    sorting them by wire values.
 
     Args:
         op1 (.Operator): First operator.

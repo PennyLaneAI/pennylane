@@ -528,7 +528,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.PauliX(5),
         ]
-        sorted_list = pu.sort(op_list)
+        sorted_list = pu.prod_sort(op_list)
         final_list = [
             qml.PauliY(0),
             qml.PauliY(1),
@@ -555,7 +555,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.CRY(1, [1, 2]),
         ]
-        sorted_list = pu.sort(op_list)
+        sorted_list = pu.prod_sort(op_list)
         final_list = [
             qml.PauliY(0),
             qml.PauliX(3),
@@ -584,7 +584,9 @@ class TestSortWires:
             qml.PauliZ("three"),
             qml.CRY("test", ["test", 2]),
         ]
-        sorted_list = pu.sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        sorted_list = pu.prod_sort(
+            op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
+        )
         final_list = [
             qml.PauliY(0),
             qml.PauliX("three"),
