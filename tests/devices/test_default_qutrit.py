@@ -117,7 +117,7 @@ class TestApply:
     def test_apply_operation_single_wire_no_parameters_inverse(
         self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
     ):
-        """Tests that applying an operation yields the expected output state for single wire
+        """Tests that applying an inverse operation yields the expected output state for single wire
         operations that have no parameters."""
 
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
@@ -197,7 +197,7 @@ class TestApply:
     def test_apply_operation_two_wires_no_parameters_inverse(
         self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
     ):
-        """Tests that applying an operation yields the expected output state for two wire
+        """Tests that applying an inverse operation yields the expected output state for two wire
         operations that have no parameters."""
 
         qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
