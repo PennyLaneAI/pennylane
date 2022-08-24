@@ -210,9 +210,9 @@ class TAdd(Operation):
     The 2-qutrit controlled add gate
 
     The construction of this operator is based on definition 7 from
-    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_. 
+    `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
     It performs the controlled :class:`~.TShift` operation, and sends
-    :math:`\hbox{TAdd} \vert i \rangle \vert j \rangle = \vert i \rangle \vert i + j \rangle`, 
+    :math:`\hbox{TAdd} \vert i \rangle \vert j \rangle = \vert i \rangle \vert i + j \rangle`,
     where addition is taken modulo 3. The matrix representation is
 
     .. math:: TAdd = \begin{bmatrix}
@@ -329,7 +329,7 @@ class TAdd(Operation):
 class TSWAP(Operation):
     r"""TSWAP(wires)
     The ternary swap operator.
-    
+
     This operation is analogous to the qubit SWAP and acts on two-qutrit computational basis states
     according to :math:`TSWAP\vert i, j\rangle = \vert j, i \rangle`. Its matrix representation is
 
