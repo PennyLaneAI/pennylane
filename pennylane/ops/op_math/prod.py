@@ -367,12 +367,13 @@ class Prod(Operator):
 
         for factor in factors:
             simplified_factor = factor.simplify()
-            pauli_tuples, phase, new_operators = cls._expand_operator(
+            pauli_tuples, phase, new_operators = cls._group_pauli_operators(
                 pauli_tuples=pauli_tuples, op=simplified_factor
             )
             global_phase *= phase
             new_factors += new_operators
 
+        # Fetch all the remaining Pauli operators inside the ``pauli_tuples`` dictionary.
         _, phase, pauli_ops = cls._get_pauli_operators(
             pauli_tuples=pauli_tuples, wires=list(pauli_tuples.keys())
         )
@@ -380,31 +381,33 @@ class Prod(Operator):
         return global_phase * phase, new_factors + pauli_ops
 
     @classmethod
-    def _expand_operator(cls, pauli_tuples: dict, op: Operator):
-        """This method expands the given operator (if possible) and groups all pauli operators that
-        act on the same wire.
+    def _group_pauli_operators(cls, pauli_tuples: dict, op: Operator):
+        """This method finds and groups all Pauli operators contained in ``op`` that act on the same
+        wire.
 
         Args:
             pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
                 operator and its values are tuples containing the coefficient and the Pauli word.
-            op (Operator): Operator to expand.
+            op (Operator): Operator to search.
 
         Returns:
             Tuple[dict, complex, tuple(.Operator)]: Tuple containing the modified ``pauli_tuples``
                 dictionary, the added global_phase of the operator and a tuple containing the
-                expansion of the operator.
+                residual operators, which contain all non Pauli operators and, if ``op`` is not
+                a Pauli operator, all the Pauli operators that acted on the same wire (to make sure
+                that the commutative property is preserved).
         """
         global_phase = 1
-        new_operators = ()
+        residual_ops = ()
         if isinstance(op, Prod):
             for factor in op.factors:
-                pauli_tuples, phase, factor_operators = cls._expand_operator(
+                pauli_tuples, prod_global_phase, prod_residual_ops = cls._group_pauli_operators(
                     pauli_tuples=pauli_tuples, op=factor
                 )
-                global_phase *= phase
-                new_operators += factor_operators
+                global_phase *= prod_global_phase
+                residual_ops += prod_residual_ops
         elif isinstance(op, Sum):
-            new_operators += (op.summands,)
+            residual_ops += (op.summands,)
         elif not isinstance(op, qml.Identity):
             if isinstance(op, SProd):
                 global_phase *= op.scalar
@@ -412,18 +415,21 @@ class Prod(Operator):
             label = op.label()
             wires = op.wires
             if label in ["I", "X", "Y", "Z"]:
+                # Update ``pauli_tuples`` dictionary
                 old_coeff, old_word = pauli_tuples.get(wires[0], (1, "I"))
                 coeff, new_word = cls._pauli_mult[old_word + label]
                 pauli_tuples[wires[0]] = old_coeff * coeff, new_word
             else:
-                pauli_tuples, phase, pauli_ops = cls._get_pauli_operators(
+                # Update the ``residual_ops`` tuple first with the Pauli ops acting on the same wire
+                # and then with the non-pauli ``op`` operator.
+                pauli_tuples, prod_global_phase, pauli_ops = cls._get_pauli_operators(
                     pauli_tuples=pauli_tuples, wires=wires
                 )
-                global_phase *= phase
-                new_operators += pauli_ops
-                new_operators += ((op,),)
+                global_phase *= prod_global_phase
+                residual_ops += pauli_ops
+                residual_ops += ((op,),)
 
-        return pauli_tuples, global_phase, new_operators
+        return pauli_tuples, global_phase, residual_ops
 
     @classmethod
     def _get_pauli_operators(cls, pauli_tuples: dict, wires: List[int]):
@@ -436,7 +442,8 @@ class Prod(Operator):
             wires (List[int]): Wires of the operators we want to get.
 
         Returns:
-            tuple(complex, tuple(.Operator)): Tuple containing the global_phase and the pauli
+            tuple(dict, complex, tuple(.Operator)): Tuple containing the updated ``pauli_tuples``
+            dictionary, the global_phase added and a tuple containing the fetched Pauli operators.
                 operators.
         """
         pauli_operators = ()
