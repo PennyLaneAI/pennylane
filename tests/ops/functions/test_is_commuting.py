@@ -18,6 +18,97 @@ import pytest
 import pennylane.numpy as np
 import pennylane as qml
 
+from pennylane.ops.functions.is_commuting import (
+    _get_target_name,
+    _check_mat_commutation,
+    is_commuting,
+)
+
+control_base_map_data = [
+    (qml.CNOT((0, 1)), "PauliX"),
+    (qml.CZ((0, 1)), "PauliZ"),
+    (qml.CY((0, 1)), "PauliY"),
+    (qml.CSWAP(range(3)), "SWAP"),
+    (qml.Toffoli(range(3)), "PauliX"),
+    (qml.ControlledPhaseShift(1.234, (0, 1)), "PhaseShift"),
+    (qml.CRX(1.23, range(2)), "RX"),
+    (qml.CRY(1.34, range(2)), "RY"),
+    (qml.CRZ(1.234, range(2)), "RZ"),
+    (qml.CRot(1.2, 2.3, 3.4, range(2)), "Rot"),
+    (qml.MultiControlledX(wires=range(4)), "PauliX"),
+]
+
+
+class TestGetTargetName:
+    """Tests the _get_target_name helper function."""
+
+    @pytest.mark.parametrize("op, target_name", control_base_map_data)
+    def test_explicitly_specified_control_op(self, op, target_name):
+        """Test getting the target name for operations explicitly specified in the map."""
+        assert _get_target_name(op) == target_name
+
+    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, 0), qml.IsingXX(0, range(2))))
+    def test_Controlled_op(self, op):
+        """Test it gets the base's name for a controlled op."""
+        c_op = qml.ops.op_math.Controlled(op, control_wires=("a", "b"))
+        assert _get_target_name(c_op) == op.name
+
+    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, 0), qml.IsingXX(0, range(2))))
+    def test_basic_op(self, op):
+        """Test that for non-controlled gates, the helper simply returns the name"""
+        assert _get_target_name(op) == op.name
+
+
+class TestCheckMatCommutation:
+    """Tests the _check_mat_commutation helper method."""
+
+    def test_matrices_commute(self):
+        """Test that if the operations commute, then the helper function returns True"""
+        op1 = qml.S(0)
+        op2 = qml.T(0)
+
+        assert _check_mat_commutation(op1, op2)
+
+    def test_matrices_dont_commute(self):
+        """Check matrices don't commute for two simple ops."""
+        op1 = qml.PauliX(0)
+        op2 = qml.PauliZ(0)
+
+        assert not _check_mat_commutation(op1, op2)
+
+
+class TestControlledOps:
+    """Test how is_commuting integrates with Controlled operators."""
+
+    def test_commuting_overlapping_targets(self):
+        """Test commuting when targets commute and overlap wires."""
+        op1 = qml.ops.op_math.Controlled(qml.PauliX(3), control_wires=(0, 1, 2))
+        op2 = qml.ops.op_math.Controlled(qml.RX(1.2, 3), control_wires=(0, 1))
+        assert qml.is_commuting(op1, op2)
+
+    def test_non_commuting_overlapping_targets(self):
+        """Test not commuting when targets don't commute and overlap wires."""
+        op1 = qml.ops.op_math.Controlled(qml.PauliZ(3), control_wires=(0, 1, 2))
+        op2 = qml.ops.op_math.Controlled(qml.RX(1.2, 3), control_wires=(0, 1))
+        assert not qml.is_commuting(op1, op2)
+
+    def test_commuting_one_target_commutes_with_ctrl(self):
+        """Test it is commuting if one target overlaps with the others control wires, and target
+        commutes with control wires."""
+
+        op1 = qml.ops.op_math.Controlled(qml.PauliZ(3), control_wires=0)
+        op2 = qml.ops.op_math.Controlled(qml.PauliX(2), control_wires=3)
+        assert qml.is_commuting(op1, op2)
+        assert qml.is_commuting(op2, op1)
+
+    def test_not_commuting_one_target_not_commute_with_ctrl(self):
+        """Test it is not commuting if a target overlaps with control wires, and target
+        does not commute with ctrl."""
+        op1 = qml.ops.op_math.Controlled(qml.PauliX(3), control_wires=0)
+        op2 = qml.ops.op_math.Controlled(qml.PauliZ(2), control_wires=3)
+        assert not qml.is_commuting(op1, op2)
+        assert not qml.is_commuting(op2, op1)
+
 
 class TestCommutingFunction:
     """Commutation function tests."""
