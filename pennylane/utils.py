@@ -407,6 +407,9 @@ def prod_sort(op_list, wire_map: dict = None):
     Returns:
         List[.Operator]: sorted list of operators
     """
+    if isinstance(op_list, tuple):
+        op_list = list(op_list)
+
     for i in range(1, len(op_list)):
 
         left_op = op_list[i]
@@ -438,6 +441,6 @@ def swappable_ops(op1, op2, wire_map: dict) -> bool:
     if wire_map is not None:
         wires1 = wires1.map(wire_map)
         wires2 = wires2.map(wire_map)
-    if np.intersect1d(wires1, wires2):
+    if np.intersect1d(wires1, wires2).size != 0:
         return False
     return np.min(wires1) > np.min(wires2)
