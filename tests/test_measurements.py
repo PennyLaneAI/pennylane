@@ -114,16 +114,16 @@ class TestExpval:
         assert res.dtype == r_dtype
 
     def test_not_an_observable(self):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is not an observable"""
+        """Test that a warning is raised if the provided
+        argument might not be hermitian."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
-            return qml.expval(qml.CNOT(wires=[0, 1]))
+            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             res = circuit()
 
     def test_observable_return_type_is_expectation(self):
@@ -190,16 +190,16 @@ class TestVar:
         assert res.dtype == r_dtype
 
     def test_not_an_observable(self):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is not an observable"""
+        """Test that a UserWarning is raised if the provided
+        argument might not be hermitian."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
-            return qml.var(qml.CNOT(wires=[0, 1]))
+            return qml.var(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             res = circuit()
 
     def test_observable_return_type_is_variance(self):
@@ -378,16 +378,16 @@ class TestSample:
         assert np.array_equal(result[2].shape, (n_sample,))
 
     def test_not_an_observable(self):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is not an observable"""
-        dev = qml.device("default.qubit", wires=2)
+        """Test that a UserWarning is raised if the provided
+        argument might not be hermitian."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
-            return qml.sample(qml.CNOT(wires=[0, 1]))
+            return qml.sample(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             sample = circuit()
 
     def test_observable_return_type_is_sample(self):
@@ -575,16 +575,16 @@ class TestCounts:
             res = circuit()
 
     def test_not_an_observable(self):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is not an observable"""
-        dev = qml.device("default.qubit", wires=2)
+        """Test that a UserWarning is raised if the provided
+        argument might not be hermitian."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
-            return qml.counts(qml.CNOT(wires=[0, 1]))
+            return qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             sample = circuit()
 
     def test_counts_dimension(self, tol):
@@ -1041,16 +1041,19 @@ class TestBetaStatisticsError:
     """Tests for errors arising for the beta statistics functions"""
 
     def test_not_an_observable(self, stat_func):
-        """Test that a qml.QuantumFunctionError is raised if the provided
-        argument is not an observable"""
+        """Test that a UserWarning is raised if the provided
+        argument might not be hermitian."""
+        if stat_func is sample:
+            pytest.skip("Sampling is not yet supported with symbolic operators.")
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.52, wires=0)
-            return stat_func(qml.CNOT(wires=[0, 1]))
+            return stat_func(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        with pytest.raises(qml.QuantumFunctionError, match="CNOT is not an observable"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             res = circuit()
 
 
