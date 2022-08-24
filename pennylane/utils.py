@@ -395,7 +395,7 @@ def expand_vector(vector, original_wires, expanded_wires):
     return qml.math.reshape(expanded_tensor, 2**M)
 
 
-def sort_wires(op_list):
+def sort(op_list):
     """Insertion sort algorithm that sorts a list of operators by their wire indices.
 
     Args:
