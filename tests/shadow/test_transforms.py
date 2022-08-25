@@ -254,12 +254,11 @@ class TestStateBackward:
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
 
-@pytest.mark.parametrize("diffable", [True, False])
 @pytest.mark.autograd
 class TestExpvalForward:
     """Test that the expval estimation is correct for a variety of states"""
 
-    def test_hadamard_expval(self, diffable):
+    def test_hadamard_expval(self):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
         obs = [
@@ -274,12 +273,12 @@ class TestExpvalForward:
         expected = [1, 1, 1, 0, 0, 0, 0]
 
         circuit = hadamard_circuit(3, shots=100000)
-        circuit = qml.shadows.expval(obs, diffable=diffable)(circuit)
+        circuit = qml.shadows.expval(obs)(circuit)
         actual = circuit()
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    def test_max_entangled_expval(self, diffable):
+    def test_max_entangled_expval(self):
         """Test that the expval estimation is correct for a maximally entangled state"""
         obs = [
             qml.PauliX(1),
@@ -294,7 +293,7 @@ class TestExpvalForward:
         expected = [0, 0, 0, 0, 1, 0, 0, -1]
 
         circuit = max_entangled_circuit(3, shots=100000)
-        circuit = qml.shadows.expval(obs, diffable=diffable)(circuit)
+        circuit = qml.shadows.expval(obs)(circuit)
         actual = circuit()
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
@@ -305,8 +304,7 @@ class TestExpvalForwardInterfaces:
     """Test that expval estimation works for all interfaces"""
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("diffable", [True, False])
-    def test_qft_expval(self, interface, diffable):
+    def test_qft_expval(self, interface):
         """Test that the expval estimation is correct for a QFT state"""
         obs = [
             qml.PauliX(0),
@@ -334,7 +332,7 @@ class TestExpvalForwardInterfaces:
         ]
 
         circuit = qft_circuit(3, shots=100000, interface=interface)
-        circuit = qml.shadows.expval(obs, diffable=diffable)(circuit)
+        circuit = qml.shadows.expval(obs)(circuit)
         actual = circuit()
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
@@ -358,7 +356,7 @@ class TestExpvalBackward:
     def test_backward_autograd(self):
         """Test the gradient of the expval for the autograd interface"""
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
@@ -378,7 +376,7 @@ class TestExpvalBackward:
         from jax import numpy as jnp
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "jax")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
@@ -397,7 +395,7 @@ class TestExpvalBackward:
         import tensorflow as tf
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "tf")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
@@ -423,7 +421,7 @@ class TestExpvalBackward:
         import torch
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="torch")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled, diffable=True)(shadow_circuit)
+        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "torch")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
