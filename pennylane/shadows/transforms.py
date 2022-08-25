@@ -15,6 +15,7 @@
 
 from itertools import product
 from functools import reduce
+import warnings
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -51,6 +52,12 @@ def shadow_expval(H, k=1):
 def _shadow_state_diffable(wires):
     """TODO: docs"""
     wires_list = [wires] if not isinstance(wires[0], list) else wires
+
+    if any(len(w) >= 8 for w in wires_list):
+        warnings.warn(
+            "Differentiable state reconstruction for more than 8 qubits is not recommended",
+            UserWarning,
+        )
 
     # all pauli observables
     all_observables = []

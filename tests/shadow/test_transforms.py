@@ -14,6 +14,7 @@
 
 """Unit tests for the classical shadows transforms"""
 
+import builtins
 import pytest
 
 import pennylane as qml
@@ -99,12 +100,12 @@ def basic_entangler_circuit_exact_expval(wires, interface="autograd"):
     return circuit
 
 
-@pytest.mark.parametrize("diffable", [True, False])
 @pytest.mark.autograd
 class TestStateForward:
     """Test that the state reconstruction is correct for a variety of states"""
 
     @pytest.mark.parametrize("wires", [1, 3])
+    @pytest.mark.parametrize("diffable", [True, False])
     def test_hadamard_state(self, wires, diffable):
         """Test that the state reconstruction is correct for a uniform
         superposition of qubits"""
@@ -117,6 +118,7 @@ class TestStateForward:
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.parametrize("wires", [1, 3])
+    @pytest.mark.parametrize("diffable", [True, False])
     def test_max_entangled_state(self, wires, diffable):
         """Test that the state reconstruction is correct for a maximally entangled state"""
         circuit = max_entangled_circuit(wires)
@@ -128,6 +130,7 @@ class TestStateForward:
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
+    @pytest.mark.parametrize("diffable", [True, False])
     def test_partial_state(self, diffable):
         """Test that the state reconstruction is correct for a subset
         of the qubits"""
@@ -145,6 +148,20 @@ class TestStateForward:
 
         assert qml.math.allclose(actual[0], expected[0], atol=1e-1)
         assert qml.math.allclose(actual[1], expected[1], atol=1e-1)
+
+    def test_large_state_warning(self, monkeypatch):
+        """Test that a warning is raised when the system to get the state
+        of is large"""
+        circuit = hadamard_circuit(8, shots=1)
+
+        with monkeypatch.context() as m:
+            # monkeypatch the range function so we don't run the state reconstruction
+            m.setattr(builtins, "range", lambda *args: [0])
+
+            msg = "Differentiable state reconstruction for more than 8 qubits is not recommended"
+            with pytest.warns(UserWarning, match=msg):
+                # full hard-coded list for wires instead of range(8) since we monkeypatched it
+                circuit = qml.shadows.state(wires=[0, 1, 2, 3, 4, 5, 6, 7], diffable=True)(circuit)
 
 
 @pytest.mark.all_interfaces
