@@ -1337,7 +1337,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)
+    return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
 
 
 T = TypeVar("T")
