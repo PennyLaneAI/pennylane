@@ -129,10 +129,10 @@ def _shadow_state_diffable(wires):
                     ]
                 )
 
-                state = qml.math.einsum(
+                s = qml.math.einsum(
                     "a,abc->bc", results[start : start + 4 ** len(w)], obs_matrices
                 ) / 2 ** len(w)
-                states.append(state)
+                states.append(s)
 
                 start += 4 ** len(w)
 
