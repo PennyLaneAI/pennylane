@@ -43,12 +43,7 @@ def shadow_expval(H, k=1):
     """TODO: docs"""
 
     def decorator(qnode):
-        def wrapper(*args, **kwargs):
-            # pylint: disable=not-callable
-            new_qnode = __replace_obs(qnode, qml.shadow_expval, H, k=k)
-            return new_qnode(*args, **kwargs)
-
-        return wrapper
+        return __replace_obs(qnode, qml.shadow_expval, H, k=k)
 
     return decorator
 

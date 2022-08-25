@@ -168,6 +168,11 @@ class TestStateForwardInterfaces:
 class TestStateBackward:
     """Test that the gradient of the state reconstruction is correct"""
 
+    # make rotations close to pi / 2 to ensure gradients are not too small
+    x = np.random.uniform(
+        0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)
+    ).tolist()
+
     @pytest.mark.autograd
     def test_backward_autograd(self):
         """Test the gradient of the state for the autograd interface"""
@@ -175,8 +180,7 @@ class TestStateBackward:
         shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
         exact_circuit = basic_entangler_circuit_exact_state(3, "autograd")
 
-        # make rotations close to pi / 2 to ensure gradients are not too small
-        x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
+        x = np.array(self.x, requires_grad=True)
 
         # for autograd in particular, take only the real part since it doesn't
         # support complex differentiation
@@ -196,11 +200,7 @@ class TestStateBackward:
         exact_circuit = basic_entangler_circuit_exact_state(3, "jax")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
-        x = jnp.array(
-            np.random.uniform(
-                0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)
-            ).astype(np.complex64)
-        )
+        x = jnp.array(self.x, dtype=np.complex64)
 
         actual = qml.math.real(jax.jacrev(shadow_circuit, holomorphic=True)(x))
         expected = qml.math.real(jax.jacrev(exact_circuit, holomorphic=True)(x))
@@ -217,9 +217,7 @@ class TestStateBackward:
         exact_circuit = basic_entangler_circuit_exact_state(3, "tf")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
-        x = tf.Variable(
-            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
-        )
+        x = tf.Variable(self.x)
 
         with tf.GradientTape() as tape:
             out = shadow_circuit(x)
@@ -243,10 +241,7 @@ class TestStateBackward:
         exact_circuit = basic_entangler_circuit_exact_state(3, "torch")
 
         # make rotations close to pi / 2 to ensure gradients are not too small
-        x = torch.tensor(
-            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)),
-            requires_grad=True,
-        )
+        x = torch.tensor(self.x, requires_grad=True)
 
         actual = torch.autograd.functional.jacobian(shadow_circuit, x)
         expected = torch.autograd.functional.jacobian(exact_circuit, x)
@@ -255,10 +250,26 @@ class TestStateBackward:
 
 
 @pytest.mark.autograd
-class TestExpvalForward:
-    """Test that the expval estimation is correct for a variety of states"""
+class TestExpvalTransform:
+    """Test that the expval transform is applied correctly"""
 
-    def test_hadamard_expval(self):
+    def test_hadamard_transform(self):
+        """
+        Test that the transform is correct for a circuit that prepares
+        the uniform superposition
+        """
+        obs = qml.PauliZ(0)
+        circuit = hadamard_circuit(3, shots=100000)
+        circuit = qml.shadows.expval(obs)(circuit)
+
+        tape = circuit.construct((), {})[0][0]
+
+        assert all(qml.equal(qml.Hadamard(i), tape.operations[i]) for i in range(3))
+        assert len(tape.observables) == 1
+        assert isinstance(tape.observables[0], qml.measurements.ShadowMeasurementProcess)
+        assert tape.observables[0].H == obs
+
+    def test_hadamard_forward(self):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
         obs = [
@@ -278,161 +289,26 @@ class TestExpvalForward:
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    def test_max_entangled_expval(self):
-        """Test that the expval estimation is correct for a maximally entangled state"""
+    def test_basic_entangler_backward(self):
+        """Test the gradient of the expval transform"""
+
         obs = [
             qml.PauliX(1),
             qml.PauliX(0) @ qml.PauliX(2),
-            qml.PauliZ(2),
-            qml.Identity(1) @ qml.PauliZ(2),
-            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
+            qml.PauliY(2),
+            qml.PauliY(1) @ qml.PauliZ(2),
             qml.PauliX(0) @ qml.PauliY(1),
             qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
-            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2),
-        ]
-        expected = [0, 0, 0, 0, 1, 0, 0, -1]
-
-        circuit = max_entangled_circuit(3, shots=100000)
-        circuit = qml.shadows.expval(obs)(circuit)
-        actual = circuit()
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-
-@pytest.mark.all_interfaces
-class TestExpvalForwardInterfaces:
-    """Test that expval estimation works for all interfaces"""
-
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    def test_qft_expval(self, interface):
-        """Test that the expval estimation is correct for a QFT state"""
-        obs = [
-            qml.PauliX(0),
-            qml.PauliX(0) @ qml.PauliX(1),
-            qml.PauliX(0) @ qml.PauliX(2),
-            qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
-            qml.PauliZ(2),
-            qml.PauliX(1) @ qml.PauliY(2),
-            qml.PauliY(1) @ qml.PauliX(2),
-            qml.Identity(0) @ qml.PauliY(1) @ qml.PauliX(2),
-            qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2),
-            qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2),
-        ]
-        expected = [
-            -1,
-            0,
-            -1 / np.sqrt(2),
-            -1 / np.sqrt(2),
-            0,
-            0,
-            1 / np.sqrt(2),
-            1 / np.sqrt(2),
-            -1 / np.sqrt(2),
-            0,
         ]
 
-        circuit = qft_circuit(3, shots=100000, interface=interface)
-        circuit = qml.shadows.expval(obs)(circuit)
-        actual = circuit()
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-
-obs_strongly_entangled = [
-    qml.PauliX(1),
-    qml.PauliX(0) @ qml.PauliX(2),
-    qml.PauliX(0) @ qml.Identity(1) @ qml.PauliX(2),
-    qml.PauliY(2),
-    qml.PauliY(1) @ qml.PauliZ(2),
-    qml.PauliX(0) @ qml.PauliY(1),
-    qml.PauliX(0) @ qml.PauliY(1) @ qml.Identity(2),
-]
-
-
-class TestExpvalBackward:
-    """Test that the gradient of the expval estimation is correct"""
-
-    @pytest.mark.autograd
-    def test_backward_autograd(self):
-        """Test the gradient of the expval for the autograd interface"""
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
+        shadow_circuit = qml.shadows.expval(obs)(shadow_circuit)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
 
-        # make rotations close to pi / 2 to ensure gradients are not too small
         x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
-        # for autograd in particular, take only the real part since it doesn't
-        # support complex differentiation
         actual = qml.jacobian(shadow_circuit)(x)
-        expected = qml.jacobian(exact_circuit)(x, obs_strongly_entangled)
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-    @pytest.mark.jax
-    def test_backward_jax(self):
-        """Test the gradient of the expval for the JAX interface"""
-        import jax
-        from jax import numpy as jnp
-
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_expval(3, "jax")
-
-        # make rotations close to pi / 2 to ensure gradients are not too small
-        x = jnp.array(
-            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
-        )
-
-        actual = jax.jacrev(shadow_circuit)(x)
-        expected = jax.jacrev(exact_circuit)(x, obs_strongly_entangled)
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-    @pytest.mark.tf
-    def test_backward_tf(self):
-        """Test the gradient of the state for the tensorflow interface"""
-        import tensorflow as tf
-
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_expval(3, "tf")
-
-        # make rotations close to pi / 2 to ensure gradients are not too small
-        x = tf.Variable(
-            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
-        )
-
-        with tf.GradientTape() as tape:
-            out = shadow_circuit(x)
-
-        actual = tape.jacobian(out, x)
-
-        with tf.GradientTape() as tape2:
-            out2 = exact_circuit(x, obs_strongly_entangled)
-
-        expected = tape2.jacobian(out2, x)
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-    @pytest.mark.torch
-    def test_backward_torch(self):
-        """Test the gradient of the state for the torch interface"""
-        import torch
-
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="torch")
-        shadow_circuit = qml.shadows.expval(obs_strongly_entangled)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_expval(3, "torch")
-
-        # make rotations close to pi / 2 to ensure gradients are not too small
-        x = torch.tensor(
-            np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)),
-            requires_grad=True,
-        )
-
-        actual = torch.autograd.functional.jacobian(shadow_circuit, x)
-        expected = torch.autograd.functional.jacobian(
-            lambda x: exact_circuit(x, obs_strongly_entangled), x
-        )
+        expected = qml.jacobian(exact_circuit)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
