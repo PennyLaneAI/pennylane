@@ -50,7 +50,7 @@ def shadow_expval(H, k=1):
 
 
 def _shadow_state_diffable(wires):
-    """TODO: docs"""
+    """Differentiable version of the shadow state transform"""
     wires_list = [wires] if not isinstance(wires[0], list) else wires
 
     if any(len(w) >= 8 for w in wires_list):
@@ -109,7 +109,7 @@ def _shadow_state_diffable(wires):
 
 
 def _shadow_state_undiffable(wires):
-    """TODO: docs"""
+    """Non-differentiable version of the shadow state transform"""
     wires_list = [wires] if not isinstance(wires[0], list) else wires
 
     def decorator(qnode):
