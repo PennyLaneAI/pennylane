@@ -95,6 +95,20 @@
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
 
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiple the 
+  Operator before exponentiation. Internally, this constructor functions creates the new
+  class `qml.ops.op_math.Exp`.
+  [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
+
+  We can now mimic any rotation gates:
+
+  ```pycon
+  >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+  >>> isingxy = qml.exp(t, 0.25j * x)
+  >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+  True
+  ```
+
 <h3>Improvements</h3>
 
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.

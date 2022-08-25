@@ -20,14 +20,15 @@ from pennylane import numpy as np
 from pennylane.ops.op_math import Exp
 
 
+@pytest.mark.parametrize("constructor", (qml.exp, Exp))
 class TestInitialization:
     """Test the initalization process and standard properties."""
 
-    def test_pauli_base(self):
+    def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
 
-        op = Exp(base, id="something")
+        op = constructor(base, id="something")
 
         assert op.base is base
         assert op.coeff == 1
@@ -35,38 +36,38 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 1
-        assert op.parameters == [1, []]
-        assert op.data == [1, []]
+        assert op.parameters == [[1], []]
+        assert op.data == [[1], []]
 
         assert op.wires == qml.wires.Wires("a")
 
         assert op.control_wires == qml.wires.Wires([])
 
-    def test_provided_coeff(self):
+    def test_provided_coeff(self, constructor):
         """Test initialization with a provided coefficient and a Tensor base."""
         base = qml.PauliZ("b") @ qml.PauliZ("c")
         coeff = np.array(1.234)
 
-        op = Exp(base, coeff)
+        op = constructor(base, coeff)
 
         assert op.base is base
         assert op.coeff is coeff
         assert op.name == "Exp"
 
         assert op.num_params == 1
-        assert op.parameters == [coeff, []]
-        assert op.data == [coeff, []]
+        assert op.parameters == [[coeff], []]
+        assert op.data == [[coeff], []]
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
-    def test_parametric_base(self):
+    def test_parametric_base(self, constructor):
         """Test initialization with a coefficient and a parametric operation base."""
 
         base_coeff = 1.23
         base = qml.RX(base_coeff, wires=5)
         coeff = np.array(-2.0)
 
-        op = Exp(base, coeff)
+        op = constructor(base, coeff)
 
         assert op.base is base
         assert op.coeff is coeff
@@ -90,9 +91,9 @@ class TestProperties:
         base = qml.RX(phi, wires=0)
         op = Exp(base, coeff)
 
-        assert op.data == [coeff, [phi]]
+        assert op.data == [[coeff], [phi]]
 
-        new_data = [-2.1, [-3.4]]
+        new_data = [[-2.1], [-3.4]]
         op.data = new_data
 
         assert op.data == new_data
@@ -153,7 +154,8 @@ class TestMatrix:
         base = qml.RX(2.0, wires=0)
         op = Exp(base, coeff)
 
-        mat = op.matrix()
+        with pytest.warns(UserWarning, match="The autograd matrix for "):
+            mat = op.matrix()
         expected = qml.math.expm(coeff * base.matrix())
         assert qml.math.allclose(mat, expected)
 
@@ -253,6 +255,17 @@ class TestMiscMethods:
         """Test that the label is always EXP"""
         op = Exp(qml.PauliZ(0), 2 + 3j)
         assert op.label(decimals=4) == "Exp"
+
+    def test_simplify_sprod(self):
+        """Test that simplify merges SProd into the coefficent."""
+        base = qml.adjoint(qml.PauliX(0))
+        coeff1 = 2.0
+        s_op = qml.s_prod(2.0, base)
+
+        op = Exp(s_op, 3j)
+        new_op = op.simplify()
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 6.0j
 
     def test_simplify(self):
         """Test that the simplify method simplifies the base."""

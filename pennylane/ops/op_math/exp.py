@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that stands for an operator raised to a power.
 """
+from warnings import warn
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
@@ -26,6 +27,57 @@ from pennylane.operation import (
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+
+
+def exp(op, coeff=1, id=None):
+    """Take the exponential of an Operator times a coefficient.
+
+    Args:
+        base (~.operation.Operator): The Operator to be exponentiated
+        coeff=1 (Number): A scalar coefficient of the operator.
+
+    Returns:
+       :class:`.operation.Operator`
+
+    **Example**
+
+    This symbolic operator can be used to make general rotation operators:
+
+    >>> x = np.array(1.23)
+    >>> op = qml.exp( qml.PauliX(0), -0.5j * x)
+    >>> qml.math.allclose(op.matrix(), qml.RX(x, wires=0).matrix())
+    True
+
+    This can even be used for more complicated generators:
+
+    >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+    >>> isingxy = qml.exp(t, 0.25j * x)
+    >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+    True
+
+    If the coefficient is purely imaginary and the base operator is Hermitian, then
+    the gate can be used in a circuit, though it may not be supported by the device and
+    may not be differentiable.
+
+    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    ... def circuit(x):
+    ...     qml.exp(qml.PauliX(0), -0.5j * x)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(qml.draw(circuit)(1.23))
+    0: ──Exp─┤  <Z>
+
+    If the base operator is Hermitian and the coefficient is real, then the ``Exp`` operator
+    can be measured as an observable:
+
+    >>> obs = qml.exp(qml.PauliZ(0), 3)
+    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    ... def circuit():
+    ...     return qml.expval(obs)
+    >>> circuit()
+    tensor(20.08553692, requires_grad=True)
+
+    """
+    return Exp(op, coeff, id=id)
 
 
 class Exp(SymbolicOp):
@@ -93,11 +145,11 @@ class Exp(SymbolicOp):
 
     @property
     def data(self):
-        return [self.coeff, self.base.data]
+        return [[self.coeff], self.base.data]
 
     @data.setter
     def data(self, new_data):
-        self.coeff = new_data[0]
+        self.coeff = new_data[0][0]
         self.base.data = new_data[1]
 
     @property
@@ -115,6 +167,9 @@ class Exp(SymbolicOp):
         return None
 
     def matrix(self, wire_order=None):
+        def get_mat(op):
+            return qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix()
+
         coeff_interface = math.get_interface(self.coeff)
         if coeff_interface == "autograd":
             # math.expm is not differentiable with autograd
@@ -127,10 +182,15 @@ class Exp(SymbolicOp):
                 eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
             except OperatorPropertyUndefined:
-                base_mat = qml.matrix(self.base)
+                warn(
+                    f"The autograd matrix for {self} is not differentiable. "
+                    "Use a different interface if you need backpropagation.",
+                    UserWarning,
+                )
+                base_mat = get_mat(self.base)
                 mat = math.expm(self.coeff * base_mat)
         else:
-            base_mat = qml.matrix(self.base)
+            base_mat = get_mat(self.base)
             if coeff_interface == "torch":
                 # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
                 base_mat = math.convert_like(base_mat, self.coeff)
@@ -151,13 +211,11 @@ class Exp(SymbolicOp):
     def eigvals(self):
         r"""Eigenvalues of the operator in the computational basis.
 
-        If:
+        .. math::
 
-        .. math:: c O \vec{v} = c \lambda \vec{v}
-
-        then we can determine the eigenvalues of the exponential:
-
-        .. math:: e^{c O} \vec{v} = e^{c \lambda} \vec{v}
+            c \mathbf{M} \mathbf{v} = c \lambda \mathbf{v}
+            \rightarrow
+            e^{c \mathbf{M}} \mathbf{v} = e^{c \lambda} \mathbf{v}
 
         >>> obs = Exp(qml.PauliX(0), 3)
         >>> qml.eigvals(obs)
@@ -177,4 +235,6 @@ class Exp(SymbolicOp):
         return Exp(self.base, self.coeff * z)
 
     def simplify(self):
+        if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+            return Exp(self.base.base.simplify(), self.coeff * self.base.scalar)
         return Exp(self.base.simplify(), self.coeff)
