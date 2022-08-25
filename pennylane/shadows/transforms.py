@@ -14,7 +14,7 @@
 """Classical shadow transforms"""
 
 from itertools import product
-from functools import reduce
+from functools import reduce, wraps
 import warnings
 
 import pennylane as qml
@@ -40,11 +40,45 @@ def __replace_obs(tape, obs, *args, **kwargs):
     return [new_tape], processing_fn
 
 
-def shadow_expval(H, k=1):
-    """TODO: docs"""
+def expval(H, k=1):
+    """Transform a QNode returning a classical shadow into one that returns
+    the approximate expectation values.
+
+    See :func:`~.pennylane.shadow_expval` for more usage details.
+
+    Args:
+        H (:class:`~.pennylane.Observable` or list[:class:`~.pennylane.Observable`]): Observables
+            for which to compute the expectation values
+        k (int): k (int): Number of equal parts to split the shadow's measurements to compute
+            the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+
+    Returns:
+        tensor-like[float]: 1-D tensor containing the expectation value estimates for each observable
+
+    **Example**
+
+    .. code-block:: python3
+
+        H = qml.PauliZ(0) @ qml.PauliZ(1)
+        dev = qml.device("default.qubit", wires=2, shots=10000)
+
+        @qml.shadows.expval(H, k=1)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x, wires=0)
+            return qml.classical_shadow(wires=[0, 1])
+
+    >>> x = np.array(1.2)
+    >>> circuit(x)
+    tensor(0.3069, requires_grad=True)
+    >>> qml.grad(circuit)(x)
+    -0.9323999999999998
+    """
 
     def decorator(qnode):
-        return __replace_obs(qnode, qml.shadow_expval, H, k=k)
+        return wraps(qnode)(__replace_obs(qnode, qml.shadow_expval, H, k=k))
 
     return decorator
 
@@ -74,6 +108,7 @@ def _shadow_state_diffable(wires):
     def decorator(qnode):
         new_qnode = __replace_obs(qnode, qml.shadow_expval, all_observables)
 
+        @wraps(qnode)
         def wrapper(*args, **kwargs):
             # pylint: disable=not-callable
             results = new_qnode(*args, **kwargs)
@@ -113,6 +148,7 @@ def _shadow_state_undiffable(wires):
     wires_list = [wires] if not isinstance(wires[0], list) else wires
 
     def decorator(qnode):
+        @wraps(qnode)
         def wrapper(*args, **kwargs):
             bits, recipes = qnode(*args, **kwargs)
             shadow = qml.shadows.ClassicalShadow(bits, recipes)
@@ -125,6 +161,52 @@ def _shadow_state_undiffable(wires):
     return decorator
 
 
-def shadow_state(wires, diffable=False):
-    """TODO: docs"""
+def state(wires, diffable=False):
+    """Transform a QNode returning a classical shadow into one that returns
+    the reconstructed state.
+
+    Args:
+        wires (list[int] or list[list[int]]): If a list of ints, this represents
+            the wires over which to reconstruct the state. If a list of list of ints,
+            a state is reconstructed for every element of the outer list, saving
+            qfunc evaluations.
+        diffable (bool): If True, reconstruct the state in a differentiable
+            fashion, where the gradient of the reconstructed state approaches
+            the gradient of the true state in expectation. This comes at a performance
+            cost.
+
+    Returns:
+        list[tensor-like[complex]]: The reconstructed states
+
+    **Example**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2, shots=10000)
+
+        @qml.shadows.state(wires=[0, 1], diffable=True)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x, wires=0)
+            return qml.classical_shadow(wires=[0, 1])
+
+    >>> x = np.array(1.2)
+    >>> circuit(x)
+    tensor([[ 0.33714998+0.j        ,  0.007875  +0.228825j  ,
+             -0.010575  +0.22642499j,  0.33705002+0.01125j   ],
+            [ 0.007875  -0.228825j  ,  0.16104999+0.j        ,
+              0.17055   -0.0126j    ,  0.011025  -0.232575j  ],
+            [-0.010575  -0.22642499j,  0.17055   +0.0126j    ,
+              0.16704999+0.j        , -0.006075  -0.225225j  ],
+            [ 0.33705002-0.01125j   ,  0.011025  +0.232575j  ,
+             -0.006075  +0.225225j  ,  0.33475   +0.j        ]],
+           dtype=complex64, requires_grad=True)
+    >>> qml.jacobian(circuit)(x)
+    array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
+           [-0.005325,  0.235275,  0.2358  , -0.004275],
+           [ 0.004275,  0.2358  ,  0.244875, -0.002175],
+           [-0.2358  , -0.004275, -0.002175, -0.235125]])
+    """
     return _shadow_state_diffable(wires) if diffable else _shadow_state_undiffable(wires)
