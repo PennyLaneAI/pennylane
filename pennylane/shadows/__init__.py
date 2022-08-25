@@ -83,41 +83,7 @@ tensor(1.827, requires_grad=True)
 >>> qml.grad(qnode)(x)
 -0.44999999999999984
 
-Note that to avoid unnecessary device executions you can provide a list of observables to :func:`shadow_expval`.
-
->>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
->>> qnode(x, Hs)
-[ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
->>> qml.jacobian(qnode)(x, Hs)
-[-0.48312, -0.00198, -0.00375,  0.00168]
-
-Alternatively, you can compute expectation values by first performing the shadow measurement and then perform classical post-processing using the :class:`ClassicalShadow`
-class methods.
-
-.. code-block:: python3
-
-    dev = qml.device("default.qubit", wires=range(2), shots=1000)
-    @qml.qnode(dev)
-    def qnode(x):
-        qml.Hadamard(0)
-        qml.CNOT((0,1))
-        qml.RX(x, wires=0)
-        return classical_shadow(wires=range(2))
-
-    bits, recipes = qnode(0)
-    shadow = ClassicalShadow(bits, recipes)
-
-After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
-For example, we can compute the expectation value of a Pauli string
-
->>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
-(1.0079999999999998+0j)
-
-or of a Hamiltonian:
-
->>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
->>> shadow.expval(H, k=1)
-(2.2319999999999998+0j)
+There are more options for post-processing classical shadows in :class:`ClassicalShadow`.
 """
 
 from .classical_shadow import ClassicalShadow, median_of_means, pauli_expval
