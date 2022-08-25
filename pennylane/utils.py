@@ -408,7 +408,7 @@ def prod_sort(op_list, wire_map: dict = None):
         List[.Operator]: sorted list of operators
     """
 
-    def swappable_ops(op1, op2, wire_map: dict) -> bool:
+    def swappable_ops(op1, op2, wire_map: dict = None) -> bool:
         """Boolean expression that indicates if op1 and op2 are commutative and should be swapped when
         sorting them by wire values.
 
