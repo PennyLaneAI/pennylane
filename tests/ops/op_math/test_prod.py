@@ -231,13 +231,34 @@ class TestInitialization:
 
 
 class TestMscMethods:
-    """Test dunder methods."""
+    """Test dunder and other visualizing methods."""
 
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep):
         """Test __repr__ method."""
         prod_op = Prod(*ops_lst)
         assert ops_rep == repr(prod_op)
+
+    def test_nested_repr(self):
+        """Test nested repr values while other nested features such as equality are not ready"""
+        prod_op = qml.PauliX(0) @ (qml.RY(1, wires=1) + qml.PauliX(0))
+        assert "PauliX(wires=[0]) @ (RY(1, wires=[1]) + PauliX(wires=[0]))" == repr(prod_op)
+
+    def test_label(self):
+        """Test label method."""
+        prod_op = qml.RY(1, wires=1) @ qml.PauliX(1)
+        assert "RY@X" == prod_op.label()
+
+        nested_op = qml.PauliX(0) @ prod_op
+        assert "X@(RY@X)" == nested_op.label()
+        assert "X@(RY\n(1.00)@X)" == nested_op.label(decimals=2)
+        assert "x0@(ry@x1)" == nested_op.label(base_label=["x0", ["ry", "x1"]])
+
+        U = np.array([[1,0],[0,-1]])
+        cache = {"matrices": []}
+        prod_op = qml.PauliX(0) @ (qml.PauliY(1) @ qml.QubitUnitary(U, wires=0))
+        assert "X@(Y@U(M0))" == prod_op.label(cache=cache)
+        assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_copy(self, ops_lst):
