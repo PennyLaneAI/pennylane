@@ -1301,7 +1301,7 @@ def shadow_expval(obs, k=1, seed_recipes=True):
             qml.Hadamard(0)
             qml.CNOT((0,1))
             qml.RX(x, wires=0)
-            return shadow_expval(obs)
+            return qml.shadow_expval(obs)
 
         x = np.array(0.5, requires_grad=True)
 
