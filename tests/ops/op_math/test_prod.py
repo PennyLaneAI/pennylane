@@ -970,7 +970,7 @@ class TestSortWires:
 
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting alforithm works for operators that act on multiple wires."""
-        op_list = [
+        op_tuple = (
             qml.PauliX(3),
             qml.PauliX(5),
             qml.Toffoli([2, 3, 4]),
@@ -980,8 +980,8 @@ class TestSortWires:
             qml.CRX(1, [0, 2]),
             qml.PauliZ(3),
             qml.CRY(1, [1, 2]),
-        ]
-        sorted_list = _prod_sort(op_list)
+        )
+        sorted_list = _prod_sort(op_tuple)
         final_list = [
             qml.PauliY(0),
             qml.PauliX(3),
@@ -1027,3 +1027,35 @@ class TestSortWires:
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
+
+
+swappable_ops = {
+    (qml.PauliX(1), qml.PauliY(0)),
+    (qml.PauliY(5), qml.PauliX(2)),
+    (qml.PauliZ(3), qml.PauliX(2)),
+    (qml.CNOT((1, 2)), qml.PauliX(0)),
+    (qml.PauliX(3), qml.Toffoli((0, 1, 2))),
+}
+
+non_swappable_ops = {
+    (qml.PauliX(1), qml.PauliY(1)),
+    (qml.PauliY(5), qml.RY(1, 5)),
+    (qml.PauliZ(0), qml.PauliX(1)),
+    (qml.CNOT((1, 2)), qml.PauliX(1)),
+    (qml.PauliX(2), qml.Toffoli((0, 1, 2))),
+}
+
+
+class TestSwappableOps:
+    """Tests for the _swappable_ops function."""
+
+    @pytest.mark.parametrize(["op1", "op2"], swappable_ops)
+    def test_swappable_ops(self, op1, op2):
+        """Test the check for swappable operators."""
+        assert _swappable_ops(op1, op2)
+        assert not _swappable_ops(op2, op1)
+
+    @pytest.mark.parametrize(["op1", "op2"], non_swappable_ops)
+    def test_non_swappable_ops(self, op1, op2):
+        """Test the check for non-swappable operators."""
+        assert not _swappable_ops(op1, op2)
