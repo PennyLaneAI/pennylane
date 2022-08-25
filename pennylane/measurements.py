@@ -94,7 +94,8 @@ Shadow = ObservableReturnTypes.Shadow
 the classical shadow protocol"""
 
 ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: dummy hack test"""
+"""Enum: An enumeration which represents returning the estimated expectation value
+from a classical shadow measurement"""
 
 
 class MeasurementShapeError(ValueError):
@@ -539,9 +540,18 @@ class ShadowMeasurementProcess(MeasurementProcess):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    This has the same arguments as the base class MeasurementProcess, along with
-    a seed that is used to seed the random measurement selection for the classical
-    shadow protocol.
+    This has the same arguments as the base class MeasurementProcess, plus other additional
+    arguments specific to the classical shadow protocol.
+
+    Args:
+        args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+        seed (Union[int, None]): The seed used to generate the random measurements
+        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
+            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
+            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
+            when ``return_type`` is ``ShadowExpval``.
+        kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
     def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
@@ -1268,7 +1278,7 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-def shadow_expval(obs, k=1, seed_recipes=True):
+def shadow_expval(H, k=1, seed_recipes=True):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
     The canonical way of computing expectation values is to simply average the expectation values for each local snapshot,
@@ -1279,6 +1289,11 @@ def shadow_expval(obs, k=1, seed_recipes=True):
     Args:
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+        seed_recipes (bool): If True, a seed will be generated that
+            is used for the randomly sampled Pauli measurements. This is to
+            ensure that the same recipes are used when a tape containing this
+            measurement is copied. Different seeds are still generated for
+            different constructed tapes.
 
     Returns:
         float: expectation value estimate.
