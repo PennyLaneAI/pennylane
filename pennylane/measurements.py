@@ -1327,7 +1327,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     >>> qml.grad(qnode)(x, H)
     -0.44999999999999984
 
-    In `shadow_expval`, we can pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
+    In `shadow_expval`, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
     >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
