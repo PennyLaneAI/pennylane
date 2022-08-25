@@ -71,6 +71,7 @@ Operator to Other functions
 
     ~pennylane.matrix
     ~pennylane.eigvals
+    ~pennylane.is_commuting
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
 
