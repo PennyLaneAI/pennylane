@@ -356,8 +356,8 @@ def is_commuting(operation1, operation2):
     if operation1.name in op_set and operation2.name in op_set:
         return check_commutation_two_non_simplified_rotations(operation1, operation2)
 
-    control_base_1 = _get_target_name(operation1)
-    control_base_2 = _get_target_name(operation2)
+    ctrl_base_1 = _get_target_name(operation1)
+    ctrl_base_2 = _get_target_name(operation2)
 
     op1_control_wires = getattr(operation1, "control_wires", {})
     op2_control_wires = getattr(operation2, "control_wires", {})
@@ -365,14 +365,13 @@ def is_commuting(operation1, operation2):
     target_wires_1 = qml.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
     target_wires_2 = qml.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
-    ops_commute = True
-    if intersection(target_wires_1, target_wires_2):
-        ops_commute &= _commutes(control_base_1, control_base_2)
+    if intersection(target_wires_1, target_wires_2) and not _commutes(ctrl_base_1, ctrl_base_2):
+        return False
 
-    if ops_commute and intersection(target_wires_1, op2_control_wires):
-        ops_commute &= _commutes("ctrl", control_base_1)
+    if intersection(target_wires_1, op2_control_wires) and not _commutes("ctrl", ctrl_base_1):
+        return False
 
-    if ops_commute and intersection(target_wires_2, op1_control_wires):
-        ops_commute &= _commutes("ctrl", control_base_2)
+    if intersection(target_wires_2, op1_control_wires) and not _commutes("ctrl", ctrl_base_2):
+        return False
 
-    return ops_commute
+    return True
