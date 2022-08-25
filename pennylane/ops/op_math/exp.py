@@ -37,7 +37,7 @@ def exp(op, coeff=1, id=None):
         coeff=1 (Number): A scalar coefficient of the operator.
 
     Returns:
-       :class:`.operation.Operator`
+       :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
 
     **Example**
 
