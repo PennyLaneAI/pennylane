@@ -53,7 +53,7 @@
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
 
 * Added the private `_prod_sort` function that sorts a list of operators by their respective wires
-  taking into account the commutative property.
+  taking into account their commutativity property.
   [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
 
 **Classical shadows**
