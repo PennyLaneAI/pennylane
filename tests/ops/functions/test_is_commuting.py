@@ -68,6 +68,7 @@ class TestCheckMatCommutation:
         op2 = qml.T(0)
 
         assert _check_mat_commutation(op1, op2)
+        assert _check_mat_commutation(op2, op1)
 
     def test_matrices_dont_commute(self):
         """Check matrices don't commute for two simple ops."""
@@ -75,6 +76,7 @@ class TestCheckMatCommutation:
         op2 = qml.PauliZ(0)
 
         assert not _check_mat_commutation(op1, op2)
+        assert not _check_mat_commutation(op2, op1)
 
 
 class TestControlledOps:
@@ -85,12 +87,14 @@ class TestControlledOps:
         op1 = qml.ops.op_math.Controlled(qml.PauliX(3), control_wires=(0, 1, 2))
         op2 = qml.ops.op_math.Controlled(qml.RX(1.2, 3), control_wires=(0, 1))
         assert qml.is_commuting(op1, op2)
+        assert qml.is_commuting(op2, op1)
 
     def test_non_commuting_overlapping_targets(self):
         """Test not commuting when targets don't commute and overlap wires."""
         op1 = qml.ops.op_math.Controlled(qml.PauliZ(3), control_wires=(0, 1, 2))
         op2 = qml.ops.op_math.Controlled(qml.RX(1.2, 3), control_wires=(0, 1))
         assert not qml.is_commuting(op1, op2)
+        assert not qml.is_commuting(op2, op1)
 
     def test_commuting_one_target_commutes_with_ctrl(self):
         """Test it is commuting if one target overlaps with the others control wires, and target

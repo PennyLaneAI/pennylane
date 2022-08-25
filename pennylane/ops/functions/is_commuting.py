@@ -169,18 +169,18 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
 
 
 def check_simplify_identity_commutation(op):
-    r"""First check that a parametric operation can be simplified to the identity operator, if it is the case then
-     return the commutation relation with the second operation. If simplification is not possible, it returns None.
+    r"""Check that a parametric operation can be simplified to the identity operator.
+    If simplification is not possible, it returns None.
 
     Args:
-        op(pennylane.Operation): First operation.
+        op (pennylane.Operation): First operation.
 
     Returns:
-         Bool: True if commutation, False non-commmutation and None if not possible to simplify.
+        Bool, None: True if op can be simplified to the identity, None otherwise.
     """
-    if op.data and op.name != "U2" and np.allclose(np.mod(op.data, 2 * np.pi), 0):
-        return True
-    return None
+    return (
+        True if op.data and op.name != "U2" and np.allclose(np.mod(op.data, 2 * np.pi), 0) else None
+    )
 
 
 def check_commutation_two_non_simplified_rotations(operation1, operation2):
@@ -369,10 +369,10 @@ def is_commuting(operation1, operation2):
     if intersection(target_wires_1, target_wires_2):
         ops_commute &= _commutes(control_base_1, control_base_2)
 
-    if intersection(target_wires_1, op2_control_wires):
+    if ops_commute and intersection(target_wires_1, op2_control_wires):
         ops_commute &= _commutes("ctrl", control_base_1)
 
-    if intersection(target_wires_2, op1_control_wires):
+    if ops_commute and intersection(target_wires_2, op1_control_wires):
         ops_commute &= _commutes("ctrl", control_base_2)
 
     return ops_commute
