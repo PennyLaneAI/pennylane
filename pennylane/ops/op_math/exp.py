@@ -214,7 +214,7 @@ class Exp(SymbolicOp):
         .. math::
 
             c \mathbf{M} \mathbf{v} = c \lambda \mathbf{v}
-            \rightarrow
+            \quad \Longrightarrow \quad
             e^{c \mathbf{M}} \mathbf{v} = e^{c \lambda} \mathbf{v}
 
         >>> obs = Exp(qml.PauliX(0), 3)
