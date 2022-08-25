@@ -22,8 +22,11 @@ import pennylane.numpy as np
 
 @qml.batch_transform
 def __replace_obs(tape, obs, *args, **kwargs):
-    # construct a new tape with everything except the measurement process
+    """
+    Tape transform to replace the measurement processes with the given one
+    """
     with qml.tape.QuantumTape() as new_tape:
+        # queue everything from the old tape except the measurement processes
         for op in tape.operations:
             qml.apply(op)
 
@@ -98,17 +101,19 @@ def _shadow_state_diffable(wires):
             for w in wires_list:
                 # reconstruct the state given the observables and the expectations of
                 # those observables
-                state = 0
-                for res, obs in zip(
-                    results[start : start + 4 ** len(w)],
-                    all_observables[start : start + 4 ** len(w)],
-                ):
-                    state = state + res * qml.math.cast_like(
-                        qml.math.convert_like(qml.matrix(obs), res), res
-                    )
-                state = state / 2 ** len(w)
 
+                obs_matrices = qml.math.stack(
+                    [
+                        qml.math.cast_like(qml.math.convert_like(qml.matrix(obs), results), results)
+                        for obs in all_observables[start : start + 4 ** len(w)]
+                    ]
+                )
+
+                state = qml.math.einsum(
+                    "a,abc->bc", results[start : start + 4 ** len(w)], obs_matrices
+                ) / 2 ** len(w)
                 states.append(state)
+
                 start += 4 ** len(w)
 
             return states[0] if not isinstance(wires[0], list) else states
