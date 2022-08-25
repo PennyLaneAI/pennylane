@@ -16,12 +16,12 @@ This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
 # pylint: disable=protected-access,too-many-branches
+from collections.abc import Iterable
 import functools
 import inspect
 import itertools
 import numbers
 import warnings
-from collections.abc import Iterable
 from operator import matmul
 
 import numpy as np
@@ -393,54 +393,3 @@ def expand_vector(vector, original_wires, expanded_wires):
     )
 
     return qml.math.reshape(expanded_tensor, 2**M)
-
-
-def prod_sort(op_list, wire_map: dict = None):
-    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
-    into account the operator commutivity.
-
-    Args:
-        op_list (List[.Operator]): list of operators to be sorted
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
-
-    Returns:
-        List[.Operator]: sorted list of operators
-    """
-
-    def swappable_ops(op1, op2, wire_map: dict = None) -> bool:
-        """Boolean expression that indicates if op1 and op2 are commutative and should be swapped when
-        sorting them by wire values.
-
-        Args:
-            op1 (.Operator): First operator.
-            op2 (.Operator): Second operator.
-            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-                Defaults to None.
-
-        Returns:
-            bool: True if operators should be swapped, False otherwise.
-        """
-        wires1 = op1.wires
-        wires2 = op2.wires
-        if wire_map is not None:
-            wires1 = wires1.map(wire_map)
-            wires2 = wires2.map(wire_map)
-        if np.intersect1d(wires1, wires2).size != 0:
-            return False
-        return np.min(wires1) > np.min(wires2)
-
-    if isinstance(op_list, tuple):
-        op_list = list(op_list)
-
-    for i in range(1, len(op_list)):
-
-        left_op = op_list[i]
-
-        j = i - 1
-        while j >= 0 and swappable_ops(op1=op_list[j], op2=left_op, wire_map=wire_map):
-            op_list[j + 1] = op_list[j]
-            j -= 1
-        op_list[j + 1] = left_op
-
-    return op_list

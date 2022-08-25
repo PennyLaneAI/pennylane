@@ -24,7 +24,7 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Prod, prod
+from pennylane.ops.op_math.prod import Prod, _prod_sort, _swappable_ops, prod
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -938,3 +938,92 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+
+class TestSortWires:
+    """Tests for the wire sorting algorithm."""
+
+    def test_sorting_operators_with_one_wire(self):
+        """Test that the sorting alforithm works for operators that act on one wire."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliZ(2),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(3),
+            qml.PauliX(5),
+        ]
+        sorted_list = _prod_sort(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(2),
+            qml.PauliX(3),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+            qml.PauliX(5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_multiple_wires(self):
+        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliX(5),
+            qml.Toffoli([2, 3, 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.PauliZ(3),
+            qml.CRY(1, [1, 2]),
+        ]
+        sorted_list = _prod_sort(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX(3),
+            qml.Toffoli([2, 3, 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, [1, 2]),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_wire_map(self):
+        """Test that the sorting alforithm works using a wire map."""
+        op_list = [
+            qml.PauliX("three"),
+            qml.PauliX(5),
+            qml.Toffoli([2, "three", 4]),
+            qml.CNOT([2, 5]),
+            qml.RX("test", 5),
+            qml.PauliY(0),
+            qml.CRX("test", [0, 2]),
+            qml.PauliZ("three"),
+            qml.CRY("test", ["test", 2]),
+        ]
+        sorted_list = _prod_sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX("three"),
+            qml.Toffoli([2, "three", 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX("test", [0, 2]),
+            qml.CRY("test", ["test", 2]),
+            qml.PauliZ("three"),
+            qml.RX("test", 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert op1.name == op2.name
+            assert op1.wires == op2.wires
+            assert op1.data == op2.data
