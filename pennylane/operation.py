@@ -236,12 +236,12 @@ def expand_matrix(base_matrix, wires, wire_order=None):
 def _local_sparse_swap_mat(i, n, format="csr"):
     """Helper function which generates the sparse matrix of SWAP
      for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
-    assert i < n
+    assert i < n-1
     swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     if i == 0:
         return kron(swap_mat, eye(2**(n-2)), format=format)  # 2 + (n - 2) = n
-    elif i == n-1:
+    elif i == n-2:
         return kron(eye(2**(n-2)), swap_mat, format=format)  # (n - 2) + 2 = n
 
     j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
@@ -306,24 +306,19 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
         base_matrix, eye(2**num_missing_wires, format=format), format=format
     )  # added missing wires at the end
 
-    # print(f"---- before: ----- \n{expanded_matrix}\n")
-
+    U = eye(2**n_total_wires)
     while not (expanded_wires == wire_order):
         for i in range(n_total_wires):
-            # print(i)
             if expanded_wires[i] != wire_order[i]:
                 j = wire_order.index(expanded_wires[i])
-                # print(i, j)
-                # print(expanded_wires, wire_order)
-                expanded_matrix = expanded_matrix @ _sparse_swap_mat(i, j, n_total_wires, format=format)
+                U = U @ _sparse_swap_mat(i, j, n_total_wires, format=format)
 
                 temp = expanded_wires[i]
                 expanded_wires[i] = expanded_wires[j]
                 expanded_wires[j] = temp
-                # print(expanded_wires, wire_order)
                 break
 
-    # print(f"---- after: ----- \n{expanded_matrix.sorted_indices()}\n\n")
+    expanded_matrix = csr_matrix(U.T) @ expanded_matrix @ U
     return expanded_matrix
 
 

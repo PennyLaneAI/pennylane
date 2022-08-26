@@ -2632,14 +2632,10 @@ class TestExpandSparseMatrix:
         res.sort_indices()
         expected = csr_matrix(np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]]))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
 
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expansion(self):
         """Tests the case where the original matrix is expanded"""
@@ -2647,23 +2643,19 @@ class TestExpandSparseMatrix:
         res.sort_indices()
         expected = csr_matrix(np.array([[1, 2, 0, 0], [3, 4, 0, 0], [0, 0, 1, 2], [0, 0, 3, 4]]))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         res = qml.operation.sparse_expand_matrix(self.base_matrix_1, wires=[2], wire_order=[2, 0])
         res.sort_indices()
         expected = csr_matrix(np.array([[1, 0, 2, 0], [0, 1, 0, 2], [3, 0, 4, 0], [0, 3, 0, 4]]))
         expected.sort_indices()
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expand_one(self, tol):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
@@ -2679,34 +2671,29 @@ class TestExpandSparseMatrix:
         res = qml.operation.sparse_expand_matrix(U_sparse, [0], [0, 4, 9])
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(U, I), I))
-        print(expected.toarray())
-        print(res.toarray())
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 4
         res = qml.operation.sparse_expand_matrix(U_sparse, [4], [0, 4, 9])
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(I, U), I))
         expected.sort_indices()
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 9
         res = qml.operation.sparse_expand_matrix(U_sparse, [9], [0, 4, 9])
         expected = csr_matrix(np.kron(np.kron(I, I), U))
         expected.sort_indices()
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expand_two_consecutive_wires(self, tol):
         """Test that a 2 qubit gate on consecutive wires correctly
@@ -2719,38 +2706,30 @@ class TestExpandSparseMatrix:
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(U2, I), I))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 1+2
         res = qml.operation.sparse_expand_matrix(U2_sparse, [1, 2], [0, 1, 2, 3])
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(I, U2), I))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
-        assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
 
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 2+3
         res = qml.operation.sparse_expand_matrix(U2_sparse, [2, 3], [0, 1, 2, 3])
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(I, I), U2))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expand_two_reversed_wires(self, tol):
         """Test that a 2 qubit gate on reversed consecutive wires correctly
@@ -2761,12 +2740,10 @@ class TestExpandSparseMatrix:
         rows = np.array([0, 2, 1, 3])
         expected = csr_matrix(np.kron(np.kron(CNOT[:, rows][rows], I), I))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expand_three_consecutive_wires(self, tol):
         """Test that a 3 qubit gate on consecutive
@@ -2776,24 +2753,20 @@ class TestExpandSparseMatrix:
         res.sort_indices()
         expected = csr_matrix(np.kron(Toffoli, I))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 1,2,3
         res = qml.operation.sparse_expand_matrix(csr_matrix(Toffoli), [1, 2, 3], [0, 1, 2, 3])
         res.sort_indices()
         expected = csr_matrix(np.kron(I, Toffoli))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expand_three_nonconsecutive_ascending_wires(self, tol):
         """Test that a 3 qubit gate on non-consecutive but ascending
@@ -2803,24 +2776,20 @@ class TestExpandSparseMatrix:
         res.sort_indices()
         expected = csr_matrix(np.kron(SWAP, II) @ np.kron(I, Toffoli) @ np.kron(SWAP, II))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 0,1,3
         res = qml.operation.sparse_expand_matrix(csr_matrix(Toffoli), [0, 1, 3], [0, 1, 2, 3])
         res.sort_indices()
         expected = csr_matrix(np.kron(II, SWAP) @ np.kron(Toffoli, I) @ np.kron(II, SWAP))
         expected.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
         """Test that a 3 qubit gate on non-consecutive non-ascending
@@ -2833,12 +2802,10 @@ class TestExpandSparseMatrix:
         expected = csr_matrix(np.kron(I, Toffoli_perm))
         expected.sort_indices()
         res.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
         # test applied to wire 3, 0, 2
         res = qml.operation.sparse_expand_matrix(csr_matrix(Toffoli), [3, 0, 2], [0, 1, 2, 3])
@@ -2846,12 +2813,10 @@ class TestExpandSparseMatrix:
         expected = csr_matrix(np.kron(SWAP, II) @ np.kron(I, Toffoli_perm) @ np.kron(SWAP, II))
         expected.sort_indices()
         res.sort_indices()
-        print(expected.toarray())
-        print(res.toarray())
+
         assert type(res) == type(expected)
-        assert np.allclose(expected.toarray(), res.toarray())
-        # assert all(res.data == expected.data)
-        # assert all(res.indices == expected.indices)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
 
     def test_local_sparse_swap_mat(self):
         swap_mat = np.array([[1, 0, 0, 0],
