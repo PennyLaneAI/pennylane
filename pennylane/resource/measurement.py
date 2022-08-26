@@ -21,6 +21,48 @@ def estimate_samples(coeffs, ops, error=0.0016, variances=None):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
 
+    An estimation for the number of measurements :math:`M` required to predict the expectation value
+    of an observable :math:`H = \sum_i A_i` with :math:`A = \sum_j c_j O_j` representing a linear
+    combination of Pauli words can be obtained as
+
+    .. math::
+
+        M = \frac{\left ( \sum_i \sqrt{\text{Var}(A_i)} \right )^2}{\epsilon^2},
+
+    with :math:`\epsilon` and :math:`\text{Var}(A)` denoting the target error in computing
+    :math:`\left \langle H \right \rangle` and the variance in computing
+    :math:`\left \langle A \right \rangle`, respectively. It has been shown by Yen et al. that the
+    variances can be computed from the covariances between the Pauli words as
+
+    .. math::
+
+        \text{Var}(A_i) = \sum_{jk} c_j c_k \text{Cov}(O_j, O_k),
+
+    where
+
+    .. math::
+
+        \text{Cov}(O_j, O_k) = \left \langle O_j O_k \right \rangle - \left \langle O_j \right \rangle \left \langle O_k \right \rangle.
+
+    The values of :math:`\text{Cov}(O_j, O_k)` are not known a priori and should be either computed
+    from affordable classical methods, such as the configuration interaction with singles and
+    doubles (CISD), or approximated with other methods. If the variances are not provided to the
+    function as input, they will be approximated by assuming :math:`\text{Cov}(O_j, O_k) =0` for
+    :math:`j \neq k` and using :math:`\text{Var}(O_i) \leq 1` from
+
+    .. math::
+
+        \text{Var}(O_i) = \left \langle O_i^2 \right \rangle - \left \langle O_i \right \rangle^2 = 1 - \left \langle O_i \right \rangle^2}.
+
+    This approximation gives
+
+    .. math::
+
+        M \approx \frac{\left ( \sum_i \sqrt{\sum_j c_j^2} \right )^2}{\epsilon^2},
+
+    where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
+    group, respectively.
+
     Args:
         coeffs (list[tensor_like]): list of coefficient groups
         ops (list[list[Observable]]): list of Pauli word groups
