@@ -176,6 +176,9 @@
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
 
+* `Controlled` operators now work with `qml.is_commuting`.
+  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
