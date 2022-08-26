@@ -89,7 +89,6 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
-    is_commuting,
     pattern_matching,
     pattern_matching_optimization,
 )
@@ -97,6 +96,7 @@ from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
+from pennylane.shadows import ClassicalShadow
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum

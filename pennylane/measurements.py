@@ -21,12 +21,14 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
+import warnings
 from enum import Enum
 from typing import Generic, TypeVar
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -114,7 +116,9 @@ class MeasurementProcess:
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None):
+    def __init__(
+        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+    ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
@@ -514,6 +518,17 @@ class MeasurementProcess:
 
         return hash(fingerprint)
 
+    def simplify(self):
+        """Reduce the depth of the observable to the minimum.
+
+        Returns:
+            .MeasurementProcess: A measurement process with a simplified observable.
+        """
+        if self.obs is None:
+            return self
+
+        return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+
 
 class ShadowMeasurementProcess(MeasurementProcess):
     """Represents a classical shadow measurement process occurring at the end of a
@@ -596,9 +611,7 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with expval"
-        )
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     return MeasurementProcess(Expectation, obs=op)
 
@@ -631,8 +644,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
-
+        warnings.warn(f"{op.name} might not be hermitian.")
     return MeasurementProcess(Variance, obs=op)
 
 
@@ -710,12 +722,7 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with sample"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -799,12 +806,7 @@ def counts(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with counts"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
