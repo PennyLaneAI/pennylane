@@ -392,8 +392,12 @@ class Sum(Operator):
 
     def simplify(self) -> "Sum":
         summands = self._simplify_summands(summands=self.summands)
-        summands = [
-            qml.s_prod(coeff, summand) if coeff != 1 else summand
-            for coeff, summand in summands.values()
-        ]
-        return Sum(*summands) if len(summands) > 1 else summands[0]
+        new_summands = []
+        for coeff, summand in summands.values():
+            if coeff == 1:
+                new_summands.append(summand)
+            elif coeff != 0:
+                new_summands.append(qml.s_prod(coeff, summand))
+        if not new_summands:
+            return 0
+        return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]

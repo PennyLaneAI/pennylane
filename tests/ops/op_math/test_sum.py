@@ -645,6 +645,19 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_grouping_delete_terms(self):
+        """Test that the simplify method deletes all terms with coefficient equal to 0."""
+        sum_op = qml.op_sum(
+            qml.PauliX(0),
+            qml.s_prod(0.3, qml.PauliX(0)),
+            qml.s_prod(0.8, qml.PauliX(0)),
+            qml.s_prod(0.2, qml.PauliX(0)),
+            qml.s_prod(0.4, qml.PauliX(0)),
+            qml.s_prod(0.3, qml.PauliX(0)),
+            qml.s_prod(-3, qml.PauliX(0)),
+        )
+        assert sum_op.simplify() == 0
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
