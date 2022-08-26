@@ -90,7 +90,7 @@ def get_active_tape():
     return QueuingContext.active_context()
 
 
-def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False, iterative_call=False):
+def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
     Args:
@@ -136,8 +136,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False, iterativ
     RY(0.2, wires=['a'])]
     """
     if depth == 0:
-        if iterative_call:
-            return tape._prep, tape._ops, tape._measurements
         return tape
 
     if stop_at is None:
@@ -201,16 +199,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False, iterativ
                     continue
 
             # recursively expand out the newly created tape
-            exp_prep, exp_ops, exp_measurements = expand_tape(
-                obj, stop_at=stop_at, depth=depth - 1, iterative_call=True
-            )
+            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_prep.extend(exp_prep)
-            new_ops.extend(exp_ops)
-            new_measurements.extend(exp_measurements)
-
-    if iterative_call:
-        return new_prep, new_ops, new_measurements
+            new_prep.extend(expanded_tape._prep)
+            new_ops.extend(expanded_tape._ops)
+            new_measurements.extend(expanded_tape._measurements)
 
     new_tape = QuantumTape()
     new_tape._prep = new_prep
@@ -382,8 +375,8 @@ class QuantumTape(AnnotatedQueue):
     def __exit__(self, exception_type, exception_value, traceback):
         try:
             super().__exit__(exception_type, exception_value, traceback)
-            if exception_type is None:
-                self._process_queue()
+            # if exception_type is None:
+            self._process_queue()
         finally:
             QuantumTape._lock.release()
 
