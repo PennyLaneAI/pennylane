@@ -65,7 +65,7 @@ class TestShadowEntropies:
         shadow = ClassicalShadow(bits, recipes)
 
         entropies = [
-            shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]
+            shadow.entropy(alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]
         ]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
         expected = np.log(2) / np.log(base)
