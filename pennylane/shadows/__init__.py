@@ -34,11 +34,13 @@ Shadow class for classical post-processing
 QNode transforms
 ----------------
 
+.. currentmodule:: pennylane.shadows
+
 .. autosummary::
     :toctree: api
 
-    ~.pennylane.shadows.state
-    ~.pennylane.shadows.expval
+    ~state
+    ~expval
 
 Classical Shadows formalism
 ---------------------------
