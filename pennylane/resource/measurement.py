@@ -17,8 +17,16 @@ for computing expectation values.
 """
 from pennylane import numpy as np
 
-def estimate_samples(coeffs, ops, error, variances):
-    r"""Estimate the number of measurements required to compute an expectation value up to an error.
+def estimate_samples(coeffs, ops, error=0.0016, variances=None):
+    r"""Estimate the number of measurements required to compute an expectation value with a target
+    error.
+
+    Args:
+        coeffs (list[tensor_like]): list of coefficient groups
+        ops (list[list[Observable]]): list of Pauli word groups
+        error (float): target error in computing the expectation value
+        variances (list[float]): variances of the Pauli word groups
+
     """
     if not variances:
         variances = np.ones(len(ops))
