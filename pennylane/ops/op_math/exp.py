@@ -167,8 +167,6 @@ class Exp(SymbolicOp):
         return None
 
     def matrix(self, wire_order=None):
-        def get_mat(op):
-            return qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix()
 
         coeff_interface = math.get_interface(self.coeff)
         if coeff_interface == "autograd":
@@ -188,7 +186,9 @@ class Exp(SymbolicOp):
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
-        base_mat = get_mat(self.base)
+        base_mat = (
+            qml.matrix(self.base) if isinstance(self.base, qml.Hamiltonian) else self.base.matrix()
+        )
         if coeff_interface == "torch":
             # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             base_mat = math.convert_like(base_mat, self.coeff)
