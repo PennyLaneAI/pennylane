@@ -366,3 +366,55 @@ class Prod(Operator):
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
 
         return Sum(*factors)
+
+
+def _prod_sort(op_list, wire_map: dict = None):
+    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
+    into account the operator commutivity.
+
+    Args:
+        op_list (List[.Operator]): list of operators to be sorted
+        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+            Defaults to None.
+
+    Returns:
+        List[.Operator]: sorted list of operators
+    """
+
+    if isinstance(op_list, tuple):
+        op_list = list(op_list)
+
+    for i in range(1, len(op_list)):
+
+        key_op = op_list[i]
+
+        j = i - 1
+        while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
+            op_list[j + 1] = op_list[j]
+            j -= 1
+        op_list[j + 1] = key_op
+
+    return op_list
+
+
+def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
+    """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
+    should be swapped when sorting them by wire values.
+
+    Args:
+        op1 (.Operator): First operator.
+        op2 (.Operator): Second operator.
+        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+            Defaults to None.
+
+    Returns:
+        bool: True if operators should be swapped, False otherwise.
+    """
+    wires1 = op1.wires
+    wires2 = op2.wires
+    if wire_map is not None:
+        wires1 = wires1.map(wire_map)
+        wires2 = wires2.map(wire_map)
+    if np.intersect1d(wires1, wires2).size != 0:
+        return False
+    return np.min(wires1) > np.min(wires2)
