@@ -304,7 +304,7 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
     )  # added missing wires at the end
 
     U = eye(2**n_total_wires)
-    while not (expanded_wires == wire_order):
+    while not expanded_wires == wire_order:
         for i in range(n_total_wires):
             if expanded_wires[i] != wire_order[i]:
                 j = wire_order.index(expanded_wires[i])
