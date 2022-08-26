@@ -17,6 +17,7 @@ for computing expectation values.
 """
 from pennylane import numpy as np
 
+
 def estimate_samples(coeffs, ops, error=0.0016, variances=None):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
@@ -73,6 +74,6 @@ def estimate_samples(coeffs, ops, error=0.0016, variances=None):
     if not variances:
         variances = np.ones(len(ops))
 
-    n_measurements = (np.sum(abs(coeffs) * variances**0.5) / error)**2
+    n_measurements = (np.sum(abs(coeffs) * variances**0.5) / error) ** 2
 
     return int(n_measurements)
