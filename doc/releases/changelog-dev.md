@@ -105,7 +105,7 @@
       qml.Hadamard(0)
       qml.CNOT((0,1))
       qml.RX(x, wires=0)
-      return shadow_expval(H)
+      return qml.shadow_expval(H)
 
   x = np.array(0.5, requires_grad=True)
 
@@ -113,6 +113,9 @@
   ```
 
 <h3>Improvements</h3>
+
+* `qml.ops.op_math.Controlled` now has basic decomposition functionality.
+  [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
@@ -148,6 +151,27 @@
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
+* `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+
+* `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
+  [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
+
+  ```python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit():
+      qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> circuit()
+  >>> list(circuit.tape)
+  [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+  ```
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -175,6 +199,7 @@ Josh Izaac,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
+Christina Lee,
 Meenu Kumari,
 Albert Mitjans Coma,
 Rashid N H M,

@@ -1234,11 +1234,8 @@ class QubitDevice(Device):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            wires (Sequence[int]): The wires to perform Pauli measurements on
-            n_snapshots (int): The number of snapshots
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
-            seed (Union[int, None]): If provided, it is used to seed the random
-                number generation for generating the Pauli measurements.
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -1290,8 +1287,9 @@ class QubitDevice(Device):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
-            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow expectation
+                value measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
             float: expectation value estimate.

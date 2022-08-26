@@ -17,6 +17,7 @@ This module contains the :class:`QueuingContext` abstract base class.
 import abc
 import copy
 from collections import OrderedDict, deque
+from typing import Deque
 
 
 class QueuingError(Exception):
@@ -109,7 +110,7 @@ class QueuingContext(abc.ABC):
     ['first object']
     """
 
-    _active_contexts = deque()
+    _active_contexts: Deque["QueuingContext"] = deque()
     """The stack of contexts that are currently active."""
 
     def __enter__(self):

@@ -217,7 +217,6 @@ from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .commutation_dag import (
     commutation_dag,
-    is_commuting,
     CommutationDAG,
     CommutationDAGNode,
 )
