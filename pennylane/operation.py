@@ -103,8 +103,9 @@ from enum import IntEnum
 from typing import List
 
 import numpy as np
+import scipy.sparse
 from numpy.linalg import multi_dot
-from scipy.sparse import coo_matrix, eye, kron
+from scipy.sparse import coo_matrix, eye, kron, csr_matrix
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -230,6 +231,100 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     mat = qml.math.reshape(mat, shape)
 
     return mat
+
+
+def _local_sparse_swap_mat(i, n, format="csr"):
+    """Helper function which generates the sparse matrix of SWAP
+     for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
+    assert i < n
+    swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+    if i == 0:
+        return kron(swap_mat, eye(2**(n-2)), format=format)  # 2 + (n - 2) = n
+    elif i == n-1:
+        return kron(eye(2**(n-2)), swap_mat, format=format)  # (n - 2) + 2 = n
+
+    j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
+    return kron(kron(eye(2**(j - 1)), swap_mat), eye(2**(n - (j+1))), format=format)  # (j - 1) + 2 + (n - (j+1)) = n
+
+
+def _sparse_swap_mat(i, j, n, format="csr"):
+    """Helper function which generates the sparse matrix of SWAP
+    for qubits: i <--> j with final shape (2**n, 2**n)."""
+    assert i < n and j < n
+    if i == j:
+        return eye(2**n, format=format)
+
+    (small_i, big_j) = (i, j) if i < j else (j, i)
+    mat = eye(2**n, format=format)
+
+    for index in range(small_i, big_j):  # swap i --> j
+        mat @= _local_sparse_swap_mat(index, n, format=format)
+
+    for index in range(big_j - 2, small_i - 1, -1):  # bring j --> old_i
+        mat @= _local_sparse_swap_mat(index, n, format=format)
+
+    return mat
+
+
+def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
+    """Re-express a sparse base matrix acting on a subspace defined by a set of wire labels
+    according to a global wire order.
+
+    Args:
+        base_matrix (tensor_like): base matrix to expand
+        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
+            contain additional labels
+
+    Returns:
+        tensor_like: expanded matrix
+    """
+
+    if (wire_order is None) or (wire_order == wires):
+        return base_matrix
+
+    shape = qml.math.shape(base_matrix)
+    if len(shape) > 3:
+        raise ValueError("Sparse matrix expansion currently doesn't support batching.")
+
+    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
+    if interface != "scipy" and not scipy.sparse.issparse(base_matrix):
+        raise ValueError("base_matrix must be a scipy sparse matrix")
+
+    n_wires = len(wires)
+    n_total_wires = len(wire_order)
+
+    expanded_wires = copy.copy(wires)
+    for wire in wire_order:
+        if wire not in wires:
+            expanded_wires.append(wire)
+
+    num_missing_wires = n_total_wires - n_wires
+    expanded_matrix = kron(
+        base_matrix, eye(2**num_missing_wires, format=format), format=format
+    )  # added missing wires at the end
+
+    # print(f"---- before: ----- \n{expanded_matrix}\n")
+
+    while not (expanded_wires == wire_order):
+        for i in range(n_total_wires):
+            # print(i)
+            if expanded_wires[i] != wire_order[i]:
+                j = wire_order.index(expanded_wires[i])
+                # print(i, j)
+                # print(expanded_wires, wire_order)
+                expanded_matrix = expanded_matrix @ _sparse_swap_mat(i, j, n_total_wires, format=format)
+
+                temp = expanded_wires[i]
+                expanded_wires[i] = expanded_wires[j]
+                expanded_wires[j] = temp
+                # print(expanded_wires, wire_order)
+                break
+
+    # print(f"---- after: ----- \n{expanded_matrix.sorted_indices()}\n\n")
+    return expanded_matrix
 
 
 # =============================================================================
