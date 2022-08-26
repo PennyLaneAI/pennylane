@@ -99,7 +99,7 @@
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
 
-* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiple the 
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
   Operator before exponentiation. Internally, this constructor functions creates the new
   class `qml.ops.op_math.Exp`.
   [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)

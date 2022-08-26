@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines the symbolic operation that stands for an operator raised to a power.
+This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
 from warnings import warn
 from scipy.sparse.linalg import expm as sparse_expm
