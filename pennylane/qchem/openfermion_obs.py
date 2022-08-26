@@ -810,6 +810,8 @@ def molecular_hamiltonian(
     alpha=None,
     coeff=None,
     args=None,
+    grouping_type=None,
+    grouping_method="rlf",
 ):  # pylint:disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule.
 
@@ -924,11 +926,16 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            return qml.Hamiltonian(qml.numpy.real(h.coeffs, requires_grad=False), h.ops), 2 * len(
-                active
-            )
+            return qml.Hamiltonian(
+                qml.numpy.real(h.coeffs, requires_grad=False),
+                h.ops,
+                grouping_type=grouping_type,
+                method=grouping_method,
+            ), 2 * len(active)
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-        return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
+        return qml.Hamiltonian(
+            qml.numpy.real(h.coeffs), h.ops, grouping_type=grouping_type, method=grouping_method
+        ), 2 * len(active)
 
     openfermion, _ = _import_of()
 
@@ -942,4 +949,9 @@ def molecular_hamiltonian(
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    return qml.qchem.convert.import_operator(h_of, wires=wires), qubits
+    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires)
+
+    return (
+        qml.Hamiltonian(h_pl.coeffs, h_pl.ops, grouping_type=grouping_type, method=grouping_method),
+        qubits,
+    )
