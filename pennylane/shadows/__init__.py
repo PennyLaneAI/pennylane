@@ -81,7 +81,7 @@ There are two ways of computing expectation values with classical shadows in Pen
         qml.Hadamard(0)
         qml.CNOT((0,1))
         qml.RX(x, wires=0)
-        return shadow_expval(H)
+        return qml.shadow_expval(H)
 
     x = np.array(0.5, requires_grad=True)
 

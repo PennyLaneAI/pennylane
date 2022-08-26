@@ -52,6 +52,10 @@
 * Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
 
+* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
+  taking into account their commutativity property.
+  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
+
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
@@ -105,7 +109,7 @@
       qml.Hadamard(0)
       qml.CNOT((0,1))
       qml.RX(x, wires=0)
-      return shadow_expval(H)
+      return qml.shadow_expval(H)
 
   x = np.array(0.5, requires_grad=True)
 
@@ -171,6 +175,9 @@
   >>> list(circuit.tape)
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
+
+* `Controlled` operators now work with `qml.is_commuting`.
+  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
 <h3>Breaking changes</h3>
 
