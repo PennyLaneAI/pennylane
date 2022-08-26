@@ -181,20 +181,18 @@ class Exp(SymbolicOp):
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates)()
                 eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
+                return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
                 warn(
                     f"The autograd matrix for {self} is not differentiable. "
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
-                base_mat = get_mat(self.base)
-                mat = math.expm(self.coeff * base_mat)
-        else:
-            base_mat = get_mat(self.base)
-            if coeff_interface == "torch":
-                # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-                base_mat = math.convert_like(base_mat, self.coeff)
-            mat = math.expm(self.coeff * base_mat)
+        base_mat = get_mat(self.base)
+        if coeff_interface == "torch":
+            # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+            base_mat = math.convert_like(base_mat, self.coeff)
+        mat = math.expm(self.coeff * base_mat)
 
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
