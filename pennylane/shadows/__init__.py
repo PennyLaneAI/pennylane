@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane.shadows
 
 Measurements
 ------------
@@ -34,10 +34,11 @@ Shadow class for classical post-processing
 QNode transforms
 ----------------
 
-.. automodapi:: pennylane.shadows.transforms
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
+.. autosummary::
+    :toctree: api
+
+    ~shadows.state
+    ~shadows.expval
 
 Classical Shadows formalism
 ---------------------------
