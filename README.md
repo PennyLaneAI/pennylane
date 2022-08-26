@@ -8,8 +8,8 @@
     <img src="https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square" />
   </a>
   <!-- ReadTheDocs -->
-  <a href="https://pennylane.readthedocs.io">
-    <img src="https://img.shields.io/readthedocs/pennylane.svg?logo=read-the-docs&style=flat-square" />
+  <a href="https://docs.pennylane.ai/en/latest">
+    <img src="https://readthedocs.com/projects/xanaduai-pennylane/badge/?version=latest&style=flat-square" />
   </a>
   <!-- PyPI -->
   <a href="https://pypi.org/project/PennyLane">

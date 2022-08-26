@@ -315,7 +315,7 @@ class PauliX(Observable, Operation):
         return super().pow(z_mod2)
 
     def _controlled(self, wire):
-        CNOT(wires=Wires(wire) + self.wires)
+        return CNOT(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
@@ -463,7 +463,7 @@ class PauliY(Observable, Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        CY(wires=Wires(wire) + self.wires)
+        return CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
@@ -610,7 +610,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
     def _controlled(self, wire):
-        CZ(wires=Wires(wire) + self.wires)
+        return CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -1005,7 +1005,7 @@ class CNOT(Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        Toffoli(wires=Wires(wire) + self.wires)
+        return Toffoli(wires=wire + self.wires)
 
     @property
     def control_wires(self):
@@ -1288,7 +1288,7 @@ class SWAP(Operation):
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
-        CSWAP(wires=wire + self.wires)
+        return CSWAP(wires=wire + self.wires)
 
     @property
     def is_hermitian(self):
@@ -2298,10 +2298,10 @@ class Barrier(Operation):
         return "||"
 
     def _controlled(self, _):
-        return Barrier(wires=self.wires)
+        return copy(self).queue()
 
     def adjoint(self):
-        return Barrier(wires=self.wires)
+        return copy(self)
 
     def pow(self, z):
         return [copy(self)]
