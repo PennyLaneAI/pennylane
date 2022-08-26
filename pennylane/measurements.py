@@ -94,7 +94,8 @@ Shadow = ObservableReturnTypes.Shadow
 the classical shadow protocol"""
 
 ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: dummy hack test"""
+"""Enum: An enumeration which represents returning the estimated expectation value
+from a classical shadow measurement"""
 
 
 class MeasurementShapeError(ValueError):
@@ -539,9 +540,18 @@ class ShadowMeasurementProcess(MeasurementProcess):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    This has the same arguments as the base class MeasurementProcess, along with
-    a seed that is used to seed the random measurement selection for the classical
-    shadow protocol.
+    This has the same arguments as the base class MeasurementProcess, plus other additional
+    arguments specific to the classical shadow protocol.
+
+    Args:
+        args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+        seed (Union[int, None]): The seed used to generate the random measurements
+        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
+            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
+            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
+            when ``return_type`` is ``ShadowExpval``.
+        kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
     def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
@@ -1268,17 +1278,21 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-def shadow_expval(obs, k=1, seed_recipes=True):
+def shadow_expval(H, k=1, seed_recipes=True):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
-    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot,
-    :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`. This corresponds to the case ``k=1``.
-    However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute
-    the median of means, see `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
+    This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
+    parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
     Args:
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
+        seed_recipes (bool): If True, a seed will be generated that
+            is used for the randomly sampled Pauli measurements. This is to
+            ensure that the same recipes are used when a tape containing this
+            measurement is copied. Different seeds are still generated for
+            different constructed tapes.
 
     Returns:
         float: expectation value estimate.
@@ -1301,7 +1315,7 @@ def shadow_expval(obs, k=1, seed_recipes=True):
             qml.Hadamard(0)
             qml.CNOT((0,1))
             qml.RX(x, wires=0)
-            return shadow_expval(obs)
+            return qml.shadow_expval(obs)
 
         x = np.array(0.5, requires_grad=True)
 
@@ -1312,7 +1326,7 @@ def shadow_expval(obs, k=1, seed_recipes=True):
     >>> qml.grad(qnode)(x, H)
     -0.44999999999999984
 
-    In `shadow_expval`, we can pass a list of observables to make use of that. Note that each qnode execution internally performs one quantum measurement, so be sure
+    In `shadow_expval`, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
     >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
@@ -1322,7 +1336,7 @@ def shadow_expval(obs, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowExpval, H=obs, seed=seed, k=k)
+    return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
 
 
 T = TypeVar("T")

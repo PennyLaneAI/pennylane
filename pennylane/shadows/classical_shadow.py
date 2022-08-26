@@ -49,6 +49,9 @@ class ClassicalShadow:
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
+        wire_map (list[int]): list of the measured wires in the order that
+            they appear in the columns of ``bits`` and ``recipes``. If None, defaults
+            to ``range(n)``, where ``n`` is the number of measured wires.
 
     .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadow`
 
@@ -82,7 +85,8 @@ class ClassicalShadow:
     (2.2319999999999998+0j)
 
     The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm (see `2002.08953 <https://arxiv.org/abs/2002.08953>`_). The case ``k=1`` corresponds to simply taking the mean
-    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means.
+    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means. For the case of measuring only in the Pauli basis,
+    there is no advantage expected from setting ``k>1``.
     """
 
     def __init__(self, bits, recipes, wire_map=None):
@@ -258,18 +262,19 @@ class ClassicalShadow:
                 )
             return coeffs_and_words
 
-    def expval(self, H, k):
+    def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
 
         The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
-        This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+        This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
+        parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
         One of the main perks of classical shadows is being able to compute many different expectation values by classically post-processing the same measurements. This is helpful in general as it may help
         save quantum circuit executions.
 
         Args:
             H (qml.Observable): Observable to compute the expectation value
-            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
 
         Returns:
             float: expectation value estimate.

@@ -62,17 +62,14 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
 
 @pytest.mark.autograd
 class TestExpvalMeasurement:
-    @pytest.mark.parametrize("wires", [1, 2, 3])
-    @pytest.mark.parametrize("shots", [1, 10, 100])
-    def test_measurement_process_numeric_type(self, wires, shots):
+    def test_measurement_process_numeric_type(self):
         """Test that the numeric type of the MeasurementProcess instance is correct"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
         assert res.numeric_type == float
 
-    @pytest.mark.parametrize("wires", [1, 2, 3])
-    @pytest.mark.parametrize("shots", [1, 10, 100])
+    @pytest.mark.parametrize("wires", [1, 2])
+    @pytest.mark.parametrize("shots", [1, 10])
     def test_measurement_process_shape(self, wires, shots):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -81,12 +78,9 @@ class TestExpvalMeasurement:
         assert res.shape() == ()
         assert res.shape(dev) == ()
 
-    @pytest.mark.parametrize("wires", [1, 2, 3])
-    @pytest.mark.parametrize("shots", [1, 10, 100])
-    def test_measurement_process_copy(self, wires, shots):
+    def test_measurement_process_copy(self):
         """Test that the attributes of the MeasurementProcess instance are
         correctly copied"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H, k=10)
 
@@ -97,31 +91,25 @@ class TestExpvalMeasurement:
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed
 
-    @pytest.mark.parametrize("wires", [1, 2, 3])
-    def test_shots_none_error(self, wires):
+    def test_shots_none_error(self):
         """Test that an error is raised when a device with shots=None is used
         to obtain classical shadows"""
-        circuit = hadamard_circuit(wires, None)
+        circuit = hadamard_circuit(2, None)
         H = qml.PauliZ(0)
 
         msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             shadow = circuit(H, k=10)
 
-    @pytest.mark.parametrize("wires", [1, 2, 3])
-    @pytest.mark.parametrize("shots", [1, 10, 100])
-    def test_multi_measurement_error(self, wires, shots):
+    def test_multi_measurement_error(self):
         """Test that an error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=100)
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-
-            for target in range(1, wires):
-                qml.CNOT(wires=[0, target])
-
+            qml.CNOT(wires=[0, 1])
             return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
 
         msg = "Classical shadows cannot be returned in combination with other return types"
