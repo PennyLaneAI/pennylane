@@ -470,7 +470,7 @@ class Prod(Operator):
 
         return pauli_tuples, global_phase, pauli_operators
 
-    def _get_stashed_ops(self, stashed_ops: dict, wires: List[int]):
+    def _get_stashed_ops(self, stashed_ops: dict, wires: List[int]):  # pylint:disable=no-self-use
         """Get the stashed operators that act on the specified wires from the ``pauli_tuples``
         dictionary.
 
