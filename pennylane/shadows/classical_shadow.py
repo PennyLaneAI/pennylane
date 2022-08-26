@@ -48,6 +48,9 @@ class ClassicalShadow:
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
+        wire_map (list[int]): list of the measured wires in the order that
+            they appear in the columns of ``bits`` and ``recipes``. If None, defaults
+            to ``range(n)``, where ``n`` is the number of measured wires.
 
     .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadow`
 
