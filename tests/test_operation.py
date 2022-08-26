@@ -2824,7 +2824,17 @@ class TestExpandSparseMatrix:
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
+    def test_bad_interface_raises_error(self):
+        """Test that an error is raised if a matrix from a different backend (not scipy) is passed
+        to sparse_expand_matrix."""
+        base_mat = np.reshape(np.arange(16), (4, 4))
+
+        with pytest.raises(ValueError, match="base_matrix must be a scipy sparse matrix"):
+            _ = qml.operation.sparse_expand_matrix(base_mat, wires=[0, 1], wire_order=[1, 0])
+
     def test_local_sparse_swap_mat(self):
+        """Test that the swap matrix for swaping index i, i+1 is
+        generated as expected."""
         swap_mat = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
         n = 5
         for i in range(1, n - 1):
@@ -2835,6 +2845,7 @@ class TestExpandSparseMatrix:
             assert np.allclose(true_expanded_swap, computed_swap)
 
     def test_sparse_swap_mat(self):
+        """Test the swap matrix generated is as expected."""
         n = 4
         for i in range(0, n):
             for j in range(0, n):
@@ -2845,6 +2856,12 @@ class TestExpandSparseMatrix:
                     )
                     computed_mat = qml.operation._sparse_swap_mat(i, j, n).toarray()
                     assert np.allclose(expected_mat, computed_mat)
+
+    def test_sparse_swap_mat_same_index(self):
+        """Test that if the indices are the same then the identity is returned."""
+        computed_mat = qml.operation._sparse_swap_mat(2, 2, 3).toarray()
+        expected_mat = np.eye(8)
+        assert np.allclose(expected_mat, computed_mat)
 
 
 def test_docstring_example_of_operator_class(tol):

@@ -103,9 +103,8 @@ from enum import IntEnum
 from typing import List
 
 import numpy as np
-import scipy.sparse
 from numpy.linalg import multi_dot
-from scipy.sparse import coo_matrix, eye, kron, csr_matrix
+from scipy.sparse import coo_matrix, eye, kron, csr_matrix, issparse
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -241,7 +240,7 @@ def _local_sparse_swap_mat(i, n, format="csr"):
 
     if i == 0:
         return kron(swap_mat, eye(2 ** (n - 2)), format=format)  # 2 + (n - 2) = n
-    elif i == n - 2:
+    if i == n - 2:
         return kron(eye(2 ** (n - 2)), swap_mat, format=format)  # (n - 2) + 2 = n
 
     j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
@@ -287,12 +286,8 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
     if (wire_order is None) or (wire_order == wires):
         return base_matrix
 
-    shape = qml.math.shape(base_matrix)
-    if len(shape) > 3:
-        raise ValueError("Sparse matrix expansion currently doesn't support batching.")
-
     interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
-    if interface != "scipy" and not scipy.sparse.issparse(base_matrix):
+    if interface != "scipy" and not issparse(base_matrix):
         raise ValueError("base_matrix must be a scipy sparse matrix")
 
     n_wires = len(wires)
