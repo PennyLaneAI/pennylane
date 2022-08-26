@@ -867,6 +867,9 @@ def molecular_hamiltonian(
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         args (array[array[float]]): initial values of the differentiable parameters
+        grouping_type (str): method to group commuting observables
+        grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
+            for grouping
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
