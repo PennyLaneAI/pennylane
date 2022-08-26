@@ -26,6 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, expand_matrix
+from pennylane.ops.op_math.pow_class import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
@@ -353,8 +354,7 @@ class Prod(Operator):
     def arithmetic_depth(self) -> int:
         return 1 + max(factor.arithmetic_depth for factor in self.factors)
 
-    @classmethod
-    def _simplify_factors(cls, factors: Tuple[Operator]) -> Tuple[Operator]:
+    def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[Operator]:
         """Reduces the depth of nested factors and groups pauli operators that act on the same wires.
 
         Returns:
@@ -364,24 +364,26 @@ class Prod(Operator):
         global_phase = 1
         new_factors = ()
         pauli_tuples = {}  # pauli_tuples = {wire: (pauli_coeff, pauli_word)}
+        stashed_ops = {}  # stashed_ops = {wires: [hash, pow_coeff, operator]}
 
         for factor in factors:
             simplified_factor = factor.simplify()
-            pauli_tuples, phase, new_operators = cls._group_pauli_operators(
-                pauli_tuples=pauli_tuples, op=simplified_factor
+            stashed_ops, pauli_tuples, phase, new_operators = self._group_operators(
+                stashed_ops=stashed_ops, pauli_tuples=pauli_tuples, op=simplified_factor
             )
             global_phase *= phase
             new_factors += new_operators
 
         # Fetch all the remaining Pauli operators inside the ``pauli_tuples`` dictionary.
-        _, phase, pauli_ops = cls._get_pauli_operators(
+        _, phase, pauli_ops = self._get_pauli_operators(
             pauli_tuples=pauli_tuples, wires=list(pauli_tuples.keys())
         )
 
-        return global_phase * phase, new_factors + pauli_ops
+        _, new_operators = self._get_stashed_ops(stashed_ops=stashed_ops, wires=list(self.wires))
 
-    @classmethod
-    def _group_pauli_operators(cls, pauli_tuples: dict, op: Operator):
+        return global_phase * phase, new_factors + pauli_ops + new_operators
+
+    def _group_operators(self, stashed_ops: dict, pauli_tuples: dict, op: Operator):
         """This method finds and groups all Pauli operators contained in ``op`` that act on the same
         wire.
 
@@ -401,8 +403,13 @@ class Prod(Operator):
         residual_ops = ()
         if isinstance(op, Prod):
             for factor in op.factors:
-                pauli_tuples, prod_global_phase, prod_residual_ops = cls._group_pauli_operators(
-                    pauli_tuples=pauli_tuples, op=factor
+                (
+                    stashed_ops,
+                    pauli_tuples,
+                    prod_global_phase,
+                    prod_residual_ops,
+                ) = self._group_operators(
+                    stashed_ops=stashed_ops, pauli_tuples=pauli_tuples, op=factor
                 )
                 global_phase *= prod_global_phase
                 residual_ops += prod_residual_ops
@@ -417,22 +424,28 @@ class Prod(Operator):
             if label in ["I", "X", "Y", "Z"]:
                 # Update ``pauli_tuples`` dictionary
                 old_coeff, old_word = pauli_tuples.get(wires[0], (1, "I"))
-                coeff, new_word = cls._pauli_mult[old_word + label]
+                coeff, new_word = self._pauli_mult[old_word + label]
                 pauli_tuples[wires[0]] = old_coeff * coeff, new_word
+                stashed_ops, new_operators = self._get_stashed_ops(
+                    stashed_ops=stashed_ops, wires=wires
+                )
+                residual_ops += new_operators
             else:
                 # Update the ``residual_ops`` tuple first with the Pauli ops acting on the same wire
                 # and then with the non-pauli ``op`` operator.
-                pauli_tuples, prod_global_phase, pauli_ops = cls._get_pauli_operators(
+                stashed_ops, new_operators = self._add_non_pauli_factor(
+                    stashed_ops=stashed_ops, op=op
+                )
+                residual_ops += new_operators
+                pauli_tuples, prod_global_phase, pauli_ops = self._get_pauli_operators(
                     pauli_tuples=pauli_tuples, wires=wires
                 )
                 global_phase *= prod_global_phase
                 residual_ops += pauli_ops
-                residual_ops += ((op,),)
 
-        return pauli_tuples, global_phase, residual_ops
+        return stashed_ops, pauli_tuples, global_phase, residual_ops
 
-    @classmethod
-    def _get_pauli_operators(cls, pauli_tuples: dict, wires: List[int]):
+    def _get_pauli_operators(self, pauli_tuples: dict, wires: List[int]):
         """Get the pauli operators that act on the specified wires from the ``pauli_tuples``
         dictionary.
 
@@ -451,11 +464,63 @@ class Prod(Operator):
         for wire in wires:
             pauli_coeff, pauli_word = pauli_tuples.pop(wire, (1, "I"))
             if pauli_word != "I":
-                pauli_op = cls._paulis[pauli_word](wire)
+                pauli_op = self._paulis[pauli_word](wire)
                 pauli_operators += ((pauli_op,),)
                 global_phase *= pauli_coeff
 
         return pauli_tuples, global_phase, pauli_operators
+
+    def _get_stashed_ops(self, stashed_ops: dict, wires: List[int]):
+        """Get the stashed operators that act on the specified wires from the ``pauli_tuples``
+        dictionary.
+
+        Args:
+            pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
+                operator and its values are tuples containing the coefficient and the Pauli word.
+            wires (List[int]): Wires of the operators we want to get.
+
+        Returns:
+            tuple(dict, complex, tuple(.Operator)): Tuple containing the updated ``pauli_tuples``
+            dictionary, the global_phase added and a tuple containing the fetched Pauli operators.
+                operators.
+        """
+        new_operators = ()
+
+        for wire in wires:
+            for key, (_, pow_coeff, op) in list(stashed_ops.items()):
+                if wire in key:
+                    stashed_ops.pop(key)
+                    if pow_coeff == 0:
+                        continue
+                    op = Pow(base=op, z=pow_coeff) if pow_coeff != 1 else op
+                    new_operators += ((op.simplify(),),)
+
+        return stashed_ops, new_operators
+
+    def _add_non_pauli_factor(self, stashed_ops: dict, op: Operator, coeff=1, op_hash=None):
+        """Add operator to the stashed_ops dictionary.
+
+        If the operator hash is already in the dictionary, the coefficient is increased instead.
+
+        Args:
+            stashed_ops (dict): Dictionary of the summands. Its keys are the hashes of all the summands
+                and its values contain a tuple with the coefficient and the summand's class.
+            op (Operator): operator to add to the summands dictionary
+            coeff (int, optional): Coefficient of the operator. Defaults to 1.
+            op_hash (int, optional): Hash of the operator. Defaults to None.
+        """
+        other_ops = ()
+        op_hash = op.hash if op_hash is None else op_hash
+        wires = op.wires
+        old_hash = stashed_ops.get(wires, [None, None, None])[0]
+        if op_hash == old_hash:
+            stashed_ops[wires][1] += coeff
+        else:
+            stashed_ops, new_ops = self._get_stashed_ops(stashed_ops=stashed_ops, wires=wires)
+            other_ops += new_ops
+            stashed_ops[wires] = [op_hash, coeff, op]
+
+        return stashed_ops, other_ops
 
     def simplify(self) -> Union["Prod", Sum]:
         global_phase, factors = self._simplify_factors(factors=self.factors)
@@ -479,12 +544,7 @@ class Prod(Operator):
 
     @property
     def hash(self):
-        return hash(
-            (
-                str(self.name),
-                str([factor.hash for factor in self.factors]),
-            )
-        )
+        return hash((str(self.name), str([factor.hash for factor in self.factors])))
 
 
 def _prod_sort(op_list, wire_map: dict = None):

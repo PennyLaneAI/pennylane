@@ -700,8 +700,8 @@ class TestSimplify:
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
-            qml.RX(1, 1) @ qml.PauliX(0),
-            qml.RX(1, 0) @ qml.PauliX(1),
+            qml.PauliX(0) @ qml.RX(1, 1),
+            qml.PauliX(1) @ qml.RX(1, 0),
             qml.RX(1, 0) @ qml.RX(1, 1),
         )
         simplified_op = prod_op.simplify()
@@ -745,9 +745,9 @@ class TestSimplify:
         )
         final_op = qml.op_sum(
             6 * Prod(qml.PauliX(0), qml.PauliX(1)),
-            5 * Prod(qml.RX(1, 1), qml.PauliX(0)),
+            5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
             6 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
-            5 * Prod(qml.RX(-1, 0), qml.RX(1, 1), qml.PauliX(0)),
+            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.RX(1, 1)),
             qml.s_prod(6, qml.PauliX(1)),
             5 * qml.RX(1, 1),
         )
