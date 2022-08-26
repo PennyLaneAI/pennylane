@@ -70,6 +70,9 @@ class TestFourierCoefficientSingleVariable:
         coeffs = coefficients(partial_func, 1, degree)
 
         assert np.allclose(coeffs, expected_coeffs)
+        coeffs = coefficients(partial_func, 1, (degree,))
+
+        assert np.allclose(coeffs, expected_coeffs)
 
 
 dev_1 = qml.device("default.qubit", wires=1)
@@ -87,6 +90,9 @@ def circuit_one_qubit_one_param_rx(inpt):
     return qml.expval(qml.PauliZ(0))
 
 
+circuit_one_qubit_one_param_rx.n_inputs = 1
+
+
 @qml.qnode(dev_1)
 def circuit_one_qubit_one_param_h_ry(inpt):
     r"""Circuit with a single-qubit, single-param, output function <Z>.
@@ -97,6 +103,9 @@ def circuit_one_qubit_one_param_h_ry(inpt):
     qml.Hadamard(wires=0)
     qml.RY(inpt[0], wires=0)
     return qml.expval(qml.PauliZ(0))
+
+
+circuit_one_qubit_one_param_h_ry.n_inputs = 1
 
 
 @qml.qnode(dev_1)
@@ -111,6 +120,9 @@ def circuit_one_qubit_one_param_rx_ry(inpt):
     return qml.expval(qml.PauliZ(0))
 
 
+circuit_one_qubit_one_param_rx_ry.n_inputs = 1
+
+
 @qml.qnode(dev_1)
 def circuit_one_qubit_two_params(inpt):
     r"""Circuit with a single-qubit, single-param, output function <Z>.
@@ -121,6 +133,9 @@ def circuit_one_qubit_two_params(inpt):
     qml.RY(inpt[0], wires=0)
     qml.RX(inpt[1], wires=0)
     return qml.expval(qml.PauliZ(0))
+
+
+circuit_one_qubit_two_params.n_inputs = 2
 
 
 @qml.qnode(dev_2)
@@ -137,6 +152,9 @@ def circuit_two_qubits_repeated_param(inpt):
     return qml.expval(qml.PauliZ(0))
 
 
+circuit_two_qubits_repeated_param.n_inputs = 1
+
+
 @qml.qnode(dev_2)
 def circuit_two_qubits_two_params(inpt):
     r"""Circuit with a single-qubit, two-param output function :math:`<Z>`.
@@ -151,74 +169,85 @@ def circuit_two_qubits_two_params(inpt):
     return qml.expval(qml.PauliZ(0))
 
 
+circuit_two_qubits_two_params.n_inputs = 2
+
+
+@pytest.mark.parametrize("use_broadcasting", [False, True])
 class TestFourierCoefficientCircuits:
     """Test calculation of Fourier coefficients for various circuits."""
 
     @pytest.mark.parametrize(
-        "circuit,inpt,degree,expected_coeffs",
+        "circuit,degree,expected_coeffs",
         [
-            (circuit_one_qubit_one_param_rx, np.array([0.1]), 1, np.array([0, 0.5, 0.5])),
-            (circuit_one_qubit_one_param_rx, np.array([0.2]), 2, np.array([0, 0.5, 0, 0, 0.5])),
-            (circuit_one_qubit_one_param_h_ry, np.array([-0.6]), 1, np.array([0, 0.5j, -0.5j])),
+            (circuit_one_qubit_one_param_rx, 1, np.array([0, 0.5, 0.5])),
+            (circuit_one_qubit_one_param_rx, 2, np.array([0, 0.5, 0, 0, 0.5])),
+            (circuit_one_qubit_one_param_h_ry, (1,), np.array([0, 0.5j, -0.5j])),
             (
                 circuit_one_qubit_one_param_h_ry,
-                np.array([2]),
                 3,
                 np.array([0, 0.5j, 0, 0, 0, 0, -0.5j]),
             ),
             (
                 circuit_one_qubit_one_param_rx_ry,
-                np.array([0.02]),
                 2,
                 np.array([0.5, 0, 0.25, 0.25, 0]),
             ),
             (
                 circuit_one_qubit_one_param_rx_ry,
-                np.array([1.56]),
                 4,
                 np.array([0.5, 0, 0.25, 0, 0, 0, 0, 0.25, 0]),
             ),
             (
                 circuit_two_qubits_repeated_param,
-                np.array([0.5]),
-                2,
+                (2,),
                 np.array([0.5, 0, 0.25, 0.25, 0]),
             ),
             (
                 circuit_two_qubits_repeated_param,
-                np.array([-0.32]),
                 3,
                 np.array([0.5, 0, 0.25, 0, 0, 0.25, 0]),
             ),
         ],
     )
-    def test_coefficients_one_param_circuits(self, circuit, inpt, degree, expected_coeffs):
+    def test_coefficients_one_param_circuits(
+        self, circuit, degree, expected_coeffs, use_broadcasting
+    ):
         """Test that coeffs for a single instance of a single parameter match the by-hand
         results regardless of input degree (max degree is 1)."""
-        coeffs = coefficients(circuit, len(inpt), degree)
+        coeffs = coefficients(circuit, circuit.n_inputs, degree, use_broadcasting=use_broadcasting)
         assert np.allclose(coeffs, expected_coeffs)
 
     @pytest.mark.parametrize(
-        "circuit,inpt,degree,expected_coeffs",
+        "circuit,degree,expected_coeffs",
         [
             (
                 circuit_two_qubits_two_params,
-                np.array([0.1, 0.3]),
+                1,
+                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+            ),
+            (
+                circuit_two_qubits_two_params,
+                (1, 1),
+                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+            ),
+            (
+                circuit_one_qubit_two_params,
                 1,
                 np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
             ),
             (
                 circuit_one_qubit_two_params,
-                np.array([-0.25, -0.9]),
-                1,
-                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0.25, 0.25]]),
+                (2, 1),
+                np.array([[0, 0, 0], [0, 0.25, 0.25], [0, 0, 0], [0, 0, 0], [0, 0.25, 0.25]]),
             ),
         ],
     )
-    def test_coefficients_two_param_circuits(self, circuit, inpt, degree, expected_coeffs):
+    def test_coefficients_two_param_circuits(
+        self, circuit, degree, expected_coeffs, use_broadcasting
+    ):
         """Test that coeffs for a single instance of a single parameter match the by-hand
         results regardless of input degree (max degree is 1)."""
-        coeffs = coefficients(circuit, len(inpt), degree)
+        coeffs = coefficients(circuit, circuit.n_inputs, degree, use_broadcasting=use_broadcasting)
         assert np.allclose(coeffs, expected_coeffs)
 
 
@@ -226,41 +255,44 @@ class TestAntiAliasing:
     """Test that anti-aliasing techniques give correct results."""
 
     @pytest.mark.parametrize(
-        "circuit,inpt,degree,expected_coeffs",
+        "circuit,degree,expected_coeffs",
         [
             (
                 circuit_two_qubits_repeated_param,
-                np.array([0.5]),
                 1,
                 np.array([0.5, 0, 0]),
             ),
         ],
     )
-    def test_anti_aliasing_incorrect(self, circuit, inpt, degree, expected_coeffs):
+    def test_anti_aliasing_incorrect(self, circuit, degree, expected_coeffs):
         """Test that anti-aliasing function gives correct results when we ask for
         coefficients below the maximum degree."""
         coeffs_anti_aliased = coefficients(
-            circuit, len(inpt), degree, lowpass_filter=True, filter_threshold=degree + 2
+            circuit, circuit.n_inputs, degree, lowpass_filter=True, filter_threshold=degree + 2
         )
         assert np.allclose(coeffs_anti_aliased, expected_coeffs)
 
-        coeffs_regular = coefficients(circuit, len(inpt), degree)
+        coeffs_regular = coefficients(circuit, circuit.n_inputs, degree)
         assert not np.allclose(coeffs_regular, expected_coeffs)
 
     @pytest.mark.parametrize(
-        "circuit,inpt,degree",
+        "circuit,degree",
         [
-            (circuit_two_qubits_two_params, np.array([0.1, 0.3]), 1),
-            (circuit_one_qubit_two_params, np.array([-0.1, 0.25]), 1),
+            (circuit_two_qubits_two_params, 1),
+            (circuit_one_qubit_two_params, 1),
         ],
     )
-    def test_anti_aliasing(self, circuit, inpt, degree):
+    def test_anti_aliasing(self, circuit, degree):
         """Test that the coefficients obtained through anti-aliasing are the
         same as the ones when we don't anti-alias at the correct degree."""
-        coeffs_regular = coefficients(circuit, len(inpt), degree, lowpass_filter=False)
-        coeffs_anti_aliased = coefficients(circuit, len(inpt), degree, lowpass_filter=True)
+        coeffs_regular = coefficients(circuit, circuit.n_inputs, degree, lowpass_filter=False)
+        coeffs_anti_aliased = coefficients(circuit, circuit.n_inputs, degree, lowpass_filter=True)
 
         assert np.allclose(coeffs_regular, coeffs_anti_aliased)
+
+    def test_anti_aliasing_not_implemented_with_broadcasting(self):
+        with pytest.raises(ValueError, match="The lowpass filter option"):
+            coefficients(circuit_one_qubit_two_params, 2, (1, 4), lowpass_filter=True)
 
 
 class TestInterfaces:
