@@ -37,8 +37,8 @@ QNode transforms
 .. autosummary::
     :toctree: api
 
-    ~shadow_expval
-    ~shadow_state
+    ~transforms.shadow_expval
+    ~transforms.shadow_state
 
 Classical Shadows formalism
 ---------------------------
