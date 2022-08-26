@@ -419,10 +419,10 @@ class Prod(Operator):
             if isinstance(op, SProd):
                 global_phase *= op.scalar
                 op = op.base
-            label = op.label()
             wires = op.wires
-            if label in ["I", "X", "Y", "Z"]:
+            if isinstance(op, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
                 # Update ``pauli_tuples`` dictionary
+                label = op.label()
                 old_coeff, old_word = pauli_tuples.get(wires[0], (1, "I"))
                 coeff, new_word = self._pauli_mult[old_word + label]
                 pauli_tuples[wires[0]] = old_coeff * coeff, new_word
@@ -512,8 +512,14 @@ class Prod(Operator):
         other_ops = ()
         op_hash = op.hash if op_hash is None else op_hash
         wires = op.wires
-        old_hash = stashed_ops.get(wires, [None, None, None])[0]
-        if op_hash == old_hash:
+        old_hash, old_coeff, old_op = stashed_ops.get(wires, [None, None, None])
+        if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and op.name == old_op.name:
+            stashed_ops[wires] = [
+                op_hash,
+                old_coeff,
+                op.__class__(op.data[0] + old_op.data[0], wires),
+            ]
+        elif op_hash == old_hash:
             stashed_ops[wires][1] += coeff
         else:
             stashed_ops, new_ops = self._get_stashed_ops(stashed_ops=stashed_ops, wires=wires)

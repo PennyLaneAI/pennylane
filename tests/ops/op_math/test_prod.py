@@ -739,21 +739,41 @@ class TestSimplify:
                         qml.Identity(0),
                     )
                 ),
-                qml.PauliX(1) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
+                qml.PauliX(0) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
             ),
             qml.Identity(0),
         )
         final_op = qml.op_sum(
-            6 * Prod(qml.PauliX(0), qml.PauliX(1)),
+            qml.Identity(0),
             5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
-            6 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            5 * Prod(qml.PauliX(0), qml.PauliX(1)),
+            qml.RX(-1, 0),
             5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.RX(1, 1)),
-            qml.s_prod(6, qml.PauliX(1)),
+            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0),
             5 * qml.RX(1, 1),
+            qml.s_prod(5, qml.PauliX(1)),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
         for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_groups_rotations(self):
+        """Test that the simplify method groups rotation operators."""
+        prod_op = qml.prod(
+            qml.RX(1, 0), qml.RZ(1, 1), qml.CNOT((1, 2)), qml.RZ(1, 1), qml.RX(3, 0), qml.RZ(1, 1)
+        )
+        final_op = qml.prod(qml.RZ(1, 1), qml.CNOT((1, 2)), qml.RX(4, 0), qml.RZ(2, 1))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(final_op.factors, simplified_op.factors):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
