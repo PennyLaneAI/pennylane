@@ -34,11 +34,10 @@ Shadow class for classical post-processing
 QNode transforms
 ----------------
 
-.. autosummary::
-    :toctree: api
-
-    shadows.state
-    shadows.expval
+.. automodapi:: pennylane.shadows.transforms
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
 
 Classical Shadows formalism
 ---------------------------
