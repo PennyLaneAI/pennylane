@@ -42,7 +42,7 @@ def __replace_obs(tape, obs, *args, **kwargs):
 
 def expval(H, k=1):
     """Transform a QNode returning a classical shadow into one that returns
-    the approximate expectation values.
+    the approximate expectation values in a differentiable manner.
 
     See :func:`~.pennylane.shadow_expval` for more usage details.
 
@@ -163,7 +163,7 @@ def _shadow_state_undiffable(wires):
 
 def state(wires, diffable=False):
     """Transform a QNode returning a classical shadow into one that returns
-    the reconstructed state.
+    the reconstructed state in a differentiable manner.
 
     Args:
         wires (list[int] or list[list[int]]): If a list of ints, this represents
