@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, sparse_expand_matrix
 
 
 def op_sum(*summands, do_queue=True, id=None):
@@ -304,6 +304,18 @@ class Sum(Operator):
             wire_order = self.wires
 
         return _sum(matrix_gen(self.summands, wire_order))
+
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the product op
+        in csr representation."""
+        if wire_order is None:
+            wire_order = self.wires
+
+        mats_gen = (
+            sparse_expand_matrix(op.sparse_matrix(wire_order), op.wires, wire_order=wire_order)
+            for op in self.summands
+        )
+        return reduce(math.add, mats_gen)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
