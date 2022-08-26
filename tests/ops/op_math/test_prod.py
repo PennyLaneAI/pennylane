@@ -786,12 +786,39 @@ class TestSimplify:
         )
         final_op = qml.s_prod(-1j, Prod(qml.PauliX(1), qml.PauliX(0)))
         simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
         assert isinstance(simplified_op, qml.ops.SProd)
         assert isinstance(simplified_op.base, qml.ops.Sum)
         assert simplified_op.name == final_op.name
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_simplify_method_groups_identical_operators(self):
+        """Test that the simplify method groups identical operators."""
+        prod_op = qml.prod(
+            qml.PauliX(0),
+            qml.CNOT((1, 2)),
+            qml.PauliZ(3),
+            qml.Toffoli((4, 5, 6)),
+            qml.CNOT((1, 2)),
+            qml.Toffoli((4, 5, 6)),
+            qml.PauliX(0),
+            qml.PauliZ(3),
+        )
+        final_op = qml.prod(*[qml.Identity(wire) for wire in range(6)])
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
 
 class TestWrapperFunc:

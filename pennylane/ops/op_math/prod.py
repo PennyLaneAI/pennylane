@@ -493,7 +493,16 @@ class Prod(Operator):
                     if pow_coeff == 0:
                         continue
                     op = Pow(base=op, z=pow_coeff) if pow_coeff != 1 else op
-                    new_operators += ((op.simplify(),),)
+                    op = op.simplify()
+                    if isinstance(op, Prod):
+                        new_factors = tuple(
+                            (factor,)
+                            for factor in op.factors
+                            if not isinstance(factor, qml.Identity)
+                        )
+                        new_operators = new_factors
+                    elif not isinstance(op, qml.Identity):
+                        new_operators += ((op,),)
 
         return stashed_ops, new_operators
 
