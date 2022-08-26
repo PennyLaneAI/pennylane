@@ -390,13 +390,13 @@ class Sum(Operator):
 
         return sum_dict
 
-    def simplify(self) -> "Sum":
+    def simplify(self, cutoff=1.0e-12) -> "Sum":
         summands = self._simplify_summands(summands=self.summands)
         new_summands = []
         for coeff, summand in summands.values():
             if coeff == 1:
                 new_summands.append(summand)
-            elif coeff != 0:
+            elif abs(coeff) > cutoff:
                 new_summands.append(qml.s_prod(coeff, summand))
         if not new_summands:
             return 0

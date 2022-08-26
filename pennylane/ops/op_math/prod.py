@@ -185,6 +185,7 @@ class Prod(Operator):
 
         self.factors = factors
         self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
+        self._hash = None
 
         if do_queue:
             self.queue()
@@ -559,7 +560,11 @@ class Prod(Operator):
 
     @property
     def hash(self):
-        return hash((str(self.name), str([factor.hash for factor in self.factors])))
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([factor.hash for factor in _prod_sort(self.factors)]))
+            )
+        return self._hash
 
 
 def _prod_sort(op_list, wire_map: dict = None):
