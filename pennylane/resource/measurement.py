@@ -18,7 +18,7 @@ for computing expectation values.
 from pennylane import numpy as np
 
 def estimate_samples(coeffs, ops, error, variances):
-    r"""
+    r"""Estimate the number of measurements required to compute an expectation value up to an error.
     """
     if not variances:
         variances = np.ones(len(ops))
