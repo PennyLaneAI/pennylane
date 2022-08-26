@@ -40,7 +40,7 @@ def __replace_obs(tape, obs, *args, **kwargs):
     return [new_tape], processing_fn
 
 
-def expval(H, k=1):
+def shadow_expval(H, k=1):
     """Transform a QNode returning a classical shadow into one that returns
     the approximate expectation values in a differentiable manner.
 
@@ -161,7 +161,7 @@ def _shadow_state_undiffable(wires):
     return decorator
 
 
-def state(wires, diffable=False):
+def shadow_state(wires, diffable=False):
     """Transform a QNode returning a classical shadow into one that returns
     the reconstructed state in a differentiable manner.
 

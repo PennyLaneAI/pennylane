@@ -37,6 +37,9 @@ QNode transforms
 .. autosummary::
     :toctree: api
 
+    ~shadow_expval
+    ~shadow_state
+
 Classical Shadows formalism
 ---------------------------
 
@@ -95,4 +98,4 @@ There are more options for post-processing classical shadows in :class:`Classica
 from .classical_shadow import ClassicalShadow, median_of_means, pauli_expval
 
 # allow aliasing in the module namespace
-from .transforms import state, expval
+from .transforms import shadow_state, shadow_expval
