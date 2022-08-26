@@ -2012,8 +2012,7 @@ class CRot(Operation):
         if np.allclose(p1, 0):
             return qml.CRZ(self.data[0] + self.data[2], wires=wires)
         if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
-            hadamard = qml.Hadamard
-            return qml.ctrl(hadamard, control=self.control_wires)(wires=target_wires)
+            return qml.ctrl(qml.Hadamard(wires=target_wires), control=self.control_wires)
 
         return self
 
