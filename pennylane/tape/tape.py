@@ -495,7 +495,7 @@ class QuantumTape(AnnotatedQueue):
             all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
         self.wires = qml.wires.Wires.all_wires(
-            dict.fromkeys(op.wires for op in self.operations + self.observables)
+            dict.fromkeys(op.wires for op in self)
         )
         self.num_wires = len(self.wires)
 
