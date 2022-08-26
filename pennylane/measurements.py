@@ -1257,14 +1257,13 @@ def classical_shadow(wires, seed_recipes=True):
 def shadow_expval(obs, k=1, seed_recipes=True):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
-    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot,
-    :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`. This corresponds to the case ``k=1``.
-    However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute
-    the median of means, see `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
+    This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
+    parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
     Args:
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1``(default) corresponds to simply taking the mean over all measurements.
 
     Returns:
         float: expectation value estimate.
