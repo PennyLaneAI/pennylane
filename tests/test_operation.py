@@ -2614,7 +2614,9 @@ class TestExpandSparseMatrix:
 
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
-        res = qml.operation.sparse_expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
+        res = qml.operation.sparse_expand_matrix(
+            self.base_matrix_2, wires=[0, 2], wire_order=[0, 2]
+        )
         assert type(res) == type(self.base_matrix_2)
         assert all(res.data == self.base_matrix_2.data)
         assert all(res.indices == self.base_matrix_2.indices)
@@ -2628,9 +2630,13 @@ class TestExpandSparseMatrix:
 
     def test_permutation(self):
         """Tests the case where the original matrix is permuted"""
-        res = qml.operation.sparse_expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[2, 0])
+        res = qml.operation.sparse_expand_matrix(
+            self.base_matrix_2, wires=[0, 2], wire_order=[2, 0]
+        )
         res.sort_indices()
-        expected = csr_matrix(np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]]))
+        expected = csr_matrix(
+            np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
+        )
         expected.sort_indices()
 
         assert type(res) == type(expected)
@@ -2661,9 +2667,9 @@ class TestExpandSparseMatrix:
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
         U = np.array(
             [
-                        [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-                        [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-                    ]
+                [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+                [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+            ]
         )
         U_sparse = csr_matrix(U)
 
@@ -2819,13 +2825,12 @@ class TestExpandSparseMatrix:
         assert all(res.indices == expected.indices)
 
     def test_local_sparse_swap_mat(self):
-        swap_mat = np.array([[1, 0, 0, 0],
-                             [0, 0, 1, 0],
-                             [0, 1, 0, 0],
-                             [0, 0, 0, 1]])
+        swap_mat = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
         n = 5
-        for i in range(1, n-1):
-            true_expanded_swap = np.kron(np.kron(np.eye(2**i), swap_mat), np.eye(2**(n - (i + 2))))
+        for i in range(1, n - 1):
+            true_expanded_swap = np.kron(
+                np.kron(np.eye(2**i), swap_mat), np.eye(2 ** (n - (i + 2)))
+            )
             computed_swap = qml.operation._local_sparse_swap_mat(i, n).toarray()
             assert np.allclose(true_expanded_swap, computed_swap)
 
@@ -2835,7 +2840,9 @@ class TestExpandSparseMatrix:
             for j in range(0, n):
                 if not (i == j):
                     expected_mat = qml.SWAP(wires=[i, j]).matrix()
-                    expected_mat = qml.operation.expand_matrix(expected_mat, [i, j], wire_order=range(n))
+                    expected_mat = qml.operation.expand_matrix(
+                        expected_mat, [i, j], wire_order=range(n)
+                    )
                     computed_mat = qml.operation._sparse_swap_mat(i, j, n).toarray()
                     assert np.allclose(expected_mat, computed_mat)
 

@@ -235,17 +235,19 @@ def expand_matrix(base_matrix, wires, wire_order=None):
 
 def _local_sparse_swap_mat(i, n, format="csr"):
     """Helper function which generates the sparse matrix of SWAP
-     for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
-    assert i < n-1
+    for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
+    assert i < n - 1
     swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     if i == 0:
-        return kron(swap_mat, eye(2**(n-2)), format=format)  # 2 + (n - 2) = n
-    elif i == n-2:
-        return kron(eye(2**(n-2)), swap_mat, format=format)  # (n - 2) + 2 = n
+        return kron(swap_mat, eye(2 ** (n - 2)), format=format)  # 2 + (n - 2) = n
+    elif i == n - 2:
+        return kron(eye(2 ** (n - 2)), swap_mat, format=format)  # (n - 2) + 2 = n
 
     j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
-    return kron(kron(eye(2**(j - 1)), swap_mat), eye(2**(n - (j+1))), format=format)  # (j - 1) + 2 + (n - (j+1)) = n
+    return kron(
+        kron(eye(2 ** (j - 1)), swap_mat), eye(2 ** (n - (j + 1))), format=format
+    )  # (j - 1) + 2 + (n - (j+1)) = n
 
 
 def _sparse_swap_mat(i, j, n, format="csr"):
