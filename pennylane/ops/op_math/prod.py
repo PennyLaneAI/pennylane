@@ -386,20 +386,20 @@ def _prod_sort(op_list, wire_map: dict = None):
 
     for i in range(1, len(op_list)):
 
-        left_op = op_list[i]
+        key_op = op_list[i]
 
         j = i - 1
-        while j >= 0 and _swappable_ops(op1=op_list[j], op2=left_op, wire_map=wire_map):
+        while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
             op_list[j + 1] = op_list[j]
             j -= 1
-        op_list[j + 1] = left_op
+        op_list[j + 1] = key_op
 
     return op_list
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
-    """Boolean expression that indicates if op1 and op2 are commutative and should be swapped when
-    sorting them by wire values.
+    """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
+    should be swapped when sorting them by wire values.
 
     Args:
         op1 (.Operator): First operator.
