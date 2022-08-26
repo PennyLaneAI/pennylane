@@ -64,37 +64,34 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def basic_entangler_circuit(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+def basic_entangler_circuit(n_wires, shots=10000, interface="autograd"):
+    dev = qml.device("default.qubit", wires=n_wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit(x):
-        qml.BasicEntanglerLayers(weights=x, wires=range(wires))
-        return qml.classical_shadow(wires=range(wires))
+        qml.BasicEntanglerLayers(weights=x, wires=range(n_wires))
+        return qml.classical_shadow(wires=range(n_wires))
 
     return circuit
 
 
-def basic_entangler_circuit_exact_state(wires, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires)
+def basic_entangler_circuit_exact_state(n_wires, sub_wires, interface="autograd"):
+    dev = qml.device("default.qubit", wires=n_wires)
 
     @qml.qnode(dev, interface=interface)
     def circuit(x):
-        qml.BasicEntanglerLayers(weights=x, wires=range(wires))
-        return qml.state()
+        qml.BasicEntanglerLayers(weights=x, wires=range(n_wires))
+        return qml.density_matrix(sub_wires)
 
-    def state_to_dm(state):
-        return qml.math.outer(state, qml.math.conj(state))
-
-    return lambda x: state_to_dm(circuit(x))
+    return circuit
 
 
-def basic_entangler_circuit_exact_expval(wires, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires)
+def basic_entangler_circuit_exact_expval(n_wires, interface="autograd"):
+    dev = qml.device("default.qubit", wires=n_wires)
 
     @qml.qnode(dev, interface=interface)
     def circuit(x, obs):
-        qml.BasicEntanglerLayers(weights=x, wires=range(wires))
+        qml.BasicEntanglerLayers(weights=x, wires=range(n_wires))
         return [qml.expval(ob) for ob in obs]
 
     return circuit
@@ -194,17 +191,21 @@ class TestStateBackward:
     def test_backward_autograd(self):
         """Test the gradient of the state for the autograd interface"""
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
-        shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_state(3, "autograd")
+
+        sub_wires = [[0, 1], [1, 2]]
+        shadow_circuit = qml.shadows.state(wires=sub_wires, diffable=True)(shadow_circuit)
 
         x = np.array(self.x, requires_grad=True)
 
         # for autograd in particular, take only the real part since it doesn't
         # support complex differentiation
-        actual = qml.jacobian(lambda x: qml.math.real(shadow_circuit(x)))(x)
-        expected = qml.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
+        actual = qml.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        for act, w in zip(qml.math.unstack(actual), sub_wires):
+            exact_circuit = basic_entangler_circuit_exact_state(3, w, "autograd")
+            expected = qml.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
+
+            assert qml.math.allclose(act, expected, atol=1e-1)
 
     @pytest.mark.jax
     def test_backward_jax(self):
@@ -213,16 +214,19 @@ class TestStateBackward:
         from jax import numpy as jnp
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="jax")
-        shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_state(3, "jax")
 
-        # make rotations close to pi / 2 to ensure gradients are not too small
+        sub_wires = [[0, 1], [1, 2]]
+        shadow_circuit = qml.shadows.state(wires=sub_wires, diffable=True)(shadow_circuit)
+
         x = jnp.array(self.x, dtype=np.complex64)
 
         actual = qml.math.real(jax.jacrev(shadow_circuit, holomorphic=True)(x))
-        expected = qml.math.real(jax.jacrev(exact_circuit, holomorphic=True)(x))
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        for act, w in zip(qml.math.unstack(actual), sub_wires):
+            exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
+            expected = qml.math.real(jax.jacrev(exact_circuit, holomorphic=True)(x))
+
+            assert qml.math.allclose(act, expected, atol=1e-1)
 
     @pytest.mark.tf
     def test_backward_tf(self):
@@ -230,23 +234,26 @@ class TestStateBackward:
         import tensorflow as tf
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
-        shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_state(3, "tf")
 
-        # make rotations close to pi / 2 to ensure gradients are not too small
+        sub_wires = [[0, 1], [1, 2]]
+        shadow_circuit = qml.shadows.state(wires=sub_wires, diffable=True)(shadow_circuit)
+
         x = tf.Variable(self.x)
 
         with tf.GradientTape() as tape:
-            out = shadow_circuit(x)
+            out = qml.math.stack(shadow_circuit(x))
 
         actual = tape.jacobian(out, x)
 
-        with tf.GradientTape() as tape2:
-            out2 = exact_circuit(x)
+        for act, w in zip(qml.math.unstack(actual), sub_wires):
+            exact_circuit = basic_entangler_circuit_exact_state(3, w, "tf")
 
-        expected = tape2.jacobian(out2, x)
+            with tf.GradientTape() as tape2:
+                out2 = exact_circuit(x)
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+            expected = tape2.jacobian(out2, x)
+
+            assert qml.math.allclose(act, expected, atol=1e-1)
 
     @pytest.mark.torch
     def test_backward_torch(self):
@@ -254,16 +261,19 @@ class TestStateBackward:
         import torch
 
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="torch")
-        shadow_circuit = qml.shadows.state(wires=[0, 1, 2], diffable=True)(shadow_circuit)
-        exact_circuit = basic_entangler_circuit_exact_state(3, "torch")
 
-        # make rotations close to pi / 2 to ensure gradients are not too small
+        sub_wires = [[0, 1], [1, 2]]
+        shadow_circuit = qml.shadows.state(wires=sub_wires, diffable=True)(shadow_circuit)
+
         x = torch.tensor(self.x, requires_grad=True)
 
-        actual = torch.autograd.functional.jacobian(shadow_circuit, x)
-        expected = torch.autograd.functional.jacobian(exact_circuit, x)
+        actual = torch.autograd.functional.jacobian(lambda x: qml.math.stack(shadow_circuit(x)), x)
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        for act, w in zip(qml.math.unstack(actual), sub_wires):
+            exact_circuit = basic_entangler_circuit_exact_state(3, w, "torch")
+            expected = torch.autograd.functional.jacobian(exact_circuit, x)
+
+            assert qml.math.allclose(act, expected, atol=1e-1)
 
 
 @pytest.mark.autograd
