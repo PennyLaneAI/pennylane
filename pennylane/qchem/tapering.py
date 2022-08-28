@@ -571,11 +571,8 @@ def taper_excitations(generators, paulixops, paulix_sector, singles, doubles):
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
-        singles (int): list with the indices ``r``, ``p`` of the two qubits representing the single excitation
-        :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`
-        doubles (int): list with the indices ``s``, ``r``, ``q``, ``p`` of the four qubits representing the
-        double excitation :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger
-        \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`
+        singles (list(list(int))): list with the indices `r`, `p` of the two qubits representing the single excitation :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`
+        doubles (list(list(int))): list with the indices `s`, `r`, `q`, `p` of the four qubits representing the double excitation :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`
 
     Returns:
         tuple(list, list): tapered single and double excitation operators
@@ -591,7 +588,8 @@ def taper_excitations(generators, paulixops, paulix_sector, singles, doubles):
     >>> paulixops = qml.qchem.paulix_ops(generators, 4)
     >>> paulix_sector = qml.qchem.optimal_sector(H, generators, n_elec)
     >>> singles, doubles = qml.qchem.excitations(n_elec, n_qubits)
-    >>> singles_tap, doubles_tap = taper_excitations(generators, paulixops, paulix_sector, singles, doubles)
+    >>> singles_tap, doubles_tap = taper_excitations(generators, paulixops, 
+                                            paulix_sector, singles, doubles)
     >>> print(singles_tap[0], doubles_tap[0])
     ((0.5+0j)) [Y0]
     ((-0.25+0j)) [X0 Y1] + ((-0.25+0j)) [Y0 X1]
