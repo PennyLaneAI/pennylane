@@ -541,8 +541,8 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
 
 def _is_commuting_obs(ham_a, ham_b, wire_map=None):
-    r""" Check for commutivity between two Pauli observables.
-    
+    r"""Check for commutivity between two Pauli observables.
+
     Args:
         ham_a (Hamiltonian): first observable
         ham_b (Hamiltonian): second observable
@@ -555,6 +555,7 @@ def _is_commuting_obs(ham_a, ham_b, wire_map=None):
             if not qml.grouping.is_commuting(op1, op2, wire_map):
                 return False
     return True
+
 
 def taper_excitations(generators, paulixops, paulix_sector, singles, doubles):
     r"""Transform excitations with a Clifford operator and taper qubits.
@@ -593,19 +594,19 @@ def taper_excitations(generators, paulixops, paulix_sector, singles, doubles):
     >>> singles_tapered, doubles_tapered = taper_excitations(generators, paulixops, paulix_sector,
                                                                 singles, doubles)
     >>> print(singles_tapered[0], doubles_tapered[0])
-    ((0.5+0j)) [Y0]   
+    ((0.5+0j)) [Y0]
     ((-0.25+0j)) [X0 Y1] + ((-0.25+0j)) [Y0 X1]
     """
 
     singles_tapered, doubles_tapered = [], []
-    
+
     for excitation in singles:
         hamil_gen = qml.SingleExcitation(1, wires=excitation).generator()
         if np.all([_is_commuting_obs(generator, hamil_gen) for generator in generators]):
             excitation_tapered_op = qml.taper(hamil_gen, generators, paulixops, paulix_sector)
             qml.simplify(excitation_tapered_op)
             singles_tapered.append(excitation_tapered_op)
-    
+
     for excitation in doubles:
         hamil_gen = qml.DoubleExcitation(1, wires=excitation).generator()
         if np.all([_is_commuting_obs(generator, hamil_gen) for generator in generators]):

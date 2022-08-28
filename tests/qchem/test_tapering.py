@@ -635,7 +635,7 @@ def test_taper_obs(symbols, geometry, charge):
 
 @pytest.mark.parametrize(
     ("obs_1", "obs_2", "wire_map", "commute_status"),
-    [   
+    [
         (
             qml.Hamiltonian([1.0], [qml.Identity(0)]),
             qml.Hamiltonian([1.0], [qml.PauliZ(0)]),
@@ -649,36 +649,44 @@ def test_taper_obs(symbols, geometry, charge):
             False,
         ),
         (
-            qml.Hamiltonian([1.0, 1.0], [qml.PauliY(0)@qml.PauliX(2), qml.PauliX(0)@qml.PauliY(2)]),
-            qml.Hamiltonian([1.0], [qml.PauliZ(0)@qml.PauliZ(1)]),
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliY(0) @ qml.PauliX(2), qml.PauliX(0) @ qml.PauliY(2)]
+            ),
+            qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
             {0: 0, 1: 1, 2: 2},
             False,
         ),
         (
-            qml.Hamiltonian([1.0, 1.0], [qml.PauliY(0)@qml.PauliX(2), qml.PauliX(0)@qml.PauliY(2)]),
-            qml.Hamiltonian([1.0], [qml.PauliZ(0)@qml.PauliZ(2)]),
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliY(0) @ qml.PauliX(2), qml.PauliX(0) @ qml.PauliY(2)]
+            ),
+            qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
             {0: 0, 1: 1, 2: 2},
             True,
         ),
         (
-            qml.Hamiltonian([1.0, 1.0], [qml.PauliY("b")@qml.PauliX("d"), qml.PauliX("b")@qml.PauliY("d")]),
-            qml.Hamiltonian([1.0], [qml.PauliZ("b")@qml.PauliZ("c")]),
-            {"a": 0, "b": 1, "c":2, "d":3},
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliY("b") @ qml.PauliX("d"), qml.PauliX("b") @ qml.PauliY("d")]
+            ),
+            qml.Hamiltonian([1.0], [qml.PauliZ("b") @ qml.PauliZ("c")]),
+            {"a": 0, "b": 1, "c": 2, "d": 3},
             False,
         ),
         (
-            qml.Hamiltonian([1.0, 1.0], [qml.PauliY("b")@qml.PauliX("d"), qml.PauliX("b")@qml.PauliY("d")]),
-            qml.Hamiltonian([1.0], [qml.PauliZ("b")@qml.PauliZ("d")]),
-            {"a": 0, "b": 1, "c":2, "d":3},
+            qml.Hamiltonian(
+                [1.0, 1.0], [qml.PauliY("b") @ qml.PauliX("d"), qml.PauliX("b") @ qml.PauliY("d")]
+            ),
+            qml.Hamiltonian([1.0], [qml.PauliZ("b") @ qml.PauliZ("d")]),
+            {"a": 0, "b": 1, "c": 2, "d": 3},
             True,
         ),
-
     ],
 )
 def test_is_commuting_obs(obs_1, obs_2, wire_map, commute_status):
     """Test that (non)-commuting Pauli observables are correctly identified."""
     do_they_commute = _is_commuting_obs(obs_1, obs_2, wire_map=wire_map)
     assert do_they_commute == commute_status
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge", "num_commuting"),
@@ -719,7 +727,7 @@ def test_is_commuting_obs(obs_1, obs_2, wire_map, commute_status):
     ],
 )
 def test_taper_excitations(symbols, geometry, charge, num_commuting):
-    r"""Test that the tapered excitation operators are consistent with the 
+    r"""Test that the tapered excitation operators are consistent with the
     tapered Hartree-Fock state."""
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
@@ -739,14 +747,15 @@ def test_taper_excitations(symbols, geometry, charge, num_commuting):
     state_tapered = functools.reduce(
         lambda i, j: np.kron(i, j), [l if s else o for s in hf_state_tapered]
     )
-    singles, doubles = qml.qchem.excitations(mol.n_electrons, 2*mol.n_orbitals)
+    singles, doubles = qml.qchem.excitations(mol.n_electrons, 2 * mol.n_orbitals)
     singles_obs = [qml.SingleExcitation(1, wires=single).generator() for single in singles]
     doubles_obs = [qml.DoubleExcitation(1, wires=double).generator() for double in doubles]
 
-    singles_tap, doubles_tap = taper_excitations(generators, paulixops, paulix_sector,
-                                                     singles, doubles)
+    singles_tap, doubles_tap = taper_excitations(
+        generators, paulixops, paulix_sector, singles, doubles
+    )
     assert len(singles_tap) == num_commuting[0] and len(doubles_tap) == num_commuting[1]
-    
+
     exc_iter = iter(singles_tap + doubles_tap)
     for observable in singles_obs + doubles_obs:
         if np.all([_is_commuting_obs(generator, observable) for generator in generators]):
@@ -765,9 +774,10 @@ def test_taper_excitations(symbols, geometry, charge, num_commuting):
             assert np.isclose(obs_val, obs_val_tapered)
 
             # check if tapered excitation are particle number conserving
-            excited_state = qml.matrix(observable, wire_order=range(len(hf_state)))@state
-            excited_state_tapered = qml.matrix(excitation_obs, 
-                            wire_order=range(len(hf_state_tapered)))@state_tapered
+            excited_state = qml.matrix(observable, wire_order=range(len(hf_state))) @ state
+            excited_state_tapered = (
+                qml.matrix(excitation_obs, wire_order=range(len(hf_state_tapered))) @ state_tapered
+            )
             pnum_val = (
                 scipy.sparse.coo_matrix(excited_state)
                 @ qml.utils.sparse_hamiltonian(particle_num)
