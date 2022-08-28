@@ -591,9 +591,8 @@ def taper_excitations(generators, paulixops, paulix_sector, singles, doubles):
     >>> paulixops = qml.qchem.paulix_ops(generators, 4)
     >>> paulix_sector = qml.qchem.optimal_sector(H, generators, n_elec)
     >>> singles, doubles = qml.qchem.excitations(n_elec, n_qubits)
-    >>> singles_tapered, doubles_tapered = taper_excitations(generators, paulixops, paulix_sector,
-                                                                singles, doubles)
-    >>> print(singles_tapered[0], doubles_tapered[0])
+    >>> singles_tap, doubles_tap = taper_excitations(generators, paulixops, paulix_sector, singles, doubles)
+    >>> print(singles_tap[0], doubles_tap[0])
     ((0.5+0j)) [Y0]
     ((-0.25+0j)) [X0 Y1] + ((-0.25+0j)) [Y0 X1]
     """
