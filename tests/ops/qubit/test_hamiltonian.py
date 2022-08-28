@@ -79,7 +79,7 @@ valid_hamiltonians = [
     (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
     ((0.5 + 1.2j, 1.2 + 0.5j), (qml.PauliX(0), qml.PauliY(1))),
-    ((0.7+0j, 0+1.3j), (qml.PauliX(0), qml.PauliY(1))),
+    ((0.7 + 0j, 0 + 1.3j), (qml.PauliX(0), qml.PauliY(1))),
 ]
 
 valid_hamiltonians_str = [
