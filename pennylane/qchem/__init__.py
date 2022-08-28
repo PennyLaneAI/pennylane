@@ -66,4 +66,5 @@ from .tapering import (
     optimal_sector,
     taper,
     taper_hf,
+    taper_excitations,
 )

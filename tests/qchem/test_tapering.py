@@ -29,6 +29,8 @@ from pennylane.qchem.tapering import (
     clifford,
     optimal_sector,
     taper_hf,
+    _is_commuting_obs,
+    taper_excitations,
 )
 
 
@@ -629,3 +631,151 @@ def test_taper_obs(symbols, geometry, charge):
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
         assert np.isclose(obs_val, obs_val_tapered)
+
+
+@pytest.mark.parametrize(
+    ("obs_1", "obs_2", "wire_map", "commute_status"),
+    [   
+        (
+            qml.Hamiltonian([1.0], [qml.Identity(0)]),
+            qml.Hamiltonian([1.0], [qml.PauliZ(0)]),
+            {0: 0},
+            True,
+        ),
+        (
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliY(0), qml.PauliX(1)]),
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliZ(0), qml.PauliX(1)]),
+            {0: 0, 1: 1},
+            False,
+        ),
+        (
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliY(0)@qml.PauliX(2), qml.PauliX(0)@qml.PauliY(2)]),
+            qml.Hamiltonian([1.0], [qml.PauliZ(0)@qml.PauliZ(1)]),
+            {0: 0, 1: 1, 2: 2},
+            False,
+        ),
+        (
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliY(0)@qml.PauliX(2), qml.PauliX(0)@qml.PauliY(2)]),
+            qml.Hamiltonian([1.0], [qml.PauliZ(0)@qml.PauliZ(2)]),
+            {0: 0, 1: 1, 2: 2},
+            True,
+        ),
+        (
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliY("b")@qml.PauliX("d"), qml.PauliX("b")@qml.PauliY("d")]),
+            qml.Hamiltonian([1.0], [qml.PauliZ("b")@qml.PauliZ("c")]),
+            {"a": 0, "b": 1, "c":2, "d":3},
+            False,
+        ),
+        (
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliY("b")@qml.PauliX("d"), qml.PauliX("b")@qml.PauliY("d")]),
+            qml.Hamiltonian([1.0], [qml.PauliZ("b")@qml.PauliZ("d")]),
+            {"a": 0, "b": 1, "c":2, "d":3},
+            True,
+        ),
+
+    ],
+)
+def test_is_commuting_obs(obs_1, obs_2, wire_map, commute_status):
+    """Test that (non)-commuting Pauli observables are correctly identified."""
+    do_they_commute = _is_commuting_obs(obs_1, obs_2, wire_map=wire_map)
+    assert do_they_commute == commute_status
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "num_commuting"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+            (0, 1),
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+            (2, 1),
+        ),
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
+                requires_grad=True,
+            ),
+            1,
+            (4, 4),
+        ),
+        (
+            ["H", "H", "H", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]],
+                requires_grad=True,
+            ),
+            0,
+            (4, 10),
+        ),
+    ],
+)
+def test_taper_excitations(symbols, geometry, charge, num_commuting):
+    r"""Test that the tapered excitation operators are consistent with the 
+    tapered Hartree-Fock state."""
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    hf_state_tapered = taper_hf(
+        generators, paulixops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
+    )
+    particle_num = qml.qchem.particle_number(len(hamiltonian.wires))
+    particle_num_tapered = qml.taper(particle_num, generators, paulixops, paulix_sector)
+
+    o = np.array([1, 0])
+    l = np.array([0, 1])
+    state = functools.reduce(lambda i, j: np.kron(i, j), [l if s else o for s in hf_state])
+    state_tapered = functools.reduce(
+        lambda i, j: np.kron(i, j), [l if s else o for s in hf_state_tapered]
+    )
+    singles, doubles = qml.qchem.excitations(mol.n_electrons, 2*mol.n_orbitals)
+    singles_obs = [qml.SingleExcitation(1, wires=single).generator() for single in singles]
+    doubles_obs = [qml.DoubleExcitation(1, wires=double).generator() for double in doubles]
+
+    singles_tap, doubles_tap = taper_excitations(generators, paulixops, paulix_sector,
+                                                     singles, doubles)
+    assert len(singles_tap) == num_commuting[0] and len(doubles_tap) == num_commuting[1]
+    
+    exc_iter = iter(singles_tap + doubles_tap)
+    for observable in singles_obs + doubles_obs:
+        if np.all([_is_commuting_obs(generator, observable) for generator in generators]):
+            excitation_obs = next(exc_iter)
+            # sanity check for consistent expectation values
+            obs_val = (
+                scipy.sparse.coo_matrix(state)
+                @ qml.utils.sparse_hamiltonian(observable, wires=range(len(hf_state)))
+                @ scipy.sparse.coo_matrix(state).T
+            ).toarray()
+            obs_val_tapered = (
+                scipy.sparse.coo_matrix(state_tapered)
+                @ qml.utils.sparse_hamiltonian(excitation_obs, wires=range(len(hf_state_tapered)))
+                @ scipy.sparse.coo_matrix(state_tapered).T
+            ).toarray()
+            assert np.isclose(obs_val, obs_val_tapered)
+
+            # check if tapered excitation are particle number conserving
+            excited_state = qml.matrix(observable, wire_order=range(len(hf_state)))@state
+            excited_state_tapered = qml.matrix(excitation_obs, 
+                            wire_order=range(len(hf_state_tapered)))@state_tapered
+            pnum_val = (
+                scipy.sparse.coo_matrix(excited_state)
+                @ qml.utils.sparse_hamiltonian(particle_num)
+                @ scipy.sparse.coo_matrix(excited_state).T
+            ).toarray()
+            pnum_val_tapered = (
+                scipy.sparse.coo_matrix(excited_state_tapered)
+                @ qml.utils.sparse_hamiltonian(particle_num_tapered)
+                @ scipy.sparse.coo_matrix(excited_state_tapered).T
+            ).toarray()
+            assert np.isclose(pnum_val, pnum_val_tapered)
