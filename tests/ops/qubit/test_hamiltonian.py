@@ -78,6 +78,8 @@ valid_hamiltonians = [
     ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
     (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
+    ((0.5 + 1.2j, 1.2 + 0.5j), (qml.PauliX(0), qml.PauliY(1))),
+    ((0.7+0j, 0+1.3j), (qml.PauliX(0), qml.PauliY(1))),
 ]
 
 valid_hamiltonians_str = [
@@ -92,6 +94,8 @@ valid_hamiltonians_str = [
     "  (1.5) [Z0]\n+ (2.0) [Y2]",
     "  (0.5) [Y0]\n+ (-0.1) [Hermitian0,1]",
     "  (0.5) [X0]\n+ (1.2) [X0 X1]",
+    "  ((0.5+1.2j)) [X0]\n+ ((1.2+0.5j)) [Y1]",
+    "  (1.3j) [Y1]\n+ ((0.7+0j)) [X0]",
 ]
 
 valid_hamiltonians_repr = [
@@ -104,6 +108,8 @@ valid_hamiltonians_repr = [
     "<Hamiltonian: terms=3, wires=[0, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 1, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
 ]
