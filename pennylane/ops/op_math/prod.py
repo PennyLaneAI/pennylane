@@ -456,8 +456,8 @@ class ProductFactorsGrouping:
     _paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
     def __init__(self):
-        self._pauli_tuples = {}  #  {wire: (pauli_coeff, pauli_word)}
-        self._stashed_ops = {}  # {wires: [hash, pow_coeff, operator]}
+        self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
+        self._non_pauli_factors = {}  # {wires: [hash, pow_coeff, operator]}
         self.queue = ()
         self.global_phase = 1
 
@@ -495,9 +495,9 @@ class ProductFactorsGrouping:
                 ``factor.wires`` several times.
         """
         label = factor.label()
-        old_coeff, old_word = self._pauli_tuples.get(wires[0], (1, "I"))
+        old_coeff, old_word = self._pauli_factors.get(wires[0], (1, "I"))
         coeff, new_word = self._pauli_mult[old_word + label]
-        self._pauli_tuples[wires[0]] = old_coeff * coeff, new_word
+        self._pauli_factors[wires[0]] = old_coeff * coeff, new_word
 
     def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
         """Adds the given non-Pauli factor to the temporary ``self._stashed_ops`` dictionary. If
@@ -517,21 +517,21 @@ class ProductFactorsGrouping:
         else:
             coeff = 1
         op_hash = factor.hash
-        old_hash, old_coeff, old_op = self._stashed_ops.get(wires, [None, None, None])
+        old_hash, old_coeff, old_op = self._non_pauli_factors.get(wires, [None, None, None])
         # TODO: Should we create an abstract `Rotation` class and make inherit all rotations from
         # this class? We could group a lot of operator functionalities, and this check will be
         # easier.
         if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and factor.name == old_op.name:
-            self._stashed_ops[wires] = [
+            self._non_pauli_factors[wires] = [
                 op_hash,
                 old_coeff,
                 factor.__class__(factor.data[0] + old_op.data[0], wires),
             ]
         elif op_hash == old_hash:
-            self._stashed_ops[wires][1] += coeff
+            self._non_pauli_factors[wires][1] += coeff
         else:
             self._queue_stashed_factors(wires=wires)
-            self._stashed_ops[wires] = [op_hash, coeff, factor]
+            self._non_pauli_factors[wires] = [op_hash, coeff, factor]
 
     def _queue_stashed_factors(self, wires: List[int]):
         """Remove all factors from the ``self._stashed_ops`` dictionary that act on the given wires
@@ -541,9 +541,9 @@ class ProductFactorsGrouping:
             wires (List[int]): Wires of the operators to be queued.
         """
         for wire in wires:
-            for key, (_, pow_coeff, op) in list(self._stashed_ops.items()):
+            for key, (_, pow_coeff, op) in list(self._non_pauli_factors.items()):
                 if wire in key:
-                    self._stashed_ops.pop(key)
+                    self._non_pauli_factors.pop(key)
                     if pow_coeff == 0:
                         continue
                     # TODO: Should we create a qml.pow function that calls op.pow() if possible?
@@ -565,7 +565,7 @@ class ProductFactorsGrouping:
             wires (List[int]): Wires of the operators to be queued.
         """
         for wire in wires:
-            pauli_coeff, pauli_word = self._pauli_tuples.pop(wire, (1, "I"))
+            pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "I"))
             if pauli_word != "I":
                 pauli_op = self._paulis[pauli_word](wire)
                 self.queue += ((pauli_op,),)
