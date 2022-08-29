@@ -762,7 +762,7 @@ class Operator(abc.ABC):
         raise EigvalsUndefinedError
 
     def eigvals(self):
-        r"""Eigenvalues of the operator in the computational basis (static method).
+        r"""Eigenvalues of the operator in the computational basis.
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
         can be reconstructed as
