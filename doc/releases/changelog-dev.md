@@ -191,7 +191,7 @@
 
   Any device that overrides `statistics` should edit the signature of the method to include
   the new `circuit` keyword argument.
-  [(#3009)](https://github.com/PennyLaneAI/pennylane/pull/3009)
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
 <h3>Deprecations</h3>
 
