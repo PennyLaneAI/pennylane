@@ -33,9 +33,7 @@ import pennylane as qml
 def __getattr__(name):
     # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
     if name == "expand":
-        warning_string = (
-            "qml.utils.expand is deprecated; using qml.math.expand_matrix instead."
-        )
+        warning_string = "qml.utils.expand is deprecated; using qml.math.expand_matrix instead."
         warnings.warn(warning_string, UserWarning)
         return qml.math.expand_matrix
     try:

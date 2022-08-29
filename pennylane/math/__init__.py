@@ -127,5 +127,5 @@ __all__ = [
     "where",
     "add",
     "iscomplex",
-    "expand_matrix"
+    "expand_matrix",
 ]
