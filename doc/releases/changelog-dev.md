@@ -55,6 +55,10 @@
 * Added the `qml.TAdd` and `qml.TSWAP` qutrit operations which are the ternary analogs of the CNOT and SWAP operations respectively.
   ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
 
+* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
+  taking into account their commutativity property.
+  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
+
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
@@ -96,6 +100,23 @@
           [1, 0],
           [0, 2],
           [0, 2]], dtype=uint8, requires_grad=True)
+  ```
+* Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+
+  ```python
+  H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+
+  dev = qml.device("default.qubit", wires=range(2), shots=10000)
+  @qml.qnode(dev)
+  def qnode(x, H):
+      qml.Hadamard(0)
+      qml.CNOT((0,1))
+      qml.RX(x, wires=0)
+      return qml.shadow_expval(H)
+
+  x = np.array(0.5, requires_grad=True)
+
+  print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
 
 <h3>Improvements</h3>
@@ -158,6 +179,9 @@
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
 
+* `Controlled` operators now work with `qml.is_commuting`.
+  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -165,6 +189,9 @@
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
 <h3>Deprecations</h3>
+
+* The `supports_reversible_diff` device capability is unused and has been removed.
+  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
 <h3>Documentation</h3>
 
@@ -191,6 +218,7 @@ Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
+Matthew Silverman,
 Jay Soni,
 Antal Száva
 Cody Wang,
