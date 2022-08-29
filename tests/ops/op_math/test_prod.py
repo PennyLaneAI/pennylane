@@ -533,6 +533,7 @@ class TestMatrix:
     def test_sparse_matrix_undefined_error(self):
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
+
         class DummyOp(qml.operation.Operation):
             num_wires = 1
 
