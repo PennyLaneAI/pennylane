@@ -153,25 +153,6 @@ class Prod(Operator):
     """
     _name = "Prod"
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
-    _pauli_mult = {
-        "II": (1.0, "I"),
-        "IX": (1.0, "X"),
-        "IY": (1.0, "Y"),
-        "IZ": (1.0, "Z"),
-        "XI": (1.0, "X"),
-        "XX": (1.0, "I"),
-        "XY": (1.0j, "Z"),
-        "XZ": (-1.0j, "Y"),
-        "YI": (1.0, "Y"),
-        "YX": (-1.0j, "Z"),
-        "YY": (1.0, "I"),
-        "YZ": (1.0j, "X"),
-        "ZI": (1.0, "Z"),
-        "ZX": (1.0j, "Y"),
-        "ZY": (-1.0j, "X"),
-        "ZZ": (1.0, "I"),
-    }
-    _paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
     def __init__(
         self, *factors: Operator, do_queue=True, id=None
@@ -356,187 +337,19 @@ class Prod(Operator):
         return 1 + max(factor.arithmetic_depth for factor in self.factors)
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[Operator]:
-        """Reduces the depth of nested factors and groups pauli operators that act on the same wires.
+        """Reduces the depth of nested factors and groups identical factors.
 
         Returns:
             Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
             of the simplified factors
         """
-        global_phase = 1
-        new_factors = ()
-        pauli_tuples = {}  # pauli_tuples = {wire: (pauli_coeff, pauli_word)}
-        stashed_ops = {}  # stashed_ops = {wires: [hash, pow_coeff, operator]}
+        new_factors = ProductFactors()
 
         for factor in factors:
             simplified_factor = factor.simplify()
-            stashed_ops, pauli_tuples, phase, new_operators = self._group_operators(
-                stashed_ops=stashed_ops, pauli_tuples=pauli_tuples, op=simplified_factor
-            )
-            global_phase *= phase
-            new_factors += new_operators
-
-        # Fetch all the remaining Pauli operators inside the ``pauli_tuples`` dictionary.
-        _, phase, pauli_ops = self._get_pauli_operators(
-            pauli_tuples=pauli_tuples, wires=list(pauli_tuples.keys())
-        )
-
-        _, new_operators = self._get_stashed_ops(stashed_ops=stashed_ops, wires=list(self.wires))
-
-        return global_phase * phase, new_factors + pauli_ops + new_operators
-
-    def _group_operators(self, stashed_ops: dict, pauli_tuples: dict, op: Operator):
-        """This method finds and groups all Pauli operators contained in ``op`` that act on the same
-        wire.
-
-        Args:
-            pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
-                operator and its values are tuples containing the coefficient and the Pauli word.
-            op (Operator): Operator to search.
-
-        Returns:
-            Tuple[dict, complex, tuple(.Operator)]: Tuple containing the modified ``pauli_tuples``
-                dictionary, the added global_phase of the operator and a tuple containing the
-                residual operators, which contain all non Pauli operators and, if ``op`` is not
-                a Pauli operator, all the Pauli operators that acted on the same wire (to make sure
-                that the commutative property is preserved).
-        """
-        global_phase = 1
-        residual_ops = ()
-        if isinstance(op, Prod):
-            for factor in op.factors:
-                (
-                    stashed_ops,
-                    pauli_tuples,
-                    prod_global_phase,
-                    prod_residual_ops,
-                ) = self._group_operators(
-                    stashed_ops=stashed_ops, pauli_tuples=pauli_tuples, op=factor
-                )
-                global_phase *= prod_global_phase
-                residual_ops += prod_residual_ops
-        elif isinstance(op, Sum):
-            residual_ops += (op.summands,)
-        elif not isinstance(op, qml.Identity):
-            if isinstance(op, SProd):
-                global_phase *= op.scalar
-                op = op.base
-            wires = op.wires
-            if isinstance(op, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
-                # Update ``pauli_tuples`` dictionary
-                label = op.label()
-                old_coeff, old_word = pauli_tuples.get(wires[0], (1, "I"))
-                coeff, new_word = self._pauli_mult[old_word + label]
-                pauli_tuples[wires[0]] = old_coeff * coeff, new_word
-                stashed_ops, new_operators = self._get_stashed_ops(
-                    stashed_ops=stashed_ops, wires=wires
-                )
-                residual_ops += new_operators
-            else:
-                # Update the ``residual_ops`` tuple first with the Pauli ops acting on the same wire
-                # and then with the non-pauli ``op`` operator.
-                stashed_ops, new_operators = self._add_non_pauli_factor(
-                    stashed_ops=stashed_ops, op=op
-                )
-                residual_ops += new_operators
-                pauli_tuples, prod_global_phase, pauli_ops = self._get_pauli_operators(
-                    pauli_tuples=pauli_tuples, wires=wires
-                )
-                global_phase *= prod_global_phase
-                residual_ops += pauli_ops
-
-        return stashed_ops, pauli_tuples, global_phase, residual_ops
-
-    def _get_pauli_operators(self, pauli_tuples: dict, wires: List[int]):
-        """Get the pauli operators that act on the specified wires from the ``pauli_tuples``
-        dictionary.
-
-        Args:
-            pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
-                operator and its values are tuples containing the coefficient and the Pauli word.
-            wires (List[int]): Wires of the operators we want to get.
-
-        Returns:
-            tuple(dict, complex, tuple(.Operator)): Tuple containing the updated ``pauli_tuples``
-            dictionary, the global_phase added and a tuple containing the fetched Pauli operators.
-                operators.
-        """
-        pauli_operators = ()
-        global_phase = 1
-        for wire in wires:
-            pauli_coeff, pauli_word = pauli_tuples.pop(wire, (1, "I"))
-            if pauli_word != "I":
-                pauli_op = self._paulis[pauli_word](wire)
-                pauli_operators += ((pauli_op,),)
-                global_phase *= pauli_coeff
-
-        return pauli_tuples, global_phase, pauli_operators
-
-    def _get_stashed_ops(self, stashed_ops: dict, wires: List[int]):  # pylint:disable=no-self-use
-        """Get the stashed operators that act on the specified wires from the ``pauli_tuples``
-        dictionary.
-
-        Args:
-            pauli_tuples (dict): Pauli tuples dictionary. Its keys are the wires of each Pauli
-                operator and its values are tuples containing the coefficient and the Pauli word.
-            wires (List[int]): Wires of the operators we want to get.
-
-        Returns:
-            tuple(dict, complex, tuple(.Operator)): Tuple containing the updated ``pauli_tuples``
-            dictionary, the global_phase added and a tuple containing the fetched Pauli operators.
-                operators.
-        """
-        new_operators = ()
-
-        for wire in wires:
-            for key, (_, pow_coeff, op) in list(stashed_ops.items()):
-                if wire in key:
-                    stashed_ops.pop(key)
-                    if pow_coeff == 0:
-                        continue
-                    op = Pow(base=op, z=pow_coeff) if pow_coeff != 1 else op
-                    op = op.simplify()
-                    if isinstance(op, Prod):
-                        new_factors = tuple(
-                            (factor,)
-                            for factor in op.factors
-                            if not isinstance(factor, qml.Identity)
-                        )
-                        new_operators = new_factors
-                    elif not isinstance(op, qml.Identity):
-                        new_operators += ((op,),)
-
-        return stashed_ops, new_operators
-
-    def _add_non_pauli_factor(self, stashed_ops: dict, op: Operator, coeff=1, op_hash=None):
-        """Add operator to the stashed_ops dictionary.
-
-        If the operator hash is already in the dictionary, the coefficient is increased instead.
-
-        Args:
-            stashed_ops (dict): Dictionary of the summands. Its keys are the hashes of all the summands
-                and its values contain a tuple with the coefficient and the summand's class.
-            op (Operator): operator to add to the summands dictionary
-            coeff (int, optional): Coefficient of the operator. Defaults to 1.
-            op_hash (int, optional): Hash of the operator. Defaults to None.
-        """
-        other_ops = ()
-        op_hash = op.hash if op_hash is None else op_hash
-        wires = op.wires
-        old_hash, old_coeff, old_op = stashed_ops.get(wires, [None, None, None])
-        if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and op.name == old_op.name:
-            stashed_ops[wires] = [
-                op_hash,
-                old_coeff,
-                op.__class__(op.data[0] + old_op.data[0], wires),
-            ]
-        elif op_hash == old_hash:
-            stashed_ops[wires][1] += coeff
-        else:
-            stashed_ops, new_ops = self._get_stashed_ops(stashed_ops=stashed_ops, wires=wires)
-            other_ops += new_ops
-            stashed_ops[wires] = [op_hash, coeff, op]
-
-        return stashed_ops, other_ops
+            new_factors.add(factor=simplified_factor)
+        new_factors.queue_factors(wires=self.wires)
+        return new_factors.global_phase, new_factors.queue
 
     def simplify(self) -> Union["Prod", Sum]:
         global_phase, factors = self._simplify_factors(factors=self.factors)
@@ -617,3 +430,146 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     if np.intersect1d(wires1, wires2).size != 0:
         return False
     return np.min(wires1) > np.min(wires2)
+
+
+class ProductFactors:
+    """Utils class used for grouping identical product factors."""
+
+    _pauli_mult = {
+        "II": (1.0, "I"),
+        "IX": (1.0, "X"),
+        "IY": (1.0, "Y"),
+        "IZ": (1.0, "Z"),
+        "XI": (1.0, "X"),
+        "XX": (1.0, "I"),
+        "XY": (1.0j, "Z"),
+        "XZ": (-1.0j, "Y"),
+        "YI": (1.0, "Y"),
+        "YX": (-1.0j, "Z"),
+        "YY": (1.0, "I"),
+        "YZ": (1.0j, "X"),
+        "ZI": (1.0, "Z"),
+        "ZX": (1.0j, "Y"),
+        "ZY": (-1.0j, "X"),
+        "ZZ": (1.0, "I"),
+    }
+    _paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+
+    def __init__(self):
+        self._pauli_tuples = {}  #  {wire: (pauli_coeff, pauli_word)}
+        self._stashed_ops = {}  # {wires: [hash, pow_coeff, operator]}
+        self.queue = ()
+        self.global_phase = 1
+
+    def add(self, factor: Operator):
+        """Add operator to the factors queue.
+
+        Args:
+            factor (Operator): Operator to add to the queue.
+        """
+        if isinstance(factor, Prod):
+            for prod_factor in factor.factors:
+                self.add(prod_factor)
+        elif isinstance(factor, Sum):
+            self.queue += (factor.summands,)
+        elif not isinstance(factor, qml.Identity):
+            if isinstance(factor, SProd):
+                self.global_phase *= factor.scalar
+                factor = factor.base
+            wires = factor.wires
+            if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
+                self._add_pauli_factor(factor=factor, wires=wires)
+                self._queue_stashed_factors(wires=wires)
+            else:
+                self._add_non_pauli_factor(factor=factor, wires=wires)
+                self._queue_pauli_factors(wires=wires)
+
+    def _add_pauli_factor(self, factor: Operator, wires: List[int]):
+        """Adds the given Pauli operator to the temporary ``self._pauli_tuples`` dictionary. If
+        there was another Pauli operator acting on the same wire, the two operators are grouped
+        together using the ``self._pauli_mult`` dictionary.
+
+        Args:
+            factor (Operator): Factor to be added.
+            wires (List[int]): Factor wires. This argument is added to avoid calling
+                ``factor.wires`` several times.
+        """
+        label = factor.label()
+        old_coeff, old_word = self._pauli_tuples.get(wires[0], (1, "I"))
+        coeff, new_word = self._pauli_mult[old_word + label]
+        self._pauli_tuples[wires[0]] = old_coeff * coeff, new_word
+
+    def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
+        """Adds the given non-Pauli factor to the temporary ``self._stashed_ops`` dictionary. If
+        there alerady exists an identical operator in the dictionary, the two are grouped together.
+
+        If there isn't an identical operator in the dictionary, all stashed operators that act on
+        the same wires are queued.
+
+        Args:
+            factor (Operator): Factor to be added.
+            wires (List[int]): Factor wires. This argument is added to avoid calling
+                ``factor.wires`` several times.
+        """
+        if isinstance(factor, Pow):
+            coeff = factor.z
+            factor = factor.base
+        else:
+            coeff = 1
+        op_hash = factor.hash
+        old_hash, old_coeff, old_op = self._stashed_ops.get(wires, [None, None, None])
+        if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and factor.name == old_op.name:
+            self._stashed_ops[wires] = [
+                op_hash,
+                old_coeff,
+                factor.__class__(factor.data[0] + old_op.data[0], wires),
+            ]
+        elif op_hash == old_hash:
+            self._stashed_ops[wires][1] += coeff
+        else:
+            self._queue_stashed_factors(wires=wires)
+            self._stashed_ops[wires] = [op_hash, coeff, factor]
+
+    def _queue_stashed_factors(self, wires: List[int]):
+        """Remove all factors from the ``self._stashed_ops`` dictionary that act on the given wires
+        and queue them.
+
+        Args:
+            wires (List[int]): Wires of the operators to be queued.
+        """
+        for wire in wires:
+            for key, (_, pow_coeff, op) in list(self._stashed_ops.items()):
+                if wire in key:
+                    self._stashed_ops.pop(key)
+                    if pow_coeff == 0:
+                        continue
+                    # TODO: Should we create a qml.pow function that calls op.pow() if possible?
+                    op = Pow(base=op, z=pow_coeff).simplify() if pow_coeff != 1 else op
+                    if isinstance(op, Prod):
+                        self.queue += tuple(
+                            (factor,)
+                            for factor in op.factors
+                            if not isinstance(factor, qml.Identity)
+                        )
+                    elif not isinstance(op, qml.Identity):
+                        self.queue += ((op,),)
+
+    def _queue_pauli_factors(self, wires: List[int]):
+        """Remove all Pauli factors from the ``self._pauli_tuples`` dictionary that act on the given
+        wires and queue them.
+
+        Args:
+            wires (List[int]): Wires of the operators to be queued.
+        """
+        for wire in wires:
+            pauli_coeff, pauli_word = self._pauli_tuples.pop(wire, (1, "I"))
+            if pauli_word != "I":
+                pauli_op = self._paulis[pauli_word](wire)
+                self.queue += ((pauli_op,),)
+                self.global_phase *= pauli_coeff
+
+    def queue_factors(self, wires: List[int]):
+        """Remove all factors from the ``self._pauli_tuples`` and ``self._stashed_ops`` dictionaries
+        that act on the given wires and queue then."""
+        self._queue_pauli_factors(wires=wires)
+        self._queue_stashed_factors(wires=wires)
