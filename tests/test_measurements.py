@@ -944,9 +944,8 @@ class TestCounts:
         res = circuit()
 
         assert len(res[0]) == 10
-        assert len(res[1]) == 1
-        assert len(res[2]) == 4
-        assert res[2]["00"] == 10
+        assert res[1] == {"00": 10}
+        assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
 
 
 class TestMeasure:
