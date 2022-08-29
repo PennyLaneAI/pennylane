@@ -41,7 +41,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     **Example**
 
-    .. code-block:: python
+    .. code-block:: python3
 
         @qml.qnode(qml.device('default.qubit', wires=range(4)))
         def circuit(x):
@@ -49,16 +49,16 @@ def ctrl(op, control, control_values=None, work_wires=None):
             qml.ctrl(qml.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        >>> print(qml.draw(circuit)("x"))
-        0: ────╭RX(x)─┤  <Z>
-        1: ────├○─────┤
-        2: ──X─├●─────┤
-        3: ────╰○─────┤
-        >>> x = np.array(1.2)
-        >>> circuit(x)
-        tensor(0.36235775, requires_grad=True)
-        >>> qml.grad(circuit)(x)
-        -0.9320390859672264
+    >>> print(qml.draw(circuit)("x"))
+    0: ────╭RX(x)─┤  <Z>
+    1: ────├○─────┤
+    2: ──X─├●─────┤
+    3: ────╰○─────┤
+    >>> x = np.array(1.2)
+    >>> circuit(x)
+    tensor(0.36235775, requires_grad=True)
+    >>> qml.grad(circuit)(x)
+    -0.9320390859672264
 
     :func:`~.ctrl` works on both functions, shown above, and individual :class:`~.operation.Operator`'s.
 
