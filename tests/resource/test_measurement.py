@@ -22,19 +22,22 @@ from pennylane import numpy as np
 coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
 error = 0.0016  # chemical accuracy
 shots = 419217  # computed manually
+variances = [0.73058343, 0.03283723]  # obtained with the upper bound var(pauli_word) = 1
 
 
 @pytest.mark.parametrize(
-    ("coefficients", "error", "shots"),
+    ("coefficients", "error", "shots", "variances"),
     [
-        (coeffs, error, shots),
+        (coeffs, error, shots, variances),
     ],
 )
-def test_estimate_samples(coefficients, error, shots):
+def test_estimate_samples(coefficients, error, shots, variances):
     r"""Test that the estimate_samples function returns the correct number of measurements."""
-    m = qml.resource.estimate_samples(coefficients, error=error)
+    m_novar = qml.resource.estimate_samples(coefficients, error=error)
+    m_var = qml.resource.estimate_samples(coefficients, variances=variances, error=error)
 
-    assert m == shots
+    assert m_novar == shots
+    assert m_var == shots
 
 
 @pytest.mark.parametrize(
@@ -45,6 +48,8 @@ def test_estimate_samples(coefficients, error, shots):
 )
 def test_estimate_error(coefficients, error, shots):
     r"""Test that the estimate_error function returns the correct error."""
-    e = qml.resource.estimate_error(coefficients, shots=shots)
+    e_novar = qml.resource.estimate_error(coefficients, shots=shots)
+    e_var = qml.resource.estimate_error(coefficients, variances=variances, shots=shots)
 
-    assert np.allclose(e, error)
+    assert np.allclose(e_novar, error)
+    assert np.allclose(e_var, error)

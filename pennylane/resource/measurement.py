@@ -33,7 +33,7 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> estimate_samples(coeffs):
+    >>> qml.resource.estimate_samples(coeffs):
     419217
 
     .. details::
@@ -108,7 +108,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> estimate_error(coeffs, shots=419217):
+    >>> qml.resource.estimate_error(coeffs, shots=419217):
     0.0016
 
     .. details::
