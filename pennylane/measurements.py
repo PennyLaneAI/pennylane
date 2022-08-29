@@ -58,7 +58,7 @@ class ObservableReturnTypes(Enum):
 Sample = ObservableReturnTypes.Sample
 """Enum: An enumeration which represents sampling an observable."""
 
-Counts: ObservableReturnTypes = ObservableReturnTypes.Counts
+Counts = ObservableReturnTypes.Counts
 """Enum: An enumeration which represents returning the number of times
  each of the observed outcomes occurred in sampling."""
 
