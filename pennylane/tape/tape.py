@@ -375,7 +375,11 @@ class QuantumTape(AnnotatedQueue):
     def __exit__(self, exception_type, exception_value, traceback):
         try:
             super().__exit__(exception_type, exception_value, traceback)
+            # After other optimizations in #2963, #2986 and follow-up work, we should check whether
+            # calling `_process_queue` only if there is no `exception_type` saves time. This would
+            # be done via the following:
             # if exception_type is None:
+            #    self._process_queue()
             self._process_queue()
         finally:
             QuantumTape._lock.release()
@@ -494,9 +498,7 @@ class QuantumTape(AnnotatedQueue):
             is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
             all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
-        self.wires = qml.wires.Wires.all_wires(
-            dict.fromkeys(op.wires for op in self)
-        )
+        self.wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
 
         is_sample_type = [

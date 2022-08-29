@@ -573,19 +573,6 @@ class Operator(abc.ABC):
         """
         return cls.compute_matrix != Operator.compute_matrix
 
-    # pylint: disable=no-self-argument, comparison-with-callable
-    @classproperty
-    def has_decomposition(cls):
-        r"""Bool: Whether or not the Operator returns a defined decomposition.
-
-        Note: Child classes may have this as an instance property instead of as a class property.
-        """
-        # Some operators will overwrite `decomposition` instead of `compute_decomposition`.
-        return (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-        )
-
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -1212,9 +1199,6 @@ class Operator(abc.ABC):
         Returns:
             .QuantumTape: quantum tape
         """
-        if not self.has_decomposition:
-            raise DecompositionUndefinedError
-
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
