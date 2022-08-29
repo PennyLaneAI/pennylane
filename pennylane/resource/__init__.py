@@ -17,4 +17,4 @@ logical qubits required to implement advanced quantum algorithms.
 """
 from .first_quantization import FirstQuantization
 from .second_quantization import DoubleFactorization
-from .measurement import estimate_samples
+from .measurement import estimate_error, estimate_samples
