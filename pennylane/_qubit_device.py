@@ -1615,12 +1615,12 @@ class QubitDevice(Device):
 
              .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=2, shots=4)
+                dev = qml.device("default.qubit", wires=2, shots=4)
 
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.RX(x, wires=0)
-                return qml.counts(all_outcomes=True)
+                @qml.qnode(dev)
+                def circuit(x):
+                    qml.RX(x, wires=0)
+                    return qml.counts(all_outcomes=True)
 
 
         """
