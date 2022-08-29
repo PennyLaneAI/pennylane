@@ -306,15 +306,11 @@ class Sum(Operator):
         return _sum(matrix_gen(self.summands, wire_order))
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the product op
-        in csr representation."""
+        """Compute the sparse matrix representation of the Sum op in csr representation."""
         if wire_order is None:
             wire_order = self.wires
 
-        mats_gen = (
-            sparse_expand_matrix(op.sparse_matrix(wire_order), op.wires, wire_order=wire_order)
-            for op in self.summands
-        )
+        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
         return reduce(math.add, mats_gen)
 
     @property
