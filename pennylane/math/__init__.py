@@ -74,6 +74,8 @@ from .utils import (
 
 from .is_independent import is_independent
 
+from .matrix_manipulation import expand_matrix
+
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
@@ -125,4 +127,5 @@ __all__ = [
     "where",
     "add",
     "iscomplex",
+    "expand_matrix"
 ]
