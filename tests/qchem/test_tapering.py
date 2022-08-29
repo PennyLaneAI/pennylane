@@ -774,9 +774,15 @@ def test_taper_excitations(symbols, geometry, charge, num_commuting):
             assert np.isclose(obs_val, obs_val_tapered)
 
             # check if tapered excitation are particle number conserving
-            excited_state = qml.matrix(observable, wire_order=range(len(hf_state))) @ state
+            excited_state = (
+                scipy.linalg.expm(1j * qml.matrix(observable, wire_order=range(len(hf_state))))
+                @ state
+            )
             excited_state_tapered = (
-                qml.matrix(excitation_obs, wire_order=range(len(hf_state_tapered))) @ state_tapered
+                scipy.linalg.expm(
+                    1j * qml.matrix(excitation_obs, wire_order=range(len(hf_state_tapered)))
+                )
+                @ state_tapered
             )
             pnum_val = (
                 scipy.sparse.coo_matrix(excited_state)
