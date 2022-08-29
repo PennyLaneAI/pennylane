@@ -21,6 +21,7 @@ import bz2
 import requests
 import pickle
 import os
+import sys
 import json
 
 class Dataset:
@@ -28,7 +29,19 @@ class Dataset:
     def __init__(self, **kwargs):
         self.variables = kwargs
 
-def load(directory,datatype,datasubtype, redownload=False):
+url = "http://127.0.0.1:5001/download"
+
+import math
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0 B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
+
+def load(directory, datatype, datasubtype, redownload=False):
     """Downloads the data if not already present in directory and 
     returns a qml.dataset of the desired dataset represented by 
     datatype and datasubtype"""
@@ -36,26 +49,58 @@ def load(directory,datatype,datasubtype, redownload=False):
     #if data is not in directory, download data
     #currently using datatype/datasubtype/datasubtype as a place holder
     #for when we have sub and subsubtypes
-    if not path.exists(directory+'/'+datatype+'/'+datasubtype+'/'+datasubtype) or redownload:
-        print("downloading data")
-        if not path.exists(directory+'/'+datatype+'/'+datasubtype):
-            os.makedirs(directory+'/'+datatype+'/'+datasubtype)
-        with open(directory+'/'+datatype+'/'+datasubtype+'/'+datasubtype, 'wb') as file:
-            response = requests.get('http://127.0.0.1:5000/download/'+datatype+'/'+datasubtype) #test dataset
-            dataset = response.content
-            file.write(dataset)
-    
-    with open(directory+'/'+datatype+'/'+datasubtype+'/'+datasubtype, 'rb') as file:
-        data = pickle.load(file)
+    dir_path = f"{directory}/{datatype}/{datasubtype}"
+    file_path = f"{directory}/{datatype}/{datasubtype}/{datasubtype}"
+    if not path.exists(file_path) or redownload:     
+        if not path.exists(dir_path):
+            os.makedirs(dir_path)
+        with open(file_path, 'wb') as file:
+            response = requests.get(url + '/'+datatype+'/'+datasubtype, stream=True) #test dataset
+            if response.status_code == 200:
+                print(f"Downloading data to {file_path}")
+                total_length = response.headers.get('content-length')
+                if total_length is None:
+                    file.write(response.content)
+                else:
+                    total_length, barsize, progress = int(total_length), 60, 0
+                    for idx, chunk in enumerate(response.iter_content(chunk_size=4096)):
+                        if chunk:
+                            file.write(chunk)
+                            progress += len(chunk)
+                            completed = min(round(progress/total_length, 3) * 100, 100)
+                            barlength = int(progress/total_length * barsize)
+                            if not idx % 1000:
+                                f = f"[{chr(9608)*barlength} {round(completed, 3)} %{'.'*(barsize-barlength)}] {convert_size(progress)}/{convert_size(total_length)}"
+                                sys.stdout.write("\r" + f)
+                                sys.stdout.flush()
+
+                    f = f"[{chr(9608)*barlength} {round(completed, 3)} %{'.'*(barsize-barlength)}] {convert_size(progress)}/{convert_size(total_length)}"
+                    sys.stdout.write("\r" + f)
+                    sys.stdout.flush()
+            else:
+                response.raise_for_status()
+
+    with open(file_path, 'rb') as file:
+        try:
+            data = dill.load(file)
+        except:
+            data = pickle.load(file)
 
     return data
 
 def listdatasets():
     """Returns a list of datasets and their sizes"""
-    byteslist = requests.get('http://127.0.0.1:5000/download/about').content
-    return json.loads(byteslist)
+    byteslist = requests.get(url + '/about').content
+    data = json.loads(byteslist)
+
+    for key, val in data.items():
+        for ky, vl in data[key].items():
+            for k, v in data[key][ky].items():
+                data[key][ky][k] = convert_size(v)
+    return data
 
 def getinfo(datatype,datasubtype,name):
-    value = requests.get('http://127.0.0.1:5000/download/about/'+datatype+'/'+datasubtype+'/'+name).content
+    value = requests.get(url + '/about/'+datatype+'/'+datasubtype+'/'+name).content
     valueasdict = json.loads(value)
     return valueasdict
+
