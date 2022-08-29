@@ -226,7 +226,7 @@ class DefaultQutrit(QutritDevice):
 
     def _apply_tswap(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a ternary SWAP gate by performing a partial transposition along the
-        specified axes. The ternary SWAP gate acts on the computational basis states like 
+        specified axes. The ternary SWAP gate acts on the computational basis states like
         :math:`\vert i, j\rangle \rightarrow \vert j, i \rangle`.
 
         Args:
