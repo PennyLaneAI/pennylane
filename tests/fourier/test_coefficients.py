@@ -276,23 +276,33 @@ class TestAntiAliasing:
         assert not np.allclose(coeffs_regular, expected_coeffs)
 
     @pytest.mark.parametrize(
-        "circuit,degree",
+        "circuit,degree,threshold",
         [
-            (circuit_two_qubits_two_params, 1),
-            (circuit_one_qubit_two_params, 1),
+            (circuit_two_qubits_two_params, 1, None),
+            (circuit_one_qubit_two_params, (1, 2), (2, 2)),
+            (circuit_two_qubits_two_params, (1, 2), 3),
+            (circuit_one_qubit_two_params, 1, (1, 2)),
         ],
     )
-    def test_anti_aliasing(self, circuit, degree):
+    def test_anti_aliasing(self, circuit, degree, threshold):
         """Test that the coefficients obtained through anti-aliasing are the
         same as the ones when we don't anti-alias at the correct degree."""
-        coeffs_regular = coefficients(circuit, circuit.n_inputs, degree, lowpass_filter=False)
-        coeffs_anti_aliased = coefficients(circuit, circuit.n_inputs, degree, lowpass_filter=True)
+        coeffs_regular = coefficients(
+            circuit,
+            circuit.n_inputs,
+            degree,
+            lowpass_filter=False,
+            filter_threshold=threshold,
+        )
+        coeffs_anti_aliased = coefficients(
+            circuit,
+            circuit.n_inputs,
+            degree,
+            lowpass_filter=True,
+            filter_threshold=threshold,
+        )
 
         assert np.allclose(coeffs_regular, coeffs_anti_aliased)
-
-    def test_anti_aliasing_not_implemented_with_broadcasting(self):
-        with pytest.raises(ValueError, match="The lowpass filter option"):
-            coefficients(circuit_one_qubit_two_params, 2, (1, 4), lowpass_filter=True)
 
 
 class TestInterfaces:

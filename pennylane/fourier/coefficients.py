@@ -170,11 +170,13 @@ def coefficients(
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree, use_broadcasting)
 
-    if not isinstance(degree, int):
-        raise ValueError("The lowpass filter option does not support multiple degrees yet.")
+    if isinstance(degree, int):
+        degree = (degree,) * n_inputs
 
     if filter_threshold is None:
-        filter_threshold = 2 * degree
+        filter_threshold = tuple((2 * d for d in degree))
+    elif isinstance(filter_threshold, int):
+        filter_threshold = (filter_threshold,) * n_inputs
 
     # Compute the fft of the function at 2x the specified degree
     unfiltered_coeffs = _coefficients_no_filter(f, n_inputs, filter_threshold, use_broadcasting)
@@ -184,18 +186,14 @@ def coefficients(
 
     # Next, slice up the array so that we get only the coefficients we care about,
     # those between -degree and degree
-    range_slices = list(
-        range(
-            filter_threshold - degree,
-            shifted_unfiltered_coeffs.shape[0] - (filter_threshold - degree),
-        )
-    )
-
+    shape = shifted_unfiltered_coeffs.shape
     shifted_filtered_coeffs = shifted_unfiltered_coeffs.copy()
 
     # Go axis by axis and take only the central components
     for axis in range(n_inputs - 1, -1, -1):
-        shifted_filtered_coeffs = np.take(shifted_filtered_coeffs, range_slices, axis=axis)
+        num_excess = filter_threshold[axis] - degree[axis]
+        _slice = list(range(num_excess, shape[axis] - num_excess))
+        shifted_filtered_coeffs = np.take(shifted_filtered_coeffs, _slice, axis=axis)
 
     # Shift everything back into "normal" fft ordering
     filtered_coeffs = np.fft.ifftshift(shifted_filtered_coeffs)
