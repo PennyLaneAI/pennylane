@@ -15,6 +15,7 @@
 from itertools import product
 import numpy as np
 
+# pylint:disable=too-many-arguments
 
 def coefficients(
     f, n_inputs, degree, lowpass_filter=False, filter_threshold=None, use_broadcasting=False
@@ -161,7 +162,9 @@ def coefficients(
     Note that in this case, ``2 * degree`` gives us exactly the maximum coefficient;
     in other situations it may be desirable to set the threshold value explicitly.
 
-    The `coefficients` function can handle qnodes from all PennyLane interfaces.
+    The `coefficients` function can handle qnodes from all PennyLane interfaces and if the
+    passed function allows broadcasted parameter inputs, the computation of the coefficients
+    can be accelerated by setting ``use_broadcasting=True``.
     """
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree, use_broadcasting)
