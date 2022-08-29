@@ -29,6 +29,7 @@ def format_nvec(nvec):
 
     return " ".join(f"{n: }" for n in nvec)
 
+
 def get_spectrum(op, decimals):
     r"""Extract the frequencies contributed by an input-encoding gate to the
     overall Fourier representation of a quantum circuit.

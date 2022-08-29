@@ -92,7 +92,7 @@ def _extract_data_and_labels(coeffs):
     """
     # extract the x ticks: create generator for indices nvec = (n1, ..., nN),
     # ranging from (-d1,...,-dN) to (d1,...,dN).
-    nvecs = list(product(*(np.array(range(-(d//2), d//2 + 1)) for d in coeffs[0].shape)))
+    nvecs = list(product(*(np.array(range(-(d // 2), d // 2 + 1)) for d in coeffs[0].shape)))
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
     # extract flattened data by real part and imaginary part, and respecting negativ indices
