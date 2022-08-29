@@ -52,7 +52,7 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
         with :math:`\epsilon` and :math:`\text{Var}(A)` denoting the target error in computing
         :math:`\left \langle H \right \rangle` and the variance in computing
         :math:`\left \langle A \right \rangle`, respectively. It has been shown in Eq. (10) of
-        [`arXiv:2201.01471v3 <https://arxiv.org/abs/2201.01471v3`_] that
+        [`arXiv:2201.01471v3 <https://arxiv.org/abs/2201.01471v3>`_] that
         the variances can be computed from the covariances between the Pauli words as
 
         .. math::
@@ -69,7 +69,7 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
         computed from affordable classical methods, such as the configuration interaction with
         singles and doubles (CISD), or approximated with other methods. If the variances are not
         provided to the function as input, they will be approximated following Eqs. (6-7) of
-        [`Phys. Rev. Research 4, 033154, 2022 <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.4.033154`_]
+        [`Phys. Rev. Research 4, 033154, 2022 <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.4.033154>`_]
         by assuming
         :math:`\text{Cov}(O_j, O_k) =0` for :math:`j \neq k` and using :math:`\text{Var}(O_i) \leq 1`
         from
@@ -127,7 +127,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
         with :math:`M` and :math:`\text{Var}(A)` denoting the number of measurements and the
         variance in computing :math:`\left \langle A \right \rangle`, respectively. It has been
         shown in Eq. (10) of
-        [`arXiv:2201.01471v3 <https://arxiv.org/abs/2201.01471v3`_] that the variances can be
+        [`arXiv:2201.01471v3 <https://arxiv.org/abs/2201.01471v3>`_] that the variances can be
         computed from the covariances between the Pauli words as
 
         .. math::
@@ -144,7 +144,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
         computed from affordable classical methods, such as the configuration interaction with
         singles and doubles (CISD), or approximated with other methods. If the variances are not
         provided to the function as input, they will be approximated following Eqs. (6-7) of
-        [`Phys. Rev. Research 4, 033154, 2022 <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.4.033154`_]
+        [`Phys. Rev. Research 4, 033154, 2022 <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.4.033154>`_]
         by assuming
         :math:`\text{Cov}(O_j, O_k) =0` for :math:`j \neq k` and using :math:`\text{Var}(O_i) \leq 1`
         from
