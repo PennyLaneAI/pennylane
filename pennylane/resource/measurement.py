@@ -18,16 +18,23 @@ for computing expectation values.
 from pennylane import numpy as np
 
 
-def estimate_samples(coeffs, ops, error=0.0016, variances=None):
+def estimate_samples(coeffs, variances=None, error=0.0016):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
 
     Args:
         coeffs (list[tensor_like]): list of coefficient groups
-        ops (list[list[Observable]]): list of Pauli word groups
-        error (float): target error in computing the expectation value
         variances (list[float]): variances of the Pauli word groups
+        error (float): target error in computing the expectation value
 
+        Returns:
+            int: the number of measurements
+
+        **Example**
+
+        >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
+        >>> estimate_samples(coeffs):
+        419217
 
     .. details::
         :title: Theory
@@ -74,12 +81,9 @@ def estimate_samples(coeffs, ops, error=0.0016, variances=None):
 
         where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
         group, respectively.
-
-
     """
-    if not variances:
-        variances = np.ones(len(ops))
-
-    n_measurements = (np.sum(abs(coeffs) * variances**0.5) / error) ** 2
-
-    return int(n_measurements)
+    if variances:
+        return int(np.sum(np.sqrt(variances)) ** 2 / error**2)
+    else:
+        group_sum = [np.sum(coeff**2) for coeff in coeffs]
+        return int(np.sum(np.sqrt(group_sum)) ** 2 / error**2)
