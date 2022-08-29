@@ -184,6 +184,30 @@ class TestMatrix:
         compare = qml.RX(phi, wires=0)
         assert qml.math.allclose(op.matrix(), compare.matrix())
 
+    @pytest.mark.jax
+    def test_jax_matrix_rx(self):
+        """Test the matrix with jax."""
+        import jax
+
+        phi = jax.numpy.array(0.4 + 0j)
+
+        base = qml.PauliX(0)
+        op = Exp(base, -0.5j * phi)
+        compare = qml.RX(phi, 0)
+
+        assert qml.math.allclose(op.matrix(), compare.matrix())
+
+        def exp_mat(x):
+            return qml.exp(base, -0.5j * x).matrix()
+
+        def rx_mat(x):
+            return qml.RX(x, wires=0).matrix()
+
+        exp_mat_grad = jax.jacobian(exp_mat, holomorphic=True)(phi)
+        rx_mat_grad = jax.jacobian(rx_mat, holomorphic=True)(phi)
+
+        assert qml.math.allclose(exp_mat_grad, rx_mat_grad)
+
     def test_sparse_matrix(self):
         """Test the sparse matrix function."""
         from scipy.sparse import csr_matrix
