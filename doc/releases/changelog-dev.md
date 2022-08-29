@@ -193,6 +193,9 @@
 
 <h3>Deprecations</h3>
 
+* The `supports_reversible_diff` device capability is unused and has been removed.
+  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
+
 <h3>Documentation</h3>
 
 * Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
@@ -218,6 +221,7 @@ Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
+Matthew Silverman,
 Jay Soni,
 Antal Száva
 Cody Wang,
