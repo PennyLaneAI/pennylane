@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator,
+from pennylane.operation import Operator
 
 
 def op_sum(*summands, do_queue=True, id=None):
