@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, expand_matrix, sparse_expand_matrix
+from pennylane.operation import Operator, expand_matrix
 from pennylane.ops.op_math.sum import Sum
 
 
@@ -300,13 +300,12 @@ class Prod(Operator):
         )
         return reduce(math.dot, mats)
 
-    def sparse_matrix(self, wire_order=None, format="csr"):
+    def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
         if wire_order is None:
             wire_order = self.wires
 
         mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
-        # return reduce(lambda mat_a, mat_b: mat_a.dot(mat_b), mats)
         return reduce(math.dot, mats)
 
     # pylint: disable=protected-access
