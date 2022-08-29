@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+from copy import copy
 from functools import reduce
 from typing import List
 
@@ -389,7 +390,7 @@ class SumSummandsGrouping:
             if op_hash in self.queue:
                 self.queue[op_hash][0] += coeff
             else:
-                self.queue[op_hash] = [coeff, summand]
+                self.queue[op_hash] = [copy(coeff), summand]
 
     def get_summands(self, cutoff=1.0e-12):
         """Get summands list.

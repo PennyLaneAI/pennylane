@@ -532,7 +532,7 @@ class ProductFactorsGrouping:
             self._non_pauli_factors[wires][1] += coeff
         else:
             self._queue_non_pauli_factors(wires=wires)
-            self._non_pauli_factors[wires] = [op_hash, coeff, factor]
+            self._non_pauli_factors[wires] = [op_hash, copy(coeff), factor]
 
     def _queue_non_pauli_factors(self, wires: List[int]):
         """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
