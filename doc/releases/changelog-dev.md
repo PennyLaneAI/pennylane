@@ -52,6 +52,10 @@
 * Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
 
+* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
+  taking into account their commutativity property.
+  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
+
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
@@ -94,6 +98,23 @@
           [0, 2],
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
+* Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+
+  ```python
+  H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+
+  dev = qml.device("default.qubit", wires=range(2), shots=10000)
+  @qml.qnode(dev)
+  def qnode(x, H):
+      qml.Hadamard(0)
+      qml.CNOT((0,1))
+      qml.RX(x, wires=0)
+      return qml.shadow_expval(H)
+
+  x = np.array(0.5, requires_grad=True)
+
+  print(qnode(x, H), qml.grad(qnode)(x, H))
+  ```
 
 <h3>Improvements</h3>
 
@@ -134,6 +155,9 @@
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
+* `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+
 * `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
   [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
 
@@ -151,6 +175,9 @@
   >>> list(circuit.tape)
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
+
+* `Controlled` operators now work with `qml.is_commuting`.
+  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
 <h3>Breaking changes</h3>
 
