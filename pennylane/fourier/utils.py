@@ -27,25 +27,7 @@ def format_nvec(nvec):
     if isinstance(nvec, int):
         return str(nvec)
 
-    nvec_str = [f"{n}" if n < 0 else f" {n}" for n in nvec]
-
-    return " ".join(nvec_str)
-
-
-def to_dict(coeffs):
-    """Convert a set of indices to a dictionary."""
-    # infer hyperparameters
-    degree = coeffs.shape[0] // 2
-    n_inputs = len(coeffs.shape)
-
-    # create generator for indices nvec = (n1, ..., nN),
-    # ranging from (-d,...,-d) to (d,...,d).
-    n_range = np.array(range(-degree, degree + 1))
-    n_ranges = [n_range] * n_inputs
-    nvecs = product(*n_ranges)
-
-    return {nvec: coeffs[nvec] for nvec in nvecs}
-
+    return " ".join(f"{n: }" for n in nvec)
 
 def get_spectrum(op, decimals):
     r"""Extract the frequencies contributed by an input-encoding gate to the
