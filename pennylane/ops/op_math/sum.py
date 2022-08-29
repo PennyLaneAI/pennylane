@@ -331,73 +331,80 @@ class Sum(Operator):
         return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
     @classmethod
-    def _simplify_summands(cls, summands: List[Operator]) -> List[Operator]:
+    def _simplify_summands(cls, summands: List[Operator]):
         """Reduces the depth of nested summands and groups equal terms together.
 
-        Keyword Args:
+        Args:
             summands (List[~.operation.Operator]): summands list to simplify
 
         Returns:
             List[~.operation.Operator]: reduced summands list
         """
-        new_summands = {}  # {hash: [coeff, summand]}
+        new_summands = SumSummands()
         for summand in summands:
             # This code block is not needed but it speeds things up when having a lot of  stacked Sums
             if isinstance(summand, Sum):
                 sum_summands = cls._simplify_summands(summands=summand.summands)
-                for op_hash, [coeff, sum_summand] in sum_summands.items():
-                    new_summands = cls._add_summand(
-                        sum_dict=new_summands, op=sum_summand, coeff=coeff, op_hash=op_hash
-                    )
+                for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
+                    new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
                 continue
 
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
                 sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
-                for op_hash, [coeff, sum_summand] in sum_summands.items():
-                    new_summands = cls._add_summand(
-                        sum_dict=new_summands, op=sum_summand, coeff=coeff, op_hash=op_hash
-                    )
+                for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
+                    new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
             elif isinstance(simplified_summand, qml.ops.SProd):  # pylint: disable=no-member
-                new_summands = cls._add_summand(
-                    sum_dict=new_summands,
-                    op=simplified_summand.base,
+                new_summands.add(
+                    summand=simplified_summand.base,
                     coeff=simplified_summand.scalar,
                 )
             else:
-                new_summands = cls._add_summand(new_summands, simplified_summand)
+                new_summands.add(summand=simplified_summand)
 
         return new_summands
 
-    @classmethod
-    def _add_summand(cls, sum_dict: dict, op: Operator, coeff=1, op_hash=None):
+    def simplify(self) -> "Sum":
+        if new_summands := self._simplify_summands(summands=self.summands).get_summands():
+            return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
+        return 0
+
+
+class SumSummands:
+    """Utils class used for grouping sum summands together."""
+
+    def __init__(self):
+        self.queue = {}  # {hash: [coeff, summand]}
+
+    def add(self, summand: Operator, coeff=1, op_hash=None):
         """Add operator to the summands dictionary.
 
         If the operator hash is already in the dictionary, the coefficient is increased instead.
 
         Args:
-            sum_dict (dict): Dictionary of the summands. Its keys are the hashes of all the summands
-                and its values contain a tuple with the coefficient and the summand's class.
-            op (Operator): operator to add to the summands dictionary
+            summand (Operator): operator to add to the summands dictionary
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """
-        op_hash = op.hash if op_hash is None else op_hash
-        if op_hash in sum_dict:
-            sum_dict[op_hash][0] += coeff
+        op_hash = summand.hash if op_hash is None else op_hash
+        if op_hash in self.queue:
+            self.queue[op_hash][0] += coeff
         else:
-            sum_dict[op_hash] = [coeff, op]
+            self.queue[op_hash] = [coeff, summand]
 
-        return sum_dict
+    def get_summands(self, cutoff=1.0e-12):
+        """Get summands list.
 
-    def simplify(self, cutoff=1.0e-12) -> "Sum":
-        summands = self._simplify_summands(summands=self.summands)
+        All summands with a coefficient less than cutoff are ignored.
+
+        Args:
+            cutoff (float, optional): Cutoff value. Defaults to 1.0e-12.
+        """
         new_summands = []
-        for coeff, summand in summands.values():
+        for coeff, summand in self.queue.values():
             if coeff == 1:
                 new_summands.append(summand)
             elif abs(coeff) > cutoff:
                 new_summands.append(qml.s_prod(coeff, summand))
-        if not new_summands:
-            return 0
-        return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
+
+        return new_summands
