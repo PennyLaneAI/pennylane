@@ -479,13 +479,13 @@ class ProductFactorsGrouping:
             wires = factor.wires
             if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
                 self._add_pauli_factor(factor=factor, wires=wires)
-                self._queue_stashed_factors(wires=wires)
+                self._queue_non_pauli_factors(wires=wires)
             else:
                 self._add_non_pauli_factor(factor=factor, wires=wires)
                 self._queue_pauli_factors(wires=wires)
 
     def _add_pauli_factor(self, factor: Operator, wires: List[int]):
-        """Adds the given Pauli operator to the temporary ``self._pauli_tuples`` dictionary. If
+        """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
         there was another Pauli operator acting on the same wire, the two operators are grouped
         together using the ``self._pauli_mult`` dictionary.
 
@@ -500,10 +500,11 @@ class ProductFactorsGrouping:
         self._pauli_factors[wires[0]] = old_coeff * coeff, new_word
 
     def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
-        """Adds the given non-Pauli factor to the temporary ``self._stashed_ops`` dictionary. If
-        there alerady exists an identical operator in the dictionary, the two are grouped together.
+        """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
+        If there alerady exists an identical operator in the dictionary, the two are grouped
+        together.
 
-        If there isn't an identical operator in the dictionary, all stashed operators that act on
+        If there isn't an identical operator in the dictionary, all non Pauli factors that act on
         the same wires are queued.
 
         Args:
@@ -530,12 +531,12 @@ class ProductFactorsGrouping:
         elif op_hash == old_hash:
             self._non_pauli_factors[wires][1] += coeff
         else:
-            self._queue_stashed_factors(wires=wires)
+            self._queue_non_pauli_factors(wires=wires)
             self._non_pauli_factors[wires] = [op_hash, coeff, factor]
 
-    def _queue_stashed_factors(self, wires: List[int]):
-        """Remove all factors from the ``self._stashed_ops`` dictionary that act on the given wires
-        and queue them.
+    def _queue_non_pauli_factors(self, wires: List[int]):
+        """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
+        wires and queue them.
 
         Args:
             wires (List[int]): Wires of the operators to be queued.
@@ -558,8 +559,8 @@ class ProductFactorsGrouping:
                         self.queue += ((op,),)
 
     def _queue_pauli_factors(self, wires: List[int]):
-        """Remove all Pauli factors from the ``self._pauli_tuples`` dictionary that act on the given
-        wires and queue them.
+        """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
+        given wires and queue them.
 
         Args:
             wires (List[int]): Wires of the operators to be queued.
@@ -572,7 +573,7 @@ class ProductFactorsGrouping:
                 self.global_phase *= pauli_coeff
 
     def queue_factors(self, wires: List[int]):
-        """Remove all factors from the ``self._pauli_tuples`` and ``self._stashed_ops`` dictionaries
-        that act on the given wires and queue then."""
+        """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
+        dictionaries that act on the given wires and queue then."""
         self._queue_pauli_factors(wires=wires)
-        self._queue_stashed_factors(wires=wires)
+        self._queue_non_pauli_factors(wires=wires)
