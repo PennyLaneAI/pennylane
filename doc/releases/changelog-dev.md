@@ -196,6 +196,9 @@
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
 
+* `Controlled` operators now work with `qml.is_commuting`.
+  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -203,6 +206,9 @@
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
 <h3>Deprecations</h3>
+
+* The `supports_reversible_diff` device capability is unused and has been removed.
+  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
 <h3>Documentation</h3>
 
@@ -229,6 +235,7 @@ Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
+Matthew Silverman,
 Jay Soni,
 Antal Száva
 Cody Wang,
