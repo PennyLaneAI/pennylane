@@ -17,6 +17,7 @@ import numpy as np
 
 # pylint:disable=too-many-arguments
 
+
 def coefficients(
     f, n_inputs, degree, lowpass_filter=False, filter_threshold=None, use_broadcasting=False
 ):
