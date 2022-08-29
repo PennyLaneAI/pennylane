@@ -354,11 +354,6 @@ class Sum(Operator):
                 sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
                 for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
                     new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
-            elif isinstance(simplified_summand, qml.ops.SProd):  # pylint: disable=no-member
-                new_summands.add(
-                    summand=simplified_summand.base,
-                    coeff=simplified_summand.scalar,
-                )
             else:
                 new_summands.add(summand=simplified_summand)
 
@@ -387,11 +382,14 @@ class SumSummandsGrouping:
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """
-        op_hash = summand.hash if op_hash is None else op_hash
-        if op_hash in self.queue:
-            self.queue[op_hash][0] += coeff
+        if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
+            self.add(summand=summand.base, coeff=summand.scalar)
         else:
-            self.queue[op_hash] = [coeff, summand]
+            op_hash = summand.hash if op_hash is None else op_hash
+            if op_hash in self.queue:
+                self.queue[op_hash][0] += coeff
+            else:
+                self.queue[op_hash] = [coeff, summand]
 
     def get_summands(self, cutoff=1.0e-12):
         """Get summands list.
