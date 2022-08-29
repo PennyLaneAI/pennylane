@@ -238,11 +238,6 @@ def _local_sparse_swap_mat(i, n, format="csr"):
     assert i < n - 1
     swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
-    if i == 0:
-        return kron(swap_mat, eye(2 ** (n - 2)), format=format)  # 2 + (n - 2) = n
-    if i == n - 2:
-        return kron(eye(2 ** (n - 2)), swap_mat, format=format)  # (n - 2) + 2 = n
-
     j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
     return kron(
         kron(eye(2 ** (j - 1)), swap_mat), eye(2 ** (n - (j + 1))), format=format
@@ -273,11 +268,13 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
     according to a global wire order.
 
     Args:
-        base_matrix (tensor_like): base matrix to expand
+        base_matrix (scipy.sparse.spmatrix): base matrix to expand
         wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
             dimension :math:`2^n` acts on a subspace of :math:`n` wires
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
+        format (str): string representing the preferred scipy sparse matrix format to cast the expanded
+            matrix too
 
     Returns:
         tensor_like: expanded matrix
@@ -310,9 +307,7 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
                 j = wire_order.index(expanded_wires[i])
                 U = U @ _sparse_swap_mat(i, j, n_total_wires, format=format)
 
-                temp = expanded_wires[i]
-                expanded_wires[i] = expanded_wires[j]
-                expanded_wires[j] = temp
+                expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
                 break
 
     expanded_matrix = csr_matrix(U.T) @ expanded_matrix @ U
