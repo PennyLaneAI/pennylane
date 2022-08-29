@@ -336,7 +336,7 @@ class Prod(Operator):
     def arithmetic_depth(self) -> int:
         return 1 + max(factor.arithmetic_depth for factor in self.factors)
 
-    def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[Operator]:
+    def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
 
         Returns:
