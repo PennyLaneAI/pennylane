@@ -87,3 +87,73 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
 
     group_sum = [np.sum(coeff**2) for coeff in coeffs]
     return int(np.sum(np.sqrt(group_sum)) ** 2 / error**2)
+
+
+def estimate_error(coeffs, variances=None, shots=1000):
+    r"""Estimate the error in computing an expectation value with a given number of measurements.
+
+    Args:
+        coeffs (list[tensor_like]): list of coefficient groups
+        variances (list[float]): variances of the Pauli word groups
+        shots (int): the number of measurements
+
+        Returns:
+            float: target error in computing the expectation value
+
+        **Example**
+
+        >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
+        >>> estimate_error(coeffs, shots=419217):
+        0.0016
+
+    .. details::
+        :title: Theory
+
+        An estimation for the error :math:`\epsilon` in predicting the the expectation
+        value of an observable :math:`H = \sum_i A_i` with :math:`A = \sum_j c_j O_j` representing a
+        linear combination of Pauli words can be obtained as
+
+        .. math::
+
+            \epsilon = \frac{\sum_i \sqrt{\text{Var}(A_i)}}{\sqrt{M}},
+
+        with :math:`M` and :math:`\text{Var}(A)` denoting the number of measurements and the
+        variance in computing :math:`\left \langle A \right \rangle`, respectively. It has been
+        shown by Yen et al. that the variances can be computed from the covariances between the
+        Pauli words as
+
+        .. math::
+
+            \text{Var}(A_i) = \sum_{jk} c_j c_k \text{Cov}(O_j, O_k),
+
+        where
+
+        .. math::
+
+            \text{Cov}(O_j, O_k) = \left \langle O_j O_k \right \rangle - \left \langle O_j \right \rangle \left \langle O_k \right \rangle.
+
+        The values of :math:`\text{Cov}(O_j, O_k)` are not known a priori and should be either
+        computed from affordable classical methods, such as the configuration interaction with
+        singles and doubles (CISD), or approximated with other methods. If the variances are not
+        provided to the function as input, they will be approximated by assuming
+        :math:`\text{Cov}(O_j, O_k) =0` for :math:`j \neq k` and using :math:`\text{Var}(O_i) \leq 1`
+        from
+
+        .. math::
+
+            \text{Var}(O_i) = \left \langle O_i^2 \right \rangle - \left \langle O_i \right \rangle^2 = 1 - \left \langle O_i \right \rangle^2.
+
+        This approximation gives
+
+        .. math::
+
+            \epsilon \approx \frac{\sum_i \sqrt{\sum_j c_j^2}}{\sqrt{M}},
+
+        where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
+        group, respectively.
+    """
+    if variances:
+        return np.sum(np.sqrt(variances)) / np.sqrt(shots)
+
+    group_sum = [np.sum(coeff**2) for coeff in coeffs]
+    return np.sum(np.sqrt(group_sum)) / np.sqrt(shots)
