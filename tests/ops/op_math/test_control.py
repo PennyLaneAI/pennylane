@@ -9,6 +9,13 @@ from pennylane.tape.tape import expand_tape
 from pennylane.ops.op_math import ctrl, Controlled
 
 
+def test_invalid_input_error():
+    """Test that a ValueError is raised upon invalid inputs."""
+    err = r"The object 1 of type <class 'int'> is not an Operator or callable."
+    with pytest.raises(ValueError, match=err):
+        qml.ctrl(1, control=2)
+
+
 def test_control_sanity_check():
     """Test that control works on a very standard usecase."""
 

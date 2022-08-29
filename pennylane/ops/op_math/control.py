@@ -41,7 +41,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     **Example**
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @qml.qnode(qml.device('default.qubit', wires=range(4)))
         def circuit(x):
@@ -83,9 +83,9 @@ def ctrl(op, control, control_values=None, work_wires=None):
         )
     if not callable(op):
         raise ValueError(
-            f"The object {op} of type {type(op)} is not callable. "
+            f"The object {op} of type {type(op)} is not an Operator or callable. "
             "This error might occur if you apply ctrl to a list "
-            "of operations instead of a function or template."
+            "of operations instead of a function or Operator."
         )
 
     @wraps(op)
