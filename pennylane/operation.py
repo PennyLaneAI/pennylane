@@ -252,15 +252,16 @@ def _sparse_swap_mat(i, j, n, format="csr"):
         return eye(2**n, format=format)
 
     (small_i, big_j) = (i, j) if i < j else (j, i)
-    mat = eye(2**n, format=format)
+    store_swaps = [_local_sparse_swap_mat(index, n, format=format) for index in range(small_i, big_j)]
 
-    for index in range(small_i, big_j):  # swap i --> j
-        mat @= _local_sparse_swap_mat(index, n, format=format)
+    res = eye(2**n, format=format)
+    for mat in store_swaps:  # swap i --> j
+        res @= mat
 
-    for index in range(big_j - 2, small_i - 1, -1):  # bring j --> old_i
-        mat @= _local_sparse_swap_mat(index, n, format=format)
+    for mat in store_swaps[-2::-1]:  # bring j --> old_i
+        res @= mat
 
-    return mat
+    return res
 
 
 def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
