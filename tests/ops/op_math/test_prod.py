@@ -693,7 +693,7 @@ class TestSimplify:
         final_op = qml.PauliX(0)
         simplified_op = prod_op.simplify()
 
-        assert isinstance(simplified_op, qml.PauliX)
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
@@ -819,6 +819,17 @@ class TestSimplify:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
+        """Test that the simplify method removes grouped elements with zero coeff."""
+        prod_op = qml.prod(
+            qml.U3(1.23, 2.34, 3.45, wires=0),
+            qml.ops.Pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+        )
+        final_op = qml.Identity(0)
+        simplified_op = prod_op.simplify()
+
+        assert qml.equal(final_op, simplified_op)
 
 
 class TestWrapperFunc:

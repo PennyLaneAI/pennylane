@@ -754,3 +754,37 @@ class TestIntegration:
         res = circuit(tf.Variable(2))
 
         assert qml.math.allclose(res, 2)
+
+
+class TestArithmetic:
+    """Test arithmetic decomposition methods."""
+
+    def test_pow(self):
+        """Test the pow method for SProd Operators."""
+
+        sprod_op = SProd(3, qml.RX(1.23, wires=0))
+        final_op = SProd(scalar=3**2, base=qml.ops.Pow(base=qml.RX(1.23, wires=0), z=2))
+        pow_op = sprod_op.pow(z=2)[0]
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(pow_op, SProd)
+        assert pow_op.name == final_op.name
+        assert pow_op.wires == final_op.wires
+        assert pow_op.data == final_op.data
+        assert pow_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_adjoint(self):
+        """Test the adjoint method for Sprod Operators."""
+
+        sprod_op = SProd(3j, qml.RX(1.23, wires=0))
+        final_op = SProd(scalar=-3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
+        adj_op = sprod_op.adjoint()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(adj_op, SProd)
+        assert adj_op.name == final_op.name
+        assert adj_op.wires == final_op.wires
+        assert adj_op.data == final_op.data
+        assert adj_op.arithmetic_depth == final_op.arithmetic_depth
