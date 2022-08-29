@@ -84,6 +84,6 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
     """
     if variances:
         return int(np.sum(np.sqrt(variances)) ** 2 / error**2)
-    else:
-        group_sum = [np.sum(coeff**2) for coeff in coeffs]
-        return int(np.sum(np.sqrt(group_sum)) ** 2 / error**2)
+
+    group_sum = [np.sum(coeff**2) for coeff in coeffs]
+    return int(np.sum(np.sqrt(group_sum)) ** 2 / error**2)
