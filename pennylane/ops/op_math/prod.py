@@ -343,7 +343,7 @@ class Prod(Operator):
             Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
             of the simplified factors
         """
-        new_factors = ProductFactors()
+        new_factors = ProductFactorsGrouping()
 
         for factor in factors:
             simplified_factor = factor.simplify()
@@ -432,7 +432,7 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     return np.min(wires1) > np.min(wires2)
 
 
-class ProductFactors:
+class ProductFactorsGrouping:
     """Utils class used for grouping identical product factors."""
 
     _pauli_mult = {

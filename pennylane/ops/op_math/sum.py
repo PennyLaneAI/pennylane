@@ -338,9 +338,9 @@ class Sum(Operator):
             summands (List[~.operation.Operator]): summands list to simplify
 
         Returns:
-            List[~.operation.Operator]: reduced summands list
+            .SumSummandsGrouping: Class containing the simplified and grouped summands.
         """
-        new_summands = SumSummands()
+        new_summands = SumSummandsGrouping()
         for summand in summands:
             # This code block is not needed but it speeds things up when having a lot of  stacked Sums
             if isinstance(summand, Sum):
@@ -370,7 +370,7 @@ class Sum(Operator):
         return 0
 
 
-class SumSummands:
+class SumSummandsGrouping:
     """Utils class used for grouping sum summands together."""
 
     def __init__(self):
