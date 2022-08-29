@@ -252,7 +252,9 @@ def _sparse_swap_mat(i, j, n, format="csr"):
         return eye(2**n, format=format)
 
     (small_i, big_j) = (i, j) if i < j else (j, i)
-    store_swaps = [_local_sparse_swap_mat(index, n, format=format) for index in range(small_i, big_j)]
+    store_swaps = [
+        _local_sparse_swap_mat(index, n, format=format) for index in range(small_i, big_j)
+    ]
 
     res = eye(2**n, format=format)
     for mat in store_swaps:  # swap i --> j
