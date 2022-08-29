@@ -52,7 +52,6 @@ class TestQNodeIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
@@ -71,7 +70,6 @@ class TestQNodeIntegration:
 
         dev = DefaultQubitJax(wires=1)
         cap = dev.capabilities()
-        assert cap["supports_reversible_diff"] == False
         assert cap["passthru_interface"] == "jax"
 
     def test_load_device(self):
