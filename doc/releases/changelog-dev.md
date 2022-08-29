@@ -179,10 +179,6 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
-* The `expand_matrix()` has been moved from `~/operation.py` to 
-  `~/math/matrix_manipulation.py`
-  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
-
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -196,6 +192,10 @@
   Any device that overrides `statistics` should edit the signature of the method to include
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+
+* The `expand_matrix()` has been moved from `~/operation.py` to 
+  `~/math/matrix_manipulation.py`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
 
