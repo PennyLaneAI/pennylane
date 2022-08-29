@@ -365,7 +365,8 @@ class Sum(Operator):
         return new_summands
 
     def simplify(self) -> "Sum":
-        if new_summands := self._simplify_summands(summands=self.summands).get_summands():
+        new_summands = self._simplify_summands(summands=self.summands).get_summands()
+        if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
         return 0
 
