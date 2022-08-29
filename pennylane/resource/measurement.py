@@ -27,14 +27,14 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
         variances (list[float]): variances of the Pauli word groups
         error (float): target error in computing the expectation value
 
-        Returns:
-            int: the number of measurements
+    Returns:
+        int: the number of measurements
 
-        **Example**
+    **Example**
 
-        >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-        >>> estimate_samples(coeffs):
-        419217
+    >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
+    >>> estimate_samples(coeffs):
+    419217
 
     .. details::
         :title: Theory
@@ -97,14 +97,14 @@ def estimate_error(coeffs, variances=None, shots=1000):
         variances (list[float]): variances of the Pauli word groups
         shots (int): the number of measurements
 
-        Returns:
-            float: target error in computing the expectation value
+    Returns:
+        float: target error in computing the expectation value
 
-        **Example**
+    **Example**
 
-        >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-        >>> estimate_error(coeffs, shots=419217):
-        0.0016
+    >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
+    >>> estimate_error(coeffs, shots=419217):
+    0.0016
 
     .. details::
         :title: Theory
