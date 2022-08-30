@@ -506,7 +506,7 @@ class ProductFactorsGrouping:
         together.
 
         If there isn't an identical operator in the dictionary, all non Pauli factors that act on
-        the same wires are queued.
+        the same wires are removed and added to the ``self.factors`` tuple.
 
         Args:
             factor (Operator): Factor to be added.
