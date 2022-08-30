@@ -209,5 +209,5 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
                 expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
                 break
 
-    expanded_matrix = csr_matrix(U.T) @ expanded_matrix @ U
-    return expanded_matrix
+    expanded_matrix = U.T @ expanded_matrix @ U
+    return expanded_matrix.asformat(format)

@@ -74,7 +74,7 @@ from .utils import (
 
 from .is_independent import is_independent
 
-from .matrix_manipulation import expand_matrix
+from .matrix_manipulation import expand_matrix, sparse_expand_matrix
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -128,4 +128,5 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
+    "sparse_expand_matrix"
 ]
