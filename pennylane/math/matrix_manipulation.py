@@ -180,7 +180,7 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
 
     Args:
         base_matrix (scipy.sparse.spmatrix): base matrix to expand
-        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+        wires (~.wires.Wires): wires determining the subspace that base matrix acts on; a base matrix of
             dimension :math:`2^n` acts on a subspace of :math:`n` wires
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
@@ -193,7 +193,7 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     n_wires = len(wires)
     n_total_wires = len(wire_order)
 
-    expanded_wires = copy.copy(wires)
+    expanded_wires = wires.tolist()
     for wire in wire_order:
         if wire not in wires:
             expanded_wires.append(wire)
