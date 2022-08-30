@@ -599,6 +599,11 @@ class TestBarrier:
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"
 
+    def test_barrier_empty_wire_list_no_error(self):
+        """Test that barrier does not raise an error when instantiated with wires=[]."""
+        barrier = qml.Barrier(wires=[])
+        assert isinstance(barrier, qml.Barrier)
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""
@@ -1167,6 +1172,41 @@ class TestPowMethod:
         """Assert that the pow-independent ops WireCut and Barrier can be raised
         to any power and just return a copy."""
         assert op.pow(n)[0].__class__ is op.__class__
+
+
+class TestControlledMethod:
+    """Tests for the _controlled method of non-parametric operations."""
+
+    def test_PauliX(self):
+        """Test the PauliX _controlled method."""
+        out = qml.PauliX(0)._controlled("a")
+        assert qml.equal(out, qml.CNOT(("a", 0)))
+
+    def test_PauliY(self):
+        """Test the PauliY _controlled method."""
+        out = qml.PauliY(0)._controlled("a")
+        assert qml.equal(out, qml.CY(("a", 0)))
+
+    def test_PauliZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.PauliZ(0)._controlled("a")
+        assert qml.equal(out, qml.CZ(("a", 0)))
+
+    def test_CNOT(self):
+        """Test the CNOT _controlled method"""
+        out = qml.CNOT((0, 1))._controlled("a")
+        assert qml.equal(out, qml.Toffoli(("a", 0, 1)))
+
+    def test_SWAP(self):
+        """Test the SWAP _controlled method."""
+        out = qml.SWAP((0, 1))._controlled("a")
+        assert qml.equal(out, qml.CSWAP(("a", 0, 1)))
+
+    def test_Barrier(self):
+        """Tests the _controlled behavior of Barrier."""
+        original = qml.Barrier((0, 1, 2), only_visual=True)
+        out = original._controlled("a")
+        assert qml.equal(original, out)
 
 
 class TestSparseMatrix:

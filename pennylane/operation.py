@@ -672,7 +672,7 @@ class Operator(abc.ABC):
         raise EigvalsUndefinedError
 
     def eigvals(self):
-        r"""Eigenvalues of the operator in the computational basis (static method).
+        r"""Eigenvalues of the operator in the computational basis.
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
         can be reconstructed as
@@ -890,6 +890,18 @@ class Operator(abc.ABC):
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
+
+        # Check that the wires is not an empty list for operators that have
+        # `num_wires` as `AnyWires` or `AllWires`.
+        if self.num_wires in {AllWires, AnyWires}:
+            if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
+                # Barrier, Snapshot: Applied to all wires if instantiated with wires = [].
+                # Hamiltonian: Possible to be empty with simplify().
+                if len(qml.wires.Wires(wires)) == 0:
+                    raise ValueError(
+                        f"{self.name}: wrong number of wires. "
+                        f"At least one wire has to be given."
+                    )
 
         self._check_batching(params)
 
