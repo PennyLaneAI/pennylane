@@ -36,7 +36,7 @@ class NullQubit(DefaultQubit):
     author = "Xanadu Inc."
 
     def __init__(self, wires, *args, **kwargs):
-        defaultKwargs = {"shots": 0}
+        defaultKwargs = {"shots": None}
         kwargs = {**defaultKwargs, **kwargs}
 
         self._gatecalls = defaultdict(int)
