@@ -15,6 +15,7 @@
 This module contains the functions needed for two-electron tensor factorization.
 """
 from pennylane import numpy as np
+import pennylane as qml
 
 
 def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
@@ -232,18 +233,21 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
     eigvals, eigvecs = np.linalg.eigh(factors)
 
     t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
-    t_eigvals, _ = np.linalg.eigh(t_matrix)
+    t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
 
     g = []
+    u_g = []
     for i in range(len(eigvals)):
         for j, val in enumerate(eigvals[i]):
             eigvecs[i][j] = eigvecs[i][j] * val
-        g.append(np.linalg.eigh(eigvecs[i] * 0.5)[0] ** 2)
+        gw, gv = np.linalg.eigh(eigvecs[i] * 0.5)
+        g.append(gw ** 2)
+        u_g.append(gv.dot(np.diag(gw).dot(np.linalg.inv(gv))))
 
-    n1 = np.sqrt(np.sum(t_eigvals**2))
-    n2 = 0.0
-    for c_ in g:
-        n2 += np.sqrt(np.sum(c_**2))
-    n = n1 + n2
+    u_t = t_eigvecs.dot(np.diag(t_eigvals).dot(np.linalg.inv(t_eigvecs)))
 
-    return (n / error) ** 2
+    coeffs = ((np.max(abs(t_eigvals)) + np.sum(abs(np.array(g)))) / error) ** 2
+    ops = ...
+    u_rotation = u_t + u_g
+
+    return coeffs, ops, u_rotation
