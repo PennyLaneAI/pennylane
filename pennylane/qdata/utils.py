@@ -23,7 +23,7 @@ URL = "http://127.0.0.1:5001"
 
 
 def _convert_size(size_bytes):
-    """ Convert file size for the dataset into appropriate units from bytes """
+    """Convert file size for the dataset into appropriate units from bytes"""
     if not size_bytes:
         return "0 B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
@@ -33,13 +33,14 @@ def _convert_size(size_bytes):
 
 
 def _write_prog_bar(progress, completed, barsize, barlength, total_length):
-    """ Helper function for printing progress bar for downloads """
+    """Helper function for printing progress bar for downloads"""
     f = f"[{chr(9608)*barlength} {round(completed, 3)} %{'.'*(barsize-barlength)}] {_convert_size(progress)}/{_convert_size(total_length)}"
     sys.stdout.write("\r" + f)
     sys.stdout.flush()
 
+
 def _validate_params(data_type, data_params, filter_params=None):
-    """ Validate parameters for loading the data """
+    """Validate parameters for loading the data"""
 
     if data_type not in list(DATA_STRUCT.keys()):
         raise ValueError(
@@ -47,9 +48,7 @@ def _validate_params(data_type, data_params, filter_params=None):
         )
 
     if not isinstance(data_params, dict):
-        raise TypeError(
-            f"Args 'data_params' should be a dict, but got {type(data_params)}."
-        )
+        raise TypeError(f"Args 'data_params' should be a dict, but got {type(data_params)}.")
 
     if list(data_params.keys()) != DATA_STRUCT[data_type]["params"]:
         raise ValueError(
@@ -62,9 +61,8 @@ def _validate_params(data_type, data_params, filter_params=None):
         )
 
     if filter_params is not None and not isinstance(filter_params, list):
-        raise TypeError(
-            f"Args 'filter_params' should be a list, but got {type(filter_params)}."
-        )         
+        raise TypeError(f"Args 'filter_params' should be a list, but got {type(filter_params)}.")
+
 
 def _check_data_exist(data_type, data_params, directory_path):
     exist = False
@@ -81,8 +79,10 @@ def _check_data_exist(data_type, data_params, directory_path):
                 break
     return exist
 
+
 def _write_data():
     pass
+
 
 def load(data_type, data_params, filter_params=None, folder_path=None, force=True):
     """Downloads the data if it is not already present in the directory and return it to user as a Datset object"""
@@ -131,7 +131,7 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
             response.raise_for_status()
 
     data_files = []
-    with zipfile.ZipFile(f"{directory_path}/data.zip", 'r') as zpf:
+    with zipfile.ZipFile(f"{directory_path}/data.zip", "r") as zpf:
         for file in zpf.namelist():
             if file[-3:] == "pkl":
                 data_files.append(file)
