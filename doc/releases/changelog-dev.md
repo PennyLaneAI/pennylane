@@ -116,7 +116,7 @@
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
 
-* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the
   Operator before exponentiation. Internally, this constructor functions creates the new
   class `qml.ops.op_math.Exp`.
   [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
@@ -150,6 +150,18 @@
 
 * Added `PSWAP` operator.
   [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
+
+* The `qml.simplify` method can now simplify parametrized operations.
+  [(#3012)](https://github.com/PennyLaneAI/pennylane/pull/3012)
+
+  ```pycon
+  >>> op1 = qml.RX(30.0, wires=0)
+  >>> qml.simplify(op1)
+  RX(4.867258771281655, wires=[0])
+  >>> op2 = qml.Rot(np.pi / 2, 5.0, -np.pi / 2, wires=0)
+  >>> qml.simplify(op2)
+  RX(5.0, wires=[0])
+  ```
 
 * The `qml.simplify` method now can compute the adjoint and power of specific operators.
   [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
@@ -216,7 +228,7 @@
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
-* The `expand_matrix()` has been moved from `~/operation.py` to 
+* The `expand_matrix()` has been moved from `~/operation.py` to
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
