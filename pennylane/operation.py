@@ -104,7 +104,7 @@ from typing import List
 
 import numpy as np
 from numpy.linalg import multi_dot
-from scipy.sparse import coo_matrix, eye, kron, csr_matrix, issparse
+from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -539,7 +539,7 @@ class Operator(abc.ABC):
         if wire_order is None or self.wires == Wires(wire_order):
             return canonical_sparse_matrix
 
-        return sparse_expand_matrix(
+        return expand_matrix(
             canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
         )
 
