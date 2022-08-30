@@ -6,7 +6,7 @@
 
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
-  
+
   Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
   parameter broadcasting with a leading broadcasting dimension in their variational
   parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
@@ -24,7 +24,7 @@
   ```
 
   An exception is `BasisEmbedding`, which is not broadcastable.
-  
+
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
@@ -47,7 +47,14 @@
   ```
 
 * Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
-  [#2784](https://github.com/PennyLaneAI/pennylane/pull/2784)
+  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+
+* Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
+  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+
+* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
+  taking into account their commutativity property.
+  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
 
 **Classical shadows**
 
@@ -58,9 +65,9 @@
   will return the randomized Pauli measurements (the `recipes`) that are performed
   for each qubit, identified as a unique integer:
 
-  - 0 for Pauli X
-  - 1 for Pauli Y
-  - 2 for Pauli Z
+  * 0 for Pauli X
+  * 1 for Pauli Y
+  * 2 for Pauli Z
 
   It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
   is sampled, and `1` if the -1 eigenvalue is sampled.
@@ -76,6 +83,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.classical_shadow(wires=[0, 1])
   ```
+
   ```pycon
   >>> bits, recipes = circuit()
   tensor([[0, 0],
@@ -90,8 +98,48 @@
           [0, 2],
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
+* Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+
+  ```python
+  H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+
+  dev = qml.device("default.qubit", wires=range(2), shots=10000)
+  @qml.qnode(dev)
+  def qnode(x, H):
+      qml.Hadamard(0)
+      qml.CNOT((0,1))
+      qml.RX(x, wires=0)
+      return qml.shadow_expval(H)
+
+  x = np.array(0.5, requires_grad=True)
+
+  print(qnode(x, H), qml.grad(qnode)(x, H))
+  ```
+
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
+  Operator before exponentiation. Internally, this constructor functions creates the new
+  class `qml.ops.op_math.Exp`.
+  [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
+
+  The function can be used to create either observables or generic rotation gates:
+
+  ```pycon
+  >>> obs = qml.exp(qml.PauliX(0), 3)
+  >>> qml.is_hermitian(obs)
+  True
+  >>> x = 1.234
+  >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+  >>> isingxy = qml.exp(t, 0.25j * x)
+  >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+  True
+  >>> qml.is_unitary(isingxy)
+  True
+  ```
 
 <h3>Improvements</h3>
+
+* `qml.ops.op_math.Controlled` now has basic decomposition functionality.
+  [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
@@ -109,13 +157,80 @@
   RX(-1, wires=[0])
   ```
 
+* Added `sparse_matrix()` support for single qubit observables
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
+
+* Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+  ```pycon
+  >>> op = qml.PauliX(wires=0)
+  >>> qml.is_hermitian(op)
+  True
+  >>> op2 = qml.RX(0.54, wires=0)
+  >>> qml.is_hermitian(op2)
+  False
+  ```
+
+* Internal use of in-place inversion is eliminated in preparation for its deprecation.
+  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
+
+* `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+
+* `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
+  [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
+
+  ```python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit():
+      qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> circuit()
+  >>> list(circuit.tape)
+  [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+  ```
+
+* `Controlled` operators now work with `qml.is_commuting`.
+  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
+
 <h3>Breaking changes</h3>
+
+* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
+  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
+  with an additional keyword argument `circuit`, which represents the quantum tape
+  being executed.
+
+  Any device that overrides `statistics` should edit the signature of the method to include
+  the new `circuit` keyword argument.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+
+* The `expand_matrix()` has been moved from `~/operation.py` to 
+  `~/math/matrix_manipulation.py`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
 
+* The `supports_reversible_diff` device capability is unused and has been removed.
+  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
+
 <h3>Documentation</h3>
 
+* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
+
 <h3>Bug fixes</h3>
+
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+  certain exceptions, when instantiated with `wires=[]`.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
 <h3>Contributors</h3>
 
@@ -126,8 +241,14 @@ Josh Izaac,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
+Christina Lee,
+Meenu Kumari,
+Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
+Matthew Silverman,
+Jay Soni,
 Antal Száva
+Cody Wang,
 David Wierichs

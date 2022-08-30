@@ -23,7 +23,7 @@ from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval
 from pennylane.operation import DecompositionUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 
@@ -478,8 +478,12 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-        self.is_sampled = any(m.return_type in (Sample, Counts, Shadow) for m in self.measurements)
-        self.all_sampled = all(m.return_type in (Sample, Counts, Shadow) for m in self.measurements)
+        self.is_sampled = any(
+            m.return_type in [Sample, Counts, Shadow, ShadowExpval] for m in self.measurements
+        )
+        self.all_sampled = all(
+            m.return_type in [Sample, Counts, Shadow, ShadowExpval] for m in self.measurements
+        )
 
     def _update_batch_size(self):
         """Infer the batch_size from the batch sizes of the tape operations and
@@ -703,10 +707,7 @@ class QuantumTape(AnnotatedQueue):
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
         for idx, op in enumerate(self._ops):
-            try:
-                self._ops[idx] = op.adjoint()
-            except qml.operation.AdjointUndefinedError:
-                op.inverse = not op.inverse
+            self._ops[idx] = qml.adjoint(op, lazy=False)
 
         self._ops = list(reversed(self._ops))
 

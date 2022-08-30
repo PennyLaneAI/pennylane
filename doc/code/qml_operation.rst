@@ -14,7 +14,7 @@ qml.operation
 .. automodapi:: pennylane.operation
     :no-heading:
     :include-all-objects:
-    :skip: IntEnum, ClassPropertyDescriptor, multi_dot, pauli_eigs, Wires, eye, kron, coo_matrix
+    :skip: IntEnum, ClassPropertyDescriptor, multi_dot, pauli_eigs, Wires, eye, kron, coo_matrix, expand_matrix
 
 
 Operation attributes

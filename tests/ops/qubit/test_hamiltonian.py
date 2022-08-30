@@ -929,6 +929,11 @@ class TestHamiltonian:
         assert all(item.requires_grad for item in c)
         assert all(isinstance(item, qml.operation.Operator) for item in o)
 
+    def test_hamiltonian_no_empty_wire_list_error(self):
+        """Test that empty Hamiltonian does not raise an empty wire error."""
+        hamiltonian = qml.Hamiltonian([], [])
+        assert isinstance(hamiltonian, qml.Hamiltonian)
+
 
 class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""
