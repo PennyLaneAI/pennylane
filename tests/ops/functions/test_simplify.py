@@ -91,6 +91,7 @@ class TestSimplifyRotations:
         simplified_op = qml.simplify(unsimplified_op)
 
         assert qml.math.allclose(qml.matrix(unsimplified_op), qml.matrix(simplified_op))
+        assert all((p >= 0).all() and (p < 4 * np.pi).all() for p in simplified_op.data)
         assert unsimplified_op.wires == simplified_op.wires
 
 
