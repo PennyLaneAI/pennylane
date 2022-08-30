@@ -160,6 +160,7 @@ class DefaultQubit(QubitDevice):
         "Sum",
         "SProd",
         "Prod",
+        "Exp",
     }
 
     def __init__(
@@ -622,7 +623,6 @@ class DefaultQubit(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             supports_broadcasting=True,
