@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, expand_matrix
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow_class import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -296,9 +296,9 @@ class Prod(Operator):
         if wire_order is None:
             wire_order = self.wires
         mats = (
-            expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
             if isinstance(op, qml.Hamiltonian)
-            else expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
             for op in self.factors
         )
 
