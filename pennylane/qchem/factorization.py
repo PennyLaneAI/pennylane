@@ -95,7 +95,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
 
             H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
             a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
-            V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta}.
+            V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta},
 
         with
 
@@ -175,7 +175,69 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
     r"""Return Hamiltonian coefficients and diagonalizing gates obtained with the basis rotation
     grouping method.
 
+    .. details::
+        :title: Theory
 
+        A second-quantized molecular Hamiltonian can be constructed in the chemist notation format
+        as
+
+        .. math::
+
+            H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
+            a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
+            V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta},
+
+        where :math:`V_{pqrs}` denotes a two-electron integral in the chemist notation and
+        :math:`T_{pq}` is obtained from the one- and two electron integrals, :math:`h_{pq}` and
+        :math:`h_{pssq}`, as
+
+        .. math::
+
+            T_{pq} = h_{pq} - \frac{1}{2} \sum_s h_{pssq}.
+
+        The tensor :math:`V` can be converted to a matrix which is indexed by the indices :math:`pq`
+        and :math:`rs` and eigendecomposed up to a rank :math:`R` to give
+
+        .. math::
+
+            V_{pqrs} = \sum_r^R w^{(r)} L_{pq}^{(r)} L_{rs}^{(r) T},
+
+        where :math:`w` and :math:`L` denote the eigenvalues and eigenvectors of the matrix,
+        respectively. The molecular Hamiltonian can then be rewritten as
+
+        .. math::
+
+            H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
+            a_{q, \alpha} + \frac{1}{2} w^{(r)} \sum_r^R \left ( \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pq}
+            L_{pq}^{(r)} a_{p, \alpha}^{\dagger} a_{q, \alpha} \right )^2.
+
+
+        The matrices :math:`L^{(r)}` can also be eigendecomposed and truncated up to a rank
+        :math:`M` to obtain a double-factorized Hamiltonian.
+
+        The orbital basis can be rotated such that each :math:`T` and :math:`L^{(r)}` matrix is
+        diagonal. This gives
+
+        .. math::
+
+            D_0 = P^{-1} T P,
+
+        and
+
+        .. math::
+
+            D_r = P_r^{-1} w_r L_r P_r.
+
+
+        The Hamiltonian can then be written in terms of the components of the diagonal :math:`D`
+        matrices and the inverse of the diagonalizing operators :math:`P` as
+
+        .. math::
+
+            H = U_0 \left ( \sum_p d_p n_p \right ) U_0^{\dagger} + \sum_l^L U_l \left ( \sum_{pq}
+            d_{pq}^{(l)} n_p n_q \right ) U_l^{\dagger}
+
+        where :math:`U = P^{-1}`.
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
     factors = qml.qchem.factorize(two_electron, tol_factor, tol_eigval)[0]
