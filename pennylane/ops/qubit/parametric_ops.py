@@ -2312,6 +2312,8 @@ class U2(Operation):
             return qml.RY(np.pi / 2, wires=wires)
         if qml.math.allclose(delta, np.pi / 2) and qml.math.allclose(phi, 3 * np.pi / 2):
             return qml.RX(np.pi / 2, wires=wires)
+        if qml.math.allclose(delta, 3 * np.pi / 2) and qml.math.allclose(phi, np.pi / 2):
+            return qml.RX(3 * np.pi / 2, wires=wires)
 
         return U2(phi, delta, wires=wires)
 
