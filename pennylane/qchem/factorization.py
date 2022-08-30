@@ -216,21 +216,9 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
         :math:`M` to obtain a double-factorized Hamiltonian.
 
         The orbital basis can be rotated such that each :math:`T` and :math:`L^{(r)}` matrix is
-        diagonal. This gives
-
-        .. math::
-
-            D_0 = P^{-1} T P,
-
-        and
-
-        .. math::
-
-            D_r = P_r^{-1} w_r L_r P_r.
-
-
-        The Hamiltonian can then be written in terms of the components of the diagonal :math:`D`
-        matrices and the inverse of the diagonalizing operators :math:`P` as
+        diagonal. With diagonal matrices :math:`D_0 = P^{-1} T P` and
+        :math:`D_r = P_r^{-1} w_r L_r P_r`, the Hamiltonian can then be written in terms of the
+        components of these matrices and the inverse of the diagonalizing operators :math:`P` as
 
         .. math::
 
