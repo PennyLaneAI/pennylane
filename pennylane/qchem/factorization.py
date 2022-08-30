@@ -169,3 +169,31 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
         )
 
     return factors, eigvals_m, eigvecs_m
+
+
+def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
+    r"""Return Hamiltonian coefficients and diagonalizing gates obtained with the basis rotation
+    grouping method.
+
+
+    """
+    two_electron = np.swapaxes(two_electron, 1, 3)
+    factors = qml.qchem.factorize(two_electron, tol_factor, tol_eigval)[0]
+    eigvals, eigvecs = np.linalg.eigh(factors)
+
+    t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
+    t_eigvals, _ = np.linalg.eigh(t_matrix)
+
+    g = []
+    for i in range(len(eigvals)):
+        for j, val in enumerate(eigvals[i]):
+            eigvecs[i][j] = eigvecs[i][j] * val
+        g.append(np.linalg.eigh(eigvecs[i] * 0.5)[0] ** 2)
+
+    n1 = np.sqrt(np.sum(t_eigvals**2))
+    n2 = 0.0
+    for c_ in g:
+        n2 += np.sqrt(np.sum(c_**2))
+    n = n1 + n2
+
+    return (n / error) ** 2
