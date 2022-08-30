@@ -143,6 +143,9 @@
   to improve performance.
   [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
 
+* The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
+  [(#2997)](https://github.com/PennyLaneAI/pennylane/pull/2997)
+
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
@@ -241,8 +244,10 @@
 
 This release contains contributions from (in alphabetical order):
 
+Juan Miguel Arrazola,
 Olivia Di Matteo,
 Josh Izaac,
+Soran Jahangiri,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
