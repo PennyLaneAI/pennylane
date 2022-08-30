@@ -119,6 +119,10 @@ class RX(Operation):
         new_op = CRX(*self.parameters, wires=wire + self.wires)
         return new_op.inv() if self.inverse else new_op
 
+    def simplify(self):
+        theta = qml.math.mod(self.data[0], 4 * np.pi)
+        return RX(theta, wires=self.wires)
+
     def single_qubit_rot_angles(self):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
         pi_half = qml.math.ones_like(self.data[0]) * (np.pi / 2)
@@ -208,6 +212,10 @@ class RY(Operation):
     def _controlled(self, wire):
         new_op = CRY(*self.parameters, wires=wire + self.wires)
         return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        theta = qml.math.mod(self.data[0], 4 * np.pi)
+        return RY(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
@@ -338,6 +346,10 @@ class RZ(Operation):
     def _controlled(self, wire):
         new_op = CRZ(*self.parameters, wires=wire + self.wires)
         return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        theta = qml.math.mod(self.data[0], 4 * np.pi)
+        return RZ(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
@@ -497,6 +509,10 @@ class PhaseShift(Operation):
     def _controlled(self, wire):
         new_op = ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
         return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 2 * np.pi)
+        return PhaseShift(phi, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
@@ -673,6 +689,10 @@ class ControlledPhaseShift(Operation):
     def pow(self, z):
         return [ControlledPhaseShift(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 2 * np.pi)
+        return ControlledPhaseShift(phi, wires=self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -837,18 +857,18 @@ class Rot(Operation):
         Hadamard(wires=[0])
 
         """
-        p0, p1, p2 = np.mod(self.data, 2 * np.pi)
+        p0, p1, p2 = qml.math.mod(self.data, 2 * np.pi)
 
         if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
             return qml.RX(self.data[1], wires=self.wires)
         if np.allclose(p0, 0) and np.allclose(p2, 0):
             return qml.RY(self.data[1], wires=self.wires)
         if np.allclose(p1, 0):
-            return qml.RZ(self.data[0] + self.data[2], wires=self.wires)
+            return qml.RZ(qml.math.mod(self.data[0] + self.data[2], 2 * np.pi), wires=self.wires)
         if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
             return qml.Hadamard(wires=self.wires)
 
-        return self
+        return Rot(p0, p1, p2, wires=self.wires)
 
 
 class MultiRZ(Operation):
@@ -1010,6 +1030,10 @@ class MultiRZ(Operation):
 
     def pow(self, z):
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        theta = qml.math.mod(self.data[0], 4 * np.pi)
+        return MultiRZ(theta, wires=self.wires)
 
 
 class PauliRot(Operation):
@@ -1473,6 +1497,10 @@ class CRX(Operation):
     def pow(self, z):
         return [CRX(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return CRX(phi, wires=self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1624,6 +1652,10 @@ class CRY(Operation):
 
     def pow(self, z):
         return [CRY(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return CRY(phi, wires=self.wires)
 
     @property
     def control_wires(self):
@@ -1812,6 +1844,10 @@ class CRZ(Operation):
 
     def pow(self, z):
         return [CRZ(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return CRZ(phi, wires=self.wires)
 
     @property
     def control_wires(self):
@@ -2004,19 +2040,19 @@ class CRot(Operation):
         wires = self.wires
         params = self.parameters
 
-        p0, p1, p2 = np.mod(params, 2 * np.pi)
+        p0, p1, p2 = qml.math.mod(params, 2 * np.pi)
 
         if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
             return qml.CRX(self.data[1], wires=wires)
         if np.allclose(p0, 0) and np.allclose(p2, 0):
             return qml.CRY(self.data[1], wires=wires)
         if np.allclose(p1, 0):
-            return qml.CRZ(self.data[0] + self.data[2], wires=wires)
+            return qml.CRZ(qml.math.mod(self.data[0] + self.data[2], 2 * np.pi), wires=wires)
         if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
             hadamard = qml.Hadamard
             return qml.ctrl(hadamard, control=self.control_wires)(wires=target_wires)
 
-        return self
+        return CRot(p0, p1, p2, wires=wires)
 
 
 class U1(Operation):
@@ -2126,6 +2162,10 @@ class U1(Operation):
 
     def pow(self, z):
         return [U1(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 2 * np.pi)
+        return U1(phi, wires=self.wires)
 
 
 class U2(Operation):
@@ -2258,16 +2298,16 @@ class U2(Operation):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        if np.allclose(np.mod(self.data[1], 2 * np.pi), 0) and np.allclose(
-            np.mod(self.data[0] + self.data[1], 2 * np.pi), 0
-        ):
+        phi, delta = qml.math.mod(self.data, 2 * np.pi)
+
+        if np.allclose(delta, 0) and np.allclose(np.mod(phi + delta, 2 * np.pi), 0):
             return qml.RY(np.pi / 2, wires=wires)
         if np.allclose(np.mod(self.data[1], np.pi / 2), 0) and np.allclose(
-            np.mod(self.data[0] + self.data[1], 2 * np.pi), 0
+            np.mod(phi + delta, 2 * np.pi), 0
         ):
-            return qml.RX(self.data[1], wires=wires)
+            return qml.RX(delta, wires=wires)
 
-        return self
+        return U2(phi, delta, wires=wires)
 
 
 class U3(Operation):
@@ -2423,20 +2463,21 @@ class U3(Operation):
         wires = self.wires
         params = self.parameters
 
-        p0, p1, p2 = np.mod(params, 2 * np.pi)
+        p0 = qml.math.mod(params[0], 4 * np.pi)
+        p1, p2 = qml.math.mod(params[1:], 2 * np.pi)
 
         if np.allclose(p0, 0) and not np.allclose(p1, 0) and np.allclose(p2, 0):
-            return qml.PhaseShift(self.data[1], wires=wires)
+            return qml.PhaseShift(p1, wires=wires)
         if (
             np.allclose(p2, np.pi / 2)
             and np.allclose(np.mod(self.data[1] + self.data[2], 2 * np.pi), 0)
             and not np.allclose(p0, 0)
         ):
-            return qml.RX(self.data[0], wires=wires)
+            return qml.RX(p0, wires=wires)
         if not np.allclose(p0, 0) and np.allclose(p1, 0) and np.allclose(p2, 0):
-            return qml.RY(self.data[0], wires=wires)
+            return qml.RY(p0, wires=wires)
 
-        return self
+        return U3(p0, p1, p2, wires=wires)
 
 
 class IsingXX(Operation):
@@ -2566,6 +2607,10 @@ class IsingXX(Operation):
 
     def pow(self, z):
         return [IsingXX(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return IsingXX(phi, wires=self.wires)
 
 
 class IsingYY(Operation):
@@ -2701,6 +2746,10 @@ class IsingYY(Operation):
 
     def pow(self, z):
         return [IsingYY(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return IsingYY(phi, wires=self.wires)
 
 
 class IsingZZ(Operation):
@@ -2867,6 +2916,10 @@ class IsingZZ(Operation):
 
     def pow(self, z):
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return IsingZZ(phi, wires=self.wires)
 
 
 class IsingXY(Operation):
@@ -3045,6 +3098,10 @@ class IsingXY(Operation):
     def pow(self, z):
         return [IsingXY(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 4 * np.pi)
+        return IsingXY(phi, wires=self.wires)
+
 
 class PSWAP(Operation):
     r"""Phase SWAP gate
@@ -3185,3 +3242,7 @@ class PSWAP(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return PSWAP(-phi, wires=self.wires)
+
+    def simplify(self):
+        phi = qml.math.mod(self.data[0], 2 * np.pi)
+        return PSWAP(phi, wires=self.wires)
