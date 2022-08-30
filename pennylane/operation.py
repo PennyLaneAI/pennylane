@@ -303,8 +303,10 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
         expanded_matrix = kron(
           base_matrix, eye(2**num_missing_wires, format=format), format=format
       )  # added missing wires at the end
+    else:
+        expanded_matrix = copy.copy(base_matrix)
 
-    U = eye(2**n_total_wires)
+    U = eye(2**n_total_wires, format=format)
     while not expanded_wires == wire_order:
         for i in range(n_total_wires):
             if expanded_wires[i] != wire_order[i]:
