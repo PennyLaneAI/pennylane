@@ -194,7 +194,7 @@ def sparse_expand_matrix(base_matrix, wires, wire_order=None, format="csr"):
     num_missing_wires = n_total_wires - n_wires
     if num_missing_wires > 0:
         expanded_matrix = kron(
-          base_matrix, eye(2**num_missing_wires, format=format), format=format
+            base_matrix, eye(2**num_missing_wires, format=format), format=format
         )  # added missing wires at the end
     else:
         expanded_matrix = copy.copy(base_matrix)

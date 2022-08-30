@@ -128,5 +128,5 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
-    "sparse_expand_matrix"
+    "sparse_expand_matrix",
 ]
