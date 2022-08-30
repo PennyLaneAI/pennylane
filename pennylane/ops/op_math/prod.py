@@ -427,9 +427,9 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     if wire_map is not None:
         wires1 = wires1.map(wire_map)
         wires2 = wires2.map(wire_map)
-    if np.intersect1d(wires1, wires2).size != 0:
-        return False
-    return np.min(wires1) > np.min(wires2)
+    wires1 = set(wires1)
+    wires2 = set(wires2)
+    return False if wires1 & wires2 else wires1.pop() > wires2.pop()
 
 
 class ProductFactorsGrouping:
