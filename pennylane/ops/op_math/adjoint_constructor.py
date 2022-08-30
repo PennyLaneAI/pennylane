@@ -16,9 +16,9 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 """
 from functools import wraps
 
-import pennylane as qml
 from pennylane.operation import Operator, AdjointUndefinedError
 from pennylane.queuing import QueuingContext
+from pennylane.tape import QuantumTape, stop_recording
 
 from .adjoint_class import Adjoint
 
@@ -35,11 +35,11 @@ def _single_op_eager(op, update_queue=False):
 
 
 # pylint: disable=no-member
-def adjoint(op, lazy=True):
+def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
 
     Args:
-        op (function or :class:`~.operation.Operator`): A single operator or a quantum function that
+        fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
             applies quantum operations.
 
     Keyword Args:
@@ -112,18 +112,19 @@ def adjoint(op, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
-    if isinstance(op, Operator):
-        return Adjoint(op) if lazy else _single_op_eager(op, update_queue=True)
-    if not callable(op):
+    if isinstance(fn, Operator):
+        return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
+    if not callable(fn):
         raise ValueError(
-            f"The object {op} of type {type(op)} is not callable. "
+            f"The object {fn} of type {type(fn)} is not callable. "
             "This error might occur if you apply adjoint to a list "
             "of operations instead of a function or template."
         )
 
-    @wraps(op)
+    @wraps(fn)
     def wrapper(*args, **kwargs):
-        tape = qml.transforms.make_tape(op)(*args, **kwargs)
+        with stop_recording(), QuantumTape() as tape:
+            fn(*args, **kwargs)
 
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(tape.operations)]
