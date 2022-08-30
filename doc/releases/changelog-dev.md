@@ -138,6 +138,9 @@
 
 <h3>Improvements</h3>
 
+* The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
+  [(#2997)](https://github.com/PennyLaneAI/pennylane/pull/2997)
+
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
@@ -213,6 +216,10 @@
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
+* The `expand_matrix()` has been moved from `~/operation.py` to 
+  `~/math/matrix_manipulation.py`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+
 <h3>Deprecations</h3>
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
@@ -232,8 +239,10 @@
 
 This release contains contributions from (in alphabetical order):
 
+Juan Miguel Arrazola,
 Olivia Di Matteo,
 Josh Izaac,
+Soran Jahangiri,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
