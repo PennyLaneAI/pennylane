@@ -535,9 +535,7 @@ class TestExpandMatrixSparse:
         mat = csr_matrix([[0, 1], [1, 0]])
         res = qml.math.expand_matrix(mat, wires=qml.wires.Wires([0]), wire_order=[0, 1])
         res.sort_indices()
-        expected = csr_matrix(
-            np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
-        )
+        expected = csr_matrix(np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]))
         expected.sort_indices()
 
         assert type(res) == type(expected)
@@ -549,9 +547,7 @@ class TestExpandMatrixSparse:
         mat = csr_matrix([[0, 1], [1, 0]])
         res = qml.math.expand_matrix(mat, wires=(0,), wire_order=[0, 1])
         res.sort_indices()
-        expected = csr_matrix(
-            np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
-        )
+        expected = csr_matrix(np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]))
         expected.sort_indices()
 
         assert type(res) == type(expected)
