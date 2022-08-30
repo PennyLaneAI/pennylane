@@ -4,18 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* The `coefficients` function and the `visualize` submodule
-  of the `qml.fourier` module now allow assigning different degrees
-  for different parameters of the input function.
-  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
-
-  The argument `degree` to `qml.fourier.coefficients` previously was an integer,
-  and now can be a sequence of integers with one integer per function
-  parameters, resulting in a returned array with shape
-  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
-  The functions in `qml.fourier.visualize` accordingly accept such a coefficients
-  array.
-
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
   
@@ -112,6 +100,15 @@
   ```
 
 <h3>Improvements</h3>
+
+* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
+  now allow assigning different degrees for different parameters of the input function.
+  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
+
+  The argument `degree` to `qml.fourier.coefficients` previously was an integer, and now
+  can be a sequence of integers with one integer per function parameters, resulting in a
+  returned array with shape `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
+  The functions in `qml.fourier.visualize` accordingly accept such a coefficients array.
 
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
