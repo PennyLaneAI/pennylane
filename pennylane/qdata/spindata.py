@@ -19,7 +19,18 @@ from .dataset import Dataset
 
 
 class Spindata(Dataset):
-    def __init__(self, parameters, hamiltonians, phase_labels, ground_energies, ground_states, correlation_matrix, classical_shadows):
+    """Class for quantum spin systems dataset"""
+
+    def __init__(
+        self,
+        parameters,
+        hamiltonians,
+        phase_labels,
+        ground_energies,
+        ground_states,
+        correlation_matrix,
+        classical_shadows,
+    ):
         self.parameters = parameters
         self.hamiltonians = hamiltonians
         self.phase_labels = phase_labels
@@ -27,4 +38,3 @@ class Spindata(Dataset):
         self.ground_states = ground_states
         self.correlation_matrix = correlation_matrix
         self.classical_shadows = classical_shadows
-
