@@ -494,10 +494,11 @@ class ProductFactorsGrouping:
             wires (List[int]): Factor wires. This argument is added to avoid calling
                 ``factor.wires`` several times.
         """
+        wire = wires[0]
         label = factor.label()
-        old_coeff, old_word = self._pauli_factors.get(wires[0], (1, "I"))
+        old_coeff, old_word = self._pauli_factors.get(wire, (1, "I"))
         coeff, new_word = self._pauli_mult[old_word + label]
-        self._pauli_factors[wires[0]] = old_coeff * coeff, new_word
+        self._pauli_factors[wire] = old_coeff * coeff, new_word
 
     def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
         """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
