@@ -191,6 +191,18 @@ class QNSPSAOptimizer:
         return params_next, loss_curr
 
     def _step_core(self, cost, args, kwargs):
+        """Core step function that returns the updated paramter before blocking condition
+        is applied.
+
+        Args:
+            cost (QNode): the QNode wrapper for the objective function for optimization
+            args : variable length argument list for qnode
+            kwargs : variable length of keyword arguments for the qnode
+
+        Returns:
+            np.array: the new variable values :math:`x^{(t+1)}` before the blocking condition
+            is applied.
+        """
         all_grad_tapes = []
         all_grad_dirs = []
         all_metric_tapes = []
@@ -230,6 +242,18 @@ class QNSPSAOptimizer:
         return params_next
 
     def _post_process_grad(self, grad_raw_results, grad_dirs):
+        r"""Post process the gradient tape results to get the SPSA gradient estimation.
+
+        Args:
+            grad_raw_results list[np.array]: list of the two qnode results with input parameters
+            perturbed along the ``grad_dirs`` directions
+            grad_dirs list[np.array]: list of perturbation arrays along which the SPSA
+            gradients are estimated
+
+        Returns:
+            list[np.array]: list of gradient arrays. Each gradient array' dimension matches
+            the shape of the corresponding input parameter
+        """
         loss_plus, loss_minus = grad_raw_results
         grad = [
             (loss_plus - loss_minus) / (2 * self.finite_diff_step) * grad_dir
@@ -238,6 +262,18 @@ class QNSPSAOptimizer:
         return grad
 
     def _post_process_tensor(self, tensor_raw_results, tensor_dirs):
+        r"""Post process the corresponding tape results to get the metric tensor estimation.
+
+        Args:
+            tensor_raw_results list[np.array]: list of the four perturbed qnode results to compute
+            the estimated metric tensor
+            tensor_dirs list[np.array]: list of the two perturbation directions used to compute
+            the metric tensor estimation. Perturbations on the different input parameters have
+            been concatenated
+
+        Returns:
+            np.array: estimated Fubini-Study metric tensor
+        """
         tensor_raw_results = [result.squeeze() for result in tensor_raw_results]
         # For each element of tensor_raw_results, the first dimension is the measured probability in
         # the computational ket{0} state, which equals the state overlap between the perturbed and
