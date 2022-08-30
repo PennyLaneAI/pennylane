@@ -15,8 +15,8 @@
 to a higher hilbert space with re-ordered wires."""
 import copy
 
-import pennylane as qml
 from scipy.sparse import csr_matrix, kron, issparse, eye
+import pennylane as qml
 
 
 def expand_matrix(base_matrix, wires, wire_order=None):
