@@ -212,42 +212,37 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
             a_{q, \alpha} + \frac{1}{2} w^{(r)} \sum_r^R \left ( \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pq}
             L_{pq}^{(r)} a_{p, \alpha}^{\dagger} a_{q, \alpha} \right )^2.
 
-
-        The matrices :math:`L^{(r)}` can also be eigendecomposed and truncated up to a rank
-        :math:`M` to obtain a double-factorized Hamiltonian.
-
         The orbital basis can be rotated such that each :math:`T` and :math:`L^{(r)}` matrix is
-        diagonal. With diagonal matrices :math:`D_0 = P^{-1} T P` and
-        :math:`D_r = P_r^{-1} w_r L_r P_r`, the Hamiltonian can then be written in terms of the
-        components of these matrices and the inverse of the diagonalizing operators :math:`P` as
+        diagonal. The Hamiltonian can then be written as
 
         .. math::
 
             H = U_0 \left ( \sum_p d_p n_p \right ) U_0^{\dagger} + \sum_l^L U_l \left ( \sum_{pq}
             d_{pq}^{(l)} n_p n_q \right ) U_l^{\dagger}
 
-        where :math:`U = P^{-1}`.
+        where the coefficients :math:`d` are obtained by diagonalizing the :math:`T` and
+        :math:`L^{(r)}` matrices. This function returns the coefficients :math:`d` and the
+        eignvectors of the :math:`T` and :math:`L^{(r)}` matrices.
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
+
     factors = qml.qchem.factorize(two_electron, tol_factor, tol_eigval)[0]
     eigvals, eigvecs = np.linalg.eigh(factors)
 
     t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
     t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
 
-    g = []
-    u_g = []
+    d_eigvals = []
+    d_eigvecs = []
+
     for i in range(len(eigvals)):
-        for j, val in enumerate(eigvals[i]):
-            eigvecs[i][j] = eigvecs[i][j] * val
-        gw, gv = np.linalg.eigh(eigvecs[i] * 0.5)
-        g.append(gw ** 2)
-        u_g.append(gv.dot(np.diag(gw).dot(np.linalg.inv(gv))))
+        for j, eigval in enumerate(eigvals[i]):
+            eigvecs[i][j] = eigvecs[i][j]
+        d_eigval, d_eigvec = np.linalg.eigh(eigvecs[i])
+        d_eigvals.append(np.array(d_eigval) * (0.5 * eigval))
+        d_eigvecs.append(d_eigvec * (0.5 * eigval))
 
-    u_t = t_eigvecs.dot(np.diag(t_eigvals).dot(np.linalg.inv(t_eigvecs)))
+    coeffs = [np.array(t_eigvals)] + [np.outer(x, x).flatten() for x in d_eigvals]
+    eigvec = [t_eigvecs] + d_eigvecs
 
-    coeffs = ((np.max(abs(t_eigvals)) + np.sum(abs(np.array(g)))) / error) ** 2
-    ops = ...
-    u_rotation = u_t + u_g
-
-    return coeffs, ops, u_rotation
+    return coeffs, eigvec
