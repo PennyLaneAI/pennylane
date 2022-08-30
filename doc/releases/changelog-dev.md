@@ -116,6 +116,26 @@
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
 
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
+  Operator before exponentiation. Internally, this constructor functions creates the new
+  class `qml.ops.op_math.Exp`.
+  [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
+
+  The function can be used to create either observables or generic rotation gates:
+
+  ```pycon
+  >>> obs = qml.exp(qml.PauliX(0), 3)
+  >>> qml.is_hermitian(obs)
+  True
+  >>> x = 1.234
+  >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+  >>> isingxy = qml.exp(t, 0.25j * x)
+  >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+  True
+  >>> qml.is_unitary(isingxy)
+  True
+  ```
+
 <h3>Improvements</h3>
 
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
@@ -192,6 +212,10 @@
   Any device that overrides `statistics` should edit the signature of the method to include
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+
+* The `expand_matrix()` has been moved from `~/operation.py` to 
+  `~/math/matrix_manipulation.py`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
 
