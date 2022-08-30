@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli, X, TADD, TSWAP
 from numpy.linalg import multi_dot
-from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
