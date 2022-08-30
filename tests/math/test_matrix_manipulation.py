@@ -519,7 +519,6 @@ class TestExpandMatrix:
                 return self.base_matrix_2_broadcasted
 
         op = DummyOp(wires=[0, 2])
-        op = DummyOp(wires=[0, 2])
         assert np.allclose(op.matrix(), self.base_matrix_2_broadcasted, atol=tol)
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
