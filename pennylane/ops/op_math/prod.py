@@ -348,8 +348,8 @@ class Prod(Operator):
         for factor in factors:
             simplified_factor = factor.simplify()
             new_factors.add(factor=simplified_factor)
-        new_factors.queue_factors(wires=self.wires)
-        return new_factors.global_phase, new_factors.queue
+        new_factors.remove_factors(wires=self.wires)
+        return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
         global_phase, factors = self._simplify_factors(factors=self.factors)
@@ -458,20 +458,20 @@ class ProductFactorsGrouping:
     def __init__(self):
         self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
         self._non_pauli_factors = {}  # {wires: [hash, pow_coeff, operator]}
-        self.queue = ()
+        self.factors = ()
         self.global_phase = 1
 
     def add(self, factor: Operator):
-        """Add operator to the factors queue.
+        """Add factor.
 
         Args:
-            factor (Operator): Operator to add to the queue.
+            factor (Operator): Factor to add.
         """
         if isinstance(factor, Prod):
             for prod_factor in factor.factors:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
-            self.queue += (factor.summands,)
+            self.factors += (factor.summands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
@@ -479,10 +479,10 @@ class ProductFactorsGrouping:
             wires = factor.wires
             if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
                 self._add_pauli_factor(factor=factor, wires=wires)
-                self._queue_non_pauli_factors(wires=wires)
+                self._remove_non_pauli_factors(wires=wires)
             else:
                 self._add_non_pauli_factor(factor=factor, wires=wires)
-                self._queue_pauli_factors(wires=wires)
+                self._remove_pauli_factors(wires=wires)
 
     def _add_pauli_factor(self, factor: Operator, wires: List[int]):
         """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
@@ -532,15 +532,15 @@ class ProductFactorsGrouping:
         elif op_hash == old_hash:
             self._non_pauli_factors[wires][1] += coeff
         else:
-            self._queue_non_pauli_factors(wires=wires)
+            self._remove_non_pauli_factors(wires=wires)
             self._non_pauli_factors[wires] = [op_hash, copy(coeff), factor]
 
-    def _queue_non_pauli_factors(self, wires: List[int]):
+    def _remove_non_pauli_factors(self, wires: List[int]):
         """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
-        wires and queue them.
+        wires and add them to the ``self.factors`` tuple.
 
         Args:
-            wires (List[int]): Wires of the operators to be queued.
+            wires (List[int]): Wires of the operators to be removed.
         """
         if not self._non_pauli_factors:
             return
@@ -553,20 +553,20 @@ class ProductFactorsGrouping:
                     # TODO: Should we create a qml.pow function that calls op.pow() if possible?
                     op = Pow(base=op, z=pow_coeff).simplify() if pow_coeff != 1 else op
                     if isinstance(op, Prod):
-                        self.queue += tuple(
+                        self.factors += tuple(
                             (factor,)
                             for factor in op.factors
                             if not isinstance(factor, qml.Identity)
                         )
                     elif not isinstance(op, qml.Identity):
-                        self.queue += ((op,),)
+                        self.factors += ((op,),)
 
-    def _queue_pauli_factors(self, wires: List[int]):
+    def _remove_pauli_factors(self, wires: List[int]):
         """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
-        given wires and queue them.
+        given wires and add them to the ``self.factors`` tuple.
 
         Args:
-            wires (List[int]): Wires of the operators to be queued.
+            wires (List[int]): Wires of the operators to be removed.
         """
         if not self._pauli_factors:
             return
@@ -574,11 +574,15 @@ class ProductFactorsGrouping:
             pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "I"))
             if pauli_word != "I":
                 pauli_op = self._paulis[pauli_word](wire)
-                self.queue += ((pauli_op,),)
+                self.factors += ((pauli_op,),)
                 self.global_phase *= pauli_coeff
 
-    def queue_factors(self, wires: List[int]):
+    def remove_factors(self, wires: List[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
-        dictionaries that act on the given wires and queue then."""
-        self._queue_pauli_factors(wires=wires)
-        self._queue_non_pauli_factors(wires=wires)
+        dictionaries that act on the given wires and add them to the ``self.factors`` tuple.
+
+        Args:
+            wires (List[int]): Wires of the operators to be removed.
+        """
+        self._remove_pauli_factors(wires=wires)
+        self._remove_non_pauli_factors(wires=wires)
