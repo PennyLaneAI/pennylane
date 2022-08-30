@@ -254,7 +254,7 @@ class TestMscMethods:
         assert "X@(RY\n(1.00)@X)" == nested_op.label(decimals=2)
         assert "x0@(ry@x1)" == nested_op.label(base_label=["x0", ["ry", "x1"]])
 
-        U = np.array([[1,0],[0,-1]])
+        U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
         prod_op = qml.PauliX(0) @ (qml.PauliY(1) @ qml.QubitUnitary(U, wires=0))
         assert "X@(Y@U(M0))" == prod_op.label(cache=cache)

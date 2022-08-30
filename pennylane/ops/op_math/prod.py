@@ -321,6 +321,7 @@ class Prod(Operator):
         'X0a@(RY1\n(1.00)@X0b)'
 
         """
+
         def _label(factor, decimals, base_label, cache):
             sub_label = factor.label(decimals, base_label, cache)
             return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label

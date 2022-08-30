@@ -326,6 +326,7 @@ class Sum(Operator):
         '(X0+Y1)+RX0\n(1.00)'
 
         """
+
         def _label(factor, decimals, base_label, cache):
             sub_label = factor.label(decimals, base_label, cache)
             return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
@@ -333,8 +334,7 @@ class Sum(Operator):
         if base_label is not None:
             if len(base_label) != len(self.summands):
                 raise ValueError(
-                    "Sum label requires ``base_label`` keyword to be same length"
-                    " as summands."
+                    "Sum label requires ``base_label`` keyword to be same length as summands."
                 )
             return "+".join(
                 _label(s, decimals, lbl, cache) for s, lbl in zip(self.summands, base_label)
