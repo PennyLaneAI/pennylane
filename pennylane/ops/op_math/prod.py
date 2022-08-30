@@ -541,6 +541,8 @@ class ProductFactorsGrouping:
         Args:
             wires (List[int]): Wires of the operators to be queued.
         """
+        if not self._non_pauli_factors:
+            return
         for wire in wires:
             for key, (_, pow_coeff, op) in list(self._non_pauli_factors.items()):
                 if wire in key:
@@ -565,6 +567,8 @@ class ProductFactorsGrouping:
         Args:
             wires (List[int]): Wires of the operators to be queued.
         """
+        if not self._pauli_factors:
+            return
         for wire in wires:
             pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "I"))
             if pauli_word != "I":
