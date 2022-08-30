@@ -14,19 +14,20 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, deque, defaultdict
 import contextlib
 import copy
+
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
+from collections import Counter, defaultdict, deque
 from threading import RLock
+from typing import List
 
 import pennylane as qml
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval
+from pennylane.operation import DecompositionUndefinedError, Operation
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import DecompositionUndefinedError
-from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
-
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -139,7 +140,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     if stop_at is None:
         # by default expand all objects
-        stop_at = lambda obj: False
+        def stop_at(obj):  # pylint: disable=unused-argument
+            return False
 
     new_tape = QuantumTape()
 
@@ -148,23 +150,25 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        try:
-            rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-        except (TypeError, ValueError) as e:
-            raise qml.QuantumFunctionError(
-                "Only observables that are qubit-wise commuting "
-                "Pauli words can be returned on the same wire"
-            ) from e
+        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+            try:
+                rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
+                    tape._obs_sharing_wires
+                )
+            except (TypeError, ValueError) as e:
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire"
+                ) from e
 
-        tape._ops.extend(rotations)
+            tape._ops.extend(rotations)
 
-        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-            new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
-            tape._measurements[i] = new_m
+            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+                new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+                tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
         for obj in getattr(tape, queue):
-
             stop = stop_at(obj)
 
             if not expand_measurements:
@@ -418,7 +422,7 @@ class QuantumTape(AnnotatedQueue):
         """
         if QueuingContext.active_context() is not self:
             raise QueuingError(
-                "Cannot stop recording requested tape " "as it is not currently recording."
+                "Cannot stop recording requested tape as it is not currently recording."
             )
 
         active_contexts = QueuingContext._active_contexts
@@ -459,7 +463,6 @@ class QuantumTape(AnnotatedQueue):
                 if list_order[obj._queue_category] > list_order[current_list]:
                     current_list = obj._queue_category
                 elif list_order[obj._queue_category] < list_order[current_list]:
-                    print(self._queue)
                     raise ValueError(
                         f"{obj._queue_category[1:]} operation {obj} must occur prior "
                         f"to {current_list[1:]}. Please place earlier in the queue."
@@ -475,8 +478,12 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
-        self.all_sampled = all(m.return_type is Sample for m in self.measurements)
+        self.is_sampled = any(
+            m.return_type in [Sample, Counts, Shadow, ShadowExpval] for m in self.measurements
+        )
+        self.all_sampled = all(
+            m.return_type in [Sample, Counts, Shadow, ShadowExpval] for m in self.measurements
+        )
 
     def _update_batch_size(self):
         """Infer the batch_size from the batch sizes of the tape operations and
@@ -520,10 +527,9 @@ class QuantumTape(AnnotatedQueue):
             repeated_wires = {w for w in obs_wires if c[w] > 1}
 
             for i, m in enumerate(self.measurements):
-                if m.obs is not None:
-                    if len(set(m.wires) & repeated_wires) > 0:
-                        self._obs_sharing_wires.append(m.obs)
-                        self._obs_sharing_wires_id.append(i)
+                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
+                    self._obs_sharing_wires.append(m.obs)
+                    self._obs_sharing_wires_id.append(i)
 
     def _update_par_info(self):
         """Update the parameter information dictionary"""
@@ -701,10 +707,7 @@ class QuantumTape(AnnotatedQueue):
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
         for idx, op in enumerate(self._ops):
-            try:
-                self._ops[idx] = op.adjoint()
-            except qml.operation.AdjointUndefinedError:
-                op.inverse = not op.inverse
+            self._ops[idx] = qml.adjoint(op, lazy=False)
 
         self._ops = list(reversed(self._ops))
 
@@ -1051,12 +1054,11 @@ class QuantumTape(AnnotatedQueue):
         elif ret_type == qml.measurements.Sample:
             shape = []
             for shot_val in device.shot_vector:
-                for _ in range(shot_val.copies):
-                    shots = shot_val.shots
-                    if shots != 1:
-                        shape.append(tuple([shots, len(mps)]))
-                    else:
-                        shape.append((len(mps),))
+                shots = shot_val.shots
+                if shots != 1:
+                    shape.extend((shots, len(mps)) for _ in range(shot_val.copies))
+                else:
+                    shape.extend((len(mps),) for _ in range(shot_val.copies))
         return shape
 
     def shape(self, device):
@@ -1105,7 +1107,7 @@ class QuantumTape(AnnotatedQueue):
         if len(self._measurements) == 1:
             output_shape = self._single_measurement_shape(self._measurements[0], device)
         else:
-            num_measurements = len(set(meas.return_type for meas in self._measurements))
+            num_measurements = len({meas.return_type for meas in self._measurements})
             if num_measurements == 1:
                 output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
@@ -1148,14 +1150,13 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.numeric_type
             complex
         """
-        measurement_types = set(meas.return_type for meas in self._measurements)
+        measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
             raise TapeError(
                 "Getting the numeric type of a tape that contains multiple types of measurements is unsupported."
             )
 
         if list(measurement_types)[0] == qml.measurements.Sample:
-
             for observable in self._measurements:
                 # Note: if one of the sample measurements contains outputs that
                 # are real, then the entire result will be real
@@ -1200,7 +1201,7 @@ class QuantumTape(AnnotatedQueue):
     # ========================================================
 
     @property
-    def operations(self):
+    def operations(self) -> List[Operation]:
         """Returns the operations on the quantum tape.
 
         Returns:
@@ -1315,11 +1316,8 @@ class QuantumTape(AnnotatedQueue):
         for observable in self.observables:
             # some observables do not have diagonalizing gates,
             # in which case we just don't append any
-            try:
+            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
                 rotation_gates.extend(observable.diagonalizing_gates())
-            except qml.operation.DiagGatesUndefinedError:
-                pass
-
         return rotation_gates
 
     @property

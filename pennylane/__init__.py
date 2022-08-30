@@ -30,8 +30,8 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
+import pennylane.resource
 import pennylane.templates
-import pennylane.hf
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
 from pennylane._device import Device, DeviceError
@@ -46,6 +46,7 @@ from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import (
+    counts,
     density_matrix,
     measure,
     expval,
@@ -55,9 +56,11 @@ from pennylane.measurements import (
     var,
     vn_entropy,
     mutual_info,
+    classical_shadow,
+    shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, op_sum
+from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -66,6 +69,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
+from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
@@ -86,22 +90,21 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
-    is_commuting,
     pattern_matching,
     pattern_matching_optimization,
-    simplify,
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
+from pennylane.shadows import ClassicalShadow
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
-from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+from pennylane.interfaces import execute, execute_new  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

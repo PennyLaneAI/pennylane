@@ -20,7 +20,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X
+from gate_data import CNOT, II, SWAP, I, Toffoli, X, TADD, TSWAP
 from numpy.linalg import multi_dot
 from scipy.sparse import csr_matrix
 
@@ -741,6 +741,18 @@ class TestObservableConstruction:
         op = DummyObserv(wires=0)
         assert op.is_hermitian is True
 
+    def test_simplify_method(self):
+        """Test that simplify method returns the same instance."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyObserv(wires=0)
+        sim_op = op.simplify()
+        assert op is sim_op
+
 
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
@@ -776,6 +788,89 @@ class TestOperatorIntegration:
 
         with pytest.raises(ValueError, match="Cannot raise an Operator"):
             _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
+
+    def test_sum_with_operator(self):
+        """Test the __sum__ dunder method with two operators."""
+        sum_op = qml.PauliX(0) + qml.RX(1, 0)
+        final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
+        #  TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sum_with_scalar(self):
+        """Test the __sum__ dunder method with a scalar value."""
+        sum_op = 5 + qml.PauliX(0) + 0
+        final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
+        # TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sum_multi_wire_operator_with_scalar(self):
+        """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
+        sum_op = 5 + qml.CNOT(wires=[0, 1])
+        final_op = qml.op_sum(
+            qml.CNOT(wires=[0, 1]),
+            qml.s_prod(5, qml.prod(qml.Identity(0), qml.Identity(1))),
+        )
+        # TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sub_rsub_and_neg_dunder_methods(self):
+        """Test the __sub__, __rsub__ and __neg__ dunder methods."""
+        sum_op = qml.PauliX(0) - 5
+        sum_op_2 = -(5 - qml.PauliX(0))
+        assert np.allclose(a=sum_op.matrix(), b=np.array([[-5, 1], [1, -5]]), rtol=0)
+        assert np.allclose(a=sum_op.matrix(), b=sum_op_2.matrix(), rtol=0)
+        neg_op = -qml.PauliX(0)
+        assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
+
+    def test_mul_with_scalar(self):
+        """Test the __mul__ dunder method with a scalar value."""
+        sprod_op = 4 * qml.RX(1, 0)
+        sprod_op2 = qml.RX(1, 0) * 4
+        final_op = qml.s_prod(scalar=4, operator=qml.RX(1, 0))
+        assert isinstance(sprod_op, qml.ops.SProd)
+        assert sprod_op.name == sprod_op2.name
+        assert sprod_op.wires == sprod_op2.wires
+        assert sprod_op.data == sprod_op2.data
+        assert sprod_op.name == final_op.name
+        assert sprod_op.wires == final_op.wires
+        assert sprod_op.data == final_op.data
+        assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
+        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_operator(self):
+        """Test the __matmul__ dunder method with an operator."""
+        prod_op = qml.RX(1, 0) @ qml.PauliX(0)
+        final_op = qml.prod(qml.RX(1, 0), qml.PauliX(0))
+        assert isinstance(prod_op, qml.ops.Prod)
+        assert prod_op.name == final_op.name
+        assert prod_op.wires == final_op.wires
+        assert prod_op.data == final_op.data
+        assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_not_supported_object_raises_error(self):
+        """Test that the __mul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+            _ = "dummy" * qml.PauliX(0)
+
+    def test_matmul_with_not_supported_object_raises_error(self):
+        """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(ValueError, match="Can only perform tensor products between operators."):
+            _ = qml.PauliX(0) @ "dummy"
 
 
 class TestInverse:
@@ -1121,11 +1216,6 @@ class TestTensor:
         with pytest.raises(
             ValueError, match="Can only perform tensor products between observables"
         ):
-            X @ Y
-
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
             T = X @ Z
             T @ Y
 
@@ -1133,7 +1223,7 @@ class TestTensor:
             ValueError, match="Can only perform tensor products between observables"
         ):
             T = X @ Z
-            Y @ T
+            4 @ T
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
@@ -2025,6 +2115,11 @@ class TestExpandMatrix:
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
+        assert np.allclose(self.base_matrix_2, res)
+
+    def test_no_wire_order_returns_base_matrix(self):
+        """Test the case where the wire_order is None it returns the original matrix"""
+        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2])
         assert np.allclose(self.base_matrix_2, res)
 
     def test_no_expansion_broadcasted(self):

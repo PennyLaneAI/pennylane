@@ -18,8 +18,8 @@ This module contains the :class:`Device` abstract base class.
 import abc
 import types
 import warnings
-from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
+from collections.abc import Iterable, Sequence
 from functools import lru_cache
 
 import numpy as np
@@ -30,7 +30,15 @@ from pennylane.operation import (
     Observable,
     Tensor,
 )
-from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
+from pennylane.measurements import (
+    Sample,
+    State,
+    Variance,
+    Expectation,
+    Probability,
+    MidMeasure,
+    ShadowExpval,
+)
 from pennylane.wires import Wires, WireError
 
 
@@ -717,7 +725,11 @@ class Device(abc.ABC):
 
         return_types = [m.return_type for m in circuit.observables]
 
-        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
+        is_shadow = ShadowExpval in return_types
+
+        if hamiltonian_in_obs and (
+            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
+        ):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
@@ -732,8 +744,9 @@ class Device(abc.ABC):
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
-            and not qml.measurements.Sample in return_types
-            and not qml.measurements.Probability in return_types
+            and qml.measurements.Sample not in return_types
+            and qml.measurements.Probability not in return_types
+            and qml.measurements.Counts not in return_types
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
             # TODO: allow for Hamiltonians in list of observables as well.
@@ -741,7 +754,10 @@ class Device(abc.ABC):
 
         else:
             # otherwise, return the output of an identity transform
-            circuits, hamiltonian_fn = [circuit], lambda res: res[0]
+            circuits = [circuit]
+
+            def hamiltonian_fn(res):
+                return res[0]
 
         # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
         # ones will be as well) and whether broadcasting is supported
@@ -758,7 +774,8 @@ class Device(abc.ABC):
         # expansion. Note that the application order is reversed compared to the expansion order,
         # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
         # results from the broadcast expansion first.
-        total_processing = lambda results: hamiltonian_fn(expanded_fn(results))
+        def total_processing(results):
+            return hamiltonian_fn(expanded_fn(results))
 
         return expanded_tapes, total_processing
 
@@ -939,7 +956,7 @@ class Device(abc.ABC):
                     "simulate the application of mid-circuit measurements on this device."
                 )
 
-            if o.inverse:
+            if getattr(o, "inverse", False):
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
                     "supports_inverse_operations", False
@@ -950,7 +967,7 @@ class Device(abc.ABC):
                     )
                 operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
+            if not self.stopping_condition(o):
                 raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )

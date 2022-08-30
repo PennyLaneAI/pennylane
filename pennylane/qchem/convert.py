@@ -169,7 +169,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         ]
     )
 
-    return np.real(np.array(coeffs)), list(ops)
+    return np.real(np.array(coeffs, requires_grad=False)), list(ops)
 
 
 def _pennylane_to_openfermion(coeffs, ops, wires=None):

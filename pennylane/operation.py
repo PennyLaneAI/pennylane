@@ -100,6 +100,7 @@ import itertools
 import numbers
 import warnings
 from enum import IntEnum
+from typing import List
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -125,7 +126,7 @@ def __getattr__(name):
         raise AttributeError from e
 
 
-def expand_matrix(base_matrix, wires, wire_order):
+def expand_matrix(base_matrix, wires, wire_order=None):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -141,13 +142,18 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     **Example**
 
-    If the wire order is identical to ``wires``, the original matrix gets returned:
+    If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
     >>> base_matrix = np.array([[1, 2, 3, 4],
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
     >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
@@ -182,7 +188,12 @@ def expand_matrix(base_matrix, wires, wire_order):
     torch.Tensor
     >>> res.requires_grad
     True
+
     """
+
+    if (wire_order is None) or (wire_order == wires):
+        return base_matrix
+
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
@@ -880,6 +891,18 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
+        # Check that the wires is not an empty list for operators that have
+        # `num_wires` as `AnyWires` or `AllWires`.
+        if self.num_wires in {AllWires, AnyWires}:
+            if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
+                # Barrier, Snapshot: Applied to all wires if instantiated with wires = [].
+                # Hamiltonian: Possible to be empty with simplify().
+                if len(qml.wires.Wires(wires)) == 0:
+                    raise ValueError(
+                        f"{self.name}: wrong number of wires. "
+                        f"At least one wire has to be given."
+                    )
+
         self._check_batching(params)
 
         self.data = list(params)  #: list[Any]: parameters of the operator
@@ -1058,7 +1081,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1080,7 +1103,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1119,7 +1142,7 @@ class Operator(abc.ABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z):
+    def pow(self, z) -> List["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1158,15 +1181,12 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
-    def adjoint(self):  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
 
         Returns:
             The adjointed operation.
@@ -1194,15 +1214,63 @@ class Operator(abc.ABC):
 
         return tape
 
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 0
+
+    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+        """Reduce the depth of nested operators to the minimum.
+
+        Returns:
+            .Operator: simplified operator
+        """
+        return self
+
     def __add__(self, other):
-        r"""The addition operation between Operator objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
+        """The addition operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, numbers.Number):
+            if other == 0:
+                return self
+            id_op = (
+                qml.prod(*(qml.Identity(w) for w in self.wires))
+                if len(self.wires) > 1
+                else qml.Identity(self.wires[0])
+            )
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
         if isinstance(other, Operator):
-            return qml.ops.Sum(self, other)  # pylint: disable=no-member
+            return qml.op_sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
+
+    def __mul__(self, other):
+        """The scalar multiplication between scalars and Operators."""
+        if isinstance(other, numbers.Number):
+            return qml.s_prod(scalar=other, operator=self)
+        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other):
+        """The product operation between Operator objects."""
+        if isinstance(other, Operator):
+            return qml.prod(self, other)
+        raise ValueError("Can only perform tensor products between operators.")
+
+    def __sub__(self, other):
+        """The substraction operation of Operator-Operator objects and Operator-scalar."""
+        if isinstance(other, (Operator, numbers.Number)):
+            return self + (-other)
+        raise ValueError(f"Cannot substract {type(other)} from Operator.")
+
+    def __rsub__(self, other):
+        """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
+        return -self + other
+
+    def __neg__(self):
+        """The negation operation of an Operator object."""
+        return qml.s_prod(scalar=-1, operator=self)
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
@@ -1432,9 +1500,6 @@ class Operation(Operator):
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
 
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     def eigvals(self):
@@ -1606,7 +1671,10 @@ class Observable(Operator):
         if isinstance(other, Observable):
             return Tensor(self, other)
 
-        raise ValueError("Can only perform tensor products between observables.")
+        try:
+            return super().__matmul__(other=other)
+        except ValueError as e:
+            raise ValueError("Can only perform tensor products between operators.") from e
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
@@ -1670,8 +1738,6 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, numbers.Number) and other == 0:
-            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
@@ -1686,10 +1752,11 @@ class Observable(Operator):
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
-
             return qml.Hamiltonian([a], [self], simplify=True)
-
-        raise ValueError(f"Cannot multiply Observable by {type(a)}")
+        try:
+            return super().__mul__(other=a)
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
 
     __rmul__ = __mul__
 
@@ -1697,7 +1764,10 @@ class Observable(Operator):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(other)} from Observable")
+        try:
+            return super().__sub__(other=other)
+        except ValueError as e:
+            raise ValueError(f"Cannot subtract {type(other)} from Observable") from e
 
 
 class Tensor(Observable):
@@ -1726,7 +1796,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
-        self.obs = []
+        self.obs: List[Observable] = []
         self._args = args
         self.queue(init=True)
 
