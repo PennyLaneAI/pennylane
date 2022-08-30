@@ -530,6 +530,34 @@ class TestExpandMatrixSparse:
     base_matrix_1 = csr_matrix(np.arange(1, 5).reshape((2, 2)))
     base_matrix_2 = csr_matrix(np.arange(1, 17).reshape((4, 4)))
 
+    def test_wires_pl_wires(self):
+        """Tests the case wires is wires.Wires object"""
+        mat = csr_matrix([[0, 1], [1, 0]])
+        res = qml.math.expand_matrix(mat, wires=qml.wires.Wires([0]), wire_order=[0, 1])
+        res.sort_indices()
+        expected = csr_matrix(
+            np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
+        )
+        expected.sort_indices()
+
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
+
+    def test_wires_tuple(self):
+        """Tests the case wires is wires.Wires object"""
+        mat = csr_matrix([[0, 1], [1, 0]])
+        res = qml.math.expand_matrix(mat, wires=(0,), wire_order=[0, 1])
+        res.sort_indices()
+        expected = csr_matrix(
+            np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
+        )
+        expected.sort_indices()
+
+        assert type(res) == type(expected)
+        assert all(res.data == expected.data)
+        assert all(res.indices == expected.indices)
+
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.math.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
