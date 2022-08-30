@@ -539,9 +539,7 @@ class Operator(abc.ABC):
         if wire_order is None or self.wires == Wires(wire_order):
             return canonical_sparse_matrix
 
-        return expand_matrix(
-            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
-        )
+        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):
