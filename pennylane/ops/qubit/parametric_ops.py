@@ -857,18 +857,20 @@ class Rot(Operation):
         Hadamard(wires=[0])
 
         """
-        p0, p1, p2 = [p % (2 * np.pi) for p in self.data]
+        p0, p1, p2 = [p % (4 * np.pi) for p in self.data]
 
-        if qml.math.allclose(p0, np.pi / 2) and qml.math.allclose(p2, 3 * np.pi / 2):
+        if qml.math.allclose(p0 % (2 * np.pi), np.pi / 2) and qml.math.allclose(
+            p2 % (2 * np.pi), 3 * np.pi / 2
+        ):
             return qml.RX(p1, wires=self.wires)
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p2, 0):
+        if qml.math.allclose(p0 % (2 * np.pi), 0) and qml.math.allclose(p2 % (2 * np.pi), 0):
             return qml.RY(p1, wires=self.wires)
-        if qml.math.allclose(p1, 0):
-            return qml.RZ((self.data[0] + self.data[2]) % (2 * np.pi), wires=self.wires)
+        if qml.math.allclose(p1 % (2 * np.pi), 0):
+            return qml.RZ((p0 + p2) % (2 * np.pi), wires=self.wires)
         if (
-            qml.math.allclose(p0, np.pi)
-            and qml.math.allclose(p1, np.pi / 2)
-            and qml.math.allclose(p2, 0)
+            qml.math.allclose(p0 % (2 * np.pi), np.pi)
+            and qml.math.allclose(p1 % (2 * np.pi), np.pi / 2)
+            and qml.math.allclose(p2 % (2 * np.pi), 0)
         ):
             return qml.Hadamard(wires=self.wires)
 
@@ -2044,18 +2046,20 @@ class CRot(Operation):
         wires = self.wires
         params = self.parameters
 
-        p0, p1, p2 = [p % (2 * np.pi) for p in params]
+        p0, p1, p2 = [p % (4 * np.pi) for p in params]
 
-        if qml.math.allclose(p0, np.pi / 2) and qml.math.allclose(p2, 3 * np.pi / 2):
+        if qml.math.allclose(p0 % (2 * np.pi), np.pi / 2) and qml.math.allclose(
+            p2 % (2 * np.pi), 3 * np.pi / 2
+        ):
             return qml.CRX(p1, wires=wires)
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p2, 0):
+        if qml.math.allclose(p0 % (2 * np.pi), 0) and qml.math.allclose(p2 % (2 * np.pi), 0):
             return qml.CRY(p1, wires=wires)
-        if qml.math.allclose(p1, 0):
-            return qml.CRZ((self.data[0] + self.data[2]) % (2 * np.pi), wires=wires)
+        if qml.math.allclose(p1 % (2 * np.pi), 0):
+            return qml.CRZ((p0 + p2) % (2 * np.pi), wires=wires)
         if (
-            qml.math.allclose(p0, np.pi)
-            and qml.math.allclose(p1, np.pi / 2)
-            and qml.math.allclose(p2, 0)
+            qml.math.allclose(p0 % (2 * np.pi), np.pi)
+            and qml.math.allclose(p1 % (2 * np.pi), np.pi / 2)
+            and qml.math.allclose(p2 % (2 * np.pi), 0)
         ):
             hadamard = qml.Hadamard
             return qml.ctrl(hadamard, control=self.control_wires)(wires=target_wires)

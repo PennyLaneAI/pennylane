@@ -75,11 +75,11 @@ class TestSimplifyRotations:
 
         # construct the parameters of the op
         if op.num_params == 1:
-            params = np.array([[-3.0, 3.0, 8.0]])
+            params = np.array([[-50.0, 3.0, 50.0]])
         elif op.num_params == 2:
-            params = np.array([[-3.0, 3.0, 8.0], [3.0, 8.0, -3]])
+            params = np.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
         else:
-            params = np.array([[-3.0, 3.0, 8.0], [3.0, 8.0, -3], [8.0, -3.0, 3]])
+            params = np.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
 
         # construct the wires
         if op.num_wires == 1:
