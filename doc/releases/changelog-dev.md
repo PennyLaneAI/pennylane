@@ -138,6 +138,10 @@
 
 <h3>Improvements</h3>
 
+* Some methods of the `QuantumTape` class have been simplified and reordered to
+  improve both readability and performance.
+  [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
+
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
