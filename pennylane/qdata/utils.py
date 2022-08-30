@@ -3,6 +3,7 @@ import sys
 import math
 import json
 import shutil
+import zipfile
 import requests
 import itertools
 from glob import glob
@@ -13,7 +14,7 @@ DATA_STRUCT = {
         "keys": {},
     },
     "qspin": {
-        "params": ["sysname", "periodicity", "lattice"],
+        "params": ["sysname", "periodicity", "lattice", "layout"],
         "keys": {},
     },
 }
@@ -21,8 +22,8 @@ DATA_STRUCT = {
 URL = "http://127.0.0.1:5001"
 
 
-def convert_size(size_bytes):
-    """Convert file size for the dataset into appropriate units from bytes"""
+def _convert_size(size_bytes):
+    """ Convert file size for the dataset into appropriate units from bytes """
     if not size_bytes:
         return "0 B"
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
@@ -31,19 +32,23 @@ def convert_size(size_bytes):
     return f"{size} {size_name[indx]}"
 
 
-def write_prog_bar(progress, completed, barsize, barlength, total_length):
-    """Helper function for printing progress bar for downloads"""
-    f = f"[{chr(9608)*barlength} {round(completed, 3)} %{'.'*(barsize-barlength)}] {convert_size(progress)}/{convert_size(total_length)}"
+def _write_prog_bar(progress, completed, barsize, barlength, total_length):
+    """ Helper function for printing progress bar for downloads """
+    f = f"[{chr(9608)*barlength} {round(completed, 3)} %{'.'*(barsize-barlength)}] {_convert_size(progress)}/{_convert_size(total_length)}"
     sys.stdout.write("\r" + f)
     sys.stdout.flush()
 
-
-def load(data_type, data_params, filter_params=None, folder_path=None, force=True):
-    """Downloads the data if it is not already present in the directory and return it to user as a Datset object"""
+def _validate_params(data_type, data_params, filter_params=None):
+    """ Validate parameters for loading the data """
 
     if data_type not in list(DATA_STRUCT.keys()):
         raise ValueError(
             f"Currently we have data hosted from types: qchem and qspin, but got {data_type}."
+        )
+
+    if not isinstance(data_params, dict):
+        raise TypeError(
+            f"Args 'data_params' should be a dict, but got {type(data_params)}."
         )
 
     if list(data_params.keys()) != DATA_STRUCT[data_type]["params"]:
@@ -56,39 +61,56 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
             f"Supported key values for {data_type} are {DATA_STRUCT[data_type]['keys']}, but got {filter_params}."
         )
 
+    if filter_params is not None and not isinstance(filter_params, list):
+        raise TypeError(
+            f"Args 'filter_params' should be a list, but got {type(filter_params)}."
+        )         
+
+def _check_data_exist(data_type, data_params, directory_path):
+    exist = False
+    if "full" in data_params.values():
+        exist = True
+    else:
+        subdirec_path = [data_params[param] for param in DATA_STRUCT[data_type]["params"]]
+        for subdirec in itertools.product(*subdirec_path):
+            path = os.path.join(directory_path, *subdirec)
+            if not os.path.exists(path) or not glob(
+                os.path.join(path, "**", "*.dat"), recursive=True
+            ):
+                exist = True
+                break
+    return exist
+
+def _write_data():
+    pass
+
+def load(data_type, data_params, filter_params=None, folder_path=None, force=True):
+    """Downloads the data if it is not already present in the directory and return it to user as a Datset object"""
+
+    _validate_params(data_type, data_params, filter_params)
+
     data_params = {
-        key: (val if isinstance(list, val) else [val]) for (key, val) in data_params.items()
+        key: (val if isinstance(val, list) else [val]) for (key, val) in data_params.items()
     }
 
-    directory_path = f"datasets/{data_type}/"
+    directory_path = f"datasets/{data_type}"
     if folder_path is not None:
         if folder_path[-1] == "/":
             folder_path = folder_path[:-1]
-        directory_path = f"{folder_path}/{directory_path}"
+        directory_path = f"/{folder_path}/{directory_path}"
 
     if not force:
-        if "full" in data_params.values():
-            force = True
-        else:
-            subdirec_path = [data_params[param] for param in DATA_STRUCT[data_type]["params"]]
-            for subdirec in itertools.product(*subdirec_path):
-                path = os.path.join(directory_path, *subdirec)
-                if not os.path.exists(path) or not glob(
-                    os.path.join(path, "**", "*.dat"), recursive=True
-                ):
-                    force = True
-                    break
+        force = _check_data_exist(data_type, data_params, directory_path)
 
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
     with open(f"{directory_path}/data.zip", "wb") as file:
         request_data = {
-            "datatype": data_type,
-            "parameters": data_params,
-            "filters": filter_params,
+            "dparams": data_params,
+            "filters": filter_params if filter_params is not None else ["full"],
         }
-        response = requests.post(f"{URL}/download", data=request_data, stream=True)
+        response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
         if response.status_code == 200:
             print(f"Downloading data to {directory_path}")
             total_length = response.headers.get("content-length")
@@ -103,15 +125,18 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
                         completed = min(round(progress / total_length, 3) * 100, 100)
                         barlength = int(progress / total_length * barsize)
                         if not idx % 1000:
-                            write_prog_bar(progress, completed, barsize, barlength, total_length)
-                write_prog_bar(progress, completed, barsize, barlength, total_length)
+                            _write_prog_bar(progress, completed, barsize, barlength, total_length)
+                _write_prog_bar(progress, completed, barsize, barlength, total_length)
         else:
             response.raise_for_status()
 
-    shutil.unpack_archive(f"{directory_path}/data.zip")
     data_files = []
-    for file in sorted(glob(os.path.join(directory_path, "**", "*.dat"), recursive=True)):
-        data_files.append(file)
+    with zipfile.ZipFile(f"{directory_path}/data.zip", 'r') as zpf:
+        for file in zpf.namelist():
+            if file[-3:] == "pkl":
+                data_files.append(file)
+        zpf.extractall(f"{directory_path}")
+    os.remove(f"{directory_path}/data.zip")
 
     return data_files
 
@@ -135,7 +160,7 @@ def direc_to_dict(path):
 def listdatasets(folder_path=None):
     """Returns a list of datasets and their sizes"""
 
-    wdata = json.loads(requests.get(url + "/about").content)
+    wdata = json.loads(requests.get(URL + "/about").content)
     if folder_path is None:
         fdata = None
     else:
@@ -144,6 +169,6 @@ def listdatasets(folder_path=None):
 
 
 def getinfo(datatype, datasubtype, name):
-    value = requests.get(url + "/about/" + datatype + "/" + datasubtype + "/" + name).content
+    value = requests.get(URL + "/about/" + datatype + "/" + datasubtype + "/" + name).content
     valueasdict = json.loads(value)
     return valueasdict
