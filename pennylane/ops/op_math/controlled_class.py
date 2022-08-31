@@ -342,7 +342,7 @@ class Controlled(SymbolicOp):
             return True
         if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
             return True
-        if isinstance(op.base, qml.PauliX):
+        if isinstance(self.base, qml.PauliX):
             return True
         if self.base.has_decomposition:
             return True
