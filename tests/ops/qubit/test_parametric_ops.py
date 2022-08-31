@@ -3135,33 +3135,33 @@ rotations = [
 ]
 
 
-def get_unsimplified_op(op_class):
-
-    # construct the parameters of the op
-    if op_class.num_params == 1:
-        params = npp.array([[-50.0, 3.0, 50.0]])
-    elif op_class.num_params == 2:
-        params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
-    else:
-        params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
-
-    # construct the wires
-    if op_class.num_wires == 1:
-        wires = 0
-    else:
-        wires = [0, 1]
-
-    return op_class(*params, wires)
-
-
 class TestSimplify:
     """Test rotation simplification methods."""
+
+    @staticmethod
+    def get_unsimplified_op(op_class):
+
+        # construct the parameters of the op
+        if op_class.num_params == 1:
+            params = npp.array([[-50.0, 3.0, 50.0]])
+        elif op_class.num_params == 2:
+            params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
+        else:
+            params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
+
+        # construct the wires
+        if op_class.num_wires == 1:
+            wires = 0
+        else:
+            wires = [0, 1]
+
+        return op_class(*params, wires)
 
     @pytest.mark.parametrize("op", rotations)
     def test_simplify_rotations(self, op):
         """Test that the matrices and wires are the same after simplification"""
 
-        unsimplified_op = get_unsimplified_op(op)
+        unsimplified_op = self.get_unsimplified_op(op)
         simplified_op = qml.simplify(unsimplified_op)
 
         assert qml.math.allclose(qml.matrix(unsimplified_op), qml.matrix(simplified_op))
@@ -3183,7 +3183,7 @@ class TestSimplify:
 
             return qml.expval(qml.PauliZ(0))
 
-        unsimplified_op = get_unsimplified_op(op)
+        unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
         params = [p[0] for p in params]
@@ -3201,7 +3201,7 @@ class TestSimplify:
         assert qml.math.allclose(unsimplified_res, simplified_res)
         assert qml.math.allclose(unsimplified_grad, simplified_grad)
 
-    @pytest.mark.tensorflow
+    @pytest.mark.tf
     @pytest.mark.parametrize("op", rotations)
     def test_simplify_rotations_grad_tensorflow(self, op):
         """Test the gradient of an op after simplication for the tensorflow interface"""
@@ -3218,7 +3218,7 @@ class TestSimplify:
 
             return qml.expval(qml.PauliZ(0))
 
-        unsimplified_op = get_unsimplified_op(op)
+        unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
         params = [tf.Variable(p[0]) for p in params]
@@ -3253,7 +3253,7 @@ class TestSimplify:
 
             return qml.expval(qml.PauliZ(0))
 
-        unsimplified_op = get_unsimplified_op(op)
+        unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
         params = [torch.tensor(p[0], requires_grad=True) for p in params]
@@ -3287,7 +3287,7 @@ class TestSimplify:
 
             return qml.expval(qml.PauliZ(0))
 
-        unsimplified_op = get_unsimplified_op(op)
+        unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
         params = [jnp.array(p[0]) for p in params]
@@ -3304,6 +3304,23 @@ class TestSimplify:
 
         assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
         assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_to_identity(self, op):
+        """Test that the operator correctly simplifies to the identity when the rotation is 0"""
+        if op == qml.U2:
+            pytest.skip("U2 gate does not simplify to Identity")
+
+        num_wires = op.num_wires if op.num_wires is not qml.operation.AnyWires else 2
+
+        unsimplified_op = op(*([0] * op.num_params), wires=range(num_wires))
+        simplified_op = qml.simplify(unsimplified_op)
+
+        if op != qml.PSWAP:
+            assert qml.equal(simplified_op, qml.Identity(0))
+        else:
+            # PSWAP reduces to SWAP when the angle is 0
+            assert qml.equal(simplified_op, qml.SWAP(wires=[0, 1]))
 
     def test_simplify_rot(self):
         """Simplify rot operations with different parameters."""
