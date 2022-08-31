@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.tape import QuantumTape
+from pennylane.devices import NullQubit
 
 
 class QNode:
@@ -199,6 +200,10 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
+
+        # The NullQubit doesn't handle caching.
+        if type(device) == NullQubit:
+            cache = False
 
         # execution keyword arguments
         self.execute_kwargs = {
