@@ -121,6 +121,10 @@ class RX(Operation):
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+            return qml.Identity(wires=self.wires)
+
         return RX(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
@@ -215,6 +219,10 @@ class RY(Operation):
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+            return qml.Identity(wires=self.wires)
+
         return RY(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
@@ -349,6 +357,10 @@ class RZ(Operation):
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+            return qml.Identity(wires=self.wires)
+
         return RZ(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
@@ -512,6 +524,10 @@ class PhaseShift(Operation):
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return PhaseShift(phi, wires=self.wires)
 
     def single_qubit_rot_angles(self):
@@ -691,6 +707,10 @@ class ControlledPhaseShift(Operation):
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return ControlledPhaseShift(phi, wires=self.wires)
 
     @property
@@ -1039,6 +1059,10 @@ class MultiRZ(Operation):
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+            return qml.Identity(wires=self.wires)
+
         return MultiRZ(theta, wires=self.wires)
 
 
@@ -1505,6 +1529,10 @@ class CRX(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return CRX(phi, wires=self.wires)
 
     @property
@@ -1661,6 +1689,10 @@ class CRY(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return CRY(phi, wires=self.wires)
 
     @property
@@ -1853,6 +1885,10 @@ class CRZ(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return CRZ(phi, wires=self.wires)
 
     @property
@@ -2177,6 +2213,10 @@ class U1(Operation):
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return U1(phi, wires=self.wires)
 
 
@@ -2622,6 +2662,10 @@ class IsingXX(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return IsingXX(phi, wires=self.wires)
 
 
@@ -2761,6 +2805,10 @@ class IsingYY(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return IsingYY(phi, wires=self.wires)
 
 
@@ -2931,6 +2979,10 @@ class IsingZZ(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return IsingZZ(phi, wires=self.wires)
 
 
@@ -3112,6 +3164,10 @@ class IsingXY(Operation):
 
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.Identity(wires=self.wires)
+
         return IsingXY(phi, wires=self.wires)
 
 
@@ -3257,4 +3313,8 @@ class PSWAP(Operation):
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
+
+        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+            return qml.SWAP(wires=self.wires)
+
         return PSWAP(phi, wires=self.wires)
