@@ -14,10 +14,10 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-
+from copy import copy
 import warnings
-
 from inspect import signature
+from typing import List
 
 import numpy as np
 from scipy import sparse
@@ -28,6 +28,27 @@ from pennylane import operation
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+
+# pylint: disable=protected-access
+def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
+    """Provides a decomposition without considering control values.  Returns None if
+    no decomposition.
+    """
+    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
+        return [op.base._controlled(op.control_wires[0])]
+    if isinstance(op.base, qml.PauliX):
+        if len(op.control_wires) == 2:
+            return [qml.Toffoli(op.active_wires)]
+        return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+
+    try:
+        # Need to use expand because of in-place inversion
+        # revert to decomposition once in-place inversion removed
+        base_decomp = op.base.expand().circuit
+    except qml.operation.DecompositionUndefinedError:
+        return None
+
+    return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
@@ -206,8 +227,13 @@ class Controlled(SymbolicOp):
         return self.hyperparameters["work_wires"]
 
     @property
+    def active_wires(self):
+        """Wires modified by the operator. This is the control wires followed by the target wires."""
+        return self.control_wires + self.target_wires
+
+    @property
     def wires(self):
-        return self.control_wires + self.base.wires + self.work_wires
+        return self.control_wires + self.target_wires + self.work_wires
 
     # pylint: disable=protected-access
     @property
@@ -262,14 +288,14 @@ class Controlled(SymbolicOp):
 
         canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
 
-        active_wires = self.control_wires + self.target_wires
-
         if wire_order is None or self.wires == Wires(wire_order):
-            return operation.expand_matrix(
-                canonical_matrix, wires=active_wires, wire_order=self.wires
+            return qml.math.expand_matrix(
+                canonical_matrix, wires=self.active_wires, wire_order=self.wires
             )
 
-        return operation.expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
+        return qml.math.expand_matrix(
+            canonical_matrix, wires=self.active_wires, wire_order=wire_order
+        )
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -311,18 +337,25 @@ class Controlled(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     def decomposition(self):
-        if not all(self.control_values):
-            d = [
-                qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val
-            ]
-            d += [Controlled(self.base, self.control_wires, work_wires=self.work_wires)]
-            d += [
-                qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val
-            ]
+        if all(self.control_values):
+            decomp = _decompose_no_control_values(self)
+            if decomp is None:
+                raise qml.operation.DecompositionUndefinedError
+            return decomp
 
-            return d
-        # More to come.  This will be an extensive PR in and of itself.
-        return super().decomposition()
+        # We need to add paulis to flip some control wires
+        d = [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+
+        decomp = _decompose_no_control_values(self)
+        if decomp is None:
+            no_control_values = copy(self).queue()
+            no_control_values.hyperparameters["control_values"] = [1] * len(self.control_wires)
+            d.append(no_control_values)
+        else:
+            d += decomp
+
+        d += [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
+        return d
 
     def generator(self):
         sub_gen = self.base.generator()
