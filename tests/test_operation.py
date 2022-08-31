@@ -392,17 +392,6 @@ class TestOperatorConstruction:
         fun1(tf.Variable(0.2))
         fun1(tf.Variable([0.2, 0.5]))
 
-    def test_no_child_repr(self):
-        """Test that child classes of Operator with arithmetic depth > 0 implement their own repr"""
-
-        class NoCustomRepr(qml.operation.Operator):
-            num_wires = 1
-            arithmetic_depth = 1
-
-        op = NoCustomRepr(0)
-        with pytest.raises(NotImplementedError):
-            repr(op)
-
 
 class TestOperationConstruction:
     """Test custom operations construction."""
