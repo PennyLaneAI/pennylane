@@ -784,17 +784,17 @@ class TestSimplify:
         prod_op = qml.prod(
             qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
         )
-        final_op = qml.s_prod(-1j, Prod(qml.PauliX(1), qml.PauliX(0)))
+        final_op = qml.op_sum(qml.s_prod(-1j, qml.PauliX(1)), qml.s_prod(-1j, qml.PauliX(0)))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.SProd)
-        assert isinstance(simplified_op.base, qml.ops.Sum)
-        assert simplified_op.name == final_op.name
-        assert simplified_op.wires == final_op.wires
-        assert simplified_op.data == final_op.data
-        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
     def test_simplify_method_groups_identical_operators(self):
         """Test that the simplify method groups identical operators."""
@@ -830,6 +830,37 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
 
         assert qml.equal(final_op, simplified_op)
+
+    def test_grouping_with_product_of_sum(self):
+        """Test that grouping works with product of a sum"""
+        prod_op = qml.prod(
+            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+        )
+        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        simplified_op = prod_op.simplify()
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_product_of_sums(self):
+        """Test that grouping works with product of two sums"""
+        prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
+        final_op = qml.op_sum(
+            qml.PauliZ(wires=[0]),
+            2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
+            qml.S(wires=[1]),
+        )
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
 
 
 class TestWrapperFunc:

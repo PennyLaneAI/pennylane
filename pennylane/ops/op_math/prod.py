@@ -369,7 +369,7 @@ class Prod(Operator):
 
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
         op = Sum(*factors).simplify()
-        return op if global_phase == 1 else qml.s_prod(global_phase, op)
+        return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
 
     @property
     def hash(self):
@@ -471,6 +471,8 @@ class ProductFactorsGrouping:
             for prod_factor in factor.factors:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
+            self._remove_pauli_factors(wires=factor.wires)
+            self._remove_non_pauli_factors(wires=factor.wires)
             self._factors += (factor.summands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
