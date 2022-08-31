@@ -41,12 +41,12 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
 
-    try:
-        # Need to use expand because of in-place inversion
-        # revert to decomposition once in-place inversion removed
-        base_decomp = op.base.expand().circuit
-    except qml.operation.DecompositionUndefinedError:
+    if not op.base.has_decomposition:
         return None
+
+    # Need to use expand because of in-place inversion
+    # revert to decomposition once in-place inversion removed
+    base_decomp = op.base.expand().circuit
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
