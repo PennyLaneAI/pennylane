@@ -550,8 +550,24 @@ class TestNullQubitIntegration:
         assert cap == capabilities
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit(self, nullqubit_device_1_wire, r_dtype):
-        """Test that the null qubit plugin provides correct result for a simple circuit"""
+    def test_qubit_circuit_state(self, nullqubit_device_1_wire, r_dtype):
+        """Test that the null qubit plugin provides the correct state for a simple circuit"""
+
+        p = 0.543
+
+        dev = nullqubit_device_1_wire
+        dev.R_DTYPE = r_dtype
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        assert circuit(p) == None
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_qubit_circuit_expval(self, nullqubit_device_1_wire, r_dtype):
+        """Test that the null qubit plugin provides the correct expval for a simple circuit"""
 
         p = 0.543
 
@@ -685,81 +701,125 @@ class TestNullQubitIntegration:
 
 @pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOps:
-    """Tests for special methods to apply gates in NullQubit."""
+    """Tests special methods to apply gates in NullQubit."""
 
     state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
     dev = qml.device("null.qubit", wires=4)
 
     single_qubit_ops = [
-        (qml.PauliX, dev._apply_x),
-        (qml.PauliY, dev._apply_y),
-        (qml.PauliZ, dev._apply_z),
-        (qml.Hadamard, dev._apply_hadamard),
-        (qml.S, dev._apply_s),
-        (qml.T, dev._apply_t),
-        (qml.SX, dev._apply_sx),
+        (dev._apply_x),
+        (dev._apply_y),
+        (dev._apply_z),
+        (dev._apply_hadamard),
+        (dev._apply_s),
+        (dev._apply_t),
+        (dev._apply_sx),
     ]
     two_qubit_ops = [
-        (qml.CNOT, dev._apply_cnot),
-        (qml.SWAP, dev._apply_swap),
-        (qml.CZ, dev._apply_cz),
+        (dev._apply_cnot),
+        (dev._apply_swap),
+        (dev._apply_cz),
     ]
     three_qubit_ops = [
-        (qml.Toffoli, dev._apply_toffoli),
+        (dev._apply_toffoli),
     ]
 
-    @pytest.mark.parametrize("op, method", single_qubit_ops)
-    def test_apply_single_qubit_op(self, op, method, inverse):
+    @pytest.mark.parametrize("method", single_qubit_ops)
+    def test_apply_single_qubit_op(self, method, inverse):
         """Test if the application of single qubit operations is correct."""
         state_out = method(self.state, axes=[1], inverse=inverse)
         assert state_out == None
 
-    @pytest.mark.parametrize("op, method", two_qubit_ops)
-    def test_apply_two_qubit_op(self, op, method, inverse):
+    @pytest.mark.parametrize("method", two_qubit_ops)
+    def test_apply_two_qubit_op(self, method, inverse):
         """Test if the application of two qubit operations is correct."""
         state_out = method(self.state, axes=[0, 1])
         assert state_out == None
 
-    @pytest.mark.parametrize("op, method", two_qubit_ops)
-    def test_apply_two_qubit_op_reverse(self, op, method, inverse):
+    @pytest.mark.parametrize("method", two_qubit_ops)
+    def test_apply_two_qubit_op_reverse(self, method, inverse):
         """Test if the application of two qubit operations is correct when the applied wires are
         reversed."""
         state_out = method(self.state, axes=[2, 1])
         assert state_out == None
 
-    @pytest.mark.parametrize("op, method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_smaller(self, op, method, inverse):
+    @pytest.mark.parametrize("method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_smaller(self, method, inverse):
         """Test if the application of three qubit operations is correct when both control wires are
         smaller than the target wire."""
         state_out = method(self.state, axes=[0, 2, 3])
         assert state_out == None
 
-    @pytest.mark.parametrize("op, method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_greater(self, op, method, inverse):
+    @pytest.mark.parametrize("method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_greater(self, method, inverse):
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
         assert state_out == None
 
-    @pytest.mark.parametrize("op, method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_split(self, op, method, inverse):
+    @pytest.mark.parametrize("method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_split(self, method, inverse):
         """Test if the application of three qubit operations is correct when one control wire is smaller
         and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
         assert state_out == None
 
+    single_qubit_ops_param = [
+        (dev._apply_phase, [1.0]),
+    ]
 
-class TestStateVector:
-    """Unit tests for the _apply_state_vector method"""
+    @pytest.mark.parametrize("method,par", single_qubit_ops_param)
+    def test_apply_single_qubit_op_(self, method, par, inverse):
+        """Test if the application of single qubit operations (with parameter) is correct."""
+        state_out = method(self.state, axes=[1], parameters=par, inverse=inverse)
+        assert state_out == None
 
-    def test_full_subsystem(self, mocker):
+
+class TestStateInitialization:
+    """Unit tests for state initialization methods"""
+
+    def test_state_vector_full_system(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = NullQubit(wires=["a", "b", "c"])
-        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
+        dev = NullQubit(wires=state_wires)
+        state = np.array(
+            [
+                1 / math.sqrt(204),
+                2 / math.sqrt(204),
+                3 / math.sqrt(204),
+                4 / math.sqrt(204),
+                5 / math.sqrt(204),
+                6 / math.sqrt(204),
+                7 / math.sqrt(204),
+                8 / math.sqrt(204),
+            ]
+        )
 
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert dev._state == None
+        spy.assert_not_called()
+
+    def test_basis_state_full_system(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        state_wires = qml.wires.Wires(["a", "b", "c"])
+        dev = NullQubit(wires=state_wires)
+        state = np.array(
+            [
+                1 / math.sqrt(204),
+                2 / math.sqrt(204),
+                3 / math.sqrt(204),
+                4 / math.sqrt(204),
+                5 / math.sqrt(204),
+                6 / math.sqrt(204),
+                7 / math.sqrt(204),
+                8 / math.sqrt(204),
+            ]
+        )
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_basis_state(state=state, wires=state_wires)
 
         assert dev._state == None
         spy.assert_not_called()

@@ -16,6 +16,8 @@ The null.qubit device is a no-op device for benchmarking PennyLane's auxiliary f
 """
 from collections import defaultdict
 
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
 from pennylane.devices import DefaultQubit
 from .._version import __version__
 
@@ -52,6 +54,17 @@ class NullQubit(DefaultQubit):
 
     def _apply_operation(self, state, operation):
         self._gatecalls[operation.name] += 1
+
+        if operation.__class__.__name__ in self._apply_ops:
+            return self._apply_ops[operation.base_name](state, axes=None, inverse=operation.inverse)
+
+        wires = operation.wires
+        if operation in diagonal_in_z_basis:
+            return self._apply_diagonal_unitary(state, None, wires)
+        if len(wires) <= 2:
+            # Einsum is faster for small gates
+            return self._apply_unitary_einsum(state, None, wires)
+        return self._apply_unitary(state, None, wires)
 
     def _apply_x(self, state, axes, **kwargs):
         self._gatecalls["PauliX"] += 1
