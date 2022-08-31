@@ -384,7 +384,8 @@ class SumSummandsGrouping:
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """
         if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
-            self.add(summand=summand.base, coeff=summand.scalar)
+            coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
+            self.add(summand=summand.base, coeff=coeff)
         else:
             op_hash = summand.hash if op_hash is None else op_hash
             if op_hash in self.queue:

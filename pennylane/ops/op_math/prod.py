@@ -458,7 +458,7 @@ class ProductFactorsGrouping:
     def __init__(self):
         self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
         self._non_pauli_factors = {}  # {wires: [hash, pow_coeff, operator]}
-        self.factors = ()
+        self._factors = []
         self.global_phase = 1
 
     def add(self, factor: Operator):
@@ -471,7 +471,7 @@ class ProductFactorsGrouping:
             for prod_factor in factor.factors:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
-            self.factors += (factor.summands,)
+            self._factors += [factor.summands]
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
@@ -506,7 +506,7 @@ class ProductFactorsGrouping:
         together.
 
         If there isn't an identical operator in the dictionary, all non Pauli factors that act on
-        the same wires are removed and added to the ``self.factors`` tuple.
+        the same wires are removed and added to the ``self._factors`` tuple.
 
         Args:
             factor (Operator): Factor to be added.
@@ -537,7 +537,7 @@ class ProductFactorsGrouping:
 
     def _remove_non_pauli_factors(self, wires: List[int]):
         """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
-        wires and add them to the ``self.factors`` tuple.
+        wires and add them to the ``self._factors`` tuple.
 
         Args:
             wires (List[int]): Wires of the operators to be removed.
@@ -553,17 +553,17 @@ class ProductFactorsGrouping:
                     # TODO: Should we create a qml.pow function that calls op.pow() if possible?
                     op = Pow(base=op, z=pow_coeff).simplify() if pow_coeff != 1 else op
                     if isinstance(op, Prod):
-                        self.factors += tuple(
+                        self._factors += [
                             (factor,)
                             for factor in op.factors
                             if not isinstance(factor, qml.Identity)
-                        )
+                        ]
                     elif not isinstance(op, qml.Identity):
-                        self.factors += ((op,),)
+                        self._factors += [(op,)]
 
     def _remove_pauli_factors(self, wires: List[int]):
         """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
-        given wires and add them to the ``self.factors`` tuple.
+        given wires and add them to the ``self._factors`` tuple.
 
         Args:
             wires (List[int]): Wires of the operators to be removed.
@@ -574,15 +574,24 @@ class ProductFactorsGrouping:
             pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "I"))
             if pauli_word != "I":
                 pauli_op = self._paulis[pauli_word](wire)
-                self.factors += ((pauli_op,),)
+                self._factors += [(pauli_op,)]
                 self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: List[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
-        dictionaries that act on the given wires and add them to the ``self.factors`` tuple.
+        dictionaries that act on the given wires and add them to the ``self._factors`` tuple.
 
         Args:
             wires (List[int]): Wires of the operators to be removed.
         """
         self._remove_pauli_factors(wires=wires)
         self._remove_non_pauli_factors(wires=wires)
+
+    @property
+    def factors(self):
+        """Grouped factors tuple.
+
+        Returns:
+            tuple: Tuple of grouped factors.
+        """
+        return tuple(self._factors)
