@@ -35,6 +35,14 @@ INV_SQRT2 = 1 / math.sqrt(2)
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
+def can_replace(x, y):
+    """
+    Convenience function that returns if x is close to y and if
+    x does not require grad
+    """
+    return qml.math.allclose(x, y) and not qml.math.requires_grad(x)
+
+
 class RX(Operation):
     r"""
     The single qubit X rotation
@@ -122,7 +130,7 @@ class RX(Operation):
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+        if can_replace(theta, 0):
             return qml.Identity(wires=self.wires)
 
         return RX(theta, wires=self.wires)
@@ -220,7 +228,7 @@ class RY(Operation):
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+        if can_replace(theta, 0):
             return qml.Identity(wires=self.wires)
 
         return RY(theta, wires=self.wires)
@@ -358,7 +366,7 @@ class RZ(Operation):
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+        if can_replace(theta, 0):
             return qml.Identity(wires=self.wires)
 
         return RZ(theta, wires=self.wires)
@@ -525,7 +533,7 @@ class PhaseShift(Operation):
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires)
 
         return PhaseShift(phi, wires=self.wires)
@@ -708,7 +716,7 @@ class ControlledPhaseShift(Operation):
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return ControlledPhaseShift(phi, wires=self.wires)
@@ -879,19 +887,15 @@ class Rot(Operation):
         """
         p0, p1, p2 = [p % (4 * np.pi) for p in self.data]
 
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p1, 0) and qml.math.allclose(p2, 0):
+        if can_replace(p0, 0) and can_replace(p1, 0) and can_replace(p2, 0):
             return qml.Identity(wires=self.wires)
-        if qml.math.allclose(p0, np.pi / 2) and qml.math.allclose(p2, 7 * np.pi / 2):
+        if can_replace(p0, np.pi / 2) and can_replace(p2, 7 * np.pi / 2):
             return qml.RX(p1, wires=self.wires)
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p2, 0):
+        if can_replace(p0, 0) and can_replace(p2, 0):
             return qml.RY(p1, wires=self.wires)
-        if qml.math.allclose(p1, 0):
+        if can_replace(p1, 0):
             return qml.RZ((p0 + p2) % (4 * np.pi), wires=self.wires)
-        if (
-            qml.math.allclose(p0, np.pi)
-            and qml.math.allclose(p1, np.pi / 2)
-            and qml.math.allclose(p2, 0)
-        ):
+        if can_replace(p0, np.pi) and can_replace(p1, np.pi / 2) and can_replace(p2, 0):
             return qml.Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
@@ -1060,7 +1064,7 @@ class MultiRZ(Operation):
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
+        if can_replace(theta, 0):
             return qml.Identity(wires=self.wires[0])
 
         return MultiRZ(theta, wires=self.wires)
@@ -1530,7 +1534,7 @@ class CRX(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return CRX(phi, wires=self.wires)
@@ -1690,7 +1694,7 @@ class CRY(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return CRY(phi, wires=self.wires)
@@ -1886,7 +1890,7 @@ class CRZ(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return CRZ(phi, wires=self.wires)
@@ -2084,19 +2088,15 @@ class CRot(Operation):
 
         p0, p1, p2 = [p % (4 * np.pi) for p in params]
 
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p1, 0) and qml.math.allclose(p2, 0):
+        if can_replace(p0, 0) and can_replace(p1, 0) and can_replace(p2, 0):
             return qml.Identity(wires=wires[0])
-        if qml.math.allclose(p0, np.pi / 2) and qml.math.allclose(p2, 7 * np.pi / 2):
+        if can_replace(p0, np.pi / 2) and can_replace(p2, 7 * np.pi / 2):
             return qml.CRX(p1, wires=wires)
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p2, 0):
+        if can_replace(p0, 0) and can_replace(p2, 0):
             return qml.CRY(p1, wires=wires)
-        if qml.math.allclose(p1, 0):
+        if can_replace(p1, 0):
             return qml.CRZ((p0 + p2) % (4 * np.pi), wires=wires)
-        if (
-            qml.math.allclose(p0, np.pi)
-            and qml.math.allclose(p1, np.pi / 2)
-            and qml.math.allclose(p2, 0)
-        ):
+        if can_replace(p0, np.pi) and can_replace(p1, np.pi / 2) and can_replace(p2, 0):
             hadamard = qml.Hadamard
             return qml.ctrl(hadamard, control=self.control_wires)(wires=target_wires)
 
@@ -2216,7 +2216,7 @@ class U1(Operation):
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires)
 
         return U1(phi, wires=self.wires)
@@ -2354,11 +2354,11 @@ class U2(Operation):
 
         phi, delta = [p % (2 * np.pi) for p in self.data]
 
-        if qml.math.allclose(delta, 0) and qml.math.allclose(phi, 0):
+        if can_replace(delta, 0) and can_replace(phi, 0):
             return qml.RY(np.pi / 2, wires=wires)
-        if qml.math.allclose(delta, np.pi / 2) and qml.math.allclose(phi, 3 * np.pi / 2):
+        if can_replace(delta, np.pi / 2) and can_replace(phi, 3 * np.pi / 2):
             return qml.RX(np.pi / 2, wires=wires)
-        if qml.math.allclose(delta, 3 * np.pi / 2) and qml.math.allclose(phi, np.pi / 2):
+        if can_replace(delta, 3 * np.pi / 2) and can_replace(phi, np.pi / 2):
             return qml.RX(3 * np.pi / 2, wires=wires)
 
         return U2(phi, delta, wires=wires)
@@ -2520,17 +2520,13 @@ class U3(Operation):
         p0 = params[0] % (4 * np.pi)
         p1, p2 = [p % (2 * np.pi) for p in params[1:]]
 
-        if qml.math.allclose(p0, 0) and qml.math.allclose(p1, 0) and qml.math.allclose(p2, 0):
+        if can_replace(p0, 0) and can_replace(p1, 0) and can_replace(p2, 0):
             return qml.Identity(wires=wires)
-        if qml.math.allclose(p0, 0) and not qml.math.allclose(p1, 0) and qml.math.allclose(p2, 0):
+        if can_replace(p0, 0) and not can_replace(p1, 0) and can_replace(p2, 0):
             return qml.PhaseShift(p1, wires=wires)
-        if (
-            qml.math.allclose(p2, np.pi / 2)
-            and qml.math.allclose(p1, 3 * np.pi / 2)
-            and not qml.math.allclose(p0, 0)
-        ):
+        if can_replace(p2, np.pi / 2) and can_replace(p1, 3 * np.pi / 2) and not can_replace(p0, 0):
             return qml.RX(p0, wires=wires)
-        if not qml.math.allclose(p0, 0) and qml.math.allclose(p1, 0) and qml.math.allclose(p2, 0):
+        if not can_replace(p0, 0) and can_replace(p1, 0) and can_replace(p2, 0):
             return qml.RY(p0, wires=wires)
 
         return U3(p0, p1, p2, wires=wires)
@@ -2667,7 +2663,7 @@ class IsingXX(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return IsingXX(phi, wires=self.wires)
@@ -2810,7 +2806,7 @@ class IsingYY(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return IsingYY(phi, wires=self.wires)
@@ -2984,7 +2980,7 @@ class IsingZZ(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return IsingZZ(phi, wires=self.wires)
@@ -3181,7 +3177,7 @@ class IsingXY(Operation):
     def simplify(self):
         phi = self.data[0] % (4 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.Identity(wires=self.wires[0])
 
         return IsingXY(phi, wires=self.wires)
@@ -3330,7 +3326,7 @@ class PSWAP(Operation):
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
 
-        if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
+        if can_replace(phi, 0):
             return qml.SWAP(wires=self.wires)
 
         return PSWAP(phi, wires=self.wires)
