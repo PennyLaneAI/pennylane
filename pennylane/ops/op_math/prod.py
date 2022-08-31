@@ -471,7 +471,7 @@ class ProductFactorsGrouping:
             for prod_factor in factor.factors:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
-            self._factors += [factor.summands]
+            self._factors += (factor.summands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
@@ -553,13 +553,13 @@ class ProductFactorsGrouping:
                     # TODO: Should we create a qml.pow function that calls op.pow() if possible?
                     op = Pow(base=op, z=pow_coeff).simplify() if pow_coeff != 1 else op
                     if isinstance(op, Prod):
-                        self._factors += [
+                        self._factors += tuple(
                             (factor,)
                             for factor in op.factors
                             if not isinstance(factor, qml.Identity)
-                        ]
+                        )
                     elif not isinstance(op, qml.Identity):
-                        self._factors += [(op,)]
+                        self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: List[int]):
         """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
@@ -574,7 +574,7 @@ class ProductFactorsGrouping:
             pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "I"))
             if pauli_word != "I":
                 pauli_op = self._paulis[pauli_word](wire)
-                self._factors += [(pauli_op,)]
+                self._factors += ((pauli_op,),)
                 self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: List[int]):
