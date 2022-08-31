@@ -147,7 +147,6 @@ class NullQubit(DefaultQubit):
 
     def execute(self, circuit, **kwargs):
         self.apply(circuit.operations)
-        return None
 
     def batch_execute(self, circuits, **kwargs):
         res = []
