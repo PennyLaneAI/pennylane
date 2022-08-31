@@ -368,8 +368,8 @@ class Prod(Operator):
             return op if global_phase == 1 else qml.s_prod(global_phase, op)
 
         factors = [Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
-
-        return Sum(*factors) if global_phase == 1 else qml.s_prod(global_phase, Sum(*factors))
+        op = Sum(*factors).simplify()
+        return op if global_phase == 1 else qml.s_prod(global_phase, op)
 
     @property
     def hash(self):
