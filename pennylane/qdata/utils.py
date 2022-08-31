@@ -160,12 +160,61 @@ def direc_to_dict(path):
 def listdatasets(folder_path=None):
     """Returns a list of datasets and their sizes"""
 
-    wdata = json.loads(requests.get(URL + "/about").content)
+    wdata = json.loads(requests.get(URL + "/download/about").content)
     if folder_path is None:
         fdata = None
     else:
         fdata = direc_to_dict(folder_path)
     return wdata, fdata
+
+
+def dfs(t, path=[]):
+    """Perform directory structure DFS"""
+    if isinstance(t, dict):
+        for key, val in t.items():
+            yield from dfs(val, [*path, key])
+    else:
+        yield path, t
+
+
+def get_params(data, data_type, **kwargs):
+    """Prepare data_param using listdatasets result"""
+    params = DATA_STRUCT[data_type]["params"]
+    if not set(kwargs.keys()).issubset(params):
+        raise ValueError(
+            f"Expected kwargs for the module {module} are {params}, but got {list(kwargs.items())}"
+        )
+
+    data_params = [["full"] for params in params]
+    mtch_params = []
+    for key, val in kwargs.items():
+        data_params[params.index(key)] = val if isinstance(val, list) else [val]
+        mtch_params.append(params.index(key))
+
+    traverse_data = list(
+        filter(
+            lambda x: all(
+                [
+                    x[0][m] in data_params[m]
+                    if m < len(params) - 1
+                    else set(data_params[m]).issubset(x[1])
+                    for m in mtch_params
+                ]
+            ),
+            dfs(data[data_type], []),
+        )
+    )
+
+    data_params = []
+    for data in traverse_data:
+        dparams = {param: ["full"] for param in params}
+        for idx in mtch_params:
+            dparams[params[idx]] = [data[0][idx]] if idx < len(params) - 1 else data[1]
+        data_params.append(dparams)
+        if not mtch_params:
+            break
+
+    return data_params
 
 
 def getinfo(datatype, datasubtype, name):
