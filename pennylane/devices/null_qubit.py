@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -92,6 +92,9 @@ class NullQubit(DefaultQubit):
     def expval(self, observable, shot_range=None, bin_size=None):
         pass
 
+    def var(self, observable, shot_range=None, bin_size=None):
+        pass
+
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
@@ -144,7 +147,7 @@ class NullQubit(DefaultQubit):
 
     def execute(self, circuit, **kwargs):
         self.apply(circuit.operations)
-        return [[0.0]]
+        return None
 
     def batch_execute(self, circuits, **kwargs):
         res = []
