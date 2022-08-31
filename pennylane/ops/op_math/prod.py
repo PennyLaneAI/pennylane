@@ -522,9 +522,6 @@ class ProductFactorsGrouping:
             exponent = 1
         op_hash = factor.hash
         old_hash, old_coeff, old_op = self._non_pauli_factors.get(wires, [None, None, None])
-        # TODO: Should we create an abstract `Rotation` class and make inherit all rotations from
-        # this class? We could group a lot of operator functionalities, and this check will be
-        # easier.
         if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and factor.name == old_op.name:
             self._non_pauli_factors[wires] = [
                 op_hash,
