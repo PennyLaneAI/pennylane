@@ -124,7 +124,7 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     return metric_tensor_expected
 
 
-class TestSPSAOptimizer:
+class TestQNSPSAOptimizer:
     @pytest.mark.parametrize("seed", [1, 151, 1231])
     @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
     def test_gradient_from_single_input(self, finite_diff_step, seed):
@@ -235,7 +235,7 @@ class TestSPSAOptimizer:
                 )
             )
             / 4
-        )
+        ).reshape(1, 1)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
