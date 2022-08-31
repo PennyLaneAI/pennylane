@@ -341,15 +341,8 @@ def is_commuting(operation1, operation2):
     if operation1.name == "CRot" and operation2.name == "CRot":
         return check_commutation_two_non_simplified_crot(operation1, operation2)
 
-    # Parametric operation might implement the identity operator
-    commutation_identity_simplification_1 = check_simplify_identity_commutation(operation1)
-    if commutation_identity_simplification_1 is not None:
-        return commutation_identity_simplification_1
-
-    # pylint:disable=arguments-out-of-order
-    commutation_identity_simplification_2 = check_simplify_identity_commutation(operation2)
-    if commutation_identity_simplification_2 is not None:
-        return commutation_identity_simplification_2
+    if "Identity" in (operation1.name, operation2.name):
+        return True
 
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
