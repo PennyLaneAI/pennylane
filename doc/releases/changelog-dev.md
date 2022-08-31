@@ -115,8 +115,8 @@
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
-  
-* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to 
+
+* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
 
@@ -180,6 +180,9 @@
   >>> op2 = qml.Rot(np.pi / 2, 5.0, -np.pi / 2, wires=0)
   >>> qml.simplify(op2)
   RX(5.0, wires=[0])
+  >>> op3 = qml.RX(4 * np.pi, wires=0)
+  >>> qml.simplify(op3)
+  Identity(wires=[0])
   ```
 
 * The `qml.simplify` method now can compute the adjoint and power of specific operators.
