@@ -709,7 +709,7 @@ class ControlledPhaseShift(Operation):
         phi = self.data[0] % (2 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return ControlledPhaseShift(phi, wires=self.wires)
 
@@ -1061,7 +1061,7 @@ class MultiRZ(Operation):
         theta = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(theta) and qml.math.allclose(theta, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return MultiRZ(theta, wires=self.wires)
 
@@ -1531,7 +1531,7 @@ class CRX(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return CRX(phi, wires=self.wires)
 
@@ -1691,7 +1691,7 @@ class CRY(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return CRY(phi, wires=self.wires)
 
@@ -1887,7 +1887,7 @@ class CRZ(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return CRZ(phi, wires=self.wires)
 
@@ -2664,7 +2664,7 @@ class IsingXX(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return IsingXX(phi, wires=self.wires)
 
@@ -2807,7 +2807,7 @@ class IsingYY(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return IsingYY(phi, wires=self.wires)
 
@@ -2981,7 +2981,7 @@ class IsingZZ(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return IsingZZ(phi, wires=self.wires)
 
@@ -3166,7 +3166,7 @@ class IsingXY(Operation):
         phi = self.data[0] % (4 * np.pi)
 
         if not qml.math.requires_grad(phi) and qml.math.allclose(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return IsingXY(phi, wires=self.wires)
 

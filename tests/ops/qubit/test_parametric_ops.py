@@ -3112,8 +3112,94 @@ class TestMultiRZ:
             qml.MultiRZ(0.5, wires=[])
 
 
+rotations = [
+    qml.RX,
+    qml.RY,
+    qml.RZ,
+    qml.PhaseShift,
+    qml.ControlledPhaseShift,
+    qml.Rot,
+    qml.MultiRZ,
+    qml.CRX,
+    qml.CRY,
+    qml.CRZ,
+    qml.CRot,
+    qml.U1,
+    qml.U2,
+    qml.U3,
+    qml.IsingXX,
+    qml.IsingYY,
+    qml.IsingZZ,
+    qml.IsingXY,
+    qml.PSWAP,
+]
+
+
+def get_unsimplified_op(op_class):
+
+    # construct the parameters of the op
+    if op_class.num_params == 1:
+        params = npp.array([[-50.0, 3.0, 50.0]])
+    elif op_class.num_params == 2:
+        params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
+    else:
+        params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
+
+    # construct the wires
+    if op_class.num_wires == 1:
+        wires = 0
+    else:
+        wires = [0, 1]
+
+    return op_class(*params, wires)
+
+
 class TestSimplify:
     """Test rotation simplification methods."""
+
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations(self, op):
+        """Test that the matrices and wires are the same after simplification"""
+
+        unsimplified_op = get_unsimplified_op(op)
+        simplified_op = qml.simplify(unsimplified_op)
+
+        assert qml.math.allclose(qml.matrix(unsimplified_op), qml.matrix(simplified_op))
+        assert all((p >= 0).all() and (p < 4 * np.pi).all() for p in simplified_op.data)
+        assert unsimplified_op.wires == simplified_op.wires
+
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad(self, op):
+        """Test the the gradient of an op after simplication is the same"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(simplify, wires, *params):
+            unsimplified_op = op(*params, wires)
+            if simplify:
+                qml.apply(qml.simplify(unsimplified_op))
+            else:
+                qml.apply(unsimplified_op)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        params = [p[0] for p in params]
+
+        unsimplified_res = circuit(False, wires, *params)
+        simplified_res = circuit(True, wires, *params)
+
+        unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(params))))(
+            False, wires, *params
+        )
+        simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(params))))(
+            True, wires, *params
+        )
+
+        assert qml.math.allclose(unsimplified_res, simplified_res)
+        assert qml.math.allclose(unsimplified_grad, simplified_grad)
 
     def test_simplify_rot(self):
         """Simplify rot operations with different parameters."""

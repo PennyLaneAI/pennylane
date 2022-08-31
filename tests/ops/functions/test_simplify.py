@@ -43,58 +43,6 @@ simplified_op = qml.prod(
 )
 
 
-@pytest.mark.parametrize(
-    "op",
-    [
-        qml.RX,
-        qml.RY,
-        qml.RZ,
-        qml.PhaseShift,
-        qml.ControlledPhaseShift,
-        qml.Rot,
-        qml.MultiRZ,
-        qml.CRX,
-        qml.CRY,
-        qml.CRZ,
-        qml.CRot,
-        qml.U1,
-        qml.U2,
-        qml.U3,
-        qml.IsingXX,
-        qml.IsingYY,
-        qml.IsingZZ,
-        qml.IsingXY,
-        qml.PSWAP,
-    ],
-)
-class TestSimplifyRotations:
-    """Test for the qml.simplify function for single-qubit parametric ops"""
-
-    def test_simplify_rotations(self, op):
-        """Test that the matrices and wires are the same after simplification"""
-
-        # construct the parameters of the op
-        if op.num_params == 1:
-            params = np.array([[-50.0, 3.0, 50.0]])
-        elif op.num_params == 2:
-            params = np.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
-        else:
-            params = np.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
-
-        # construct the wires
-        if op.num_wires == 1:
-            wires = 0
-        else:
-            wires = [0, 1]
-
-        unsimplified_op = op(*params, wires)
-        simplified_op = qml.simplify(unsimplified_op)
-
-        assert qml.math.allclose(qml.matrix(unsimplified_op), qml.matrix(simplified_op))
-        assert all((p >= 0).all() and (p < 4 * np.pi).all() for p in simplified_op.data)
-        assert unsimplified_op.wires == simplified_op.wires
-
-
 class TestSimplifyOperators:
     """Tests for the qml.simplify method used with operators."""
 
