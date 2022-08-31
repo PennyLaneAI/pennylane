@@ -2619,7 +2619,7 @@ class TestPauliRot:
         """Test PauliRot matrix correctly accounts for identities."""
 
         res = qml.PauliRot.compute_matrix(theta, pauli_word)
-        expected = qml.operation.expand_matrix(
+        expected = qml.math.expand_matrix(
             qml.PauliRot.compute_matrix(theta, compressed_pauli_word), compressed_wires, wires
         )
 
@@ -2627,7 +2627,7 @@ class TestPauliRot:
 
         batch = np.ones(3) * theta
         res = qml.PauliRot.compute_matrix(batch, pauli_word)
-        expected = qml.operation.expand_matrix(
+        expected = qml.math.expand_matrix(
             qml.PauliRot.compute_matrix(batch, compressed_pauli_word), compressed_wires, wires
         )
 

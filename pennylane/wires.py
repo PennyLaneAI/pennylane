@@ -412,15 +412,11 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         <Wires = [4, 0, 1, 3, 5]>
         """
-        combined = []
-        seen_labels = set()
-        for wires in list_of_wires:
-            if not isinstance(wires, Wires):
-                raise WireError(f"Expected a Wires object; got {wires} of type {type(wires)}")
-
-            extension = [label for label in wires.labels if label not in seen_labels]
-            combined.extend(extension)
-            seen_labels.update(extension)
+        converted_wires = (
+            wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
+        )
+        all_wires_list = sum((w.tolist() for w in converted_wires), [])
+        combined = list(dict.fromkeys(all_wires_list))
 
         if sort:
             if all(isinstance(w, int) for w in combined):

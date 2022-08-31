@@ -597,7 +597,7 @@ class TestMatrix:
         op = Controlled(base, 0)
 
         method_order = op.matrix(wire_order=(1, 0))
-        function_order = qml.operation.expand_matrix(op.matrix(), op.wires, (1, 0))
+        function_order = qml.math.expand_matrix(op.matrix(), op.wires, (1, 0))
 
         assert qml.math.allclose(method_order, function_order)
 
