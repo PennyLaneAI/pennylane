@@ -285,9 +285,11 @@ class TestMiscMethods:
 
     def test_repr(self):
         """Test __repr__ method."""
+        assert repr(Controlled(qml.S(0), [1])) == "Controlled(S(wires=[0]), control_wires=[1])"
+
         base = qml.S(0) + qml.T(1)
         op = Controlled(base, [2])
-        assert repr(op) == "C(S(wires=[0]) + T(wires=[1]), wires=[2])"
+        assert repr(op) == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2])"
 
     def test_copy(self):
         """Test that a copy of a controlled oeprator can have its parameters updated

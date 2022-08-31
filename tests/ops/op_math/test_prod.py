@@ -248,6 +248,8 @@ class TestMscMethods:
         """Test label method."""
         prod_op = qml.RY(1, wires=1) @ qml.PauliX(1)
         assert "RY@X" == prod_op.label()
+        with pytest.raises(ValueError):
+            prod_op.label(base_label=["only_first"])
 
         nested_op = qml.PauliX(0) @ prod_op
         assert "X@(RY@X)" == nested_op.label()

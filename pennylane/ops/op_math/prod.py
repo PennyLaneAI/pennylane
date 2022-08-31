@@ -327,7 +327,7 @@ class Prod(Operator):
             return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
 
         if base_label is not None:
-            if len(base_label) != len(self.factors):
+            if isinstance(base_label, str) or len(base_label) != len(self.factors):
                 raise ValueError(
                     "Prod label requires ``base_label`` keyword to be same length"
                     " as product factors."

@@ -272,6 +272,8 @@ class TestMscMethods:
         """Test label method."""
         sum_op = qml.RY(1, wires=1) + qml.PauliX(1)
         assert "RY+X" == sum_op.label()
+        with pytest.raises(ValueError):
+            sum_op.label(base_label=["only_first"])
 
         nested_op = qml.PauliX(0) + sum_op
         assert "X+(RY+X)" == nested_op.label()

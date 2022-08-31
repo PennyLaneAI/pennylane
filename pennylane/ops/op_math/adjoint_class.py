@@ -202,8 +202,6 @@ class Adjoint(SymbolicOp):
         super().__init__(base, do_queue=do_queue, id=id)
 
     def __repr__(self):
-        if self.arithmetic_depth == 1:
-            return super().__repr__()
         return f"Adjoint({self.base})"
 
     def label(self, decimals=None, base_label=None, cache=None):

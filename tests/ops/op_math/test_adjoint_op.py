@@ -307,6 +307,8 @@ class TestMiscMethods:
 
     def test_repr(self):
         """Test __repr__ method."""
+        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(wires=[0]))"
+
         base = qml.S(0) + qml.T(0)
         op = Adjoint(base)
         assert repr(op) == "Adjoint(S(wires=[0]) + T(wires=[0]))"

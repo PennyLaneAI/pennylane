@@ -266,9 +266,7 @@ class Controlled(SymbolicOp):
     # Methods ##########################################
 
     def __repr__(self):
-        if self.arithmetic_depth == 1:
-            return super().__repr__()
-        return f"C({self.base}, wires={self.control_wires.tolist()})"
+        return f"Controlled({self.base}, control_wires={self.control_wires.tolist()})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)

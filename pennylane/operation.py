@@ -961,6 +961,10 @@ class Operator(abc.ABC):
 
     def __repr__(self):
         """Constructor-call-like representation."""
+        if self.arithmetic_depth > 0:
+            raise NotImplementedError(
+                "Operators with an arithmetic depth greater than zero must define their own __repr__ method"
+            )
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
