@@ -436,24 +436,24 @@ class ProductFactorsGrouping:
     """Utils class used for grouping identical product factors."""
 
     _pauli_mult = {
-        "II": (1.0, "I"),
-        "IX": (1.0, "X"),
-        "IY": (1.0, "Y"),
-        "IZ": (1.0, "Z"),
-        "XI": (1.0, "X"),
-        "XX": (1.0, "I"),
-        "XY": (1.0j, "Z"),
-        "XZ": (-1.0j, "Y"),
-        "YI": (1.0, "Y"),
-        "YX": (-1.0j, "Z"),
-        "YY": (1.0, "I"),
-        "YZ": (1.0j, "X"),
-        "ZI": (1.0, "Z"),
-        "ZX": (1.0j, "Y"),
-        "ZY": (-1.0j, "X"),
-        "ZZ": (1.0, "I"),
+        "IdentityIdentity": (1.0, "Identity"),
+        "IdentityPauliX": (1.0, "PauliX"),
+        "IdentityPauliY": (1.0, "PauliY"),
+        "IdentityPauliZ": (1.0, "PauliZ"),
+        "PauliXIdentity": (1.0, "PauliX"),
+        "PauliXPauliX": (1.0, "Identity"),
+        "PauliXPauliY": (1.0j, "PauliZ"),
+        "PauliXPauliZ": (-1.0j, "PauliY"),
+        "PauliYIdentity": (1.0, "PauliY"),
+        "PauliYPauliX": (-1.0j, "PauliZ"),
+        "PauliYPauliY": (1.0, "Identity"),
+        "PauliYPauliZ": (1.0j, "PauliX"),
+        "PauliZIdentity": (1.0, "PauliZ"),
+        "PauliZPauliX": (1.0j, "PauliY"),
+        "PauliZPauliY": (-1.0j, "PauliX"),
+        "PauliZPauliZ": (1.0, "Identity"),
     }
-    _paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+    _paulis = {"PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
 
     def __init__(self):
         self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
@@ -497,8 +497,8 @@ class ProductFactorsGrouping:
                 ``factor.wires`` several times.
         """
         wire = wires[0]
-        label = factor.label()
-        old_coeff, old_word = self._pauli_factors.get(wire, (1, "I"))
+        label = factor.name
+        old_coeff, old_word = self._pauli_factors.get(wire, (1, "Identity"))
         coeff, new_word = self._pauli_mult[old_word + label]
         self._pauli_factors[wire] = old_coeff * coeff, new_word
 
@@ -573,8 +573,8 @@ class ProductFactorsGrouping:
         if not self._pauli_factors:
             return
         for wire in wires:
-            pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "I"))
-            if pauli_word != "I":
+            pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "Identity"))
+            if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
                 self.global_phase *= pauli_coeff
