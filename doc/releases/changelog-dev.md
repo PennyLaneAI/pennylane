@@ -223,6 +223,7 @@
 
 * `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
   or a product of identities.
+  [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
 <h3>Breaking changes</h3>
 
