@@ -24,7 +24,7 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Prod, prod
+from pennylane.ops.op_math.prod import Prod, _prod_sort, _swappable_ops, prod
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -610,7 +610,6 @@ class TestProperties:
         assert prod_op.is_hermitian == hermitian_status
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf
@@ -623,10 +622,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
         import jax.numpy as jnp
@@ -639,10 +637,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_torch(self):
         """Test that is_hermitian works when a torch type scalar is provided."""
         import torch
@@ -655,7 +652,7 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):
@@ -890,7 +887,7 @@ class TestIntegration:
         assert qnp.allclose(var, true_var)
 
     def test_measurement_process_probs(self):
-        """Test Prod class instance in probs measurement process raises error."""  # currently can't support due to bug
+        """Test Prod class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
 
@@ -906,20 +903,35 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=2)
-        prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
+        """Test Prod class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.sample(op=prod_op)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for sampling yet.",
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 20
+        assert (results == 1).all()
+
+    def test_measurement_process_counts(self):
+        """Test Prod class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
+            return qml.counts(op=prod_op)
+
+        results = my_circ()
+
+        assert sum(results.values()) == 20
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -938,7 +950,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -948,7 +960,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             my_circ()
 
     def test_operation_integration(self):
@@ -997,3 +1009,124 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+
+class TestSortWires:
+    """Tests for the wire sorting algorithm."""
+
+    def test_sorting_operators_with_one_wire(self):
+        """Test that the sorting alforithm works for operators that act on one wire."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliZ(2),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(3),
+            qml.PauliX(5),
+        ]
+        sorted_list = _prod_sort(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(2),
+            qml.PauliX(3),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+            qml.PauliX(5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_multiple_wires(self):
+        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        op_tuple = (
+            qml.PauliX(3),
+            qml.PauliX(5),
+            qml.Toffoli([2, 3, 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.PauliZ(3),
+            qml.CRY(1, [1, 2]),
+        )
+        sorted_list = _prod_sort(op_tuple)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX(3),
+            qml.Toffoli([2, 3, 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, [1, 2]),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_wire_map(self):
+        """Test that the sorting alforithm works using a wire map."""
+        op_list = [
+            qml.PauliX("three"),
+            qml.PauliX(5),
+            qml.Toffoli([2, "three", 4]),
+            qml.CNOT([2, 5]),
+            qml.RX("test", 5),
+            qml.PauliY(0),
+            qml.CRX("test", [0, 2]),
+            qml.PauliZ("three"),
+            qml.CRY("test", ["test", 2]),
+        ]
+        sorted_list = _prod_sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX("three"),
+            qml.Toffoli([2, "three", 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX("test", [0, 2]),
+            qml.CRY("test", ["test", 2]),
+            qml.PauliZ("three"),
+            qml.RX("test", 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert op1.name == op2.name
+            assert op1.wires == op2.wires
+            assert op1.data == op2.data
+
+
+swappable_ops = {
+    (qml.PauliX(1), qml.PauliY(0)),
+    (qml.PauliY(5), qml.PauliX(2)),
+    (qml.PauliZ(3), qml.PauliX(2)),
+    (qml.CNOT((1, 2)), qml.PauliX(0)),
+    (qml.PauliX(3), qml.Toffoli((0, 1, 2))),
+}
+
+non_swappable_ops = {
+    (qml.PauliX(1), qml.PauliY(1)),
+    (qml.PauliY(5), qml.RY(1, 5)),
+    (qml.PauliZ(0), qml.PauliX(1)),
+    (qml.CNOT((1, 2)), qml.PauliX(1)),
+    (qml.PauliX(2), qml.Toffoli((0, 1, 2))),
+}
+
+
+class TestSwappableOps:
+    """Tests for the _swappable_ops function."""
+
+    @pytest.mark.parametrize(["op1", "op2"], swappable_ops)
+    def test_swappable_ops(self, op1, op2):
+        """Test the check for swappable operators."""
+        assert _swappable_ops(op1, op2)
+        assert not _swappable_ops(op2, op1)
+
+    @pytest.mark.parametrize(["op1", "op2"], non_swappable_ops)
+    def test_non_swappable_ops(self, op1, op2):
+        """Test the check for non-swappable operators."""
+        assert not _swappable_ops(op1, op2)

@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 class ClassicalShadow:
-    r"""Class for classical shadow post-processing
+    r"""Class for classical shadow post-processing expectation values, approximate states, and entropies.
 
     A ``ClassicalShadow`` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
@@ -42,9 +42,15 @@ class ClassicalShadow:
 
     One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to its exponential scaling.
 
+    .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
+        qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``.
+
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
+        wire_map (list[int]): list of the measured wires in the order that
+            they appear in the columns of ``bits`` and ``recipes``. If None, defaults
+            to ``range(n)``, where ``n`` is the number of measured wires.
 
     .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadow`
 
@@ -73,21 +79,33 @@ class ClassicalShadow:
 
     or of a Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
     >>> shadow.expval(H, k=1)
     (2.2319999999999998+0j)
 
     The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm (see `2002.08953 <https://arxiv.org/abs/2002.08953>`_). The case ``k=1`` corresponds to simply taking the mean
-    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means.
+    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means. For the case of measuring only in the Pauli basis,
+    there is no advantage expected from setting ``k>1``.
     """
 
-    def __init__(self, bits, recipes):
+    def __init__(self, bits, recipes, wire_map=None):
         self.bits = bits
         self.recipes = recipes
+
+        # the wires corresponding to the columns of bitstrings
+        if wire_map is None:
+            self.wire_map = list(range(bits.shape[1]))
+        else:
+            self.wire_map = wire_map
 
         if bits.shape != recipes.shape:
             raise ValueError(
                 f"Bits and recipes but have the same shape, got {bits.shape} and {recipes.shape}."
+            )
+
+        if bits.shape[1] != len(self.wire_map):
+            raise ValueError(
+                f"The 1st axis of bits must have the same size as wire_map, got {bits.shape[1]} and {len(self.wire_map)}."
             )
 
         self.observables = [
@@ -142,8 +160,6 @@ class ClassicalShadow:
         U = np.empty((T, n, 2, 2), dtype="complex")
         for i, u in enumerate(self.observables):
             U[np.where(recipes == i)] = u
-
-        # U = np.array([[self.observables[idx] for idx in recipe] for recipe in recipes], dtype="complex")
 
         state = (qml.math.cast((1 - 2 * bits[:, :, None, None]), np.complex64) * U + np.eye(2)) / 2
 
@@ -222,7 +238,7 @@ class ClassicalShadow:
                 if ob.name not in obs_to_recipe_map:
                     raise ValueError("Observable must be a linear combination of Pauli observables")
 
-                word[ob.wires[0]] = obs_to_recipe_map[ob.name]
+                word[self.wire_map.index(ob.wires[0])] = obs_to_recipe_map[ob.name]
 
             return word
 
@@ -244,18 +260,19 @@ class ClassicalShadow:
                 )
             return coeffs_and_words
 
-    def expval(self, H, k):
+    def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
 
         The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
-        This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+        This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
+        parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
         One of the main perks of classical shadows is being able to compute many different expectation values by classically post-processing the same measurements. This is helpful in general as it may help
         save quantum circuit executions.
 
         Args:
             H (qml.Observable): Observable to compute the expectation value
-            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
 
         Returns:
             float: expectation value estimate.
@@ -321,9 +338,7 @@ def median_of_means(arr, num_batches, axis=0):
     Returns:
         float: The median of means
     """
-    means = []
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
-
     means = [
         qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)
     ]
@@ -377,7 +392,6 @@ def pauli_expval(bits, recipes, word):
     id_mask = word == -1
 
     # determine snapshots and qubits that match the word
-
     indices = qml.math.equal(
         qml.math.reshape(recipes, (T, 1, n)), qml.math.reshape(word, (1, b, n))
     )

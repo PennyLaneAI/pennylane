@@ -51,11 +51,8 @@ def _apply_operations(state, op, device, invert=False):
         device._apply_basis_state(op.parameters[0], op.wires)
         return device._state
 
-    if invert:
-        op.inv()
-    state = device._apply_operation(state, op)
-    if invert:
-        op.inv()
+    apply_op = qml.adjoint(op) if invert else op
+    state = device._apply_operation(state, apply_op)
 
     return state
 
