@@ -202,7 +202,7 @@ class QNode:
         self.max_expansion = max_expansion
 
         # The NullQubit doesn't handle caching.
-        if type(device) == NullQubit:
+        if isinstance(device, NullQubit):
             cache = False
 
         # execution keyword arguments
