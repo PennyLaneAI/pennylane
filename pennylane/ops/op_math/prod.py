@@ -498,9 +498,9 @@ class ProductFactorsGrouping:
         """
         wire = wires[0]
         label = factor.name
-        old_coeff, old_word = self._pauli_factors.get(wire, (1, "Identity"))
-        coeff, new_word = self._pauli_mult[old_word + label]
-        self._pauli_factors[wire] = old_coeff * coeff, new_word
+        old_exponent, old_word = self._pauli_factors.get(wire, (1, "Identity"))
+        exponent, new_word = self._pauli_mult[old_word + label]
+        self._pauli_factors[wire] = old_exponent * exponent, new_word
 
     def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
         """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
@@ -516,10 +516,10 @@ class ProductFactorsGrouping:
                 ``factor.wires`` several times.
         """
         if isinstance(factor, Pow):
-            coeff = factor.z
+            exponent = factor.z
             factor = factor.base
         else:
-            coeff = 1
+            exponent = 1
         op_hash = factor.hash
         old_hash, old_coeff, old_op = self._non_pauli_factors.get(wires, [None, None, None])
         # TODO: Should we create an abstract `Rotation` class and make inherit all rotations from
@@ -532,10 +532,10 @@ class ProductFactorsGrouping:
                 factor.__class__(factor.data[0] + old_op.data[0], wires),
             ]
         elif op_hash == old_hash:
-            self._non_pauli_factors[wires][1] += coeff
+            self._non_pauli_factors[wires][1] += exponent
         else:
             self._remove_non_pauli_factors(wires=wires)
-            self._non_pauli_factors[wires] = [op_hash, copy(coeff), factor]
+            self._non_pauli_factors[wires] = [op_hash, copy(exponent), factor]
 
     def _remove_non_pauli_factors(self, wires: List[int]):
         """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
