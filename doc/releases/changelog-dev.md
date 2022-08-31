@@ -116,6 +116,20 @@
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
+  
+* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to 
+  a larger hilbert space.
+  [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
+
+  ```pycon
+  >>> from scipy import sparse
+  >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
+  >>> qml.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
+  array([[0., 1., 0., 0.],
+         [1., 0., 0., 0.],
+         [0., 0., 0., 1.],
+         [0., 0., 1., 0.]])
+  ```
 
 * `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
   Operator before exponentiation. Internally, this constructor functions creates the new
