@@ -172,7 +172,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
     return factors, eigvals_m, eigvecs_m
 
 
-def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
+def basis_rotation(one_electron, two_electron, tol_factor):
     r"""Return Hamiltonian coefficients and diagonalizing gates obtained with the basis rotation
     grouping method.
 
@@ -201,15 +201,15 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
 
         .. math::
 
-            V_{pqrs} = \sum_r^R w^{(r)} L_{pq}^{(r)} L_{rs}^{(r) T},
+            V_{pqrs} = \sum_r^R L_{pq}^{(r)} L_{rs}^{(r) T},
 
-        where :math:`w` and :math:`L` denote the eigenvalues and eigenvectors of the matrix,
-        respectively. The molecular Hamiltonian can then be rewritten as
+        where :math:`L` denotes the eigenvectors of the matrix. The molecular Hamiltonian can then
+        be rewritten as
 
         .. math::
 
             H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
-            a_{q, \alpha} + \frac{1}{2} w^{(r)} \sum_r^R \left ( \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pq}
+            a_{q, \alpha} + \frac{1}{2} \sum_r^R \left ( \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pq}
             L_{pq}^{(r)} a_{p, \alpha}^{\dagger} a_{q, \alpha} \right )^2.
 
         The orbital basis can be rotated such that each :math:`T` and :math:`L^{(r)}` matrix is
@@ -217,8 +217,8 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
 
         .. math::
 
-            H = U_0 \left ( \sum_p d_p n_p \right ) U_0^{\dagger} + \sum_l^L U_l \left ( \sum_{pq}
-            d_{pq}^{(l)} n_p n_q \right ) U_l^{\dagger}
+            H = U_0 \left ( \sum_p d_p n_p \right ) U_0^{\dagger} + \sum_r^R U_r \left ( \sum_{pq}
+            d_{pq}^{(r)} n_p n_q \right ) U_r^{\dagger}
 
         where the coefficients :math:`d` are obtained by diagonalizing the :math:`T` and
         :math:`L^{(r)}` matrices. This function returns the coefficients :math:`d` and the
@@ -226,23 +226,12 @@ def basis_rotation(one_electron, two_electron, tol_factor, tol_eigval, error):
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
 
-    factors = qml.qchem.factorize(two_electron, tol_factor, tol_eigval)[0]
-    eigvals, eigvecs = np.linalg.eigh(factors)
+    factors, eigvals_m, eigvecs_m = qml.qchem.factorize(two_electron, tol_factor, 0.0)
 
     t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
     t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
 
-    d_eigvals = []
-    d_eigvecs = []
-
-    for i in range(len(eigvals)):
-        for j, eigval in enumerate(eigvals[i]):
-            eigvecs[i][j] = eigvecs[i][j]
-        d_eigval, d_eigvec = np.linalg.eigh(eigvecs[i])
-        d_eigvals.append(np.array(d_eigval) * (0.5 * eigval))
-        d_eigvecs.append(d_eigvec * (0.5 * eigval))
-
-    coeffs = [np.array(t_eigvals)] + [np.outer(x, x).flatten() for x in d_eigvals]
-    eigvec = [t_eigvecs] + d_eigvecs
+    coeffs = [np.array(t_eigvals)] + [np.outer(x, x).flatten() * 0.5 for x in eigvals_m]
+    eigvec = [t_eigvecs] + eigvecs_m
 
     return coeffs, eigvec
