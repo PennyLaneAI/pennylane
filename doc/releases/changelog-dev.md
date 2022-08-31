@@ -250,7 +250,7 @@
 
 <h3>Bug fixes</h3>
 
-* `jax.jit` now works with QNode when the quantum function was transformed by `qml.simplify`.
+* Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
 * Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
