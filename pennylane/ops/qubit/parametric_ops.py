@@ -2174,6 +2174,8 @@ class U1(Operation):
         else:
             fac = np.array([0, 1])
 
+        fac = qml.math.convert_like(fac, phi)
+
         arg = 1j * phi
         if qml.math.ndim(arg) == 0:
             return qml.math.diag(qml.math.exp(arg * fac))
@@ -3112,12 +3114,24 @@ class IsingXY(Operation):
             s = qml.math.cast_like(s, 1j)
 
         js = 1j * s
+        off_diag = qml.math.cast_like(
+            qml.math.array(
+                [
+                    [0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0],
+                ],
+                like=js,
+            ),
+            1j,
+        )
         if qml.math.ndim(phi) == 0:
-            return qml.math.diag([1, c, c, 1]) + qml.math.diag([0, js, js, 0])[::-1]
+            return qml.math.diag([1, c, c, 1]) + js * off_diag
 
         ones = qml.math.ones_like(c)
         diags = stack_last([ones, c, c, ones])[:, :, np.newaxis]
-        return diags * np.eye(4) + qml.math.tensordot(js, np.diag([0, 1, 1, 0])[::-1], axes=0)
+        return diags * np.eye(4) + qml.math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ

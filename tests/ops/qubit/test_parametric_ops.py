@@ -3168,18 +3168,18 @@ class TestSimplify:
         assert all((p >= 0).all() and (p < 4 * np.pi).all() for p in simplified_op.data)
         assert unsimplified_op.wires == simplified_op.wires
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("op", rotations)
-    def test_simplify_rotations_grad(self, op):
-        """Test the the gradient of an op after simplication is the same"""
+    def test_simplify_rotations_grad_autograd(self, op):
+        """Test the gradient of an op after simplication for the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(simplify, wires, *params):
-            unsimplified_op = op(*params, wires)
             if simplify:
-                qml.apply(qml.simplify(unsimplified_op))
+                qml.simplify(op(*params, wires))
             else:
-                qml.apply(unsimplified_op)
+                op(*params, wires)
 
             return qml.expval(qml.PauliZ(0))
 
@@ -3200,6 +3200,110 @@ class TestSimplify:
 
         assert qml.math.allclose(unsimplified_res, simplified_res)
         assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.tensorflow
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_tensorflow(self, op):
+        """Test the gradient of an op after simplication for the tensorflow interface"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        params = [tf.Variable(p[0]) for p in params]
+
+        with tf.GradientTape() as unsimplified_tape:
+            unsimplified_res = circuit(False, wires, *params)
+
+        unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, params)
+
+        with tf.GradientTape() as simplified_tape:
+            simplified_res = circuit(False, wires, *params)
+
+        simplified_grad = simplified_tape.gradient(simplified_res, params)
+
+        assert qml.math.allclose(unsimplified_res, simplified_res)
+        assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_torch(self, op):
+        """Test the gradient of an op after simplication for the torch interface"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        params = [torch.tensor(p[0], requires_grad=True) for p in params]
+
+        unsimplified_res = circuit(False, wires, *params)
+        unsimplified_res.backward()
+        unsimplified_grad = [p.grad for p in params]
+
+        simplified_res = circuit(True, wires, *params)
+        simplified_res.backward()
+        simplified_grad = [p.grad for p in params]
+
+        assert qml.math.allclose(unsimplified_res, simplified_res)
+        assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_jax(self, op):
+        """Test the gradient of an op after simplication for the JAX interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        params = [jnp.array(p[0]) for p in params]
+
+        unsimplified_res = circuit(False, wires, *params)
+        simplified_res = circuit(True, wires, *params)
+
+        unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(params))))(
+            False, wires, *params
+        )
+        simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(params))))(
+            True, wires, *params
+        )
+
+        assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+        assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
     def test_simplify_rot(self):
         """Simplify rot operations with different parameters."""
