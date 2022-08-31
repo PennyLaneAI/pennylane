@@ -338,7 +338,16 @@ class Controlled(SymbolicOp):
 
     @property
     def has_decomposition(self):
-        return not all(self.control_values)
+        if not all(self.control_values):
+            return True
+        if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
+            return True
+        if isinstance(op.base, qml.PauliX):
+            return True
+        if self.base.has_decomposition:
+            return True
+
+        return False
 
     def decomposition(self):
         if all(self.control_values):
