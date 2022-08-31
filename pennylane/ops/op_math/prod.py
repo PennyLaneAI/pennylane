@@ -435,24 +435,31 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
 class ProductFactorsGrouping:
     """Utils class used for grouping identical product factors."""
 
-    _pauli_mult = {
-        "IdentityIdentity": (1.0, "Identity"),
-        "IdentityPauliX": (1.0, "PauliX"),
-        "IdentityPauliY": (1.0, "PauliY"),
-        "IdentityPauliZ": (1.0, "PauliZ"),
-        "PauliXIdentity": (1.0, "PauliX"),
-        "PauliXPauliX": (1.0, "Identity"),
-        "PauliXPauliY": (1.0j, "PauliZ"),
-        "PauliXPauliZ": (-1.0j, "PauliY"),
-        "PauliYIdentity": (1.0, "PauliY"),
-        "PauliYPauliX": (-1.0j, "PauliZ"),
-        "PauliYPauliY": (1.0, "Identity"),
-        "PauliYPauliZ": (1.0j, "PauliX"),
-        "PauliZIdentity": (1.0, "PauliZ"),
-        "PauliZPauliX": (1.0j, "PauliY"),
-        "PauliZPauliY": (-1.0j, "PauliX"),
-        "PauliZPauliZ": (1.0, "Identity"),
+    _identity_map = {
+        "Identity": (1.0, "Identity"),
+        "PauliX": (1.0, "PauliX"),
+        "PauliY": (1.0, "PauliY"),
+        "PauliZ": (1.0, "PauliZ"),
     }
+    _x_map = {
+        "Identity": (1.0, "PauliX"),
+        "PauliX": (1.0, "Identity"),
+        "PauliY": (1.0j, "PauliZ"),
+        "PauliZ": (-1.0j, "PauliY"),
+    }
+    _y_map = {
+        "Identity": (1.0, "PauliY"),
+        "PauliX": (-1.0j, "PauliZ"),
+        "PauliY": (1.0, "Identity"),
+        "PauliZ": (1.0j, "PauliX"),
+    }
+    _z_map = {
+        "Identity": (1.0, "PauliZ"),
+        "PauliX": (1.0j, "PauliY"),
+        "PauliY": (-1.0j, "PauliX"),
+        "PauliZ": (1.0, "Identity"),
+    }
+    _pauli_mult = {"Identity": _identity_map, "PauliX": _x_map, "PauliY": _y_map, "PauliZ": _z_map}
     _paulis = {"PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
 
     def __init__(self):
@@ -497,9 +504,9 @@ class ProductFactorsGrouping:
                 ``factor.wires`` several times.
         """
         wire = wires[0]
-        label = factor.name
+        op2_name = factor.name
         old_exponent, old_word = self._pauli_factors.get(wire, (1, "Identity"))
-        exponent, new_word = self._pauli_mult[old_word + label]
+        exponent, new_word = self._pauli_mult[old_word][op2_name]
         self._pauli_factors[wire] = old_exponent * exponent, new_word
 
     def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
