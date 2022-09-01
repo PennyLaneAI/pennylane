@@ -27,7 +27,6 @@ from pennylane.operation import (
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
-    expand_matrix,
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingContext, apply
@@ -186,7 +185,7 @@ class Pow(SymbolicOp):
         if wire_order is None or self.wires == Wires(wire_order):
             return mat
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     @staticmethod
