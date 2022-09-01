@@ -791,6 +791,7 @@ class TestSimplify:
 
         assert isinstance(simplified_op, qml.ops.Sum)
         for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert repr(s1) == repr(s2)
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
