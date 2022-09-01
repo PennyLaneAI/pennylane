@@ -521,9 +521,6 @@ class Operator(abc.ABC):
         operator's wires in the global wire order. Otherwise, the wire order defaults to the
         operator's wires.
 
-        .. note::
-            The wire_order argument is currently not implemented, and using it will raise an error.
-
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
         .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
@@ -535,12 +532,11 @@ class Operator(abc.ABC):
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
-        if wire_order is not None:
-            raise NotImplementedError("The wire_order argument is not yet implemented")
         canonical_sparse_matrix = self.compute_sparse_matrix(
             *self.parameters, **self.hyperparameters
         )
-        return canonical_sparse_matrix
+
+        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):
