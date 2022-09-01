@@ -536,7 +536,6 @@ class Operator(abc.ABC):
             *self.parameters, **self.hyperparameters
         )
 
-
         return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
