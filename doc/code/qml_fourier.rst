@@ -124,8 +124,8 @@ We can then compute the frequencies supported by the input-encoding gates as:
 
 .. code::
 
-   >>> from pennylane.fourier import spectrum
-   >>> freqs = spectrum(simple_circuit_marked)([0.1])
+   >>> from pennylane.fourier import circuit_spectrum
+   >>> freqs = circuit_spectrum(simple_circuit_marked)([0.1])
    >>> for k, v in freqs.items():
    >>>     print(k, ":", v)
 
