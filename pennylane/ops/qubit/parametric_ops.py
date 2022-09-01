@@ -37,7 +37,7 @@ stack_last = functools.partial(qml.math.stack, axis=-1)
 
 def can_replace(x, y):
     """
-    Convenience function that returns if x is close to y and if
+    Convenience function that returns true if x is close to y and if
     x does not require grad
     """
     return (not qml.math.requires_grad(x)) and qml.math.allclose(x, y)
