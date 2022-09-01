@@ -133,8 +133,8 @@
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
-  
-* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to 
+
+* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
 
@@ -148,7 +148,7 @@
          [0., 0., 1., 0.]])
   ```
 
-* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the
   Operator before exponentiation. Internally, this constructor functions creates the new
   class `qml.ops.op_math.Exp`.
   [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
@@ -170,6 +170,11 @@
 
 <h3>Improvements</h3>
 
+* Some methods of the `QuantumTape` class have been simplified and reordered to
+  improve both readability and performance. The `Wires.all_wires` method has been rewritten
+  to improve performance.
+  [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
+
 * The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
   [(#2997)](https://github.com/PennyLaneAI/pennylane/pull/2997)
 
@@ -182,6 +187,21 @@
 
 * Added `PSWAP` operator.
   [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
+
+* The `qml.simplify` method can now simplify parametrized operations.
+  [(#3012)](https://github.com/PennyLaneAI/pennylane/pull/3012)
+
+  ```pycon
+  >>> op1 = qml.RX(30.0, wires=0)
+  >>> qml.simplify(op1)
+  RX(4.867258771281655, wires=[0])
+  >>> op2 = qml.Rot(np.pi / 2, 5.0, -np.pi / 2, wires=0)
+  >>> qml.simplify(op2)
+  RX(5.0, wires=[0])
+  >>> op3 = qml.RX(4 * np.pi, wires=0)
+  >>> qml.simplify(op3)
+  Identity(wires=[0])
+  ```
 
 * The `qml.simplify` method now can compute the adjoint and power of specific operators.
   [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
@@ -234,6 +254,27 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
+* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
+  [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
+  
+  ```pycon
+  >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
+  >>> op = qml.op_sum(xy, qml.Identity(0))
+  >>>
+  >>> sparse_mat = op.sparse_matrix(wire_order=[0,1])
+  >>> type(sparse_mat)
+  <class 'scipy.sparse.csr.csr_matrix'>
+  >>> print(sparse_mat.toarray())
+  [[1.+1.j 0.+0.j 0.+0.j 0.+0.j]
+  [0.+0.j 1.-1.j 0.+0.j 0.+0.j]
+  [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
+  [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
+  ```
+
+* `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
+  or a product of identities.
+  [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -248,7 +289,7 @@
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
-* The `expand_matrix()` has been moved from `~/operation.py` to 
+* The `expand_matrix()` has been moved from `~/operation.py` to
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
@@ -262,6 +303,9 @@
 * Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
+
+* Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
+  [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
 * Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
   certain exceptions, when instantiated with `wires=[]`.
