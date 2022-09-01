@@ -3186,20 +3186,21 @@ class TestSimplify:
         unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
-        params = [p[0] for p in params]
+        for i in range(params[0].shape[0]):
+            parameters = [p[i] for p in params]
 
-        unsimplified_res = circuit(False, wires, *params)
-        simplified_res = circuit(True, wires, *params)
+            unsimplified_res = circuit(False, wires, *parameters)
+            simplified_res = circuit(True, wires, *parameters)
 
-        unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(params))))(
-            False, wires, *params
-        )
-        simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(params))))(
-            True, wires, *params
-        )
+            unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+                False, wires, *parameters
+            )
+            simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+                True, wires, *parameters
+            )
 
-        assert qml.math.allclose(unsimplified_res, simplified_res)
-        assert qml.math.allclose(unsimplified_grad, simplified_grad)
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("op", rotations)
@@ -3221,20 +3222,21 @@ class TestSimplify:
         unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
-        params = [tf.Variable(p[0]) for p in params]
+        for i in range(params[0].shape[0]):
+            parameters = [tf.Variable(p[i]) for p in params]
 
-        with tf.GradientTape() as unsimplified_tape:
-            unsimplified_res = circuit(False, wires, *params)
+            with tf.GradientTape() as unsimplified_tape:
+                unsimplified_res = circuit(False, wires, *parameters)
 
-        unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, params)
+            unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
 
-        with tf.GradientTape() as simplified_tape:
-            simplified_res = circuit(False, wires, *params)
+            with tf.GradientTape() as simplified_tape:
+                simplified_res = circuit(False, wires, *parameters)
 
-        simplified_grad = simplified_tape.gradient(simplified_res, params)
+            simplified_grad = simplified_tape.gradient(simplified_res, parameters)
 
-        assert qml.math.allclose(unsimplified_res, simplified_res)
-        assert qml.math.allclose(unsimplified_grad, simplified_grad)
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.tf
     def test_simplify_rotations_grad_tf_function(self):
@@ -3259,20 +3261,21 @@ class TestSimplify:
         unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
-        params = [tf.Variable(p[0]) for p in params]
+        for i in range(params[0].shape[0]):
+            parameters = [tf.Variable(p[i]) for p in params]
 
-        with tf.GradientTape() as unsimplified_tape:
-            unsimplified_res = circuit(False, wires, *params)
+            with tf.GradientTape() as unsimplified_tape:
+                unsimplified_res = circuit(False, wires, *parameters)
 
-        unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, params)
+            unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
 
-        with tf.GradientTape() as simplified_tape:
-            simplified_res = circuit(True, wires, *params)
+            with tf.GradientTape() as simplified_tape:
+                simplified_res = circuit(True, wires, *parameters)
 
-        simplified_grad = simplified_tape.gradient(simplified_res, params)
+            simplified_grad = simplified_tape.gradient(simplified_res, parameters)
 
-        assert qml.math.allclose(unsimplified_res, simplified_res)
-        assert qml.math.allclose(unsimplified_grad, simplified_grad)
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("op", rotations)
@@ -3294,18 +3297,19 @@ class TestSimplify:
         unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
-        params = [torch.tensor(p[0], requires_grad=True) for p in params]
+        for i in range(params[0].shape[0]):
+            parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
 
-        unsimplified_res = circuit(False, wires, *params)
-        unsimplified_res.backward()
-        unsimplified_grad = [p.grad for p in params]
+            unsimplified_res = circuit(False, wires, *parameters)
+            unsimplified_res.backward()
+            unsimplified_grad = [p.grad for p in parameters]
 
-        simplified_res = circuit(True, wires, *params)
-        simplified_res.backward()
-        simplified_grad = [p.grad for p in params]
+            simplified_res = circuit(True, wires, *parameters)
+            simplified_res.backward()
+            simplified_grad = [p.grad for p in parameters]
 
-        assert qml.math.allclose(unsimplified_res, simplified_res)
-        assert qml.math.allclose(unsimplified_grad, simplified_grad)
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", rotations)
@@ -3328,20 +3332,21 @@ class TestSimplify:
         unsimplified_op = self.get_unsimplified_op(op)
         params, wires = unsimplified_op.data, unsimplified_op.wires
 
-        params = [jnp.array(p[0]) for p in params]
+        for i in range(params[0].shape[0]):
+            parameters = [jnp.array(p[i]) for p in params]
 
-        unsimplified_res = circuit(False, wires, *params)
-        simplified_res = circuit(True, wires, *params)
+            unsimplified_res = circuit(False, wires, *parameters)
+            simplified_res = circuit(True, wires, *parameters)
 
-        unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(params))))(
-            False, wires, *params
-        )
-        simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(params))))(
-            True, wires, *params
-        )
+            unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                False, wires, *parameters
+            )
+            simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                True, wires, *parameters
+            )
 
-        assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
-        assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+            assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
     @pytest.mark.jax
     def test_simplify_rotations_grad_jax_jit(self):
@@ -3370,18 +3375,21 @@ class TestSimplify:
         unsimplified_op = self.get_unsimplified_op(op)
         params = unsimplified_op.data
 
-        params = [jnp.array(p[0]) for p in params]
+        for i in range(params[0].shape[0]):
+            parameters = [jnp.array(p[i]) for p in params]
 
-        unsimplified_res = unsimplified_circuit(*params)
-        simplified_res = simplified_circuit(*params)
+            unsimplified_res = unsimplified_circuit(*parameters)
+            simplified_res = simplified_circuit(*parameters)
 
-        unsimplified_grad = jax.grad(unsimplified_circuit, argnums=list(range(len(params))))(
-            *params
-        )
-        simplified_grad = jax.grad(simplified_circuit, argnums=list(range(len(params))))(*params)
+            unsimplified_grad = jax.grad(
+                unsimplified_circuit, argnums=list(range(len(parameters)))
+            )(*parameters)
+            simplified_grad = jax.grad(simplified_circuit, argnums=list(range(len(parameters))))(
+                *parameters
+            )
 
-        assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
-        assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+            assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
 
     @pytest.mark.parametrize("op", rotations)
     def test_simplify_to_identity(self, op):
