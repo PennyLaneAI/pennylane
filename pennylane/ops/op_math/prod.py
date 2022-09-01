@@ -182,6 +182,9 @@ class Prod(Operator):
 
         return copied_op
 
+    def _check_batching(self, params):
+        pass
+
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
 

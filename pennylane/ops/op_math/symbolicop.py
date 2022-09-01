@@ -127,3 +127,6 @@ class SymbolicOp(Operator):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
+
+    def _check_batching(self, params):
+        pass

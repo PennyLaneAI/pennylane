@@ -177,6 +177,9 @@ class Sum(Operator):
 
         return copied_op
 
+    def _check_batching(self, params):
+        pass
+
     @property
     def data(self):
         """Create data property"""
