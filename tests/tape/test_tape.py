@@ -757,7 +757,7 @@ class TestParameters:
         with pytest.raises(ValueError, match="must be non-negative integers"):
             tape.trainable_params = (0.5,)
 
-        with pytest.raises(ValueError, match="has at most 5 parameters"):
+        with pytest.raises(ValueError, match="only has 5 parameters"):
             tape.trainable_params = {0, 7}
 
     def test_setting_parameters(self, make_tape):

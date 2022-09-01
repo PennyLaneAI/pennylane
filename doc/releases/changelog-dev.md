@@ -152,6 +152,11 @@
 
 <h3>Improvements</h3>
 
+* Some methods of the `QuantumTape` class have been simplified and reordered to
+  improve both readability and performance. The `Wires.all_wires` method has been rewritten
+  to improve performance.
+  [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
+
 * The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
   [(#2997)](https://github.com/PennyLaneAI/pennylane/pull/2997)
 
@@ -232,6 +237,10 @@
   [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
   [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
   ```
+
+* `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
+  or a product of identities.
+  [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
 <h3>Breaking changes</h3>
 
