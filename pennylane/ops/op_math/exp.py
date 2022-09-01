@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
     expand_matrix,
-    Tensor,
     OperatorPropertyUndefined,
 )
 from pennylane.wires import Wires
