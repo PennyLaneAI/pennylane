@@ -479,7 +479,7 @@ class TestEigenval:
 
 
 class TestBarrier:
-    """Tests that the Barrier gate is correct"""
+    """Tests that the Barrier gate is correct."""
 
     def test_use_barrier(self):
         r"""Test that the barrier influences compilation."""
@@ -603,6 +603,25 @@ class TestBarrier:
         """Test that barrier does not raise an error when instantiated with wires=[]."""
         barrier = qml.Barrier(wires=[])
         assert isinstance(barrier, qml.Barrier)
+
+    def test_simplify_only_visual_one_wire(self):
+        """Test that if `only_visual=True`, the operation simplifies to the identity."""
+        op = qml.Barrier(wires="a", only_visual=True)
+        simplified = op.simplify()
+        assert qml.equal(simplified, qml.Identity("a"))
+
+    def test_simplify_only_visual_multiple_wires(self):
+        """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
+        op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
+        simplified = op.simplify()
+        assert isinstance(simplified, qml.ops.op_math.Prod)
+        for i, op in enumerate(simplified.factors):
+            assert qml.equal(op, qml.Identity(i))
+
+    def test_simplify_only_visual_False(self):
+        """Test that no simplification occurs if only_visual is False."""
+        op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
+        assert op.simplify() is op
 
 
 class TestWireCut:
