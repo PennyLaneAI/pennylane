@@ -173,8 +173,32 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
 
 
 def basis_rotation(one_electron, two_electron, tol_factor):
-    r"""Return Hamiltonian coefficients and diagonalizing gates obtained with the basis rotation
-    grouping method.
+    r"""Return the grouped coefficients and observables of a Hamiltonian and the basis rotation
+    unitaries obtained with the basis rotation grouping method.
+
+    Args:
+        one_electron (array[float]): one-electron integral matrix in the molecular orbital basis
+        two_electron (array[array[float]]): two-electron integral tensor in the molecular orbital
+            basis arranged in chemist notation
+        tol_factor (float): threshold error value for discarding the negligible factors
+
+    Returns:
+        tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing the
+        grouped coefficients and grouped opservables of a Hamiltonian and the basis rotation
+        unitaries obtained with the basis rotation grouping method
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> coeffs, ops, eigvecs = basis_rotation(one, two, tol_factor=1.0e-5)
+    >>> print(coeffs)
+    [array([-1.29789639,  0.84064639,  0.45725000]),
+     array([-0.00019476, -0.01100037,  0.02239026, -0.01119513]),
+     array([ 0.36242096, -0.18121048, -0.18121048]),
+     array([-1.36155423,  2.03646071, -1.34981296,  0.67490648])]
 
     .. details::
         :title: Theory
@@ -229,11 +253,18 @@ def basis_rotation(one_electron, two_electron, tol_factor):
             n_p = \frac{1-Z_p}{2}
 
         where :math:`Z_p` is the Pauli :math:`Z` operator applied to qubit :math:`p`. This gives
-        the
+        the qubit Hamiltonian
 
-        This function returns the coefficients :math:`d` and the
-        eigenvectors of the :math:`T` and :math:`L^{(r)}` matrices. The eigenvectors can then be
-        used to construct the basis rotation unitary.
+        .. math::
+
+           H = U_0 \left ( \sum_p O_p^{(0)} \right ) U_0^{\dagger} + \sum_r^R U_r \left ( \sum_{q} O_q^{(r)} \right ) U_r^{\dagger},
+
+        where :math:`O = \sum_i c_i P_i` is a linear combination of Pauli words :math:`P_` that are
+        a tensor product of Pauli :math:`Z` and Identity operators. This allows all the Pauli words
+        in each of the :math:`O` terms to be measured simultaneously. This function returns the
+        coefficients and the Pauli words grouped for each of the :math:`O` terms as well as the
+        eigenvectors of the :math:`T` and :math:`L^{(r)}` matrices that can be used to construct the
+        basis rotation unitaries :math:`U`.
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
 
