@@ -41,7 +41,7 @@ class NullQubit(DefaultQubit):
         defaultKwargs = {"shots": None}
         kwargs = {**defaultKwargs, **kwargs}
 
-        self._gatecalls = defaultdict(int)
+        self._operation_calls = defaultdict(int)
         self._shots = kwargs["shots"]
         self._shot_vector = None
         self.custom_expand_fn = None
@@ -53,10 +53,10 @@ class NullQubit(DefaultQubit):
             self._apply_operation(None, op)
 
     def _apply_operation(self, state, operation):
-        self._gatecalls[operation.name] += 1
-
         if operation.__class__.__name__ in self._apply_ops:
             return self._apply_ops[operation.base_name](state, axes=None, inverse=operation.inverse)
+
+        self._operation_calls[operation.name] += 1
 
         wires = operation.wires
         if operation in diagonal_in_z_basis:
@@ -67,40 +67,40 @@ class NullQubit(DefaultQubit):
         return self._apply_unitary(state, None, wires)
 
     def _apply_x(self, state, axes, **kwargs):
-        self._gatecalls["PauliX"] += 1
+        self._operation_calls["PauliX"] += 1
 
     def _apply_y(self, state, axes, **kwargs):
-        self._gatecalls["PauliY"] += 1
+        self._operation_calls["PauliY"] += 1
 
     def _apply_z(self, state, axes, **kwargs):
-        self._gatecalls["PauliZ"] += 1
+        self._operation_calls["PauliZ"] += 1
 
     def _apply_hadamard(self, state, axes, **kwargs):
-        self._gatecalls["Hadamard"] += 1
+        self._operation_calls["Hadamard"] += 1
 
     def _apply_s(self, state, axes, inverse=False):
-        self._gatecalls["S"] += 1
+        self._operation_calls["S"] += 1
 
     def _apply_t(self, state, axes, inverse=False):
-        self._gatecalls["T"] += 1
+        self._operation_calls["T"] += 1
 
     def _apply_sx(self, state, axes, inverse=False):
-        self._gatecalls["SX"] += 1
+        self._operation_calls["SX"] += 1
 
     def _apply_cnot(self, state, axes, **kwargs):
-        self._gatecalls["CNOT"] += 1
-
-    def _apply_toffoli(self, state, axes, **kwargs):
-        self._gatecalls["Toffoli"] += 1
+        self._operation_calls["CNOT"] += 1
 
     def _apply_swap(self, state, axes, **kwargs):
-        self._gatecalls["SWAP"] += 1
+        self._operation_calls["SWAP"] += 1
 
     def _apply_cz(self, state, axes, **kwargs):
-        self._gatecalls["CZ"] += 1
+        self._operation_calls["CZ"] += 1
+
+    def _apply_toffoli(self, state, axes, **kwargs):
+        self._operation_calls["Toffoli"] += 1
 
     def _apply_phase(self, state, axes, parameters, inverse=False):
-        self._gatecalls["Phase"] += 1
+        pass
 
     def expval(self, observable, shot_range=None, bin_size=None):
         pass
@@ -154,9 +154,9 @@ class NullQubit(DefaultQubit):
     def generate_samples(self):
         pass
 
-    def gatecalls(self):
-        """Call the specified gate"""
-        return self._gatecalls
+    def operation_calls(self):
+        """Statistics of operation calls"""
+        return self._operation_calls
 
     def execute(self, circuit, **kwargs):
         self.apply(circuit.operations)

@@ -24,6 +24,8 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.null_qubit import NullQubit
 
+from collections import defaultdict
+
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def nullqubit_device_1_wire(request):
@@ -596,7 +598,7 @@ class TestNullQubitIntegration:
 
     def test_nonzero_shots(self):
         """Test that the null qubit plugin provides correct result for high shot number"""
-
+        print("test_nonzero_shots")
         shots = 10**5
         dev = qml.device("null.qubit", wires=1, shots=shots)
 
@@ -612,7 +614,7 @@ class TestNullQubitIntegration:
         for _ in range(100):
             runs.append(circuit(p))
 
-        assert np.all(circuit(p) == np.array(None, dtype=object))
+        assert np.all(runs == np.array(None, dtype=object))
 
     @pytest.mark.parametrize(
         "name,state",
@@ -779,7 +781,7 @@ class TestStateInitialization:
     """Unit tests for state initialization methods"""
 
     def test_state_vector_full_system(self, mocker):
-        """Test applying a state vector to the full subsystem"""
+        """Test applying a state vector to the full system"""
         state_wires = qml.wires.Wires(["a", "b", "c"])
         dev = NullQubit(wires=state_wires)
         state = np.array(
@@ -802,7 +804,7 @@ class TestStateInitialization:
         spy.assert_not_called()
 
     def test_basis_state_full_system(self, mocker):
-        """Test applying a state vector to the full subsystem"""
+        """Test applying a state vector to the full system"""
         state_wires = qml.wires.Wires(["a", "b", "c"])
         dev = NullQubit(wires=state_wires)
         state = np.array(
@@ -823,3 +825,329 @@ class TestStateInitialization:
 
         assert dev._state == None
         spy.assert_not_called()
+
+
+class TestOpCallDirect:
+    """Tests the operation call statistics with direct calls to special methods."""
+
+    state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
+    dev = qml.device("null.qubit", wires=4)
+
+    single_qubit_ops = [
+        (dev._apply_x, {"PauliX": 1}),
+        (dev._apply_y, {"PauliX": 1, "PauliY": 1}),
+        (dev._apply_z, {"PauliX": 1, "PauliY": 1, "PauliZ": 1}),
+        (dev._apply_hadamard, {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1}),
+        (dev._apply_s, {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1, "S": 1}),
+        (dev._apply_t, {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1, "S": 1, "T": 1}),
+        (
+            dev._apply_sx,
+            {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1, "S": 1, "T": 1, "SX": 1},
+        ),
+    ]
+    two_qubit_ops = [
+        (
+            dev._apply_cnot,
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "SX": 1,
+                "CNOT": 1,
+            },
+        ),
+        (
+            dev._apply_swap,
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "SX": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+            },
+        ),
+        (
+            dev._apply_cz,
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "SX": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+            },
+        ),
+    ]
+    three_qubit_ops = [
+        (
+            dev._apply_toffoli,
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "SX": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+                "Toffoli": 1,
+            },
+        ),
+    ]
+
+    @pytest.mark.parametrize("method,expected", single_qubit_ops)
+    def test_single_qubit_op(self, method, expected):
+        """Test if the application of single qubit operations is being accounted for."""
+        method(self.state, axes=[1])
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
+
+    @pytest.mark.parametrize("method,expected", two_qubit_ops)
+    def test_two_qubit_op(self, method, expected):
+        """Test if the application of single qubit operations is being accounted for."""
+        method(self.state, axes=[0, 1])
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
+
+    @pytest.mark.parametrize("method,expected", three_qubit_ops)
+    def test_three_qubit_op(self, method, expected):
+        """Test if the application of single qubit operations is being accounted for."""
+        method(self.state, axes=[0, 1, 2])
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
+
+
+class TestOpCallIntegration:
+    """Integration tests for operation call statistics."""
+
+    dev = qml.device("null.qubit", wires=2)
+
+    single_qubit_ops = [
+        (qml.PauliX, {"PauliX": 1}),
+        (qml.PauliY, {"PauliX": 1, "PauliY": 1}),
+        (qml.PauliZ, {"PauliX": 1, "PauliY": 1, "PauliZ": 1}),
+        (qml.Hadamard, {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1}),
+        (qml.S, {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1, "S": 1}),
+        (qml.T, {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1, "S": 1, "T": 1}),
+    ]
+    two_qubit_ops = [
+        (
+            qml.CNOT,
+            {"PauliX": 1, "PauliY": 1, "PauliZ": 1, "Hadamard": 1, "S": 1, "T": 1, "CNOT": 1},
+        ),
+        (
+            qml.SWAP,
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+            },
+        ),
+        (
+            qml.CZ,
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+            },
+        ),
+    ]
+
+    @pytest.mark.parametrize("operation,expected", single_qubit_ops)
+    def test_single_qubit_op(self, operation, expected):
+        """Test if the application of single qubit operations, without parameters,
+        is being accounted for."""
+
+        @qml.qnode(self.dev, diff_method="parameter-shift")
+        def circuit():
+            operation(wires=[0])
+            return qml.state()
+
+        circuit()
+
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
+
+    @pytest.mark.parametrize("operation,expected", two_qubit_ops)
+    def test_two_qubit_op(self, operation, expected):
+        """Test if the application of two qubit operations, without parameters,
+        is being accounted for."""
+
+        @qml.qnode(self.dev, diff_method="parameter-shift")
+        def circuit():
+            operation(wires=[0, 1])
+            return qml.state()
+
+        circuit()
+
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
+
+    single_qubit_ops_par = [
+        (
+            qml.RX,
+            [math.pi / 4],
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+                "RX": 1,
+            },
+        ),
+        (
+            qml.RY,
+            [math.pi / 4],
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+                "RX": 1,
+                "RY": 1,
+            },
+        ),
+        (
+            qml.RZ,
+            [math.pi / 4],
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+                "RX": 1,
+                "RY": 1,
+                "RZ": 1,
+            },
+        ),
+        (
+            qml.MultiRZ,
+            [math.pi / 2],
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+                "RX": 1,
+                "RY": 1,
+                "RZ": 1,
+                "MultiRZ": 1,
+            },
+        ),
+        (
+            qml.DiagonalQubitUnitary,
+            [np.array([-1, 1])],
+            {
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "S": 1,
+                "T": 1,
+                "CNOT": 1,
+                "SWAP": 1,
+                "CZ": 1,
+                "RX": 1,
+                "RY": 1,
+                "RZ": 1,
+                "MultiRZ": 1,
+                "DiagonalQubitUnitary": 1,
+            },
+        ),
+    ]
+    two_qubit_ops_par = [
+        (qml.CRX, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 1, 'DiagonalQubitUnitary': 1, 'CRX': 1}),
+        (qml.CRY, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 1, 'DiagonalQubitUnitary': 1, 'CRX': 1, 'CRY': 1}),
+        (qml.CRZ, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 1, 'DiagonalQubitUnitary': 1, 'CRX': 1, 'CRY': 1, 'CRZ': 1}),
+        (qml.MultiRZ, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 1, 'CRX': 1, 'CRY': 1, 'CRZ': 1}),
+        (qml.DiagonalQubitUnitary, [np.array([-1, 1, -1, 1])], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1}),
+        (qml.IsingXX, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1, 'IsingXX': 1}),
+        (qml.IsingYY, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1, 'IsingXX': 1, 'IsingYY': 1}),
+        (qml.IsingZZ, [math.pi / 2], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1, 'IsingXX': 1, 'IsingYY': 1, 'IsingZZ': 1}),
+        (
+            qml.QubitStateVector,
+            [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1, 'IsingXX': 1, 'IsingYY': 1, 'IsingZZ': 1, 'QubitStateVector': 1}
+        ),
+        (
+            qml.BasisState,
+            [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1, 'IsingXX': 1, 'IsingYY': 1, 'IsingZZ': 1, 'QubitStateVector': 1, 'BasisState': 1}
+        ),
+        (
+            qml.BasisState,
+            [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)], {'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'Hadamard': 1, 'S': 1, 'T': 1, 'CNOT': 1, 'SWAP': 1, 'CZ': 1, 'RX': 1, 'RY': 1, 'RZ': 1, 'MultiRZ': 2, 'DiagonalQubitUnitary': 2, 'CRX': 1, 'CRY': 1, 'CRZ': 1, 'IsingXX': 1, 'IsingYY': 1, 'IsingZZ': 1, 'QubitStateVector': 1, 'BasisState': 2}
+        ),
+    ]
+
+    @pytest.mark.parametrize("operation,input,expected", single_qubit_ops_par)
+    def test_single_qubit_op_with_par(self, operation, input, expected):
+        """Test if the application of single qubit operations, with parameters,
+        is being accounted for."""
+
+        @qml.qnode(self.dev, diff_method="parameter-shift")
+        def circuit(input):
+            operation(input, wires=[0])
+            return qml.state()
+
+        circuit(input)
+
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
+
+    @pytest.mark.parametrize("operation,input,expected", two_qubit_ops_par)
+    def test_two_qubit_op_with_par(self, operation, input, expected):
+        """Test if the application of two qubit operations, with parameters,
+        is being accounted for."""
+
+        @qml.qnode(self.dev, diff_method="parameter-shift")
+        def circuit(input):
+            operation(input, wires=[0, 1])
+            return qml.state()
+
+        circuit(input)
+
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev.operation_calls() == expected_dict
