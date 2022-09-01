@@ -15,16 +15,17 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
-from collections.abc import Sequence
 import functools
 import inspect
 import warnings
+from collections.abc import Sequence
 
 import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
+from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.tape import QuantumTape
 
 
 class QNode:
@@ -514,7 +515,7 @@ class QNode:
         )
 
     @property
-    def tape(self):
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 

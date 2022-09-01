@@ -27,7 +27,6 @@ from pennylane.operation import (
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
-    expand_matrix,
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingContext, apply
@@ -186,7 +185,7 @@ class Pow(SymbolicOp):
         if wire_order is None or self.wires == Wires(wire_order):
             return mat
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -213,7 +212,7 @@ class Pow(SymbolicOp):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates of an operator to a power is the same as the diagonalizing
         gates as the original operator. As we can see,
@@ -253,6 +252,9 @@ class Pow(SymbolicOp):
         See also :func:`~.generator`
         """
         return self.z * self.base.generator()
+
+    def adjoint(self):
+        return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
         try:
