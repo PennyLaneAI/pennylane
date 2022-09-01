@@ -14,12 +14,6 @@
 """
 Contains the dataset class.
 """
-from base64 import decode
-from os import path
-import dill
-import bz2
-import requests
-import pickle
 import os
 import sys
 import json
@@ -30,3 +24,10 @@ class Dataset:
 
     def __init__(self, **kwargs):
         self.variables = kwargs
+
+    def from_dataset(self, dataset):
+        for (key, val) in dataset.__dict__.items():
+            setattr(self, key, val)
+            #if getattr(self, key, None):
+            #    setattr(self, key, val)
+

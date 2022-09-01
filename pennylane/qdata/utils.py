@@ -7,7 +7,7 @@ import pickle
 import zipfile
 import requests
 import itertools
-from glob import glob
+import glob
 
 DATA_STRUCT = {
     "qchem": {
@@ -101,7 +101,7 @@ def _check_data_exist(data_type, data_params, directory_path):
         subdirec_path = [data_params[param] for param in DATA_STRUCT[data_type]["params"]]
         for subdirec in itertools.product(*subdirec_path):
             path = os.path.join(directory_path, *subdirec)
-            if not os.path.exists(path) or not glob(
+            if not os.path.exists(path) or not glob.glob(
                 os.path.join(path, "**", "*.dat"), recursive=True
             ):
                 exist = True

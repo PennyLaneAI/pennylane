@@ -23,7 +23,7 @@ class Chemdata(Dataset):
 
     def __init__(
         self,
-        molecule,
+        molecule=None,
         hamiltonian=None,
         symmetries=None,
         paulix_ops=None,

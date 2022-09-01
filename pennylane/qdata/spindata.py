@@ -23,13 +23,13 @@ class Spindata(Dataset):
 
     def __init__(
         self,
-        parameters,
-        hamiltonians,
-        phase_labels,
-        ground_energies,
-        ground_states,
-        correlation_matrix,
-        classical_shadows,
+        parameters=None,
+        hamiltonians=None,
+        phase_labels=None,
+        ground_energies=None,
+        ground_states=None,
+        correlation_matrix=None,
+        classical_shadows=None,
     ):
         self.parameters = parameters
         self.hamiltonians = hamiltonians
