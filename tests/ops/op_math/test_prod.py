@@ -784,7 +784,7 @@ class TestSimplify:
         prod_op = qml.prod(
             qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
         )
-        final_op = qml.op_sum(qml.s_prod(-1j, qml.PauliX(1)), qml.s_prod(-1j, qml.PauliX(0)))
+        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators

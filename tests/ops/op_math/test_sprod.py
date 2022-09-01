@@ -546,8 +546,8 @@ class TestSimplify:
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
-        sprod_op = s_prod(-3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
-        final_op = s_prod(-6j, qml.PauliX(0))
+        sprod_op = s_prod(0 - 3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.SProd)
