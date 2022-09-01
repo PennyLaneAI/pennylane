@@ -221,8 +221,19 @@ def basis_rotation(one_electron, two_electron, tol_factor):
             d_{pq}^{(r)} n_p n_q \right ) U_r^{\dagger}
 
         where the coefficients :math:`d` are obtained by diagonalizing the :math:`T` and
-        :math:`L^{(r)}` matrices. This function returns the coefficients :math:`d` and the
-        eignvectors of the :math:`T` and :math:`L^{(r)}` matrices.
+        :math:`L^{(r)}` matrices. The number operators :math:`n_p = a_p^{\dagger} a_p` can be
+        converted to qubit operators using
+
+        .. math::
+
+            n_p = \frac{1-Z_p}{2}
+
+        where :math:`Z_p` is the Pauli :math:`Z` operator applied to qubit :math:`p`. This gives
+        the
+
+        This function returns the coefficients :math:`d` and the
+        eigenvectors of the :math:`T` and :math:`L^{(r)}` matrices. The eigenvectors can then be
+        used to construct the basis rotation unitary.
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
 
@@ -231,7 +242,35 @@ def basis_rotation(one_electron, two_electron, tol_factor):
     t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
     t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
 
-    coeffs = [np.array(t_eigvals)] + [np.outer(x, x).flatten() * 0.5 for x in eigvals_m]
-    eigvec = [t_eigvecs] + eigvecs_m
+    eigvals = [np.array(t_eigvals)] + [np.outer(x, x).flatten() * 0.5 for x in eigvals_m]
+    eigvecs = [t_eigvecs] + eigvecs_m
 
-    return coeffs, eigvec
+    ops_t = 0.0
+    for i in range(len(eigvals[0])):
+        ops_t += 0.5 * eigvals[0][i] * qml.Identity(i) - 0.5 * eigvals[0][i] * qml.PauliZ(i)
+
+    ops_l = []
+    for m, coeff in enumerate(eigvals[1:]):
+        ops_l_ = 0.0
+        for i in range(len(coeff) // 2):
+            for j in range(len(coeff) // 2):
+                cc = coeff[i + j]
+                if i == j:
+                    ops_l_ += cc * (
+                        qml.Identity(i) - qml.PauliZ(i) - qml.PauliZ(j) + qml.Identity(i)
+                    )
+                else:
+                    ops_l_ += cc * (
+                        qml.Identity(i)
+                        - qml.PauliZ(i)
+                        - qml.PauliZ(j)
+                        + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
+                    )
+        ops_l.append(ops_l_)
+
+    ops = [ops_t] + ops_l
+
+    c_group = [op.coeffs for op in ops]
+    o_group = [op.ops for op in ops]
+
+    return c_group, o_group, eigvecs
