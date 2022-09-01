@@ -193,7 +193,11 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     n_wires = len(wires)
     n_total_wires = len(wire_order)
 
-    expanded_wires = copy.copy(wires)
+    if isinstance(wires, qml.wires.Wires):
+        expanded_wires = wires.tolist()
+    else:
+        expanded_wires = list(copy.copy(wires))
+
     for wire in wire_order:
         if wire not in wires:
             expanded_wires.append(wire)

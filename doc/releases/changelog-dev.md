@@ -236,6 +236,23 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
+* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
+  [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
+  
+  ```pycon
+  >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
+  >>> op = qml.op_sum(xy, qml.Identity(0))
+  >>>
+  >>> sparse_mat = op.sparse_matrix(wire_order=[0,1])
+  >>> type(sparse_mat)
+  <class 'scipy.sparse.csr.csr_matrix'>
+  >>> print(sparse_mat.toarray())
+  [[1.+1.j 0.+0.j 0.+0.j 0.+0.j]
+  [0.+0.j 1.-1.j 0.+0.j 0.+0.j]
+  [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
+  [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
+  ```
+
 * `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
@@ -268,6 +285,9 @@
 * Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
+
+* Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
+  [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
 * Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
   certain exceptions, when instantiated with `wires=[]`.
