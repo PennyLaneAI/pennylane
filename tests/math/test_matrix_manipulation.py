@@ -543,7 +543,7 @@ class TestExpandMatrixSparse:
         assert all(res.indices == expected.indices)
 
     def test_wires_tuple(self):
-        """Tests the case wires is wires.Wires object"""
+        """Tests the case wires is a tuple"""
         mat = csr_matrix([[0, 1], [1, 0]])
         res = qml.math.expand_matrix(mat, wires=(0,), wire_order=[0, 1])
         res.sort_indices()
