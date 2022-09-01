@@ -245,7 +245,7 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
-        final_op = qml.RZ(-1.32, wires=0)
+        final_op = qml.RZ(4 * np.pi - 1.32, wires=0)
         simplified_op = adj_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -258,7 +258,9 @@ class TestSimplify:
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
         adj_op = Adjoint(qml.op_sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
-        sum_op = qml.op_sum(qml.RX(-1, 0), qml.RY(-1, 0), qml.RZ(-1, 0))
+        sum_op = qml.op_sum(
+            qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
+        )
         simplified_op = adj_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -278,7 +280,9 @@ class TestSimplify:
         """Test that the simplify method converts an adjoint of products to a (reverse) product
         of adjoints."""
         adj_op = Adjoint(qml.prod(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
-        final_op = qml.prod(qml.RZ(-1, 0), qml.RY(-1, 0), qml.RX(-1, 0))
+        final_op = qml.prod(
+            qml.RZ(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0)
+        )
         simplified_op = adj_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Prod)

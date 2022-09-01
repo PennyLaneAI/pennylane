@@ -738,7 +738,7 @@ class TestSimplify:
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
         prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
-        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -770,9 +770,9 @@ class TestSimplify:
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
             Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
             Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
             Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
