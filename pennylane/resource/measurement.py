@@ -22,6 +22,8 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
 
+    See also :func:`estimate_error`.
+
     Args:
         coeffs (list[tensor_like]): list of coefficient groups
         variances (list[float]): variances of the Pauli word groups
@@ -91,11 +93,13 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
         return int(np.sum(np.sqrt(variances)) ** 2 / error**2)
 
     group_sum = [np.sum(coeff**2) for coeff in coeffs]
-    return int(np.sum(np.sqrt(group_sum)) ** 2 / error**2)
+    return int(np.ceil(np.sum(np.sqrt(group_sum)) ** 2 / error**2))
 
 
 def estimate_error(coeffs, variances=None, shots=1000):
     r"""Estimate the error in computing an expectation value with a given number of measurements.
+
+    See also :func:`estimate_samples`.
 
     Args:
         coeffs (list[tensor_like]): list of coefficient groups

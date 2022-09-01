@@ -41,12 +41,12 @@ def test_estimate_samples(coefficients, error, shots, variances):
 
 
 @pytest.mark.parametrize(
-    ("coefficients", "error", "shots"),
+    ("coefficients", "error", "shots", "variances"),
     [
-        (coeffs, error, shots),
+        (coeffs, error, shots, variances),
     ],
 )
-def test_estimate_error(coefficients, error, shots):
+def test_estimate_error(coefficients, error, shots, variances):
     r"""Test that the estimate_error function returns the correct error."""
     e_novar = qml.resource.estimate_error(coefficients, shots=shots)
     e_var = qml.resource.estimate_error(coefficients, variances=variances, shots=shots)
