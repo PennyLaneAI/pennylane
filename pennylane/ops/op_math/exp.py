@@ -139,7 +139,7 @@ class Exp(SymbolicOp):
     def __repr__(self):
         return (
             f"Exp({self.coeff} {self.base})"
-            if isinstance(self.base, Tensor)
+            if self.base.arithmetic_depth > 0
             else f"Exp({self.coeff} {self.base.name})"
         )
 

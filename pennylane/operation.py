@@ -1834,6 +1834,10 @@ class Tensor(Observable):
         """
         return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
 
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(o.arithmetic_depth for o in self.obs)
+
     def __matmul__(self, other):
         if isinstance(other, Tensor):
             self.obs.extend(other.obs)
