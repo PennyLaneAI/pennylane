@@ -297,9 +297,9 @@ def basis_rotation(one_electron, two_electron, tol_factor):
                         - qml.PauliZ(j)
                         + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
                     )
-        ops_l.append(ops_l_)
+        ops_l.append(ops_l_.tolist())
 
-    ops = [ops_t] + ops_l
+    ops = [ops_t.tolist()] + ops_l
 
     c_group = [op.coeffs for op in ops]
     o_group = [op.ops for op in ops]

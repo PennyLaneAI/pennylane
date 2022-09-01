@@ -167,3 +167,37 @@ def test_empty_error(two_tensor):
 
     with pytest.raises(ValueError, match="All eigenvectors are discarded."):
         qml.qchem.factorize(two_tensor, 1e-5, 1e1)
+
+
+@pytest.mark.parametrize(
+    ("one_matrix", "two_tensor", "tol_factor", "coeffs_ref"),
+    [
+        (
+            np.array([[-1.25330961e00, -2.07722728e-13], [-2.07611706e-13, -4.75069041e-01]]),
+            np.array(  # two-electron integral tensor in physicist notation
+                [
+                    [
+                        [[6.74755872e-01, 2.39697151e-13], [2.39780418e-13, 1.81210478e-01]],
+                        [[2.39808173e-13, 1.81210478e-01], [6.63711349e-01, 2.21378471e-13]],
+                    ],
+                    [
+                        [[2.39808173e-13, 6.63711349e-01], [1.81210478e-01, 2.21822560e-13]],
+                        [[1.81210478e-01, 2.21489493e-13], [2.21267449e-13, 6.97651447e-01]],
+                    ],
+                ]
+            ),
+            1.0e-5,
+            [
+                np.array([-1.29789639, 0.84064639, 0.45725]),
+                np.array([-0.00019476, -0.01100037, 0.02239026, -0.01119513]),
+                np.array([0.36242096, -0.18121048, -0.18121048]),
+                np.array([-1.36155423, 2.03646071, -1.34981296, 0.67490648]),
+            ],
+        ),
+    ],
+)
+def test_basis_rotation(one_matrix, two_tensor, tol_factor, coeffs_ref):
+    coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
+
+    for i, coeff in enumerate(coeffs):
+        assert np.allclose(coeff, coeffs_ref[i])
