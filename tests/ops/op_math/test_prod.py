@@ -863,6 +863,22 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_grouping_with_barriers(self):
+        """Test that grouping is not done when a barrier is present."""
+        prod_op = qml.prod(qml.S(0), qml.Barrier(0), qml.S(0)).simplify()
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(prod_op.factors, simplified_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_only_visual_barriers(self):
+        """Test that grouping is implemented when an only-visual barrier is present."""
+        prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
+        assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
