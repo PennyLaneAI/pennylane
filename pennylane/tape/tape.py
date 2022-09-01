@@ -1321,7 +1321,7 @@ class QuantumTape(AnnotatedQueue):
         """Returns the measurements on the quantum tape.
 
         Returns:
-            list[.MeasurementProcess]: list of recorded measurement processess
+            list[.MeasurementProcess]: list of recorded measurement processes
 
         **Example**
 
