@@ -17,6 +17,7 @@ Unit tests for the qml.simplify function
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 
 
@@ -33,7 +34,13 @@ def build_op():
     )
 
 
-simplified_op = qml.prod(qml.RX(-1, 0), qml.RZ(-1, 0), qml.PauliX(0), qml.RY(-1, 0), qml.RX(-1, 0))
+simplified_op = qml.prod(
+    qml.RX(4 * np.pi - 1, 0),
+    qml.RZ(4 * np.pi - 1, 0),
+    qml.PauliX(0),
+    qml.RY(4 * np.pi - 1, 0),
+    qml.RX(4 * np.pi - 1, 0),
+)
 
 
 class TestSimplifyOperators:
