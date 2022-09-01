@@ -13,10 +13,13 @@
 # limitations under the License.
 """This module contains methods to expand the matrix representation of an operator
 to a higher hilbert space with re-ordered wires."""
+import copy
+
+from scipy.sparse import csr_matrix, kron, issparse, eye
 import pennylane as qml
 
 
-def expand_matrix(base_matrix, wires, wire_order=None):
+def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -26,6 +29,8 @@ def expand_matrix(base_matrix, wires, wire_order=None):
             dimension :math:`2^n` acts on a subspace of :math:`n` wires
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
+        sparse_format (str): if the base matrix is a scipy sparse matrix then this is the string representing the
+            preferred scipy sparse matrix format to cast the expanded matrix too
 
     Returns:
         tensor_like: expanded matrix
@@ -79,16 +84,29 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     >>> res.requires_grad
     True
 
+    The method words with scipy sparse matrices, for example:
+
+    >>> from scipy import sparse
+    >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
+    >>> qml.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
+    array([[0., 1., 0., 0.],
+           [1., 0., 0., 0.],
+           [0., 0., 0., 1.],
+           [0., 0., 1., 0.]])
+
     """
 
     if (wire_order is None) or (wire_order == wires):
         return base_matrix
 
+    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
+    if interface == "scipy" and issparse(base_matrix):
+        return _sparse_expand_matrix(base_matrix, wires, wire_order, format=sparse_format)
+
     wire_order = qml.wires.Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
     batch_dim = shape[0] if len(shape) == 3 else None
-    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
 
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
@@ -120,3 +138,83 @@ def expand_matrix(base_matrix, wires, wire_order=None):
     mat = qml.math.reshape(mat, shape)
 
     return mat
+
+
+def _local_sparse_swap_mat(i, n, format="csr"):
+    """Helper function which generates the sparse matrix of SWAP
+    for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
+    assert i < n - 1
+    swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+    j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
+    return kron(
+        kron(eye(2 ** (j - 1)), swap_mat), eye(2 ** (n - (j + 1))), format=format
+    )  # (j - 1) + 2 + (n - (j+1)) = n
+
+
+def _sparse_swap_mat(i, j, n, format="csr"):
+    """Helper function which generates the sparse matrix of SWAP
+    for qubits: i <--> j with final shape (2**n, 2**n)."""
+    assert i < n and j < n
+    if i == j:
+        return eye(2**n, format=format)
+
+    (small_i, big_j) = (i, j) if i < j else (j, i)
+    store_swaps = [
+        _local_sparse_swap_mat(index, n, format=format) for index in range(small_i, big_j)
+    ]
+
+    res = eye(2**n, format=format)
+    for mat in store_swaps:  # swap i --> j
+        res @= mat
+
+    for mat in store_swaps[-2::-1]:  # bring j --> old_i
+        res @= mat
+
+    return res
+
+
+def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
+    """Re-express a sparse base matrix acting on a subspace defined by a set of wire labels
+    according to a global wire order.
+
+    Args:
+        base_matrix (scipy.sparse.spmatrix): base matrix to expand
+        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
+            contain additional labels
+        format (str): string representing the preferred scipy sparse matrix format to cast the expanded
+            matrix too
+
+    Returns:
+        tensor_like: expanded matrix
+    """
+    n_wires = len(wires)
+    n_total_wires = len(wire_order)
+
+    expanded_wires = copy.copy(wires)
+    for wire in wire_order:
+        if wire not in wires:
+            expanded_wires.append(wire)
+
+    num_missing_wires = n_total_wires - n_wires
+    if num_missing_wires > 0:
+        expanded_matrix = kron(
+            base_matrix, eye(2**num_missing_wires, format=format), format=format
+        )  # added missing wires at the end
+    else:
+        expanded_matrix = copy.copy(base_matrix)
+
+    U = eye(2**n_total_wires, format=format)
+    for i in range(n_total_wires):
+        if expanded_wires[i] != wire_order[i]:
+            j = expanded_wires.index(wire_order[i])  # location of correct wire
+            U = U @ _sparse_swap_mat(
+                i, j, n_total_wires, format=format
+            )  # swap incorrect wire for correct wire
+
+            expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
+
+    expanded_matrix = U.T @ expanded_matrix @ U
+    return expanded_matrix.asformat(format)
