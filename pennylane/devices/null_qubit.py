@@ -153,10 +153,8 @@ class NullQubit(DefaultQubit):
 
     def generate_samples(self):
         self.analytic_probability()
-        return
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
-        """Return samples of an observable."""
         pass
 
     def operation_calls(self):
