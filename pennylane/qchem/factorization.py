@@ -268,7 +268,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
 
-    _, eigvals_m, eigvecs_m = qml.qchem.factorize(two_electron, tol_factor, 0.0)
+    factors, eigvals_m, eigvecs_m = qml.qchem.factorize(two_electron, tol_factor, 0.0)
 
     t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
     t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
@@ -281,7 +281,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         ops_t += 0.5 * eigvals[0][i] * qml.Identity(i) - 0.5 * eigvals[0][i] * qml.PauliZ(i)
 
     ops_l = []
-    for coeff in enumerate(eigvals[1:]):
+    for m, coeff in enumerate(eigvals[1:]):
         ops_l_ = 0.0
         for i in range(len(coeff) // 2):
             for j in range(len(coeff) // 2):
