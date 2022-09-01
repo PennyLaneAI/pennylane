@@ -125,10 +125,10 @@ class NullQubit(DefaultQubit):
 
     @property
     def state(self):
-        pass
+        return None
 
     def density_matrix(self, wires):
-        pass
+        return None
 
     def _apply_state_vector(self, state, device_wires):
         pass
@@ -152,6 +152,11 @@ class NullQubit(DefaultQubit):
         pass
 
     def generate_samples(self):
+        self.analytic_probability()
+        return
+
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        """Return samples of an observable."""
         pass
 
     def operation_calls(self):
