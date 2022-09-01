@@ -281,7 +281,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         ops_t += 0.5 * eigvals[0][i] * qml.Identity(i) - 0.5 * eigvals[0][i] * qml.PauliZ(i)
 
     ops_l = []
-    for m, coeff in enumerate(eigvals[1:]):
+    for coeff in enumerate(eigvals[1:]):
         ops_l_ = 0.0
         for i in range(len(coeff) // 2):
             for j in range(len(coeff) // 2):
