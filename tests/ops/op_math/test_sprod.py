@@ -552,6 +552,7 @@ class TestSimplify:
 
         assert isinstance(simplified_op, qml.ops.SProd)
         assert simplified_op.name == final_op.name
+        assert repr(simplified_op) == repr(final_op)
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
