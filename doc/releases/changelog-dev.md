@@ -6,7 +6,7 @@
 
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
-  
+
   Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
   parameter broadcasting with a leading broadcasting dimension in their variational
   parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
@@ -24,7 +24,7 @@
   ```
 
   An exception is `BasisEmbedding`, which is not broadcastable.
-  
+
 * Added `QutritDevice` as an abstract base class for qutrit devices.
   [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
@@ -115,8 +115,50 @@
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
+  
+* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to 
+  a larger hilbert space.
+  [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
+
+  ```pycon
+  >>> from scipy import sparse
+  >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
+  >>> qml.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
+  array([[0., 1., 0., 0.],
+         [1., 0., 0., 0.],
+         [0., 0., 0., 1.],
+         [0., 0., 1., 0.]])
+  ```
+
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
+  Operator before exponentiation. Internally, this constructor functions creates the new
+  class `qml.ops.op_math.Exp`.
+  [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
+
+  The function can be used to create either observables or generic rotation gates:
+
+  ```pycon
+  >>> obs = qml.exp(qml.PauliX(0), 3)
+  >>> qml.is_hermitian(obs)
+  True
+  >>> x = 1.234
+  >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+  >>> isingxy = qml.exp(t, 0.25j * x)
+  >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+  True
+  >>> qml.is_unitary(isingxy)
+  True
+  ```
 
 <h3>Improvements</h3>
+
+* Some methods of the `QuantumTape` class have been simplified and reordered to
+  improve both readability and performance. The `Wires.all_wires` method has been rewritten
+  to improve performance.
+  [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
+
+* The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
+  [(#2997)](https://github.com/PennyLaneAI/pennylane/pull/2997)
 
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
@@ -136,7 +178,7 @@
   >>> qml.simplify(adj_op)
   RX(-1, wires=[0])
   ```
-  
+
 * Added `sparse_matrix()` support for single qubit observables
   [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
@@ -179,13 +221,32 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
+* `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
+  or a product of identities.
+  [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
+* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
+  with an additional keyword argument `circuit`, which represents the quantum tape
+  being executed.
+
+  Any device that overrides `statistics` should edit the signature of the method to include
+  the new `circuit` keyword argument.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+
+* The `expand_matrix()` has been moved from `~/operation.py` to 
+  `~/math/matrix_manipulation.py`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+
 <h3>Deprecations</h3>
+
+* The `supports_reversible_diff` device capability is unused and has been removed.
+  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
 <h3>Documentation</h3>
 
@@ -201,8 +262,10 @@
 
 This release contains contributions from (in alphabetical order):
 
+Juan Miguel Arrazola,
 Olivia Di Matteo,
 Josh Izaac,
+Soran Jahangiri,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
@@ -212,6 +275,7 @@ Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
 Mudit Pandey,
+Matthew Silverman,
 Jay Soni,
 Antal Száva
 Cody Wang,
