@@ -28,7 +28,7 @@ class QNSPSAOptimizer:
         \eta \widehat{\mathbf{g}}^{-1}(\mathbf{x}^{(t)})\widehat{\nabla f}(\mathbf{x}^{(t)}),
 
     where :math:`f(\mathbf{x})` is the objective function with input parameters :math:`\mathbf{x}`,
-    while :math:`\nabla f` is the gradient, :math:`\mathbf{g}` the second-order Fubini-Study metric
+    while :math:`\nabla f` is the gradient, :math:`\mathbf{g}` is the second-order Fubini-Study metric
     tensor. With QNSPSA algorithm, both the gradient and the metric tensor are estimated
     stochastically, with :math:`\widehat{\nabla f}` and :math:`\widehat{\mathbf{g}}`. This stochastic
     approach requires only a fixed number of circuit executions per optimization step,
@@ -37,7 +37,7 @@ class QNSPSAOptimizer:
     other hand, the introduction of the Fubini-Study metric into the optimization helps to find
     better minima and allows for faster convergence.
 
-    The gradient is estimated similarly as the [TODO] `SPSA optimizer
+    The gradient is estimated similarly as the `SPSA optimizer
     <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.SPSAOptimizer.html>`_, with a
     pair of perturbations:
 
@@ -67,7 +67,7 @@ class QNSPSAOptimizer:
         \delta F = F(\mathbf{x, \mathbf{x} + \epsilon \mathbf{h}_1} + \epsilon \mathbf{h}_2)
         - F (\mathbf{x, \mathbf{x} + \epsilon \mathbf{h}_1}) - F(\mathbf{x, \mathbf{x}
         - \epsilon \mathbf{h}_1} + \epsilon \mathbf{h}_2)
-        + F(\mathbf{x, \mathbf{x} + \epsilon \mathbf{h}_1}).
+        + F(\mathbf{x, \mathbf{x} - \epsilon \mathbf{h}_1}).
 
     For more details, see:
 
@@ -115,7 +115,7 @@ class QNSPSAOptimizer:
         blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
             loss value no larger than the loss value before update, plus a tolerance. The tolerance
             is set with the hyperparameter ``history_length``. The ``blocking`` option is
-            observed to help the optimizer to significantly converge faster
+            observed to help the optimizer to converge significantly faster
         history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
             the cost values in the last ``history_length`` steps
         seed (int): seed for the random sampling
@@ -191,7 +191,7 @@ class QNSPSAOptimizer:
         return params_next, loss_curr
 
     def _step_core(self, cost, args, kwargs):
-        """Core step function that returns the updated paramter before blocking condition
+        """Core step function that returns the updated parameter before blocking condition
         is applied.
 
         Args:
