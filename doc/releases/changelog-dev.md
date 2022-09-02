@@ -257,6 +257,8 @@
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
+* New `null.qubit` device. The `null.qubit` no-ops all operations and memory allocations. It inherits directly from default.qubit and should support all Numpy-interface functionality.
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -298,17 +300,19 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola,
-Olivia Di Matteo,
+Albert Mitjans Coma,
+Amintor Dusko,
 Josh Izaac,
 Soran Jahangiri,
 Edward Jiang,
 Ankit Khandelwal,
 Korbinian Kottmann,
-Christina Lee,
 Meenu Kumari,
-Albert Mitjans Coma,
+Christina Lee,
+Olivia Di Matteo,
 Rashid N H M,
 Zeyue Niu,
+Lee J. O'Riordan
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
