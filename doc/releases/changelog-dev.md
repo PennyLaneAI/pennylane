@@ -257,6 +257,10 @@
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
+* `__repr__` and `label` methods are more correct and meaningful for Operators with an arithmetic
+  depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
+  [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
