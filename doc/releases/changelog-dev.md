@@ -236,6 +236,23 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
+* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
+  [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
+  
+  ```pycon
+  >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
+  >>> op = qml.op_sum(xy, qml.Identity(0))
+  >>>
+  >>> sparse_mat = op.sparse_matrix(wire_order=[0,1])
+  >>> type(sparse_mat)
+  <class 'scipy.sparse.csr.csr_matrix'>
+  >>> print(sparse_mat.toarray())
+  [[1.+1.j 0.+0.j 0.+0.j 0.+0.j]
+  [0.+0.j 1.-1.j 0.+0.j 0.+0.j]
+  [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
+  [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
+  ```
+
 * `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
