@@ -668,9 +668,10 @@ class TestSimplify:
             qml.adjoint(qml.RY(1, 0)),
             qml.adjoint(qml.PauliZ(1)),
         )
+        mod_angle = -1 % (4 * np.pi)
         final_op = op_sum(
             qml.s_prod(2, qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1))),
-            qml.s_prod(2, qml.RY(-1, 0)),
+            qml.s_prod(2, qml.RY(mod_angle, 0)),
             qml.s_prod(2, qml.PauliZ(1)),
         )
         simplified_op = sum_op.simplify()

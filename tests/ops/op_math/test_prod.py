@@ -782,13 +782,14 @@ class TestSimplify:
             ),
             qml.Identity(0),
         )
+        mod_angle = -1 % (4 * np.pi)
         final_op = qml.op_sum(
             qml.Identity(0),
             5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
             5 * Prod(qml.PauliX(0), qml.PauliX(1)),
-            qml.RX(-1, 0),
-            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.RX(1, 1)),
-            5 * Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
+            qml.RX(mod_angle, 0),
+            5 * Prod(qml.RX(mod_angle, 0), qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.RX(mod_angle, 0), qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0),
             5 * qml.RX(1, 1),
             qml.s_prod(5, qml.PauliX(1)),
