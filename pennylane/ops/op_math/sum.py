@@ -360,7 +360,7 @@ class Sum(Operator):
 
         return new_summands
 
-    def simplify(self, cutoff=1.0e-12) -> "Sum":
+    def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
         new_summands = self._simplify_summands(summands=self.summands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
