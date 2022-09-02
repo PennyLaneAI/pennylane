@@ -628,9 +628,9 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
         ]
     ):
         gen_tapered = qml.taper(gen_op, generators, paulixops, paulix_sector)
-        qml.simplify(gen_tapered)
     else:
         gen_tapered = qml.Hamiltonian([], [])
+    qml.simplify(gen_tapered)
 
     params = operation.parameters[0] if len(operation.parameters) else 1.0
     if qml.queuing.QueuingContext.recording():
