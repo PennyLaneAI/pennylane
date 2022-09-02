@@ -26,7 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
+from pennylane.ops.qubit.non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -2085,17 +2085,6 @@ class CRot(Operation):
         target_wires = [w for w in self.wires if w not in self.control_wires]
         wires = self.wires
         params = self.parameters
-
-        p0, p1, p2 = np.mod(params, 2 * np.pi)
-
-        if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
-            return qml.CRX(self.data[1], wires=wires)
-        if np.allclose(p0, 0) and np.allclose(p2, 0):
-            return qml.CRY(self.data[1], wires=wires)
-        if np.allclose(p1, 0):
-            return qml.CRZ(self.data[0] + self.data[2], wires=wires)
-        if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
-            return qml.ctrl(qml.Hadamard(wires=target_wires), control=self.control_wires)
 
         p0, p1, p2 = [p % (4 * np.pi) for p in params]
 
