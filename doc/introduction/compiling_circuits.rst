@@ -290,12 +290,12 @@ As mentioned earlier we can also simplify QNode objects to, for example, group r
         qml.RY(x[1], wires=1)
         qml.RZ(x[2], wires=2)
         qml.RX(-1, wires=0)
-        qml.RZ(-2, wires=2)
-        qml.RY(2, wires=1)
+        qml.RY(-2, wires=1)
+        qml.RZ(2, wires=2)
         return qml.probs([0, 1, 2])
 
 >>> x = [1, 2, 3]
 >>> print(qml.draw(circuit)(x))
-0: ──────────┤ Probs
-1: ─RY(4.00)─┤ Probs
-2: ─RZ(1.00)─┤ Probs
+0: ───────────┤ ╭Probs
+1: ───────────┤ ├Probs
+2: ──RZ(5.00)─┤ ╰Probs
