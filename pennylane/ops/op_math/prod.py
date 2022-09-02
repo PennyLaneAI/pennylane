@@ -538,7 +538,7 @@ class _ProductFactorsGrouping:
             self._non_pauli_factors[wires] = [
                 op_hash,
                 old_exponent,
-                factor.__class__(factor.data[0] + old_op.data[0], wires),
+                factor.__class__(factor.data[0] + old_op.data[0], wires).simplify(),
             ]
         elif op_hash == old_hash:
             self._non_pauli_factors[wires][1] += exponent
