@@ -297,11 +297,15 @@
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
+* Fixes a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola,
+Utkarsh Azad,
 Olivia Di Matteo,
 Josh Izaac,
 Soran Jahangiri,
