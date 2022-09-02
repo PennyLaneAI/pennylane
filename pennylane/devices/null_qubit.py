@@ -152,6 +152,8 @@ class NullQubit(DefaultQubit):
         pass
 
     def generate_samples(self):
+        """Returns the computational basis samples generated for all wires.
+        In the _qubit_device.py, the function calls for analytic_probability for its operations."""
         self.analytic_probability()
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
