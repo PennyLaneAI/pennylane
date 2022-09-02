@@ -231,7 +231,7 @@ class TestInitialization:
 
 
 class TestMscMethods:
-    """Test dunder methods."""
+    """Test dunder and other miscellaneous small methods."""
 
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep):
@@ -252,6 +252,18 @@ class TestMscMethods:
         for f1, f2 in zip(prod_op.factors, copied_op.factors):
             assert qml.equal(f1, f2)
             assert f1 is not f2
+
+    def test_check_batching(self):
+        """Test that _check_batching runs check batching on all constituents."""
+
+        base1 = qml.RX(1.2, wires=0)
+        base2 = qml.RZ(2.3, wires=0)
+
+        prod = Prod(base1, base2)
+        prod.data = [[np.array([1.2, 2.3])], [np.array([3.4, 4.5])]]
+        prod._check_batching(prod.data)
+        assert base1.batch_size == 2
+        assert base2.batch_size == 2
 
 
 class TestMatrix:

@@ -278,6 +278,18 @@ class TestMscMethods:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
 
+    def test_check_batching(self):
+        """Test that _check_batching runs check batching on all constituents."""
+
+        base1 = qml.RX(1.2, wires=0)
+        base2 = qml.RZ(2.3, wires=0)
+
+        op = Sum(base1, base2)
+        op.data = [[np.array([1.2, 2.3])], [np.array([3.4, 4.5])]]
+        op._check_batching(op.data)
+        assert base1.batch_size == 2
+        assert base2.batch_size == 2
+
 
 class TestMatrix:
     """Test matrix-related methods."""

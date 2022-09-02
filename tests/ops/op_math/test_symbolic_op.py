@@ -53,6 +53,16 @@ def test_copy():
     assert op.data == [param1]
 
 
+def test_check_batching():
+    """Test that calling _check_batching on a symbolic op runs it on the base operation."""
+
+    base = qml.RX(1.2, wires=0)
+    op = SymbolicOp(base)
+    op.data = [np.array(2.3, 4.5)]
+    op._check_batching(op.data)
+    assert base.batch_size == 2
+
+
 class TestProperties:
     """Test the properties of the symbolic op."""
 
