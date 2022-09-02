@@ -255,3 +255,48 @@ observables and coefficients:
 [[0.97, 4.21], [1.43]]
 
 This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.grouping` module.
+
+Simplifying Operators
+----------------------
+
+PennyLane offers the :func:`~.pennylane.simplify` function to simplify single operators, quantum
+functions, QNodes and tapes. This function reduces the arithemtic depth of all the given operators
+to its minimum, groups like terms in sums and products, resolves products of Pauli 
+operators and combines identical rotation gates by summing its angles.
+
+For example, lets simplify the following operator:
+
+>>> nested_op = qml.prod(qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0))), qml.RX(1, 0))
+>>> qml.simplify(nested_op)
+PauliX(wires=[0]) @ RX(2.0, wires=[0]) + RX(1.0, wires=[0])
+
+Several simplifications steps are happening here. First of all, the nested products are removed:
+`qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))`
+Then the product of sums is transformed into a sum of products:
+`qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))`
+And finally like terms in the obtained products are grouped together, removing all identities: 
+`qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))`
+
+As mentioned earlier, we can also simplify QNode objects:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=1)
+        qml.RZ(x[2], wires=2)
+        qml.RX(-0.4, wires=0)
+        qml.RZ(-2, wires=2)
+        qml.RY(2, wires=1)
+        return qml.probs([0, 1, 2])
+
+    x = [1, 2, 3]
+    
+>>> print(qml.draw(circuit)(x))
+0: ─RX(13.17)─┤ Probs
+1: ─RY(4.00)─┤ Probs
+2: ─RZ(13.57)─┤ Probs
