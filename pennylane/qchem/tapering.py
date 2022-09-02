@@ -17,8 +17,9 @@ This module contains the functions needed for tapering qubits using symmetries.
 # pylint: disable=unnecessary-lambda
 
 import functools
-
+import itertools
 import autograd.numpy as anp
+import scipy
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
@@ -540,75 +541,105 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     return np.array(tapered_hartree_fock).astype(int)
 
 
-def _is_commuting_obs(ham_a, ham_b, wire_map=None):
-    r"""Check for commutivity between two Pauli observables.
+def taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op=None):
+    r"""Transform the gate operation with a Clifford operator and taper qubits.
+
+    The qubit operator for the generator of the gate operation is computed either internally or can be provided
+    manually via `gen_op` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
+    the molecular Hamiltonian, then this operator is tranformed using the Clifford operators :math:`U` and
+    tapered, otherwise it is discarded. Fianlly, the tapered generator is exponentiated using :func:`~.PauliRot`
+    for building the tapered unitary.
 
     Args:
-        ham_a (Hamiltonian): first observable
-        ham_b (Hamiltonian): second observable
-
-    Returns:
-        Bool: representing whether ham_a and ham_b commutes or not.
-    """
-    for op1 in ham_a.ops:
-        for op2 in ham_b.ops:
-            if not qml.grouping.is_commuting(op1, op2, wire_map):
-                return False
-    return True
-
-
-def taper_excitations(generators, paulixops, paulix_sector, singles, doubles):
-    r"""Transform excitations with a Clifford operator and taper qubits.
-
-    The qubit operators for single and double excitations are first generated using the generators of
-    :func:`~.SingleExcitation` and :func:`~.DoubleExcitation` operations. Each of these operators that commutes
-    with all :math:`\mathbb{Z}_2` symmetries of the molecular Hamiltonian are then tranformed using the
-    Clifford operators :math:`U` and then tapered, while rest of the other non-commuting operators are discarded.
-    These new tapered excitation operators can be exponentiated using :func:`~.PauliRot` for building a
-    tapered UCCSD-like circuit ansatze.
-
-    Args:
+        operation (Operation): qubit operation to be tapered
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
-        singles (list(list(int))): list with the indices `r`, `p` of the two qubits representing the single excitation :math:`\vert r, p \rangle = \hat{c}_p^\dagger \hat{c}_r \vert \mathrm{HF}\rangle`
-        doubles (list(list(int))): list with the indices `s`, `r`, `q`, `p` of the four qubits representing the double excitation :math:`\vert s, r, q, p \rangle = \hat{c}_p^\dagger \hat{c}_q^\dagger \hat{c}_r \hat{c}_s \vert \mathrm{HF}\rangle`
+        wire_order (Sequence[Any]): order of the wires in the quantum circuit
+        gen_op (Hamiltonian): optional argument to provide the generator of the operation
 
     Returns:
-        tuple(list, list): tapered single and double excitation operators
+        list(Operation): list of operations of type :func:`~.PauliRot` implementing tapered unitary operation
 
     **Example**
 
     >>> symbols = ['He', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
     >>> n_elec = mol.n_electrons
-    >>> generators = qml.qchem.symmetry_generators(H)
-    >>> paulixops = qml.qchem.paulix_ops(generators, 4)
-    >>> paulix_sector = qml.qchem.optimal_sector(H, generators, n_elec)
-    >>> singles, doubles = qml.qchem.excitations(n_elec, n_qubits)
-    >>> singles_tap, doubles_tap = taper_excitations(generators, paulixops,
-                                            paulix_sector, singles, doubles)
-    >>> print(singles_tap[0], doubles_tap[0])
-    ((0.5+0j)) [Y0]
-    ((-0.25+0j)) [X0 Y1] + ((-0.25+0j)) [Y0 X1]
+    >>> generators = qchem.symmetry_generators(H)
+    >>> paulixops = qchem.paulix_ops(generators, 4)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, n_elec)
+    >>> qchem.taper_operation(qml.SingleExcitation(1, wires=[0, 2]),
+                                generators, paulixops, paulix_sector, wire_order=H.wires)
+    [PauliRot(0.5+0.j, 'RY', wires=[0])]
+    >>> dev = qml.device('default.qubit', wires=[0,1])
+    >>> @qml.qnode(dev)
+    >>> def circuit(params):
+            qchem.taper_operation(qml.DoubleExcitation(params[idx], wires=[0, 1, 2, 3]),
+                                    generators, paulixops, paulix_sector, H.wires)
+            return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    >>> print(drawer(params=[0.38686753]))
+        0: ─╭RXY(-0.10+0.00j)─╭RYX(-0.10+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(-0.10+0.00j)─╰RYX(-0.10+0.00j)─┤ ╰<Z@Z>
     """
 
-    singles_tapered, doubles_tapered = [], []
+    if gen_op is None:
+        if operation.num_params < 1:  # Non-parameterized gates
+            gen_mat = -1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
+            gen_op = qml.Hamiltonian(
+                *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
+            )
+            qml.simplify(gen_op)
+            if gen_op.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
+                gen_op -= qml.Hamiltonian([gen_op.coeffs[0]], [qml.Identity(wires=wire_order[0])])
+        else:  # Single-parameter gates
+            try:
+                gen_op = qml.generator(operation, "hamiltonian")
+            except Exception as exc:
+                raise NotImplementedError(
+                    f"Generator for {operation} is not implemented, please provide it with 'gen_op' args."
+                ) from exc
+    else:
+        if not isinstance(gen_op, qml.Hamiltonian):
+            raise ValueError(
+                f"Generator for the operation needs to a qml.Hamiltonian, but got {type(gen_op)}."
+            )
+        mat1 = scipy.linalg.expm(1j * qml.matrix(gen_op, wire_order=wire_order))
+        mat2 = qml.matrix(operation, wire_order=wire_order)
+        phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
+            np.nonzero(mat1)
+        ]
+        if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
+            raise ValueError(
+                f"Given gen_op: {gen_op} doesn't seem to be the correct generator for the {operation}."
+            )
 
-    for excitation in singles:
-        hamil_gen = qml.SingleExcitation(1, wires=excitation).generator()
-        if np.all([_is_commuting_obs(generator, hamil_gen) for generator in generators]):
-            excitation_tapered_op = qml.taper(hamil_gen, generators, paulixops, paulix_sector)
-            qml.simplify(excitation_tapered_op)
-            singles_tapered.append(excitation_tapered_op)
+    if np.all(
+        [
+            [
+                qml.grouping.is_commuting(op1, op2)
+                for op1, op2 in itertools.product(generator.ops, gen_op.ops)
+            ]
+            for generator in generators
+        ]
+    ):
+        gen_tapered = qml.taper(gen_op, generators, paulixops, paulix_sector)
+        qml.simplify(gen_tapered)
+    else:
+        gen_tapered = qml.Hamiltonian([], [])
 
-    for excitation in doubles:
-        hamil_gen = qml.DoubleExcitation(1, wires=excitation).generator()
-        if np.all([_is_commuting_obs(generator, hamil_gen) for generator in generators]):
-            excitation_tapered_op = qml.taper(hamil_gen, generators, paulixops, paulix_sector)
-            qml.simplify(excitation_tapered_op)
-            doubles_tapered.append(excitation_tapered_op)
-
-    return singles_tapered, doubles_tapered
+    params = operation.parameters[0] if len(operation.parameters) else 1.0
+    if qml.queuing.QueuingContext.recording():
+        qml.queuing.QueuingContext.safe_update_info(operation, owner=gen_tapered)
+        for coeff, op in zip(*gen_tapered.terms()):
+            qml.PauliRot(params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+    else:
+        ops_tapered = []
+        for coeff, op in zip(*gen_tapered.terms()):
+            ops_tapered.append(
+                qml.PauliRot(params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+            )
+        return ops_tapered
