@@ -277,7 +277,7 @@ Then the product of sums is transformed into a sum of products:
 And finally like terms in the obtained products are grouped together, removing all identities: 
 `qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))`
 
-As mentioned earlier, we can also simplify QNode objects:
+As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
 
 .. code-block:: python
 
@@ -289,14 +289,13 @@ As mentioned earlier, we can also simplify QNode objects:
         qml.RX(x[0], wires=0)
         qml.RY(x[1], wires=1)
         qml.RZ(x[2], wires=2)
-        qml.RX(-0.4, wires=0)
+        qml.RX(-1, wires=0)
         qml.RZ(-2, wires=2)
         qml.RY(2, wires=1)
         return qml.probs([0, 1, 2])
 
-    x = [1, 2, 3]
-    
+>>> x = [1, 2, 3]
 >>> print(qml.draw(circuit)(x))
-0: ─RX(13.17)─┤ Probs
+0: ──────────┤ Probs
 1: ─RY(4.00)─┤ Probs
-2: ─RZ(13.57)─┤ Probs
+2: ─RZ(1.00)─┤ Probs
