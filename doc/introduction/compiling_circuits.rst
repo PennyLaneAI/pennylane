@@ -260,7 +260,7 @@ Simplifying Operators
 ----------------------
 
 PennyLane offers the :func:`~.pennylane.simplify` function to simplify single operators, quantum
-functions, QNodes and tapes. This function reduces the arithemtic depth of all the given operators
+functions, QNodes and tapes. This function reduces the arithemtic depth of the given operators
 to its minimum, groups like terms in sums and products, resolves products of Pauli 
 operators and combines identical rotation gates by summing its angles.
 
