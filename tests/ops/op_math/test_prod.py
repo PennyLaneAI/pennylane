@@ -220,9 +220,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = prod_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0)
-        ]
+        eigs_cache = prod_op._eigs[prod_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -673,9 +671,7 @@ class TestProperties:
 
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
-        eigs_cache = diag_prod_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-        ]
+        eigs_cache = diag_prod_op._eigs[diag_prod_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 

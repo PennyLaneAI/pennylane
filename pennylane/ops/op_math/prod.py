@@ -247,14 +247,13 @@ class Prod(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        Hmat = self.matrix()
-        Hmat = math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
+        if self.hash not in self._eigs:
+            Hmat = self.matrix()
+            Hmat = math.to_numpy(Hmat)
             w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[Hkey]
+        return self._eigs[self.hash]
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
