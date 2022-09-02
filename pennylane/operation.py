@@ -107,8 +107,8 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.math import expand_matrix
+from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
@@ -1055,6 +1055,18 @@ class Operator(abc.ABC):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @property
+    def control_wires(self):  # pragma: no cover
+        r"""Control wires of the operator.
+
+        For operations that are not controlled,
+        this is an empty ``Wires`` object of length ``0``.
+
+        Returns:
+            Wires: The control wires of the operation.
+        """
+        return Wires([])
+
+    @property
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
@@ -1248,18 +1260,6 @@ class Operation(Operator):
     For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
     ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
     """
-
-    @property
-    def control_wires(self):  # pragma: no cover
-        r"""Control wires of the operator.
-
-        For operations that are not controlled,
-        this is an empty ``Wires`` object of length ``0``.
-
-        Returns:
-            Wires: The control wires of the operation.
-        """
-        return Wires([])
 
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
