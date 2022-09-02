@@ -25,6 +25,8 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 
+from .composite import CompositeOp
+
 
 def op_sum(*summands, do_queue=True, id=None):
     r"""Construct an operator which is the sum of the given operators.
@@ -79,7 +81,7 @@ def _sum(mats_gen, dtype=None, cast_like=None):
     return res
 
 
-class Sum(Operator):
+class Sum(CompositeOp):
     r"""Symbolic operator representing the sum of operators.
 
     Args:
@@ -144,58 +146,12 @@ class Sum(Operator):
         tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
     """
 
-    _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
-
-    def __init__(
-        self, *summands: Operator, do_queue=True, id=None
-    ):  # pylint: disable=super-init-not-called
-        """Initialize a Symbolic Operator class corresponding to the Sum of operations."""
-        self._name = "Sum"
-        self._id = id
-        self.queue_idx = None
-
-        if len(summands) < 2:
-            raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
-
-        self.summands = summands
-        self._wires = qml.wires.Wires.all_wires([s.wires for s in self.summands])
-
-        if do_queue:
-            self.queue()
-
-    def __repr__(self):
-        """Constructor-call-like representation."""
-        return " + ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.summands])
-
-    def __copy__(self):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-        copied_op.summands = tuple(s.__copy__() for s in self.summands)
-
-        for attr, value in vars(self).items():
-            if attr not in {"data", "summands"}:
-                setattr(copied_op, attr, value)
-
-        return copied_op
+    _op_symbol = "+"
+    _name = "Sum"
 
     @property
-    def data(self):
-        """Create data property"""
-        return [s.parameters for s in self.summands]
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        for new_entry, op in zip(new_data, self.summands):
-            op.data = new_entry
-
-    @property
-    def num_wires(self):
-        return len(self.wires)
-
-    @property
-    def num_params(self):
-        return sum(op.num_params for op in self.summands)
+    def summands(self):
+        return self.operands
 
     @property
     def is_hermitian(self):
@@ -204,72 +160,14 @@ class Sum(Operator):
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
-
         .. math:: O = \sum_i c_i O_i
-
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
-
         .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
         return [1.0] * len(self.summands), list(self.summands)
-
-    @property
-    def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the Hermitian observable.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        It transforms the input operator according to the wires specified.
-
-        Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
-            operator
-        """
-        Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
-
-        return self._eigs[Hkey]
-
-    def diagonalizing_gates(self):
-        r"""Sequence of gates that diagonalize the operator in the computational basis.
-
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
-
-        The diagonalizing gates rotate the state into the eigenbasis
-        of the operator.
-
-        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
-
-        Returns:
-            list[.Operator] or None: a list of operators
-        """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
-
-    def eigvals(self):
-        r"""Return the eigenvalues of the specified Hermitian observable.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the Hermitian observable
-        """
-        return self.eigendecomposition["eigval"]
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -306,43 +204,6 @@ class Sum(Operator):
 
         return _sum(matrix_gen(self.summands, wire_order))
 
-    def label(self, decimals=None, base_label=None, cache=None):
-        r"""How the sum is represented in diagrams and drawings.
-
-        Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``factors`` attribute.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
-
-        Returns:
-            str: label to use in drawings
-
-        >>> op = qml.op_sum(qml.op_sum(qml.PauliX(0), qml.PauliY(1)), qml.RX(1, wires=0))
-        >>> op.label()
-        '(X+Y)+RX'
-        >>> op.label(decimals=2, base_label=[["X0", "Y1"], "RX0"])
-        '(X0+Y1)+RX0\n(1.00)'
-
-        """
-
-        def _label(factor, decimals, base_label, cache):
-            sub_label = factor.label(decimals, base_label, cache)
-            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
-
-        if base_label is not None:
-            if isinstance(base_label, str) or len(base_label) != len(self.summands):
-                raise ValueError(
-                    "Sum label requires ``base_label`` keyword to be same length as summands."
-                )
-            return "+".join(
-                _label(s, decimals, lbl, cache) for s, lbl in zip(self.summands, base_label)
-            )
-
-        return "+".join(_label(s, decimals, None, cache) for s in self.summands)
-
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
         wire_order = wire_order or self.wires
@@ -359,20 +220,8 @@ class Sum(Operator):
         """
         return None
 
-    def queue(self, context=qml.QueuingContext):
-        """Updates each operator in the summands owner to Sum, this ensures
-        that the summands are not applied to the circuit repeatedly."""
-        for op in self.summands:
-            context.safe_update_info(op, owner=self)
-        context.append(self, owns=self.summands)
-        return self
-
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self.summands))
-
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):

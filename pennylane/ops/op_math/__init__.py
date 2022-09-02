@@ -38,6 +38,7 @@ Symbolic Classes
     :toctree: api
 
     ~Adjoint
+    ~CompositeOp
     ~ControlledOperation
     ~Controlled
     ~ControlledOp
@@ -65,3 +66,5 @@ from .control import ctrl, ControlledOperation
 from .pow_class import Pow
 
 from .symbolicop import SymbolicOp
+
+from .composite import CompositeOp

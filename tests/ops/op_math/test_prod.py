@@ -135,7 +135,7 @@ class TestInitialization:
 
     def test_raise_error_fewer_then_2_factors(self):
         """Test that initializing a Prod operator with less than 2 factors raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to multiply;"):
+        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
             prod(qml.PauliX(wires=0))
 
     def test_parameters(self):

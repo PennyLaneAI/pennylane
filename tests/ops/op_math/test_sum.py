@@ -151,7 +151,7 @@ class TestInitialization:
 
     def test_raise_error_fewer_then_2_summands(self):
         """Test that initializing a Sum operator with less than 2 summands raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to sum;"):
+        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
             op_sum(qml.PauliX(0))
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])

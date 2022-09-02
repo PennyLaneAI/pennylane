@@ -31,6 +31,8 @@ from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
+from .composite import CompositeOp
+
 
 def prod(*ops, do_queue=True, id=None):
     """Construct an operator which represents the generalized product of the
@@ -64,7 +66,7 @@ def prod(*ops, do_queue=True, id=None):
     return Prod(*ops, do_queue=do_queue, id=id)
 
 
-class Prod(Operator):
+class Prod(CompositeOp):
     r"""Symbolic operator representing the product of operators.
 
     Args:
@@ -151,67 +153,21 @@ class Prod(Operator):
         >>> qml.grad(circuit)(weights)
         array([-0.07059289])
     """
+
+    _op_symbol = "@"
     _name = "Prod"
-    _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(
-        self, *factors: Operator, do_queue=True, id=None
-    ):  # pylint: disable=super-init-not-called
-        """Initialize a Prod instance"""
-        self._id = id
-        self.queue_idx = None
-
-        if len(factors) < 2:
-            raise ValueError(f"Require at least two operators to multiply; got {len(factors)}")
-
-        self.factors = factors
-        self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
-        self._hash = None
-
-        if do_queue:
-            self.queue()
-
-    def __repr__(self):
-        """Constructor-call-like representation."""
-        return " @ ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.factors])
-
-    def __copy__(self):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-        copied_op.factors = tuple(copy(f) for f in self.factors)
-
-        for attr, value in vars(self).items():
-            if attr not in {"factors"}:
-                setattr(copied_op, attr, value)
-
-        return copied_op
+    @property
+    def factors(self):
+        return self.operands
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
 
     @property
-    def data(self):
-        """Create data property"""
-        return [f.parameters for f in self.factors]
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        for new_entry, op in zip(new_data, self.factors):
-            op.data = new_entry
-
-    @property
     def batch_size(self):
         """Batch size of input parameters."""
         return next((op.batch_size for op in self.factors if op.batch_size is not None), None)
-
-    @property
-    def num_params(self):
-        return sum(op.num_params for op in self.factors)
-
-    @property
-    def num_wires(self):
-        return len(self.wires)
 
     @property
     def is_hermitian(self):
@@ -237,60 +193,6 @@ class Prod(Operator):
             return [qml.apply(op) for op in self.factors[::-1]]
         return list(self.factors[::-1])
 
-    @property
-    def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        It transforms the input operator according to the wires specified.
-
-        Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the
-                eigenvectors of the operator.
-        """
-        Hmat = self.matrix()
-        Hmat = math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
-
-        return self._eigs[Hkey]
-
-    def diagonalizing_gates(self):
-        r"""Sequence of gates that diagonalize the operator in the computational basis.
-
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
-
-        The diagonalizing gates rotate the state into the eigenbasis
-        of the operator.
-
-        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
-
-        Returns:
-            list[.Operator] or None: a list of operators
-        """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
-
-    def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        return self.eigendecomposition["eigval"]
-
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         wire_order = wire_order or self.wires
@@ -302,44 +204,6 @@ class Prod(Operator):
         )
 
         return reduce(math.dot, mats)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        r"""How the product is represented in diagrams and drawings.
-
-        Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``factors`` attribute.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
-
-        Returns:
-            str: label to use in drawings
-
-        >>> op = qml.prod(qml.PauliX(0), qml.prod(qml.RY(1, wires=1), qml.PauliX(0)))
-        >>> op.label()
-        'X@(RY@X)'
-        >>> op.label(decimals=2, base_label=["X0a", ["RY1", "X0b"]])
-        'X0a@(RY1\n(1.00)@X0b)'
-
-        """
-
-        def _label(factor, decimals, base_label, cache):
-            sub_label = factor.label(decimals, base_label, cache)
-            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
-
-        if base_label is not None:
-            if isinstance(base_label, str) or len(base_label) != len(self.factors):
-                raise ValueError(
-                    "Prod label requires ``base_label`` keyword to be same length"
-                    " as product factors."
-                )
-            return "@".join(
-                _label(f, decimals, lbl, cache) for f, lbl in zip(self.factors, base_label)
-            )
-
-        return "@".join(_label(f, decimals, None, cache) for f in self.factors)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
@@ -363,14 +227,6 @@ class Prod(Operator):
         Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self.factors) else None
-
-    def queue(self, context=qml.QueuingContext):
-        """Updates each operator's owner to Prod, this ensures
-        that the operators are not applied to the circuit repeatedly."""
-        for op in self.factors:
-            context.safe_update_info(op, owner=self)
-        context.append(self, owns=self.factors)
-        return self
 
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))
