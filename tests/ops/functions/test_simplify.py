@@ -164,6 +164,34 @@ class TestSimplifyCallables:
         assert s_op.wires == simplified_tape_op.wires
         assert s_op.arithmetic_depth == simplified_tape_op.arithmetic_depth
 
+    def test_simplify_qfunc_multiple_operators(self):
+        """Test the simplify method with a qfunc that contains multiple parametric operations."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def qfunc(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            qml.RX(1, 0)
+            qml.RY(4, 1)
+            return qml.probs(wires=0)
+
+        x = 1
+        y = 3
+        simplified_tape_op = qml.prod(qml.RX(x + 1, 0), qml.RY((y + 4) % (4 * np.pi), 1))
+
+        s_qfunc = qml.simplify(qfunc)
+
+        qnode = qml.QNode(qfunc, dev)
+        s_qnode = qml.QNode(s_qfunc, dev)
+
+        assert qml.math.allclose(s_qnode(x, y), qnode(x, y))
+        assert len(s_qnode.tape) == 2
+        s_op = s_qnode.tape.operations[0]
+        assert isinstance(s_op, qml.ops.Prod)
+        assert s_op.data == simplified_tape_op.data
+        assert s_op.wires == simplified_tape_op.wires
+        assert s_op.arithmetic_depth == simplified_tape_op.arithmetic_depth
+
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a simplified quantum function."""
