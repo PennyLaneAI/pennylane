@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, expand_matrix
+from pennylane.operation import Operator
 from pennylane.ops.op_math.sum import Sum
 
 
@@ -293,11 +293,17 @@ class Prod(Operator):
             wire_order = self.wires
 
         mats = (
-            expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
             if not isinstance(op, qml.Hamiltonian)
-            else expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            else math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
             for op in self.factors
         )
+        return reduce(math.dot, mats)
+
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the Prod op in csr representation."""
+        wire_order = wire_order or self.wires
+        mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
         return reduce(math.dot, mats)
 
     # pylint: disable=protected-access

@@ -24,6 +24,7 @@ Constructor Functions
 
     ~adjoint
     ~ctrl
+    ~exp
     ~op_sum
     ~prod
     ~s_prod
@@ -39,6 +40,7 @@ Symbolic Classes
     ~Adjoint
     ~Controlled
     ~ControlledOp
+    ~Exp
     ~Pow
     ~Prod
     ~Sum
@@ -50,6 +52,7 @@ Symbolic Classes
 from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
 from .controlled_class import Controlled, ControlledOp
+from .exp import exp, Exp
 
 from .prod import prod, Prod
 
