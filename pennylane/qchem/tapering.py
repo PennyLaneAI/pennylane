@@ -540,7 +540,8 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     return np.array(tapered_hartree_fock).astype(int)
 
-# pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements
+
+# pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
 def taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op=None):
     r"""Transform the gate operation with a Clifford operator and taper qubits.
 
