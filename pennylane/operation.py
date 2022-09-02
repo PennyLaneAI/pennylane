@@ -656,7 +656,7 @@ class Operator(abc.ABC):
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
-            cache=None (dict): dictionary that caries information between label calls
+            cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
 
         Returns:
@@ -1699,7 +1699,7 @@ class Tensor(Observable):
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
                 Must be same length as ``obs`` attribute.
-            cache=None (dict): dictionary that caries information between label calls
+            cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
 
         Returns:
@@ -1829,6 +1829,10 @@ class Tensor(Observable):
             in the tensor product
         """
         return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
