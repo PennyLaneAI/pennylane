@@ -231,7 +231,7 @@ class SProd(SymbolicOp):
         return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
 
     def adjoint(self):
-        return SProd(scalar=self.scalar.conjugate(), base=qml.adjoint(self.base))
+        return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
 
     def simplify(self) -> Operator:
         if self.scalar == 1:
