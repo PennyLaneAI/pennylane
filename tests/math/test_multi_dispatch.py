@@ -123,3 +123,32 @@ def test_multi_dispatch_decorate_non_dispatch(values):
         return coefficient * np.sum([fn.dot(v, v) for v in values])
 
     assert fn.allequal(custom_function(values), 700)
+
+
+@pytest.mark.all_interfaces
+def test_unwrap():
+    """Test that unwrap converts lists to lists and interface variables to numpy."""
+    import torch
+    import tensorflow as tf
+    from jax import numpy as jnp
+
+    params = [
+        [torch.tensor(2)],
+        [[3, 4], torch.tensor([5, 6])],
+        tf.Variable([-1.0, -2.0]),
+        [jnp.array(0.5), jnp.array([6, 7])],
+    ]
+
+    out = fn.unwrap(params)
+
+    assert out[0] == [2]
+    assert out[1][0] == [3, 4]
+    assert fn.allclose(out[1][1], np.array([5, 6]))
+    assert fn.get_interface(out[1][1]) == "numpy"
+
+    assert fn.allclose(out[2], np.array([-1.0, -2.0]))
+    assert fn.get_interface(out[2]) == "numpy"
+
+    assert out[3][0] == 0.5
+    assert fn.allclose(out[3][1], np.array([6, 7]))
+    assert fn.get_interface(out[3][1]) == "numpy"
