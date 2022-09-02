@@ -257,6 +257,10 @@
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
+* `qml.math.unwrap` and `op._check_batching` no longer create ragged NumPy arrays when used in conjunction
+  with operator arithmetic.
+  [(#3021)](https://github.com/PennyLaneAI/pennylane/pull/3021)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
