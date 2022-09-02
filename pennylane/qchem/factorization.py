@@ -173,8 +173,8 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
 
 
 def basis_rotation(one_electron, two_electron, tol_factor):
-    r"""Return the grouped coefficients and observables of a Hamiltonian and the basis rotation
-    unitaries obtained with the basis rotation grouping method.
+    r"""Return the grouped coefficients and observables of a molecular Hamiltonian and the basis
+    rotation unitaries obtained with the basis rotation grouping method.
 
     Args:
         one_electron (array[float]): one-electron integral matrix in the molecular orbital basis
@@ -203,7 +203,10 @@ def basis_rotation(one_electron, two_electron, tol_factor):
     .. details::
         :title: Theory
 
-        A second-quantized molecular Hamiltonian can be constructed in the chemist notation format
+        A second-quantized molecular Hamiltonian can be constructed in the
+        `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_ format
+        following Eq. (1) of
+        [`PRX Quantum 2, 030305, 2021 <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.030305>`_]
         as
 
         .. math::
@@ -228,7 +231,9 @@ def basis_rotation(one_electron, two_electron, tol_factor):
             V_{pqrs} = \sum_r^R L_{pq}^{(r)} L_{rs}^{(r) T},
 
         where :math:`L` denotes the eigenvectors of the matrix. The molecular Hamiltonian can then
-        be rewritten as
+        be rewritten following Eq. (7) of
+        [`Phys. Rev. Research 3, 033055, 2021 <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.033055>`_]
+        as
 
         .. math::
 
@@ -237,7 +242,9 @@ def basis_rotation(one_electron, two_electron, tol_factor):
             L_{pq}^{(r)} a_{p, \alpha}^{\dagger} a_{q, \alpha} \right )^2.
 
         The orbital basis can be rotated such that each :math:`T` and :math:`L^{(r)}` matrix is
-        diagonal. The Hamiltonian can then be written as
+        diagonal. The Hamiltonian can then be written following Eq. (2) of
+        [`npj Quantum Information, 7, 23 (2021) <https://www.nature.com/articles/s41534-020-00341-7>`_]
+        as
 
         .. math::
 
