@@ -117,7 +117,7 @@
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
   
-* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to 
+* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
 
@@ -131,7 +131,7 @@
          [0., 0., 1., 0.]])
   ```
 
-* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the 
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the
   Operator before exponentiation. Internally, this constructor functions creates the new
   class `qml.ops.op_math.Exp`.
   [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
@@ -219,7 +219,8 @@
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
 
-* `qml.simplify` now groups the product and the sum of identical operators.
+* Added functionality to `qml.simplify` to allow for grouping of like terms in a sum, resolve
+  products of pauli operators and combine rotation angles of identical rotation gates.
   [(#2982)](https://github.com/PennyLaneAI/pennylane/pull/2982)
 
   ```pycon
@@ -252,7 +253,7 @@
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
-* The `expand_matrix()` has been moved from `~/operation.py` to 
+* The `expand_matrix()` has been moved from `~/operation.py` to
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
