@@ -293,8 +293,7 @@ class Prod(Operator):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        if wire_order is None:
-            wire_order = self.wires
+        wire_order = wire_order or self.wires
         mats = (
             math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
             if isinstance(op, qml.Hamiltonian)
