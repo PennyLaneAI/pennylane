@@ -128,5 +128,6 @@ class SymbolicOp(Operator):
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
 
+    # pylint: disable=protected-access
     def _check_batching(self, params):
-        pass
+        return self.base._check_batching(params)

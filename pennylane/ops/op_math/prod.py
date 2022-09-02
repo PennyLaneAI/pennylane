@@ -182,8 +182,10 @@ class Prod(Operator):
 
         return copied_op
 
+    # pylint: disable=protected-access
     def _check_batching(self, params):
-        pass
+        for param, op in zip(params, self.factors):
+            op._check_batching(param)
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]

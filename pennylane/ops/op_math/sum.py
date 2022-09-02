@@ -177,8 +177,10 @@ class Sum(Operator):
 
         return copied_op
 
+    # pylint: disable=protected-access
     def _check_batching(self, params):
-        pass
+        for param, op in zip(params, self.summands):
+            op._check_batching(param)
 
     @property
     def data(self):
