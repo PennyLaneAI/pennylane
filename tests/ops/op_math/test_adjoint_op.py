@@ -309,11 +309,23 @@ class TestSimplify:
 class TestMiscMethods:
     """Test miscellaneous small methods on the Adjoint class."""
 
+    def test_repr(self):
+        """Test __repr__ method."""
+        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(wires=[0]))"
+
+        base = qml.S(0) + qml.T(0)
+        op = Adjoint(base)
+        assert repr(op) == "Adjoint(S(wires=[0]) + T(wires=[0]))"
+
     def test_label(self):
         """Test that the label method for the adjoint class adds a † to the end."""
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         op = Adjoint(base)
         assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
+
+        base = qml.S(0) + qml.T(0)
+        op = Adjoint(base)
+        assert op.label() == "(S+T)†"
 
     def test_adjoint_of_adjoint(self):
         """Test that the adjoint of an adjoint is the original operation."""

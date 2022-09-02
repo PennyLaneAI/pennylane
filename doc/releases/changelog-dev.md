@@ -261,6 +261,10 @@
   with operator arithmetic.
   [(#3021)](https://github.com/PennyLaneAI/pennylane/pull/3021)
 
+* `__repr__` and `label` methods are more correct and meaningful for Operators with an arithmetic
+  depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
+  [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -297,11 +301,15 @@
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
+* Fixes a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola,
+Utkarsh Azad,
 Olivia Di Matteo,
 Josh Izaac,
 Soran Jahangiri,
