@@ -463,7 +463,7 @@ class _ProductFactorsGrouping:
 
     def __init__(self):
         self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
-        self._non_pauli_factors = {}  # {wires: [hash, pow_coeff, operator]}
+        self._non_pauli_factors = {}  # {wires: [hash, exponent, operator]}
         self._factors = []
         self.global_phase = 1
 
@@ -504,9 +504,9 @@ class _ProductFactorsGrouping:
         """
         wire = wires[0]
         op2_name = factor.name
-        old_exponent, old_word = self._pauli_factors.get(wire, (1, "Identity"))
-        exponent, new_word = self._pauli_mult[old_word][op2_name]
-        self._pauli_factors[wire] = old_exponent * exponent, new_word
+        old_coeff, old_word = self._pauli_factors.get(wire, (1, "Identity"))
+        coeff, new_word = self._pauli_mult[old_word][op2_name]
+        self._pauli_factors[wire] = old_coeff * coeff, new_word
 
     def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
         """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
@@ -527,11 +527,11 @@ class _ProductFactorsGrouping:
         else:
             exponent = 1
         op_hash = factor.hash
-        old_hash, old_coeff, old_op = self._non_pauli_factors.get(wires, [None, None, None])
+        old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
         if isinstance(old_op, (qml.RX, qml.RY, qml.RZ)) and factor.name == old_op.name:
             self._non_pauli_factors[wires] = [
                 op_hash,
-                old_coeff,
+                old_exponent,
                 factor.__class__(factor.data[0] + old_op.data[0], wires),
             ]
         elif op_hash == old_hash:
@@ -550,13 +550,13 @@ class _ProductFactorsGrouping:
         if not self._non_pauli_factors:
             return
         for wire in wires:
-            for key, (_, pow_coeff, op) in list(self._non_pauli_factors.items()):
+            for key, (_, exponent, op) in list(self._non_pauli_factors.items()):
                 if wire in key:
                     self._non_pauli_factors.pop(key)
-                    if pow_coeff == 0:
+                    if exponent == 0:
                         continue
                     # TODO: Should we create a qml.pow function that calls op.pow() if possible?
-                    op = Pow(base=op, z=pow_coeff).simplify() if pow_coeff != 1 else op
+                    op = Pow(base=op, z=exponent).simplify() if exponent != 1 else op
                     if isinstance(op, Prod):
                         self._factors += tuple(
                             (factor,)
