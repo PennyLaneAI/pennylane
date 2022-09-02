@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
 error = 0.0016  # chemical accuracy
-shots = 419217  # computed manually
+shots = 419218  # computed manually
 variances = [0.73058343, 0.03283723]  # obtained with the upper bound var(pauli_word) = 1
 
 
