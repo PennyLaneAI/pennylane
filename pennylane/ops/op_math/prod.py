@@ -15,6 +15,7 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
+import functools
 import itertools
 from copy import copy
 from functools import reduce
@@ -285,19 +286,26 @@ class Prod(Operator):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        return self.eigendecomposition["eigval"]
+        overlapping_wires = functools.reduce(
+            lambda a, b: a & b, [set(op.wires) for op in self.factors]
+        )
+        return (
+            self.eigendecomposition["eigval"]
+            if overlapping_wires
+            else qml.math.sort(qml.math.concatenate([op.eigvals() for op in self.factors]))
+        )
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         if wire_order is None:
             wire_order = self.wires
-
         mats = (
-            math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
-            if not isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            if isinstance(op, qml.Hamiltonian)
+            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
             for op in self.factors
         )
+
         return reduce(math.dot, mats)
 
     def sparse_matrix(self, wire_order=None):
