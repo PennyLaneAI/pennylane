@@ -506,6 +506,45 @@ class TestMatrix:
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
 
+    # sparse matrix tests:
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined and correct."""
+        prod_op = prod(op1(wires=0), op2(wires=1))
+        true_mat = math.kron(mat1, mat2)
+        prod_mat = prod_op.sparse_matrix().todense()
+
+        assert np.allclose(true_mat, prod_mat)
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined
+        with wire order and correct."""
+        true_mat = math.kron(math.kron(mat2, np.eye(2)), mat1)
+
+        prod_op = prod(op1(wires=2), op2(wires=0))
+        prod_mat = prod_op.sparse_matrix(wire_order=[0, 1, 2]).todense()
+
+        assert np.allclose(true_mat, prod_mat)
+
+    def test_sparse_matrix_undefined_error(self):
+        """Test that an error is raised when the sparse matrix method
+        is undefined for any of the factors."""
+
+        class DummyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def sparse_matrix(self, wire_order=None):
+                raise qml.operation.SparseMatrixUndefinedError
+
+        prod_op = prod(qml.PauliX(wires=0), DummyOp(wires=1))
+
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            prod_op.sparse_matrix()
+
 
 class TestProperties:
     """Test class properties."""
@@ -715,7 +754,7 @@ class TestSimplify:
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
         prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
-        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -747,9 +786,9 @@ class TestSimplify:
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ (5 * qml.RX(1, 1)),
             qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), qml.PauliX(1)),
+            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
+            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
             Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
             Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
             Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
