@@ -306,6 +306,12 @@ class Sum(Operator):
 
         return _sum(matrix_gen(self.summands, wire_order))
 
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the Sum op in csr representation."""
+        wire_order = wire_order or self.wires
+        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
+        return reduce(math.add, mats_gen)
+
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
         """Used for sorting objects into their respective lists in `QuantumTape` objects.

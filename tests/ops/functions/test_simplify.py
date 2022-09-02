@@ -17,6 +17,7 @@ Unit tests for the qml.simplify function
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 
 
@@ -33,7 +34,13 @@ def build_op():
     )
 
 
-simplified_op = qml.prod(qml.RX(-1, 0), qml.RZ(-1, 0), qml.PauliX(0), qml.RY(-1, 0), qml.RX(-1, 0))
+simplified_op = qml.prod(
+    qml.RX(4 * np.pi - 1, 0),
+    qml.RZ(4 * np.pi - 1, 0),
+    qml.PauliX(0),
+    qml.RY(4 * np.pi - 1, 0),
+    qml.RX(4 * np.pi - 1, 0),
+)
 
 
 class TestSimplifyOperators:
@@ -156,3 +163,24 @@ class TestSimplifyCallables:
         assert s_op.data == simplified_tape_op.data
         assert s_op.wires == simplified_tape_op.wires
         assert s_op.arithmetic_depth == simplified_tape_op.arithmetic_depth
+
+    @pytest.mark.jax
+    def test_jitting_simplified_qfunc(self):
+        """Test that we can jit qnodes that have a simplified quantum function."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        @qml.simplify
+        def circuit(x):
+            qml.adjoint(qml.RX(x, wires=0))
+            qml.PauliX(0) ** 2
+            return qml.expval(qml.PauliY(0))
+
+        x = jax.numpy.array(4 * jax.numpy.pi + 0.1)
+        res = circuit(x)
+        assert qml.math.allclose(res, jax.numpy.sin(x))
+
+        grad = jax.grad(circuit)(x)
+        assert qml.math.allclose(grad, jax.numpy.cos(x))
