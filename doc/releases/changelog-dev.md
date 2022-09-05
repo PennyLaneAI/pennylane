@@ -152,6 +152,10 @@
 
 <h3>Improvements</h3>
 
+* `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
+  broadcasted operations, as they are present in decompositions of broadcasted operations.
+  [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
+
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
   to improve performance.
