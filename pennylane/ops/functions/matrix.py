@@ -134,13 +134,12 @@ def _matrix(tape, wire_order=None):
     interface = qml.math._multi_dispatch(params)
 
     wire_order = wire_order or tape.wires
-    n_wires = len(wire_order)
 
     # initialize the unitary matrix
-    unitary_matrix = qml.math.eye(2**n_wires, like=interface)
+    unitary_matrix = qml.math.eye(2**len(wire_order), like=interface)
 
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        unitary_matrix = qml.math.tensordot(U, unitary_matrix, axes=[[-1], [-2]])
+        unitary_matrix = qml.math.einsum("...ij,...jk->...ik", U, unitary_matrix)
 
     return unitary_matrix
