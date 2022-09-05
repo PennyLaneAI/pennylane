@@ -138,8 +138,23 @@ def _matrix(tape, wire_order=None):
     # initialize the unitary matrix
     unitary_matrix = qml.math.eye(2 ** len(wire_order), like=interface)
 
+    broadcasted_unitary = False
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        unitary_matrix = qml.math.einsum("...ij,...jk->...ik", U, unitary_matrix)
+        broadcasted_U = qml.math.ndim(U) == 3
+        if broadcasted_U and broadcasted_unitary:
+            # If both, U and unitary_matrix are broadcasted, we need a special syntax
+            unitary_matrix = qml.math.stack(
+                [qml.math.dot(u, _unitary) for u, _unitary in zip(U, unitary_matrix)]
+            )
+        else:
+            # This covers the cases where at most one of U and unitary_matrix is broadcasted
+            unitary_matrix = qml.math.tensordot(U, unitary_matrix, axes=[[-1], [-2]])
+            # If unitary_matrix was broadcasted, we need to move the corresponding axis up front
+            if broadcasted_unitary:
+                unitary_matrix = qml.math.moveaxis(unitary_matrix, 1, 0)
+
+        if broadcasted_U:
+            broadcasted_unitary = True
 
     return unitary_matrix
