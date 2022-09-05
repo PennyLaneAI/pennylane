@@ -107,6 +107,8 @@ class TestRotGateFusion:
             ([0.05, 0.2, 0.0], [0.0, -0.6, 0.12]),
             ([0.05, -1.34, 4.12], [0.0, 0.2, 0.12]),
             ([0.05, -1.34, 4.12], [0.3, 0.0, 0.12]),
+            ([np.pi, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
+            ([0.9, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
         ],
     )
     def test_full_rot_fusion_autograd(self, angles_1, angles_2):

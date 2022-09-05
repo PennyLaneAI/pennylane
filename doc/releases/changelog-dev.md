@@ -250,6 +250,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
+  for specific combinations of rotations.
+  [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
+    
 * Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)

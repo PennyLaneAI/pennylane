@@ -66,15 +66,29 @@ def _fuse(angles_1, angles_2):
     qw, qx, qy, qz = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
 
     # Convert the product back into the angles fed to Rot
-    z1_arg1 = 2 * (qy * qz - qw * qx)
-    z1_arg2 = 2 * (qx * qz + qw * qy)
-    z1 = arctan2(z1_arg1, z1_arg2)
+    y_arg = 1 - 2 * (qx**2 + qy**2)
 
-    y = arccos(qw**2 - qx**2 - qy**2 + qz**2)
+    # Require special treatment of the case qx = qy = 0
+    if abs(y_arg) >= 1:  # Have to check for "greater than" as well, because of imprecisions
+        z1_arg1 = 2 * (qx * qy + qz * qw)
+        z1_arg2 = 1 - 2 * (qx**2 + qz**2)
+        if y_arg > 0:
+            z1 = arctan2(z1_arg1, z1_arg2)
+            y = z2 = 0.0
+        else:
+            z1 = -arctan2(z1_arg1, z1_arg2)
+            y = np.pi
+            z2 = 0.0
+    else:
+        z1_arg1 = 2 * (qy * qz - qw * qx)
+        z1_arg2 = 2 * (qx * qz + qw * qy)
+        z1 = arctan2(z1_arg1, z1_arg2)
 
-    z2_arg1 = 2 * (qy * qz + qw * qx)
-    z2_arg2 = 2 * (qw * qy - qx * qz)
-    z2 = arctan2(z2_arg1, z2_arg2)
+        y = arccos(y_arg)
+
+        z2_arg1 = 2 * (qy * qz + qw * qx)
+        z2_arg2 = 2 * (qw * qy - qx * qz)
+        z2 = arctan2(z2_arg1, z2_arg2)
 
     return stack([z1, y, z2])
 
