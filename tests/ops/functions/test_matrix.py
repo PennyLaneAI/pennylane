@@ -191,6 +191,51 @@ class TestMultipleOperations:
         assert np.allclose(matrix, expected_matrix)
 
 
+class TestWithParameterBroadcasting:
+    def test_multiple_operations_tape_single_broadcasted_op(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a single broadcasted gate."""
+        wire_order = ["a", "b", "c"]
+
+        angles = np.array([0.0, np.pi, 0.0])
+        with qml.tape.QuantumTape() as tape:
+            qml.S(wires="b")
+            qml.RX(angles, wires="a")
+            qml.Hadamard(wires="c")
+            qml.CNOT(wires=["b", "c"])
+
+        matrix = qml.matrix(tape, wire_order)
+        expected_matrix = [
+            np.kron(I, CNOT) @ np.kron(I, np.kron(S, H)),
+            -1j * np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)),
+            np.kron(I, CNOT) @ np.kron(I, np.kron(S, H)),
+        ]
+        assert np.allclose(matrix, expected_matrix)
+
+    def test_multiple_operations_tape_multi_broadcasted_op(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a multiple broadcasted gate."""
+        wire_order = ["a", "b", "c"]
+
+        angles1 = np.array([0.0, np.pi, 0.0, np.pi])
+        angles2 = np.array([0.0, 0.0, np.pi, np.pi])
+        with qml.tape.QuantumTape() as tape:
+            qml.S(wires="b")
+            qml.RX(angles1, wires="a")
+            qml.Hadamard(wires="c")
+            qml.CNOT(wires=["b", "c"])
+            qml.RX(angles2, wires="c")
+
+        matrix = qml.matrix(tape, wire_order)
+        expected_matrix = [
+            np.kron(I, np.kron(I, I)) @ np.kron(I, CNOT) @ np.kron(I, np.kron(S, H)),
+            -1j * np.kron(I, np.kron(I, I)) @ np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)),
+            -1j * np.kron(I, np.kron(I, X)) @ np.kron(I, CNOT) @ np.kron(I, np.kron(S, H)),
+            -np.kron(I, np.kron(I, X)) @ np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)),
+        ]
+        assert np.allclose(matrix, expected_matrix)
+
+
 class TestCustomWireOrdering:
     def test_tensor_wire_oder(self):
         """Test wire order of a tensor product"""

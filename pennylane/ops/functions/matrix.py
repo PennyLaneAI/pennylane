@@ -136,7 +136,7 @@ def _matrix(tape, wire_order=None):
     wire_order = wire_order or tape.wires
 
     # initialize the unitary matrix
-    unitary_matrix = qml.math.eye(2**len(wire_order), like=interface)
+    unitary_matrix = qml.math.eye(2 ** len(wire_order), like=interface)
 
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
