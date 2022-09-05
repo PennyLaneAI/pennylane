@@ -18,6 +18,7 @@ import numpy as np
 from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract
 from pennylane.wires import Wires
 
+
 def find_next_gate(wires, op_list):
     """Given a list of operations, finds the next operation that acts on at least one of
     the same set of wires, if present.
