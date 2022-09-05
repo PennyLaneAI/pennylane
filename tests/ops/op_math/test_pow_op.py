@@ -351,6 +351,14 @@ class TestSimplify:
 class TestMiscMethods:
     """Test miscellaneous minor Pow methods."""
 
+    def test_repr(self):
+        op = Pow(qml.PauliX(0), 2.5)
+        assert repr(op) == "PauliX(wires=[0])**2.5"
+
+        base = qml.RX(1, 0) + qml.S(1)
+        op = Pow(base, 2.5)
+        assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
+
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
         independently of the original operator."""
