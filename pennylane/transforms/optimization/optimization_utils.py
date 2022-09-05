@@ -13,7 +13,9 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
-from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract, pi
+import numpy as np
+
+from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract
 from pennylane.wires import Wires
 
 def find_next_gate(wires, op_list):
@@ -76,7 +78,7 @@ def _fuse(angles_1, angles_2):
             y = z2 = 0.0
         else:
             z1 = -arctan2(z1_arg1, z1_arg2)
-            y = pi
+            y = np.pi
             z2 = 0.0
     else:
         z1_arg1 = 2 * (qy * qz - qw * qx)
