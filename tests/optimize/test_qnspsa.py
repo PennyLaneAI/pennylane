@@ -324,7 +324,7 @@ class TestQNSPSAOptimizer:
 
         # test the expectation value
         qnode_expected = np.cos(params[0] / 2) ** 2 - np.sin(params[0] / 2) ** 2 * np.cos(params[1])
-        assert qnode_res == qnode_expected
+        assert np.allclose(qnode_res, qnode_expected)
 
         # test the next-step parameter
         _, grad_dirs = target_opt._get_spsa_grad_tapes(qnode, params, {})
@@ -411,5 +411,5 @@ class TestQNSPSAOptimizer:
         for _ in range(history_length):
             opt.step_and_cost(qnode, params)
         # blocking should stop params from updating from this minimum
-        new_params, loss = opt.step_and_cost(qnode, params)
+        new_params, _ = opt.step_and_cost(qnode, params)
         assert np.allclose(new_params, params)
