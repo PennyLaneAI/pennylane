@@ -75,7 +75,7 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this [TODO] `tutorial <placeholder>`_.
+    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa.html>`_.
 
     **Examples:**
 
@@ -106,19 +106,19 @@ class QNSPSAOptimizer:
     Step 50: cost = -0.9984
 
     Keyword Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate
+        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
         regularization (float): regularitzation term :math:`\beta` to the Fubini-Study metric tensor
-            for numerical stability
+            for numerical stability (default: 1e-3)
         finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
-            gradient and the Fubini-Study metric tensor
-        resamplings (int): the number of samples to average for each parameter update
+            gradient and the Fubini-Study metric tensor (default: 1e-2)
+        resamplings (int): the number of samples to average for each parameter update (default: 1)
         blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
             loss value no larger than the loss value before update, plus a tolerance. The tolerance
             is set with the hyperparameter ``history_length``. The ``blocking`` option is
-            observed to help the optimizer to converge significantly faster
+            observed to help the optimizer to converge significantly faster (default: True)
         history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
-            the cost values in the last ``history_length`` steps
-        seed (int): seed for the random sampling
+            the cost values in the last ``history_length`` steps (default: 5)
+        seed (int): seed for the random sampling (default: None)
     """
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
@@ -290,7 +290,7 @@ class QNSPSAOptimizer:
                 + np.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
             )
             * tensor_finite_diff
-            / (8 * self.finite_diff_step * self.finite_diff_step)
+            / (8 * self.finite_diff_step**2)
         )
         return metric_tensor
 

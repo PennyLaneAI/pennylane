@@ -48,44 +48,43 @@ def get_multi_input_qnode():
     return loss_fn
 
 
-def get_grad_from_single_input_qnode(params, finite_diff_step, grad_dirs):
-    """Gradient computed analytically. One can expand the following expression to get the
-    qnode_finite_diff expression:
-    qnode(params + finite_diff_step * direction) - qnode(params - finite_diff_step * direction)
+def get_grad_finite_diff(params, finite_diff_step, grad_dirs):
+    """Helper function computing the qnode finite difference for computing the gradient analytically.
+    One can expand the following expression to get the qnode_finite_diff expression:
+    qnode(params + finite_diff_step * grad_dirs) - qnode(params - finite_diff_step * grad_dirs)
     """
-    direction = grad_dirs[0]
     qnode_finite_diff = (
-        -np.sin(params[0][0]) * np.sin(finite_diff_step * direction[0][0])
-        + np.sin(params[0][1]) * np.sin(finite_diff_step * direction[0][1])
+        -np.sin(params[0]) * np.sin(finite_diff_step * grad_dirs[0])
+        + np.sin(params[1]) * np.sin(finite_diff_step * grad_dirs[1])
         + (
             np.cos(
-                params[0][0]
-                + params[0][1]
-                + finite_diff_step * direction[0][0]
-                + finite_diff_step * direction[0][1]
+                params[0]
+                + params[1]
+                + finite_diff_step * grad_dirs[0]
+                + finite_diff_step * grad_dirs[1]
             )
             + np.cos(
-                params[0][0]
-                + finite_diff_step * direction[0][0]
-                - params[0][1]
-                - finite_diff_step * direction[0][1]
+                params[0]
+                + finite_diff_step * grad_dirs[0]
+                - params[1]
+                - finite_diff_step * grad_dirs[1]
             )
             - np.cos(
-                params[0][0]
-                + params[0][1]
-                - finite_diff_step * direction[0][0]
-                - finite_diff_step * direction[0][1]
+                params[0]
+                + params[1]
+                - finite_diff_step * grad_dirs[0]
+                - finite_diff_step * grad_dirs[1]
             )
             - np.cos(
-                params[0][0]
-                - finite_diff_step * direction[0][0]
-                - params[0][1]
-                + finite_diff_step * direction[0][1]
+                params[0]
+                - finite_diff_step * grad_dirs[0]
+                - params[1]
+                + finite_diff_step * grad_dirs[1]
             )
         )
         / 4
     )
-    return qnode_finite_diff / (2 * finite_diff_step) * direction
+    return qnode_finite_diff
 
 
 def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
@@ -124,9 +123,9 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     return metric_tensor_expected
 
 
+@pytest.mark.parametrize("seed", [1, 151, 1231])
+@pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
 class TestQNSPSAOptimizer:
-    @pytest.mark.parametrize("seed", [1, 151, 1231])
-    @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
     def test_gradient_from_single_input(self, finite_diff_step, seed):
         """Test that the QNSPSA gradient estimation is correct by comparing the optimizer result
         to the analytical result."""
@@ -147,12 +146,11 @@ class TestQNSPSAOptimizer:
         raw_results = qml.execute(grad_tapes, qnode.device, None)
         grad_res = opt._post_process_grad(raw_results, grad_dirs)[0]
 
-        # gradient computed analytically.
-        grad_expected = get_grad_from_single_input_qnode(params, finite_diff_step, grad_dirs)
+        # gradient computed analytically
+        qnode_finite_diff = get_grad_finite_diff(params[0], finite_diff_step, grad_dirs[0][0])
+        grad_expected = qnode_finite_diff / (2 * finite_diff_step) * grad_dirs[0]
         assert np.allclose(grad_res, grad_expected)
 
-    @pytest.mark.parametrize("seed", [1, 151, 1231])
-    @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
     def test_raw_metric_tensor(self, finite_diff_step, seed):
         """Test that the QNSPSA metric tensor estimation(before regularization) is correct by
         comparing the optimizer result to the analytical result."""
@@ -180,8 +178,6 @@ class TestQNSPSAOptimizer:
         )
         assert np.allclose(metric_tensor_res, metric_tensor_expected)
 
-    @pytest.mark.parametrize("seed", [1, 151, 1231])
-    @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
     def test_gradient_from_multi_input(self, finite_diff_step, seed):
         """Test that the QNSPSA gradient estimation is correct by comparing the optimizer result
         to the analytical result."""
@@ -202,51 +198,17 @@ class TestQNSPSAOptimizer:
         raw_results = qml.execute(grad_tapes, qnode.device, None)
         grad_res = opt._post_process_grad(raw_results, grad_dirs)
 
-        # gradient computed analytically. One can expand the following expression
-        # to get the qnode_finite_diff expression:
-        # qnode(params + finite_diff_step * direction) - qnode(params - finite_diff_step * direction)
-        qnode_finite_diff = (
-            -np.sin(params[0]) * np.sin(finite_diff_step * grad_dirs[0])
-            + np.sin(params[1]) * np.sin(finite_diff_step * grad_dirs[1])
-            + (
-                np.cos(
-                    params[0]
-                    + params[1]
-                    + finite_diff_step * grad_dirs[0]
-                    + finite_diff_step * grad_dirs[1]
-                )
-                + np.cos(
-                    params[0]
-                    + finite_diff_step * grad_dirs[0]
-                    - params[1]
-                    - finite_diff_step * grad_dirs[1]
-                )
-                - np.cos(
-                    params[0]
-                    + params[1]
-                    - finite_diff_step * grad_dirs[0]
-                    - finite_diff_step * grad_dirs[1]
-                )
-                - np.cos(
-                    params[0]
-                    - finite_diff_step * grad_dirs[0]
-                    - params[1]
-                    + finite_diff_step * grad_dirs[1]
-                )
-            )
-            / 4
-        ).reshape(1, 1)
+        # gradient computed analytically
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
         assert np.allclose(grad_res, grad_expected)
 
-    @pytest.mark.parametrize("seed", [11, 31, 71])
-    @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
-    @pytest.mark.parametrize("stepsize", [1e-3, 1e-2, 1e-1])
-    def test_step_from_single_input(self, finite_diff_step, seed, stepsize):
+    def test_step_from_single_input(self, finite_diff_step, seed):
         """Test step() function with the single-input qnode."""
         regularization = 1e-3
+        stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
             stepsize=stepsize,
             regularization=regularization,
@@ -266,7 +228,10 @@ class TestQNSPSAOptimizer:
 
         _, grad_dirs = dummy_opt._get_spsa_grad_tapes(qnode, [params], {})
         _, tensor_dirs = dummy_opt._get_tensor_tapes(qnode, [params], {})
-        grad_expected = get_grad_from_single_input_qnode(params, finite_diff_step, grad_dirs)[0]
+
+        qnode_finite_diff = get_grad_finite_diff(params[0], finite_diff_step, grad_dirs[0][0])
+        grad_expected = (qnode_finite_diff / (2 * finite_diff_step) * grad_dirs[0])[0]
+
         metric_tensor_expected = get_metric_from_single_input_qnode(
             params, finite_diff_step, tensor_dirs
         )
@@ -280,12 +245,10 @@ class TestQNSPSAOptimizer:
         new_params_expected = params - stepsize * np.matmul(inv_metric_tensor, grad_expected)
         assert np.allclose(new_params_res, new_params_expected)
 
-    @pytest.mark.parametrize("seed", [11, 31, 71])
-    @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
-    @pytest.mark.parametrize("stepsize", [1e-3, 1e-2, 1e-1])
-    def test_step_and_cost_from_single_input(self, finite_diff_step, seed, stepsize):
+    def test_step_and_cost_from_single_input(self, finite_diff_step, seed):
         """Test step_and_cost() function with the single-input qnode."""
         regularization = 1e-3
+        stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
             stepsize=stepsize,
             regularization=regularization,
