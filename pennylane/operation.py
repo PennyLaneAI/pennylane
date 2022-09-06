@@ -521,9 +521,6 @@ class Operator(abc.ABC):
         operator's wires in the global wire order. Otherwise, the wire order defaults to the
         operator's wires.
 
-        .. note::
-            The wire_order argument is currently not implemented, and using it will raise an error.
-
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
         .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
@@ -535,12 +532,11 @@ class Operator(abc.ABC):
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
-        if wire_order is not None:
-            raise NotImplementedError("The wire_order argument is not yet implemented")
         canonical_sparse_matrix = self.compute_sparse_matrix(
             *self.parameters, **self.hyperparameters
         )
-        return canonical_sparse_matrix
+
+        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):
@@ -660,7 +656,7 @@ class Operator(abc.ABC):
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
-            cache=None (dict): dictionary that caries information between label calls
+            cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
 
         Returns:
@@ -780,23 +776,20 @@ class Operator(abc.ABC):
         self._wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires not in {AllWires, AnyWires} and len(self._wires) != self.num_wires:
+        if self.num_wires in {AllWires, AnyWires}:
+            if (
+                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian))
+                and len(qml.wires.Wires(wires)) == 0
+            ):
+                raise ValueError(
+                    f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
+                )
+
+        elif len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
-
-        # Check that the wires is not an empty list for operators that have
-        # `num_wires` as `AnyWires` or `AllWires`.
-        if self.num_wires in {AllWires, AnyWires}:
-            if not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian)):
-                # Barrier, Snapshot: Applied to all wires if instantiated with wires = [].
-                # Hamiltonian: Possible to be empty with simplify().
-                if len(qml.wires.Wires(wires)) == 0:
-                    raise ValueError(
-                        f"{self.name}: wrong number of wires. "
-                        f"At least one wire has to be given."
-                    )
 
         self._check_batching(params)
 
@@ -1703,7 +1696,7 @@ class Tensor(Observable):
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
                 Must be same length as ``obs`` attribute.
-            cache=None (dict): dictionary that caries information between label calls
+            cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
 
         Returns:
@@ -1833,6 +1826,10 @@ class Tensor(Observable):
             in the tensor product
         """
         return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):
