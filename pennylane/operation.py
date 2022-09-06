@@ -1466,7 +1466,8 @@ class Operation(Operator):
     @inverse.setter
     def inverse(self, boolean):
         warnings.warn(
-            "In-place inversion with inverse is deprecated. Please use qml.adjoint instead.",
+            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
+            " op ** -1 instead.",
             UserWarning,
         )
         self._inverse = boolean
@@ -1483,10 +1484,6 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        warnings.warn(
-            "In-place inversion with inv is deprecated. Please use qml.adjoint instead.",
-            UserWarning,
-        )
         self.inverse = not self._inverse
         return self
 

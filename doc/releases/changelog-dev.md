@@ -142,14 +142,18 @@
 
   Don't use:
 
+  ```pycon
   >>> v1 = qml.PauliX(0).inv()
   >>> v2 = qml.PauliX(0)
   >>> v2.inverse = True
+  ```
 
   Instead use:
 
+  ```pycon
   >>> qml.adjoint(qml.PauliX(0))
   >>> qml.PauliX(0) ** -1
+  ```
 
   `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
   inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
