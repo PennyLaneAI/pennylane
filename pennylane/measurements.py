@@ -852,12 +852,12 @@ def counts(op=None, wires=None, all_outcomes=False):
 
     .. code-block:: python3
 
-    dev = qml.device("default.qubit", wires=2, shots=4)
+        dev = qml.device("default.qubit", wires=2, shots=4)
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.PauliX(wires=0)
-        return qml.counts()
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.counts()
 
     Executing this QNode shows only the observed outcomes:
 
@@ -866,10 +866,12 @@ def counts(op=None, wires=None, all_outcomes=False):
 
     Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
 
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.PauliX(wires=0)
-        return qml.counts(all_outcomes=True)
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=0)
+            return qml.counts(all_outcomes=True)
 
     Executing this QNode shows counts for all states:
 
