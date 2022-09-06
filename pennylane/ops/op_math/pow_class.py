@@ -260,8 +260,9 @@ class Pow(SymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        base = self.base.simplify()
         try:
-            ops = self.base.pow(z=self.z)
+            ops = base.pow(z=self.z)
             if not ops:
                 return (
                     qml.prod(*(qml.Identity(w) for w in self.wires))
@@ -271,4 +272,4 @@ class Pow(SymbolicOp):
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:
-            return Pow(base=self.base.simplify(), z=self.z)
+            return Pow(base=base, z=self.z)
