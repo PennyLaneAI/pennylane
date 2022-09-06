@@ -1040,6 +1040,7 @@ class TestIntegration:
         assert len(results) == 20
         assert (results == 1).all()
 
+
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
