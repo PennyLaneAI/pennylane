@@ -727,6 +727,17 @@ class TestSimplify:
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
+    def test_simplify_grouping_with_tolerance(self):
+        """Test the simplify method with a specific tolerance."""
+        sum_op = qml.op_sum(-0.9 * qml.RX(1, 0), qml.RX(1, 0))
+        final_op = qml.s_prod(0, qml.Identity(0))
+        simplified_op = sum_op.simplify(cutoff=0.1)
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
