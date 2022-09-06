@@ -475,7 +475,7 @@ class TestExpansion:
             unitary_matrix = np.eye(2**n_wires)
 
             for op in tape.operations:
-                mat = qml.operation.expand_matrix(matrix(op), op.wires, tape.wires)
+                mat = qml.math.expand_matrix(matrix(op), op.wires, tape.wires)
                 unitary_matrix = mat @ unitary_matrix
 
             return unitary_matrix

@@ -29,6 +29,7 @@ from pennylane import Device, DeviceError
 from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
+
 from pennylane.measurements import (
     Counts,
     Expectation,
@@ -37,11 +38,13 @@ from pennylane.measurements import (
     Probability,
     Sample,
     Shadow,
+    ShadowExpval,
     State,
     Variance,
     VnEntropy,
 )
 from pennylane.operation import operation_derivative
+from pennylane.shadows import ClassicalShadow
 from pennylane.wires import Wires
 
 
@@ -690,6 +693,7 @@ class QubitDevice(Device):
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
+            circuit (~.tape.QuantumTape): the quantum tape currently being executed
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -813,9 +817,15 @@ class QubitDevice(Device):
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
-                results.append(
-                    self.classical_shadow(wires=obs.wires, circuit=circuit, seed=obs.seed)
-                )
+                results.append(self.classical_shadow(obs, circuit=circuit))
+
+            elif obs.return_type is ShadowExpval:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "Classical shadows cannot be returned in combination"
+                        " with other return types"
+                    )
+                results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -1199,7 +1209,7 @@ class QubitDevice(Device):
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
-    def classical_shadow(self, wires, circuit, seed=None):
+    def classical_shadow(self, obs, circuit):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -1225,11 +1235,8 @@ class QubitDevice(Device):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            wires (Sequence[int]): The wires to perform Pauli measurements on
-            n_snapshots (int): The number of snapshots
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
-            seed (Union[int, None]): If provided, it is used to seed the random
-                number generation for generating the Pauli measurements.
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -1238,7 +1245,9 @@ class QubitDevice(Device):
         if circuit is None:  # pragma: no cover
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
+        wires = obs.wires
         n_snapshots = self.shots
+        seed = obs.seed
 
         with set_shots(self, shots=1):
             # slow implementation but works for all devices
@@ -1273,6 +1282,23 @@ class QubitDevice(Device):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
+    def shadow_expval(self, obs, circuit):
+        r"""Compute expectation values using classical shadows in a differentiable manner.
+
+        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+
+        Args:
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow expectation
+                value measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Returns:
+            float: expectation value estimate.
+        """
+        bits, recipes = self.classical_shadow(obs, circuit)
+        shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
+        return shadow.expval(obs.H, obs.k)
+
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
         state from the last run of the device.
@@ -1283,6 +1309,7 @@ class QubitDevice(Device):
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
+
 
         .. note::
 
