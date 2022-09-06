@@ -164,7 +164,7 @@ class Sum(Operator):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return " + ".join([f"{f}" for f in self.summands])
+        return " + ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.summands])
 
     def __copy__(self):
         cls = self.__class__
@@ -309,6 +309,49 @@ class Sum(Operator):
             wire_order = self.wires
 
         return _sum(matrix_gen(self.summands, wire_order))
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""How the sum is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``factors`` attribute.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        >>> op = qml.op_sum(qml.op_sum(qml.PauliX(0), qml.PauliY(1)), qml.RX(1, wires=0))
+        >>> op.label()
+        '(X+Y)+RX'
+        >>> op.label(decimals=2, base_label=[["X0", "Y1"], "RX0"])
+        '(X0+Y1)+RX0\n(1.00)'
+
+        """
+
+        def _label(factor, decimals, base_label, cache):
+            sub_label = factor.label(decimals, base_label, cache)
+            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
+
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self.summands):
+                raise ValueError(
+                    "Sum label requires ``base_label`` keyword to be same length as summands."
+                )
+            return "+".join(
+                _label(s, decimals, lbl, cache) for s, lbl in zip(self.summands, base_label)
+            )
+
+        return "+".join(_label(s, decimals, None, cache) for s in self.summands)
+
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the Sum op in csr representation."""
+        wire_order = wire_order or self.wires
+        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
+        return reduce(math.add, mats_gen)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!

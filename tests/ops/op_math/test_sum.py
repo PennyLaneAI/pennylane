@@ -306,13 +306,36 @@ class TestInitialization:
 
 
 class TestMscMethods:
-    """Test dunder methods."""
+    """Test dunder and other visualizing methods."""
 
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep):
         """Test __repr__ method."""
         sum_op = Sum(*ops_lst)
         assert ops_rep == repr(sum_op)
+
+    def test_nested_repr(self):
+        """Test nested repr values while other nested features such as equality are not ready"""
+        sum_op = qml.PauliX(0) + qml.RY(1, wires=1) @ qml.PauliX(0)
+        assert "PauliX(wires=[0]) + (RY(1, wires=[1]) @ PauliX(wires=[0]))" == repr(sum_op)
+
+    def test_label(self):
+        """Test label method."""
+        sum_op = qml.RY(1, wires=1) + qml.PauliX(1)
+        assert "RY+X" == sum_op.label()
+        with pytest.raises(ValueError):
+            sum_op.label(base_label=["only_first"])
+
+        nested_op = qml.PauliX(0) + sum_op
+        assert "X+(RY+X)" == nested_op.label()
+        assert "X+(RY\n(1.00)+X)" == nested_op.label(decimals=2)
+        assert "x0+(ry+x1)" == nested_op.label(base_label=["x0", ["ry", "x1"]])
+
+        U = np.array([[1, 0], [0, -1]])
+        cache = {"matrices": []}
+        prod_op = qml.PauliX(0) + (qml.PauliY(1) + qml.QubitUnitary(U, wires=0))
+        assert "X+(Y+U(M0))" == prod_op.label(cache=cache)
+        assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_copy(self, ops_lst):
@@ -581,6 +604,45 @@ class TestMatrix:
         assert isinstance(mat, tf.Tensor)
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
+
+    # sparse matrix tests:
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined and correct."""
+        sum_op = op_sum(op1(wires=0), op2(wires=1))
+        true_mat = math.kron(mat1, np.eye(2)) + math.kron(np.eye(2), mat2)
+        sum_mat = sum_op.sparse_matrix().todense()
+
+        assert np.allclose(true_mat, sum_mat)
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined
+        with wire order and correct."""
+        true_mat = math.kron(mat2, np.eye(4)) + math.kron(np.eye(4), mat1)
+
+        sum_op = op_sum(op1(wires=2), op2(wires=0))
+        sum_mat = sum_op.sparse_matrix(wire_order=[0, 1, 2]).todense()
+
+        assert np.allclose(true_mat, sum_mat)
+
+    def test_sparse_matrix_undefined_error(self):
+        """Test that an error is raised when the sparse matrix method
+        is undefined for any of the factors."""
+
+        class DummyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def sparse_matrix(self, wire_order=None):
+                raise qml.operation.SparseMatrixUndefinedError
+
+        sum_op = op_sum(qml.PauliX(wires=0), DummyOp(wires=1))
+
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            sum_op.sparse_matrix()
 
 
 class TestProperties:

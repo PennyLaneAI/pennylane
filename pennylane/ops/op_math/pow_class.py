@@ -154,6 +154,13 @@ class Pow(SymbolicOp):
 
         super().__init__(base, do_queue=do_queue, id=id)
 
+    def __repr__(self):
+        return (
+            f"({self.base})**{self.z}"
+            if self.base.arithmetic_depth > 0
+            else f"{self.base}**{self.z}"
+        )
+
     @property
     def z(self):
         """The exponent."""
@@ -169,7 +176,10 @@ class Pow(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
-        return self.base.label(decimals, base_label, cache=cache) + z_string
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return (
+            f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
+        )
 
     def matrix(self, wire_order=None):
         if isinstance(self.base, qml.Hamiltonian):

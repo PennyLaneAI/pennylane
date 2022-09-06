@@ -1851,8 +1851,6 @@ class TestDefaultRepresentations:
 
     def test_sparse_matrix_undefined(self):
         """Tests that custom error is raised in the default sparse matrix representation."""
-        with pytest.raises(NotImplementedError):
-            MyOp(wires="a").sparse_matrix(wire_order=["a", "b"])
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             MyOp.compute_sparse_matrix()
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
