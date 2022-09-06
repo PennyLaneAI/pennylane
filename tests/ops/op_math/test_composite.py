@@ -216,6 +216,26 @@ class TestMscMethods:
             assert qml.equal(o1, o2)
             assert o1 is not o2
 
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_len(self, ops_lst):
+        """Test __len__ method."""
+        op = ValidOp(*ops_lst)
+        assert len(op) == len(ops_lst)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_iter(self, ops_lst):
+        """Test __iter__ method."""
+        op = ValidOp(*ops_lst)
+        for i, j in zip(op, ops_lst):
+            assert i == j
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_getitem(self, ops_lst):
+        """Test __getitem__ method."""
+        op = ValidOp(*ops_lst)
+        for i in range(len(ops_lst)):
+            assert op[i] == ops_lst[i]
+
 
 class TestProperties:
     """Test class properties."""
