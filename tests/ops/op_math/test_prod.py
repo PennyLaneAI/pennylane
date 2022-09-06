@@ -80,13 +80,6 @@ ops = (
     ),
 )
 
-ops_rep = (
-    "PauliZ(wires=[0]) @ PauliX(wires=[1])",
-    "PauliX(wires=[0]) @ PauliZ(wires=[0]) @ Hadamard(wires=[0])",
-    "CNOT(wires=[0, 1]) @ RX(1.23, wires=[1]) @ Identity(wires=[0])",
-    "IsingXX(4.56, wires=[2, 3]) @ Toffoli(wires=[1, 2, 3]) @ Rot(0.34, 1.0, 0, wires=[0])",
-)
-
 ops_hermitian_status = (  # computed manually
     True,  # True
     False,  # True
@@ -132,33 +125,6 @@ class TestInitialization:
         assert prod_op.data == [[], [0.23]]
         assert prod_op.parameters == [[], [0.23]]
         assert prod_op.num_params == 1
-
-    def test_raise_error_fewer_then_2_factors(self):
-        """Test that initializing a Prod operator with less than 2 factors raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
-            prod(qml.PauliX(wires=0))
-
-    def test_parameters(self):
-        """Test that parameters are initialized correctly."""
-        prod_op = prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert prod_op.parameters == [[9.87], [1.23, 4.0, 5.67]]
-
-    def test_data(self):
-        """Test that data is initialized correctly."""
-        prod_op = prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert prod_op.data == [[9.87], [1.23, 4.0, 5.67]]
-
-    def test_data_setter(self):
-        """Test the setter method for data"""
-        prod_op = prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert prod_op.data == [[9.87], [1.23, 4.0, 5.67]]
-
-        new_data = [[1.23], [0.0, -1.0, -2.0]]
-        prod_op.data = new_data
-        assert prod_op.data == new_data
-
-        for op, new_entry in zip(prod_op.factors, new_data):
-            assert op.data == new_entry
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
@@ -228,53 +194,6 @@ class TestInitialization:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
-
-
-class TestMscMethods:
-    """Test dunder and other visualizing methods."""
-
-    @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
-    def test_repr(self, ops_lst, ops_rep):
-        """Test __repr__ method."""
-        prod_op = Prod(*ops_lst)
-        assert ops_rep == repr(prod_op)
-
-    def test_nested_repr(self):
-        """Test nested repr values while other nested features such as equality are not ready"""
-        prod_op = qml.PauliX(0) @ (qml.RY(1, wires=1) + qml.PauliX(0))
-        assert "PauliX(wires=[0]) @ (RY(1, wires=[1]) + PauliX(wires=[0]))" == repr(prod_op)
-
-    def test_label(self):
-        """Test label method."""
-        prod_op = qml.RY(1, wires=1) @ qml.PauliX(1)
-        assert "RY@X" == prod_op.label()
-        with pytest.raises(ValueError):
-            prod_op.label(base_label=["only_first"])
-
-        nested_op = qml.PauliX(0) @ prod_op
-        assert "X@(RY@X)" == nested_op.label()
-        assert "X@(RY\n(1.00)@X)" == nested_op.label(decimals=2)
-        assert "x0@(ry@x1)" == nested_op.label(base_label=["x0", ["ry", "x1"]])
-
-        U = np.array([[1, 0], [0, -1]])
-        cache = {"matrices": []}
-        prod_op = qml.PauliX(0) @ (qml.PauliY(1) @ qml.QubitUnitary(U, wires=0))
-        assert "X@(Y@U(M0))" == prod_op.label(cache=cache)
-        assert cache["matrices"] == [U]
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_copy(self, ops_lst):
-        """Test __copy__ method."""
-        prod_op = Prod(*ops_lst)
-        copied_op = copy(prod_op)
-
-        assert prod_op.id == copied_op.id
-        assert prod_op.data == copied_op.data
-        assert prod_op.wires == copied_op.wires
-
-        for f1, f2 in zip(prod_op.factors, copied_op.factors):
-            assert qml.equal(f1, f2)
-            assert f1 is not f2
 
 
 class TestMatrix:
@@ -572,25 +491,6 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_num_params(self, ops_lst):
-        """Test num_params property updates correctly."""
-        prod_op = Prod(*ops_lst)
-        true_num_params = sum(op.num_params for op in ops_lst)
-
-        assert prod_op.num_params == true_num_params
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_num_wires(self, ops_lst):
-        """Test num_wires property updates correctly."""
-        prod_op = Prod(*ops_lst)
-        true_wires = set()
-
-        for op in ops_lst:
-            true_wires = true_wires.union(op.wires.toset())
-
-        assert prod_op.num_wires == len(true_wires)
-
     @pytest.mark.parametrize(
         "ops_lst, hermitian_status",
         [(ops_tup, status) for ops_tup, status in zip(ops, ops_hermitian_status)],
@@ -732,6 +632,11 @@ class TestSimplify:
             qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1) @ qml.PauliX(0)
         )
         assert prod_op.arithmetic_depth == 3
+
+        op_constructed = Prod(
+            qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1), qml.PauliX(0)
+        )
+        assert op_constructed.arithmetic_depth == 1
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
