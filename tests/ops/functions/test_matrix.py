@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.op_transforms import OperationTransformError
 
-from gate_data import I, X, Y, Z, H, S, CNOT, Roty as RY
+from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -197,7 +197,7 @@ class TestWithParameterBroadcasting:
         and a single broadcasted gate."""
         wire_order = ["a", "b", "c"]
 
-        angles = np.array([0.0, np.pi, 0.0])
+        angles = np.array([0.0, np.pi, 0.7])
         with qml.tape.QuantumTape() as tape:
             qml.S(wires="b")
             qml.RX(angles, wires="a")
@@ -208,7 +208,27 @@ class TestWithParameterBroadcasting:
         expected_matrix = [
             np.kron(I, CNOT) @ np.kron(I, np.kron(S, H)),
             -1j * np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)),
+            np.kron(I, CNOT) @ np.kron(RX(0.7), np.kron(S, H)),
+        ]
+        assert np.allclose(matrix, expected_matrix)
+
+    def test_multiple_operations_tape_leading_broadcasted_op(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a leading single broadcasted gate."""
+        wire_order = ["a", "b", "c"]
+
+        angles = np.array([0.0, np.pi, 0.7])
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(angles, wires="a")
+            qml.S(wires="b")
+            qml.Hadamard(wires="c")
+            qml.CNOT(wires=["b", "c"])
+
+        matrix = qml.matrix(tape, wire_order)
+        expected_matrix = [
             np.kron(I, CNOT) @ np.kron(I, np.kron(S, H)),
+            -1j * np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)),
+            np.kron(I, CNOT) @ np.kron(RX(0.7), np.kron(S, H)),
         ]
         assert np.allclose(matrix, expected_matrix)
 

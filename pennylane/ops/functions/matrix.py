@@ -136,25 +136,23 @@ def _matrix(tape, wire_order=None):
     wire_order = wire_order or tape.wires
 
     # initialize the unitary matrix
-    unitary_matrix = qml.math.eye(2 ** len(wire_order), like=interface)
+    result = qml.math.eye(2 ** len(wire_order), like=interface)
 
-    broadcasted_unitary = False
+    result_is_broadcasted = False
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        broadcasted_U = qml.math.ndim(U) == 3
-        if broadcasted_U and broadcasted_unitary:
-            # If both, U and unitary_matrix are broadcasted, we need a special syntax
-            unitary_matrix = qml.math.stack(
-                [qml.math.dot(u, _unitary) for u, _unitary in zip(U, unitary_matrix)]
-            )
+        U_is_broadcasted = qml.math.ndim(U) == 3
+        if U_is_broadcasted and result_is_broadcasted:
+            # If both, U and result are broadcasted, we need a special syntax
+            result = qml.math.stack([qml.math.dot(u, _unitary) for u, _unitary in zip(U, result)])
         else:
-            # This covers the cases where at most one of U and unitary_matrix is broadcasted
-            unitary_matrix = qml.math.tensordot(U, unitary_matrix, axes=[[-1], [-2]])
-            # If unitary_matrix was broadcasted, we need to move the corresponding axis up front
-            if broadcasted_unitary:
-                unitary_matrix = qml.math.moveaxis(unitary_matrix, 1, 0)
+            # This covers the cases where at most one of U and result is broadcasted
+            result = qml.math.tensordot(U, result, axes=[[-1], [-2]])
+            # If result already was broadcasted, we need to move the corresponding axis up front
+            if result_is_broadcasted:
+                result = qml.math.moveaxis(result, 1, 0)
 
-        if broadcasted_U:
-            broadcasted_unitary = True
+        if U_is_broadcasted:
+            result_is_broadcasted = True
 
-    return unitary_matrix
+    return result
