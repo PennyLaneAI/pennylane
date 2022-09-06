@@ -24,7 +24,7 @@ from typing import List
 
 import pennylane as qml
 from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval
-from pennylane.operation import DecompositionUndefinedError, Operation
+from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 
 from .unwrap import UnwrapTape
@@ -188,7 +188,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_queue.append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operator, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -1259,7 +1259,7 @@ class QuantumTape(AnnotatedQueue):
     # ========================================================
 
     @property
-    def operations(self) -> List[Operation]:
+    def operations(self) -> List[Operator]:
         """Returns the operations on the quantum tape.
 
         Returns:
