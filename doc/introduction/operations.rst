@@ -52,6 +52,7 @@ Operator to Operator functions
     ~pennylane.adjoint
     ~pennylane.ctrl
     ~pennylane.cond
+    ~pennylane.exp
     ~pennylane.op_sum
     ~pennylane.prod
     ~pennylane.s_prod
