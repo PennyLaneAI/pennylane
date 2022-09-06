@@ -84,7 +84,9 @@
 
 <h4>Classical shadows 👤</h4>
 
-* Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
+* Added the `qml.classical_shadow` measurement process that can now be returned from QNodes. 
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+  [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
 
   The measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
@@ -126,7 +128,8 @@
   ```
 
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
-
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
+  
   ```python
   H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
 
@@ -354,8 +357,15 @@
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
 <h3>Documentation</h3>
-
-* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
+* Fix fourier docs to use `circuit_spectrum`.
+  [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
+  
+* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
+  to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is 
+  the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement 
+  $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, 
+  making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
+  [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
 
@@ -367,7 +377,7 @@
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
 * Fixes a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
-  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3004)
 
 <h3>Contributors</h3>
 
@@ -375,6 +385,7 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola,
 Utkarsh Azad,
+Tom Bromley,
 Olivia Di Matteo,
 Isaac De Vlugt,
 Josh Izaac,
@@ -393,4 +404,4 @@ Matthew Silverman,
 Jay Soni,
 Antal Száva,
 Cody Wang,
-David Wierichs
+David Wierichs.
