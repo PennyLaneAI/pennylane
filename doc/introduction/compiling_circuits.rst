@@ -46,11 +46,16 @@ Now lets simplify a nested operator:
 (PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
 
 Several simplifications steps are happening here. First of all, the nested products are removed:
-``qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))``
+.. code-block:: python
+    qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
+
 Then the product of sums is transformed into a sum of products:
-``qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))``
+.. code-block:: python
+    qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
+
 And finally like terms in the obtained products are grouped together, removing all identities: 
-``qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))``
+.. code-block:: python
+    qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
 
 As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
 
