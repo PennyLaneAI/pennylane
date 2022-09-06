@@ -84,7 +84,7 @@
 
 <h4>Classical shadows 👤</h4>
 
-* Classical shadows are now available to return from QNodes.
+* Classical shadow measurements are now available to return from QNodes.
 
   The classical-shadow measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953).
