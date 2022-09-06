@@ -20,10 +20,11 @@ Simplifying Operators
 
 PennyLane provides the :func:`~.pennylane.simplify` function to simplify single operators, quantum
 functions, QNodes and tapes. This function has several purposes:
-- Reducing the arithemtic depth of the given operators to its minimum.
-- Grouping like terms in sums and products.
-- Resolving products of Pauli operators.
-- Combining identical rotation gates by summing its angles.
+
+* Reducing the arithmetic depth of the given operators to its minimum.
+* Grouping like terms in sums and products.
+* Resolving products of Pauli operators.
+* Combining identical rotation gates by summing its angles.
 
 Here are some simple simplification routines:
 
