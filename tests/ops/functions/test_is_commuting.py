@@ -170,7 +170,7 @@ class TestCommutingFunction:
     def test_cz_mcz(self, wires, res):
         """Commutation between CZ and MCZ."""
 
-        op1 = qml.ctrl(qml.PauliZ(wires=wires[1][2]), control=wires[1][:-1])
+        op1 = qml.ctrl(qml.PauliZ(wires=wires[1][-1]), control=wires[1][:-1])
         op2 = qml.CZ(wires=wires[0])
 
         assert qml.is_commuting(op1, op2) == res

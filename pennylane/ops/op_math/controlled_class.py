@@ -79,10 +79,10 @@ class Controlled(SymbolicOp):
 
     >>> base = qml.RX(1.234, 1)
     >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
-    C(RX)(1.234, wires=[0, 2, 3, 1])
+    Controlled(RX(1.234, wires=[1]), control_wires=[0, 2, 3], control_values=[True, False, True])
     >>> op = Controlled(base, 0, control_values=[0])
     >>> op
-    C(RX)(1.234, wires=[0, 1])
+    Controlled(RX(1.234, wires=[1]), control_wires=[0], control_values=[0])
 
     The operation has both standard :class:`~.operation.Operator` properties
     and ``Controlled`` specific properties:
