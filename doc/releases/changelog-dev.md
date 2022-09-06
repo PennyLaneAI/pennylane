@@ -275,6 +275,10 @@
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
+* Refactored common code from `Prod` and `Sum` classes into a `CompositeOp` abstract class that
+  comes with `__iter__`, `__len__` and `__getitem__` functions.
+  [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
