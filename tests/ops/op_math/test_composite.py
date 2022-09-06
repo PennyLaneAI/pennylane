@@ -67,16 +67,19 @@ class TestConstruction:
     simple_operands = (qml.S(0), qml.T(1))
 
     def test_direct_initialization_fails(self):
+        """Test directly initializing a CompositeOp fails"""
         with pytest.raises(
             TypeError, match="Can't instantiate abstract class CompositeOp with abstract methods"
         ):
             _ = CompositeOp(*self.simple_operands)
 
-    def test_class_missing_properties_fails(self):
+    def test_class_missing_name_fails(self):
+        """Test child classes without _name defined raise an error"""
         with pytest.raises(NotImplementedError, match="Child class must specify _name"):
             _ = OpMissingProperties(*self.simple_operands)
 
     def test_class_missing_symbol_fails(self):
+        """Test child classes without _op_symbol defined raise an error"""
         with pytest.raises(NotImplementedError, match="Child class must specify _op_symbol"):
             _ = OpMissingSymbol(*self.simple_operands)
 
@@ -86,6 +89,7 @@ class TestConstruction:
             _ = ValidOp(qml.PauliX(0))
 
     def test_initialization(self):
+        """Test that valid child classes can be initialized without error"""
         op = ValidOp(*self.simple_operands)
         assert op.name == "ValidOp"
         assert op.op_symbol == "#"

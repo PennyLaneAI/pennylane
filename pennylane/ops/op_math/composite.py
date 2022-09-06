@@ -93,6 +93,7 @@ class CompositeOp(Operator, abc.ABC):
 
     @property
     def op_symbol(self) -> str:
+        """The symbol used when visualizing the composite operator"""
         return self._op_symbol
 
     @property
