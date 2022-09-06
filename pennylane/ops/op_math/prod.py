@@ -21,8 +21,6 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator

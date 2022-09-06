@@ -16,6 +16,8 @@ This submodule defines a base class for composite operations.
 """
 import abc
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
@@ -37,6 +39,8 @@ class CompositeOp(Operator, abc.ABC):
     """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
+    _op_symbol = None
+    _name = None
 
     def __init__(
         self, *operands: Operator, do_queue=True, id=None
@@ -44,9 +48,9 @@ class CompositeOp(Operator, abc.ABC):
         self._id = id
         self.queue_idx = None
 
-        if not hasattr(self, "_name"):
+        if self._name is None:
             raise NotImplementedError("Child class must specify _name")
-        if not hasattr(self, "_op_symbol"):
+        if self._op_symbol is None:
             raise NotImplementedError("Child class must specify _op_symbol")
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
