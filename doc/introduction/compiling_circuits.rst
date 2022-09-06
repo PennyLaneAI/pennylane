@@ -25,7 +25,18 @@ functions, QNodes and tapes. This function has several purposes:
 - Resolving products of Pauli operators.
 - Combining identical rotation gates by summing its angles.
 
-For example, lets simplify the following operator:
+Here are some simple simplification routines:
+
+>>> qml.simplify(qml.adjoint(qml.RX(1.23, 0)))
+RX(11.336370614359172, wires=[0])
+>>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
+RX(3.0, wires=[0])
+>>> qml.simplify(qml.RX(1, 0) + qml.RX(1, 0))
+RX(2.0, wires=[0])
+>>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+-1j * PauliY(wires=[0])
+
+Now lets simplify a nested operator:
 
 >>> nested_op = qml.prod(qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0))), qml.RX(1, 0))
 >>> qml.simplify(nested_op)
