@@ -164,6 +164,18 @@ class TestInitialization:
         for op1, op2 in zip(decomposition, true_decomposition):
             assert qml.equal(op1, op2)
 
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_decomposition_on_tape(self, ops_lst):
+        """Test the decomposition of a prod of operators is a list
+        of the provided factors on a tape."""
+        prod_op = prod(*ops_lst)
+        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
+        with qml.tape.QuantumTape() as tape:
+            prod_op.decomposition()
+
+        for op1, op2 in zip(tape.operations, true_decomposition):
+            assert qml.equal(op1, op2)
+
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliX(wires=0), qml.Identity(wires=1), qml.PauliX(wires=0))
@@ -1023,22 +1035,6 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
-
-    def test_decomposition_while_queued(self):
-        """Test that operators from decomposition are all applied."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
-        prod_op = Prod(qml.Hadamard(0), qml.Hadamard(1))
-        obs_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            prod_op.decomposition()
-            return qml.sample(op=obs_op)
-
-        results = my_circ()
-
-        assert len(results) == 20
-        assert (results == 1).all()
 
 
 class TestSortWires:
