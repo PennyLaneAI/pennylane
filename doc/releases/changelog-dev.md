@@ -88,22 +88,21 @@
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
   [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
 
-  The measurement protocol is described in detail in the
-  [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
-  will return the randomized Pauli measurements (the `recipes`) that are performed
-  for each qubit, identified as a unique integer:
+  The classical-shadow measurement protocol is described in detail in the
+  [classical shadows paper](https://arxiv.org/abs/2002.08953).
+  As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
 
-  * 0 for Pauli X
-  * 1 for Pauli Y
-  * 2 for Pauli Z
+  - QNodes returning `qml.classical_shadow` will return two entities: 
 
-  It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
-  is sampled, and `1` if the -1 eigenvalue is sampled.
+    + `bits`: `0` or `1` if the 1 or -1 eigenvalue is sampled, respectively
+    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer:
 
-  For example,
+      = 0 for Pauli X
+      = 1 for Pauli Y
+      = 2 for Pauli Z
 
   ```python
-  dev = qml.device("default.qubit", wires=2, shots=5)
+  dev = qml.device("default.qubit", wires=2, shots=3)
 
   @qml.qnode(dev)
   def circuit():
@@ -114,36 +113,40 @@
 
   ```pycon
   >>> bits, recipes = circuit()
+  >>> bits
   tensor([[0, 0],
           [1, 0],
-          [1, 0],
-          [0, 0],
           [0, 1]], dtype=uint8, requires_grad=True)
   >>> recipes
   tensor([[2, 2],
           [0, 2],
-          [1, 0],
-          [0, 2],
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
 
-* Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+  - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
   [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
-  
-  ```python
-  H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
 
+  ```python
   dev = qml.device("default.qubit", wires=range(2), shots=10000)
+
   @qml.qnode(dev)
-  def qnode(x, H):
+  def circuit(x, H):
       qml.Hadamard(0)
       qml.CNOT((0,1))
       qml.RX(x, wires=0)
       return qml.shadow_expval(H)
+  ```
 
-  x = np.array(0.5, requires_grad=True)
-
-  print(qnode(x, H), qml.grad(qnode)(x, H))
+  ```pycon
+  >>> x = np.array(0.5, requires_grad=True)
+  >>> H = qml.Hamiltonian(
+      [1., 1.], 
+      [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+  ) 
+  >>> circuit(x, H), 
+  tensor(1.8486, requires_grad=True) 
+  >>> qml.grad(circuit)(x, H))
+  -0.4797000000000001
   ```
 
 <h4>Operator stuff (TODO: IMPROVE TITLE)</h4>
@@ -357,6 +360,7 @@
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
 <h3>Documentation</h3>
+
 * Fix fourier docs to use `circuit_spectrum`.
   [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
   
