@@ -32,15 +32,17 @@ RX(11.336370614359172, wires=[0])
 >>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
 RX(3.0, wires=[0])
 >>> qml.simplify(qml.RX(1, 0) + qml.RX(1, 0))
+2*(RX(1.0, wires=[0]))
+>>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
 RX(2.0, wires=[0])
 >>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
--1j * PauliY(wires=[0])
+-1j*(PauliY(wires=[0]))
 
 Now lets simplify a nested operator:
 
 >>> nested_op = qml.prod(qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0))), qml.RX(1, 0))
 >>> qml.simplify(nested_op)
-PauliX(wires=[0]) @ RX(2.0, wires=[0]) + RX(1.0, wires=[0])
+(PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
 
 Several simplifications steps are happening here. First of all, the nested products are removed:
 ``qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))``
@@ -58,12 +60,14 @@ As mentioned earlier we can also simplify QNode objects to, for example, group r
     @qml.simplify
     @qml.qnode(dev)
     def circuit(x):
-        qml.RX(x[0], wires=0)
-        qml.RY(x[1], wires=1)
-        qml.RZ(x[2], wires=2)
-        qml.RX(-1, wires=0)
-        qml.RY(-2, wires=1)
-        qml.RZ(2, wires=2)
+        (
+            qml.RX(x[0], wires=0)
+            @ qml.RY(x[1], wires=1)
+            @ qml.RZ(x[2], wires=2)
+            @ qml.RX(-1, wires=0)
+            @ qml.RY(-2, wires=1)
+            @ qml.RZ(2, wires=2)
+        )
         return qml.probs([0, 1, 2])
 
 >>> x = [1, 2, 3]
