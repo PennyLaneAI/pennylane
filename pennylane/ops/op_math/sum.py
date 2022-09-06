@@ -370,7 +370,12 @@ class Sum(Operator):
         new_summands = self._simplify_summands(summands=self.summands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
-        return 0
+        return qml.s_prod(
+            0,
+            qml.prod(*(qml.Identity(w) for w in self.wires))
+            if len(self.wires) > 1
+            else qml.Identity(self.wires[0]),
+        )
 
 
 class _SumSummandsGrouping:

@@ -696,7 +696,13 @@ class TestSimplify:
             qml.s_prod(0.3, qml.PauliX(0)),
             qml.s_prod(-3, qml.PauliX(0)),
         )
-        assert sum_op.simplify() == 0
+        simplified_op = sum_op.simplify()
+        final_op = qml.s_prod(0, qml.Identity(0))
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
 
 class TestWrapperFunc:
