@@ -58,7 +58,7 @@ def test_check_batching():
 
     base = qml.RX(1.2, wires=0)
     op = SymbolicOp(base)
-    op.data = [np.array(2.3, 4.5)]
+    op.data = [np.array([2.3, 4.5])]
     op._check_batching(op.data)
     assert base.batch_size == 2
 
