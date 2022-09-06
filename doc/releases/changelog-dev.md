@@ -4,59 +4,85 @@
 
 <h3>New features since last release</h3>
 
-* Embedding templates now support parameter broadcasting.
-  [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
+<h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
 
-  Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
-  parameter broadcasting with a leading broadcasting dimension in their variational
-  parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
-  vector of features. With broadcasting, we now also can compute
-
-  ```pycon
-  >>> features = np.array([
-  ...     [0.5, 0.5, 0., 0., 0.5, 0., 0.5, 0.],
-  ...     [1., 0., 0., 0., 0., 0., 0., 0.],
-  ...     [0.5, 0.5, 0., 0., 0., 0., 0.5, 0.5],
-  ... ])
-  >>> op = qml.AmplitudeEmbedding(features, wires=[1, 5, 2])
-  >>> op.batch_size
-  3
-  ```
-
-  An exception is `BasisEmbedding`, which is not broadcastable.
-
-* Added `QutritDevice` as an abstract base class for qutrit devices.
-  [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
-
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
+* An entirely new framework for quantum computing is now simulatable with the addition of qutrit functionalities.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
-
-* Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
+  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
+  [(#2782)](https://github.com/PennyLaneAI/pennylane/pull/2782)
   [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
+  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+
+  [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*. 
+  The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
+  
+  To facilitate qutrit circuits requires a new device: `"default.qutrit"`.
+  The `"default.qutrit"` device is a Python-based simulator and is defined as per usual:
 
   ```pycon
   >>> dev = qml.device("default.qutrit", wires=1)
-  >>> @qml.qnode(dev)
-  ... def circuit(U):
-  ...     qml.QutritUnitary(U, wires=0)
-  ...     return qml.probs(wires=0)
-  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-  >>> print(circuit(U))
-  [0.5 0.5 0. ]
+  >>> type(dev)
+  <class 'pennylane.devices.default_qutrit.DefaultQutrit'>
   ```
 
-* Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
-  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
+  The following operations are supported on `"default.qutrit"` devices:  
 
-* Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
-  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
+  - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
+  which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively. 
 
-* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
-  taking into account their commutativity property.
-  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
+  - Custom unitary operations via `qml.QutritUnitary`
 
-**Classical shadows**
+  -  `qml.state` and `qml.probs` measurements
+
+  - Measuring user-specified Hermitian matrix observables via `qml.THermitian`
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  dev = qml.device("default.qutrit", wires=2)
+
+  U = np.array([
+          [1, 1, 1], 
+          [1, 1, 1], 
+          [1, 1, 1]
+      ]
+  ) / np.sqrt(3) 
+
+  obs = np.array([
+          [1, 1, 0], 
+          [1, -1, 0], 
+          [0, 0, np.sqrt(2)]
+      ]
+  ) / np.sqrt(2)
+
+  def qutrit_function(U, obs):
+      qml.TShift(0)
+      qml.TClock(0)
+      qml.QutritUnitary(U, wires=0)
+
+  @qml.qnode(dev)
+  def qutrit_state(U, obs)
+      qutrit_function(U, obs)
+      return qml.state()
+
+  @qml.qnode(dev)
+  def qutrit_expval(U, obs)
+      qutrit_function(U, obs)
+      return qml.expval(qml.THermitian(obs, wires=0))
+  ```
+
+  ```pycon
+  >>> qutrit_state(U, obs)
+  tensor([-0.28867513+0.5j, -0.28867513+0.5j, -0.28867513+0.5j], requires_grad=True) 
+  >>> qutrit_expval(U, obs)
+  tensor(0.80473785, requires_grad=True)
+  ```
+  
+  We will continue to add more and more support for qutrits in future releases!
+
+<h4>Classical shadows 👤</h4>
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
 
@@ -117,6 +143,8 @@
   print(qnode(x, H), qml.grad(qnode)(x, H))
   ```
 
+<h4>Operator stuff (TODO: IMPROVE TITLE)</h4>
+
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
@@ -151,7 +179,37 @@
   True
   ```
 
+* Added `PSWAP` operator.
+  [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
+
+<h4>Parameter broadcasting</h4>
+
+* Embedding templates now support parameter broadcasting.
+  [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
+
+  Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
+  parameter broadcasting with a leading broadcasting dimension in their variational
+  parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
+  vector of features. With broadcasting, we now also can compute
+
+  ```pycon
+  >>> features = np.array([
+  ...     [0.5, 0.5, 0., 0., 0.5, 0., 0.5, 0.],
+  ...     [1., 0., 0., 0., 0., 0., 0., 0.],
+  ...     [0.5, 0.5, 0., 0., 0., 0., 0.5, 0.5],
+  ... ])
+  >>> op = qml.AmplitudeEmbedding(features, wires=[1, 5, 2])
+  >>> op.batch_size
+  3
+  ```
+
+  An exception is `BasisEmbedding`, which is not broadcastable.
+
 <h3>Improvements</h3>
+
+* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
+  taking into account their commutativity property.
+  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
@@ -167,9 +225,6 @@
 * Automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
-
-* Added `PSWAP` operator.
-  [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
 
 * The `qml.simplify` method can now simplify parametrized operations.
   [(#3012)](https://github.com/PennyLaneAI/pennylane/pull/3012)
