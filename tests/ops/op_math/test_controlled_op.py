@@ -226,18 +226,50 @@ class TestProperties:
         assert op.has_matrix is False
 
     @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
-    def test_has_decomposition_true(self, cwires, cvalues):
+    def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
         """Test that controlled claims `has_decomposition` to be true if there are
         any negated control values."""
 
         op = Controlled(qml.RX(0.2, wires=1), cwires, cvalues)
         assert op.has_decomposition is True
 
-    def test_has_decomposition_false(self):
-        """Test that controlled claims `has_decomposition` to be false if
-        all control values are `1` (the default)."""
+    def test_has_decomposition_true_via_base_has_ctrl_single_cwire(self):
+        """Test that controlled claims `has_decomposition` to be true if
+        only one control wire is used and the base has a `_controlled` method."""
 
         op = Controlled(qml.RX(0.2, wires=1), 4)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_pauli_x(self):
+        """Test that controlled claims `has_decomposition` to be true if
+        the base is a `PauliX` operator"""
+
+        op = Controlled(qml.PauliX(3), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_decomp(self):
+        """Test that controlled claims `has_decomposition` to be true if
+        the base has a decomposition and indicates this via `has_decomposition`."""
+
+        op = Controlled(qml.IsingXX(0.6, [1, 3]), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_false_single_cwire(self):
+        """Test that controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use a single control wire."""
+
+        # all control values are 1, there is only one control wire but TempOperator does
+        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), 0)
+        assert op.has_decomposition is False
+
+    def test_has_decomposition_false_multi_cwire(self):
+        """Test that controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use multiple control wires."""
+
+        # all control values are 1, there are multiple control wires,
+        # `RX` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(qml.RX(0.5, 1), [0, 5])
         assert op.has_decomposition is False
 
     @pytest.mark.parametrize("value", (True, False))
