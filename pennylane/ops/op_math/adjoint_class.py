@@ -248,7 +248,8 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
+        base = self.base.simplify()
         try:
-            return self.base.adjoint().simplify()
+            return base.adjoint().simplify()
         except AdjointUndefinedError:
-            return Adjoint(base=self.base.simplify())
+            return Adjoint(base=base.simplify())
