@@ -562,7 +562,7 @@ class _ProductFactorsGrouping:
                     if exponent == 0:
                         continue
                     # TODO: Should we create a qml.pow function that calls op.pow() if possible?
-                    op = Pow(base=op, z=exponent).simplify() if exponent != 1 else op
+                    if exponent !=1: op = Pow(base=op, z=exponent).simplify()
                     if isinstance(op, Prod):
                         self._factors += tuple(
                             (factor,)
