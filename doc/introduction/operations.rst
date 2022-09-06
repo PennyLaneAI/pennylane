@@ -75,6 +75,7 @@ Operator to Other functions
     ~pennylane.is_commuting
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
+    ~pennylane.simplify
 
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.

@@ -229,13 +229,36 @@ class TestInitialization:
 
 
 class TestMscMethods:
-    """Test dunder methods."""
+    """Test dunder and other visualizing methods."""
 
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep):
         """Test __repr__ method."""
         prod_op = Prod(*ops_lst)
         assert ops_rep == repr(prod_op)
+
+    def test_nested_repr(self):
+        """Test nested repr values while other nested features such as equality are not ready"""
+        prod_op = qml.PauliX(0) @ (qml.RY(1, wires=1) + qml.PauliX(0))
+        assert "PauliX(wires=[0]) @ (RY(1, wires=[1]) + PauliX(wires=[0]))" == repr(prod_op)
+
+    def test_label(self):
+        """Test label method."""
+        prod_op = qml.RY(1, wires=1) @ qml.PauliX(1)
+        assert "RY@X" == prod_op.label()
+        with pytest.raises(ValueError):
+            prod_op.label(base_label=["only_first"])
+
+        nested_op = qml.PauliX(0) @ prod_op
+        assert "X@(RY@X)" == nested_op.label()
+        assert "X@(RY\n(1.00)@X)" == nested_op.label(decimals=2)
+        assert "x0@(ry@x1)" == nested_op.label(base_label=["x0", ["ry", "x1"]])
+
+        U = np.array([[1, 0], [0, -1]])
+        cache = {"matrices": []}
+        prod_op = qml.PauliX(0) @ (qml.PauliY(1) @ qml.QubitUnitary(U, wires=0))
+        assert "X@(Y@U(M0))" == prod_op.label(cache=cache)
+        assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_copy(self, ops_lst):
@@ -716,7 +739,7 @@ class TestSimplify:
         final_op = qml.PauliX(0)
         simplified_op = prod_op.simplify()
 
-        assert isinstance(simplified_op, qml.PauliX)
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
@@ -724,7 +747,7 @@ class TestSimplify:
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
-            qml.RX(1, 0) @ qml.PauliX(1),
+            qml.PauliX(1) @ qml.RX(1, 0),
             qml.RX(1, 0) @ qml.RX(1, 1),
         )
         simplified_op = prod_op.simplify()
@@ -762,20 +785,21 @@ class TestSimplify:
                         qml.Identity(0),
                     )
                 ),
-                qml.PauliX(1) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
+                qml.PauliX(0) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
             ),
             qml.Identity(0),
         )
+        mod_angle = -1 % (4 * np.pi)
         final_op = qml.op_sum(
-            Prod(qml.PauliX(0), qml.PauliX(1)),
-            qml.PauliX(0) @ (5 * qml.RX(1, 1)),
-            qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.RX(4 * np.pi - 1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            qml.Identity(0),
+            5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.PauliX(0), qml.PauliX(1)),
+            qml.RX(mod_angle, 0),
+            5 * Prod(qml.RX(mod_angle, 0), qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.RX(mod_angle, 0), qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0),
+            5 * qml.RX(1, 1),
+            qml.s_prod(5, qml.PauliX(1)),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -784,6 +808,123 @@ class TestSimplify:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_groups_rotations(self):
+        """Test that the simplify method groups rotation operators."""
+        prod_op = qml.prod(
+            qml.RX(1, 0), qml.RZ(1, 1), qml.CNOT((1, 2)), qml.RZ(1, 1), qml.RX(3, 0), qml.RZ(1, 1)
+        )
+        final_op = qml.prod(qml.RZ(1, 1), qml.CNOT((1, 2)), qml.RX(4, 0), qml.RZ(2, 1))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_pauli_words(self):
+        """Test that the simplify method groups pauli words."""
+        prod_op = qml.prod(
+            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+        )
+        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert repr(s1) == repr(s2)
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_groups_identical_operators(self):
+        """Test that the simplify method groups identical operators."""
+        prod_op = qml.prod(
+            qml.PauliX(0),
+            qml.CNOT((1, 2)),
+            qml.PauliZ(3),
+            qml.Toffoli((4, 5, 6)),
+            qml.CNOT((1, 2)),
+            qml.Toffoli((4, 5, 6)),
+            qml.PauliX(0),
+            qml.PauliZ(3),
+        )
+        final_op = qml.prod(*[qml.Identity(wire) for wire in range(6)])
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
+        """Test that the simplify method removes grouped elements with zero coeff."""
+        prod_op = qml.prod(
+            qml.U3(1.23, 2.34, 3.45, wires=0),
+            qml.ops.Pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+        )
+        final_op = qml.Identity(0)
+        simplified_op = prod_op.simplify()
+
+        assert qml.equal(final_op, simplified_op)
+
+    def test_grouping_with_product_of_sum(self):
+        """Test that grouping works with product of a sum"""
+        prod_op = qml.prod(
+            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+        )
+        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        simplified_op = prod_op.simplify()
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_product_of_sums(self):
+        """Test that grouping works with product of two sums"""
+        prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
+        final_op = qml.op_sum(
+            qml.PauliZ(wires=[0]),
+            2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
+            qml.S(wires=[1]),
+        )
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_barriers(self):
+        """Test that grouping is not done when a barrier is present."""
+        prod_op = qml.prod(qml.S(0), qml.Barrier(0), qml.S(0)).simplify()
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(prod_op.factors, simplified_op.factors):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_only_visual_barriers(self):
+        """Test that grouping is implemented when an only-visual barrier is present."""
+        prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
+        assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
 
 
 class TestWrapperFunc:
