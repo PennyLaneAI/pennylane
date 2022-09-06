@@ -479,18 +479,18 @@ class _ProductFactorsGrouping:
         Args:
             factor (Operator): Factor to add.
         """
+        wires = factor.wires
         if isinstance(factor, Prod):
             for prod_factor in factor.factors:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
-            self._remove_pauli_factors(wires=factor.wires)
-            self._remove_non_pauli_factors(wires=factor.wires)
+            self._remove_pauli_factors(wires=wires)
+            self._remove_non_pauli_factors(wires=wires)
             self._factors += (factor.summands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
                 factor = factor.base
-            wires = factor.wires
             if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
                 self._add_pauli_factor(factor=factor, wires=wires)
                 self._remove_non_pauli_factors(wires=wires)
