@@ -141,7 +141,7 @@ def _matrix(tape, wire_order=None):
     broadcasted_unitary = False
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        broadcasted_U = qml.math.ndim(U) == 3
+        U_is_broadcasted = qml.math.ndim(U) == 3
         if broadcasted_U and broadcasted_unitary:
             # If both, U and unitary_matrix are broadcasted, we need a special syntax
             unitary_matrix = qml.math.stack(
