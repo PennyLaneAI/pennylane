@@ -98,6 +98,7 @@
           [0, 2],
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
+
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
 
   ```python
@@ -235,6 +236,19 @@
   >>> circuit()
   >>> list(circuit.tape)
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+  ```
+
+* Added functionality to `qml.simplify` to allow for grouping of like terms in a sum, resolve
+  products of pauli operators and combine rotation angles of identical rotation gates.
+  [(#2982)](https://github.com/PennyLaneAI/pennylane/pull/2982)
+
+  ```pycon
+  >>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)))
+  Identity(wires=[0]) @ Identity(wires=[1])
+  >>> qml.simplify(qml.op_sum(qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)))
+  2*(PauliX(wires=[0])) + 2*(PauliY(wires=[1]))
+  >>> qml.simplify(qml.prod(qml.RZ(1, 0), qml.RZ(1, 0)))
+  RZ(2, wires=[0])
   ```
 
 * `Controlled` operators now work with `qml.is_commuting`.
