@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
     expand_matrix,
-    Tensor,
     OperatorPropertyUndefined,
 )
 from pennylane.wires import Wires
@@ -139,7 +138,7 @@ class Exp(SymbolicOp):
     def __repr__(self):
         return (
             f"Exp({self.coeff} {self.base})"
-            if isinstance(self.base, Tensor)
+            if self.base.arithmetic_depth > 0
             else f"Exp({self.coeff} {self.base.name})"
         )
 
