@@ -131,3 +131,12 @@ class SymbolicOp(Operator):
     # pylint: disable=protected-access
     def _check_batching(self, params):
         return self.base._check_batching(params)
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                self.base.hash,
+            )
+        )
