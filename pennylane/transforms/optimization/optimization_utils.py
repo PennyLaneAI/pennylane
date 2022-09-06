@@ -15,7 +15,17 @@
 # pylint: disable=too-many-return-statements,import-outside-toplevel
 import numpy as np
 
-from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract
+from pennylane.math import (
+    allclose,
+    sin,
+    cos,
+    arccos,
+    arctan2,
+    stack,
+    _multi_dispatch,
+    is_abstract,
+    abs as math_abs,
+)
 from pennylane.wires import Wires
 
 
@@ -62,37 +72,89 @@ def _quaternion_product(q1, q2):
     return stack([qw, qx, qy, qz])
 
 
+def _singular_quat_to_zyz(q, y_arg):
+    """Compute the ZYZ angles for the singular case of qx = qy = 0"""
+    qw, qx, qy, qz = q
+    z1_arg1 = 2 * (qx * qy + qz * qw)
+    z1_arg2 = 1 - 2 * (qx**2 + qz**2)
+    if y_arg > 0:
+        z1 = arctan2(z1_arg1, z1_arg2)
+        y = z2 = 0.0
+    else:
+        z1 = -arctan2(z1_arg1, z1_arg2)
+        y = np.pi
+        z2 = 0.0
+    return stack([z1, y, z2])
+
+
+def _singular_quat_to_zyz_jax(q, y_arg):
+    """Compute the ZYZ angles for the singular case of qx = qy = 0 in a jax
+    JIT compatible manner."""
+    from jax.lax import cond
+
+    qw, qx, qy, qz = q
+    z1_arg1 = 2 * (qx * qy + qz * qw)
+    z1_arg2 = 1 - 2 * (qx**2 + qz**2)
+    return cond(
+        y_arg > 0,
+        lambda z1_arg1, z1_arg2: stack([arctan2(z1_arg1, z1_arg2), 0.0, 0.0]),
+        lambda z1_arg1, z1_arg2: stack([-arctan2(z1_arg1, z1_arg2), np.pi, 0.0]),
+        z1_arg1,
+        z1_arg2,
+    )
+
+
+def _regular_quat_to_zyz(q, y_arg):
+    """Compute the ZYZ angles for the regular case (qx != 0 or qy != 0)"""
+    qw, qx, qy, qz = q
+    z1_arg1 = 2 * (qx * qy + qz * qw)
+    z1_arg1 = 2 * (qy * qz - qw * qx)
+    z1_arg2 = 2 * (qx * qz + qw * qy)
+    z1 = arctan2(z1_arg1, z1_arg2)
+
+    y = arccos(y_arg)
+
+    z2_arg1 = 2 * (qy * qz + qw * qx)
+    z2_arg2 = 2 * (qw * qy - qx * qz)
+    z2 = arctan2(z2_arg1, z2_arg2)
+
+    return stack([z1, y, z2])
+
+
 def _fuse(angles_1, angles_2):
     """Perform fusion of two angle sets. Separated out so we can do JIT with conditionals."""
     # Compute the product of the quaternions
-    qw, qx, qy, qz = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
+    q = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
 
     # Convert the product back into the angles fed to Rot
-    y_arg = 1 - 2 * (qx**2 + qy**2)
+    y_arg = 1 - 2 * (q[1] ** 2 + q[2] ** 2)
 
     # Require special treatment of the case qx = qy = 0
     if abs(y_arg) >= 1:  # Have to check for "greater than" as well, because of imprecisions
-        z1_arg1 = 2 * (qx * qy + qz * qw)
-        z1_arg2 = 1 - 2 * (qx**2 + qz**2)
-        if y_arg > 0:
-            z1 = arctan2(z1_arg1, z1_arg2)
-            y = z2 = 0.0
-        else:
-            z1 = -arctan2(z1_arg1, z1_arg2)
-            y = np.pi
-            z2 = 0.0
+        return _singular_quat_to_zyz(q, y_arg)
     else:
-        z1_arg1 = 2 * (qy * qz - qw * qx)
-        z1_arg2 = 2 * (qx * qz + qw * qy)
-        z1 = arctan2(z1_arg1, z1_arg2)
+        return _regular_quat_to_zyz(q, y_arg)
 
-        y = arccos(y_arg)
 
-        z2_arg1 = 2 * (qy * qz + qw * qx)
-        z2_arg2 = 2 * (qw * qy - qx * qz)
-        z2 = arctan2(z2_arg1, z2_arg2)
+def _fuse_jax(angles_1, angles_2):
+    """Perform fusion of two angle sets. Separated out so we can do JIT with conditionals."""
+    # Compute the product of the quaternions
+    q = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
 
-    return stack([z1, y, z2])
+    # Convert the product back into the angles fed to Rot
+    y_arg = 1 - 2 * (q[1] ** 2 + q[2] ** 2)
+
+    from jax.lax import cond
+
+    # Require special treatment of the case qx = qy = 0. Note that we have to check
+    # for "greater than" as well, because of imprecisions
+    return cond(
+        math_abs(y_arg) >= 1,
+        _singular_quat_to_zyz_jax,
+        _regular_quat_to_zyz,
+        q,
+        y_arg,
+    )
 
 
 def _no_fuse(angles_1, angles_2):
@@ -132,7 +194,7 @@ def fuse_rot_angles(angles_1, angles_2):
             return cond(
                 allclose(angles_1[1], 0.0) * allclose(angles_2[1], 0.0),
                 _no_fuse,
-                _fuse,
+                _fuse_jax,
                 angles_1,
                 angles_2,
             )
