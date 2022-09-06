@@ -443,14 +443,6 @@ class Prod(Operator):
             )
         return self._hash
 
-    @property
-    def hash(self):
-        if self._hash is None:
-            self._hash = hash(
-                (str(self.name), str([factor.hash for factor in _prod_sort(self.factors)]))
-            )
-        return self._hash
-
 
 def _prod_sort(op_list, wire_map: dict = None):
     """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
@@ -473,7 +465,7 @@ def _prod_sort(op_list, wire_map: dict = None):
         key_op = op_list[i]
 
         j = i - 1
-        while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
+        while j >= 0 and _sort_key(op1=op_list[j], op2=key_op, wire_map=wire_map):
             op_list[j + 1] = op_list[j]
             j -= 1
         op_list[j + 1] = key_op
@@ -481,7 +473,7 @@ def _prod_sort(op_list, wire_map: dict = None):
     return op_list
 
 
-def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
+def _sort_key(op1, op2, wire_map: dict = None) -> bool:
     """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
     should be swapped when sorting them by wire values.
 

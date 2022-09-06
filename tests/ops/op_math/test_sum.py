@@ -239,19 +239,7 @@ class TestInitialization:
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = qnp.array(
-            (
-                [
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                ]
-            )
-        )
-
-        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+        assert diag_sum_op.diagonalizing_gates() == []
 
 
 class TestMscMethods:

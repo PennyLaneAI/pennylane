@@ -153,6 +153,7 @@ class Sum(Operator):
         self._name = "Sum"
         self._id = id
         self.queue_idx = None
+        self._overlapping_wires = None
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
@@ -201,6 +202,16 @@ class Sum(Operator):
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return all(s.is_hermitian for s in self.summands)
+
+    @property
+    def overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._overlapping_wires is None:
+            wires = []
+            for op in self.summands:
+                wires.extend(list(op.wires))
+            self._overlapping_wires = len(wires) != len(set(wires))
+        return self._overlapping_wires
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
@@ -256,9 +267,13 @@ class Sum(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        if self.overlapping_wires:
+            eigen_vectors = self.eigendecomposition["eigvec"]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        diag_gates = []
+        for summand in self.summands:
+            diag_gates.extend(summand.diagonalizing_gates())
+        return [qml.adjoint(gate) for gate in diag_gates]
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified Hermitian observable.
@@ -269,7 +284,13 @@ class Sum(Operator):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        return self.eigendecomposition["eigval"]
+        if self.overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
+            for summand in self.summands
+        ]
+        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -457,3 +478,24 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
+
+
+def _sort_key(op1, op2, wire_map: dict = None) -> bool:
+    """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
+    should be swapped when sorting them by wire values.
+
+    Args:
+        op1 (.Operator): First operator.
+        op2 (.Operator): Second operator.
+        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+            Defaults to None.
+
+    Returns:
+        bool: True if operators should be swapped, False otherwise.
+    """
+    wires1 = op1.wires
+    wires2 = op2.wires
+    if wire_map is not None:
+        wires1 = wires1.map(wire_map)
+        wires2 = wires2.map(wire_map)
+    return np.min(wires1) > np.min(wires2)
