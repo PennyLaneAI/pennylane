@@ -668,7 +668,7 @@ class TestInverse:
     def test_base_already_inverted(self):
         """Test that if the base is already inverted, then initialization un-inverts
         it and applies a negative sign to the exponent."""
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
             base = qml.S(0).inv()
         op = Pow(base, 2)
 
