@@ -18,7 +18,7 @@ section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 Simplifying Operators
 ----------------------
 
-PennyLane offers the :func:`~.pennylane.simplify` function to simplify single operators, quantum
+PennyLane provides the :func:`~.pennylane.simplify` function to simplify single operators, quantum
 functions, QNodes and tapes. This function has several purposes:
 - Reduce the arithemtic depth of the given operators to its minimum.
 - Group like terms in sums and products.
