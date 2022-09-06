@@ -37,6 +37,32 @@ from .symbolicop import SymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
+def pow(op, z=1, lazy=True):
+    """Raise an Operator to a power.
+
+    Args:
+        base (~.operation.Operator): the operator to be raised to a power
+        z=1 (float): the exponent
+
+    Keyword Args:
+        lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Pow`` class
+            and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
+
+    Returns:
+        Operator
+    """
+    if lazy:
+        return Pow(op, z)
+    try:
+        pow_ops = op.pow(z)
+    except PowUndefinedError:
+        return Pow(op, z)
+    QueuingContext.safe_update_info(op, owner=pow_ops)
+    for obj in pow_ops:
+        QueuingContext.append(obj, owns=op)
+    return pow_ops[0] if len(pow_ops) == 1 else pow_ops
+
+
 # pylint: disable=no-member
 class PowOperation(Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
