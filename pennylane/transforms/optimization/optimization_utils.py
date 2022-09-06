@@ -132,8 +132,7 @@ def _fuse(angles_1, angles_2):
     # Require special treatment of the case qx = qy = 0
     if abs(y_arg) >= 1:  # Have to check for "greater than" as well, because of imprecisions
         return _singular_quat_to_zyz(q, y_arg)
-    else:
-        return _regular_quat_to_zyz(q, y_arg)
+    return _regular_quat_to_zyz(q, y_arg)
 
 
 def _fuse_jax(angles_1, angles_2):
