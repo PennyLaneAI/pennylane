@@ -24,7 +24,7 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
-from pennylane.ops.op_math.prod import Prod, _prod_sort, _sort_key, prod
+from pennylane.ops.op_math.prod import Prod, _prod_sort, _swappable_ops, prod
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -1216,10 +1216,10 @@ class TestSwappableOps:
     @pytest.mark.parametrize(["op1", "op2"], swappable_ops)
     def test_swappable_ops(self, op1, op2):
         """Test the check for swappable operators."""
-        assert _sort_key(op1, op2)
-        assert not _sort_key(op2, op1)
+        assert _swappable_ops(op1, op2)
+        assert not _swappable_ops(op2, op1)
 
     @pytest.mark.parametrize(["op1", "op2"], non_swappable_ops)
     def test_non_swappable_ops(self, op1, op2):
         """Test the check for non-swappable operators."""
-        assert not _sort_key(op1, op2)
+        assert not _swappable_ops(op1, op2)

@@ -465,7 +465,7 @@ def _prod_sort(op_list, wire_map: dict = None) -> List[Operator]:
         key_op = op_list[i]
 
         j = i - 1
-        while j >= 0 and _sort_key(op1=op_list[j], op2=key_op, wire_map=wire_map):
+        while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
             op_list[j + 1] = op_list[j]
             j -= 1
         op_list[j + 1] = key_op
@@ -473,7 +473,7 @@ def _prod_sort(op_list, wire_map: dict = None) -> List[Operator]:
     return op_list
 
 
-def _sort_key(op1, op2, wire_map: dict = None) -> bool:
+def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
     should be swapped when sorting them by wire values.
 
