@@ -408,6 +408,42 @@ def _get_var_with_second_order(pdA2, f0, pdA):
     return pdA2 - 2 * f0 * pdA
 
 
+def _process_pda2_involutory(tape, pdA2, var_idx):
+    """Auxiliary function for post-processing the partial derivative of <A^2>
+    if there are involutory observables.
+
+    If involutory observables are present, ensure they have zero gradient.
+
+    For the pdA2_tapes, we have replaced non-involutory observables with their
+    square (A -> A^2). However, involutory observables have been left as-is
+    (A), and have not been replaced by their square (A^2 = I). As a result,
+    components of the gradient vector will not be correct. We need to replace
+    the gradient value with 0 (the known, correct gradient for involutory
+    variables).
+    """
+    if not qml.active_return():
+
+        m = [tape.observables[i].name not in NONINVOLUTORY_OBS for i in var_idx]
+        m = qml.math.convert_like(m, pdA2)
+        return qml.math.where(qml.math.reshape(m, [-1, 1]), 0, pdA2)
+
+    zero = qml.math.convert_like(0, pdA2)
+    new_pdA2 = []
+    for i, obs in enumerate(tape.observables):
+        if i in var_idx:
+            obs_name = obs.name
+            if isinstance(obs_name, list):
+                obs_involutory = any(n not in NONINVOLUTORY_OBS for n in obs_name)
+            else:
+                obs_involutory = obs_name not in NONINVOLUTORY_OBS
+
+            if obs_involutory:
+                new_pdA2.append(zero)
+            else:
+                new_pdA2.append(pdA2[i])
+    return qml.math.array(new_pdA2)
+
+
 def _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
     """Auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
@@ -420,30 +456,7 @@ def _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
         involutory = set(var_idx) - set(non_involutory)
 
         if involutory:
-            # if involutory observables are present, ensure they have zero gradient.
-            #
-            # For the pdA2_tapes, we have replaced non-involutory
-            # observables with their square (A -> A^2). However,
-            # involutory observables have been left as-is (A), and have
-            # not been replaced by their square (A^2 = I). As a result,
-            # components of the gradient vector will not be correct. We
-            # need to replace the gradient value with 0 (the known,
-            # correct gradient for involutory variables).
-            zero = qml.math.convert_like(0, pdA2)
-            new_pdA2 = []
-            for i, obs in enumerate(tape.observables):
-                obs_name = obs.name
-                if i in var_idx:
-                    if isinstance(obs_name, list):
-                        obs_involutory = any(n not in NONINVOLUTORY_OBS for n in obs_name)
-                    else:
-                        obs_involutory = obs_name not in NONINVOLUTORY_OBS
-
-                    if obs_involutory:
-                        new_pdA2.append(zero)
-                    else:
-                        new_pdA2.append(pdA2[i])
-            pdA2 = qml.math.array(new_pdA2)
+            pdA2 = _process_pda2_involutory(tape, pdA2, var_idx)
     return pdA2
 
 
