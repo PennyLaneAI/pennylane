@@ -152,7 +152,7 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
     if not qml.active_return():
 
         axis = 0
-        if not broadcast and not qml.active_return():
+        if not broadcast:
             res = qml.math.stack(res)
         elif (
             qml.math.get_interface(res[0]) != "torch"
