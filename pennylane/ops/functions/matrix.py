@@ -144,6 +144,8 @@ def _matrix(tape, wire_order=None):
         U_is_broadcasted = qml.math.ndim(U) == 3
         if U_is_broadcasted and result_is_broadcasted:
             # If both, U and result are broadcasted, we need a special syntax
+            # `einsum` is quite slow here and approaches based on `dot` or `tensordot` alone
+            # did not reach the exact functionality we want here.
             result = qml.math.stack([qml.math.dot(u, _unitary) for u, _unitary in zip(U, result)])
         else:
             # This covers the cases where at most one of U and result is broadcasted
