@@ -98,6 +98,7 @@
           [0, 2],
           [0, 2]], dtype=uint8, requires_grad=True)
   ```
+
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
 
   ```python
@@ -233,6 +234,19 @@
   [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
   ```
 
+* Added functionality to `qml.simplify` to allow for grouping of like terms in a sum, resolve
+  products of pauli operators and combine rotation angles of identical rotation gates.
+  [(#2982)](https://github.com/PennyLaneAI/pennylane/pull/2982)
+
+  ```pycon
+  >>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)))
+  Identity(wires=[0]) @ Identity(wires=[1])
+  >>> qml.simplify(qml.op_sum(qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)))
+  2*(PauliX(wires=[0])) + 2*(PauliY(wires=[1]))
+  >>> qml.simplify(qml.prod(qml.RZ(1, 0), qml.RZ(1, 0)))
+  RZ(2, wires=[0])
+  ```
+
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
@@ -256,6 +270,10 @@
 * `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
+
+* `__repr__` and `label` methods are more correct and meaningful for Operators with an arithmetic
+  depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
+  [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
 * New `null.qubit` device. The `null.qubit` no-ops all operations and memory allocations. It inherits directly from default.qubit and should support all Numpy-interface functionality.
 
@@ -295,11 +313,15 @@
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
+* Fixes a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
+  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola,
+Utkarsh Azad,
 Albert Mitjans Coma,
 Amintor Dusko,
 Josh Izaac,
