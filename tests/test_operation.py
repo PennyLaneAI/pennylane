@@ -890,12 +890,12 @@ class TestInverse:
         dummy_op_class_name = dummy_op.name
 
         # Check that the name of the Operation was modified when applying the inverse
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
             assert dummy_op.inv().name == dummy_op_class_name + ".inv"
         assert dummy_op.inverse
 
         # Check that the name of the Operation is the original again, once applying the inverse a second time
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
             assert dummy_op.inv().name == dummy_op_class_name
         assert not dummy_op.inverse
 
@@ -907,7 +907,7 @@ class TestInverse:
             num_wires = 1
 
         with qml.tape.QuantumTape() as tape:
-            with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+            with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
                 op = DummyOp(wires=[0]).inv()
             assert op.inverse is True
 
@@ -926,7 +926,7 @@ class TestInverse:
             qml.RX(1.234, wires=0).inv()
             return qml.state()
 
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
             assert qml.math.allclose(circuit()[0], 1)
 
     def test_inverse_operations_not_supported(self):
@@ -1937,7 +1937,7 @@ class TestOperationDerivative:
 
         assert np.allclose(derivative, expected_derivative)
 
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
             op.inv()
         derivative_inv = operation_derivative(op)
         expected_derivative_inv = 0.5 * np.array(
