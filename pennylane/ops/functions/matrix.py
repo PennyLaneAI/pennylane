@@ -138,23 +138,10 @@ def _matrix(tape, wire_order=None):
     # initialize the unitary matrix
     result = qml.math.eye(2 ** len(wire_order), like=interface)
 
-    result_is_broadcasted = False
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        U_is_broadcasted = qml.math.ndim(U) == 3
-        if U_is_broadcasted and result_is_broadcasted:
-            # If both, U and result are broadcasted, we need a special syntax
-            # `einsum` is quite slow here and approaches based on `dot` or `tensordot` alone
-            # did not reach the exact functionality we want here.
-            result = qml.math.stack([qml.math.dot(u, _unitary) for u, _unitary in zip(U, result)])
-        else:
-            # This covers the cases where at most one of U and result is broadcasted
-            result = qml.math.tensordot(U, result, axes=[[-1], [-2]])
-            # If result already was broadcasted, we need to move the corresponding axis up front
-            if result_is_broadcasted:
-                result = qml.math.moveaxis(result, 1, 0)
-
-        if U_is_broadcasted:
-            result_is_broadcasted = True
+        # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
+        # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
+        result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
 
     return result

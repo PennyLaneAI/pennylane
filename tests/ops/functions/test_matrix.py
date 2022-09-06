@@ -255,6 +255,29 @@ class TestWithParameterBroadcasting:
         ]
         assert np.allclose(matrix, expected_matrix)
 
+    def test_multiple_operations_tape_bcasting_matches_Hilbert_dim(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a multiple broadcasted gate."""
+        wire_order = ["a", "b"]
+
+        angles1 = np.array([0.0, np.pi, 0.0, np.pi])
+        angles2 = np.array([0.0, 0.0, np.pi, np.pi])
+        with qml.tape.QuantumTape() as tape:
+            qml.S(wires="b")
+            qml.RX(angles1, wires="a")
+            qml.Hadamard(wires="b")
+            qml.CNOT(wires=["a", "b"])
+            qml.RX(angles2, wires="b")
+
+        matrix = qml.matrix(tape, wire_order)
+        expected_matrix = [
+            np.kron(I, I) @ CNOT @ np.kron(I, H @ S),
+            -1j * np.kron(I, I) @ CNOT @ np.kron(X, H @ S),
+            -1j * np.kron(I, X) @ CNOT @ np.kron(I, H @ S),
+            -np.kron(I, X) @ CNOT @ np.kron(X, H @ S),
+        ]
+        assert np.allclose(matrix, expected_matrix)
+
 
 class TestCustomWireOrdering:
     def test_tensor_wire_oder(self):
