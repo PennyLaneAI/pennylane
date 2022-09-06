@@ -19,8 +19,6 @@ from copy import copy
 from functools import reduce
 from typing import List
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
@@ -151,6 +149,7 @@ class Sum(CompositeOp):
 
     @property
     def summands(self):
+        """Return the summands that compose this operator."""
         return self.operands
 
     @property

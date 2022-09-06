@@ -159,6 +159,7 @@ class Prod(CompositeOp):
 
     @property
     def factors(self):
+        """Return the factors that compose this operator."""
         return self.operands
 
     def terms(self):  # is this method necessary for this class?

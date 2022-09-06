@@ -15,13 +15,6 @@
 This submodule defines a base class for composite operations.
 """
 import abc
-import itertools
-from copy import copy
-from functools import reduce
-from itertools import combinations
-from typing import List, Tuple, Union
-
-import numpy as np
 
 import pennylane as qml
 from pennylane import math
@@ -45,7 +38,9 @@ class CompositeOp(Operator, abc.ABC):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *operands: Operator, do_queue=True, id=None):
+    def __init__(
+        self, *operands: Operator, do_queue=True, id=None
+    ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
 
