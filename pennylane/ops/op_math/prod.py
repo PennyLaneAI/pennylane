@@ -160,6 +160,7 @@ class Prod(Operator):
         """Initialize a Prod instance"""
         self._id = id
         self.queue_idx = None
+        self._mat_cache = {}
 
         if len(factors) < 2:
             raise ValueError(f"Require at least two operators to multiply; got {len(factors)}")
@@ -294,6 +295,9 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         wire_order = wire_order or self.wires
+        if wire_order in self._mat_cache:
+            return self._mat_cache[wire_order]
+
         mats = (
             math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
             if isinstance(op, qml.Hamiltonian)
@@ -301,7 +305,9 @@ class Prod(Operator):
             for op in self.factors
         )
 
-        return reduce(math.dot, mats)
+        mat = reduce(math.dot, mats)
+        self._mat_cache[wire_order] = mat
+        return mat
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.

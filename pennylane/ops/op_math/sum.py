@@ -153,6 +153,7 @@ class Sum(Operator):
         self._name = "Sum"
         self._id = id
         self.queue_idx = None
+        self._mat_cache = {}
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
@@ -301,10 +302,13 @@ class Sum(Operator):
                 else:
                     yield op.matrix(wire_order=wire_order)
 
-        if wire_order is None:
-            wire_order = self.wires
+        wire_order = wire_order or self.wires
+        if wire_order in self._mat_cache:
+            return self._mat_cache[wire_order]
 
-        return _sum(matrix_gen(self.summands, wire_order))
+        mat = _sum(matrix_gen(self.summands, wire_order))
+        self._mat_cache[wire_order] = mat
+        return mat
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the sum is represented in diagrams and drawings.
