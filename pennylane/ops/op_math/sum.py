@@ -489,8 +489,7 @@ class _SumSummandsGrouping:
 
 
 def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
-    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
-    into account the operator commutivity.
+    """Sort algorithm that sorts a list of sum summands by their wire indices.
 
     Args:
         op_list (List[.Operator]): list of operators to be sorted
