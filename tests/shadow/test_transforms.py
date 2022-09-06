@@ -341,3 +341,18 @@ class TestExpvalTransform:
         expected = qml.jacobian(exact_circuit)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
+
+    def test_non_shadow_error(self):
+        """Test that an exception is raised when the decorated QNode does not
+        return shadows"""
+        dev = qml.device("default.qubit", wires=1, shots=100)
+
+        @qml.shadows.shadow_expval(qml.PauliZ(0))
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.expval(qml.PauliZ(0))
+
+        msg = "Tape measurement must be shadow, got expval"
+        with pytest.raises(ValueError, match=msg):
+            circuit()
