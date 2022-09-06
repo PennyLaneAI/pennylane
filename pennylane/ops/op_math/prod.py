@@ -15,7 +15,6 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
-import functools
 import itertools
 from copy import copy
 from functools import reduce
@@ -165,6 +164,7 @@ class Prod(Operator):
         self.factors = factors
         self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
         self._hash = None
+        self._overlapping_wires = None
 
         if do_queue:
             self.queue()
@@ -224,6 +224,16 @@ class Prod(Operator):
                 return False
         return all(op.is_hermitian for op in self.factors)
 
+    @property
+    def overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._overlapping_wires is None:
+            wires = []
+            for op in self.factors:
+                wires.extend(list(op.wires))
+            self._overlapping_wires = len(wires) != len(set(wires))
+        return self._overlapping_wires
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -273,12 +283,16 @@ class Prod(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        if self.overlapping_wires:
+            eigen_vectors = self.eigendecomposition["eigvec"]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        diag_gates = []
+        for factor in self.factors:
+            diag_gates.extend(factor.diagonalizing_gates())
+        return [qml.adjoint(gate) for gate in diag_gates]
 
     def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
+        """Return the eigenvalues of the specified operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -286,14 +300,14 @@ class Prod(Operator):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        overlapping_wires = functools.reduce(
-            lambda a, b: a & b, [set(op.wires) for op in self.factors]
-        )
-        return (
-            self.eigendecomposition["eigval"]
-            if overlapping_wires
-            else qml.math.sort(qml.math.concatenate([op.eigvals() for op in self.factors]))
-        )
+        if self.overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
+            for factor in self.factors
+        ]
+
+        return qml.math.prod(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
