@@ -291,8 +291,8 @@ class TestSimplify:
 
     def test_simplify_nested_pow_ops(self):
         """Test the simplify method with nested pow operations."""
-        pow_op = Pow(base=Pow(base=Pow(base=qml.RX(1, 0), z=3), z=2), z=5)
-        mod_angle = 30 % (4 * np.pi)
+        pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.RX(1, 0), z=1.2)), z=2), z=5)
+        mod_angle = -12 % (4 * np.pi)
         final_op = qml.RX(mod_angle, 0)
         simplified_op = pow_op.simplify()
 
