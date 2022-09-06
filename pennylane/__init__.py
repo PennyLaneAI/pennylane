@@ -57,9 +57,10 @@ from pennylane.measurements import (
     vn_entropy,
     mutual_info,
     classical_shadow,
+    shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod
+from pennylane.ops import adjoint, ctrl, exp, op_sum, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
