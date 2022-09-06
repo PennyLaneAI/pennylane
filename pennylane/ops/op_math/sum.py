@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+from copy import copy
 from functools import reduce
 from typing import List
 
@@ -164,7 +165,7 @@ class Sum(Operator):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return " + ".join([f"{f}" for f in self.summands])
+        return " + ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.summands])
 
     def __copy__(self):
         cls = self.__class__
@@ -305,6 +306,49 @@ class Sum(Operator):
 
         return _sum(matrix_gen(self.summands, wire_order))
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""How the sum is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``factors`` attribute.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        >>> op = qml.op_sum(qml.op_sum(qml.PauliX(0), qml.PauliY(1)), qml.RX(1, wires=0))
+        >>> op.label()
+        '(X+Y)+RX'
+        >>> op.label(decimals=2, base_label=[["X0", "Y1"], "RX0"])
+        '(X0+Y1)+RX0\n(1.00)'
+
+        """
+
+        def _label(factor, decimals, base_label, cache):
+            sub_label = factor.label(decimals, base_label, cache)
+            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
+
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self.summands):
+                raise ValueError(
+                    "Sum label requires ``base_label`` keyword to be same length as summands."
+                )
+            return "+".join(
+                _label(s, decimals, lbl, cache) for s, lbl in zip(self.summands, base_label)
+            )
+
+        return "+".join(_label(s, decimals, None, cache) for s in self.summands)
+
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the Sum op in csr representation."""
+        wire_order = wire_order or self.wires
+        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
+        return reduce(math.add, mats_gen)
+
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
@@ -331,30 +375,85 @@ class Sum(Operator):
         return 1 + max(summand.arithmetic_depth for summand in self.summands)
 
     @classmethod
-    def _simplify_summands(cls, sum_op: "Sum") -> List[Operator]:
-        """Reduces the depth of nested summands.
+    def _simplify_summands(cls, summands: List[Operator]):
+        """Reduces the depth of nested summands and groups equal terms together.
 
-        If ``depth`` is not provided or negative, then the summands list is completely flattenned.
-
-        Keyword Args:
-            depth (int): Reduced depth. Default is -1.
+        Args:
+            summands (List[~.operation.Operator]): summands list to simplify
 
         Returns:
-            List[~.operation.Operator]: reduced summands list
+            .SumSummandsGrouping: Class containing the simplified and grouped summands.
         """
-        summands = []
-        for summand in sum_op.summands:
+        new_summands = _SumSummandsGrouping()
+        for summand in summands:
+            # This code block is not needed but it speeds things up when having a lot of  stacked Sums
             if isinstance(summand, Sum):
-                summands.extend(cls._simplify_summands(sum_op=summand))
+                sum_summands = cls._simplify_summands(summands=summand.summands)
+                for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
+                    new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
                 continue
+
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
-                summands.extend(simplified_summand.summands)
+                sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
+                for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
+                    new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
             else:
-                summands.append(simplified_summand)
+                new_summands.add(summand=simplified_summand)
 
-        return summands
+        return new_summands
 
-    def simplify(self) -> "Sum":
-        summands = self._simplify_summands(sum_op=self)
-        return Sum(*summands)
+    def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        new_summands = self._simplify_summands(summands=self.summands).get_summands(cutoff=cutoff)
+        if new_summands:
+            return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
+        return qml.s_prod(
+            0,
+            qml.prod(*(qml.Identity(w) for w in self.wires))
+            if len(self.wires) > 1
+            else qml.Identity(self.wires[0]),
+        )
+
+
+class _SumSummandsGrouping:
+    """Utils class used for grouping sum summands together."""
+
+    def __init__(self):
+        self.queue = {}  # {hash: [coeff, summand]}
+
+    def add(self, summand: Operator, coeff=1, op_hash=None):
+        """Add operator to the summands dictionary.
+
+        If the operator hash is already in the dictionary, the coefficient is increased instead.
+
+        Args:
+            summand (Operator): operator to add to the summands dictionary
+            coeff (int, optional): Coefficient of the operator. Defaults to 1.
+            op_hash (int, optional): Hash of the operator. Defaults to None.
+        """
+        if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
+            coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
+            self.add(summand=summand.base, coeff=coeff)
+        else:
+            op_hash = summand.hash if op_hash is None else op_hash
+            if op_hash in self.queue:
+                self.queue[op_hash][0] += coeff
+            else:
+                self.queue[op_hash] = [copy(coeff), summand]
+
+    def get_summands(self, cutoff=1.0e-12):
+        """Get summands list.
+
+        All summands with a coefficient less than cutoff are ignored.
+
+        Args:
+            cutoff (float, optional): Cutoff value. Defaults to 1.0e-12.
+        """
+        new_summands = []
+        for coeff, summand in self.queue.values():
+            if coeff == 1:
+                new_summands.append(summand)
+            elif abs(coeff) > cutoff:
+                new_summands.append(qml.s_prod(coeff, summand))
+
+        return new_summands

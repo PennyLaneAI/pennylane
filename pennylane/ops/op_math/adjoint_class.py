@@ -201,8 +201,12 @@ class Adjoint(SymbolicOp):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, do_queue=do_queue, id=id)
 
+    def __repr__(self):
+        return f"Adjoint({self.base})"
+
     def label(self, decimals=None, base_label=None, cache=None):
-        return f"{self.base.label(decimals, base_label, cache=cache)}†"
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -244,7 +248,8 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
+        base = self.base.simplify()
         try:
-            return self.base.adjoint().simplify()
+            return base.adjoint().simplify()
         except AdjointUndefinedError:
-            return Adjoint(base=self.base.simplify())
+            return Adjoint(base=base.simplify())
