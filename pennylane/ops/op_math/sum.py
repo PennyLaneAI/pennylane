@@ -153,6 +153,7 @@ class Sum(Operator):
         self._name = "Sum"
         self._id = id
         self.queue_idx = None
+        self._hash = None
         self._overlapping_wires = None
 
         if len(summands) < 2:
@@ -230,7 +231,7 @@ class Sum(Operator):
 
     @property
     def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the Hermitian observable.
+        r"""Return the eigendecomposition of the matrix specified by the operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -239,16 +240,15 @@ class Sum(Operator):
 
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
-            operator
+                operator.
         """
-        Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
+        if self.hash not in self._eigs:
+            Hmat = self.matrix()
+            Hmat = math.to_numpy(Hmat)
             w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[Hkey]
+        return self._eigs[self.hash]
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -435,6 +435,14 @@ class Sum(Operator):
             else qml.Identity(self.wires[0]),
         )
 
+    @property
+    def hash(self):
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([summand.hash for summand in _sum_sort(self.summands)]))
+            )
+        return self._hash
+
 
 class _SumSummandsGrouping:
     """Utils class used for grouping sum summands together."""
@@ -480,22 +488,34 @@ class _SumSummandsGrouping:
         return new_summands
 
 
-def _sort_key(op1, op2, wire_map: dict = None) -> bool:
-    """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
-    should be swapped when sorting them by wire values.
+def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
+    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
+    into account the operator commutivity.
 
     Args:
-        op1 (.Operator): First operator.
-        op2 (.Operator): Second operator.
+        op_list (List[.Operator]): list of operators to be sorted
         wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
             Defaults to None.
 
     Returns:
-        bool: True if operators should be swapped, False otherwise.
+        List[.Operator]: sorted list of operators
     """
-    wires1 = op1.wires
-    wires2 = op2.wires
-    if wire_map is not None:
-        wires1 = wires1.map(wire_map)
-        wires2 = wires2.map(wire_map)
-    return np.min(wires1) > np.min(wires2)
+
+    if isinstance(op_list, tuple):
+        op_list = list(op_list)
+
+    def _sort_key(op) -> bool:
+        """Sorting key.
+
+        Args:
+            op (.Operator): Operator.
+
+        Returns:
+            int: Minimum wire value.
+        """
+        wires = op.wires
+        if wire_map is not None:
+            wires = wires.map(wire_map)
+        return np.min(wires)
+
+    return sorted(op_list, key=_sort_key)

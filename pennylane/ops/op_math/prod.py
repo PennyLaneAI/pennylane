@@ -444,7 +444,7 @@ class Prod(Operator):
         return self._hash
 
 
-def _prod_sort(op_list, wire_map: dict = None):
+def _prod_sort(op_list, wire_map: dict = None) -> List[Operator]:
     """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
     into account the operator commutivity.
 
