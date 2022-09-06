@@ -22,8 +22,11 @@ jobs:
           - {python-version: 3.7, suite: 'torch'}
           - {python-version: 3.7, suite: 'tf'}
           - {python-version: 3.8, suite: 'tf'}
+          - {python-version: 3.10, suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
+          - {python-version: 3.10, suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
+          - {python-version: 3.10, suite: 'jax'}
           - {python-version: 3.7, suite: 'autograd'}
           - {python-version: 3.8, suite: 'autograd'}
           - {python-version: 3.9, suite: 'autograd'}
