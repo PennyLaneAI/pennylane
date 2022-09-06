@@ -17,7 +17,7 @@ This module contains the :class:`QutritDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import itertools
 
 import numpy as np
@@ -71,6 +71,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
     # TODO: Update set of supported observables as new observables are added
     observables = {
         "Identity",
+        "THermitian",
     }
 
     @classmethod
@@ -79,10 +80,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         capabilities = super().capabilities().copy()
         capabilities.update(model="qutrit")
         return capabilities
-
-    def statistics(self, observables, shot_range=None, bin_size=None):
-        # Overloading QubitDevice.statistics() as VnEntropy and MutualInfo not yet supported for QutritDevice
-        raise NotImplementedError
 
     def generate_samples(self):
         r"""Returns the computational basis samples generated for all wires.
@@ -104,6 +101,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         rotated_prob = self.analytic_probability()
 
         samples = self.sample_basis_states(number_of_states, rotated_prob)
+
         return self.states_to_ternary(samples, self.num_wires)
 
     def generate_basis_states(self, num_wires, dtype=np.uint32):
@@ -152,15 +150,18 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
     def density_matrix(self, wires):
         """Returns the reduced density matrix prior to measurement.
 
-        .. note::
+        Args:
+            wires (Wires): wires of the reduced system
 
-            Only state vector simulators support this property. Please see the
-            plugin documentation for more details.
+        Raises:
+            QuantumFunctionError: density matrix is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add density matrix support. Currently, qml.math is hard-coded to work only with qubit states,
-        # (see `qml.math.reduced_dm()`) so it needs to be updated to be able to handle calculations for qutrits
-        # before this method can be implemented.
-        raise NotImplementedError
+        # TODO: Add support for DensityMatrix return type. Currently, qml.math is hard coded to calculate this for qubit
+        # states (see `qml.math.reduced_dm()`), so it needs to be updated before DensityMatrix can be supported for qutrits.
+        # For now, if a user tries to request this return type, an error will be raised.
+        raise qml.QuantumFunctionError(
+            "Unsupported return type specified for observable density matrix"
+        )
 
     def vn_entropy(self, wires, log_base):
         r"""Returns the Von Neumann entropy prior to measurement.
@@ -172,13 +173,15 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             wires (Wires): Wires of the considered subsystem.
             log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
-        Returns:
-            float: returns the Von Neumann entropy
+        Raises:
+            QuantumFunctionError: Von Neumann entropy is currently unsupported on :class:`~.QutritDevice`
         """
         # TODO: Add support for VnEntropy return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.vn_entropy()`), so it needs to be updated before VnEntropy can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise NotImplementedError
+        raise qml.QuantumFunctionError(
+            "Unsupported return type specified for observable Von Neumann entropy"
+        )
 
     def mutual_info(self, wires0, wires1, log_base):
         r"""Returns the mutual information prior to measurement:
@@ -194,13 +197,15 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             wires1 (Wires): wires of the second subsystem
             log_base (float): base to use in the logarithm
 
-        Returns:
-            float: the mutual information
+        Raises:
+            QuantumFunctionError: Mutual information is currently unsupported on :class:`~.QutritDevice`
         """
         # TODO: Add support for MutualInfo return type. Currently, qml.math is hard coded to calculate this for qubit
         # states (see `qml.math.mutual_info()`), so it needs to be updated before MutualInfo can be supported for qutrits.
         # For now, if a user tries to request this return type, an error will be raised.
-        raise NotImplementedError
+        raise qml.QuantumFunctionError(
+            "Unsupported return type specified for observable mutual information"
+        )
 
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
         """Return the estimated probability of each computational basis state
@@ -302,9 +307,14 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         prob = self._reshape(prob, [3] * self.num_wires)
 
         # sum over all inactive wires
-        prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
-        # TODO: Add case for when inactive_device_wires is not an instance of Wires once
-        # default qutrit device is added
+        # hotfix to catch when default.qutrit uses this method
+        # since then device_wires is a list
+        if isinstance(inactive_device_wires, Wires):
+            wires = inactive_device_wires.labels
+        else:
+            wires = inactive_device_wires
+
+        prob = self._flatten(self._reduce_sum(prob, wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -317,10 +327,27 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         perm = basis_states @ powers_of_three
         return self._gather(prob, perm)
 
-    # TODO: Update in next PR to add counts capability for binning
-    def sample(
-        self, observable, shot_range=None, bin_size=None
-    ):  # pylint: disable=arguments-differ
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+        def _samples_to_counts(samples, no_observable_provided):
+            """Group the obtained samples into a dictionary.
+
+            **Example**
+
+                >>> samples
+                tensor([[0, 0, 1],
+                        [0, 0, 1],
+                        [1, 1, 1]], requires_grad=True)
+                >>> self._samples_to_counts(samples)
+                {'111':1, '001':2}
+            """
+            if no_observable_provided:
+                # If we describe a state vector, we need to convert its list representation
+                # into string (it's hashable and good-looking).
+                # Before converting to str, we need to extract elements from arrays
+                # to satisfy the case of jax interface, as jax arrays do not support str.
+                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            states, counts = np.unique(samples, return_counts=True)
+            return dict(zip(states, counts))
 
         # TODO: Add special cases for any observables that require them once list of
         # observables is updated.
@@ -329,10 +356,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         device_wires = self.map_wires(observable.wires)
         name = observable.name  # pylint: disable=unused-variable
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        no_observable_provided = isinstance(observable, MeasurementProcess)
 
-        if isinstance(
-            observable, MeasurementProcess
-        ):  # if no observable was provided then return the raw samples
+        if no_observable_provided:  # if no observable was provided then return the raw samples
             if (
                 len(observable.wires) != 0
             ):  # if wires are provided, then we only return samples from those wires
@@ -359,9 +385,22 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
                 ) from e
 
         if bin_size is None:
+            if counts:
+                return _samples_to_counts(samples, no_observable_provided)
             return samples
 
-        return samples.reshape((bin_size, -1))
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
+        if counts:
+            shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
+            return [
+                _samples_to_counts(bin_sample, no_observable_provided)
+                for bin_sample in samples.reshape(shape)
+            ]
+        return (
+            samples.reshape((num_wires, bin_size, -1))
+            if no_observable_provided
+            else samples.reshape((bin_size, -1))
+        )
 
     # TODO: Implement function. Currently unimplemented due to lack of decompositions available
     # for existing operations and lack of non-parametrized observables.

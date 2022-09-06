@@ -18,7 +18,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.wires import Wires
 
 try:
     import jax.numpy as jnp
@@ -139,7 +138,6 @@ class DefaultQubitJax(DefaultQubit):
     _reduce_sum = staticmethod(lambda array, axes: jnp.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(jnp.reshape)
     _flatten = staticmethod(lambda array: array.ravel())
-    _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(jnp.einsum)
     _cast = staticmethod(jnp.array)
     _transpose = staticmethod(jnp.transpose)
@@ -154,6 +152,8 @@ class DefaultQubitJax(DefaultQubit):
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
     _const_mul = staticmethod(jnp.multiply)
+    _size = staticmethod(jnp.size)
+    _ndim = staticmethod(jnp.ndim)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         if jax_config.read("jax_enable_x64"):
@@ -174,10 +174,7 @@ class DefaultQubitJax(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            passthru_interface="jax",
-            supports_reversible_diff=False,
-        )
+        capabilities.update(passthru_interface="jax")
         return capabilities
 
     @staticmethod
@@ -212,6 +209,18 @@ class DefaultQubitJax(DefaultQubit):
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
         else:
             key = self._prng_key
+        if jnp.ndim(state_probability) == 2:
+            # Produce separate keys for each of the probabilities along the broadcasted axis
+            keys = []
+            for _ in state_probability:
+                key, subkey = jax.random.split(key)
+                keys.append(subkey)
+            return jnp.array(
+                [
+                    jax.random.choice(_key, number_of_states, shape=(shots,), p=prob)
+                    for _key, prob in zip(keys, state_probability)
+                ]
+            )
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
@@ -231,75 +240,60 @@ class DefaultQubitJax(DefaultQubit):
             List[int]: basis states in binary representation
         """
         powers_of_two = 1 << jnp.arange(num_wires, dtype=dtype)
-        states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
+        states_sampled_base_ten = samples[..., None] & powers_of_two
+        return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
 
-    def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
-        """Return the estimated probability of each computational basis state
-        using the generated samples.
+    @staticmethod
+    def _count_unbinned_samples(indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
 
-        Args:
-            wires (Iterable[Number, str], Number, str, Wires): wires to calculate
-                marginal probabilities for. Wires not provided are traced out of the system.
-            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                to use. If not specified, all samples are used.
-            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                returns the measurement statistic separately over each bin. If not
-                provided, the entire shot range is treated as a single bin.
+        shape = (dim + 1,) if batch_size is None else (batch_size, dim + 1)
+        prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
+        if batch_size is None:
+            basis_states, counts = jnp.unique(indices, return_counts=True, size=dim, fill_value=-1)
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[state].set(count / len(indices))
+            # resize prob which discards the 'filled values'
+            return prob[:-1]
 
-        Returns:
-            array[float]: list of the probabilities
-        """
+        for i, idx in enumerate(indices):
+            basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[i, state].set(count / len(idx))
 
-        wires = wires or self.wires
-        # convert to a wires object
-        wires = Wires(wires)
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-        num_wires = len(device_wires)
+        # resize prob which discards the 'filled values'
+        return prob[:, :-1]
 
-        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
-        samples = self._samples[sample_slice, device_wires]
+    @staticmethod
+    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
+        """Count the occurences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability per bin."""
 
-        # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        indices = samples @ powers_of_two
+        # extend the probability vectors to store 'filled values'
+        shape = (dim + 1, num_bins) if batch_size is None else (batch_size, dim + 1, num_bins)
+        prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
+        if batch_size is None:
+            indices = indices.reshape((num_bins, bin_size))
 
-        if bin_size is not None:
-            bins = len(samples) // bin_size
-
-            indices = indices.reshape((bins, -1))
-            prob = np.zeros(
-                [2**num_wires + 1, bins], dtype=jnp.float64
-            )  # extend it to store 'filled values'
-            prob = qml.math.convert_like(prob, indices)
-
-            # count the basis state occurrences, and construct the probability vector
+            # count the basis state occurrences, and construct the probability vector for each bin
             for b, idx in enumerate(indices):
                 idx = qml.math.convert_like(idx, indices)
-                basis_states, counts = qml.math.unique(
-                    idx, return_counts=True, size=2**num_wires, fill_value=-1
-                )
-
+                basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
                 for state, count in zip(basis_states, counts):
                     prob = prob.at[state, b].set(count / bin_size)
 
-            prob = jnp.resize(
-                prob, (2**num_wires, bins)
-            )  # resize prob which discards the 'filled values'
+            # resize prob which discards the 'filled values'
+            return prob[:-1]
 
-        else:
-            basis_states, counts = qml.math.unique(
-                indices, return_counts=True, size=2**num_wires, fill_value=-1
-            )
-            prob = np.zeros([2**num_wires + 1], dtype=jnp.float64)
-            prob = qml.math.convert_like(prob, indices)
-
-            for state, count in zip(basis_states, counts):
-                prob = prob.at[state].set(count / len(samples))
-
-            prob = jnp.resize(
-                prob, 2**num_wires
-            )  # resize prob which discards the 'filled values'
-
-        return self._asarray(prob, dtype=self.R_DTYPE)
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                idx = qml.math.convert_like(idx, indices)
+                basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[i, state, b].set(count / bin_size)
+        # resize prob which discards the 'filled values'
+        return prob[:, :-1]

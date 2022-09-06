@@ -20,9 +20,8 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X
+from gate_data import CNOT, II, SWAP, I, Toffoli, X, TADD, TSWAP
 from numpy.linalg import multi_dot
-from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -785,6 +784,18 @@ class TestObservableConstruction:
         op = DummyObserv(wires=0)
         assert op.is_hermitian is True
 
+    def test_simplify_method(self):
+        """Test that simplify method returns the same instance."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyObserv(wires=0)
+        sim_op = op.simplify()
+        assert op is sim_op
+
 
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
@@ -820,6 +831,89 @@ class TestOperatorIntegration:
 
         with pytest.raises(ValueError, match="Cannot raise an Operator"):
             _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
+
+    def test_sum_with_operator(self):
+        """Test the __sum__ dunder method with two operators."""
+        sum_op = qml.PauliX(0) + qml.RX(1, 0)
+        final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
+        #  TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sum_with_scalar(self):
+        """Test the __sum__ dunder method with a scalar value."""
+        sum_op = 5 + qml.PauliX(0) + 0
+        final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
+        # TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sum_multi_wire_operator_with_scalar(self):
+        """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
+        sum_op = 5 + qml.CNOT(wires=[0, 1])
+        final_op = qml.op_sum(
+            qml.CNOT(wires=[0, 1]),
+            qml.s_prod(5, qml.prod(qml.Identity(0), qml.Identity(1))),
+        )
+        # TODO: Use qml.equal when fixed.
+        assert isinstance(sum_op, qml.ops.Sum)
+        for s1, s2 in zip(sum_op.summands, final_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+        assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sub_rsub_and_neg_dunder_methods(self):
+        """Test the __sub__, __rsub__ and __neg__ dunder methods."""
+        sum_op = qml.PauliX(0) - 5
+        sum_op_2 = -(5 - qml.PauliX(0))
+        assert np.allclose(a=sum_op.matrix(), b=np.array([[-5, 1], [1, -5]]), rtol=0)
+        assert np.allclose(a=sum_op.matrix(), b=sum_op_2.matrix(), rtol=0)
+        neg_op = -qml.PauliX(0)
+        assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
+
+    def test_mul_with_scalar(self):
+        """Test the __mul__ dunder method with a scalar value."""
+        sprod_op = 4 * qml.RX(1, 0)
+        sprod_op2 = qml.RX(1, 0) * 4
+        final_op = qml.s_prod(scalar=4, operator=qml.RX(1, 0))
+        assert isinstance(sprod_op, qml.ops.SProd)
+        assert sprod_op.name == sprod_op2.name
+        assert sprod_op.wires == sprod_op2.wires
+        assert sprod_op.data == sprod_op2.data
+        assert sprod_op.name == final_op.name
+        assert sprod_op.wires == final_op.wires
+        assert sprod_op.data == final_op.data
+        assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
+        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_operator(self):
+        """Test the __matmul__ dunder method with an operator."""
+        prod_op = qml.RX(1, 0) @ qml.PauliX(0)
+        final_op = qml.prod(qml.RX(1, 0), qml.PauliX(0))
+        assert isinstance(prod_op, qml.ops.Prod)
+        assert prod_op.name == final_op.name
+        assert prod_op.wires == final_op.wires
+        assert prod_op.data == final_op.data
+        assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_not_supported_object_raises_error(self):
+        """Test that the __mul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+            _ = "dummy" * qml.PauliX(0)
+
+    def test_matmul_with_not_supported_object_raises_error(self):
+        """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
+        with pytest.raises(ValueError, match="Can only perform tensor products between operators."):
+            _ = qml.PauliX(0) @ "dummy"
 
 
 class TestInverse:
@@ -1165,11 +1259,6 @@ class TestTensor:
         with pytest.raises(
             ValueError, match="Can only perform tensor products between observables"
         ):
-            X @ Y
-
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
             T = X @ Z
             T @ Y
 
@@ -1177,7 +1266,7 @@ class TestTensor:
             ValueError, match="Can only perform tensor products between observables"
         ):
             T = X @ Z
-            Y @ T
+            4 @ T
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
@@ -1750,8 +1839,6 @@ class TestDefaultRepresentations:
 
     def test_sparse_matrix_undefined(self):
         """Tests that custom error is raised in the default sparse matrix representation."""
-        with pytest.raises(NotImplementedError):
-            MyOp(wires="a").sparse_matrix(wire_order=["a", "b"])
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             MyOp.compute_sparse_matrix()
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
@@ -2056,508 +2143,6 @@ class TestCriteria:
         assert not both(self.cnot)
         assert not both(self.rot)
         assert not both(self.exp)
-
-
-class TestExpandMatrix:
-    """Tests for the expand_matrix helper function."""
-
-    base_matrix_1 = np.arange(1, 5).reshape((2, 2))
-    base_matrix_1_broadcasted = np.arange(1, 13).reshape((3, 2, 2))
-    base_matrix_2 = np.arange(1, 17).reshape((4, 4))
-    base_matrix_2_broadcasted = np.arange(1, 49).reshape((3, 4, 4))
-
-    def test_no_expansion(self):
-        """Tests the case where the original matrix is not changed"""
-        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
-        assert np.allclose(self.base_matrix_2, res)
-
-    def test_no_wire_order_returns_base_matrix(self):
-        """Test the case where the wire_order is None it returns the original matrix"""
-        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2])
-        assert np.allclose(self.base_matrix_2, res)
-
-    def test_no_expansion_broadcasted(self):
-        """Tests the case where the broadcasted original matrix is not changed"""
-        res = qml.operation.expand_matrix(
-            self.base_matrix_2_broadcasted, wires=[0, 2], wire_order=[0, 2]
-        )
-        assert np.allclose(self.base_matrix_2_broadcasted, res)
-
-    def test_permutation(self):
-        """Tests the case where the original matrix is permuted"""
-        res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[2, 0])
-
-        expected = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
-        assert np.allclose(expected, res)
-
-    def test_permutation_broadcasted(self):
-        """Tests the case where the broadcasted original matrix is permuted"""
-        res = qml.operation.expand_matrix(
-            self.base_matrix_2_broadcasted, wires=[0, 2], wire_order=[2, 0]
-        )
-
-        perm = [0, 2, 1, 3]
-        expected = self.base_matrix_2_broadcasted[:, perm][:, :, perm]
-        assert np.allclose(expected, res)
-
-    def test_expansion(self):
-        """Tests the case where the original matrix is expanded"""
-        res = qml.operation.expand_matrix(self.base_matrix_1, wires=[2], wire_order=[0, 2])
-        expected = np.array([[1, 2, 0, 0], [3, 4, 0, 0], [0, 0, 1, 2], [0, 0, 3, 4]])
-        assert np.allclose(expected, res)
-
-        res = qml.operation.expand_matrix(self.base_matrix_1, wires=[2], wire_order=[2, 0])
-        expected = np.array([[1, 0, 2, 0], [0, 1, 0, 2], [3, 0, 4, 0], [0, 3, 0, 4]])
-        assert np.allclose(expected, res)
-
-    def test_expansion_broadcasted(self):
-        """Tests the case where the broadcasted original matrix is expanded"""
-        res = qml.operation.expand_matrix(
-            self.base_matrix_1_broadcasted, wires=[2], wire_order=[0, 2]
-        )
-        expected = np.array(
-            [
-                [
-                    [1, 2, 0, 0],
-                    [3, 4, 0, 0],
-                    [0, 0, 1, 2],
-                    [0, 0, 3, 4],
-                ],
-                [
-                    [5, 6, 0, 0],
-                    [7, 8, 0, 0],
-                    [0, 0, 5, 6],
-                    [0, 0, 7, 8],
-                ],
-                [
-                    [9, 10, 0, 0],
-                    [11, 12, 0, 0],
-                    [0, 0, 9, 10],
-                    [0, 0, 11, 12],
-                ],
-            ]
-        )
-        assert np.allclose(expected, res)
-
-        res = qml.operation.expand_matrix(
-            self.base_matrix_1_broadcasted, wires=[2], wire_order=[2, 0]
-        )
-        expected = np.array(
-            [
-                [
-                    [1, 0, 2, 0],
-                    [0, 1, 0, 2],
-                    [3, 0, 4, 0],
-                    [0, 3, 0, 4],
-                ],
-                [
-                    [5, 0, 6, 0],
-                    [0, 5, 0, 6],
-                    [7, 0, 8, 0],
-                    [0, 7, 0, 8],
-                ],
-                [
-                    [9, 0, 10, 0],
-                    [0, 9, 0, 10],
-                    [11, 0, 12, 0],
-                    [0, 11, 0, 12],
-                ],
-            ]
-        )
-        assert np.allclose(expected, res)
-
-    @staticmethod
-    def func_for_autodiff(mat):
-        """Expand a single-qubit matrix to two qubits where the
-        matrix acts on the latter qubit."""
-        return qml.operation.expand_matrix(mat, wires=[2], wire_order=[0, 2])
-
-    # the entries should be mapped by func_for_autodiff via
-    # source -> destinations
-    # (0, 0) -> (0, 0), (2, 2)
-    # (0, 1) -> (0, 1), (2, 3)
-    # (1, 0) -> (1, 0), (3, 2)
-    # (1, 1) -> (1, 1), (3, 3)
-    # so that the expected Jacobian is 0 everywhere except for the entries
-    # (dest, source) from the above list, where it is 1.
-    expected_autodiff_nobatch = np.zeros((4, 4, 2, 2), dtype=float)
-    indices = [
-        (0, 0, 0, 0),
-        (2, 2, 0, 0),
-        (0, 1, 0, 1),
-        (2, 3, 0, 1),
-        (1, 0, 1, 0),
-        (3, 2, 1, 0),
-        (1, 1, 1, 1),
-        (3, 3, 1, 1),
-    ]
-    for ind in indices:
-        expected_autodiff_nobatch[ind] = 1.0
-
-    # When using broadcasting, the expected Jacobian
-    # of func_for_autodiff is diagonal in the dimensions 0 and 3
-    expected_autodiff_broadcasted = np.zeros((3, 4, 4, 3, 2, 2), dtype=float)
-    for ind in indices:
-        expected_autodiff_broadcasted[:, ind[0], ind[1], :, ind[2], ind[3]] = np.eye(3)
-
-    expected_autodiff = [expected_autodiff_nobatch, expected_autodiff_broadcasted]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        "i, base_matrix",
-        [
-            (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
-        ],
-    )
-    def test_autograd(self, i, base_matrix, tol):
-        """Tests differentiation in autograd by computing the Jacobian of
-        the expanded matrix with respect to the canonical matrix."""
-
-        base_matrix = pnp.array(base_matrix, requires_grad=True)
-        jac_fn = qml.jacobian(self.func_for_autodiff)
-        jac = jac_fn(base_matrix)
-
-        assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
-
-    @pytest.mark.torch
-    @pytest.mark.parametrize(
-        "i, base_matrix",
-        [
-            (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
-        ],
-    )
-    def test_torch(self, i, base_matrix, tol):
-        """Tests differentiation in torch by computing the Jacobian of
-        the expanded matrix with respect to the canonical matrix."""
-        import torch
-
-        base_matrix = torch.tensor(base_matrix, requires_grad=True)
-        jac = torch.autograd.functional.jacobian(self.func_for_autodiff, base_matrix)
-
-        assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "i, base_matrix",
-        [
-            (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
-        ],
-    )
-    def test_jax(self, i, base_matrix, tol):
-        """Tests differentiation in jax by computing the Jacobian of
-        the expanded matrix with respect to the canonical matrix."""
-        import jax
-
-        base_matrix = jax.numpy.array(base_matrix)
-        jac_fn = jax.jacobian(self.func_for_autodiff)
-        jac = jac_fn(base_matrix)
-
-        assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "i, base_matrix",
-        [
-            (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
-        ],
-    )
-    def test_tf(self, i, base_matrix, tol):
-        """Tests differentiation in TensorFlow by computing the Jacobian of
-        the expanded matrix with respect to the canonical matrix."""
-        import tensorflow as tf
-
-        base_matrix = tf.Variable(base_matrix)
-        with tf.GradientTape() as tape:
-            res = self.func_for_autodiff(base_matrix)
-
-        jac = tape.jacobian(res, base_matrix)
-        assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
-
-    def test_expand_one(self, tol):
-        """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        U = np.array(
-            [
-                [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-                [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-            ]
-        )
-        # test applied to wire 0
-        res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 4
-        res = qml.operation.expand_matrix(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I, U), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 9
-        res = qml.operation.expand_matrix(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I, I), U)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_one_broadcasted(self, tol):
-        """Test that a broadcasted 1 qubit gate correctly expands to 3 qubits."""
-        U = np.array(
-            [
-                [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-                [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-            ]
-        )
-        # outer product with batch vector
-        U = np.tensordot([0.14, -0.23, 1.3j], U, axes=0)
-        # test applied to wire 0
-        res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I_broadcasted), I_broadcasted)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 4
-        res = qml.operation.expand_matrix(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I_broadcasted, U), I_broadcasted)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 9
-        res = qml.operation.expand_matrix(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I_broadcasted, I_broadcasted), U)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_consecutive_wires(self, tol):
-        """Test that a 2 qubit gate on consecutive wires correctly
-        expands to 4 qubits."""
-        U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
-
-        # test applied to wire 0+1
-        res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
-        expected = np.kron(np.kron(U2, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1+2
-        res = qml.operation.expand_matrix(U2, [1, 2], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I, U2), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 2+3
-        res = qml.operation.expand_matrix(U2, [2, 3], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I, I), U2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_consecutive_wires_broadcasted(self, tol):
-        """Test that a broadcasted 2 qubit gate on consecutive wires correctly
-        expands to 4 qubits."""
-        U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
-        U2 = np.tensordot([2.31, 1.53, 0.7 - 1.9j], U2, axes=0)
-
-        # test applied to wire 0+1
-        res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
-        expected = np.kron(np.kron(U2, I_broadcasted), I_broadcasted)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1+2
-        res = qml.operation.expand_matrix(U2, [1, 2], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I_broadcasted, U2), I_broadcasted)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 2+3
-        res = qml.operation.expand_matrix(U2, [2, 3], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I_broadcasted, I_broadcasted), U2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_reversed_wires(self, tol):
-        """Test that a 2 qubit gate on reversed consecutive wires correctly
-        expands to 4 qubits."""
-        # CNOT with target on wire 1
-        res = qml.operation.expand_matrix(CNOT, [1, 0], [0, 1, 2, 3])
-        rows = np.array([0, 2, 1, 3])
-        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_reversed_wires_broadcasted(self, tol):
-        """Test that a broadcasted 2 qubit gate on reversed consecutive wires correctly
-        expands to 4 qubits."""
-        # CNOT with target on wire 1 and a batch dimension of size 1
-        res = qml.operation.expand_matrix(CNOT_broadcasted, [1, 0], [0, 1, 2, 3])
-        rows = [0, 2, 1, 3]
-        expected = np.kron(
-            np.kron(CNOT_broadcasted[:, :, rows][:, rows], I_broadcasted), I_broadcasted
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_consecutive_wires(self, tol):
-        """Test that a 3 qubit gate on consecutive
-        wires correctly expands to 4 qubits."""
-        # test applied to wire 0,1,2
-        res = qml.operation.expand_matrix(Toffoli, [0, 1, 2], [0, 1, 2, 3])
-        expected = np.kron(Toffoli, I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1,2,3
-        res = qml.operation.expand_matrix(Toffoli, [1, 2, 3], [0, 1, 2, 3])
-        expected = np.kron(I, Toffoli)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_consecutive_wires_broadcasted(self, tol):
-        """Test that a broadcasted 3 qubit gate on consecutive
-        wires correctly expands to 4 qubits."""
-        # test applied to wire 0,1,2
-        res = qml.operation.expand_matrix(Toffoli_broadcasted, [0, 1, 2], [0, 1, 2, 3])
-        expected = np.kron(Toffoli_broadcasted, I_broadcasted)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1,2,3
-        res = qml.operation.expand_matrix(Toffoli_broadcasted, [1, 2, 3], [0, 1, 2, 3])
-        expected = np.kron(I_broadcasted, Toffoli_broadcasted)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
-        """Test that a 3 qubit gate on non-consecutive but ascending
-        wires correctly expands to 4 qubits."""
-        # test applied to wire 0,2,3
-        res = qml.operation.expand_matrix(Toffoli, [0, 2, 3], [0, 1, 2, 3])
-        expected = np.kron(SWAP, II) @ np.kron(I, Toffoli) @ np.kron(SWAP, II)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 0,1,3
-        res = qml.operation.expand_matrix(Toffoli, [0, 1, 3], [0, 1, 2, 3])
-        expected = np.kron(II, SWAP) @ np.kron(Toffoli, I) @ np.kron(II, SWAP)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_ascending_wires_broadcasted(self, tol):
-        """Test that a broadcasted 3 qubit gate on non-consecutive but ascending
-        wires correctly expands to 4 qubits."""
-        # test applied to wire 0,2,3
-        res = qml.operation.expand_matrix(Toffoli_broadcasted[:1], [0, 2, 3], [0, 1, 2, 3])
-        expected = np.tensordot(
-            np.tensordot(
-                np.kron(SWAP, II),
-                np.kron(I_broadcasted, Toffoli_broadcasted[:1]),
-                axes=[[1], [1]],
-            ),
-            np.kron(SWAP, II),
-            axes=[[2], [0]],
-        )
-        expected = np.moveaxis(expected, 0, -2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 0,1,3
-        res = qml.operation.expand_matrix(Toffoli_broadcasted, [0, 1, 3], [0, 1, 2, 3])
-        expected = np.tensordot(
-            np.tensordot(
-                np.kron(II, SWAP),
-                np.kron(Toffoli_broadcasted, I_broadcasted),
-                axes=[[1], [1]],
-            ),
-            np.kron(II, SWAP),
-            axes=[[2], [0]],
-        )
-        expected = np.moveaxis(expected, 0, -2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
-        """Test that a 3 qubit gate on non-consecutive non-ascending
-        wires correctly expands to 4 qubits"""
-        # test applied to wire 3, 1, 2
-        res = qml.operation.expand_matrix(Toffoli, [3, 1, 2], [0, 1, 2, 3])
-        # change the control qubit on the Toffoli gate
-        rows = [0, 4, 1, 5, 2, 6, 3, 7]
-        Toffoli_perm = Toffoli[:, rows][rows]
-        expected = np.kron(I, Toffoli_perm)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 3, 0, 2
-        res = qml.operation.expand_matrix(Toffoli, [3, 0, 2], [0, 1, 2, 3])
-        # change the control qubit on the Toffoli gate
-        expected = np.kron(SWAP, II) @ np.kron(I, Toffoli_perm) @ np.kron(SWAP, II)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_nonascending_wires_broadcasted(self, tol):
-        """Test that a broadcasted 3 qubit gate on non-consecutive non-ascending
-        wires correctly expands to 4 qubits"""
-        # test applied to wire 3, 1, 2
-        res = qml.operation.expand_matrix(Toffoli_broadcasted, [3, 1, 2], [0, 1, 2, 3])
-        # change the control qubit on the Toffoli gate
-        rows = [0, 4, 1, 5, 2, 6, 3, 7]
-        Toffoli_broadcasted_perm = Toffoli_broadcasted[:, :, rows][:, rows]
-        expected = np.kron(I_broadcasted, Toffoli_broadcasted_perm)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 3, 0, 2
-        res = qml.operation.expand_matrix(Toffoli_broadcasted, [3, 0, 2], [0, 1, 2, 3])
-        # change the control qubit on the Toffoli gate
-        expected = np.tensordot(
-            np.tensordot(
-                np.kron(SWAP, II),
-                np.kron(I_broadcasted, Toffoli_broadcasted_perm),
-                axes=[[1], [1]],
-            ),
-            np.kron(SWAP, II),
-            axes=[[2], [0]],
-        )
-        expected = np.moveaxis(expected, 0, -2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_matrix_usage_in_operator_class(self, tol):
-        """Tests that the method is used correctly by defining a dummy operator and
-        checking the permutation/expansion."""
-
-        perm = [0, 2, 1, 3]
-        permuted_matrix = self.base_matrix_2[perm][:, perm]
-
-        expanded_matrix = np.array(
-            [
-                [1, 2, 0, 0, 3, 4, 0, 0],
-                [5, 6, 0, 0, 7, 8, 0, 0],
-                [0, 0, 1, 2, 0, 0, 3, 4],
-                [0, 0, 5, 6, 0, 0, 7, 8],
-                [9, 10, 0, 0, 11, 12, 0, 0],
-                [13, 14, 0, 0, 15, 16, 0, 0],
-                [0, 0, 9, 10, 0, 0, 11, 12],
-                [0, 0, 13, 14, 0, 0, 15, 16],
-            ]
-        )
-
-        class DummyOp(qml.operation.Operator):
-            num_wires = 2
-
-            def compute_matrix(*params, **hyperparams):
-                return self.base_matrix_2
-
-        op = DummyOp(wires=[0, 2])
-        assert np.allclose(op.matrix(), self.base_matrix_2, atol=tol)
-        assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
-        assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
-
-    def test_expand_matrix_usage_in_operator_class_broadcasted(self, tol):
-        """Tests that the method is used correctly with a broadcasted matrix by defining
-        a dummy operator and checking the permutation/expansion."""
-
-        perm = [0, 2, 1, 3]
-        permuted_matrix = self.base_matrix_2_broadcasted[:, perm][:, :, perm]
-
-        expanded_matrix = np.tensordot(
-            np.tensordot(
-                np.kron(SWAP, I),
-                np.kron(I_broadcasted, self.base_matrix_2_broadcasted),
-                axes=[[1], [1]],
-            ),
-            np.kron(SWAP, I),
-            axes=[[2], [0]],
-        )
-        expanded_matrix = np.moveaxis(expanded_matrix, 0, -2)
-
-        class DummyOp(qml.operation.Operator):
-            num_wires = 2
-
-            def compute_matrix(*params, **hyperparams):
-                return self.base_matrix_2_broadcasted
-
-        op = DummyOp(wires=[0, 2])
-        assert np.allclose(op.matrix(), self.base_matrix_2_broadcasted, atol=tol)
-        assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
-        assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
 
 def test_docstring_example_of_operator_class(tol):

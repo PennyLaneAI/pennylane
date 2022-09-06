@@ -14,18 +14,54 @@
 """
 This module contains classes and functions for Operator arithmetic.
 
-.. currentmodule:: pennylane.ops.op_math
+Constructor Functions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
+
+    ~adjoint
+    ~ctrl
+    ~exp
+    ~op_sum
+    ~prod
+    ~s_prod
+
+Symbolic Classes
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~Adjoint
+    ~ControlledOperation
+    ~Controlled
+    ~ControlledOp
+    ~Exp
+    ~Pow
+    ~Prod
+    ~Sum
+    ~SProd
+    ~SymbolicOp
 
 """
 
 from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
+from .controlled_class import Controlled, ControlledOp
+from .exp import exp, Exp
+
+from .prod import prod, Prod
+
 from .sum import op_sum, Sum
 
-from .control import ctrl, ControlledOperation
+from .sprod import s_prod, SProd
 
+from .control import ctrl, ControlledOperation
 from .pow_class import Pow
 
 from .symbolicop import SymbolicOp

@@ -33,13 +33,14 @@ class SymbolicOp(Operator):
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
     :class:`~.ops.op_math.Adjoint` and :class:`~.ops.op_math.Pow`.
 
-    New symbolic operators can inherit from this class to recieve some common default behavior, such as
-    deferring properties to the the base class, copying the base class during a shallow copy, and updating
-    the metadata of the base operator during queueing.
+    New symbolic operators can inherit from this class to recieve some common default behavior, such
+    as deferring properties to the the base class, copying the base class during a shallow copy, and
+    updating the metadata of the base operator during queueing.
 
-    The child symbolic operator should define the `_name` property during initialization and define any
-    relevant representations, such as :meth:`~.operation.Operator.matrix`, :meth:`~.operation.Operator.diagonalizing_gates`,
-    :meth:`~.operation.Operator.eigvals`, and :meth:`~.operation.Operator.decomposition`.
+    The child symbolic operator should define the `_name` property during initialization and define
+    any relevant representations, such as :meth:`~.operation.Operator.matrix`,
+    :meth:`~.operation.Operator.diagonalizing_gates`, :meth:`~.operation.Operator.eigvals`, and
+    :meth:`~.operation.Operator.decomposition`.
     """
 
     _name = "Symbolic"
@@ -70,7 +71,7 @@ class SymbolicOp(Operator):
             self.queue()
 
     @property
-    def base(self):
+    def base(self) -> Operator:
         """The base operator."""
         return self.hyperparameters["base"]
 
@@ -82,10 +83,6 @@ class SymbolicOp(Operator):
     @data.setter
     def data(self, new_data):
         self.base.data = new_data
-
-    @property
-    def parameters(self):
-        return self.base.parameters
 
     @property
     def num_params(self):
@@ -109,14 +106,6 @@ class SymbolicOp(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
@@ -134,3 +123,16 @@ class SymbolicOp(Operator):
         context.safe_update_info(self.base, owner=self)
         context.append(self, owns=self.base)
         return self
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + self.base.arithmetic_depth
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                self.base.hash,
+            )
+        )

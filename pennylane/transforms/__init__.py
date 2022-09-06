@@ -82,7 +82,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
-    ~transforms.simplify
     ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
@@ -218,10 +217,8 @@ from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .commutation_dag import (
     commutation_dag,
-    is_commuting,
     CommutationDAG,
     CommutationDAGNode,
-    simplify,
 )
 from .tape_expand import (
     expand_invalid_trainable,

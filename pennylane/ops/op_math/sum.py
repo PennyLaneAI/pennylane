@@ -15,7 +15,9 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+from copy import copy
 from functools import reduce
+from typing import List
 
 import numpy as np
 
@@ -28,17 +30,17 @@ def op_sum(*summands, do_queue=True, id=None):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
-        id (str or None): id for the sum operator. Default is None.
+        id (str or None): id for the Sum operator. Default is None.
 
     Returns:
-        ~ops.op_math.Sum: the operator representing the sum of summands.
+        ~ops.op_math.Sum: The operator representing the sum of summands.
 
-    ..seealso:: :class:`~.ops.op_math.Sum`
+    .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
 
@@ -56,7 +58,7 @@ def _sum(mats_gen, dtype=None, cast_like=None):
     r"""Private method to compute the sum of matrices.
 
     Args:
-        mats_gen (Generator): a python generator which produces the matricies which
+        mats_gen (Generator): a python generator which produces the matrices which
             will be summed together.
 
     Keyword Args:
@@ -84,9 +86,13 @@ class Sum(Operator):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
+        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str or None): id for the sum operator. Default is None.
+
+    .. note::
+        Currently this operator can not be queued in a circuit as an operation, only measured terminally.
+
+    .. seealso:: :func:`~.ops.op_math.op_sum`
 
     **Example**
 
@@ -115,6 +121,27 @@ class Sum(Operator):
                 1.81677345+0.57695852j, 0.        +0.j        ],
                [0.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 1.81677345+0.57695852j]])
+
+        The Sum operation can also be measured inside a qnode as an observable.
+        If the circuit is parameterized, then we can also differentiate through the
+        sum observable.
+
+        .. code-block:: python
+
+            sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, grad_method="best")
+            def circuit(weights):
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.RX(weights[2], wires=1)
+                return qml.expval(sum_op)
+
+        >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.grad(circuit)(weights)
+        tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
     """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
@@ -131,7 +158,6 @@ class Sum(Operator):
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
 
         self.summands = summands
-        self.data = [s.parameters for s in self.summands]
         self._wires = qml.wires.Wires.all_wires([s.wires for s in self.summands])
 
         if do_queue:
@@ -139,12 +165,11 @@ class Sum(Operator):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return " + ".join([f"{f}" for f in self.summands])
+        return " + ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.summands])
 
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()  # copies the combined parameters
         copied_op.summands = tuple(s.__copy__() for s in self.summands)
 
         for attr, value in vars(self).items():
@@ -154,14 +179,15 @@ class Sum(Operator):
         return copied_op
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        raise ValueError("Batch size is not defined for Sum operators.")
+    def data(self):
+        """Create data property"""
+        return [s.parameters for s in self.summands]
 
-    @property
-    def ndim_params(self):
-        """ndim_params of input parameters."""
-        raise ValueError("Dimension of parameters is not currently implemented for Sum operators.")
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for new_entry, op in zip(new_data, self.summands):
+            op.data = new_entry
 
     @property
     def num_wires(self):
@@ -189,7 +215,7 @@ class Sum(Operator):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self.summands), self.summands
+        return [1.0] * len(self.summands), list(self.summands)
 
     @property
     def eigendecomposition(self):
@@ -201,7 +227,8 @@ class Sum(Operator):
         It transforms the input operator according to the wires specified.
 
         Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
+            operator
         """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
@@ -217,7 +244,7 @@ class Sum(Operator):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -259,7 +286,8 @@ class Sum(Operator):
         .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
 
         Returns:
             tensor_like: matrix representation
@@ -268,12 +296,58 @@ class Sum(Operator):
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
             for op in summands:
-                yield op.matrix(wire_order=wire_order)
+                if isinstance(op, qml.Hamiltonian):
+                    yield qml.matrix(op, wire_order=wire_order)
+                else:
+                    yield op.matrix(wire_order=wire_order)
 
         if wire_order is None:
             wire_order = self.wires
 
         return _sum(matrix_gen(self.summands, wire_order))
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""How the sum is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``factors`` attribute.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        >>> op = qml.op_sum(qml.op_sum(qml.PauliX(0), qml.PauliY(1)), qml.RX(1, wires=0))
+        >>> op.label()
+        '(X+Y)+RX'
+        >>> op.label(decimals=2, base_label=[["X0", "Y1"], "RX0"])
+        '(X0+Y1)+RX0\n(1.00)'
+
+        """
+
+        def _label(factor, decimals, base_label, cache):
+            sub_label = factor.label(decimals, base_label, cache)
+            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
+
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self.summands):
+                raise ValueError(
+                    "Sum label requires ``base_label`` keyword to be same length as summands."
+                )
+            return "+".join(
+                _label(s, decimals, lbl, cache) for s, lbl in zip(self.summands, base_label)
+            )
+
+        return "+".join(_label(s, decimals, None, cache) for s in self.summands)
+
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the Sum op in csr representation."""
+        wire_order = wire_order or self.wires
+        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
+        return reduce(math.add, mats_gen)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
@@ -290,4 +364,96 @@ class Sum(Operator):
         that the summands are not applied to the circuit repeatedly."""
         for op in self.summands:
             context.safe_update_info(op, owner=self)
+        context.append(self, owns=self.summands)
         return self
+
+    def adjoint(self):
+        return Sum(*(qml.adjoint(summand) for summand in self.summands))
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(summand.arithmetic_depth for summand in self.summands)
+
+    @classmethod
+    def _simplify_summands(cls, summands: List[Operator]):
+        """Reduces the depth of nested summands and groups equal terms together.
+
+        Args:
+            summands (List[~.operation.Operator]): summands list to simplify
+
+        Returns:
+            .SumSummandsGrouping: Class containing the simplified and grouped summands.
+        """
+        new_summands = _SumSummandsGrouping()
+        for summand in summands:
+            # This code block is not needed but it speeds things up when having a lot of  stacked Sums
+            if isinstance(summand, Sum):
+                sum_summands = cls._simplify_summands(summands=summand.summands)
+                for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
+                    new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
+                continue
+
+            simplified_summand = summand.simplify()
+            if isinstance(simplified_summand, Sum):
+                sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
+                for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
+                    new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
+            else:
+                new_summands.add(summand=simplified_summand)
+
+        return new_summands
+
+    def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        new_summands = self._simplify_summands(summands=self.summands).get_summands(cutoff=cutoff)
+        if new_summands:
+            return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
+        return qml.s_prod(
+            0,
+            qml.prod(*(qml.Identity(w) for w in self.wires))
+            if len(self.wires) > 1
+            else qml.Identity(self.wires[0]),
+        )
+
+
+class _SumSummandsGrouping:
+    """Utils class used for grouping sum summands together."""
+
+    def __init__(self):
+        self.queue = {}  # {hash: [coeff, summand]}
+
+    def add(self, summand: Operator, coeff=1, op_hash=None):
+        """Add operator to the summands dictionary.
+
+        If the operator hash is already in the dictionary, the coefficient is increased instead.
+
+        Args:
+            summand (Operator): operator to add to the summands dictionary
+            coeff (int, optional): Coefficient of the operator. Defaults to 1.
+            op_hash (int, optional): Hash of the operator. Defaults to None.
+        """
+        if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
+            coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
+            self.add(summand=summand.base, coeff=coeff)
+        else:
+            op_hash = summand.hash if op_hash is None else op_hash
+            if op_hash in self.queue:
+                self.queue[op_hash][0] += coeff
+            else:
+                self.queue[op_hash] = [copy(coeff), summand]
+
+    def get_summands(self, cutoff=1.0e-12):
+        """Get summands list.
+
+        All summands with a coefficient less than cutoff are ignored.
+
+        Args:
+            cutoff (float, optional): Cutoff value. Defaults to 1.0e-12.
+        """
+        new_summands = []
+        for coeff, summand in self.queue.values():
+            if coeff == 1:
+                new_summands.append(summand)
+            elif abs(coeff) > cutoff:
+                new_summands.append(qml.s_prod(coeff, summand))
+
+        return new_summands

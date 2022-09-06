@@ -280,13 +280,15 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                 specialfunc(drawer, layer, mapped_wires, op)
 
             else:
-                control_wires = [wire_map[w] for w in op.control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
+                op_control_wires = getattr(op, "control_wires", [])
+                control_wires = [wire_map[w] for w in op_control_wires]
+                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
                 control_values = op.hyperparameters.get("control_values", None)
 
                 if control_values is None:
-                    control_values = "1" * len(control_wires)
-                control_values = [(i == "1") for i in control_values]
+                    control_values = [True for _ in control_wires]
+                elif isinstance(control_values[0], str):
+                    control_values = [(i == "1") for i in control_values]
 
                 if len(control_wires) != 0:
                     drawer.ctrl(
