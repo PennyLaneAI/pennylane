@@ -326,7 +326,7 @@ class ClassicalShadow:
     def entropy(self, wires=None, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
         r"""Compute entropies from classical shadow measurements.
 
-        Compute general Renyi entropies of order :math:`\alpha` for a reduced denity matrix :math:`\rho` in terms of
+        Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
 
         .. math:: S_\alpha(\rho) = \frac{1}{1-\alpha} \log\left(\text{tr}\left[\rho^\alpha \right] \right).
 
@@ -355,7 +355,7 @@ class ClassicalShadow:
             k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
                 Thus, ``k=1`` is default and advised.
             base (float): Base to the logarithm used for the entropies.
-            atol (float): Absolute tolerance for Eigenvalues close to 0 that are taken into account.
+            atol (float): Absolute tolerance for eigenvalues close to 0 that are taken into account.
 
         Returns:
             float: Entropy of the chosen subsystem.
@@ -435,7 +435,7 @@ class ClassicalShadow:
         if alpha == 1:
             # Special case of von Neumann entropy
             return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
-        # else:
+        
         # General Renyi-alpha entropy
         return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
