@@ -159,9 +159,13 @@ class Sum(CompositeOp):
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
+
         .. math:: O = \sum_i c_i O_i
+
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
         .. seealso:: :meth:`~.Operator.compute_terms`
+
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`

@@ -1024,6 +1024,21 @@ class TestIntegration:
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
 
+    def test_decomposition_while_queued(self):
+        """Test that operators from decomposition are all applied."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.Hadamard(0), qml.Hadamard(1))
+        obs_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            prod_op.decomposition()
+            return qml.sample(op=obs_op)
+
+        results = my_circ()
+
+        assert len(results) == 20
+        assert (results == 1).all()
 
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
