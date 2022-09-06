@@ -1662,7 +1662,7 @@ class QubitDevice(Device):
                 outcomes = self.generate_basis_states(num_wires)
                 outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
         elif obs.return_type is AllCounts:
-                outcomes = qml.eigvals(obs)
+            outcomes = qml.eigvals(obs)
 
         # generate empty outcome dict, populate values with state counts
         outcome_dict = {k: np.int64(0) for k in outcomes}
