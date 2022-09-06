@@ -14,6 +14,7 @@
 """
 This submodule defines a base class for composite operations.
 """
+import abc
 import itertools
 from copy import copy
 from functools import reduce
@@ -26,7 +27,8 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 
-class CompositeOp(Operator):
+
+class CompositeOp(Operator, abc.ABC):
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -41,14 +43,16 @@ class CompositeOp(Operator):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
-    _name = "Composite"
-    _op_symbol = None
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
     def __init__(self, *operands: Operator, do_queue=True, id=None):
         self._id = id
         self.queue_idx = None
 
+        if not hasattr(self, "_name"):
+            raise NotImplementedError("Child class must specify _name")
+        if not hasattr(self, "_op_symbol"):
+            raise NotImplementedError("Child class must specify _op_symbol")
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
@@ -60,7 +64,9 @@ class CompositeOp(Operator):
             self.queue()
 
     def __repr__(self):
-        return f" {self.op_symbol} ".join([f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self.operands])
+        return f" {self.op_symbol} ".join(
+            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self.operands]
+        )
 
     def __copy__(self):
         cls = self.__class__
@@ -69,7 +75,7 @@ class CompositeOp(Operator):
 
         for attr, value in vars(self).items():
             if attr not in {"operands"}:
-                setattr(copied_op, attr, value) # TODO: exclude data?
+                setattr(copied_op, attr, value)  # TODO: exclude data?
 
         return copied_op
 
@@ -109,11 +115,19 @@ class CompositeOp(Operator):
         return sum(op.num_params for op in self.operands)
 
     @property
+    @abc.abstractmethod
     def is_hermitian(self):
         """
         TODO: should we do `all(op.is_hermitian for op in self.operands)` as default?
         """
-        return False
+
+    @abc.abstractmethod
+    def matrix(self, wire_order=None):
+        """Representation of the operator as a matrix in the computational basis."""
+
+    @abc.abstractmethod
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the composite operator."""
 
     @property
     def eigendecomposition(self):
@@ -183,13 +197,16 @@ class CompositeOp(Operator):
         Returns:
             str: label to use in drawings
         """
+
         def _label(op, decimals, base_label, cache):
             sub_label = op.label(decimals, base_label, cache)
             return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
 
         if base_label is not None:
             if isinstance(base_label, str) or len(base_label) != len(self.operands):
-                raise ValueError("Composite operator labels require ``base_label`` keyword to be same length as operands.")
+                raise ValueError(
+                    "Composite operator labels require ``base_label`` keyword to be same length as operands."
+                )
             return self.op_symbol.join(
                 _label(op, decimals, lbl, cache) for op, lbl in zip(self.operands, base_label)
             )
