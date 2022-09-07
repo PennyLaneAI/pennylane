@@ -300,8 +300,6 @@ class TestQNSPSAOptimizer:
 
     def test_step_and_cost_from_multi_input(self, finite_diff_step, seed):
         """Test step_and_cost() function with the multi-input qnode."""
-        # TODO: The test largely duplicates the test of test_step_from_single_input. Futher refactoring
-        # might be possible.
         regularization = 1e-3
         stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
@@ -361,8 +359,6 @@ class TestQNSPSAOptimizer:
 
     def test_step_and_cost_with_non_trainable_input(self, finite_diff_step, seed):
         """Test step_and_cost() function with the qnode with non-trainable input."""
-        # TODO: The test largely duplicates the test of test_step_from_single_input. Futher refactoring
-        # might be possible.
         regularization = 1e-3
         stepsize = 1e-2
         opt = qml.QNSPSAOptimizer(
