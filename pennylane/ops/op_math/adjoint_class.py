@@ -255,6 +255,7 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
+        base = self.base.simplify()
         if self.base.has_adjoint:
-            return self.base.adjoint().simplify()
-        return Adjoint(base=self.base.simplify())
+            return base.adjoint().simplify()
+        return Adjoint(base=base.simplify())

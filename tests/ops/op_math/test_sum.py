@@ -733,6 +733,62 @@ class TestSimplify:
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_grouping(self):
+        """Test that the simplify method groups equal terms."""
+        sum_op = op_sum(
+            qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
+            qml.prod(qml.RX(1.0, 0), qml.PauliX(0), qml.PauliZ(1)),
+            qml.adjoint(qml.op_sum(qml.RY(1, 0), qml.PauliZ(1))),
+            qml.adjoint(qml.RY(1, 0)),
+            qml.adjoint(qml.PauliZ(1)),
+        )
+        mod_angle = -1 % (4 * np.pi)
+        final_op = op_sum(
+            qml.s_prod(2, qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1))),
+            qml.s_prod(2, qml.RY(mod_angle, 0)),
+            qml.s_prod(2, qml.PauliZ(1)),
+        )
+        simplified_op = sum_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Sum)
+        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_grouping_delete_terms(self):
+        """Test that the simplify method deletes all terms with coefficient equal to 0."""
+        sum_op = qml.op_sum(
+            qml.PauliX(0),
+            qml.s_prod(0.3, qml.PauliX(0)),
+            qml.s_prod(0.8, qml.PauliX(0)),
+            qml.s_prod(0.2, qml.PauliX(0)),
+            qml.s_prod(0.4, qml.PauliX(0)),
+            qml.s_prod(0.3, qml.PauliX(0)),
+            qml.s_prod(-3, qml.PauliX(0)),
+        )
+        simplified_op = sum_op.simplify()
+        final_op = qml.s_prod(0, qml.Identity(0))
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_simplify_grouping_with_tolerance(self):
+        """Test the simplify method with a specific tolerance."""
+        sum_op = qml.op_sum(-0.9 * qml.RX(1, 0), qml.RX(1, 0))
+        final_op = qml.s_prod(0, qml.Identity(0))
+        simplified_op = sum_op.simplify(cutoff=0.1)
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
