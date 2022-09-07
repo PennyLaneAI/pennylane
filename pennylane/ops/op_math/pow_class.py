@@ -27,7 +27,6 @@ from pennylane.operation import (
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
-    expand_matrix,
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingContext, apply
@@ -155,6 +154,13 @@ class Pow(SymbolicOp):
 
         super().__init__(base, do_queue=do_queue, id=id)
 
+    def __repr__(self):
+        return (
+            f"({self.base})**{self.z}"
+            if self.base.arithmetic_depth > 0
+            else f"{self.base}**{self.z}"
+        )
+
     @property
     def z(self):
         """The exponent."""
@@ -170,7 +176,10 @@ class Pow(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
-        return self.base.label(decimals, base_label, cache=cache) + z_string
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return (
+            f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
+        )
 
     def matrix(self, wire_order=None):
         if isinstance(self.base, qml.Hamiltonian):
@@ -186,7 +195,7 @@ class Pow(SymbolicOp):
         if wire_order is None or self.wires == Wires(wire_order):
             return mat
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -254,12 +263,16 @@ class Pow(SymbolicOp):
         """
         return self.z * self.base.generator()
 
+    def pow(self, z):
+        return [Pow(base=self.base, z=self.z * z)]
+
     def adjoint(self):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        base = self.base.simplify()
         try:
-            ops = self.base.pow(z=self.z)
+            ops = base.pow(z=self.z)
             if not ops:
                 return (
                     qml.prod(*(qml.Identity(w) for w in self.wires))
@@ -269,4 +282,4 @@ class Pow(SymbolicOp):
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:
-            return Pow(base=self.base.simplify(), z=self.z)
+            return Pow(base=base, z=self.z)

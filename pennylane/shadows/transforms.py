@@ -26,6 +26,13 @@ def __replace_obs(tape, obs, *args, **kwargs):
     """
     Tape transform to replace the measurement processes with the given one
     """
+    # check if the measurement process of the tape is qml.classical_shadow
+    for o in tape.observables:
+        if o.return_type is not qml.measurements.Shadow:
+            raise ValueError(
+                f"Tape measurement must be {qml.measurements.Shadow!r}, got {o.return_type!r}"
+            )
+
     with qml.tape.QuantumTape() as new_tape:
         # queue everything from the old tape except the measurement processes
         for op in tape.operations:
@@ -40,7 +47,7 @@ def __replace_obs(tape, obs, *args, **kwargs):
     return [new_tape], processing_fn
 
 
-def expval(H, k=1):
+def shadow_expval(H, k=1):
     """Transform a QNode returning a classical shadow into one that returns
     the approximate expectation values in a differentiable manner.
 
@@ -161,7 +168,7 @@ def _shadow_state_undiffable(wires):
     return decorator
 
 
-def state(wires, diffable=False):
+def shadow_state(wires, diffable=False):
     """Transform a QNode returning a classical shadow into one that returns
     the reconstructed state in a differentiable manner.
 
