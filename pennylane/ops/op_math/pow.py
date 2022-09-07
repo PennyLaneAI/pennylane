@@ -51,7 +51,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     Returns:
         Operator
 
-    .. seealso:: :class:`~.Pow`, :method:`~.Operator.pow`.
+    .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
 
     **Example**
 
