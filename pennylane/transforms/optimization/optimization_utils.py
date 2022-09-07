@@ -13,6 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
+from functools import partial
 import numpy as np
 
 from pennylane.math import (
@@ -72,11 +73,22 @@ def _quaternion_product(q1, q2):
     return stack([qw, qx, qy, qz])
 
 
-def _singular_quat_to_zyz(q, y_arg):
+def _singular_quat_to_zyz(qw, qx, qy, qz, y_arg, abstract_jax=False):
     """Compute the ZYZ angles for the singular case of qx = qy = 0"""
-    qw, qx, qy, qz = q
     z1_arg1 = 2 * (qx * qy + qz * qw)
     z1_arg2 = 1 - 2 * (qx**2 + qz**2)
+
+    if abstract_jax:
+        from jax.lax import cond
+
+        return cond(
+            y_arg > 0,
+            lambda z1_arg1, z1_arg2: stack([arctan2(z1_arg1, z1_arg2), 0.0, 0.0]),
+            lambda z1_arg1, z1_arg2: stack([-arctan2(z1_arg1, z1_arg2), np.pi, 0.0]),
+            z1_arg1,
+            z1_arg2,
+        )
+
     if y_arg > 0:
         z1 = arctan2(z1_arg1, z1_arg2)
         y = z2 = 0.0
@@ -87,26 +99,9 @@ def _singular_quat_to_zyz(q, y_arg):
     return stack([z1, y, z2])
 
 
-def _singular_quat_to_zyz_jax(q, y_arg):
-    """Compute the ZYZ angles for the singular case of qx = qy = 0 in a jax
-    JIT compatible manner."""
-    from jax.lax import cond
-
-    qw, qx, qy, qz = q
-    z1_arg1 = 2 * (qx * qy + qz * qw)
-    z1_arg2 = 1 - 2 * (qx**2 + qz**2)
-    return cond(
-        y_arg > 0,
-        lambda z1_arg1, z1_arg2: stack([arctan2(z1_arg1, z1_arg2), 0.0, 0.0]),
-        lambda z1_arg1, z1_arg2: stack([-arctan2(z1_arg1, z1_arg2), np.pi, 0.0]),
-        z1_arg1,
-        z1_arg2,
-    )
-
-
-def _regular_quat_to_zyz(q, y_arg):
+def _regular_quat_to_zyz(qw, qx, qy, qz, y_arg):
     """Compute the ZYZ angles for the regular case (qx != 0 or qy != 0)"""
-    qw, qx, qy, qz = q
+    # pynt: disable=unused-argument
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
     z1 = arctan2(z1_arg1, z1_arg2)
@@ -120,39 +115,34 @@ def _regular_quat_to_zyz(q, y_arg):
     return stack([z1, y, z2])
 
 
-def _fuse(angles_1, angles_2):
+def _fuse(angles_1, angles_2, abstract_jax=False):
     """Perform fusion of two angle sets. Separated out so we can do JIT with conditionals."""
     # Compute the product of the quaternions
-    q = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
+    qw, qx, qy, qz = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
 
     # Convert the product back into the angles fed to Rot
-    y_arg = 1 - 2 * (q[1] ** 2 + q[2] ** 2)
-
-    # Require special treatment of the case qx = qy = 0
-    if abs(y_arg) >= 1:  # Have to check for "greater than" as well, because of imprecisions
-        return _singular_quat_to_zyz(q, y_arg)
-    return _regular_quat_to_zyz(q, y_arg)
-
-
-def _fuse_jax(angles_1, angles_2):
-    """Perform fusion of two angle sets. Separated out so we can do JIT with conditionals."""
-    # Compute the product of the quaternions
-    q = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
-
-    # Convert the product back into the angles fed to Rot
-    y_arg = 1 - 2 * (q[1] ** 2 + q[2] ** 2)
-
-    from jax.lax import cond
+    y_arg = 1 - 2 * (qx**2 + qy**2)
 
     # Require special treatment of the case qx = qy = 0. Note that we have to check
     # for "greater than" as well, because of imprecisions
-    return cond(
-        math_abs(y_arg) >= 1,
-        _singular_quat_to_zyz_jax,
-        _regular_quat_to_zyz,
-        q,
-        y_arg,
-    )
+    if abstract_jax:
+        from jax.lax import cond
+
+        return cond(
+            math_abs(y_arg) >= 1,
+            partial(_singular_quat_to_zyz, abstract_jax=True),
+            _regular_quat_to_zyz,
+            qw,
+            qx,
+            qy,
+            qz,
+            y_arg,
+        )
+
+    # Require special treatment of the case qx = qy = 0
+    if abs(y_arg) >= 1:  # Have to check for "greater than" as well, because of imprecisions
+        return _singular_quat_to_zyz(qw, qx, qy, qz, y_arg)
+    return _regular_quat_to_zyz(qw, qx, qy, qz, y_arg)
 
 
 def _no_fuse(angles_1, angles_2):
@@ -160,6 +150,7 @@ def _no_fuse(angles_1, angles_2):
         Rot(a, 0, b) Rot(c, 0, d) = Rot(a + b + c + d, 0, 0)
     The quaternion math itself will fail in this case without a conditional.
     """
+    # pynt: disable=unused-argument
     return stack([angles_1[0] + angles_1[2] + angles_2[0] + angles_2[2], 0.0, 0.0])
 
 
@@ -192,7 +183,7 @@ def fuse_rot_angles(angles_1, angles_2):
             return cond(
                 allclose(angles_1[1], 0.0) * allclose(angles_2[1], 0.0),
                 _no_fuse,
-                _fuse_jax,
+                partial(_fuse, abstract_jax=True),
                 angles_1,
                 angles_2,
             )
