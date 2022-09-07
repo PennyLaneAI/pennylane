@@ -158,7 +158,7 @@
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
 
   A common scenario in which this becomes relevant is the decomposition of broadcasted
-  operations: The decomposition in general will contain one or multiple broadcasted
+  operations: the decomposition in general will contain one or multiple broadcasted
   operations as well as operations with no or fixed parameters that are not broadcasted.
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
