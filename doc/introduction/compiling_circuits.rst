@@ -58,7 +58,9 @@ Then the product of sums is transformed into a sum of products:
     qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
 
 And finally like terms in the obtained products are grouped together, removing all identities: 
+
 .. code-block:: python
+
     qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
 
 As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
