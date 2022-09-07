@@ -314,19 +314,35 @@ class Prod(Operator):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        mats = (
-            math.expand_matrix(qml.matrix(op), op.wires, wire_order=self.wires)
-            if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=self.wires)
-            for op in self.factors
-        )
 
-        reduced_mat = reduce(math.dot, mats)
+        sorted_factors = _prod_sort(self.factors)
+        mats = [
+            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+            for op in sorted_factors
+        ]
 
-        if wire_order is not None:
-            reduced_mat = math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
+        def reduce_func(op1_tuple: tuple, op2_tuple: tuple):
+            mat1, wires1 = op1_tuple
+            mat2, wires2 = op2_tuple
+            if wires1 != wires2:
+                if not set(wires1) ^ set(wires2):
+                    # same wires but different order
+                    mat2 = math.expand_matrix(mat2, wires2, wire_order=wires1)
+                    prod_wires = wires1
+                else:
+                    # different wires
+                    prod_wires = wires1 + wires2
+                    mat1 = math.expand_matrix(mat1, wires1, wire_order=prod_wires)
+                    mat2 = math.expand_matrix(mat2, wires2, wire_order=prod_wires)
+            else:
+                prod_wires = wires1
+            return math.dot(mat1, mat2), prod_wires
 
-        return reduced_mat
+        reduced_mat, sorted_wires = reduce(reduce_func, mats)
+
+        wire_order = wire_order or self.wires
+
+        return math.expand_matrix(reduced_mat, sorted_wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
