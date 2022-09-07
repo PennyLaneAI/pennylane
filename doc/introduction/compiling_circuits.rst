@@ -28,6 +28,8 @@ functions, QNodes and tapes. This function has several purposes:
 
 Here are some simple simplification routines:
 
+>>> qml.simplify(qml.RX(4*np.pi+0.1, 0 ))
+RX(0.09999999999999964, wires=[0])
 >>> qml.simplify(qml.adjoint(qml.RX(1.23, 0)))
 RX(11.336370614359172, wires=[0])
 >>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
