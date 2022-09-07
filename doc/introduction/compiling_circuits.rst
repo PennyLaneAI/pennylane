@@ -46,7 +46,9 @@ Now lets simplify a nested operator:
 (PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
 
 Several simplifications steps are happening here. First of all, the nested products are removed:
+
 .. code-block:: python
+
     qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
 
 Then the product of sums is transformed into a sum of products:
