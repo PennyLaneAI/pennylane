@@ -549,12 +549,12 @@ class TestKerasLayerIntegration:
     def test_model_save_weights(self, model, n_qubits, tmpdir):
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
-        prediction = model.predict(np.ones(n_qubits))
+        prediction = model.predict(np.ones(1, n_qubits))
         weights = model.get_weights()
         file = str(tmpdir) + "/model"
         model.save_weights(file)
         model.load_weights(file)
-        prediction_loaded = model.predict(np.ones(n_qubits))
+        prediction_loaded = model.predict(np.ones(1, n_qubits))
         weights_loaded = model.get_weights()
 
         assert np.allclose(prediction, prediction_loaded)
@@ -601,12 +601,12 @@ class TestKerasLayerIntegrationDM:
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
 
-        prediction = model_dm.predict(np.ones(n_qubits))
+        prediction = model_dm.predict(np.ones(1, n_qubits))
         weights = model_dm.get_weights()
         file = str(tmpdir) + "/model"
         model_dm.save_weights(file)
         model_dm.load_weights(file)
-        prediction_loaded = model_dm.predict(np.ones(n_qubits))
+        prediction_loaded = model_dm.predict(np.ones(1, n_qubits))
         weights_loaded = model_dm.get_weights()
 
         assert np.allclose(prediction, prediction_loaded)
