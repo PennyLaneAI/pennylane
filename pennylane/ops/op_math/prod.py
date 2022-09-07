@@ -153,7 +153,6 @@ class Prod(CompositeOp):
     """
 
     _op_symbol = "@"
-    _name = "Prod"
 
     @property
     def factors(self):
@@ -166,7 +165,7 @@ class Prod(CompositeOp):
     @property
     def batch_size(self):
         """Batch size of input parameters."""
-        return next((op.batch_size for op in self.factors if op.batch_size is not None), None)
+        return next((op.batch_size for op in self if op.batch_size is not None), None)
 
     @property
     def is_hermitian(self):
@@ -179,7 +178,7 @@ class Prod(CompositeOp):
         for o1, o2 in combinations(self.factors, r=2):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-        return all(op.is_hermitian for op in self.factors)
+        return all(op.is_hermitian for op in self)
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
@@ -189,7 +188,7 @@ class Prod(CompositeOp):
         that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
         """
         if qml.queuing.QueuingContext.recording():
-            return [qml.apply(op) for op in self.factors[::-1]]
+            return [qml.apply(op) for op in self[::-1]]
         return list(self.factors[::-1])
 
     def matrix(self, wire_order=None):
@@ -199,7 +198,7 @@ class Prod(CompositeOp):
             math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
             if isinstance(op, qml.Hamiltonian)
             else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
-            for op in self.factors
+            for op in self
         )
 
         return reduce(math.dot, mats)
@@ -207,7 +206,7 @@ class Prod(CompositeOp):
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
         wire_order = wire_order or self.wires
-        mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
+        mats = (op.sparse_matrix(wire_order=wire_order) for op in self)
         return reduce(math.dot, mats)
 
     # pylint: disable=protected-access
@@ -225,14 +224,14 @@ class Prod(CompositeOp):
 
         Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
-        return "_ops" if all(op._queue_category == "_ops" for op in self.factors) else None
+        return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
     def adjoint(self):
-        return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))
+        return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
     @property
     def arithmetic_depth(self) -> int:
-        return 1 + max(factor.arithmetic_depth for factor in self.factors)
+        return 1 + max(factor.arithmetic_depth for factor in self)
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.

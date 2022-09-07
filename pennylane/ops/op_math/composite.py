@@ -33,44 +33,39 @@ class CompositeOp(Operator, abc.ABC):
         do_queue (bool): determines if the operator will be queued. Default is True.
         id (str or None): id for the operator. Default is None.
 
-    The child composite operator should define the `_name` and `_op_symbol` properties
+    The child composite operator should define the `_op_symbol` property
     during initialization and define any relevant representations, such as
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
-    _op_symbol = None
-    _name = None
 
     def __init__(
         self, *operands: Operator, do_queue=True, id=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
+        self._name = self.__class__.__name__
 
-        if self._name is None:
-            raise NotImplementedError("Child class must specify _name")
-        if self._op_symbol is None:
-            raise NotImplementedError("Child class must specify _op_symbol")
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
         self.operands = operands
-        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.operands])
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
 
         if do_queue:
             self.queue()
 
     def __repr__(self):
-        return f" {self.op_symbol} ".join(
-            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self.operands]
+        return f" {self._op_symbol} ".join(
+            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )
 
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.operands = tuple(s.__copy__() for s in self.operands)
+        copied_op.operands = tuple(s.__copy__() for s in self)
 
         for attr, value in vars(self).items():
             if attr not in {"operands"}:
@@ -91,19 +86,19 @@ class CompositeOp(Operator, abc.ABC):
         return len(self.operands)
 
     @property
-    def op_symbol(self) -> str:
+    @abc.abstractmethod
+    def _op_symbol(self) -> str:
         """The symbol used when visualizing the composite operator"""
-        return self._op_symbol
 
     @property
     def data(self):
         """Create data property"""
-        return [op.parameters for op in self.operands]
+        return [op.data for op in self]
 
     @data.setter
     def data(self, new_data):
         """Set the data property"""
-        for new_entry, op in zip(new_data, self.operands):
+        for new_entry, op in zip(new_data, self):
             op.data = new_entry
 
     @property
@@ -112,22 +107,22 @@ class CompositeOp(Operator, abc.ABC):
 
     @property
     def num_params(self):
-        return sum(op.num_params for op in self.operands)
+        return sum(op.num_params for op in self)
 
     @property
     @abc.abstractmethod
     def is_hermitian(self):
         """
-        TODO: should we do `all(op.is_hermitian for op in self.operands)` as default?
+        TODO: should we do `all(op.is_hermitian for op in self)` as default?
         """
+
+    @property
+    def has_matrix(self):
+        return all(op.has_matrix for op in self)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-
-    @abc.abstractmethod
-    def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the composite operator."""
 
     @property
     def eigendecomposition(self):
@@ -203,24 +198,24 @@ class CompositeOp(Operator, abc.ABC):
             return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
 
         if base_label is not None:
-            if isinstance(base_label, str) or len(base_label) != len(self.operands):
+            if isinstance(base_label, str) or len(base_label) != len(self):
                 raise ValueError(
                     "Composite operator labels require ``base_label`` keyword to be same length as operands."
                 )
-            return self.op_symbol.join(
-                _label(op, decimals, lbl, cache) for op, lbl in zip(self.operands, base_label)
+            return self._op_symbol.join(
+                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label)
             )
 
-        return self.op_symbol.join(_label(op, decimals, None, cache) for op in self.operands)
+        return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
 
     def queue(self, context=qml.QueuingContext):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
-        for op in self.operands:
+        for op in self:
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.operands)
         return self
 
     @property
     def arithmetic_depth(self) -> int:
-        return 1 + max(op.arithmetic_depth for op in self.operands)
+        return 1 + max(op.arithmetic_depth for op in self)

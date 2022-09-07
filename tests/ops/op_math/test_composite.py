@@ -40,25 +40,15 @@ ops_rep = (
 )
 
 
-class OpMissingProperties(CompositeOp):
+class ValidOp(CompositeOp):
+    _op_symbol = "#"
+
     @property
     def is_hermitian(self):
         return False
 
     def matrix(self, wire_order=None):
         return np.eye(4)
-
-    def sparse_matrix(self, wire_order=None):
-        return np.eye(4)
-
-
-class OpMissingSymbol(OpMissingProperties):
-    _name = "NoSymbol"
-
-
-class ValidOp(OpMissingProperties):
-    _name = "ValidOp"
-    _op_symbol = "#"
 
 
 class TestConstruction:
@@ -73,16 +63,6 @@ class TestConstruction:
         ):
             _ = CompositeOp(*self.simple_operands)
 
-    def test_class_missing_name_fails(self):
-        """Test child classes without _name defined raise an error"""
-        with pytest.raises(NotImplementedError, match="Child class must specify _name"):
-            _ = OpMissingProperties(*self.simple_operands)
-
-    def test_class_missing_symbol_fails(self):
-        """Test child classes without _op_symbol defined raise an error"""
-        with pytest.raises(NotImplementedError, match="Child class must specify _op_symbol"):
-            _ = OpMissingSymbol(*self.simple_operands)
-
     def test_raise_error_fewer_than_2_operands(self):
         """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
         with pytest.raises(ValueError, match="Require at least two operators to combine;"):
@@ -91,8 +71,8 @@ class TestConstruction:
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(*self.simple_operands)
-        assert op.name == "ValidOp"
-        assert op.op_symbol == "#"
+        assert op._name == "ValidOp"
+        assert op._op_symbol == "#"
 
     def test_queue_idx(self):
         """Test that queue_idx is None."""

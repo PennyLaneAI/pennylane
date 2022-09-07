@@ -145,7 +145,6 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
-    _name = "Sum"
 
     @property
     def summands(self):
@@ -155,7 +154,7 @@ class Sum(CompositeOp):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return all(s.is_hermitian for s in self.summands)
+        return all(s.is_hermitian for s in self)
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
@@ -170,7 +169,7 @@ class Sum(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self.summands), list(self.summands)
+        return [1.0] * len(self), list(self.summands)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -210,7 +209,7 @@ class Sum(CompositeOp):
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
         wire_order = wire_order or self.wires
-        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
+        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self)
         return reduce(math.add, mats_gen)
 
     @property
@@ -224,7 +223,7 @@ class Sum(CompositeOp):
         return None
 
     def adjoint(self):
-        return Sum(*(qml.adjoint(summand) for summand in self.summands))
+        return Sum(*(qml.adjoint(summand) for summand in self))
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):
