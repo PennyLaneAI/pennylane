@@ -18,7 +18,7 @@
   The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
   
   To facilitate qutrit circuits requires a new device: `"default.qutrit"`.
-  The `"default.qutrit"` device is a Python-based simulator and is defined as per usual:
+  The `"default.qutrit"` device is a Python-based simulator, akin to `"default.qubit"`, and is defined as per usual:
 
   ```pycon
   >>> dev = qml.device("default.qutrit", wires=1)
@@ -29,13 +29,13 @@
   The following operations are supported on `"default.qutrit"` devices:  
 
   - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
-  which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively. 
+  which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
 
-  - Custom unitary operations via `qml.QutritUnitary`
+  - Custom unitary operations via `qml.QutritUnitary`.
 
-  -  `qml.state` and `qml.probs` measurements
+  - `qml.state` and `qml.probs` measurements.
 
-  - Measuring user-specified Hermitian matrix observables via `qml.THermitian`
+  - Measuring user-specified Hermitian matrix observables via `qml.THermitian`.
 
   ```python
   import pennylane as qml
@@ -57,7 +57,7 @@
       ]
   ) / np.sqrt(2)
 
-  def qutrit_function(U, obs):
+  def qutrit_function(U):
       qml.TShift(0)
       qml.TClock(0)
       qml.QutritUnitary(U, wires=0)
@@ -84,9 +84,10 @@
 
 <h4>Classical shadows 👤</h4>
 
-* Added the `qml.classical_shadow` measurement process that can now be returned from QNodes. 
+* Measurements required for the classical-shadows protocol are now available. 
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
   [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
 
   The classical-shadow measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953).
@@ -124,7 +125,6 @@
   ```
 
   - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
-  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
 
   ```python
   dev = qml.device("default.qubit", wires=range(2), shots=10000)
@@ -135,14 +135,15 @@
       qml.CNOT((0,1))
       qml.RX(x, wires=0)
       return qml.shadow_expval(H)
+
+  x = np.array(0.5, requires_grad=True) 
+  H = qml.Hamiltonian(
+          [1., 1.], 
+          [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+      )  
   ```
 
   ```pycon
-  >>> x = np.array(0.5, requires_grad=True)
-  >>> H = qml.Hamiltonian(
-      [1., 1.], 
-      [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
-  ) 
   >>> circuit(x, H), 
   tensor(1.8486, requires_grad=True) 
   >>> qml.grad(circuit)(x, H))
