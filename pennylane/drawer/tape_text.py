@@ -45,7 +45,7 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
 
-    control_wires = op.control_wires
+    control_wires = getattr(op, "control_wires", [])
     control_values = op.hyperparameters.get("control_values", None)
     if control_values:
         for w, val in zip(control_wires, control_values):
