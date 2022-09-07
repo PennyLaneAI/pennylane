@@ -154,6 +154,7 @@
 * Added `qml.resource.estimate_error` and `qml.resource.estimate_samples` methods for
   estimating error accumulation and measurement requirements for obtaining expectation
   values in variational quantum algorithms for molecular systems, respectively.
+  [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
 
   ```pycon
   >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
