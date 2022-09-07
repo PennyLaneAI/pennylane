@@ -564,23 +564,24 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
 
     **Example**
 
-    >>> symbols = ['He', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+    >>> symbols, geometry = ['He', 'H'], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
     >>> mol = qchem.Molecule(symbols, geometry, charge=1)
     >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
-    >>> n_elec = mol.n_electrons
     >>> generators = qchem.symmetry_generators(H)
-    >>> paulixops = qchem.paulix_ops(generators, 4)
-    >>> paulix_sector = qchem.optimal_sector(H, generators, n_elec)
+    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
     >>> qchem.taper_operation(qml.SingleExcitation(1, wires=[0, 2]),
                                 generators, paulixops, paulix_sector, wire_order=H.wires)
     [PauliRot(0.5+0.j, 'RY', wires=[0])]
-    >>> dev = qml.device('default.qubit', wires=[0,1])
+
+    This can even be used for within a :class:`~.pennylane.QNode`:
+
+    >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
-    >>> def circuit(params):
-            qchem.taper_operation(qml.DoubleExcitation(params[idx], wires=[0, 1, 2, 3]),
-                                    generators, paulixops, paulix_sector, H.wires)
-            return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    ... def circuit(params):
+    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
+    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[0.38686753]))
         0: ─╭RXY(-0.10+0.00j)─╭RYX(-0.10+0.00j)─┤ ╭<Z@Z>
