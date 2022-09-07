@@ -323,7 +323,7 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires=None, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
+    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
         r"""Compute entropies from classical shadow measurements.
 
         Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
@@ -345,8 +345,8 @@ class ClassicalShadow:
             Further, entropies as post-processed by this class method are currently not differentiable.
 
         Args:
-            wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Defaults to ``[0]`` when ``None`` is passed
-                to avoid computing potentially exponentially large quantities.
+            wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Note that the computation scales exponentially in the
+                number of wires for the reduced state.
             snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None`` (default), all local snapshots are taken.
                 In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
             alpha (float): order of the Renyi-entropy. Defaults to ``alpha=2``, which corresponds to the purity of the reduced state. This case is straight forward to compute.
@@ -407,8 +407,6 @@ class ClassicalShadow:
         [0.6727522114759635, 0.6252047673044356, 0.5996592216299593]
 
         """
-        if wires is None:
-            wires = [0]
 
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
