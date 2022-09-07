@@ -151,6 +151,18 @@
   True
   ```
 
+* Added `qml.resource.estimate_error` and `qml.resource.estimate_samples` methods for
+  estimating error accumulation and measurement requirements for obtaining expectation
+  values in variational quantum algorithms for molecular systems, respectively.
+
+  ```pycon
+  >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
+  >>> qml.resource.estimate_samples(coeffs)
+  419217
+  >>> qml.resource.estimate_error(coeffs, shots=419217)
+  0.0016
+  ```
+
 <h3>Improvements</h3>
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
