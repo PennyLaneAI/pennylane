@@ -293,15 +293,19 @@ class Prod(Operator):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
         mats = (
-            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            math.expand_matrix(qml.matrix(op), op.wires, wire_order=self.wires)
             if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            else math.expand_matrix(op.matrix(), op.wires, wire_order=self.wires)
             for op in self.factors
         )
 
-        return reduce(math.dot, mats)
+        reduced_mat = reduce(math.dot, mats)
+
+        if wire_order is not None:
+            reduced_mat = math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
+
+        return reduced_mat
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.

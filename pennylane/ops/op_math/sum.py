@@ -293,18 +293,20 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        def matrix_gen(summands, wire_order=None):
+        def matrix_gen(summands):
             """Helper function to construct a generator of matrices"""
             for op in summands:
                 if isinstance(op, qml.Hamiltonian):
-                    yield qml.matrix(op, wire_order=wire_order)
+                    yield qml.matrix(op, wire_order=self.wires)
                 else:
-                    yield op.matrix(wire_order=wire_order)
+                    yield op.matrix(wire_order=self.wires)
 
-        if wire_order is None:
-            wire_order = self.wires
+        reduced_mat = _sum(matrix_gen(self.summands))
 
-        return _sum(matrix_gen(self.summands, wire_order))
+        if wire_order is not None:
+            reduced_mat = math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
+
+        return reduced_mat
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the sum is represented in diagrams and drawings.
