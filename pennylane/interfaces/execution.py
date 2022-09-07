@@ -632,6 +632,9 @@ def execute_new(
         for i, tape in enumerate(tapes):
             tapes[i] = expand_fn(tape)
 
+        if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+            tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
+
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
