@@ -112,9 +112,7 @@ class CompositeOp(Operator, abc.ABC):
     @property
     @abc.abstractmethod
     def is_hermitian(self):
-        """
-        TODO: should we do `all(op.is_hermitian for op in self)` as default?
-        """
+        """This property determines if the composite operator is hermitian."""
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
