@@ -835,6 +835,44 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2,wire_map,commute_status",
+        [
+            (qml.Identity(0), qml.PauliZ(0), {0: 0}, True),
+            (qml.PauliY(0), qml.PauliZ(0), {0: 0}, False),
+            (qml.PauliX(0), qml.PauliX(1), {0: 0, 1: 1}, True),
+            (qml.PauliY("x"), qml.PauliX("y"), None, True),
+            (
+                qml.PauliZ("a") @ qml.PauliY("b") @ qml.PauliZ("d"),
+                qml.PauliX("a") @ qml.PauliZ("c") @ qml.PauliY("d"),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                True,
+            ),
+            (
+                qml.PauliX("a") @ qml.PauliY("b") @ qml.PauliZ("d"),
+                qml.PauliX("a") @ qml.PauliZ("c") @ qml.PauliY("d"),
+                {"a": 0, "b": 1, "c": 2, "d": 3},
+                False,
+            ),
+        ],
+    )
+    def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
+        """Test that (non)-commuting Pauli words are correctly identified."""
+        do_they_commute = qml.is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+        assert do_they_commute == commute_status
+
+    @pytest.mark.parametrize(
+        "pauli_word_1,pauli_word_2",
+        [
+            (qml.PauliX(0) @ qml.Hadamard(1) @ qml.Identity(2), qml.PauliX(0) @ qml.PauliY(2)),
+            (qml.PauliX(0) @ qml.PauliY(2), qml.PauliX(0) @ qml.Hadamard(1) @ qml.Identity(2)),
+        ],
+    )
+    def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
+        """Ensure invalid inputs are handled properly when determining commutativity."""
+        with pytest.raises(qml.QuantumFunctionError, match="Tensor operations are not supported."):
+            qml.is_commuting(pauli_word_1, pauli_word_2)
+
     def test_operation_1_not_supported(self):
         """Test that giving a non supported operation raises an error."""
         rho = np.zeros((2**1, 2**1), dtype=np.complex128)
