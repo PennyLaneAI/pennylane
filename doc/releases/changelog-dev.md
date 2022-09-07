@@ -222,7 +222,6 @@
 * Represent the exponentiation of operators via `qml.exp`.
   [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
 
-  v0.25 of PennyLane saw the addition of a whole host of additions that make operator arithmetic more intuitive. With this release, we've included the ability to exponentiate operators.
   The `qml.exp` function can be used to create observables or generic rotation gates:
 
   ```pycon
@@ -245,13 +244,14 @@
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
   ```pycon
-  >>> op = qml.PauliX(wires=0)
-  >>> qml.is_hermitian(op)
+  >>> op1 = qml.PauliX(wires=0)
+  >>> qml.is_hermitian(op1)
   True
-  >>> op2 = qml.RX(0.54, wires=0)
-  >>> qml.is_hermitian(op2)
+  >>> op2 = qml.PauliX(0) + qml.RX(np.pi/3, 0) 
+  >>> qml.is_unitary(op2)
   False
   ```
+
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
 
