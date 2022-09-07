@@ -75,7 +75,7 @@ def _quaternion_product(q1, q2):
 
 def _singular_quat_to_zyz(qw, qx, qy, qz, y_arg, abstract_jax=False):
     """Compute the ZYZ angles for the singular case of qx = qy = 0"""
-    #pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
     z1_arg1 = 2 * (qx * qy + qz * qw)
     z1_arg2 = 1 - 2 * (qx**2 + qz**2)
 
