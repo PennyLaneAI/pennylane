@@ -52,7 +52,9 @@ Several simplifications steps are happening here. First of all, the nested produ
     qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
 
 Then the product of sums is transformed into a sum of products:
+
 .. code-block:: python
+
     qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
 
 And finally like terms in the obtained products are grouped together, removing all identities: 
