@@ -263,12 +263,15 @@ class TestFiniteDiff:
 
         assert isinstance(result[0], numpy.ndarray)
         assert result[0].shape == (4,)
+        assert np.allclose(result[0], 0)
 
         assert isinstance(result[1], numpy.ndarray)
         assert result[1].shape == (4,)
+        assert np.allclose(result[1], 0)
 
         assert isinstance(result[2], numpy.ndarray)
         assert result[2].shape == (4,)
+        assert np.allclose(result[2], 0)
 
         tapes, _ = qml.gradients.finite_diff_new(circuit.tape)
         assert tapes == []
@@ -420,7 +423,7 @@ class TestFiniteDiff:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.finite_diff_new(c)(x)) for c in circuits]
-        print(transform)
+
         expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
 
         assert all(t == q for t, q in zip(transform, expected))

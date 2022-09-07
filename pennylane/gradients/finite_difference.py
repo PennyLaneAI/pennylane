@@ -338,7 +338,7 @@ def finite_diff(
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum([c * r for c, r in zip(coeffs, res)])
+            g = sum(c * r for c, r in zip(coeffs, res))
 
             if c0 is not None:
                 # add on the unshifted term
@@ -569,7 +569,7 @@ def finite_diff_new(
             g = []
 
             for i in range(0, len(tape.measurements)):
-                elem = sum([r[i] for r in l])
+                elem = sum(r[i] for r in l)
                 g.append(elem)
 
             # Add on the unshifted term
