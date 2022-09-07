@@ -298,18 +298,11 @@ class Sum(Operator):
         def reduce_func(op1_tuple: tuple, op2_tuple: tuple):
             mat1, wires1 = op1_tuple
             mat2, wires2 = op2_tuple
-            if wires1 != wires2:
-                if not set(wires1) ^ set(wires2):
-                    # same wires but different order
-                    mat2 = math.expand_matrix(mat2, wires2, wire_order=wires1)
-                    sum_wires = wires1
-                else:
-                    # different wires
-                    sum_wires = wires1 + wires2
-                    mat1 = math.expand_matrix(mat1, wires1, wire_order=sum_wires)
-                    mat2 = math.expand_matrix(mat2, wires2, wire_order=sum_wires)
-            else:
-                sum_wires = wires1
+            sum_wires = wires1 + wires2
+            if wires1 != sum_wires:
+                mat1 = math.expand_matrix(mat1, wires1, wire_order=sum_wires)
+            if wires2 != sum_wires:
+                mat2 = math.expand_matrix(mat2, wires2, wire_order=sum_wires)
             return math.add(mat1, mat2), sum_wires
 
         reduced_mat, sorted_wires = reduce(reduce_func, mats)
