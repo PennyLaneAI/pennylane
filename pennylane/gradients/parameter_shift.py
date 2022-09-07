@@ -191,7 +191,8 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
         else:
             # New return type output
             g = []
-            assert len(res) > 0
+
+            # Multiple measurements case, so we can extract the first result
             num_params = len(res[0])
             for parameter_idx in range(num_params):
 
@@ -505,18 +506,18 @@ def _create_variance_proc_fn(
             res = qml.math.hstack(res)
             mask = qml.math.hstack(mask)
 
+        # Note: len(f0) == len(mask)
         f0 = qml.math.expand_dims(res, -1)
         mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
         pdA = pdA_fn(results[1:tape_boundary])
-        assert len(f0) == len(mask)
 
         pdA2 = _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
-        if isinstance(pdA2, int) and pdA2 != 0:
-            assert len(pdA2) == len(pdA)
+
+        # Note: if isinstance(pdA2, int) and pdA2 != 0, then len(pdA2) == len(pdA)
 
         if qml.active_return():
             multi_measure = len(tape.measurements) > 1
@@ -525,9 +526,7 @@ def _create_variance_proc_fn(
                 res = []
                 for idx, m in enumerate(mask):
 
-                    if isinstance(pdA2, np.ndarray):
-                        # Note: it is assumed that pdA is also a sequence and
-                        # we can index into it
+                    if isinstance(pdA2, np.ndarray) and isinstance(pdA2, (Sequence, np.ndarray)):
                         r = (
                             _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx])
                             if m
