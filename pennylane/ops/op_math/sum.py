@@ -289,7 +289,7 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        sorted_summands = _sum_sort(self.summands)
+        sorted_summands = self.summands
         mats = [
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in sorted_summands

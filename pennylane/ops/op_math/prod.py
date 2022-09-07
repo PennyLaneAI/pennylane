@@ -315,7 +315,7 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        sorted_factors = _prod_sort(self.factors)
+        sorted_factors = self.factors
         mats = [
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in sorted_factors
