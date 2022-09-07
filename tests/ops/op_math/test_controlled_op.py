@@ -404,9 +404,9 @@ class TestMiscMethods:
         assert op4.hash == op5.hash
         assert op4.hash == op6.hash
 
-        # ignore work wires
+        # work wires
         op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
-        assert op7.hash == op1.hash
+        assert op7.hash != op1.hash
 
 
 class TestOperationProperties:

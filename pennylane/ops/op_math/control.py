@@ -60,10 +60,11 @@ def ctrl(op, control, control_values=None, work_wires=None):
     >>> qml.grad(circuit)(x)
     -0.9320390859672264
 
-    :func:`~.ctrl` works on both functions, shown above, and individual :class:`~.operation.Operator`'s.
+    :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
+    and individual :class:`~.operation.Operator`'s.
 
     >>> qml.ctrl(qml.PauliX(0), (1,2))
-    C(PauliX)(wires=[1, 2, 0])
+    Controlled(PauliX(wires=[0]), control_wires=[1, 2])
     >>> qml.ctrl(qml.PauliX(0), (1,2)).decomposition()
     [Toffoli(wires=[1, 2, 0])]
 
@@ -71,7 +72,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     >>> op = qml.ctrl(qml.RX(1.2, wires=0) ** 2 @ qml.RY(0.1, wires=0), control=1)
     >>> qml.simplify(qml.adjoint(op))
-    C(Prod)([-0.1], [2.4], wires=[1, 0])
+    Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
 
     """
     control_values = [control_values] if isinstance(control_values, int) else control_values
