@@ -432,7 +432,7 @@ class ClassicalShadow:
         if alpha == 1:
             # Special case of von Neumann entropy
             return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
-        
+
         # General Renyi-alpha entropy
         return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
