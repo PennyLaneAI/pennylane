@@ -167,7 +167,7 @@ class Prod(Operator):
         self.factors = factors
         self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
         self._hash = None
-        self._overlapping_wires = None
+        self._has_overlapping_wires = None
 
         if do_queue:
             self.queue()
@@ -228,14 +228,14 @@ class Prod(Operator):
         return all(op.is_hermitian for op in self.factors)
 
     @property
-    def overlapping_wires(self) -> bool:
+    def has_overlapping_wires(self) -> bool:
         """Boolean expression that indicates if the factors have overlapping wires."""
-        if self._overlapping_wires is None:
+        if self._has_overlapping_wires is None:
             wires = []
             for op in self.factors:
                 wires.extend(list(op.wires))
-            self._overlapping_wires = len(wires) != len(set(wires))
-        return self._overlapping_wires
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
@@ -286,7 +286,7 @@ class Prod(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-        if self.overlapping_wires:
+        if self.has_overlapping_wires:
             eigen_vectors = self.eigendecomposition["eigvec"]
             return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
         diag_gates = []
@@ -303,7 +303,7 @@ class Prod(Operator):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        if self.overlapping_wires:
+        if self.has_overlapping_wires:
             return self.eigendecomposition["eigval"]
         eigvals = [
             qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))

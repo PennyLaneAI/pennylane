@@ -154,7 +154,7 @@ class Sum(Operator):
         self._id = id
         self.queue_idx = None
         self._hash = None
-        self._overlapping_wires = None
+        self._has_overlapping_wires = None
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
@@ -205,14 +205,14 @@ class Sum(Operator):
         return all(s.is_hermitian for s in self.summands)
 
     @property
-    def overlapping_wires(self) -> bool:
+    def has_overlapping_wires(self) -> bool:
         """Boolean expression that indicates if the factors have overlapping wires."""
-        if self._overlapping_wires is None:
+        if self._has_overlapping_wires is None:
             wires = []
             for op in self.summands:
                 wires.extend(list(op.wires))
-            self._overlapping_wires = len(wires) != len(set(wires))
-        return self._overlapping_wires
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
@@ -267,7 +267,7 @@ class Sum(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-        if self.overlapping_wires:
+        if self.has_overlapping_wires:
             eigen_vectors = self.eigendecomposition["eigvec"]
             return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
         diag_gates = []
@@ -284,7 +284,7 @@ class Sum(Operator):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        if self.overlapping_wires:
+        if self.has_overlapping_wires:
             return self.eigendecomposition["eigval"]
         eigvals = [
             qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
