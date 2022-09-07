@@ -257,7 +257,7 @@
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
-* New `null.qubit` device. The `null.qubit` no-ops all operations and memory allocations. It inherits directly from default.qubit and should support all Numpy-interface functionality.
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. It inherits directly from default.qubit and should support all Numpy-interface functionality.
 
 <h3>Breaking changes</h3>
 

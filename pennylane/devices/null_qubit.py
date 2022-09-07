@@ -108,18 +108,6 @@ class NullQubit(DefaultQubit):
     def var(self, observable, shot_range=None, bin_size=None):
         pass
 
-    @classmethod
-    def capabilities(cls):
-        capabilities = super().capabilities().copy()
-        capabilities.update(
-            model="qubit",
-            supports_reversible_diff=True,
-            supports_inverse_operations=True,
-            supports_analytic_computation=True,
-            returns_state=True,
-        )
-        return capabilities
-
     def _create_basis_state(self, index):
         pass
 

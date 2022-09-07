@@ -565,7 +565,6 @@ class TestNullQubitIntegration:
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },
-            "supports_reversible_diff": True,
         }
         assert cap == capabilities
 
