@@ -496,14 +496,17 @@ def finite_diff_new(
                 output_dims.append(1)
         list_zeros = []
 
-        for i, _ in enumerate(tape.trainable_params):
-            if len(output_dims) > 1:
-                sub_list = []
-                for j in output_dims:
-                    sub_list.append(np.zeros(j))
-                list_zeros.append(tuple(sub_list))
-            else:
-                list_zeros.append(np.zeros(output_dims[0]))
+        for i, _ in enumerate(tape.measurements):
+            dim = output_dims[i]
+            sub_list_zeros = []
+            for _ in range(0, len(tape.trainable_params)):
+                sub_list_zeros.append(qml.math.zeros(dim))
+            sub_list_zeros = tuple(sub_list_zeros)
+            list_zeros.append(sub_list_zeros)
+
+        if len(tape.measurements) == 1:
+            return [], lambda _: list_zeros[0]
+
         return [], lambda _: tuple(list_zeros)
 
     gradient_tapes = []
@@ -554,7 +557,6 @@ def finite_diff_new(
             res = results[start : start + s]
             start = start + s
             # compute the linear combination of results and coefficients
-
             # First compute the multiplication with coeff
             l = []
             for i, c in enumerate(coeffs):
@@ -580,7 +582,7 @@ def finite_diff_new(
                 g = [i + j for i, j in zip(g, c0r0)]
 
             if len(g) > 1:
-                if isinstance(results[0], np.ndarray):
+                if isinstance(results[0][0], np.ndarray) and len(tape):
                     grads.append(tuple(np.array(i / (h**n)) for i in g))
                 else:
                     grads.append(tuple(i / (h**n) for i in g))
