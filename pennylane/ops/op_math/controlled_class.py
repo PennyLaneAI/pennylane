@@ -194,6 +194,17 @@ class Controlled(SymbolicOp):
 
         super().__init__(base, do_queue, id)
 
+    @property
+    def hash(self):
+        return hash(
+            (
+                "Controlled",
+                self.base.hash,
+                tuple(self.control_wires.tolist()),
+                tuple(self.control_values),
+            )
+        )
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):

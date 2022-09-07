@@ -1848,7 +1848,7 @@ class TestHashing:
 
     def test_rotation_modulo_identical(self):
         """Tests that the circuit hash of circuits with single-qubit
-        rotations differing by multiples of 2pi have identical hash"""
+        rotations differing by multiples of 4pi have identical hash"""
         a = np.array(np.pi / 2, dtype=np.float64)
         b = np.array(np.pi / 4, dtype=np.float64)
 
@@ -1861,8 +1861,8 @@ class TestHashing:
             qml.expval(H)
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(a - 2 * np.pi, wires=[0])
-            qml.RY(b + 2 * np.pi, wires=[1])
+            qml.RX(a - 4 * np.pi, wires=[0])
+            qml.RY(b + 4 * np.pi, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
