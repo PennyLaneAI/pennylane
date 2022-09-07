@@ -417,7 +417,6 @@ class ClassicalShadow:
         if alpha == 2:
             # special case of purity
             res = -qml.math.log(qml.math.trace(rdm @ rdm))
-            res = qml.math.cast(res, dtype="float64")
             return res / div
 
         # Else
@@ -426,7 +425,7 @@ class ClassicalShadow:
         mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
         mask1 = qml.math.where(evs > 0, True, False)
         mask = qml.math.logical_and(mask0, mask1)
-        # Renormalize
+        # Renormalize because of cropped evs
         evs_nonzero = qml.math.gather(evs, mask)
         evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
 

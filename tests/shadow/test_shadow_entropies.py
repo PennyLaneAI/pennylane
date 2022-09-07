@@ -110,7 +110,7 @@ class TestShadowEntropies:
             # exact solution
             rdm = qml.qinfo.reduced_dm(qnode_exact, wires=rdm_wires)(x)
             evs = qml.math.eigvalsh(rdm)
-            print(np.round(evs, 3))
+
             evs = evs[np.where(evs > 0)]
 
             exact_2 = -np.log(np.trace(rdm @ rdm))
