@@ -240,7 +240,7 @@
 
   The `qml.PSWAP` gate -- or phase-SWAP gate -- was previously available within the PennyLane-Braket plugin only. Enjoy it natively in PennyLane with v0.26.
 
-* Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
+* Check whether or not an operator is hermitian or unitary with `qml.is_hermitian` and `qml.is_unitary`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
   ```pycon
@@ -275,7 +275,7 @@
 
 <h3>Improvements</h3>
 
-* `qml.math.expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
+* The `qml.math.expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
 
@@ -307,7 +307,6 @@
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
-
 * Added `sparse_matrix()` support for single qubit observables.
   [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
@@ -337,7 +336,7 @@
   [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
   ```
 
-* `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
+* `qml.Barrier` with `only_visual=True` now simplifies via `op.simplify()` to the identity
   or a product of identities.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
@@ -354,7 +353,6 @@
 * The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
   with an additional keyword argument `circuit`, which represents the quantum tape
   being executed.
-
   Any device that overrides `statistics` should edit the signature of the method to include
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
@@ -370,7 +368,7 @@
 
 <h3>Documentation</h3>
 
-* Fix fourier docs to use `circuit_spectrum`.
+* Fixed the Fourier transform docs to use `circuit_spectrum`.
   [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
   
 * Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
@@ -389,7 +387,7 @@
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
-* Fixes a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
+* Fixed a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
   [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3004)
 
 <h3>Contributors</h3>
