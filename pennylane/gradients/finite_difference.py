@@ -590,9 +590,22 @@ def finite_diff_new(
                 else:
                     grads.append(g[0] / (h**n))
 
-        if len(tape.trainable_params) > 1:
-            return tuple(grads)
+        # Single measurement
+        if len(tape.measurements) == 1:
+            return tuple(elem for elem in grads)
 
-        return grads[0]
+        # Reordering to match the right shape for multiple measurements
+        grads_reorder = [
+            [0 for _ in range(0, len(tape.trainable_params))]
+            for _ in range(0, len(tape.measurements))
+        ]
+        for i in range(0, len(tape.measurements)):
+            for j in range(0, len(tape.trainable_params)):
+                grads_reorder[i][j] = grads[j][i]
+
+        # To tuple
+        grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
+
+        return grads_tuple
 
     return gradient_tapes, processing_fn
