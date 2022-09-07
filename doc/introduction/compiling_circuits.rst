@@ -63,7 +63,7 @@ And finally like terms in the obtained products are grouped together, removing a
 
 .. code-block:: python
 
-    qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
+    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
 
 As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
 
