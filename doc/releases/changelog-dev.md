@@ -155,6 +155,7 @@
 
 * `qml.ctrl` now uses `Controlled` instead of `ControlledOperation`.  The new `Controlled` class
   wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
@@ -286,6 +287,7 @@
 
 * The `ControlledOperation` class is removed.  This was a developer-only class, so the change should not be evident to
   any users. It is replaced by `Controlled`.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
 * The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
   with an additional keyword argument `circuit`, which represents the quantum tape
