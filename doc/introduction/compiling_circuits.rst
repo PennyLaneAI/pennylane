@@ -43,7 +43,9 @@ RX(2.0, wires=[0])
 
 Now lets simplify a nested operator:
 
->>> nested_op = qml.prod(qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0))), qml.RX(1, 0))
+>>> sum_op = qml.RX(1, 0) + qml.PauliX(0)
+>>> prod1 = qml.PauliX(0) @ sum_op
+>>> nested_op = prod1 @ qml.RX(1, 0)
 >>> qml.simplify(nested_op)
 (PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
 
