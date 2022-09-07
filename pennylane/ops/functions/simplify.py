@@ -106,7 +106,8 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
                 func(*args, **kwargs)
 
             _ = [qml.simplify(op) for op in tape.operations]
-            return tuple(qml.simplify(m) for m in tape.measurements)
+            m = tuple(qml.simplify(m) for m in tape.measurements)
+            return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):
             return QNode(
