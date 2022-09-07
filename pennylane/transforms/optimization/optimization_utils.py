@@ -75,6 +75,7 @@ def _quaternion_product(q1, q2):
 
 def _singular_quat_to_zyz(qw, qx, qy, qz, y_arg, abstract_jax=False):
     """Compute the ZYZ angles for the singular case of qx = qy = 0"""
+    #pylint: disable=too-many-arguments
     z1_arg1 = 2 * (qx * qy + qz * qw)
     z1_arg2 = 1 - 2 * (qx**2 + qz**2)
 
@@ -101,7 +102,6 @@ def _singular_quat_to_zyz(qw, qx, qy, qz, y_arg, abstract_jax=False):
 
 def _regular_quat_to_zyz(qw, qx, qy, qz, y_arg):
     """Compute the ZYZ angles for the regular case (qx != 0 or qy != 0)"""
-    # pynt: disable=unused-argument
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
     z1 = arctan2(z1_arg1, z1_arg2)
@@ -150,7 +150,6 @@ def _no_fuse(angles_1, angles_2):
         Rot(a, 0, b) Rot(c, 0, d) = Rot(a + b + c + d, 0, 0)
     The quaternion math itself will fail in this case without a conditional.
     """
-    # pynt: disable=unused-argument
     return stack([angles_1[0] + angles_1[2] + angles_2[0] + angles_2[2], 0.0, 0.0])
 
 
