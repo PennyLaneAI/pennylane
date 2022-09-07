@@ -116,6 +116,7 @@ class CompositeOp(Operator, abc.ABC):
         TODO: should we do `all(op.is_hermitian for op in self)` as default?
         """
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return all(op.has_matrix for op in self)
