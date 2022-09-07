@@ -266,10 +266,10 @@ class TestFiniteDiff:
         assert result[0].shape == (4,)
 
         assert isinstance(result[1], numpy.ndarray)
-        assert result[0].shape == (4,)
+        assert result[1].shape == (4,)
 
         assert isinstance(result[2], numpy.ndarray)
-        assert result[0].shape == (4,)
+        assert result[2].shape == (4,)
 
         tapes, _ = qml.gradients.finite_diff_new(circuit.tape)
         assert tapes == []
@@ -797,8 +797,7 @@ class TestFiniteDiffGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff_new(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac_0 = fn(dev.batch_execute_new(tapes))[0]
-            jac_1 = fn(dev.batch_execute_new(tapes))[1]
+            jac_0, jac_1 = fn(dev.batch_execute_new(tapes))
 
         x, y = 1.0 * params
 
@@ -914,5 +913,4 @@ class TestFiniteDiffGradients:
                 [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
             ]
         )
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)

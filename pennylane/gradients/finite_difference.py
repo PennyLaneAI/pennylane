@@ -482,7 +482,7 @@ def finite_diff_new(
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=finite_diff)
+            gradient_analysis(tape, grad_fn=finite_diff_new)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
