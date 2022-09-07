@@ -269,7 +269,7 @@ class TestWithParameterBroadcasting:
 
         matrix = qml.matrix(tape, wire_order)
         I_HS = np.kron(I, H @ S)
-        X_HS = np.kron(I, H @ S)
+        X_HS = np.kron(X, H @ S)
         I_X = np.kron(I, X)
         expected_matrix = [
             CNOT @ I_HS,
