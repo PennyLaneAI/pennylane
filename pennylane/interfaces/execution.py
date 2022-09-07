@@ -678,7 +678,7 @@ def execute_new(
                 from .tensorflow import execute as _execute
         elif mapped_interface == "torch":
             from .torch import execute as _execute
-        else:  # is jax
+        elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn(interface, tapes)
     except ImportError as e:
         raise qml.QuantumFunctionError(
