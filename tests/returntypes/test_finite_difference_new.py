@@ -499,10 +499,11 @@ class TestFiniteDiff:
 
 @pytest.mark.parametrize("approx_order", [2, 4])
 @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
+@pytest.mark.parametrize("validate", [True, False])
 class TestFiniteDiffIntegration:
     """Tests for the finite difference gradient transform"""
 
-    def test_ragged_output(self, approx_order, strategy):
+    def test_ragged_output(self, approx_order, strategy, validate):
         """Test that the Jacobian is correctly returned for a tape
         with ragged output"""
         dev = qml.device("default.qubit", wires=3)
@@ -516,7 +517,9 @@ class TestFiniteDiffIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tapes, fn = finite_diff_new(tape, approx_order=approx_order, strategy=strategy)
+        tapes, fn = finite_diff_new(
+            tape, approx_order=approx_order, strategy=strategy, validate_params=validate
+        )
         res = fn(dev.batch_execute_new(tapes))
 
         assert isinstance(res, tuple)
@@ -533,7 +536,7 @@ class TestFiniteDiffIntegration:
         assert res[1][1].shape == (4,)
         assert res[1][2].shape == (4,)
 
-    def test_single_expectation_value(self, approx_order, strategy, tol):
+    def test_single_expectation_value(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
@@ -546,38 +549,8 @@ class TestFiniteDiffIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tapes, fn = finite_diff_new(tape, approx_order=approx_order, strategy=strategy)
-        res = fn(dev.batch_execute_new(tapes))
-
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
-        assert isinstance(res[0], numpy.ndarray)
-        assert res[0].shape == ()
-
-        assert isinstance(res[1], numpy.ndarray)
-        assert res[1].shape == ()
-
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, tol):
-        """Tests correct output shape and evaluation for a tape
-        with a single expval output where all parameters are chosen to compute
-        the jacobian"""
-        dev = qml.device("default.qubit", wires=2)
-        x = 0.543
-        y = -0.654
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        # we choose both trainable parameters
         tapes, fn = finite_diff_new(
-            tape, argnum=[0, 1], approx_order=approx_order, strategy=strategy
+            tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
         res = fn(dev.batch_execute_new(tapes))
 
@@ -593,7 +566,43 @@ class TestFiniteDiffIntegration:
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, tol):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, tol):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output where all parameters are chosen to compute
+        the jacobian"""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        # we choose both trainable parameters
+        tapes, fn = finite_diff_new(
+            tape,
+            argnum=[0, 1],
+            approx_order=approx_order,
+            strategy=strategy,
+            validate_params=validate,
+        )
+        res = fn(dev.batch_execute_new(tapes))
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert res[0].shape == ()
+
+        assert isinstance(res[1], numpy.ndarray)
+        assert res[1].shape == ()
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -612,7 +621,9 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         # we choose only 1 trainable parameter
-        tapes, fn = finite_diff_new(tape, argnum=1, approx_order=approx_order, strategy=strategy)
+        tapes, fn = finite_diff_new(
+            tape, argnum=1, approx_order=approx_order, strategy=strategy, validate_params=validate
+        )
         res = fn(dev.batch_execute_new(tapes))
 
         assert isinstance(res, tuple)
@@ -628,7 +639,7 @@ class TestFiniteDiffIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, tol):
+    def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -642,7 +653,9 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tapes, fn = finite_diff_new(tape, approx_order=approx_order, strategy=strategy)
+        tapes, fn = finite_diff_new(
+            tape, approx_order=approx_order, strategy=strategy, validate_params=validate
+        )
         res = fn(dev.batch_execute_new(tapes))
 
         assert isinstance(res, tuple)
@@ -660,7 +673,7 @@ class TestFiniteDiffIntegration:
         assert isinstance(res[1][0], numpy.ndarray)
         assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_var_expectation_values(self, approx_order, strategy, tol):
+    def test_var_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -674,7 +687,9 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tapes, fn = finite_diff_new(tape, approx_order=approx_order, strategy=strategy)
+        tapes, fn = finite_diff_new(
+            tape, approx_order=approx_order, strategy=strategy, validate_params=validate
+        )
         res = fn(dev.batch_execute_new(tapes))
 
         assert isinstance(res, tuple)
@@ -692,7 +707,7 @@ class TestFiniteDiffIntegration:
         assert isinstance(res[1][0], numpy.ndarray)
         assert isinstance(res[1][1], numpy.ndarray)
 
-    def test_prob_expectation_values(self, approx_order, strategy, tol):
+    def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -706,7 +721,9 @@ class TestFiniteDiffIntegration:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
-        tapes, fn = finite_diff_new(tape, approx_order=approx_order, strategy=strategy)
+        tapes, fn = finite_diff_new(
+            tape, approx_order=approx_order, strategy=strategy, validate_params=validate
+        )
         res = fn(dev.batch_execute_new(tapes))
 
         assert isinstance(res, tuple)
@@ -881,7 +898,6 @@ class TestFiniteDiffGradients:
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_fn(params):
-
             with qml.tape.QuantumTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
