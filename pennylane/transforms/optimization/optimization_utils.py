@@ -107,7 +107,6 @@ def _singular_quat_to_zyz_jax(q, y_arg):
 def _regular_quat_to_zyz(q, y_arg):
     """Compute the ZYZ angles for the regular case (qx != 0 or qy != 0)"""
     qw, qx, qy, qz = q
-    z1_arg1 = 2 * (qx * qy + qz * qw)
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
     z1 = arctan2(z1_arg1, z1_arg2)
