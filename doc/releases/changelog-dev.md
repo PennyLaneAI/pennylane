@@ -153,6 +153,9 @@
 
 <h3>Improvements</h3>
 
+* The new `qml.pow` provides a top-level constructor for raising operators to powers.
+  [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
+
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
   to improve performance.
