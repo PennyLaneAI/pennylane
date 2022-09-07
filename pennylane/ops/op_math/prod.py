@@ -292,7 +292,7 @@ class Prod(Operator):
         diag_gates = []
         for factor in self.factors:
             diag_gates.extend(factor.diagonalizing_gates())
-        return [qml.adjoint(gate) for gate in diag_gates]
+        return diag_gates
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.

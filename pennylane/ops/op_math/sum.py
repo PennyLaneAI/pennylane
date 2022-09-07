@@ -273,7 +273,7 @@ class Sum(Operator):
         diag_gates = []
         for summand in self.summands:
             diag_gates.extend(summand.diagonalizing_gates())
-        return [qml.adjoint(gate) for gate in diag_gates]
+        return diag_gates
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified Hermitian observable.
