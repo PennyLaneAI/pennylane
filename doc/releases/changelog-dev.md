@@ -59,6 +59,7 @@
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
   The measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
@@ -100,6 +101,7 @@
   ```
 
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
 
   ```python
   H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
@@ -120,6 +122,7 @@
 * Added the `qml.shadows.shadow_expval` and `qml.shadows.shadow_state` QNode transforms for
   computing expectation values and states from a classical shadow measurement. These transforms
   are fully differentiable.
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
 
   ```python
   dev = qml.device("default.qubit", wires=1, shots=1000)
@@ -357,6 +360,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
+  for specific combinations of rotations.
+  [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
+    
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
