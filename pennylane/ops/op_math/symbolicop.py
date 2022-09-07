@@ -127,3 +127,12 @@ class SymbolicOp(Operator):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                self.base.hash,
+            )
+        )
