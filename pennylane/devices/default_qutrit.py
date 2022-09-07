@@ -190,7 +190,7 @@ class DefaultQutrit(QutritDevice):
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
 
     def _apply_tadd(self, state, axes, inverse=False):
-        """Applies a controlled add gate by slicing along the first axis specified in ``axes`` and
+        """Applies a controlled ternary add gate by slicing along the first axis specified in ``axes`` and
         applying a TShift transformation along the second axis. The ternary add gate acts on the
         computational basis states like :math:`\vert i, j\rangle \rightarrow \vert i, i+j \rangle`, where
         addition is taken modulo 3.
