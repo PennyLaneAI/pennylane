@@ -342,7 +342,7 @@ class ClassicalShadow:
 
             Entropies are non-linear functions of the quantum state. Accuracy bounds on entropies with classical shadows are not known exactly,
             but scale exponentially in the subsystem size. It is advisable to only compute entropies for small subsystems of a few qubits.
-            Further, entropies as post-processed by this class method are currently not differentiable.
+            Further, entropies as post-processed by this class method are currently not automatically differentiable.
 
         Args:
             wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Note that the computation scales exponentially in the
