@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane.ops.functions.is_commuting import (
     _get_target_name,
     _check_mat_commutation,
-    is_commuting,
 )
 
 control_base_map_data = [
@@ -828,7 +827,7 @@ class TestCommutingFunction:
             ([[0], [1]], True),
         ],
     )
-    def test_u3_identity_barrier(self, wires, res):
+    def test_barrier_u3_identity(self, wires, res):
         """Commutation between Barrier and U3(0.0, 0.0, 0.0)."""
         commutation = qml.is_commuting(
             qml.Barrier(wires=wires[1]), qml.U3(0.0, 0.0, 0.0, wires=wires[0])
@@ -856,7 +855,7 @@ class TestCommutingFunction:
             ),
         ],
     )
-    def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
+    def test_pauli_words(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
         """Test that (non)-commuting Pauli words are correctly identified."""
         do_they_commute = qml.is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
         assert do_they_commute == commute_status
@@ -868,7 +867,7 @@ class TestCommutingFunction:
             (qml.PauliX(0) @ qml.PauliY(2), qml.PauliX(0) @ qml.Hadamard(1) @ qml.Identity(2)),
         ],
     )
-    def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
+    def test_non_pauli_word_tensors_not_supported(self, pauli_word_1, pauli_word_2):
         """Ensure invalid inputs are handled properly when determining commutativity."""
         with pytest.raises(qml.QuantumFunctionError, match="Tensor operations are not supported."):
             qml.is_commuting(pauli_word_1, pauli_word_2)
