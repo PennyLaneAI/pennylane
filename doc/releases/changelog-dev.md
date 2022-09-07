@@ -152,17 +152,23 @@
   [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
   We can access the general Renyi-$\alpha$ entropy of a given subsystem by specifying its `wires`.
 
+  ```pycon
   >>> shadow = ClassicalShadow(bits, recipes)
   >>> Renyi_entropy = shadow.entropy(wires=[0, 3], alpha=1.5)
+  ```
 
   We can access the von Neumann entropy by setting `alpha=1`.
 
+  ```pycon
   >>> shadow = ClassicalShadow(bits, recipes)
   >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  ```
 
   Setting `alpha=2` corresponds to the special case of computing (the logarithm of) the purity of a reduced state.
 
-  >>> purity = shadow.entropy(wires=[1, 2, 6], alpha=2)
+  ```pycon
+  >>> log_purity = shadow.entropy(wires=[1, 2, 6], alpha=2)
+  ```
 
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
