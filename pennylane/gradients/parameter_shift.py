@@ -544,7 +544,7 @@ def _create_variance_proc_fn(
                 res = []
                 for idx, m in enumerate(mask):
 
-                    if isinstance(pdA2, np.ndarray) and isinstance(pdA2, (Sequence, np.ndarray)):
+                    if isinstance(pdA2, (Sequence, np.ndarray)):
                         r = (
                             _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx])
                             if m
