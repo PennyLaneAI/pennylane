@@ -801,9 +801,9 @@ class TestCounts:
         basis_state = "0111"
 
         assert isinstance(res, tuple)
-        assert res[0] == {basis_state: shot_vec[0]}
-        assert res[1] == {basis_state: shot_vec[1]}
-        assert res[2] == {basis_state: shot_vec[2]}
+        assert res[0][basis_state] == shot_vec[0]
+        assert res[1][basis_state] == shot_vec[1]
+        assert res[2][basis_state] == shot_vec[2]
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
@@ -824,9 +824,9 @@ class TestCounts:
         sample = 1
 
         assert isinstance(res, tuple)
-        assert res[0] == {sample: shot_vec[0]}
-        assert res[1] == {sample: shot_vec[1]}
-        assert res[2] == {sample: shot_vec[2]}
+        assert res[0][sample] == shot_vec[0]
+        assert res[1][sample] == shot_vec[1]
+        assert res[2][sample] == shot_vec[2]
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
@@ -866,6 +866,86 @@ class TestCounts:
         counts_term_indices = [i * 2 for i in range(num_shot_bins)]
         for ind in counts_term_indices:
             assert isinstance(res[ind], dict)
+
+    def test_all_outcomes_kwarg_providing_observable(self):
+        """Test that the dictionary keys *all* eigenvalues of the observable,
+        including 0 count values, if observable is given and all_outcomes=True"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.counts(qml.PauliZ(0), all_outcomes=True)
+            return res
+
+        res = circuit()
+
+        assert res == {1: n_shots, -1: 0}
+
+    def test_all_outcomes_kwarg_no_observable_no_wires(self):
+        """Test that the dictionary keys are *all* the possible combinations
+        of basis states for the device, including 0 count values, if no wire
+        count and no observable are given and all_outcomes=True"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(all_outcomes=True)
+
+        res = circuit()
+
+        assert res == {"00": n_shots, "01": 0, "10": 0, "11": 0}
+
+    def test_all_outcomes_kwarg_providing_wires_and_no_observable(self):
+        """Test that the dictionary keys are *all* possible combinations
+        of basis states for the specified wires, including 0 count values,
+        if wire count is given and all_outcomes=True"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=4, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(wires=[0, 2], all_outcomes=True)
+
+        res = circuit()
+
+        assert res == {"00": n_shots, "01": 0, "10": 0, "11": 0}
+
+    def test_all_outcomes_hermitian(self):
+        """Tests that the all_outcomes=True option for counts works with the
+        qml.Hermitian observable"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+        A = np.array([[1, 0], [0, -1]])
+
+        @qml.qnode(dev)
+        def circuit(x):
+            return qml.counts(qml.Hermitian(x, wires=0), all_outcomes=True)
+
+        res = circuit(A)
+
+        assert res == {-1.0: 0, 1.0: n_shots}
+
+    def test_all_outcomes_multiple_measurements(self):
+        """Tests that the all_outcomes=True option for counts works when
+        multiple measurements are performed"""
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0)), qml.counts(), qml.counts(all_outcomes=True)
+
+        res = circuit()
+
+        assert len(res[0]) == 10
+        assert res[1] == {"00": 10}
+        assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
 
 
 class TestMeasure:
