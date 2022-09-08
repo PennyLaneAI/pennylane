@@ -380,6 +380,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
+  for specific combinations of rotations.
+  [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
+    
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
