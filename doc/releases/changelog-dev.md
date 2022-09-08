@@ -154,7 +154,7 @@
 * Added the possibility to compute general Renyi entropies in the `ClassicalShadow` class.
   [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
 
-  We can access the general Renyi-$\alpha$ entropy of a given subsystem by specifying its `wires`.
+  We can access the general Renyi entropy of a given subsystem by specifying its `wires`.
 
   ```pycon
   >>> shadow = ClassicalShadow(bits, recipes)
