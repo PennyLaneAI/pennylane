@@ -76,7 +76,7 @@
 * Added the `qml.GellMannObs` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as the first
   argument when using `GellMannObs`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
-
+ 
 * Added the private `_prod_sort` function that sorts a list of operators by their respective wires
   taking into account their commutativity property.
   [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
