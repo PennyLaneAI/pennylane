@@ -383,9 +383,12 @@ def expval_param_shift(
             g = _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output)
 
             grads.append(g)
-            # This clause will be hit at least once (because otherwise all gradients would have
-            # been zero), providing a representative for a zero gradient to emulate its type/shape.
-            zero_rep = qml.math.zeros_like(g)
+            if not qml.active_return():
+                # This clause will be hit at least once (because otherwise all gradients would have
+                # been zero), providing a representative for a zero gradient to emulate its type/shape.
+                zero_rep = qml.math.zeros_like(g)
+            else:
+                zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
 
         if qml.active_return():
             for i, g in enumerate(grads):

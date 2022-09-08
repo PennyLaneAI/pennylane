@@ -1409,6 +1409,26 @@ class TestParameterShiftRule:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
+    def test_multi_measure_no_warning(self):
+        """Test computing the gradient of a tape that contains multiple
+        measurements omits no warnings."""
+        dev = qml.device("default.qubit", wires=4)
+
+        par1 = qml.numpy.array(0.3)
+        par2 = qml.numpy.array(0.1)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(par1, wires=0)
+            qml.RX(par2, wires=1)
+            qml.probs(wires=[1, 2])
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(None) as record:
+            tapes, fn = qml.gradients.param_shift(tape)
+            fn(dev.batch_execute_new(tapes))
+
+        assert len(record) == 0
+
 
 class TestParameterShiftRuleBroadcast:
     """Tests for the parameter shift implementation using broadcasting"""
