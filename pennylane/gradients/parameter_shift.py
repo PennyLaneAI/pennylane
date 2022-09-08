@@ -397,6 +397,9 @@ def expval_param_shift(
                 if g is None:
                     grads[i] = zero_rep
 
+            # Switch up the "axes" for measurement results and parameters to
+            # match the structure outputted by jax.jacobian when inputting a
+            # tuple-valued function
             if multi_measure:
                 new_grad = []
                 num_measurements = len(grads[0])
