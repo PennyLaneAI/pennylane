@@ -230,7 +230,8 @@ class NullQubit(QubitDevice):
         )
         return capabilities
 
-    def _create_basis_state(self, index):
+    @staticmethod
+    def _create_basis_state(index):
         return None
 
     @property
