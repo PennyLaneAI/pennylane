@@ -74,7 +74,7 @@ def is_pauli_word(observable):
     """
 
     if not isinstance(observable, Observable):
-        raise TypeError(f"Expected {Observable} instance, instead got {type(observable)} instance.")
+        return False
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
