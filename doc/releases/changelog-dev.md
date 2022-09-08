@@ -297,6 +297,7 @@
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
 * `qml.grouping.is_pauli_word` now returns `False` for non-Observables, instead of raising an error.
+  [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
 <h3>Breaking changes</h3>
 
