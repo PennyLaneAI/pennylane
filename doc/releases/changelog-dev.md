@@ -325,6 +325,14 @@
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
+* Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
+  `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
+  and the diagonalising gates using the factors/summands instead of using the full matrix.
+  [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
+
+* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
+  [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -357,7 +365,7 @@
 * Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
   [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
-    
+
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
