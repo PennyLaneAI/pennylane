@@ -556,8 +556,6 @@ def _create_variance_proc_fn(
                             if m
                             else [pdA[idx][i] for i in range(len(pdA))]
                         )
-                    else:
-                        r = _get_var_with_second_order(pdA2, f0[idx], pdA[idx]) if m else pdA[idx]
 
                     res.append(r)
                 res = tuple(res)
