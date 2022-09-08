@@ -744,9 +744,15 @@ class Device(abc.ABC):
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
-            and qml.measurements.Sample not in return_types
-            and qml.measurements.Probability not in return_types
-            and qml.measurements.Counts not in return_types
+            and all(
+                t not in return_types
+                for t in [
+                    qml.measurements.Sample,
+                    qml.measurements.Probability,
+                    qml.measurements.Counts,
+                    qml.measurements.AllCounts,
+                ]
+            )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
             # TODO: allow for Hamiltonians in list of observables as well.
