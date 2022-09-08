@@ -427,7 +427,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
     return pdA2 - 2 * f0 * pdA
 
 
-def _process_pda2_involutory(tape, pdA2, var_idx):
+def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     """Auxiliary function for post-processing the partial derivative of <A^2>
     if there are involutory observables.
 
@@ -448,18 +448,11 @@ def _process_pda2_involutory(tape, pdA2, var_idx):
 
     zero = qml.math.convert_like(0, pdA2)
     new_pdA2 = []
-    for i, obs in enumerate(tape.observables):
+    for i in range(len(tape.observables)):
         if i in var_idx:
-            obs_name = obs.name
-            if isinstance(obs_name, list):
-                obs_involutory = any(n not in NONINVOLUTORY_OBS for n in obs_name)
-            else:
-                obs_involutory = obs_name not in NONINVOLUTORY_OBS
+            obs_involutory = i not in non_involutory
+            new_pdA2.append(zero if obs_involutory else pdA2[i])
 
-            if obs_involutory:
-                new_pdA2.append(zero)
-            else:
-                new_pdA2.append(pdA2[i])
     return qml.math.array(new_pdA2)
 
 
@@ -475,7 +468,7 @@ def _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
         involutory = set(var_idx) - set(non_involutory)
 
         if involutory:
-            pdA2 = _process_pda2_involutory(tape, pdA2, var_idx)
+            pdA2 = _process_pda2_involutory(tape, pdA2, var_idx, non_involutory)
     return pdA2
 
 
