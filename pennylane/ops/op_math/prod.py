@@ -425,7 +425,7 @@ class Prod(Operator):
     def hash(self):
         if self._hash is None:
             self._hash = hash(
-                (str(self.name), str([factor.hash for factor in _prod_sort(self.factors)]))
+                (self.name, str([factor.hash for factor in _prod_sort(self.factors)]))
             )
         return self._hash
 

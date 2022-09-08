@@ -291,3 +291,7 @@ class Pow(SymbolicOp):
             return op.simplify()
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
+
+    @property
+    def hash(self):
+        return hash((self.name, self.z, self.base.hash))

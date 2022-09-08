@@ -263,4 +263,4 @@ class SProd(SymbolicOp):
 
     @property
     def hash(self):
-        return hash((self.scalar, self.base.hash))
+        return hash((self.name, self.scalar, self.base.hash))
