@@ -171,8 +171,31 @@ And the result is:
 >>> circuit()
 {'00': 495, '11': 505}
 
+Per default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can 
+be used to display all possible outcomes, including those that were observed ``0`` times in sampling.
+
+For example, we could run the previous circuit with ``all_outcomes=True``:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.counts(all_outcomes=True)
+
+>>> result = circuit()
+>>> print(result)
+{'00': 518, '01': 0, '10': 0, '11': 482}
+
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
+eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
+dictionary showing possible computational basis states grows rapidly. 
+
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
-a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
+a tuple is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
 
@@ -184,7 +207,7 @@ a tensor of tensors is returned to provide differentiability for the outputs of 
         return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
 >>> circuit()
-(-0.036, 0.036, {'01': 482, '10': 518})
+(-0.036, 0.036, {'01': 482, '10': 518}) 
 
 Probability
 -----------
