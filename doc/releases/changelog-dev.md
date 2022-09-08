@@ -275,7 +275,7 @@
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
-* Use `self.hash` instead of `self.matrix` to cache the eigendecomposition results in `Prod` and
+* Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
   `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
