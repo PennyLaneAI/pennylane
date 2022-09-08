@@ -32,6 +32,7 @@ from pennylane.math import sum as qmlsum
 
 from pennylane.measurements import (
     Counts,
+    AllCounts,
     Expectation,
     MeasurementProcess,
     MutualInfo,
@@ -319,7 +320,9 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         ret_types = [m.return_type for m in circuit.measurements]
-        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        counts_exist = any(
+            ret in (qml.measurements.Counts, qml.measurements.AllCounts) for ret in ret_types
+        )
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -448,7 +451,9 @@ class QubitDevice(Device):
         s1 = 0
 
         ret_types = [m.return_type for m in circuit.measurements]
-        counts_exist = any(ret is qml.measurements.Counts for ret in ret_types)
+        counts_exist = any(
+            ret in (qml.measurements.Counts, qml.measurements.AllCounts) for ret in ret_types
+        )
         single_measurement = len(circuit.measurements) == 1
 
         for shot_tuple in self._shot_vector:
@@ -545,7 +550,7 @@ class QubitDevice(Device):
                 else:
                     result = r_[idx]
 
-                if not circuit.observables[idx2].return_type is Counts:
+                if not circuit.observables[idx2].return_type in (Counts, AllCounts):
                     result = self._asarray(result.T)
 
                 result_group.append(result)
@@ -745,7 +750,7 @@ class QubitDevice(Device):
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 )
 
-            elif obs.return_type is Counts:
+            elif obs.return_type in (Counts, AllCounts):
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
                 )
@@ -896,7 +901,7 @@ class QubitDevice(Device):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 result = qml.math.squeeze(samples)
 
-            elif obs.return_type is Counts:
+            elif obs.return_type in (Counts, AllCounts):
                 result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif obs.return_type is Probability:
@@ -1598,6 +1603,75 @@ class QubitDevice(Device):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
+    def _samples_to_counts(self, samples, obs, num_wires):
+        """Groups the samples into a dictionary showing number of occurences for
+        each possible outcome.
+
+        The format of the dictionary depends on obs.return_type, which is set when
+        calling measurements.counts by setting the kwarg all_outcomes (bool). Per default,
+        the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
+        the dictionary will instead contain all possible outcomes, with a count of 0
+        for those not observed. See example.
+
+
+        Args:
+            samples: samples in an array of dimension ``(shots,len(wires))``
+            obs (Observable): the observable sampled
+            num_wires (int): number of wires the sampled observable was performed on
+
+        Returns:
+            dict: dictionary with format ``{'outcome': num_occurences}``, including all
+                outcomes for the sampled observable
+
+        **Example**
+
+            >>> samples
+            tensor([[0, 0],
+                    [0, 0],
+                    [1, 0]], requires_grad=True)
+
+            Per default, this will return:
+            >>> self._samples_to_counts(samples, obs, num_wires)
+            {'00': 2, '10': 1}
+
+            However, if obs.return_type is AllCounts, this will return:
+            >>> self._samples_to_counts(samples, obs, num_wires)
+            {'00': 2, '01': 0, '10': 1, '11': 0}
+
+            The variable all_outcomes can be set when running measurements.counts, i.e.:
+
+             .. code-block:: python3
+
+                dev = qml.device("default.qubit", wires=2, shots=4)
+
+                @qml.qnode(dev)
+                def circuit(x):
+                    qml.RX(x, wires=0)
+                    return qml.counts(all_outcomes=True)
+
+
+        """
+
+        outcomes = []
+
+        if isinstance(obs, MeasurementProcess):
+            # convert samples and outcomes (if using) from arrays to str for dict keys
+            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+
+            if obs.return_type is AllCounts:
+                outcomes = self.generate_basis_states(num_wires)
+                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+        elif obs.return_type is AllCounts:
+            outcomes = qml.eigvals(obs)
+
+        # generate empty outcome dict, populate values with state counts
+        outcome_dict = {k: np.int64(0) for k in outcomes}
+        states, counts = np.unique(samples, return_counts=True)
+        for s, c in zip(states, counts):
+            outcome_dict[s] = c
+
+        return outcome_dict
+
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
 
@@ -1619,28 +1693,6 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
-
-        def _samples_to_counts(samples, no_observable_provided):
-            """Group the obtained samples into a dictionary.
-
-            **Example**
-
-                >>> samples
-                tensor([[0, 0, 1],
-                        [0, 0, 1],
-                        [1, 1, 1]], requires_grad=True)
-                >>> self._samples_to_counts(samples)
-                {'111':1, '001':2}
-            """
-            if no_observable_provided:
-                # If we describe a state vector, we need to convert its list representation
-                # into string (it's hashable and good-looking).
-                # Before converting to str, we need to extract elements from arrays
-                # to satisfy the case of jax interface, as jax arrays do not support str.
-                samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-
-            states, counts = np.unique(samples, return_counts=True)
-            return dict(zip(states, counts))
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
@@ -1684,16 +1736,16 @@ class QubitDevice(Device):
                     f"Cannot compute samples of {observable.name}."
                 ) from e
 
+        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
             if counts:
-                return _samples_to_counts(samples, no_observable_provided)
+                return self._samples_to_counts(samples, observable, num_wires)
             return samples
 
-        num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if counts:
             shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
-                _samples_to_counts(bin_sample, no_observable_provided)
+                self._samples_to_counts(bin_sample, observable, num_wires)
                 for bin_sample in samples.reshape(shape)
             ]
 

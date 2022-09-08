@@ -23,7 +23,7 @@ from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 
@@ -502,7 +502,8 @@ class QuantumTape(AnnotatedQueue):
         self.num_wires = len(self.wires)
 
         is_sample_type = [
-            m.return_type in (Sample, Counts, Shadow, ShadowExpval) for m in self.measurements
+            m.return_type in (Sample, Counts, AllCounts, Shadow, ShadowExpval)
+            for m in self.measurements
         ]
         self.is_sampled = any(is_sample_type)
         self.all_sampled = all(is_sample_type)
