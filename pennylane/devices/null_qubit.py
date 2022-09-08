@@ -124,17 +124,12 @@ class NullQubit(QubitDevice):
         kwargs = {**defaultKwargs, **kwargs}
 
         self._operation_calls = defaultdict(int)
-        self._shots = kwargs["shots"]
-        self._analytic = kwargs["analytic"]
-        self._r_dtype = kwargs["r_dtype"]
-        self._c_dtype = kwargs["c_dtype"]
-
         super().__init__(
             wires,
-            self._shots,
-            r_dtype=self._r_dtype,
-            c_dtype=self._c_dtype,
-            analytic=self._analytic,
+            shots=kwargs["shots"],
+            r_dtype=kwargs["r_dtype"],
+            c_dtype=kwargs["c_dtype"],
+            analytic=kwargs["analytic"],
         )
         self._debugger = None
 
@@ -236,7 +231,7 @@ class NullQubit(QubitDevice):
         return capabilities
 
     def _create_basis_state(self, index):
-        pass
+        return None
 
     @property
     def state(self):
