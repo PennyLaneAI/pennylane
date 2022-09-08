@@ -413,7 +413,7 @@ class TestApply:
         ],
     )
     def test_advanced_op(self, r_dtype, c_dtype, op, tol):
-        """Test some advanced operations."""
+        """Test qchem and arithmetic operations."""
 
         dev = qml.device("null.qubit", wires=4, r_dtype=r_dtype, c_dtype=c_dtype)
 
@@ -1362,7 +1362,7 @@ class TestOpCallDirect:
 class TestOpCallIntegration:
     """Integration tests for operation call statistics."""
 
-    dev = qml.device("null.qubit", wires=2)
+    dev_2_qubits = qml.device("null.qubit", wires=2)
 
     single_qubit_ops = [
         (qml.PauliX, {"PauliX": 1}),
@@ -1411,7 +1411,7 @@ class TestOpCallIntegration:
         """Test if the application of single qubit operations, without parameters,
         is being accounted for."""
 
-        @qml.qnode(self.dev, diff_method="parameter-shift")
+        @qml.qnode(self.dev_2_qubits, diff_method="parameter-shift")
         def circuit():
             operation(wires=[0])
             return qml.state()
@@ -1419,14 +1419,14 @@ class TestOpCallIntegration:
         circuit()
 
         expected_dict = defaultdict(int, **expected)
-        assert self.dev.operation_calls() == expected_dict
+        assert self.dev_2_qubits.operation_calls() == expected_dict
 
     @pytest.mark.parametrize("operation,expected", two_qubit_ops)
     def test_two_qubit_op(self, operation, expected):
         """Test if the application of two qubit operations, without parameters,
         is being accounted for."""
 
-        @qml.qnode(self.dev, diff_method="parameter-shift")
+        @qml.qnode(self.dev_2_qubits, diff_method="parameter-shift")
         def circuit():
             operation(wires=[0, 1])
             return qml.state()
@@ -1434,7 +1434,7 @@ class TestOpCallIntegration:
         circuit()
 
         expected_dict = defaultdict(int, **expected)
-        assert self.dev.operation_calls() == expected_dict
+        assert self.dev_2_qubits.operation_calls() == expected_dict
 
     single_qubit_ops_par = [
         (
@@ -1806,7 +1806,7 @@ class TestOpCallIntegration:
         """Test if the application of single qubit operations, with parameters,
         is being accounted for."""
 
-        @qml.qnode(self.dev, diff_method="parameter-shift")
+        @qml.qnode(self.dev_2_qubits, diff_method="parameter-shift")
         def circuit(input):
             operation(input, wires=[0])
             return qml.state()
@@ -1814,14 +1814,14 @@ class TestOpCallIntegration:
         circuit(input)
 
         expected_dict = defaultdict(int, **expected)
-        assert self.dev.operation_calls() == expected_dict
+        assert self.dev_2_qubits.operation_calls() == expected_dict
 
     @pytest.mark.parametrize("operation,input,expected", two_qubit_ops_par)
     def test_two_qubit_op_with_par(self, operation, input, expected):
         """Test if the application of two qubit operations, with parameters,
         is being accounted for."""
 
-        @qml.qnode(self.dev, diff_method="parameter-shift")
+        @qml.qnode(self.dev_2_qubits, diff_method="parameter-shift")
         def circuit(input):
             operation(input, wires=[0, 1])
             return qml.state()
@@ -1829,7 +1829,108 @@ class TestOpCallIntegration:
         circuit(input)
 
         expected_dict = defaultdict(int, **expected)
-        assert self.dev.operation_calls() == expected_dict
+        assert self.dev_2_qubits.operation_calls() == expected_dict
+
+    dev_4_qubits = qml.device("null.qubit", wires=4)
+
+    @pytest.mark.parametrize(
+        "op,expected",
+        [
+            (qml.SingleExcitation, {"SingleExcitation": 1}),
+            (qml.SingleExcitationPlus, {"SingleExcitation": 1, "SingleExcitationPlus": 1}),
+            (
+                qml.SingleExcitationMinus,
+                {"SingleExcitation": 1, "SingleExcitationPlus": 1, "SingleExcitationMinus": 1},
+            ),
+            (
+                qml.DoubleExcitation,
+                {
+                    "SingleExcitation": 1,
+                    "SingleExcitationPlus": 1,
+                    "SingleExcitationMinus": 1,
+                    "DoubleExcitation": 1,
+                },
+            ),
+            (
+                qml.DoubleExcitationPlus,
+                {
+                    "SingleExcitation": 1,
+                    "SingleExcitationPlus": 1,
+                    "SingleExcitationMinus": 1,
+                    "DoubleExcitation": 1,
+                    "DoubleExcitationPlus": 1,
+                },
+            ),
+            (
+                qml.DoubleExcitationMinus,
+                {
+                    "SingleExcitation": 1,
+                    "SingleExcitationPlus": 1,
+                    "SingleExcitationMinus": 1,
+                    "DoubleExcitation": 1,
+                    "DoubleExcitationPlus": 1,
+                    "DoubleExcitationMinus": 1,
+                },
+            ),
+            (
+                qml.OrbitalRotation,
+                {
+                    "SingleExcitation": 1,
+                    "SingleExcitationPlus": 1,
+                    "SingleExcitationMinus": 1,
+                    "DoubleExcitation": 1,
+                    "DoubleExcitationPlus": 1,
+                    "DoubleExcitationMinus": 1,
+                    "OrbitalRotation": 1,
+                },
+            ),
+            (
+                qml.QubitSum,
+                {
+                    "SingleExcitation": 1,
+                    "SingleExcitationPlus": 1,
+                    "SingleExcitationMinus": 1,
+                    "DoubleExcitation": 1,
+                    "DoubleExcitationPlus": 1,
+                    "DoubleExcitationMinus": 1,
+                    "OrbitalRotation": 1,
+                    "QubitSum": 1,
+                },
+            ),
+            (
+                qml.QubitCarry,
+                {
+                    "SingleExcitation": 1,
+                    "SingleExcitationPlus": 1,
+                    "SingleExcitationMinus": 1,
+                    "DoubleExcitation": 1,
+                    "DoubleExcitationPlus": 1,
+                    "DoubleExcitationMinus": 1,
+                    "OrbitalRotation": 1,
+                    "QubitSum": 1,
+                    "QubitCarry": 1,
+                },
+            ),
+        ],
+    )
+    def test_advanced_op(self, op, expected):
+        """Test qchem and arithmetic operations."""
+        n_wires = op.num_wires
+        n_params = op.num_params
+
+        @qml.qnode(self.dev_4_qubits, diff_method="parameter-shift")
+        def circuit():
+            if n_params == 0:
+                op(wires=range(n_wires))
+            elif n_params == 1:
+                op(0.5, wires=range(n_wires))
+            else:
+                op([0.5] * n_params, wires=range(n_wires))
+            return qml.state()
+
+        circuit()
+        expected_dict = defaultdict(int, **expected)
+        assert self.dev_4_qubits.operation_calls() == expected_dict
 
 
 class TestState:
