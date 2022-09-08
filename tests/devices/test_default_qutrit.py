@@ -70,6 +70,170 @@ class TestApply:
     """
 
     # TODO: Add tests for non-parametric ops after they're implemented
+    test_data_no_parameters = [
+        (qml.TShift, [1, 0, 0], np.array([0, 1, 0]), None),
+        (
+            qml.TShift,
+            [1 / math.sqrt(2), 1 / math.sqrt(2), 0],
+            np.array([0, 1 / math.sqrt(2), 1 / math.sqrt(2)]),
+            None,
+        ),
+        (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
+        (qml.TClock, [0, 1, 0], np.array([0, OMEGA, 0]), None),
+    ]
+
+    test_data_no_parameters_inverses = [
+        (qml.TShift, [0, 1, 0], np.array([1, 0, 0]), None),
+        (
+            qml.TShift,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            np.array([1 / math.sqrt(2), 1 / math.sqrt(2), 0]),
+            None,
+        ),
+        (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
+        (qml.TClock, [0, OMEGA, 0], np.array([0, 1, 0]), None),
+    ]
+
+    @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
+    def test_apply_operation_single_wire_no_parameters(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an operation yields the expected output state for single wire
+        operations that have no parameters."""
+
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.apply(
+            [operation(wires=[0]) if subspace is None else operation(wires=[0], subspace=subspace)]
+        )
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output, subspace", test_data_no_parameters_inverses
+    )
+    def test_apply_operation_single_wire_no_parameters_inverse(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an inverse operation yields the expected output state for single wire
+        operations that have no parameters."""
+
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.apply(
+            [
+                operation(wires=[0]).inv()
+                if subspace is None
+                else operation(wires=[0], subspace=subspace).inv()
+            ]
+        )
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+    test_data_two_wires_no_parameters = [
+        (qml.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
+        (
+            qml.TSWAP,
+            [0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 0, 1 / math.sqrt(2)],
+            np.array([0, 1 / math.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / math.sqrt(2)]),
+            None,
+        ),
+        (
+            qml.TSWAP,
+            [0, 0, 0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 1j / math.sqrt(3)],
+            np.array([0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 0, 0, 1j / math.sqrt(3)]),
+            None,
+        ),
+    ]
+
+    test_data_tadd = [
+        (qml.TAdd, [0, 0, 0, 0, 1, 0, 0, 0, 0], np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]), None),
+        (
+            qml.TAdd,
+            [0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0],
+            np.array([0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0]),
+            None,
+        ),
+        (
+            qml.TAdd,
+            [0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j],
+            np.array([0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0]),
+            None,
+        ),
+    ]
+
+    test_data_tadd_inv = [
+        (qml.TAdd, [0, 0, 0, 0, 0, 1, 0, 0, 0], np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]), None),
+        (
+            qml.TAdd,
+            [0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0],
+            np.array([0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0]),
+            None,
+        ),
+        (
+            qml.TAdd,
+            [0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0],
+            np.array([0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j]),
+            None,
+        ),
+    ]
+
+    all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_tadd
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output, subspace", all_two_wires_no_parameters
+    )
+    def test_apply_operation_two_wires_no_parameters(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an operation yields the expected output state for two wire
+        operations that have no parameters."""
+
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply(
+            [
+                operation(wires=[0, 1])
+                if subspace is None
+                else operation(wires=[0, 1], subspace=subspace)
+            ]
+        )
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+
+    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_tadd_inv
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output, subspace", all_two_wires_no_parameters_inv
+    )
+    def test_apply_operation_two_wires_no_parameters_inverse(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an inverse operation yields the expected output state for two wire
+        operations that have no parameters."""
+
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply(
+            [
+                operation(wires=[0, 1]).inv()
+                if subspace is None
+                else operation(wires=[0, 1], subspace=subspace).inv()
+            ]
+        )
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
@@ -969,8 +1133,10 @@ class TestApplyOps:
         (qml.TClock, dev._apply_tclock),
     ]
 
-    # TODO: Add tests for two-qutrit ops once they are added
-    two_qutrit_ops = []
+    two_qutrit_ops = [
+        (qml.TAdd, dev._apply_tadd),
+        (qml.TSWAP, dev._apply_tswap),
+    ]
 
     @pytest.mark.parametrize("op, method", single_qutrit_ops)
     def test_apply_single_qutrit_op(self, op, method, inverse):
@@ -981,7 +1147,26 @@ class TestApplyOps:
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
-    # TODO: Add tests for two-qutrit operations
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct."""
+        state_out = method(self.state, axes=[0, 1], inverse=inverse)
+        op1 = op(wires=[0, 1])
+        matrix = op1.inv().matrix() if inverse else op1.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op_reverse(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct when the
+        applied wires are reverse."""
+        state_out = method(self.state, axes=[1, 0], inverse=inverse)
+        op2 = op(wires=[1, 0])
+        matrix = op2.inv().matrix() if inverse else op2.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("badc,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
 
 
 class TestApplyOperationUnit:

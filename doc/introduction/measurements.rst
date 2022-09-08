@@ -39,6 +39,7 @@ The available measurement functions are
     ~pennylane.vn_entropy
     ~pennylane.mutual_info
     ~pennylane.classical_shadow
+    ~pennylane.shadow_expval
 
 :html:`</div>`
 

@@ -21,13 +21,14 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.wires import Wires
-from tests.ops.qubit.test_non_parametric_ops import NON_PARAMETRIZED_OPERATIONS
 
-from gate_data import TSHIFT, TCLOCK
+from gate_data import TSHIFT, TCLOCK, TADD, TSWAP
 
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.TShift, TSHIFT),
     (qml.TClock, TCLOCK),
+    (qml.TAdd, TADD),
+    (qml.TSWAP, TSWAP),
 ]
 
 
@@ -71,11 +72,19 @@ class TestEigenval:
         res = op.eigvals()
         assert np.allclose(res, exp)
 
+    def test_tadd_eigenval(self):
+        """Tests that the TAdd eigenvalue matches the numpy eigenvalues of the TAdd matrix"""
+        op = qml.TAdd(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
 
-period_three_ops = (
+
+period_three_ops = [
     qml.TShift(wires=0),
     qml.TClock(wires=0),
-)
+    qml.TAdd(wires=[0, 1]),
+]
 
 
 class TestPowMethod:
@@ -106,10 +115,23 @@ class TestPowMethod:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
 
+    @pytest.mark.parametrize("offset", [0, 2, -2, 4, -4])
+    def test_tswap_pow(self, offset):
+        """Test powers of the TSWAP operator"""
+        op = qml.TSWAP(wires=[0, 1])
+
+        assert len(op.pow(0 + offset)) == 0
+        assert op.pow(1 + offset)[0].__class__ is qml.TSWAP
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(1.234)  # Expect error raised for non-integer power
+
 
 label_data = [
     (qml.TShift(0), "TShift", "TShift⁻¹"),
     (qml.TClock(0), "TClock", "TClock⁻¹"),
+    (qml.TAdd([0, 1]), "TAdd", "TAdd⁻¹"),
+    (qml.TSWAP([0, 1]), "TSWAP", "TSWAP"),
 ]
 
 
@@ -120,3 +142,47 @@ def test_label_method(op, label1, label2):
 
     op.inv()
     assert op.label() == label2
+
+
+control_data = [
+    (qml.TShift(0), Wires([])),
+    (qml.TClock(0), Wires([])),
+    (qml.TAdd([0, 1]), Wires([0])),
+    (qml.TSWAP([0, 1]), Wires([])),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test ``control_wires`` attribute for non-parametrized operations."""
+
+    assert op.control_wires == control_wires
+
+
+adjoint_ops = [  # ops that are not their own inverses
+    qml.TShift(wires=0),
+    qml.TClock(wires=0),
+    qml.TAdd(wires=[0, 1]),
+]
+
+involution_ops = [  # ops that are their own inverses
+    qml.TSWAP(wires=[0, 1]),
+]
+
+
+@pytest.mark.parametrize("op", adjoint_ops)
+def test_adjoint_method(op, tol):
+    adj_op = copy.copy(op)
+    adj_op = adj_op.adjoint()
+
+    assert adj_op.name == op.name + ".inv"
+    assert np.allclose(adj_op.matrix(), op.matrix().conj().T)
+
+
+@pytest.mark.parametrize("op", involution_ops)
+def test_adjoint_method_involution(op, tol):
+    adj_op = copy.copy(op)
+    adj_op = adj_op.adjoint()
+
+    assert adj_op.name == op.name
+    assert np.allclose(adj_op.matrix(), op.matrix())

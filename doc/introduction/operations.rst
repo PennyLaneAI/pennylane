@@ -52,6 +52,7 @@ Operator to Operator functions
     ~pennylane.adjoint
     ~pennylane.ctrl
     ~pennylane.cond
+    ~pennylane.exp
     ~pennylane.op_sum
     ~pennylane.prod
     ~pennylane.s_prod
@@ -71,6 +72,10 @@ Operator to Other functions
 
     ~pennylane.matrix
     ~pennylane.eigvals
+    ~pennylane.is_commuting
+    ~pennylane.is_hermitian
+    ~pennylane.is_unitary
+    ~pennylane.simplify
 
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.
