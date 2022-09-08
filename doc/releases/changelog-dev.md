@@ -250,7 +250,7 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
-* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
+* `Prod` and `Sum` class now support the `sparse_matrix()` method.
   [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
   
   ```pycon
@@ -274,6 +274,10 @@
 * `__repr__` and `label` methods are more correct and meaningful for Operators with an arithmetic
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
+
+* Use `self.hash` instead of `self.matrix` to cache the eigendecomposition results in `Prod` and
+  `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
+  and the diagonalising gates using the factors/summands instead of using the full matrix.
 
 <h3>Breaking changes</h3>
 
@@ -307,7 +311,7 @@
 * Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
   [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
-    
+
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
