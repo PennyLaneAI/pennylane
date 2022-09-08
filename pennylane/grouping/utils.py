@@ -60,9 +60,6 @@ def is_pauli_word(observable):
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
 
-    Raises:
-        TypeError: if input observable is not an Observable instance.
-
     **Example**
 
     >>> is_pauli_word(qml.Identity(0))

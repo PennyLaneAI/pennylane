@@ -51,11 +51,6 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     False
     """
 
-    if not (is_pauli_word(pauli_word_1) and is_pauli_word(pauli_word_2)):
-        raise TypeError(
-            f"Expected Pauli word observables, instead got {pauli_word_1} and {pauli_word_2}"
-        )
-
     if wire_map is None:
         wire_map = _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2)
 
@@ -364,14 +359,13 @@ def is_commuting(operation1, operation2, wire_map=None):
     if operation2.name == "ControlledOperation" and operation2.control_base == "MultipleTargets":
         raise qml.QuantumFunctionError(f"{operation2.control_base} controlled is not supported.")
 
-    try:
+    if is_pauli_word(operation1) and is_pauli_word(operation2):
         return _pword_is_commuting(operation1, operation2, wire_map)
-    except TypeError:  # aside from Pauli words, Tensor commutation evaluation is not supported
-        if isinstance(operation1, qml.operation.Tensor) or isinstance(
-            operation2, qml.operation.Tensor
-        ):
-            # pylint: disable=raise-missing-from
-            raise qml.QuantumFunctionError("Tensor operations are not supported.")
+
+    # aside from Pauli words, Tensor commutation evaluation is not supported
+    if isinstance(operation1, qml.operation.Tensor) or isinstance(operation2, qml.operation.Tensor):
+        # pylint: disable=raise-missing-from
+        raise qml.QuantumFunctionError("Tensor operations are not supported.")
 
     # operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
