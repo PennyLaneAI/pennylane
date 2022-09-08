@@ -317,7 +317,7 @@ class Prod(Operator):
         mats = (
             math.expand_matrix(qml.matrix(op), op.wires, wire_order=self.wires)
             if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=self.wires)
+            else op.matrix(wire_order=self.wires)
             for op in self.factors
         )
 
