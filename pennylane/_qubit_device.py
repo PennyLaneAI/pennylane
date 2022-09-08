@@ -45,7 +45,6 @@ from pennylane.measurements import (
     VnEntropy,
 )
 from pennylane.operation import operation_derivative
-from pennylane.shadows import ClassicalShadow
 from pennylane.wires import Wires
 
 
@@ -1301,7 +1300,7 @@ class QubitDevice(Device):
             float: expectation value estimate.
         """
         bits, recipes = self.classical_shadow(obs, circuit)
-        shadow = ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=obs.wires.tolist())
         return shadow.expval(obs.H, obs.k)
 
     def analytic_probability(self, wires=None):
