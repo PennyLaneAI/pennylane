@@ -315,10 +315,10 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        mats_and_wires = [
+        mats_and_wires = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self.factors
-        ]
+        )
 
         def expand_and_dot(op1_tuple: tuple, op2_tuple: tuple):
             mat1, wires1 = op1_tuple

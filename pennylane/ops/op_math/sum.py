@@ -289,10 +289,10 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        mats_and_wires = [
+        mats_and_wires = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self.summands
-        ]
+        )
 
         def expand_and_dot(op1_tuple: tuple, op2_tuple: tuple):
             mat1, wires1 = op1_tuple
