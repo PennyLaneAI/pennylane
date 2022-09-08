@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-from copy import copy
 import warnings
+from copy import copy
 from inspect import signature
 from typing import List
 
@@ -25,12 +25,14 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
+from pennylane.operation import Operation, Operator, Tensor
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
+
 # pylint: disable=protected-access
-def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
+def _decompose_no_control_values(op: Operator) -> List[Operator]:
     """Provides a decomposition without considering control values.  Returns None if
     no decomposition.
     """
@@ -45,7 +47,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         # Need to use expand because of in-place inversion
         # revert to decomposition once in-place inversion removed
         base_decomp = op.base.expand().circuit
-    except qml.operation.DecompositionUndefinedError:
+    except operation.DecompositionUndefinedError:
         return None
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
@@ -150,7 +152,7 @@ class Controlled(SymbolicOp):
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
         """If base is an ``Operation``, then the a ``ControlledOp`` should be used instead."""
-        if isinstance(base, operation.Operation):
+        if isinstance(base, Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
@@ -276,10 +278,19 @@ class Controlled(SymbolicOp):
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
+    def equal(self, other: Operator) -> bool:
+        return (
+            self.wires == other.wires
+            and self.control_values == other.control_values
+            and qml.equal(self.base, other.base)
+            if isinstance(other, Controlled)
+            else False
+        )
+
     def matrix(self, wire_order=None):
 
         if self.base.batch_size is not None:
-            raise qml.operation.MatrixUndefinedError
+            raise operation.MatrixUndefinedError
 
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
@@ -348,7 +359,7 @@ class Controlled(SymbolicOp):
         if all(self.control_values):
             decomp = _decompose_no_control_values(self)
             if decomp is None:
-                raise qml.operation.DecompositionUndefinedError
+                raise operation.DecompositionUndefinedError
             return decomp
 
         # We need to add paulis to flip some control wires
@@ -367,7 +378,7 @@ class Controlled(SymbolicOp):
 
     def generator(self):
         sub_gen = self.base.generator()
-        proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
+        proj_tensor = Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
         return 1.0 * proj_tensor @ sub_gen
 
     def adjoint(self):
@@ -399,7 +410,7 @@ class Controlled(SymbolicOp):
         )
 
 
-class ControlledOp(Controlled, operation.Operation):
+class ControlledOp(Controlled, Operation):
     """Operation-specific methods and properties for the :class:`~.ops.op_math.Controlled` class.
 
     When an :class:`~.operation.Operation` is provided to the :class:`~.ops.op_math.Controlled`
