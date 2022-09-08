@@ -329,7 +329,7 @@ class Prod(Operator):
             qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix()
             for op in self.factors
         )
-        full_mat = reduce(np.kron, mats_gen)
+        full_mat = reduce(math.kron, mats_gen)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
