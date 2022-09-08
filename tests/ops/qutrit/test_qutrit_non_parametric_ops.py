@@ -165,9 +165,9 @@ adjoint_ops = [  # ops that are not their own inverses
     qml.TAdd(wires=[0, 1]),
 ]
 
-involution_ops = [
-    qml.TSWAP([0, 1]),
-]  # ops that are their own inverses
+involution_ops = [  # ops that are their own inverses
+    qml.TSWAP(wires=[0, 1]),
+]
 
 
 @pytest.mark.parametrize("op", adjoint_ops)
