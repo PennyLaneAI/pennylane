@@ -279,6 +279,10 @@
   `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
   and the diagonalising gates using the factors/summands instead of using the full matrix.
 
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
