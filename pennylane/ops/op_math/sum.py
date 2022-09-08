@@ -289,13 +289,12 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        sorted_summands = self.summands
-        mats = [
+        mats_and_wires = [
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in sorted_summands
+            for op in self.summands
         ]
 
-        def reduce_func(op1_tuple: tuple, op2_tuple: tuple):
+        def expand_and_dot(op1_tuple: tuple, op2_tuple: tuple):
             mat1, wires1 = op1_tuple
             mat2, wires2 = op2_tuple
             sum_wires = wires1 + wires2
@@ -305,11 +304,11 @@ class Sum(Operator):
                 mat2 = math.expand_matrix(mat2, wires2, wire_order=sum_wires)
             return math.add(mat1, mat2), sum_wires
 
-        reduced_mat, sorted_wires = reduce(reduce_func, mats)
+        reduced_mat, sum_wires = reduce(expand_and_dot, mats_and_wires)
 
         wire_order = wire_order or self.wires
 
-        return math.expand_matrix(reduced_mat, sorted_wires, wire_order=wire_order)
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the sum is represented in diagrams and drawings.
