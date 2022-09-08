@@ -356,6 +356,18 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_Prod(self):
+        with QuantumTape() as tape:
+            qml.S(0) @ qml.T(0)
+
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
+        plt.close()
+
 
 controlled_data = [
     (qml.CY(wires=(0, 1)), "Y"),

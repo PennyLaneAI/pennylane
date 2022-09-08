@@ -173,7 +173,7 @@ class Prod(Operator):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return " @ ".join([f"{f}" for f in self.factors])
+        return " @ ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.factors])
 
     def __copy__(self):
         cls = self.__class__
@@ -302,6 +302,44 @@ class Prod(Operator):
         )
 
         return reduce(math.dot, mats)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""How the product is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``factors`` attribute.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        >>> op = qml.prod(qml.PauliX(0), qml.prod(qml.RY(1, wires=1), qml.PauliX(0)))
+        >>> op.label()
+        'X@(RY@X)'
+        >>> op.label(decimals=2, base_label=["X0a", ["RY1", "X0b"]])
+        'X0a@(RY1\n(1.00)@X0b)'
+
+        """
+
+        def _label(factor, decimals, base_label, cache):
+            sub_label = factor.label(decimals, base_label, cache)
+            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
+
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self.factors):
+                raise ValueError(
+                    "Prod label requires ``base_label`` keyword to be same length"
+                    " as product factors."
+                )
+            return "@".join(
+                _label(f, decimals, lbl, cache) for f, lbl in zip(self.factors, base_label)
+            )
+
+        return "@".join(_label(f, decimals, None, cache) for f in self.factors)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
@@ -479,18 +517,18 @@ class _ProductFactorsGrouping:
         Args:
             factor (Operator): Factor to add.
         """
+        wires = factor.wires
         if isinstance(factor, Prod):
             for prod_factor in factor.factors:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
-            self._remove_pauli_factors(wires=factor.wires)
-            self._remove_non_pauli_factors(wires=factor.wires)
+            self._remove_pauli_factors(wires=wires)
+            self._remove_non_pauli_factors(wires=wires)
             self._factors += (factor.summands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
                 factor = factor.base
-            wires = factor.wires
             if isinstance(factor, (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)):
                 self._add_pauli_factor(factor=factor, wires=wires)
                 self._remove_non_pauli_factors(wires=wires)
@@ -561,8 +599,8 @@ class _ProductFactorsGrouping:
                     self._non_pauli_factors.pop(key)
                     if exponent == 0:
                         continue
-                    # TODO: Should we create a qml.pow function that calls op.pow() if possible?
-                    op = Pow(base=op, z=exponent).simplify() if exponent != 1 else op
+                    if exponent != 1:
+                        op = Pow(base=op, z=exponent).simplify()
                     if isinstance(op, Prod):
                         self._factors += tuple(
                             (factor,)

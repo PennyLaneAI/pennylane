@@ -291,12 +291,14 @@ class TestSimplify:
 
     def test_simplify_nested_pow_ops(self):
         """Test the simplify method with nested pow operations."""
-        pow_op = Pow(base=Pow(base=Pow(base=qml.RX(1, 0), z=3), z=2), z=5)
-        mod_angle = 30 % (4 * np.pi)
-        final_op = qml.RX(mod_angle, 0)
+        pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.CNOT([1, 0]), z=1.2)), z=2), z=5)
+        final_op = qml.prod(qml.Identity(1), qml.Identity(0))
         simplified_op = pow_op.simplify()
 
-        assert qml.equal(final_op, simplified_op)
+        assert isinstance(simplified_op, qml.ops.Prod)
+        assert final_op.data == simplified_op.data
+        assert final_op.wires == simplified_op.wires
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_zero_power(self):
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
@@ -319,13 +321,12 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = Pow(qml.s_prod(3, qml.PauliX(0)), 2)
+        final_op = qml.s_prod(9, qml.PauliX(0))
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, Pow)
-        assert isinstance(simplified_op.base, qml.ops.SProd)
+        assert isinstance(simplified_op, qml.ops.SProd)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -353,6 +354,14 @@ class TestSimplify:
 
 class TestMiscMethods:
     """Test miscellaneous minor Pow methods."""
+
+    def test_repr(self):
+        op = Pow(qml.PauliX(0), 2.5)
+        assert repr(op) == "PauliX(wires=[0])**2.5"
+
+        base = qml.RX(1, 0) + qml.S(1)
+        op = Pow(base, 2.5)
+        assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
 
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
