@@ -215,10 +215,7 @@ class DefaultQutrit(QutritDevice):
         # roll. If axes[1] is larger than axes[0], then we need to shift the target axis down by
         # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
         # target=3. Then, state[slices[1]] has 3 axes and target=3 now corresponds to the second axis.
-        if axes[1] > axes[0]:
-            target_axes = [axes[1] - 1]
-        else:
-            target_axes = [axes[1]]
+        target_axes = [axes[1] - 1] if axes[1] > axes[0] else [axes[1]]
 
         state_1 = self._apply_tshift(state[slices[1]], axes=target_axes, inverse=inverse)
         state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=not inverse)
