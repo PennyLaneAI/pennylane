@@ -134,7 +134,7 @@ class NullQubit(QubitDevice):
         self._debugger = None
 
         # Create the initial state. The state will always be None.
-        self._state = self._create_basis_state(0) # pylint: disable=assignment-from-none
+        self._state = self._create_basis_state(0)  # pylint: disable=assignment-from-none
         self._pre_rotated_state = self._state
 
         self._apply_ops = {
