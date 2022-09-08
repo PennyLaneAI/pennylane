@@ -289,7 +289,7 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        mats_and_wires = (
+        mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self.summands
         )
@@ -304,7 +304,7 @@ class Sum(Operator):
                 mat2 = math.expand_matrix(mat2, wires2, wire_order=sum_wires)
             return math.add(mat1, mat2), sum_wires
 
-        reduced_mat, sum_wires = reduce(expand_and_dot, mats_and_wires)
+        reduced_mat, sum_wires = reduce(expand_and_dot, mats_and_wires_gen)
 
         wire_order = wire_order or self.wires
 

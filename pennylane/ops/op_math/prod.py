@@ -315,7 +315,7 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        mats_and_wires = (
+        mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self.factors
         )
@@ -330,7 +330,7 @@ class Prod(Operator):
                 mat2 = math.expand_matrix(mat2, wires2, wire_order=prod_wires)
             return math.dot(mat1, mat2), prod_wires
 
-        reduced_mat, prod_wires = reduce(expand_and_dot, mats_and_wires)
+        reduced_mat, prod_wires = reduce(expand_and_dot, mats_and_wires_gen)
 
         wire_order = wire_order or self.wires
 
