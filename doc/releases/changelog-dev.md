@@ -297,7 +297,6 @@
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
-  It inherits directly from default.qubit and should support all Numpy-interface functionality.
 
 <h3>Breaking changes</h3>
 
