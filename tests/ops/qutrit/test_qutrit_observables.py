@@ -18,6 +18,7 @@ from unittest.mock import PropertyMock, patch
 import pytest
 import pennylane as qml
 import numpy as np
+from gate_data import GELL_MANN
 
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
@@ -316,14 +317,14 @@ class TestTHermitian:
 
 
 GM_OBSERVABLES = [
-    (1, np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), [1, -1, 0]),
-    (2, np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]]), [1, -1, 0]),
-    (3, np.diag([1, -1, 0]), [1, -1, 0]),
-    (4, np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]]), [1, -1, 0]),
-    (5, np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]]), [1, -1, 0]),
-    (6, np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]]), [1, -1, 0]),
-    (7, np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]]), [1, -1, 0]),
-    (8, np.diag([1, 1, -2]) / np.sqrt(3), np.array([1, 1, -2]) / np.sqrt(3)),
+    (1, GELL_MANN[0], [1, -1, 0]),
+    (2, GELL_MANN[1], [1, -1, 0]),
+    (3, GELL_MANN[2], [1, -1, 0]),
+    (4, GELL_MANN[3], [1, -1, 0]),
+    (5, GELL_MANN[4], [1, -1, 0]),
+    (6, GELL_MANN[5], [1, -1, 0]),
+    (7, GELL_MANN[6], [1, -1, 0]),
+    (8, GELL_MANN[7], np.array([1, 1, -2]) / np.sqrt(3)),
 ]
 
 
