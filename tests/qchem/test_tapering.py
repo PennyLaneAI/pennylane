@@ -706,25 +706,20 @@ def test_taper_excitations(
     state_tapered = functools.reduce(
         lambda i, j: np.kron(i, j), [l if s else o for s in hf_tapered]
     )
+
     singles, doubles = qml.qchem.excitations(num_electrons, num_wires)
+    exc_fnc = [qml.SingleExcitation, qml.DoubleExcitation]
+    exc_obs, exc_tap = [[], []], [[], []]
+    for idx, exc in enumerate([singles, doubles]):
+        exc_obs[idx] = [exc_fnc[idx](1.0, wires=wire) for wire in exc]
+        exc_tap[idx] = [
+            taper_operation(op, generators, paulixops, paulix_sector, range(num_wires))
+            for op in exc_obs[idx]
+        ]
+        exc_tap[idx] = [x for x in exc_tap[idx] if x]
+        assert len(exc_tap[idx]) == num_commuting[idx]
 
-    singles_obs = [qml.SingleExcitation(1, wires=single) for single in singles]
-    doubles_obs = [qml.DoubleExcitation(1, wires=double) for double in doubles]
-
-    singles_tap = [
-        taper_operation(op, generators, paulixops, paulix_sector, range(num_wires))
-        for op in singles_obs
-    ]
-    doubles_tap = [
-        taper_operation(op, generators, paulixops, paulix_sector, range(num_wires))
-        for op in doubles_obs
-    ]
-
-    singles_tap = [x for x in singles_tap if x]
-    doubles_tap = [x for x in doubles_tap if x]
-    assert len(singles_tap) == num_commuting[0] and len(doubles_tap) == num_commuting[1]
-
-    obs_all, obs_tap = singles_obs + doubles_obs, singles_tap + doubles_tap
+    obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
     for op_all, op_tap in zip(obs_all, obs_tap):
         if op_tap:
 
@@ -807,18 +802,14 @@ def test_inconsistent_taper_ops(operation, gen_op, message_match):
 def test_consistent_taper_ops(operation, gen_op):
     r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
 
-    symbols, geometry, charge = (
-        ["He", "H"],
-        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
-        1,
-    )
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
-
-    generators = qml.symmetry_generators(hamiltonian)
-    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
-    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
-    wire_order = hamiltonian.wires
+    # HeH+ tapering data for [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]
+    generators = [
+        qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+        qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
+    ]
+    paulixops = [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])]
+    paulix_sector = (-1, -1)
+    wire_order = range(4)
 
     taper_op1 = taper_operation(operation, generators, paulixops, paulix_sector, wire_order, None)
     taper_op2 = taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op)
