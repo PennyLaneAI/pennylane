@@ -256,3 +256,7 @@ class Adjoint(SymbolicOp):
             return base.adjoint().simplify()
         except AdjointUndefinedError:
             return Adjoint(base=base.simplify())
+
+    @property
+    def hash(self):
+        return hash((self.name, self.base.hash))
