@@ -370,9 +370,7 @@ class Sum(Operator):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
         mats_gen = (op.sparse_matrix(wire_order=self.wires) for op in self.summands)
         reduced_matrix = reduce(math.add, mats_gen)
-        if wire_order is not None:
-            reduced_matrix = math.expand_matrix(reduced_matrix, self.wires, wire_order=wire_order)
-        return reduced_matrix
+        return math.expand_matrix(reduced_matrix, self.wires, wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
