@@ -687,9 +687,9 @@ class QNode:
 
             res = res[0]
 
-        if (
-            not isinstance(self._qfunc_output, Sequence)
-            and self._qfunc_output.return_type is qml.measurements.Counts
+        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
+            qml.measurements.Counts,
+            qml.measurements.AllCounts,
         ):
 
             if not self.device._has_partitioned_shots():
@@ -699,7 +699,8 @@ class QNode:
             return tuple(res)
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
