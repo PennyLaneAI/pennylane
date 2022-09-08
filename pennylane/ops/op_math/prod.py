@@ -21,6 +21,8 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
@@ -180,16 +182,6 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
-    @property
-    def has_overlapping_wires(self) -> bool:
-        """Boolean expression that indicates if the factors have overlapping wires."""
-        if self._has_overlapping_wires is None:
-            wires = []
-            for op in self.factors:
-                wires.extend(list(op.wires))
-            self._has_overlapping_wires = len(wires) != len(set(wires))
-        return self._has_overlapping_wires
-
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -214,7 +206,7 @@ class Prod(CompositeOp):
             return self.eigendecomposition["eigval"]
         eigvals = [
             qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
-            for factor in self.factors
+            for factor in self
         ]
 
         return qml.math.prod(eigvals, axis=0)
@@ -401,7 +393,7 @@ class _ProductFactorsGrouping:
         """
         wires = factor.wires
         if isinstance(factor, Prod):
-            for prod_factor in factor.factors:
+            for prod_factor in factor:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
             self._remove_pauli_factors(wires=wires)
@@ -486,7 +478,7 @@ class _ProductFactorsGrouping:
                     if isinstance(op, Prod):
                         self._factors += tuple(
                             (factor,)
-                            for factor in op.factors
+                            for factor in op
                             if not isinstance(factor, qml.Identity)
                         )
                     elif not isinstance(op, qml.Identity):

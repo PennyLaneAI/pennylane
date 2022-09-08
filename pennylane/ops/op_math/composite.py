@@ -111,6 +111,16 @@ class CompositeOp(Operator, abc.ABC):
         return sum(op.num_params for op in self)
 
     @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
+    @property
     @abc.abstractmethod
     def is_hermitian(self):
         """This property determines if the composite operator is hermitian."""
@@ -170,8 +180,8 @@ class CompositeOp(Operator, abc.ABC):
             eigen_vectors = self.eigendecomposition["eigvec"]
             return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
         diag_gates = []
-        for summand in self.summands:
-            diag_gates.extend(summand.diagonalizing_gates())
+        for op in self:
+            diag_gates.extend(op.diagonalizing_gates())
         return diag_gates
 
     def label(self, decimals=None, base_label=None, cache=None):

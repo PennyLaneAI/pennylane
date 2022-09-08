@@ -176,20 +176,6 @@ class TestInitialization:
         for op1, op2 in zip(tape.operations, true_decomposition):
             assert qml.equal(op1, op2)
 
-    def test_diagonalizing_gates(self):
-        """Test that the diagonalizing gates are correct."""
-        diag_prod_op = Prod(qml.PauliX(wires=0), qml.Identity(wires=1), qml.PauliX(wires=0))
-        diagonalizing_gates = diag_prod_op.diagonalizing_gates()
-
-        assert len(diagonalizing_gates) == 1
-        diagonalizing_mat = diagonalizing_gates[0].matrix()
-
-        true_mat = qnp.array(
-            [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
-        )
-
-        assert np.allclose(diagonalizing_mat, true_mat)
-
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         prod_op = Prod(qml.PauliZ(wires=0), qml.Identity(wires=1))

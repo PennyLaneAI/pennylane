@@ -171,11 +171,6 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
-    def test_diagonalizing_gates(self):
-        """Test that the diagonalizing gates are correct."""
-        diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        assert diag_sum_op.diagonalizing_gates() == []
-
 
 class TestMatrix:
     """Test matrix-related methods."""

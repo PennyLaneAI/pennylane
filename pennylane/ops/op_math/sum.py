@@ -19,6 +19,8 @@ from copy import copy
 from functools import reduce
 from typing import List
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
@@ -156,16 +158,6 @@ class Sum(CompositeOp):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return all(s.is_hermitian for s in self)
 
-    @property
-    def has_overlapping_wires(self) -> bool:
-        """Boolean expression that indicates if the factors have overlapping wires."""
-        if self._has_overlapping_wires is None:
-            wires = []
-            for op in self.summands:
-                wires.extend(list(op.wires))
-            self._has_overlapping_wires = len(wires) != len(set(wires))
-        return self._has_overlapping_wires
-
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -194,7 +186,7 @@ class Sum(CompositeOp):
             return self.eigendecomposition["eigval"]
         eigvals = [
             qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
-            for summand in self.summands
+            for summand in self
         ]
         return qml.math.sum(eigvals, axis=0)
 

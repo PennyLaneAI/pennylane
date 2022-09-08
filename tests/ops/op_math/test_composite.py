@@ -48,7 +48,7 @@ class ValidOp(CompositeOp):
         return False
 
     def matrix(self, wire_order=None):
-        return np.eye(4)
+        return np.eye(2**self.num_wires)
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]
@@ -125,17 +125,20 @@ class TestConstruction:
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
-    def test_diagonalizing_gates(self):
-        """Test that the diagonalizing gates are correct."""
-        diag_op = ValidOp(*self.simple_operands)
+    def test_diagonalizing_gates_non_overlapping(self):
+        """Test that the diagonalizing gates are correct when wires do not overlap."""
+        diag_op = ValidOp(qml.PauliZ(wires=0), qml.Identity(wires=1))
+        assert diag_op.diagonalizing_gates() == []
+
+    def test_diagonalizing_gates_overlapping(self):
+        """Test that the diagonalizing gates are correct when wires overlap."""
+        diag_op = ValidOp(qml.S(0), qml.PauliX(0))
         diagonalizing_gates = diag_op.diagonalizing_gates()
 
         assert len(diagonalizing_gates) == 1
         diagonalizing_mat = diagonalizing_gates[0].matrix()
 
-        true_mat = qnp.array(
-            [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
-        )
+        true_mat = np.eye(2)
 
         assert np.allclose(diagonalizing_mat, true_mat)
 
@@ -147,9 +150,7 @@ class TestConstruction:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-        ]
+        eigs_cache = diag_op._eigs[diag_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
