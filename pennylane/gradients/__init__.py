@@ -295,6 +295,7 @@ from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
 from .vjp import compute_vjp, batch_vjp, vjp
+from .vjp_new import compute_vjp_new, batch_vjp_new, vjp_new
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
     eigvals_to_frequencies,

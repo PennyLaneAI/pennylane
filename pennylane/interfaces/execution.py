@@ -33,7 +33,6 @@ import pennylane as qml
 
 from .set_shots import set_shots
 
-
 INTERFACE_MAP = {
     None: "Numpy",
     "autograd": "autograd",
@@ -220,19 +219,19 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
 
 
 def execute(
-    tapes,
-    device,
-    gradient_fn,
-    interface="autograd",
-    mode="best",
-    gradient_kwargs=None,
-    cache=True,
-    cachesize=10000,
-    max_diff=1,
-    override_shots=False,
-    expand_fn="device",
-    max_expansion=10,
-    device_batch_transform=True,
+        tapes,
+        device,
+        gradient_fn,
+        interface="autograd",
+        mode="best",
+        gradient_kwargs=None,
+        cache=True,
+        cachesize=10000,
+        max_diff=1,
+        override_shots=False,
+        expand_fn="device",
+        max_expansion=10,
+        device_batch_transform=True,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -466,19 +465,19 @@ def _get_jax_execute_fn(interface, tapes):
 
 
 def execute_new(
-    tapes,
-    device,
-    gradient_fn,
-    interface="autograd",
-    mode="best",
-    gradient_kwargs=None,
-    cache=True,
-    cachesize=10000,
-    max_diff=1,
-    override_shots=False,
-    expand_fn="device",
-    max_expansion=10,
-    device_batch_transform=True,
+        tapes,
+        device,
+        gradient_fn,
+        interface="autograd",
+        mode="best",
+        gradient_kwargs=None,
+        cache=True,
+        cachesize=10000,
+        max_diff=1,
+        override_shots=False,
+        expand_fn="device",
+        max_expansion=10,
+        device_batch_transform=True,
 ):
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
@@ -618,10 +617,9 @@ def execute_new(
             )(tapes)
         )
 
-    #
-    # # the default execution function is batch_execute
-    # execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
-    # _mode = "backward"
+    # the default execution function is batch_execute
+    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    _mode = "backward"
     #
     # if gradient_fn == "device":
     #     # gradient function is a device method
@@ -657,7 +655,12 @@ def execute_new(
     #     # within execute_and_gradients, so providing a gradient_fn
     #     # in this case would have ambiguous behaviour.
     #     raise ValueError("Gradient transforms cannot be used with mode='forward'")
-    #
+
+    # Temporary autograd support
+    mapped_interface = INTERFACE_MAP[interface]
+    if mapped_interface == "autograd":
+        from .autograd_new import execute_new as _execute
+
     # try:
     #     mapped_interface = INTERFACE_MAP[interface]
     # except KeyError as e:
@@ -684,8 +687,8 @@ def execute_new(
     #         f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
     #     ) from e
     #
-    # res = _execute(
-    #     tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
-    # )
+    res = _execute(
+        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
+    )
 
-    # return batch_fn(res)
+    return batch_fn(res)
