@@ -794,7 +794,7 @@ class TestOperatorIntegration:
         final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
-        for s1, s2 in zip(sum_op.summands, final_op.summands):
+        for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -806,7 +806,7 @@ class TestOperatorIntegration:
         final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
-        for s1, s2 in zip(sum_op.summands, final_op.summands):
+        for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -821,7 +821,7 @@ class TestOperatorIntegration:
         )
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
-        for s1, s2 in zip(sum_op.summands, final_op.summands):
+        for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data

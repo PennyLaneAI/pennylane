@@ -533,7 +533,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -559,7 +559,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -699,7 +699,7 @@ class TestWrapperFunc:
         sum_func_op = op_sum(*summands, id=op_id, do_queue=do_queue)
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
-        assert sum_class_op.summands == sum_func_op.summands
+        assert sum_class_op.operands == sum_func_op.operands
         assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
         assert sum_class_op.id == sum_func_op.id
         assert sum_class_op.wires == sum_func_op.wires
@@ -879,7 +879,7 @@ class TestArithmetic:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(adj_op, Sum)
-        for s1, s2 in zip(final_op.summands, adj_op.summands):
+        for s1, s2 in zip(final_op.operands, adj_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data

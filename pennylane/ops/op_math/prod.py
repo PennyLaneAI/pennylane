@@ -156,11 +156,6 @@ class Prod(CompositeOp):
 
     _op_symbol = "@"
 
-    @property
-    def factors(self):
-        """Return the factors that compose this operator."""
-        return self.operands
-
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
 
@@ -177,7 +172,7 @@ class Prod(CompositeOp):
         yields false, which ARE hermitian. So a false result only implies a more explicit check
         must be performed.
         """
-        for o1, o2 in combinations(self.factors, r=2):
+        for o1, o2 in combinations(self.operands, r=2):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
         return all(op.is_hermitian for op in self)
@@ -191,7 +186,7 @@ class Prod(CompositeOp):
         """
         if qml.queuing.QueuingContext.recording():
             return [qml.apply(op) for op in self[::-1]]
-        return list(self.factors[::-1])
+        return list(self.operands[::-1])
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
@@ -269,7 +264,7 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
-        global_phase, factors = self._simplify_factors(factors=self.factors)
+        global_phase, factors = self._simplify_factors(factors=self.operands)
 
         factors = list(itertools.product(*factors))
         if len(factors) == 1:
@@ -292,7 +287,7 @@ class Prod(CompositeOp):
     def hash(self):
         if self._hash is None:
             self._hash = hash(
-                (str(self.name), str([factor.hash for factor in _prod_sort(self.factors)]))
+                (str(self.name), str([factor.hash for factor in _prod_sort(self.operands)]))
             )
         return self._hash
 
@@ -398,7 +393,7 @@ class _ProductFactorsGrouping:
         elif isinstance(factor, Sum):
             self._remove_pauli_factors(wires=wires)
             self._remove_non_pauli_factors(wires=wires)
-            self._factors += (factor.summands,)
+            self._factors += (factor.operands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar

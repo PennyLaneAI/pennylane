@@ -149,11 +149,6 @@ class Sum(CompositeOp):
     _op_symbol = "+"
 
     @property
-    def summands(self):
-        """Return the summands that compose this operator."""
-        return self.operands
-
-    @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return all(s.is_hermitian for s in self)
@@ -171,7 +166,7 @@ class Sum(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self), list(self.summands)
+        return [1.0] * len(self), list(self.operands)
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified operator.
@@ -223,7 +218,7 @@ class Sum(CompositeOp):
         if wire_order is None:
             wire_order = self.wires
 
-        return _sum(matrix_gen(self.summands, wire_order))
+        return _sum(matrix_gen(self.operands, wire_order))
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
@@ -258,14 +253,14 @@ class Sum(CompositeOp):
         for summand in summands:
             # This code block is not needed but it speeds things up when having a lot of  stacked Sums
             if isinstance(summand, Sum):
-                sum_summands = cls._simplify_summands(summands=summand.summands)
+                sum_summands = cls._simplify_summands(summands=summand.operands)
                 for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
                     new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
                 continue
 
             simplified_summand = summand.simplify()
             if isinstance(simplified_summand, Sum):
-                sum_summands = cls._simplify_summands(summands=simplified_summand.summands)
+                sum_summands = cls._simplify_summands(summands=simplified_summand.operands)
                 for op_hash, [coeff, sum_summand] in sum_summands.queue.items():
                     new_summands.add(summand=sum_summand, coeff=coeff, op_hash=op_hash)
             else:
@@ -274,7 +269,7 @@ class Sum(CompositeOp):
         return new_summands
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
-        new_summands = self._simplify_summands(summands=self.summands).get_summands(cutoff=cutoff)
+        new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
         return qml.s_prod(
@@ -288,7 +283,7 @@ class Sum(CompositeOp):
     def hash(self):
         if self._hash is None:
             self._hash = hash(
-                (str(self.name), str([summand.hash for summand in _sum_sort(self.summands)]))
+                (str(self.name), str([summand.hash for summand in _sum_sort(self.operands)]))
             )
         return self._hash
 

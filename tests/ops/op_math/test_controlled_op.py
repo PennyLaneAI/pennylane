@@ -499,7 +499,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Controlled)
-        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
+        for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data

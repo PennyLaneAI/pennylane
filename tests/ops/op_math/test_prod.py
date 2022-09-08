@@ -138,7 +138,7 @@ class TestInitialization:
         assert prod_op.data == prod_term_ops[0].data
         assert prod_op.wires == prod_term_ops[0].wires
 
-        for f1, f2 in zip(prod_op.factors, prod_term_ops[0].factors):
+        for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
             assert qml.equal(f1, f2)
 
     def test_batch_size(self):
@@ -629,7 +629,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -655,7 +655,7 @@ class TestSimplify:
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -670,7 +670,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -706,7 +706,7 @@ class TestSimplify:
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -723,7 +723,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -740,7 +740,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert repr(s1) == repr(s2)
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -765,7 +765,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -791,7 +791,7 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -807,7 +807,7 @@ class TestSimplify:
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -818,7 +818,7 @@ class TestSimplify:
         prod_op = qml.prod(qml.S(0), qml.Barrier(0), qml.S(0)).simplify()
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(prod_op.factors, simplified_op.factors):
+        for s1, s2 in zip(prod_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -844,7 +844,7 @@ class TestWrapperFunc:
         prod_func_op = prod(*factors, id=op_id, do_queue=do_queue)
         prod_class_op = Prod(*factors, id=op_id, do_queue=do_queue)
 
-        assert prod_class_op.factors == prod_func_op.factors
+        assert prod_class_op.operands == prod_func_op.operands
         assert np.allclose(prod_class_op.matrix(), prod_func_op.matrix())
         assert prod_class_op.id == prod_func_op.id
         assert prod_class_op.wires == prod_func_op.wires
