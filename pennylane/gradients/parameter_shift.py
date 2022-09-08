@@ -340,20 +340,6 @@ def expval_param_shift(
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
-    def _post_process_grads(grads, zero_rep):
-        """Post-processing of grads with the old return types."""
-        for i, g in enumerate(grads):
-            # Fill in zero-valued gradients
-            if g is None:
-                grads[i] = zero_rep
-            # The following is for backwards compatibility; currently, the device stacks multiple
-            # measurement arrays, even if not the same size, resulting in a ragged array.
-            # In the future, we might want to change this so that only tuples of arrays are returned.
-            if getattr(g, "dtype", None) is np.dtype("object") and qml.math.ndim(g) > 0:
-                grads[i] = qml.math.hstack(g)
-
-        return qml.math.T(qml.math.stack(grads))
-
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
@@ -391,31 +377,36 @@ def expval_param_shift(
             else:
                 zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
 
-        if qml.active_return():
-            for i, g in enumerate(grads):
-                # Fill in zero-valued gradients
-                if g is None:
-                    grads[i] = zero_rep
+        for i, g in enumerate(grads):
+            # Fill in zero-valued gradients
+            if g is None:
+                grads[i] = zero_rep
+            # The following is for backwards compatibility; currently, the device stacks multiple
+            # measurement arrays, even if not the same size, resulting in a ragged array.
+            # In the future, we might want to change this so that only tuples of arrays are returned.
+            if (
+                not qml.active_return()
+                and getattr(g, "dtype", None) is np.dtype("object")
+                and qml.math.ndim(g) > 0
+            ):
+                grads[i] = qml.math.hstack(g)
 
-            # Switch up the "axes" for measurement results and parameters to
-            # match the structure outputted by jax.jacobian when inputting a
-            # tuple-valued function
-            if multi_measure:
-                new_grad = []
-                num_measurements = len(grads[0])
-                for i in range(num_measurements):
-                    measurement_grad = []
-                    for g in grads:
-                        measurement_grad.append(g[i])
+        # Switch up the "axes" for measurement results and parameters to
+        # match the structure outputted by jax.jacobian when inputting a
+        # tuple-valued function
+        if qml.active_return() and multi_measure:
+            new_grad = []
+            num_measurements = len(grads[0])
+            for i in range(num_measurements):
+                measurement_grad = []
+                for g in grads:
+                    measurement_grad.append(g[i])
 
-                    new_grad.append(tuple(measurement_grad))
+                new_grad.append(tuple(measurement_grad))
 
-                grads = new_grad
+            grads = new_grad
 
-            res = tuple(grads)
-        else:
-            res = _post_process_grads(grads, zero_rep)
-
+        res = qml.math.T(qml.math.stack(grads)) if not qml.active_return() else tuple(grads)
         return res
 
     return gradient_tapes, processing_fn
