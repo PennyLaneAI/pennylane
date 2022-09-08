@@ -315,14 +315,21 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         wire_order = wire_order or self.wires
-        mats = (
-            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
-            if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+        if self.has_overlapping_wires:
+            mats = (
+                math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+                if isinstance(op, qml.Hamiltonian)
+                else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+                for op in self.factors
+            )
+
+            return reduce(math.dot, mats)
+        mats_gen = (
+            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix()
             for op in self.factors
         )
-
-        return reduce(math.dot, mats)
+        full_mat = reduce(np.kron, mats_gen)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
