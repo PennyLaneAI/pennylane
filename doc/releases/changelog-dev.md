@@ -59,6 +59,7 @@
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
   The measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
@@ -100,6 +101,7 @@
   ```
 
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
 
   ```python
   H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
@@ -115,6 +117,38 @@
   x = np.array(0.5, requires_grad=True)
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
+  ```
+
+* Added the `qml.shadows.shadow_expval` and `qml.shadows.shadow_state` QNode transforms for
+  computing expectation values and states from a classical shadow measurement. These transforms
+  are fully differentiable.
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
+
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=1000)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RY(x, wires=0)
+      return qml.classical_shadow(wires=[0])
+  ```
+
+  ```pycon
+  >>> x = np.array(1.2)
+  >>> expval_circuit = qml.shadows.shadow_expval(qml.PauliZ(0))(circuit)
+  >>> expval_circuit(x)
+  tensor(0.282, requires_grad=True)
+  >>> qml.grad(expval_circuit)(x)
+  -1.0439999999999996
+  ```
+  ```pycon
+  >>> state_circuit = qml.shadows.shadow_state(wires=[0], diffable=True)(circuit)
+  >>> state_circuit(x)
+  tensor([[0.7055+0.j    , 0.447 +0.0075j],
+          [0.447 -0.0075j, 0.2945+0.j    ]], requires_grad=True)
+  >>> qml.jacobian(lambda x: np.real(state_circuit(x)))(x)
+  array([[-0.477,  0.162],
+         [ 0.162,  0.477]])
   ```
 
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
@@ -268,7 +302,7 @@
 
 * `Prod` and `Sum` class now support the `sparse_matrix()` method.
   [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
-  
+
   ```pycon
   >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
   >>> op = qml.op_sum(xy, qml.Identity(0))
@@ -318,6 +352,29 @@
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
+
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  ```pycon
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+  ```
+
+  Instead use:
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+  ```
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
