@@ -295,10 +295,7 @@ class TestSimplify:
         final_op = qml.prod(qml.Identity(1), qml.Identity(0))
         simplified_op = pow_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.Prod)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_zero_power(self):
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
@@ -311,25 +308,15 @@ class TestSimplify:
         final_op = qml.prod(qml.Identity(0), qml.Identity(1))
         simplified_op = pow_op.simplify()
 
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.Prod)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = qml.s_prod(9, qml.PauliX(0))
+        final_op = qml.s_prod(9, qml.Identity(0))
         simplified_op = pow_op.simplify()
 
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.SProd)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
@@ -337,19 +324,13 @@ class TestSimplify:
         final_op = ControlledOp(base=qml.PauliX(0), control_wires=1, id=3)
         simplified_op = pow_op.simplify()
 
-        assert isinstance(simplified_op, ControlledOp)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(final_op, simplified_op)
 
-    def test_simplify_with_adjoint_not_defined(self):
+    def test_simplify_with_pow_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.pow method."""
         op = Pow(qml.U2(1, 1, 0), z=3)
         simplified_op = op.simplify()
-        assert isinstance(simplified_op, Pow)
-        assert op.data == simplified_op.data
-        assert op.wires == simplified_op.wires
-        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(op, simplified_op)
 
 
 class TestMiscMethods:
