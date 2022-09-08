@@ -14,9 +14,14 @@
 """This module contains methods to expand the matrix representation of an operator
 to a higher hilbert space with re-ordered wires."""
 import copy
+from functools import reduce
+from typing import Sequence, Tuple
 
-from scipy.sparse import csr_matrix, kron, issparse, eye
+import numpy as np
+from scipy.sparse import csr_matrix, eye, issparse, kron
+
 import pennylane as qml
+from pennylane.wires import Wires
 
 
 def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
@@ -138,6 +143,47 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     mat = qml.math.reshape(mat, shape)
 
     return mat
+
+
+def reduce_operators(
+    ops: Sequence[np.ndarray], reduce_func: callable, sparse=False
+) -> Tuple[np.ndarray, Wires]:
+    """Apply the given ``reduce_func`` cumulatively to the items of the ``ops`` sequence,
+    from left to right, so as to reduce the sequence to a single matrix.
+
+    Args:
+        ops (Sequence): Sequence of operators to reduce.
+        reduce_func (callable): Function used to reduce the sequence of operators.
+        sparse (bool, optional): If True, compute the sparse matrix instead. Defaults to False.
+
+    Returns:
+        Tuple[tensor, Wires]: A tuple containing the reduced matrix and the wires it acts on.
+    """
+    mats_and_wires_gen = (
+        (
+            op.sparse_matrix()
+            if sparse
+            else qml.matrix(op)
+            if isinstance(op, qml.Hamiltonian)
+            else op.matrix(),
+            op.wires,
+        )
+        for op in ops
+    )
+
+    def expand_and_reduce(op1_tuple: Tuple[np.ndarray, Wires], op2_tuple: Tuple[np.ndarray, Wires]):
+        mat1, wires1 = op1_tuple
+        mat2, wires2 = op2_tuple
+        prod_wires = wires1 + wires2
+        if wires1 != prod_wires:
+            mat1 = qml.math.expand_matrix(mat1, wires1, wire_order=prod_wires)
+        if wires2 != prod_wires:
+            mat2 = qml.math.expand_matrix(mat2, wires2, wire_order=prod_wires)
+        return reduce_func(mat1, mat2), prod_wires
+
+    reduced_mat, prod_wires = reduce(expand_and_reduce, mats_and_wires_gen)
+
+    return reduced_mat, prod_wires
 
 
 def _local_sparse_swap_mat(i, n, format="csr"):

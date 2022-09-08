@@ -16,7 +16,6 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from copy import copy
-from functools import reduce
 from typing import List
 
 import numpy as np
@@ -289,22 +288,7 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in self.summands
-        )
-
-        def expand_and_dot(op1_tuple: tuple, op2_tuple: tuple):
-            mat1, wires1 = op1_tuple
-            mat2, wires2 = op2_tuple
-            sum_wires = wires1 + wires2
-            if wires1 != sum_wires:
-                mat1 = math.expand_matrix(mat1, wires1, wire_order=sum_wires)
-            if wires2 != sum_wires:
-                mat2 = math.expand_matrix(mat2, wires2, wire_order=sum_wires)
-            return math.add(mat1, mat2), sum_wires
-
-        reduced_mat, sum_wires = reduce(expand_and_dot, mats_and_wires_gen)
+        reduced_mat, sum_wires = math.reduce_operators(ops=self.summands, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
@@ -349,11 +333,13 @@ class Sum(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
-        mats_gen = (op.sparse_matrix(wire_order=self.wires) for op in self.summands)
-        reduced_matrix = reduce(math.add, mats_gen)
-        if wire_order is not None:
-            reduced_matrix = math.expand_matrix(reduced_matrix, self.wires, wire_order=wire_order)
-        return reduced_matrix
+        reduced_mat, sum_wires = math.reduce_operators(
+            ops=self.summands, reduce_func=math.add, sparse=True
+        )
+
+        wire_order = wire_order or self.wires
+
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!

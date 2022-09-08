@@ -17,7 +17,6 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
-from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
@@ -315,22 +314,7 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in self.factors
-        )
-
-        def expand_and_dot(op1_tuple: tuple, op2_tuple: tuple):
-            mat1, wires1 = op1_tuple
-            mat2, wires2 = op2_tuple
-            prod_wires = wires1 + wires2
-            if wires1 != prod_wires:
-                mat1 = math.expand_matrix(mat1, wires1, wire_order=prod_wires)
-            if wires2 != prod_wires:
-                mat2 = math.expand_matrix(mat2, wires2, wire_order=prod_wires)
-            return math.dot(mat1, mat2), prod_wires
-
-        reduced_mat, prod_wires = reduce(expand_and_dot, mats_and_wires_gen)
+        reduced_mat, prod_wires = math.reduce_operators(ops=self.factors, reduce_func=math.dot)
 
         wire_order = wire_order or self.wires
 
@@ -376,11 +360,13 @@ class Prod(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        mats = (op.sparse_matrix(wire_order=self.wires) for op in self.factors)
-        reduced_mat = reduce(math.dot, mats)
-        if wire_order is not None:
-            reduced_mat = math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
-        return reduced_mat
+        reduced_mat, prod_wires = math.reduce_operators(
+            ops=self.factors, reduce_func=math.dot, sparse=True
+        )
+
+        wire_order = wire_order or self.wires
+
+        return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property
