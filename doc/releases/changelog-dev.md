@@ -296,6 +296,9 @@
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
+* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
+  [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
