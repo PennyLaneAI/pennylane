@@ -21,8 +21,6 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
@@ -472,9 +470,7 @@ class _ProductFactorsGrouping:
                         op = Pow(base=op, z=exponent).simplify()
                     if isinstance(op, Prod):
                         self._factors += tuple(
-                            (factor,)
-                            for factor in op
-                            if not isinstance(factor, qml.Identity)
+                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
                         )
                     elif not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
