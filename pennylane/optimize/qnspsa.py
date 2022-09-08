@@ -298,7 +298,7 @@ class QNSPSAOptimizer:
         params = []
         non_trainable_indices = []
         for idx, arg in enumerate(args):
-            if not getattr(arg, "requires_grad", False) or not arg.requires_grad:
+            if not getattr(arg, "requires_grad", False):
                 non_trainable_indices.append(idx)
                 continue
             # if an input parameter is a zero-dimension array, add one dimension to form an array.
@@ -348,7 +348,7 @@ class QNSPSAOptimizer:
         args_plus = list(args)
         args_minus = list(args)
         for index, arg in enumerate(args):
-            if not getattr(arg, "requires_grad", False) or not arg.requires_grad:
+            if not getattr(arg, "requires_grad", False):
                 continue
             direction = self.rng.choice([-1, 1], size=arg.shape)
 
@@ -383,7 +383,7 @@ class QNSPSAOptimizer:
         args_list = [list(args) for _ in range(4)]
 
         for index, arg in enumerate(args):
-            if not getattr(arg, "requires_grad", False) or not arg.requires_grad:
+            if not getattr(arg, "requires_grad", False):
                 continue
             dir1 = self.rng.choice([-1, 1], size=arg.shape)
             dir2 = self.rng.choice([-1, 1], size=arg.shape)
