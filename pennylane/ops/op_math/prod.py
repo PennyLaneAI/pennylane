@@ -323,10 +323,7 @@ class Prod(Operator):
 
         reduced_mat = reduce(math.dot, mats)
 
-        if wire_order is not None:
-            reduced_mat = math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
-
-        return reduced_mat
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
