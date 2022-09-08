@@ -53,6 +53,7 @@ class CompositeOp(Operator, abc.ABC):
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
+        self._has_overlapping_wires = None
 
         if do_queue:
             self.queue()
@@ -120,6 +121,10 @@ class CompositeOp(Operator, abc.ABC):
         return all(op.has_matrix for op in self)
 
     @abc.abstractmethod
+    def eigvals(self):
+        """Return the eigenvalues of the specified operator."""
+
+    @abc.abstractmethod
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
@@ -136,21 +141,20 @@ class CompositeOp(Operator, abc.ABC):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        Hmat = self.matrix()
-        Hmat = math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
+        if self.hash not in self._eigs:
+            Hmat = self.matrix()
+            Hmat = math.to_numpy(Hmat)
             w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[Hkey]
+        return self._eigs[self.hash]
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -162,20 +166,13 @@ class CompositeOp(Operator, abc.ABC):
         Returns:
             list[.Operator] or None: a list of operators
         """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
-
-    def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        return self.eigendecomposition["eigval"]
+        if self.has_overlapping_wires:
+            eigen_vectors = self.eigendecomposition["eigvec"]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        diag_gates = []
+        for summand in self.summands:
+            diag_gates.extend(summand.diagonalizing_gates())
+        return diag_gates
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the composite operator is represented in diagrams and drawings.

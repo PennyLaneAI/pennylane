@@ -156,6 +156,16 @@ class Sum(CompositeOp):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return all(s.is_hermitian for s in self)
 
+    @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self.summands:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -170,6 +180,23 @@ class Sum(CompositeOp):
             and list of operations :math:`O_i`
         """
         return [1.0] * len(self), list(self.summands)
+
+    def eigvals(self):
+        r"""Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        if self.has_overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
+            for summand in self.summands
+        ]
+        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -265,6 +292,14 @@ class Sum(CompositeOp):
             else qml.Identity(self.wires[0]),
         )
 
+    @property
+    def hash(self):
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([summand.hash for summand in _sum_sort(self.summands)]))
+            )
+        return self._hash
+
 
 class _SumSummandsGrouping:
     """Utils class used for grouping sum summands together."""
@@ -308,3 +343,35 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
+
+
+def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
+    """Sort algorithm that sorts a list of sum summands by their wire indices.
+
+    Args:
+        op_list (List[.Operator]): list of operators to be sorted
+        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+            Defaults to None.
+
+    Returns:
+        List[.Operator]: sorted list of operators
+    """
+
+    if isinstance(op_list, tuple):
+        op_list = list(op_list)
+
+    def _sort_key(op) -> bool:
+        """Sorting key.
+
+        Args:
+            op (.Operator): Operator.
+
+        Returns:
+            int: Minimum wire value.
+        """
+        wires = op.wires
+        if wire_map is not None:
+            wires = wires.map(wire_map)
+        return np.min(wires)
+
+    return sorted(op_list, key=_sort_key)

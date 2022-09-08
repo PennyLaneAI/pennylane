@@ -180,6 +180,16 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
+    @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self.factors:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -190,6 +200,24 @@ class Prod(CompositeOp):
         if qml.queuing.QueuingContext.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self.factors[::-1])
+
+    def eigvals(self):
+        """Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        if self.has_overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
+            for factor in self.factors
+        ]
+
+        return qml.math.prod(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
@@ -277,7 +305,7 @@ class Prod(CompositeOp):
         return self._hash
 
 
-def _prod_sort(op_list, wire_map: dict = None):
+def _prod_sort(op_list, wire_map: dict = None) -> List[Operator]:
     """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
     into account the operator commutivity.
 

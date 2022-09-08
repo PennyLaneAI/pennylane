@@ -50,6 +50,9 @@ class ValidOp(CompositeOp):
     def matrix(self, wire_order=None):
         return np.eye(4)
 
+    def eigvals(self):
+        return self.eigendecomposition["eigval"]
+
 
 class TestConstruction:
     """Test the construction of composite ops."""
