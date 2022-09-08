@@ -210,6 +210,22 @@
   False
   ```
 
+* Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
+  will return a dictionary containing all possible outcomes. [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.counts(all_outcomes=True)
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '01': 0, '10': 0,  '11': 505}
+  ```
+  
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
@@ -250,7 +266,7 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
-* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
+* `Prod` and `Sum` class now support the `sparse_matrix()` method.
   [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
   
   ```pycon
@@ -274,6 +290,11 @@
 * `__repr__` and `label` methods are more correct and meaningful for Operators with an arithmetic
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
+
+* Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
+  `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
+  and the diagonalising gates using the factors/summands instead of using the full matrix.
+  [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
 <h3>Breaking changes</h3>
 
@@ -327,6 +348,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
+  for specific combinations of rotations.
+  [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
+
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
@@ -351,6 +376,7 @@ Ankit Khandelwal,
 Korbinian Kottmann,
 Christina Lee,
 Meenu Kumari,
+Lillian Marie Austin Frederiksen,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
