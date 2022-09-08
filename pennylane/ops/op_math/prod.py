@@ -370,9 +370,7 @@ class Prod(Operator):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
         mats = (op.sparse_matrix(wire_order=self.wires) for op in self.factors)
         reduced_mat = reduce(math.dot, mats)
-        if wire_order is not None:
-            reduced_mat = math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
-        return reduced_mat
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property
