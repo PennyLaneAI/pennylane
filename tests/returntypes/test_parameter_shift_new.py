@@ -1070,10 +1070,10 @@ class TestParameterShiftRule:
 
         # Expvals
         assert np.allclose(res[0][0], expval_expected[0])
-        assert np.allclose(res[1][0], expval_expected[1])
+        assert np.allclose(res[0][1], expval_expected[1])
 
         # Probs
-        assert np.allclose(res[0][1], probs_expected[:, 0])
+        assert np.allclose(res[1][0], probs_expected[:, 0])
         assert np.allclose(res[1][1], probs_expected[:, 1])
 
     def test_involutory_variance(self, tol):
@@ -1287,7 +1287,7 @@ class TestParameterShiftRule:
     costs_and_expected_expval = [
         (cost1, [3], False),
         (cost2, [3], True),
-        (cost3, [3, 2], True),
+        (cost3, [2, 3], True),
     ]
 
     @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_expval)
@@ -1313,7 +1313,7 @@ class TestParameterShiftRule:
         # The output shape of transforms for 2D qnode outputs (cost6) is currently
         # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
         # TODO: fix qnode/expected once #2296 is resolved
-        (cost6, [3, 2, 4], True),
+        (cost6, [2, 3, 4], True),
     ]
 
     @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_probs)
@@ -2287,9 +2287,9 @@ class TestHamiltonianExpvalGradients:
 
         res = fn(dev.batch_execute_new(tapes))
         assert isinstance(res, tuple)
-        assert len(res) == 5
-        assert len(res[0]) == 2
-        assert len(res[1]) == 2
+        assert len(res) == 2
+        assert len(res[0]) == 5
+        assert len(res[1]) == 5
 
         expected = [
             [
@@ -2302,7 +2302,7 @@ class TestHamiltonianExpvalGradients:
             [-d * np.sin(x), 0, 0, 0, np.cos(x)],
         ]
 
-        assert np.allclose(np.stack(res).T, expected, atol=tol, rtol=0)
+        assert np.allclose(np.stack(res), expected, atol=tol, rtol=0)
 
     @staticmethod
     def cost_fn(weights, coeffs1, coeffs2, dev=None, broadcast=False):
@@ -2360,7 +2360,7 @@ class TestHamiltonianExpvalGradients:
             return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, np.array(expected).T, atol=tol, rtol=0)
+        assert np.allclose(res, np.array(expected), atol=tol, rtol=0)
 
         # TODO: test when Hessians are supported with the new return types
         # second derivative wrt to Hamiltonian coefficients should be zero
@@ -2392,8 +2392,8 @@ class TestHamiltonianExpvalGradients:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
         expected = self.cost_fn_expected(weights.numpy(), coeffs1.numpy(), coeffs2.numpy())
-        assert np.allclose(jac[0], np.array(expected).T[0], atol=tol, rtol=0)
-        assert np.allclose(jac[1], np.array(expected).T[1], atol=tol, rtol=0)
+        assert np.allclose(jac[0], np.array(expected)[0], atol=tol, rtol=0)
+        assert np.allclose(jac[1], np.array(expected)[1], atol=tol, rtol=0)
 
         # TODO: test when Hessians are supported with the new return types
         # second derivative wrt to Hamiltonian coefficients should be zero
@@ -2456,7 +2456,7 @@ class TestHamiltonianExpvalGradients:
             return
         res = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, np.array(expected).T, atol=tol, rtol=0)
+        assert np.allclose(res, np.array(expected), atol=tol, rtol=0)
 
         # TODO: test when Hessians are supported with the new return types
         # second derivative wrt to Hamiltonian coefficients should be zero

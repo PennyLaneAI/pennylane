@@ -192,15 +192,14 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
             g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
             g = _unshifted_coeff(g, unshifted_coeff, r0)
         else:
-            # New return type output
             g = []
 
             # Multiple measurements case, so we can extract the first result
-            num_params = len(res[0])
-            for parameter_idx in range(num_params):
+            num_measurements = len(res[0])
+            for meas_idx in range(num_measurements):
 
                 # Gather the measurement results
-                single_result = [measurement_result[parameter_idx] for measurement_result in res]
+                single_result = [param_result[meas_idx] for param_result in res]
                 coeffs = qml.math.convert_like(coeffs, single_result)
                 g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
                 g.append(g_component)
@@ -368,6 +367,8 @@ def expval_param_shift(
         start = 1 if at_least_one_unshifted and f0 is None else 0
         r0 = f0 or results[0]
 
+        multi_measure = len(tape.measurements) > 1
+
         for data in gradient_data:
 
             num_tapes, *_, batch_size = data
@@ -383,7 +384,7 @@ def expval_param_shift(
             g = _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output)
 
             grads.append(g)
-            if not qml.active_return():
+            if not qml.active_return() or not multi_measure:
                 # This clause will be hit at least once (because otherwise all gradients would have
                 # been zero), providing a representative for a zero gradient to emulate its type/shape.
                 zero_rep = qml.math.zeros_like(g)
@@ -395,6 +396,18 @@ def expval_param_shift(
                 # Fill in zero-valued gradients
                 if g is None:
                     grads[i] = zero_rep
+
+            if multi_measure:
+                new_grad = []
+                num_measurements = len(grads[0])
+                for i in range(num_measurements):
+                    measurement_grad = []
+                    for g in grads:
+                        measurement_grad.append(g[i])
+
+                    new_grad.append(tuple(measurement_grad))
+
+                grads = new_grad
 
             res = tuple(grads)
         else:
@@ -534,14 +547,18 @@ def _create_variance_proc_fn(
                             if m
                             else pdA[idx]
                         )
-                    elif isinstance(pdA, tuple):
+                    elif (
+                        isinstance(pdA, tuple)
+                        and len(pdA) > 0
+                        and isinstance(pdA, (Sequence, np.ndarray))
+                    ):
                         r = (
                             [
-                                _get_var_with_second_order(pdA2, f0[idx], pdA[i][idx])
+                                _get_var_with_second_order(pdA2, f0[idx], pdA[idx][i])
                                 for i in range(len(pdA))
                             ]
                             if m
-                            else [pdA[i][idx] for i in range(len(pdA))]
+                            else [pdA[idx][i] for i in range(len(pdA))]
                         )
                     else:
                         r = _get_var_with_second_order(pdA2, f0[idx], pdA[idx]) if m else pdA[idx]
