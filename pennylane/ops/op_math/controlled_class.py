@@ -234,7 +234,7 @@ class Controlled(SymbolicOp):
         return self.control_wires + self.target_wires
 
     @property
-    def wires(self):
+    def wires(self) -> Wires:
         return self.control_wires + self.target_wires + self.work_wires
 
     # pylint: disable=protected-access
@@ -408,6 +408,10 @@ class Controlled(SymbolicOp):
             control_values=self.control_values,
             work_wires=self.work_wires,
         )
+
+    @property
+    def hash(self):
+        return hash((self.name, tuple(self.wires), tuple(self.control_values), self.base.hash))
 
 
 class ControlledOp(Controlled, Operation):

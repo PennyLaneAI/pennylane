@@ -15,14 +15,12 @@
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
 from warnings import warn
+
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import (
-    expand_matrix,
-    OperatorPropertyUndefined,
-)
+from pennylane.operation import OperatorPropertyUndefined, expand_matrix
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -235,3 +233,7 @@ class Exp(SymbolicOp):
         if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
             return Exp(self.base.base.simplify(), self.coeff * self.base.scalar)
         return Exp(self.base.simplify(), self.coeff)
+
+    @property
+    def hash(self):
+        return hash((self.name, self.coeff, self.base.hash))
