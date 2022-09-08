@@ -662,7 +662,7 @@ def execute_new(
 
     try:
         mapped_interface = INTERFACE_MAP[interface]
-    except KeyError as e:
+    except KeyError as e:  # pragma: no cover #TODO: remove no cover once more support for new return types
         raise ValueError(
             f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
         ) from e
@@ -676,10 +676,10 @@ def execute_new(
         #         from .tensorflow_autograph import execute as _execute
         #     else:
         #         from .tensorflow import execute as _execute
-        elif mapped_interface == "torch":
-            from .torch import execute as _execute
-        elif mapped_interface == "jax":
-            _execute = _get_jax_execute_fn(interface, tapes)
+        # elif mapped_interface == "torch":
+        #     from .torch import execute as _execute
+        # elif mapped_interface == "jax":
+        #     _execute = _get_jax_execute_fn(interface, tapes)
     except ImportError as e:  # pragma: no cover #TODO: remove no cover once more support for new return types
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "
