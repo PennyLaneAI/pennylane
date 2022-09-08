@@ -140,6 +140,12 @@ class TestApply:
             np.array([0, 1 / math.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / math.sqrt(2)]),
             None,
         ),
+        (
+            qml.TSWAP,
+            [0, 0, 0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 1j / math.sqrt(3)],
+            np.array([0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 0, 0, 1j / math.sqrt(3)]),
+            None,
+        ),
     ]
 
     test_data_tadd = [
@@ -150,6 +156,12 @@ class TestApply:
             np.array([0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0]),
             None,
         ),
+        (
+            qml.TAdd,
+            [0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j],
+            np.array([0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0]),
+            None,
+        ),
     ]
 
     test_data_tadd_inv = [
@@ -158,6 +170,12 @@ class TestApply:
             qml.TAdd,
             [0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0],
             np.array([0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0]),
+            None,
+        ),
+        (
+            qml.TAdd,
+            [0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0],
+            np.array([0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j]),
             None,
         ),
     ]
