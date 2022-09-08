@@ -1163,7 +1163,7 @@ class Operator(abc.ABC):
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
-            return qml.pow(self, z=other)  # pylint: disable=no-member
+            return qml.pow(self, z=other)
         raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 

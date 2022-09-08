@@ -888,7 +888,7 @@ class TestSimplify:
         """Test that the simplify method removes grouped elements with zero coeff."""
         prod_op = qml.prod(
             qml.U3(1.23, 2.34, 3.45, wires=0),
-            qml.ops.Pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
         )
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()

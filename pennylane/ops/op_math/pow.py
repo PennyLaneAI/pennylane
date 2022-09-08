@@ -47,6 +47,10 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
 
     Returns:
         Operator
@@ -72,12 +76,12 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z)
+        return Pow(base, z, do_queue=do_queue, id=id)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
         # needs to be identity (not prod of identities) so device knows to skip
-        pow_op = qml.Identity(base.wires[0])
+        pow_op = qml.Identity(base.wires[0], id=id)
     elif num_ops == 1:
         pow_op = pow_ops[0]
     else:
