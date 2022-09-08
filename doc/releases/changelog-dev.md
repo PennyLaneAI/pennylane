@@ -244,6 +244,22 @@
   False
   ```
 
+* Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
+  will return a dictionary containing all possible outcomes. [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.counts(all_outcomes=True)
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '01': 0, '10': 0,  '11': 505}
+  ```
+  
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
@@ -366,6 +382,7 @@ Ankit Khandelwal,
 Korbinian Kottmann,
 Christina Lee,
 Meenu Kumari,
+Lillian Marie Austin Frederiksen,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
