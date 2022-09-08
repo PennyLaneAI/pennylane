@@ -153,6 +153,8 @@ class Sum(Operator):
         self._name = "Sum"
         self._id = id
         self.queue_idx = None
+        self._hash = None
+        self._has_overlapping_wires = None
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
@@ -202,6 +204,16 @@ class Sum(Operator):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return all(s.is_hermitian for s in self.summands)
 
+    @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self.summands:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -219,7 +231,7 @@ class Sum(Operator):
 
     @property
     def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the Hermitian observable.
+        r"""Return the eigendecomposition of the matrix specified by the operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -228,16 +240,15 @@ class Sum(Operator):
 
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
-            operator
+                operator.
         """
-        Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
+        if self.hash not in self._eigs:
+            Hmat = self.matrix()
+            Hmat = math.to_numpy(Hmat)
             w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[Hkey]
+        return self._eigs[self.hash]
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -256,9 +267,13 @@ class Sum(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        if self.has_overlapping_wires:
+            eigen_vectors = self.eigendecomposition["eigvec"]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        diag_gates = []
+        for summand in self.summands:
+            diag_gates.extend(summand.diagonalizing_gates())
+        return diag_gates
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified Hermitian observable.
@@ -269,7 +284,13 @@ class Sum(Operator):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        return self.eigendecomposition["eigval"]
+        if self.has_overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
+            for summand in self.summands
+        ]
+        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -414,6 +435,14 @@ class Sum(Operator):
             else qml.Identity(self.wires[0]),
         )
 
+    @property
+    def hash(self):
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([summand.hash for summand in _sum_sort(self.summands)]))
+            )
+        return self._hash
+
 
 class _SumSummandsGrouping:
     """Utils class used for grouping sum summands together."""
@@ -457,3 +486,35 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
+
+
+def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
+    """Sort algorithm that sorts a list of sum summands by their wire indices.
+
+    Args:
+        op_list (List[.Operator]): list of operators to be sorted
+        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+            Defaults to None.
+
+    Returns:
+        List[.Operator]: sorted list of operators
+    """
+
+    if isinstance(op_list, tuple):
+        op_list = list(op_list)
+
+    def _sort_key(op) -> bool:
+        """Sorting key.
+
+        Args:
+            op (.Operator): Operator.
+
+        Returns:
+            int: Minimum wire value.
+        """
+        wires = op.wires
+        if wire_map is not None:
+            wires = wires.map(wire_map)
+        return np.min(wires)
+
+    return sorted(op_list, key=_sort_key)
