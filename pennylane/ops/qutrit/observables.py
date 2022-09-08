@@ -190,7 +190,7 @@ class GellMannObs(Observable):
         super().__init__(index, wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_matrix(index):
+    def compute_matrix(index):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
