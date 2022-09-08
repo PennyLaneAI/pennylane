@@ -22,6 +22,7 @@ from itertools import combinations
 from typing import List, Tuple, Union
 
 import numpy as np
+from scipy.sparse import kron
 
 import pennylane as qml
 from pennylane import math
@@ -331,6 +332,16 @@ class Prod(Operator):
         full_mat = reduce(np.kron, mats_gen)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
+    def sparse_matrix(self, wire_order=None):
+        """Compute the sparse matrix representation of the Prod op in csr representation."""
+        wire_order = wire_order or self.wires
+        if self.has_overlapping_wires:
+            mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
+            return reduce(math.dot, mats)
+        mats_gen = (op.sparse_matrix() for op in self.factors)
+        full_mat = reduce(kron, mats_gen)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
 
@@ -368,12 +379,6 @@ class Prod(Operator):
             )
 
         return "@".join(_label(f, decimals, None, cache) for f in self.factors)
-
-    def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Prod op in csr representation."""
-        wire_order = wire_order or self.wires
-        mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
-        return reduce(math.dot, mats)
 
     # pylint: disable=protected-access
     @property
