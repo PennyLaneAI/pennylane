@@ -79,6 +79,13 @@ class TestEigenval:
         res = op.eigvals()
         assert np.allclose(res, exp)
 
+    def test_tswap_eigenval(self):
+        """Tests that the TAdd eigenvalue matches the numpy eigenvalues of the TAdd matrix"""
+        op = qml.TSWAP(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
 
 period_three_ops = [
     qml.TShift(wires=0),
