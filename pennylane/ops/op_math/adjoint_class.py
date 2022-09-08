@@ -16,7 +16,7 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 """
 import pennylane as qml
 from pennylane.math import conj, transpose
-from pennylane.operation import AdjointUndefinedError, Observable, Operation
+from pennylane.operation import AdjointUndefinedError, Observable, Operation, Operator
 
 from .symbolicop import SymbolicOp
 
@@ -207,6 +207,9 @@ class Adjoint(SymbolicOp):
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache=cache)
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
+
+    def equal(self, other: Operator) -> bool:
+        return qml.equal(self.base, other.base) if isinstance(other, Adjoint) else False
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

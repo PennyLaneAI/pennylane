@@ -248,33 +248,17 @@ class TestSimplify:
         final_op = qml.RZ(4 * np.pi - 1.32, wires=0)
         simplified_op = adj_op.simplify()
 
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.RZ)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
         adj_op = Adjoint(qml.op_sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
-        sum_op = qml.op_sum(
+        final_op = qml.op_sum(
             qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
 
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.Sum)
-        assert sum_op.data == simplified_op.data
-        assert sum_op.wires == simplified_op.wires
-        assert sum_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        for s1, s2 in zip(sum_op.summands, simplified_op.summands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        qml.equal(final_op, simplified_op)
 
     def test_simplify_adj_of_prod(self):
         """Test that the simplify method converts an adjoint of products to a (reverse) product
