@@ -553,7 +553,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
 
     Args:
         operation (Operation): qubit operation to be tapered
-        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        generators (list[Hamiltonian]): list of generators of symmetries for the Hamiltonian
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
@@ -562,6 +562,10 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     Returns:
         list(Operation): list of operations of type :func:`~.PauliRot` implementing tapered unitary operation
 
+    Raises:
+        NotImplementedError: generator of the operation cannot be constructed internally
+        ValueError: operation needs to be a :class:`~.pennylane.Hamiltonian` and a valid generator of the operation
+
     **Example**
 
     >>> symbols, geometry = ['He', 'H'], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
@@ -569,7 +573,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
-    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
+    >>> paulix_sector = qchem.optimal_sector(H, genera  tors, mol.n_electrons)
     >>> qchem.taper_operation(qml.SingleExcitation(1, wires=[0, 2]),
                                 generators, paulixops, paulix_sector, wire_order=H.wires)
     [PauliRot(0.5+0.j, 'RY', wires=[0])]
@@ -600,7 +604,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
         else:  # Single-parameter gates
             try:
                 gen_op = qml.generator(operation, "hamiltonian")
-            except Exception as exc:
+            except ValueError as exc:
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'gen_op' args."
                 ) from exc
