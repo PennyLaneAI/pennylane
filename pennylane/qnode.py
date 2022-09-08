@@ -641,10 +641,7 @@ class QNode:
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ) and self.interface in ("tf", "autograd"):
-                if isinstance(res, qml.numpy.ndarray) and res.shape == ():
-                    backprop = qml.math.in_backprop(res)
-                else:
-                    backprop = any(qml.math.in_backprop(x) for x in res)
+                backprop = any(qml.math.in_backprop(x) for x in res)
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 
@@ -654,8 +651,6 @@ class QNode:
                 and not backprop
             ):
                 if not self.device._shot_vector:
-                    if isinstance(res, qml.numpy.ndarray) and res.shape == ():
-                        res = [res.tolist()]
                     res = type(self.tape._qfunc_output)(res)
                 else:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
