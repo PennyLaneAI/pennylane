@@ -50,20 +50,6 @@ def get_multi_input_qnode():
     return loss_fn
 
 
-def get_qnode_with_non_trainable_input():
-    """Prepare qnode with a trainable tensor, and a placeholder as input."""
-    dev = qml.device("default.qubit", wires=2)
-    # the analytical expression of the qnode goes as:
-    # np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(params[0][1])
-    @qml.qnode(dev)
-    def loss_fn(params, placeholder):
-        qml.RY(params[0][0], wires=0)
-        qml.CRX(params[0][1], wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    return loss_fn, (1, 2)  # returns the qnode and the input param shape
-
-
 def get_grad_finite_diff(params, finite_diff_step, grad_dirs):
     """Helper function computing the qnode finite difference for computing the gradient analytically.
     One can expand the following expression to get the qnode_finite_diff expression:
@@ -284,7 +270,8 @@ class TestQNSPSAOptimizer:
         params = np.random.rand(*params_shape)
 
         new_params_blocking_res, qnode_blocking_res = opt_blocking.step_and_cost(qnode, params)
-        new_params_expected = target_opt.step(qnode, params)
+        with pytest.warns(UserWarning):
+            new_params_expected = target_opt.step(qnode, params)
         # analytical expression of the qnode
         qnode_expected = np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(
             params[0][1]
@@ -370,20 +357,39 @@ class TestQNSPSAOptimizer:
             history_length=5,
             seed=seed,
         )
-        # target opt is used to reproduce the result with step()
+        # a deep copy of the same opt, to be applied to qnode_reduced
         target_opt = deepcopy(opt)
+        dev = qml.device("default.qubit", wires=2)
+        non_trainable_param = np.random.rand(1)
+        non_trainable_param.requires_grad = False
 
-        qnode, params_shape = get_qnode_with_non_trainable_input()
-        params = np.random.rand(*params_shape)
+        trainable_param = np.random.rand(1)
 
-        new_params_res, qnode_res = opt.step_and_cost(qnode, params, "placeholder")
-        new_params_expected = target_opt.step(qnode, params, "placeholder")
-        # analytical expression of the qnode
-        qnode_expected = np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(
-            params[0][1]
+        @qml.qnode(dev)
+        def qnode_with_non_trainable(trainable, non_trainable):
+            qml.RY(trainable, wires=0)
+            qml.CRX(non_trainable, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # reduced qnode where non-trainable param value is hard coded
+        @qml.qnode(dev)
+        def qnode_reduced(trainable):
+            qml.RY(trainable, wires=0)
+            qml.CRX(non_trainable_param, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        new_params_res, qnode_res = opt.step_and_cost(
+            qnode_with_non_trainable, trainable_param, non_trainable_param
         )
-        assert np.allclose(new_params_res, new_params_expected)
+        new_trainable_res, new_non_trianable_res = new_params_res
+
+        new_trainable_expected, qnode_expected = target_opt.step_and_cost(
+            qnode_reduced, trainable_param
+        )
+
         assert np.allclose(qnode_res, qnode_expected)
+        assert np.allclose(new_non_trianable_res, non_trainable_param)
+        assert np.allclose(new_trainable_res, new_trainable_expected)
 
     def test_blocking(self, finite_diff_step, seed):
         """Test blocking setting of the optimizer."""

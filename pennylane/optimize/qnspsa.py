@@ -296,8 +296,10 @@ class QNSPSAOptimizer:
 
     def _get_next_params(self, args, gradient):
         params = []
-        for arg in args:
-            if not getattr(arg, "requires_grad", False):
+        non_trainable_indices = []
+        for idx, arg in enumerate(args):
+            if not getattr(arg, "requires_grad", False) or not arg.requires_grad:
+                non_trainable_indices.append(idx)
                 continue
             # if an input parameter is a zero-dimension array, add one dimension to form an array.
             # The returned result will not drop this added dimension
@@ -322,14 +324,31 @@ class QNSPSAOptimizer:
             params_split_indices.append(tmp)
         new_params = np.split(new_params_vec, params_split_indices)
         new_params_reshaped = [new_params[i].reshape(params[i].shape) for i in range(len(params))]
-        return new_params_reshaped
+
+        next_args = []
+        non_trainable_idx = 0
+        trainable_idx = 0
+
+        # merge trainables and non-trainables into the original order
+        for idx, arg in enumerate(args):
+            if (
+                non_trainable_idx < len(non_trainable_indices)
+                and idx == non_trainable_indices[non_trainable_idx]
+            ):
+                next_args.append(arg)
+                non_trainable_idx += 1
+                continue
+            next_args.append(new_params_reshaped[trainable_idx])
+            trainable_idx += 1
+
+        return next_args
 
     def _get_spsa_grad_tapes(self, cost, args, kwargs):
         dirs = []
         args_plus = list(args)
         args_minus = list(args)
         for index, arg in enumerate(args):
-            if not getattr(arg, "requires_grad", False):
+            if not getattr(arg, "requires_grad", False) or not arg.requires_grad:
                 continue
             direction = self.rng.choice([-1, 1], size=arg.shape)
 
@@ -364,7 +383,7 @@ class QNSPSAOptimizer:
         args_list = [list(args) for _ in range(4)]
 
         for index, arg in enumerate(args):
-            if not getattr(arg, "requires_grad", False):
+            if not getattr(arg, "requires_grad", False) or not arg.requires_grad:
                 continue
             dir1 = self.rng.choice([-1, 1], size=arg.shape)
             dir2 = self.rng.choice([-1, 1], size=arg.shape)
@@ -410,17 +429,7 @@ class QNSPSAOptimizer:
         if not isinstance(params_next, list):
             params_next = [params_next]
 
-        new_args = list(args)
-        params_curr = []
-        i = 0
-        for index, arg in enumerate(new_args):
-            if not getattr(arg, "requires_grad", False):
-                continue
-            new_args[index] = params_next[i]
-            i += 1
-            params_curr.append(arg)
-
-        cost.construct(new_args, kwargs)
+        cost.construct(params_next, kwargs)
         tape_loss_next = cost.tape.copy(copy_operations=True)
 
         loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
@@ -436,7 +445,7 @@ class QNSPSAOptimizer:
         )
 
         if loss_curr + tol < loss_next:
-            params_next = params_curr
+            params_next = args
 
         if len(params_next) == 1:
             return params_next[0], loss_curr
