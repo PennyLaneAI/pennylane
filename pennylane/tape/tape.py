@@ -502,7 +502,8 @@ class QuantumTape(AnnotatedQueue):
         self.num_wires = len(self.wires)
 
         is_sample_type = [
-            m.return_type in (Sample, Counts, AllCounts, Shadow, ShadowExpval) for m in self.measurements
+            m.return_type in (Sample, Counts, AllCounts, Shadow, ShadowExpval)
+            for m in self.measurements
         ]
         self.is_sampled = any(is_sample_type)
         self.all_sampled = all(is_sample_type)
