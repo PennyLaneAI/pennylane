@@ -333,6 +333,9 @@
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
+* `qml.grouping.utils.is_commuting` is removed, and its Pauli word logic is now part of `qml.is_commuting`.
+  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
