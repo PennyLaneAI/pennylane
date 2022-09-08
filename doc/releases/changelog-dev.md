@@ -325,11 +325,6 @@
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
-<<<<<<< HEAD
-* Refactored common code from `Prod` and `Sum` classes into a `CompositeOp` abstract class that
-  comes with `__iter__`, `__len__` and `__getitem__` functions.
-  [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
-=======
 * Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
   `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
   and the diagonalising gates using the factors/summands instead of using the full matrix.
@@ -337,7 +332,10 @@
 
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
->>>>>>> master
+
+* Refactored common code from `Prod` and `Sum` classes into a `CompositeOp` abstract class that
+  comes with `__iter__`, `__len__` and `__getitem__` functions.
+  [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
 
 <h3>Breaking changes</h3>
 
