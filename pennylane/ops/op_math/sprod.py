@@ -153,13 +153,6 @@ class SProd(SymbolicOp):
         """
         return [self.scalar], [self.base]
 
-    def equal(self, other: Operator) -> bool:
-        return (
-            self.scalar == other.scalar and qml.equal(self.base, other.base)
-            if isinstance(other, SProd)
-            else False
-        )
-
     @property
     def is_hermitian(self):
         """If the base operator is hermitian and the scalar is real,

@@ -25,7 +25,6 @@ from pennylane.operation import (
     DecompositionUndefinedError,
     Observable,
     Operation,
-    Operator,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
@@ -180,13 +179,6 @@ class Pow(SymbolicOp):
         base_label = self.base.label(decimals, base_label, cache=cache)
         return (
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
-        )
-
-    def equal(self, other: Operator) -> bool:
-        return (
-            self.z == other.z and qml.equal(self.base, other.base)
-            if isinstance(other, Pow)
-            else False
         )
 
     def matrix(self, wire_order=None):

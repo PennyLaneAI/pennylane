@@ -217,13 +217,6 @@ class Sum(Operator):
         """
         return [1.0] * len(self.summands), list(self.summands)
 
-    def equal(self, other: Operator) -> bool:
-        return (
-            all(qml.equal(op1, op2) for op1, op2 in zip(self.summands, other.summands))
-            if isinstance(other, Sum)
-            else False
-        )
-
     @property
     def eigendecomposition(self):
         r"""Return the eigendecomposition of the matrix specified by the Hermitian observable.

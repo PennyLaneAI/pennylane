@@ -630,16 +630,6 @@ class Operator(abc.ABC):
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
 
-    def equal(self, other: "Operator") -> bool:
-        """Check if self is equal to the ``other`` operator.
-
-        Args:
-            other (Operator): other operator to check
-
-        Returns:
-            bool: returns True if self is equal to ``other``, False otherwise
-        """
-
     @property
     @abc.abstractmethod
     def num_wires(self):

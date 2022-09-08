@@ -278,15 +278,6 @@ class Controlled(SymbolicOp):
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
-    def equal(self, other: Operator) -> bool:
-        return (
-            self.wires == other.wires
-            and self.control_values == other.control_values
-            and qml.equal(self.base, other.base)
-            if isinstance(other, Controlled)
-            else False
-        )
-
     def matrix(self, wire_order=None):
 
         if self.base.batch_size is not None:

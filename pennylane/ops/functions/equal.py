@@ -72,9 +72,6 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    eq = op1.equal(op2)
-    if eq is not None:
-        return eq
     if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
         return False
     if not all(
