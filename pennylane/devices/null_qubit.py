@@ -18,11 +18,12 @@ from collections import defaultdict
 
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-from pennylane.devices import DefaultQubit
+from pennylane import QubitDevice  # , DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane import numpy as np
 from .._version import __version__
 
 # pylint: disable=unused-argument
-class NullQubit(DefaultQubit):
+class NullQubit(QubitDevice):
     """Null qubit device for PennyLane.
 
     Args:
@@ -37,15 +38,123 @@ class NullQubit(DefaultQubit):
     version = __version__
     author = "Xanadu Inc."
 
+    operations = {
+        "Identity",
+        "Snapshot",
+        "BasisState",
+        "QubitStateVector",
+        "QubitUnitary",
+        "ControlledQubitUnitary",
+        "MultiControlledX",
+        "DiagonalQubitUnitary",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "MultiRZ",
+        "Hadamard",
+        "S",
+        "Adjoint(S)",
+        "T",
+        "Adjoint(T)",
+        "SX",
+        "Adjoint(SX)",
+        "CNOT",
+        "SWAP",
+        "ISWAP",
+        "PSWAP",
+        "Adjoint(ISWAP)",
+        "SISWAP",
+        "Adjoint(SISWAP)",
+        "SQISW",
+        "CSWAP",
+        "Toffoli",
+        "CY",
+        "CZ",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "CPhase",
+        "RX",
+        "RY",
+        "RZ",
+        "Rot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+        "IsingXY",
+        "SingleExcitation",
+        "SingleExcitationPlus",
+        "SingleExcitationMinus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "QubitCarry",
+        "QubitSum",
+        "OrbitalRotation",
+        "QFT",
+        "ECR",
+    }
+
+    observables = {
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "Hadamard",
+        "Hermitian",
+        "Identity",
+        "Projector",
+        "SparseHamiltonian",
+        "Hamiltonian",
+        "Sum",
+        "SProd",
+        "Prod",
+        "Exp",
+    }
+
     def __init__(self, wires, *args, **kwargs):
-        defaultKwargs = {"shots": None}
+        defaultKwargs = {
+            "shots": None,
+            "analytic": None,
+            "r_dtype": np.float64,
+            "c_dtype": np.complex128,
+        }
         kwargs = {**defaultKwargs, **kwargs}
 
         self._operation_calls = defaultdict(int)
         self._shots = kwargs["shots"]
-        self._shot_vector = None
-        self.custom_expand_fn = None
-        super().__init__(wires=wires, shots=self._shots)
+        self._analytic = kwargs["analytic"]
+        self._r_dtype = kwargs["r_dtype"]
+        self._c_dtype = kwargs["c_dtype"]
+
+        super().__init__(
+            wires,
+            self._shots,
+            r_dtype=self._r_dtype,
+            c_dtype=self._c_dtype,
+            analytic=self._analytic,
+        )
+        self._debugger = None
+
+        # Create the initial state. The state will always be None.
+        self._state = self._create_basis_state(0)
+        self._pre_rotated_state = self._state
+
+        self._apply_ops = {
+            "PauliX": self._apply_x,
+            "PauliY": self._apply_y,
+            "PauliZ": self._apply_z,
+            "Hadamard": self._apply_hadamard,
+            "S": self._apply_s,
+            "T": self._apply_t,
+            "SX": self._apply_sx,
+            "CNOT": self._apply_cnot,
+            "SWAP": self._apply_swap,
+            "CZ": self._apply_cz,
+            "Toffoli": self._apply_toffoli,
+        }
 
     # pylint: disable=arguments-differ
     def apply(self, operations, *args, **kwargs):
@@ -107,6 +216,24 @@ class NullQubit(DefaultQubit):
 
     def var(self, observable, shot_range=None, bin_size=None):
         pass
+
+    @classmethod
+    def capabilities(cls):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            model="qubit",
+            supports_inverse_operations=True,
+            supports_analytic_computation=True,
+            supports_broadcasting=True,
+            returns_state=True,
+            passthru_devices={
+                "tf": "null.qubit.tf",
+                "torch": "null.qubit.torch",
+                "autograd": "null.qubit.autograd",
+                "jax": "null.qubit.jax",
+            },
+        )
+        return capabilities
 
     def _create_basis_state(self, index):
         pass
