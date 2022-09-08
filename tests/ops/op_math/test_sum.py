@@ -468,6 +468,17 @@ class TestMatrix:
         true_mat = qnp.kron(U, qnp.eye(2)) + qnp.eye(4)
         assert np.allclose(mat, true_mat)
 
+    def test_cache_mat(self):
+        """Test that the matrix gets cached into the instance attribute"""
+        wire_order1, wire_order2 = ([0, 1], [1, 0])
+        sum_op = qml.op_sum(qml.PauliX(wires=0), qml.RZ(1.23, wires=1))
+
+        mat1 = qml.matrix(sum_op, wire_order=wire_order1)
+        mat2 = qml.matrix(sum_op, wire_order=wire_order2)
+
+        assert (sum_op._mat_cache[Wires(wire_order1)] == mat1).all()
+        assert (sum_op._mat_cache[Wires(wire_order2)] == mat2).all()
+
     def test_sum_hamiltonian(self):
         """Test that a hamiltonian object can be summed."""
         U = 0.5 * (qml.PauliX(wires=0) @ qml.PauliZ(wires=1))

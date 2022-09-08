@@ -26,6 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
 from pennylane.ops.op_math.pow_class import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -295,6 +296,8 @@ class Prod(Operator):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         wire_order = wire_order or self.wires
+        if not isinstance(wire_order, Wires):
+            wire_order = Wires(wire_order)
         if wire_order in self._mat_cache:
             return self._mat_cache[wire_order]
 

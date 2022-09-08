@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
 
 
 def op_sum(*summands, do_queue=True, id=None):
@@ -303,6 +304,8 @@ class Sum(Operator):
                     yield op.matrix(wire_order=wire_order)
 
         wire_order = wire_order or self.wires
+        if not isinstance(wire_order, Wires):
+            wire_order = Wires(wire_order)
         if wire_order in self._mat_cache:
             return self._mat_cache[wire_order]
 
