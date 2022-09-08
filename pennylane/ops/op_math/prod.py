@@ -22,6 +22,7 @@ from itertools import combinations
 from typing import List, Tuple, Union
 
 import numpy as np
+from scipy.sparse import kron
 
 import pennylane as qml
 from pennylane import math
@@ -338,7 +339,7 @@ class Prod(Operator):
             mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
             return reduce(math.dot, mats)
         mats_gen = (op.sparse_matrix() for op in self.factors)
-        full_mat = reduce(math.kron, mats_gen)
+        full_mat = reduce(kron, mats_gen)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
