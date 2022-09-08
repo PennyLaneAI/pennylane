@@ -72,12 +72,11 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
+    eq = op1.equal(op2)
+    if eq is not None:
+        return eq
     if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
         return False
-    if op1.arithmetic_depth > 0:
-        raise NotImplementedError(
-            "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
-        )
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):

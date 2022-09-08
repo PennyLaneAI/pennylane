@@ -189,6 +189,13 @@ class Prod(Operator):
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
 
+    def equal(self, other: Operator) -> bool:
+        return (
+            all(qml.equal(op1, op2) for op1, op2 in zip(self.factors, other.factors))
+            if isinstance(other, Prod)
+            else False
+        )
+
     @property
     def data(self):
         """Create data property"""

@@ -107,8 +107,8 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.math import expand_matrix
+from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
@@ -629,6 +629,16 @@ class Operator(abc.ABC):
             and list of operations :math:`O_i`
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
+
+    def equal(self, other: "Operator") -> bool:
+        """Check if self is equal to the ``other`` operator.
+
+        Args:
+            other (Operator): other operator to check
+
+        Returns:
+            bool: returns True if self is equal to ``other``, False otherwise
+        """
 
     @property
     @abc.abstractmethod
