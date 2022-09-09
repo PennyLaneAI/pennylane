@@ -322,8 +322,15 @@
          [0., 0., 1., 0.]])
   ```
 
-* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple
-broadcasted operations or non-broadcasted operations after broadcasted ones.
+* `qml.ctrl` now uses `Controlled` instead of `ControlledOperation`.  The new `Controlled` class
+  wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
+
+* The new `qml.pow` provides a top-level constructor for raising operators to powers.
+  [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
+
+* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple 
+  broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
 
   A common scenario in which this becomes relevant is the decomposition of broadcasted
@@ -406,11 +413,19 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
+* Refactored common code from `Prod` and `Sum` classes into a `CompositeOp` abstract class that
+  comes with `__iter__`, `__len__` and `__getitem__` functions.
+  [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+* The `ControlledOperation` class is removed.  This was a developer-only class, so the change should not be evident to
+  any users. It is replaced by `Controlled`.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
 * The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
   with an additional keyword argument `circuit`, which represents the quantum tape
@@ -422,6 +437,9 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
 * The `expand_matrix()` has been moved from `~/operation.py` to
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+
+* `qml.grouping.utils.is_commuting` is removed, and its Pauli word logic is now part of `qml.is_commuting`.
+  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
 
 <h3>Deprecations</h3>
 
