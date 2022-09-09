@@ -16,7 +16,8 @@
   The additional circuit executions are used to provide a stochastic estimation of a second-order
   metric tensor, which often helps the optimizer to achieve faster convergence. 
 
-  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:   
+  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:
+  
   ```python
   max_iterations = 50
   opt = qml.QNSPSAOptimizer() 
@@ -109,6 +110,8 @@
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
   [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
   [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
+  [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
 
   The classical-shadow measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953).
@@ -351,6 +354,8 @@
 
   An exception is `BasisEmbedding`, which is not broadcastable.
 
+<h3>Improvements</h3>
+
 * The `qml.math.expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
@@ -393,7 +398,6 @@
 
 * Added `sparse_matrix()` support for single qubit observables.
   [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
-  
 
 * Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
   will return a dictionary containing all possible outcomes. 
