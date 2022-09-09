@@ -15,7 +15,7 @@
 to a higher hilbert space with re-ordered wires."""
 import copy
 from functools import reduce
-from typing import Sequence, Tuple
+from typing import Generator, Tuple
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, issparse, kron
@@ -146,30 +146,19 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
 
 def reduce_operators(
-    ops: Sequence[np.ndarray], reduce_func: callable, sparse=False
+    mats_and_wires_gen: Generator[tuple[np.ndarray, Wires], None, None], reduce_func: callable
 ) -> Tuple[np.ndarray, Wires]:
-    """Apply the given ``reduce_func`` cumulatively to the items of the ``ops`` sequence,
-    from left to right, so as to reduce the sequence to a single matrix.
+    """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
+    generator, from left to right, so as to reduce the sequence to a single matrix.
 
     Args:
-        ops (Sequence): Sequence of operators to reduce.
-        reduce_func (callable): Function used to reduce the sequence of operators.
-        sparse (bool, optional): If True, compute the sparse matrix instead. Defaults to False.
+        mats_and_wires_gen (Generator): generator of tuples containing the matrix and the wires of
+            each operator
+        reduce_func (callable): function used to reduce the sequence of operators
 
     Returns:
-        Tuple[tensor, Wires]: A tuple containing the reduced matrix and the wires it acts on.
+        Tuple[tensor, Wires]: a tuple containing the reduced matrix and the wires it acts on
     """
-    mats_and_wires_gen = (
-        (
-            op.sparse_matrix()
-            if sparse
-            else qml.matrix(op)
-            if isinstance(op, qml.Hamiltonian)
-            else op.matrix(),
-            op.wires,
-        )
-        for op in ops
-    )
 
     def expand_and_reduce(op1_tuple: Tuple[np.ndarray, Wires], op2_tuple: Tuple[np.ndarray, Wires]):
         mat1, wires1 = op1_tuple

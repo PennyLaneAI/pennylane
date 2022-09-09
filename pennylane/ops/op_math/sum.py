@@ -288,7 +288,14 @@ class Sum(Operator):
             tensor_like: matrix representation
         """
 
-        reduced_mat, sum_wires = math.reduce_operators(ops=self.summands, reduce_func=math.add)
+        mats_and_wires_gen = (
+            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+            for op in self.summands
+        )
+
+        reduced_mat, sum_wires = math.reduce_operators(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+        )
 
         wire_order = wire_order or self.wires
 
@@ -333,8 +340,10 @@ class Sum(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
+        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self.summands)
+
         reduced_mat, sum_wires = math.reduce_operators(
-            ops=self.summands, reduce_func=math.add, sparse=True
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
         )
 
         wire_order = wire_order or self.wires
