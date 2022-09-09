@@ -159,6 +159,15 @@ class SProd(SymbolicOp):
         then the scalar product operator is hermitian."""
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
+    @property
+    def _pauli_rep(self):
+        if self.base._pauli_rep is None:
+            return None
+
+        for pw in self.base._pauli_rep:
+            self.base._pauli_rep[pw] *= self.scalar
+        return self.base._pauli_rep
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 

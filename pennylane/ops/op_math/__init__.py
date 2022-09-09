@@ -65,3 +65,5 @@ from .control import ctrl, ControlledOperation
 from .pow_class import Pow
 
 from .symbolicop import SymbolicOp
+
+from .PauliArithmetic import PauliSentence, PauliWord

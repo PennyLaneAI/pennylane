@@ -237,6 +237,15 @@ class Prod(Operator):
             self._has_overlapping_wires = len(wires) != len(set(wires))
         return self._has_overlapping_wires
 
+    @property
+    def _pauli_rep(self):
+        final_pauli_sentence = qml.ops.op_math.PauliArithmetic.PauliSentence({})
+        for factor in self.factors:
+            if factor._pauli_rep is None:
+                return None
+            final_pauli_sentence *= factor._pauli_rep
+        return final_pauli_sentence
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
