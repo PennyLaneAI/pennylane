@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for matrix expand functions."""
-import pennylane as qml
-from pennylane import numpy as pnp
+from functools import reduce
 
-import pytest
 import numpy as np
+import pytest
 from gate_data import CNOT, II, SWAP, I, Toffoli, X
 from scipy.sparse import csr_matrix
 
+import pennylane as qml
+from pennylane import numpy as pnp
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -783,3 +784,44 @@ class TestExpandMatrixSparse:
         computed_mat = qml.math.matrix_manipulation._sparse_swap_mat(2, 2, 3).toarray()
         expected_mat = np.eye(8)
         assert np.allclose(expected_mat, computed_mat)
+
+
+class TestReduceMatrices:
+    """Tests for the reduce_matrices function."""
+
+    op_list = [
+        qml.PauliX(0),
+        qml.RX(1, 0),
+        qml.CNOT([3, 4]),
+        qml.PauliZ(0),
+        qml.RX(2, 7),
+        qml.Toffoli([4, 1, 7]),
+    ]
+
+    def test_sum_matrices(self):
+        """Test the reduce_matrices function with the add method."""
+        mats_and_wires_gen = ((op.matrix(), op.wires) for op in self.op_list)
+        reduced_mat, final_wires = qml.math.reduce_matrices(mats_and_wires_gen, qml.math.add)
+
+        expected_wires = reduce(lambda x, y: x + y, [op.wires for op in self.op_list])
+        expected_matrix = reduce(
+            qml.math.add, (op.matrix(wire_order=expected_wires) for op in self.op_list)
+        )
+
+        assert final_wires == expected_wires
+        assert qml.math.allclose(reduced_mat, expected_matrix)
+        assert reduced_mat.shape == (2**5, 2**5)
+
+    def test_prod_matrices(self):
+        """Test the reduce_matrices function with the dot method."""
+        mats_and_wires_gen = ((op.matrix(), op.wires) for op in self.op_list)
+        reduced_mat, final_wires = qml.math.reduce_matrices(mats_and_wires_gen, qml.math.dot)
+
+        expected_wires = reduce(lambda x, y: x + y, [op.wires for op in self.op_list])
+        expected_matrix = reduce(
+            qml.math.dot, (op.matrix(wire_order=expected_wires) for op in self.op_list)
+        )
+
+        assert final_wires == expected_wires
+        assert qml.math.allclose(reduced_mat, expected_matrix)
+        assert reduced_mat.shape == (2**5, 2**5)
