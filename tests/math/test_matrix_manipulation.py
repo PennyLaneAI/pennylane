@@ -797,11 +797,11 @@ class TestReduceMatrices:
         qml.RX(2, 7),
         qml.Toffoli([4, 1, 7]),
     ]
-    mats_and_wires_gen = ((op.matrix(), op.wires) for op in op_list)
 
     def test_sum_matrices(self):
         """Test the reduce_matrices function with the add method."""
-        reduced_mat, final_wires = qml.math.reduce_matrices(self.mats_and_wires_gen, qml.math.add)
+        mats_and_wires_gen = ((op.matrix(), op.wires) for op in self.op_list)
+        reduced_mat, final_wires = qml.math.reduce_matrices(mats_and_wires_gen, qml.math.add)
 
         expected_wires = reduce(lambda x, y: x + y, [op.wires for op in self.op_list])
         expected_matrix = reduce(
@@ -814,7 +814,8 @@ class TestReduceMatrices:
 
     def test_prod_matrices(self):
         """Test the reduce_matrices function with the dot method."""
-        reduced_mat, final_wires = qml.math.reduce_matrices(self.mats_and_wires_gen, qml.math.dot)
+        mats_and_wires_gen = ((op.matrix(), op.wires) for op in self.op_list)
+        reduced_mat, final_wires = qml.math.reduce_matrices(mats_and_wires_gen, qml.math.dot)
 
         expected_wires = reduce(lambda x, y: x + y, [op.wires for op in self.op_list])
         expected_matrix = reduce(
