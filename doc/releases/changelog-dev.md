@@ -169,6 +169,29 @@
          [ 0.162,  0.477]])
   ```
 
+* Added the possibility to compute general Renyi entropies in the `ClassicalShadow` class.
+  [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
+
+  We can access the general Renyi entropy of a given subsystem by specifying its `wires`.
+
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> Renyi_entropy = shadow.entropy(wires=[0, 3], alpha=1.5)
+  ```
+
+  We can access the von Neumann entropy by setting `alpha=1`.
+
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  ```
+
+  Setting `alpha=2` corresponds to the special case of computing (the logarithm of) the purity of a reduced state.
+
+  ```pycon
+  >>> log_purity = shadow.entropy(wires=[1, 2, 6], alpha=2)
+  ```
+
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
@@ -204,6 +227,14 @@
   ```
 
 <h3>Improvements</h3>
+
+* `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
+  broadcasted operations, or non-broadcasted operations after broadcasted ones.
+  [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
+
+  A common scenario in which this becomes relevant is the decomposition of broadcasted
+  operations: the decomposition in general will contain one or multiple broadcasted
+  operations as well as operations with no or fixed parameters that are not broadcasted.
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
@@ -348,6 +379,10 @@
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
@@ -370,6 +405,29 @@
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
+
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  ```pycon
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+  ```
+
+  Instead use:
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+  ```
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
