@@ -318,7 +318,7 @@ class Prod(Operator):
             for op in self.factors
         )
 
-        reduced_mat, prod_wires = math.reduce_operators(
+        reduced_mat, prod_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
         )
 
@@ -368,7 +368,7 @@ class Prod(Operator):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self.factors)
 
-        reduced_mat, prod_wires = math.reduce_operators(
+        reduced_mat, prod_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
         )
 

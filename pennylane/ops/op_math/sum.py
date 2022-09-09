@@ -292,7 +292,7 @@ class Sum(Operator):
             for op in self.summands
         )
 
-        reduced_mat, sum_wires = math.reduce_operators(
+        reduced_mat, sum_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
         )
 
@@ -341,7 +341,7 @@ class Sum(Operator):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self.summands)
 
-        reduced_mat, sum_wires = math.reduce_operators(
+        reduced_mat, sum_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
         )
 
