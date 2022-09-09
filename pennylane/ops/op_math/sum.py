@@ -16,7 +16,6 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from copy import copy
-from functools import reduce
 from typing import List
 
 import numpy as np
@@ -52,31 +51,6 @@ def op_sum(*summands, do_queue=True, id=None):
            [ 1, -1]])
     """
     return Sum(*summands, do_queue=do_queue, id=id)
-
-
-def _sum(mats_gen, dtype=None, cast_like=None):
-    r"""Private method to compute the sum of matrices.
-
-    Args:
-        mats_gen (Generator): a python generator which produces the matrices which
-            will be summed together.
-
-    Keyword Args:
-        dtype (str): a string representing the data type of the entries in the result.
-        cast_like (Tensor): a tensor with the desired data type in its entries.
-
-    Returns:
-        res (Tensor): the tensor which is the sum of the matrices obtained from mats_gen.
-    """
-    # Note this method is currently inefficient (improve addition by looking at wire subgroups)
-    res = reduce(math.add, mats_gen)
-
-    if dtype is not None:
-        res = math.cast(res, dtype)
-    if cast_like is not None:
-        res = math.cast_like(res, cast_like)
-
-    return res
 
 
 class Sum(Operator):
@@ -313,19 +287,18 @@ class Sum(Operator):
         Returns:
             tensor_like: matrix representation
         """
+        mats_and_wires_gen = (
+            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+            for op in self.summands
+        )
 
-        def matrix_gen(summands, wire_order=None):
-            """Helper function to construct a generator of matrices"""
-            for op in summands:
-                if isinstance(op, qml.Hamiltonian):
-                    yield qml.matrix(op, wire_order=wire_order)
-                else:
-                    yield op.matrix(wire_order=wire_order)
+        reduced_mat, sum_wires = math.reduce_matrices(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+        )
 
-        if wire_order is None:
-            wire_order = self.wires
+        wire_order = wire_order or self.wires
 
-        return _sum(matrix_gen(self.summands, wire_order))
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the sum is represented in diagrams and drawings.
@@ -366,9 +339,15 @@ class Sum(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
+        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self.summands)
+
+        reduced_mat, sum_wires = math.reduce_matrices(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+        )
+
         wire_order = wire_order or self.wires
-        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
-        return reduce(math.add, mats_gen)
+
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
@@ -515,6 +494,6 @@ def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
         wires = op.wires
         if wire_map is not None:
             wires = wires.map(wire_map)
-        return np.min(wires)
+        return np.min(wires), len(wires)
 
     return sorted(op_list, key=_sort_key)
