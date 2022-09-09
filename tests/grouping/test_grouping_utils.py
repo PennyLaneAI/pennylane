@@ -256,6 +256,14 @@ class TestGroupingUtils:
         assert not is_pauli_word(observable_3)
         assert not is_pauli_word(observable_4)
 
+    def test_is_pauli_word_non_observable(self):
+        """Test that non-observables are not Pauli Words."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert not is_pauli_word(DummyOp(1))
+
     def test_are_identical_pauli_words(self):
         """Tests for determining if two Pauli words have the same ``wires`` and ``name`` attributes."""
 

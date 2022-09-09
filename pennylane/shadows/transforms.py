@@ -22,7 +22,11 @@ import pennylane.numpy as np
 
 
 @qml.batch_transform
+<<<<<<< HEAD
 def __replace_obs(tape, obs, *args, **kwargs):
+=======
+def _replace_obs(tape, obs, *args, **kwargs):
+>>>>>>> 8872d7ad305a987057a2e9b96ea3a8dd3cdf2819
     """
     Tape transform to replace the measurement processes with the given one
     """
@@ -85,7 +89,11 @@ def shadow_expval(H, k=1):
     """
 
     def decorator(qnode):
+<<<<<<< HEAD
         return wraps(qnode)(__replace_obs(qnode, qml.shadow_expval, H, k=k))
+=======
+        return wraps(qnode)(_replace_obs(qnode, qml.shadow_expval, H, k=k))
+>>>>>>> 8872d7ad305a987057a2e9b96ea3a8dd3cdf2819
 
     return decorator
 
@@ -113,7 +121,11 @@ def _shadow_state_diffable(wires):
         all_observables.extend(observables)
 
     def decorator(qnode):
+<<<<<<< HEAD
         new_qnode = __replace_obs(qnode, qml.shadow_expval, all_observables)
+=======
+        new_qnode = _replace_obs(qnode, qml.shadow_expval, all_observables)
+>>>>>>> 8872d7ad305a987057a2e9b96ea3a8dd3cdf2819
 
         @wraps(qnode)
         def wrapper(*args, **kwargs):

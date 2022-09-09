@@ -267,6 +267,22 @@
   False
   ```
 
+* Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
+  will return a dictionary containing all possible outcomes. [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.counts(all_outcomes=True)
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '01': 0, '10': 0,  '11': 505}
+  ```
+  
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
@@ -332,6 +348,18 @@
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
+* Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
+  `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
+  and the diagonalising gates using the factors/summands instead of using the full matrix.
+  [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
+
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
+* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
+  [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -352,6 +380,29 @@
 
 <h3>Deprecations</h3>
 
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  ```pycon
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+  ```
+
+  Instead use:
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+  ```
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
+
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
@@ -364,7 +415,7 @@
 * Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
   [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
-    
+
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
@@ -389,6 +440,7 @@ Ankit Khandelwal,
 Korbinian Kottmann,
 Christina Lee,
 Meenu Kumari,
+Lillian Marie Austin Frederiksen,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
