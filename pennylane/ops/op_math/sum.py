@@ -16,7 +16,6 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from copy import copy
-from functools import reduce
 from typing import List
 
 import numpy as np
@@ -52,31 +51,6 @@ def op_sum(*summands, do_queue=True, id=None):
            [ 1, -1]])
     """
     return Sum(*summands, do_queue=do_queue, id=id)
-
-
-def _sum(mats_gen, dtype=None, cast_like=None):
-    r"""Private method to compute the sum of matrices.
-
-    Args:
-        mats_gen (Generator): a python generator which produces the matrices which
-            will be summed together.
-
-    Keyword Args:
-        dtype (str): a string representing the data type of the entries in the result.
-        cast_like (Tensor): a tensor with the desired data type in its entries.
-
-    Returns:
-        res (Tensor): the tensor which is the sum of the matrices obtained from mats_gen.
-    """
-    # Note this method is currently inefficient (improve addition by looking at wire subgroups)
-    res = reduce(math.add, mats_gen)
-
-    if dtype is not None:
-        res = math.cast(res, dtype)
-    if cast_like is not None:
-        res = math.cast_like(res, cast_like)
-
-    return res
 
 
 class Sum(Operator):
@@ -153,6 +127,8 @@ class Sum(Operator):
         self._name = "Sum"
         self._id = id
         self.queue_idx = None
+        self._hash = None
+        self._has_overlapping_wires = None
 
         if len(summands) < 2:
             raise ValueError(f"Require at least two operators to sum; got {len(summands)}")
@@ -202,6 +178,16 @@ class Sum(Operator):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return all(s.is_hermitian for s in self.summands)
 
+    @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self.summands:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -219,7 +205,7 @@ class Sum(Operator):
 
     @property
     def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the Hermitian observable.
+        r"""Return the eigendecomposition of the matrix specified by the operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -228,16 +214,15 @@ class Sum(Operator):
 
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the
-            operator
+                operator.
         """
-        Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
+        if self.hash not in self._eigs:
+            Hmat = self.matrix()
+            Hmat = math.to_numpy(Hmat)
             w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[Hkey]
+        return self._eigs[self.hash]
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -256,9 +241,13 @@ class Sum(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        if self.has_overlapping_wires:
+            eigen_vectors = self.eigendecomposition["eigvec"]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        diag_gates = []
+        for summand in self.summands:
+            diag_gates.extend(summand.diagonalizing_gates())
+        return diag_gates
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified Hermitian observable.
@@ -269,7 +258,13 @@ class Sum(Operator):
         Returns:
             array: array containing the eigenvalues of the Hermitian observable
         """
-        return self.eigendecomposition["eigval"]
+        if self.has_overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
+            for summand in self.summands
+        ]
+        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -292,19 +287,18 @@ class Sum(Operator):
         Returns:
             tensor_like: matrix representation
         """
+        mats_and_wires_gen = (
+            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+            for op in self.summands
+        )
 
-        def matrix_gen(summands, wire_order=None):
-            """Helper function to construct a generator of matrices"""
-            for op in summands:
-                if isinstance(op, qml.Hamiltonian):
-                    yield qml.matrix(op, wire_order=wire_order)
-                else:
-                    yield op.matrix(wire_order=wire_order)
+        reduced_mat, sum_wires = math.reduce_matrices(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+        )
 
-        if wire_order is None:
-            wire_order = self.wires
+        wire_order = wire_order or self.wires
 
-        return _sum(matrix_gen(self.summands, wire_order))
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the sum is represented in diagrams and drawings.
@@ -345,9 +339,15 @@ class Sum(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
+        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self.summands)
+
+        reduced_mat, sum_wires = math.reduce_matrices(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+        )
+
         wire_order = wire_order or self.wires
-        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self.summands)
-        return reduce(math.add, mats_gen)
+
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
@@ -414,6 +414,14 @@ class Sum(Operator):
             else qml.Identity(self.wires[0]),
         )
 
+    @property
+    def hash(self):
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([summand.hash for summand in _sum_sort(self.summands)]))
+            )
+        return self._hash
+
 
 class _SumSummandsGrouping:
     """Utils class used for grouping sum summands together."""
@@ -457,3 +465,35 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
+
+
+def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
+    """Sort algorithm that sorts a list of sum summands by their wire indices.
+
+    Args:
+        op_list (List[.Operator]): list of operators to be sorted
+        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+            Defaults to None.
+
+    Returns:
+        List[.Operator]: sorted list of operators
+    """
+
+    if isinstance(op_list, tuple):
+        op_list = list(op_list)
+
+    def _sort_key(op) -> bool:
+        """Sorting key.
+
+        Args:
+            op (.Operator): Operator.
+
+        Returns:
+            int: Minimum wire value.
+        """
+        wires = op.wires
+        if wire_map is not None:
+            wires = wires.map(wire_map)
+        return np.min(wires), len(wires)
+
+    return sorted(op_list, key=_sort_key)

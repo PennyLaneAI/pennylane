@@ -220,9 +220,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = prod_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0)
-        ]
+        eigs_cache = prod_op._eigs[prod_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -696,9 +694,7 @@ class TestProperties:
 
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
-        eigs_cache = diag_prod_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-        ]
+        eigs_cache = diag_prod_op._eigs[diag_prod_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -708,19 +704,7 @@ class TestProperties:
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
-        diagonalizing_gates = diag_prod_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = qnp.array(
-            (  # the gates that swap eigvals till they are ordered smallest --> largest
-                [
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ]
-            )
-        )
-
-        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+        assert diag_prod_op.diagonalizing_gates() == []
 
 
 class TestSimplify:
@@ -888,7 +872,7 @@ class TestSimplify:
         """Test that the simplify method removes grouped elements with zero coeff."""
         prod_op = qml.prod(
             qml.U3(1.23, 2.34, 3.45, wires=0),
-            qml.ops.Pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
         )
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()
@@ -1184,11 +1168,11 @@ class TestSortWires:
             qml.PauliX(5),
             qml.Toffoli([2, "three", 4]),
             qml.CNOT([2, 5]),
-            qml.RX("test", 5),
+            qml.RX(1, 5),
             qml.PauliY(0),
-            qml.CRX("test", [0, 2]),
+            qml.CRX(1, [0, 2]),
             qml.PauliZ("three"),
-            qml.CRY("test", ["test", 2]),
+            qml.CRY(1, ["test", 2]),
         ]
         sorted_list = _prod_sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
@@ -1197,10 +1181,10 @@ class TestSortWires:
             qml.Toffoli([2, "three", 4]),
             qml.PauliX(5),
             qml.CNOT([2, 5]),
-            qml.CRX("test", [0, 2]),
-            qml.CRY("test", ["test", 2]),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, ["test", 2]),
             qml.PauliZ("three"),
-            qml.RX("test", 5),
+            qml.RX(1, 5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):

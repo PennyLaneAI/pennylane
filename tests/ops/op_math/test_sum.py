@@ -26,7 +26,7 @@ import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Sum, op_sum
-from pennylane.ops.op_math.sum import _sum  # pylint: disable=protected-access
+from pennylane.ops.op_math.sum import _sum_sort  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -227,9 +227,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_sum_op._eigs[
-            (2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-        ]
+        eigs_cache = diag_sum_op._eigs[diag_sum_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -239,19 +237,7 @@ class TestInitialization:
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        diagonalizing_gates = diag_sum_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = qnp.array(
-            (
-                [
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                ]
-            )
-        )
-
-        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+        assert diag_sum_op.diagonalizing_gates() == []
 
 
 class TestMscMethods:
@@ -739,6 +725,95 @@ class TestSimplify:
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
 
+class TestSortWires:
+    """Tests for the wire sorting algorithm."""
+
+    def test_sorting_operators_with_one_wire(self):
+        """Test that the sorting alforithm works for operators that act on one wire."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliZ(2),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(3),
+            qml.PauliX(5),
+        ]
+        sorted_list = _sum_sort(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(2),
+            qml.PauliX(3),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+            qml.PauliX(5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_multiple_wires(self):
+        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        op_tuple = (
+            qml.PauliX(3),
+            qml.PauliX(5),
+            qml.Toffoli([2, 3, 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.PauliZ(3),
+            qml.CRY(1, [1, 2]),
+        )
+        sorted_list = _sum_sort(op_tuple)
+        final_list = [
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, [1, 2]),
+            qml.CNOT([2, 5]),
+            qml.Toffoli([2, 3, 4]),
+            qml.PauliX(3),
+            qml.PauliZ(3),
+            qml.PauliX(5),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_wire_map(self):
+        """Test that the sorting alforithm works using a wire map."""
+        op_list = [
+            qml.PauliX("three"),
+            qml.PauliX(5),
+            qml.Toffoli([2, "three", 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, ["test", 2]),
+            qml.PauliZ("three"),
+            qml.CRY(1, ["test", 2]),
+        ]
+        sorted_list = _sum_sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        final_list = [
+            qml.PauliY(0),
+            qml.CRX(1, ["test", 2]),
+            qml.CRY(1, ["test", 2]),
+            qml.CNOT([2, 5]),
+            qml.Toffoli([2, "three", 4]),
+            qml.PauliX("three"),
+            qml.PauliZ("three"),
+            qml.PauliX(5),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert op1.name == op2.name
+            assert op1.wires == op2.wires
+            assert op1.data == op2.data
+
+
 class TestWrapperFunc:
     """Test wrapper function."""
 
@@ -758,40 +833,6 @@ class TestWrapperFunc:
         assert sum_class_op.id == sum_func_op.id
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
-
-
-class TestPrivateSum:
-    """Test private _sum() method."""
-
-    def test_sum_private(self):
-        """Test the sum private method generates expected matrices."""
-        mats_gen = (qnp.eye(2) for _ in range(3))
-
-        sum_mat = _sum(mats_gen)
-        expected_sum_mat = 3 * qnp.eye(2)
-        assert qnp.allclose(sum_mat, expected_sum_mat)
-
-    def test_dtype(self):
-        """Test dtype keyword arg casts matrix correctly"""
-        dtype = "complex128"
-        mats_gen = (qnp.eye(2) for _ in range(3))
-
-        sum_mat = _sum(mats_gen, dtype=dtype)
-        expected_sum_mat = 3 * qnp.eye(2, dtype=dtype)
-
-        assert sum_mat.dtype == "complex128"
-        assert qnp.allclose(sum_mat, expected_sum_mat)
-
-    def test_cast_like(self):
-        """Test cast_like keyword arg casts matrix correctly"""
-        cast_like = qnp.array(2, dtype="complex128")
-        mats_gen = (qnp.eye(2) for _ in range(3))
-
-        sum_mat = _sum(mats_gen, cast_like=cast_like)
-        expected_sum_mat = 3 * qnp.eye(2, dtype="complex128")
-
-        assert sum_mat.dtype == "complex128"
-        assert qnp.allclose(sum_mat, expected_sum_mat)
 
 
 class TestIntegration:
