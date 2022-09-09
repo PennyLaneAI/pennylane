@@ -389,6 +389,10 @@
   the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
   [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
 
+* The the factors of `Prod` don't share any wires, the matrix and sparse matrix are computed using
+  a kronecker product for improved efficiency.
+  [(#3040)](https://github.com/PennyLaneAI/pennylane/pull/3040)
+
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
