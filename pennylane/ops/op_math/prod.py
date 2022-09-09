@@ -23,7 +23,7 @@ from typing import List, Tuple, Union
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.ops.op_math.pow_class import Pow
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
