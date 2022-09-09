@@ -330,6 +330,10 @@
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
