@@ -39,7 +39,6 @@ Symbolic Classes
     :toctree: api
 
     ~Adjoint
-    ~ControlledOperation
     ~Controlled
     ~ControlledOp
     ~Exp
@@ -62,7 +61,7 @@ from .sum import op_sum, Sum
 
 from .sprod import s_prod, SProd
 
-from .control import ctrl, ControlledOperation
+from .control import ctrl
 from .pow import pow, Pow
 
 from .symbolicop import SymbolicOp

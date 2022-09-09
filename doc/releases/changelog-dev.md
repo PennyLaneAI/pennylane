@@ -235,6 +235,10 @@
 
 <h3>Improvements</h3>
 
+* `qml.ctrl` now uses `Controlled` instead of `ControlledOperation`.  The new `Controlled` class
+  wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
+
 * The new `qml.pow` provides a top-level constructor for raising operators to powers.
   [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
 
@@ -402,6 +406,10 @@
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
+* The `ControlledOperation` class is removed.  This was a developer-only class, so the change should not be evident to
+  any users. It is replaced by `Controlled`.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
+
 * The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
   with an additional keyword argument `circuit`, which represents the quantum tape
   being executed.
@@ -413,6 +421,9 @@
 * The `expand_matrix()` has been moved from `~/operation.py` to
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+
+* `qml.grouping.utils.is_commuting` is removed, and its Pauli word logic is now part of `qml.is_commuting`.
+  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
 
 <h3>Deprecations</h3>
 
