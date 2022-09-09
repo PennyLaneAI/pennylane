@@ -151,9 +151,9 @@ class TestInitialization:
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
-        """Test checking control_values are booleans."""
-        with pytest.raises(ValueError, match="control_values can only take on"):
-            Controlled(self.temp_op, (0, 1), ["b", 2])
+        """Test control values are converted to booleans."""
+        op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
+        assert op.control_values == [False, False, True]
 
     def test_control_values_wrong_length(self):
         """Test checking control_values length error."""

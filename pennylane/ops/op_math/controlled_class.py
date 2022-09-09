@@ -62,6 +62,7 @@ class Controlled(SymbolicOp):
     Keyword Args:
         control_values (Iterable[Bool]): The values to control on. Must be the same
             length as ``control_wires``. Defaults to ``True`` for all control wires.
+            Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     .. note::
@@ -73,7 +74,7 @@ class Controlled(SymbolicOp):
         an entire tape and does not provide as many representations and attributes as ``Controlled``,
         but :class:`~.ControlledOperation` does decompose.
 
-    .. seealso:: :class:`~.ControlledOp`, :class:`~.ControlledOperation`, and :func:`~.ctrl`
+    .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
 
@@ -103,6 +104,12 @@ class Controlled(SymbolicOp):
 
     >>> op.control_values
     [0]
+
+    Provided control values are converted to booleans internally, so
+    any "truthy" or "falsy" objects work.
+
+    >>> Controlled(base, ("a", "b", "c"), control_values=["", None, 5]).control_values
+    [False, False, True]
 
     Representations for an operator are available if the base class defines them.
     Sparse matrices are available if the base class defines either a sparse matrix
@@ -171,12 +178,14 @@ class Controlled(SymbolicOp):
                 )
                 control_values = [(x == "1") for x in control_values]
 
-            control_values = [bool(control_values)] if isinstance(control_values, int) else [bool(control_value) for control_value in control_values]
+            control_values = (
+                [bool(control_values)]
+                if isinstance(control_values, int)
+                else [bool(control_value) for control_value in control_values]
+            )
 
             if len(control_values) != len(control_wires):
                 raise ValueError("control_values should be the same length as control_wires")
-            if not set(control_values).issubset({False, True}):
-                raise ValueError("control_values can only take on True or False")
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
             raise ValueError("The control wires must be different from the base operation wires.")
