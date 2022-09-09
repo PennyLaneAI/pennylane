@@ -232,7 +232,8 @@ class CompositeOp(Operator, abc.ABC):
         context.append(self, owns=self.operands)
         return self
 
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
         """Sort composite operands by their wire indices."""
 
