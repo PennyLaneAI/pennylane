@@ -74,8 +74,8 @@ class TestConstructor:
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
         assert isinstance(new_op, qml.ops.Prod)
-        assert qml.equal(new_op.factors[0], qml.S(0))
-        assert qml.equal(new_op.factors[1], qml.T(0))
+        assert qml.equal(new_op.operands[0], qml.S(0))
+        assert qml.equal(new_op.operands[1], qml.T(0))
 
     def test_nonlazy_simplification_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op
