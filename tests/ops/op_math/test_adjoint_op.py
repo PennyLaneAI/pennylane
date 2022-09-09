@@ -269,25 +269,13 @@ class TestSimplify:
         )
         simplified_op = adj_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.Prod)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_with_adjoint_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.adjoint method."""
         op = Adjoint(qml.T(0))
         simplified_op = op.simplify()
-        assert isinstance(simplified_op, Adjoint)
-        assert op.data == simplified_op.data
-        assert op.wires == simplified_op.wires
-        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(op, simplified_op)
 
 
 class TestMiscMethods:

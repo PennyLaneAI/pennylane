@@ -6,15 +6,17 @@
 
 #     http://www.apache.org/licenses/LICENSE-2.0
 
+import numpy as np
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-import pennylane as qml
-import numpy as np
 from scipy.stats import unitary_group
+
+import pennylane as qml
 
 
 class TestDecomposition:
@@ -36,12 +38,8 @@ class TestDecomposition:
             qml.adjoint(qml.QFT(wires=[1, 2]))
 
         assert len(tape2.queue) == len(tape.queue)
-        # qml.equal doesn't work for Adjoint op yet, so we stop before we get to it.
-        for op1, op2 in zip(tape.queue[:-1], tape2.queue[:-1]):
+        for op1, op2 in zip(tape.queue, tape2.queue):
             assert qml.equal(op1, op2)
-
-        assert isinstance(tape[-1], qml.ops.op_math.Adjoint)
-        assert qml.equal(tape[-1].base, qml.QFT(wires=(1, 2)))
 
         assert np.allclose(tape.queue[1].matrix(), tape2.queue[1].matrix())
         assert np.allclose(tape.queue[3].matrix(), tape2.queue[3].matrix())

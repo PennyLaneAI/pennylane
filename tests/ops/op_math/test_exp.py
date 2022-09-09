@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from copy import copy
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -290,7 +291,6 @@ class TestMiscMethods:
     def test_simplify_sprod(self):
         """Test that simplify merges SProd into the coefficent."""
         base = qml.adjoint(qml.PauliX(0))
-        coeff1 = 2.0
         s_op = qml.s_prod(2.0, base)
 
         op = Exp(s_op, 3j)
