@@ -167,6 +167,7 @@ class Prod(Operator):
         self.factors = factors
         self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
         self._hash = None
+        self._has_overlapping_wires = None
 
         if do_queue:
             self.queue()
@@ -226,6 +227,16 @@ class Prod(Operator):
                 return False
         return all(op.is_hermitian for op in self.factors)
 
+    @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self.factors:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -250,14 +261,13 @@ class Prod(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
-        Hmat = self.matrix()
-        Hmat = math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
+        if self.hash not in self._eigs:
+            Hmat = self.matrix()
+            Hmat = math.to_numpy(Hmat)
             w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[Hkey]
+        return self._eigs[self.hash]
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -276,12 +286,16 @@ class Prod(Operator):
         Returns:
             list[.Operator] or None: a list of operators
         """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        if self.has_overlapping_wires:
+            eigen_vectors = self.eigendecomposition["eigvec"]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        diag_gates = []
+        for factor in self.factors:
+            diag_gates.extend(factor.diagonalizing_gates())
+        return diag_gates
 
     def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
+        """Return the eigenvalues of the specified operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -289,19 +303,27 @@ class Prod(Operator):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        return self.eigendecomposition["eigval"]
+        if self.has_overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
+            for factor in self.factors
+        ]
+
+        return qml.math.prod(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
         mats = (
-            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            qml.matrix(op, wire_order=self.wires)
             if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            else op.matrix(wire_order=self.wires)
             for op in self.factors
         )
 
-        return reduce(math.dot, mats)
+        reduced_mat = reduce(math.dot, mats)
+
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
@@ -343,9 +365,9 @@ class Prod(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        wire_order = wire_order or self.wires
-        mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
-        return reduce(math.dot, mats)
+        mats = (op.sparse_matrix(wire_order=self.wires) for op in self.factors)
+        reduced_mat = reduce(math.dot, mats)
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property
@@ -423,7 +445,7 @@ class Prod(Operator):
         return self._hash
 
 
-def _prod_sort(op_list, wire_map: dict = None):
+def _prod_sort(op_list, wire_map: dict = None) -> List[Operator]:
     """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
     into account the operator commutivity.
 

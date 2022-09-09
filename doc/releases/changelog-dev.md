@@ -59,6 +59,7 @@
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
   The measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
@@ -100,6 +101,7 @@
   ```
 
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
 
   ```python
   H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
@@ -115,6 +117,38 @@
   x = np.array(0.5, requires_grad=True)
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
+  ```
+
+* Added the `qml.shadows.shadow_expval` and `qml.shadows.shadow_state` QNode transforms for
+  computing expectation values and states from a classical shadow measurement. These transforms
+  are fully differentiable.
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
+
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=1000)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RY(x, wires=0)
+      return qml.classical_shadow(wires=[0])
+  ```
+
+  ```pycon
+  >>> x = np.array(1.2)
+  >>> expval_circuit = qml.shadows.shadow_expval(qml.PauliZ(0))(circuit)
+  >>> expval_circuit(x)
+  tensor(0.282, requires_grad=True)
+  >>> qml.grad(expval_circuit)(x)
+  -1.0439999999999996
+  ```
+  ```pycon
+  >>> state_circuit = qml.shadows.shadow_state(wires=[0], diffable=True)(circuit)
+  >>> state_circuit(x)
+  tensor([[0.7055+0.j    , 0.447 +0.0075j],
+          [0.447 -0.0075j, 0.2945+0.j    ]], requires_grad=True)
+  >>> qml.jacobian(lambda x: np.real(state_circuit(x)))(x)
+  array([[-0.477,  0.162],
+         [ 0.162,  0.477]])
   ```
 
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
@@ -152,6 +186,14 @@
   ```
 
 <h3>Improvements</h3>
+
+* `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
+  broadcasted operations, or non-broadcasted operations after broadcasted ones.
+  [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
+
+  A common scenario in which this becomes relevant is the decomposition of broadcasted
+  operations: the decomposition in general will contain one or multiple broadcasted
+  operations as well as operations with no or fixed parameters that are not broadcasted.
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
@@ -210,6 +252,22 @@
   False
   ```
 
+* Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
+  will return a dictionary containing all possible outcomes. [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+  >>>
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     return qml.counts(all_outcomes=True)
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '01': 0, '10': 0,  '11': 505}
+  ```
+  
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
@@ -250,9 +308,9 @@
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
 
-* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
+* `Prod` and `Sum` class now support the `sparse_matrix()` method.
   [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
-  
+
   ```pycon
   >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
   >>> op = qml.op_sum(xy, qml.Identity(0))
@@ -275,6 +333,18 @@
   depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
+* Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
+  `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
+  and the diagonalising gates using the factors/summands instead of using the full matrix.
+  [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
+
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
+* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
+  [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -295,6 +365,29 @@
 
 <h3>Deprecations</h3>
 
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  ```pycon
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+  ```
+
+  Instead use:
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+  ```
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
+
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
@@ -307,7 +400,7 @@
 * Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
   [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
-    
+
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
@@ -332,6 +425,7 @@ Ankit Khandelwal,
 Korbinian Kottmann,
 Christina Lee,
 Meenu Kumari,
+Lillian Marie Austin Frederiksen,
 Albert Mitjans Coma,
 Rashid N H M,
 Zeyue Niu,
