@@ -47,6 +47,11 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
+    @property
+    def _pauli_rep(self):
+        pw = pennylane.ops.op_math.PauliArithetic.PauliWord({self.wires: pennylane.ops.op_math.PauliArithetic.I})
+        return pennylane.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).

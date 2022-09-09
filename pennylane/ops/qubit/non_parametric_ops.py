@@ -321,6 +321,11 @@ class PauliX(Observable, Operation):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
 
+    @property
+    def _pauli_rep(self):
+        pw = qml.ops.op_math.PauliArithetic.PauliWord({self.wires: qml.ops.op_math.PauliArithetic.X})
+        return qml.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+
 
 class PauliY(Observable, Operation):
     r"""PauliY(wires)
@@ -469,6 +474,11 @@ class PauliY(Observable, Operation):
         # Y = RZ(0) RY(\pi) RZ(0)
         return [0.0, np.pi, 0.0]
 
+    @property
+    def _pauli_rep(self):
+        pw = qml.ops.op_math.PauliArithetic.PauliWord({self.wires: qml.ops.op_math.PauliArithetic.Y})
+        return qml.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+
 
 class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
@@ -615,6 +625,11 @@ class PauliZ(Observable, Operation):
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
         return [np.pi, 0.0, 0.0]
+
+    @property
+    def _pauli_rep(self):
+        pw = qml.ops.op_math.PauliArithetic.PauliWord({self.wires: qml.ops.op_math.PauliArithetic.Z})
+        return qml.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
 
 
 class S(Operation):
