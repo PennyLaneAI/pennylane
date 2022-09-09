@@ -165,10 +165,8 @@ def reduce_matrices(
         mat1, wires1 = op1_tuple
         mat2, wires2 = op2_tuple
         expanded_wires = wires1 + wires2
-        if wires1 != expanded_wires:
-            mat1 = qml.math.expand_matrix(mat1, wires1, wire_order=expanded_wires)
-        if wires2 != expanded_wires:
-            mat2 = qml.math.expand_matrix(mat2, wires2, wire_order=expanded_wires)
+        mat1 = qml.math.expand_matrix(mat1, wires1, wire_order=expanded_wires)
+        mat2 = qml.math.expand_matrix(mat2, wires2, wire_order=expanded_wires)
         return reduce_func(mat1, mat2), expanded_wires
 
     reduced_mat, final_wires = reduce(expand_and_reduce, mats_and_wires_gen)
