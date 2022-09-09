@@ -70,6 +70,9 @@
 * Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
 
+* Added the `qml.TAdd` and `qml.TSWAP` qutrit operations which are the ternary analogs of the CNOT and SWAP operations respectively.
+  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
+
 * Added the private `_prod_sort` function that sorts a list of operators by their respective wires
   taking into account their commutativity property.
   [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
