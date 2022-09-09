@@ -724,8 +724,8 @@ class TestSortWires:
             qml.PauliZ(2),
             qml.PauliX(3),
             qml.PauliZ(3),
-            qml.RX(1, 5),
             qml.PauliX(5),
+            qml.RX(1, 5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -746,11 +746,11 @@ class TestSortWires:
         )
         sorted_list = _sum_sort(op_tuple)
         final_list = [
-            qml.PauliY(0),
             qml.CRX(1, [0, 2]),
+            qml.PauliY(0),
             qml.CRY(1, [1, 2]),
-            qml.Toffoli([2, 3, 4]),
             qml.CNOT([2, 5]),
+            qml.Toffoli([2, 3, 4]),
             qml.PauliX(3),
             qml.PauliZ(3),
             qml.PauliX(5),
@@ -778,8 +778,8 @@ class TestSortWires:
             qml.PauliY(0),
             qml.CRX(1, ["test", 2]),
             qml.CRY(1, ["test", 2]),
-            qml.Toffoli([2, "three", 4]),
             qml.CNOT([2, 5]),
+            qml.Toffoli([2, "three", 4]),
             qml.PauliX("three"),
             qml.PauliZ("three"),
             qml.PauliX(5),

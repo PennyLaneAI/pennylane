@@ -502,7 +502,7 @@ def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
     if isinstance(op_list, tuple):
         op_list = list(op_list)
 
-    def _sort_key(op) -> bool:
+    def _sort_key(op: Operator) -> bool:
         """Sorting key.
 
         Args:
@@ -514,6 +514,6 @@ def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
         wires = op.wires
         if wire_map is not None:
             wires = wires.map(wire_map)
-        return np.min(wires)
+        return np.min(wires), op.name
 
     return sorted(op_list, key=_sort_key)
