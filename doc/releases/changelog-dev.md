@@ -400,6 +400,10 @@
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
+* Refactored common code from `Prod` and `Sum` classes into a `CompositeOp` abstract class that
+  comes with `__iter__`, `__len__` and `__getitem__` functions.
+  [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
