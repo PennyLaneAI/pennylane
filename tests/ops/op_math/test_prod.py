@@ -458,6 +458,16 @@ class TestMatrix:
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_same_wires(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined and correct."""
+        prod_op = prod(op1(wires=0), op2(wires=0))
+        true_mat = mat1 @ mat2
+        prod_mat = prod_op.sparse_matrix().todense()
+
+        assert np.allclose(true_mat, prod_mat)
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Prod op is defined
         with wire order and correct."""
