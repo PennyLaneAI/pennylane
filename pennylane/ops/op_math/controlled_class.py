@@ -24,8 +24,17 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math as qmlmath
-from pennylane import operation
-from pennylane.operation import Operation, Operator, Tensor
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    Operation,
+    Operator,
+    ParameterFrequenciesUndefinedError,
+    SparseMatrixUndefinedError,
+    Tensor,
+    classproperty,
+)
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -47,7 +56,7 @@ def _decompose_no_control_values(op: Operator) -> List[Operator]:
         # Need to use expand because of in-place inversion
         # revert to decomposition once in-place inversion removed
         base_decomp = op.base.expand().circuit
-    except operation.DecompositionUndefinedError:
+    except DecompositionUndefinedError:
         return None
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
@@ -136,7 +145,7 @@ class Controlled(SymbolicOp):
     """
 
     # pylint: disable=no-self-argument
-    @operation.classproperty
+    @classproperty
     def __signature__(cls):  # pragma: no cover
         # this method is defined so inspect.signature returns __init__ signature
         # instead of __new__ signature
@@ -281,7 +290,7 @@ class Controlled(SymbolicOp):
     def matrix(self, wire_order=None):
 
         if self.base.batch_size is not None:
-            raise operation.MatrixUndefinedError
+            raise MatrixUndefinedError
 
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
@@ -314,11 +323,11 @@ class Controlled(SymbolicOp):
 
         try:
             target_mat = self.base.sparse_matrix()
-        except operation.SparseMatrixUndefinedError:
+        except SparseMatrixUndefinedError:
             try:
                 target_mat = sparse.lil_matrix(self.base.matrix())
-            except operation.MatrixUndefinedError as e:
-                raise operation.SparseMatrixUndefinedError from e
+            except MatrixUndefinedError as e:
+                raise SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
@@ -350,7 +359,7 @@ class Controlled(SymbolicOp):
         if all(self.control_values):
             decomp = _decompose_no_control_values(self)
             if decomp is None:
-                raise operation.DecompositionUndefinedError
+                raise DecompositionUndefinedError
             return decomp
 
         # We need to add paulis to flip some control wires
@@ -460,8 +469,8 @@ class ControlledOp(Controlled, Operation):
         if self.base.num_params == 1:
             try:
                 base_gen = qml.generator(self.base, format="observable")
-            except operation.GeneratorUndefinedError as e:
-                raise operation.ParameterFrequenciesUndefinedError(
+            except GeneratorUndefinedError as e:
+                raise ParameterFrequenciesUndefinedError(
                     f"Operation {self.base.name} does not have parameter frequencies defined."
                 ) from e
 
@@ -477,7 +486,7 @@ class ControlledOp(Controlled, Operation):
 
             processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
-        raise operation.ParameterFrequenciesUndefinedError(
+        raise ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
             "and parameter frequencies can not be computed via generator for more than one"
             "parameter."
