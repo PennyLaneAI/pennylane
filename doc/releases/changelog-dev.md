@@ -231,6 +231,9 @@
 
 <h3>Improvements</h3>
 
+* The new `qml.pow` provides a top-level constructor for raising operators to powers.
+  [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
+
 * `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
   broadcasted operations, or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
@@ -410,7 +413,7 @@
 <h3>Deprecations</h3>
 
 * In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
-  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  use `qml.adjoint` or `qml.pow` instead. Support for these methods will remain till v0.28.
   [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
 
   Don't use:
@@ -421,15 +424,21 @@
   >>> v2.inverse = True
   ```
 
-  Instead use:
+  Instead use either:
 
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
+  Adjoint(PauliX(wires=[0]))
+  >>> qml.pow(qml.PauliX(0), -1)
+  PauliX(wires=[0])**-1
+  >>> qml.pow(qml.PauliX(0), -1, lazy=False)
+  PauliX(wires=[0])
   >>> qml.PauliX(0) ** -1
+  PauliX(wires=[0])**-1
   ```
 
-  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
-  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  `adjoint` takes the conjugate transpose of an operator, while `qml.pow(op, -1)` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `qml.pow(op, -1)`, even
   though they represent the same thing.
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
