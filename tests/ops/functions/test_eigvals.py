@@ -106,7 +106,7 @@ class TestSingleOperation:
         """Test that the ctrl is correctly taken into account"""
         res = qml.eigvals(qml.ctrl(qml.PauliX, 0))(wires=1)
         expected = np.linalg.eigvals(qml.matrix(qml.CNOT(wires=[0, 1])))
-        assert np.allclose(res, expected)
+        assert np.allclose(np.sort(res), np.sort(expected))
 
     def test_tensor_product(self):
         """Test a tensor product"""
