@@ -17,7 +17,6 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
-from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
@@ -27,7 +26,7 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.ops.op_math.pow_class import Pow
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
@@ -315,16 +314,19 @@ class Prod(Operator):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
         if self.has_overlapping_wires:
-            mats = (
-                qml.matrix(op, wire_order=self.wires)
-                if isinstance(op, qml.Hamiltonian)
-                else op.matrix(wire_order=self.wires)
+            mats_and_wires_gen = (
+                (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
                 for op in self.factors
             )
 
-            return reduce(math.dot, mats)
+            reduced_mat, prod_wires = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            )
+
+            wire_order = wire_order or self.wires
+
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
         mats_gen = (
             qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix()
             for op in self.factors
@@ -334,14 +336,20 @@ class Prod(Operator):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        wire_order = wire_order or self.wires
         if self.has_overlapping_wires:
-            mats = (op.sparse_matrix(wire_order=self.wires) for op in self.factors)
-            reduced_mat = reduce(math.dot, mats)
-            return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
+            mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self.factors)
+
+            reduced_mat, prod_wires = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            )
+
+            wire_order = wire_order or self.wires
+
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
         mats = (op.sparse_matrix() for op in self.factors)
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
