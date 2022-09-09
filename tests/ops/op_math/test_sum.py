@@ -26,7 +26,6 @@ import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Sum, op_sum
-from pennylane.ops.op_math.sum import _sum_sort  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -610,7 +609,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.PauliX(5),
         ]
-        sorted_list = _sum_sort(op_list)
+        sorted_list = Sum._sort(op_list)
         final_list = [
             qml.PauliY(0),
             qml.PauliY(1),
@@ -637,7 +636,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.CRY(1, [1, 2]),
         )
-        sorted_list = _sum_sort(op_tuple)
+        sorted_list = Sum._sort(op_tuple)
         final_list = [
             qml.PauliY(0),
             qml.CRX(1, [0, 2]),
@@ -666,7 +665,7 @@ class TestSortWires:
             qml.PauliZ("three"),
             qml.CRY(1, ["test", 2]),
         ]
-        sorted_list = _sum_sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
             qml.PauliY(0),
             qml.CRX(1, ["test", 2]),

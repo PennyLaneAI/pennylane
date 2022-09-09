@@ -258,13 +258,37 @@ class Sum(CompositeOp):
             else qml.Identity(self.wires[0]),
         )
 
-    @property
-    def hash(self):
-        if self._hash is None:
-            self._hash = hash(
-                (str(self.name), str([summand.hash for summand in _sum_sort(self.operands)]))
-            )
-        return self._hash
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+        """Sort algorithm that sorts a list of sum summands by their wire indices.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+
+        if isinstance(op_list, tuple):
+            op_list = list(op_list)
+
+        def _sort_key(op) -> bool:
+            """Sorting key.
+
+            Args:
+                op (.Operator): Operator.
+
+            Returns:
+                int: Minimum wire value.
+            """
+            wires = op.wires
+            if wire_map is not None:
+                wires = wires.map(wire_map)
+            return np.min(wires), len(wires)
+
+        return sorted(op_list, key=_sort_key)
 
 
 class _SumSummandsGrouping:
@@ -309,35 +333,3 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
-
-
-def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
-    """Sort algorithm that sorts a list of sum summands by their wire indices.
-
-    Args:
-        op_list (List[.Operator]): list of operators to be sorted
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
-
-    Returns:
-        List[.Operator]: sorted list of operators
-    """
-
-    if isinstance(op_list, tuple):
-        op_list = list(op_list)
-
-    def _sort_key(op) -> bool:
-        """Sorting key.
-
-        Args:
-            op (.Operator): Operator.
-
-        Returns:
-            int: Minimum wire value.
-        """
-        wires = op.wires
-        if wire_map is not None:
-            wires = wires.map(wire_map)
-        return np.min(wires), len(wires)
-
-    return sorted(op_list, key=_sort_key)

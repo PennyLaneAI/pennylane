@@ -53,6 +53,10 @@ class ValidOp(CompositeOp):
     def eigvals(self):
         return self.eigendecomposition["eigval"]
 
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None):
+        return op_list
+
 
 class TestConstruction:
     """Test the construction of composite ops."""

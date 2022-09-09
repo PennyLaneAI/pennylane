@@ -15,6 +15,7 @@
 This submodule defines a base class for composite operations.
 """
 import abc
+from typing import List
 
 import numpy as np
 
@@ -230,6 +231,18 @@ class CompositeOp(Operator, abc.ABC):
             context.safe_update_info(op, owner=self)
         context.append(self, owns=self.operands)
         return self
+
+    @abc.abstractclassmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+        """Sort composite operands by their wire indices."""
+
+    @property
+    def hash(self):
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([factor.hash for factor in self._sort(self.operands)]))
+            )
+        return self._hash
 
     @property
     def arithmetic_depth(self) -> int:

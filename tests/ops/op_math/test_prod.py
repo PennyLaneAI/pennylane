@@ -24,7 +24,7 @@ import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
-from pennylane.ops.op_math.prod import Prod, _prod_sort, _swappable_ops, prod
+from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -1021,7 +1021,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.PauliX(5),
         ]
-        sorted_list = _prod_sort(op_list)
+        sorted_list = Prod._sort(op_list)
         final_list = [
             qml.PauliY(0),
             qml.PauliY(1),
@@ -1048,7 +1048,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.CRY(1, [1, 2]),
         )
-        sorted_list = _prod_sort(op_tuple)
+        sorted_list = Prod._sort(op_tuple)
         final_list = [
             qml.PauliY(0),
             qml.PauliX(3),
@@ -1077,7 +1077,7 @@ class TestSortWires:
             qml.PauliZ("three"),
             qml.CRY(1, ["test", 2]),
         ]
-        sorted_list = _prod_sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        sorted_list = Prod._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
             qml.PauliY(0),
             qml.PauliX("three"),

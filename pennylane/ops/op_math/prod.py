@@ -289,42 +289,34 @@ class Prod(CompositeOp):
         op = Sum(*factors).simplify()
         return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
 
-    @property
-    def hash(self):
-        if self._hash is None:
-            self._hash = hash(
-                (str(self.name), str([factor.hash for factor in _prod_sort(self.operands)]))
-            )
-        return self._hash
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+        """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
+        into account the operator commutivity.
 
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
 
-def _prod_sort(op_list, wire_map: dict = None) -> List[Operator]:
-    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
-    into account the operator commutivity.
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
 
-    Args:
-        op_list (List[.Operator]): list of operators to be sorted
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
+        if isinstance(op_list, tuple):
+            op_list = list(op_list)
 
-    Returns:
-        List[.Operator]: sorted list of operators
-    """
+        for i in range(1, len(op_list)):
 
-    if isinstance(op_list, tuple):
-        op_list = list(op_list)
+            key_op = op_list[i]
 
-    for i in range(1, len(op_list)):
+            j = i - 1
+            while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
+                op_list[j + 1] = op_list[j]
+                j -= 1
+            op_list[j + 1] = key_op
 
-        key_op = op_list[i]
-
-        j = i - 1
-        while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
-            op_list[j + 1] = op_list[j]
-            j -= 1
-        op_list[j + 1] = key_op
-
-    return op_list
+        return op_list
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
