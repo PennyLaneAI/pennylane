@@ -111,7 +111,7 @@ class PowOperation(Operation):
 
     def inv(self):
         warn(
-            "In-place inversion with inv is deprecated. Please use qml.adjoint instead.",
+            "In-place inversion with inv is deprecated. Please use qml.adjoint instead or qml.pow.",
             UserWarning,
         )
         self.hyperparameters["z"] *= -1
