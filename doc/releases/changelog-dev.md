@@ -436,6 +436,9 @@
 * `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
   [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
 
+* `qml.is_commuting` has been moved from `pennylane/transforms/commutation_dag.py` to `pennylane/ops/functions`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+
 <h3>Deprecations</h3>
 
 * In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
