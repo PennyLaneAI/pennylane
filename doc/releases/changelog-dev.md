@@ -126,12 +126,8 @@
   - QNodes returning `qml.classical_shadow` will return two entities: 
 
     + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
-    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer:
-  
-      > 0 for Pauli X
-      > 1 for Pauli Y
-      > 2 for Pauli Z
-
+    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
+    
     ```python
     dev = qml.device("default.qubit", wires=2, shots=3)
 
@@ -209,7 +205,7 @@
   - combining rotation angles of identical rotation gates
 
   Here is an example of `qml.simplify` in action with parameterized rotation gates. 
-  In this case, the angles of rotation are simplified to be modulo 4 :math:`\pi`.
+  In this case, the angles of rotation are simplified to be modulo :math:`4\pi`.
 
   ```pycon
   >>> op1 = qml.RX(30.0, wires=0)
@@ -410,11 +406,10 @@
 * The computation of the (sparse) matrix for the sum or product of operators is now more efficient.
   [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
 
-* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
+* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable` instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
-* Refactored common code from `Prod` and `Sum` classes into a `CompositeOp` abstract class that
-  comes with `__iter__`, `__len__` and `__getitem__` functions.
+* Added `len`, `iter` and `getitem` dunder methods to a new `CompositeOp` class to help iterate over `Sum` and `Prod` operands.
   [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
 
 <h3>Breaking changes</h3>
@@ -423,7 +418,7 @@
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
-* The `ControlledOperation` class is removed.  This was a developer-only class, so the change should not be evident to
+* The `ControlledOperation` class has been removed.  This was a developer-only class, so the change should not be evident to
   any users. It is replaced by `Controlled`.
   [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
@@ -438,7 +433,7 @@
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
-* `qml.grouping.utils.is_commuting` is removed, and its Pauli word logic is now part of `qml.is_commuting`.
+* `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
   [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
 
 <h3>Deprecations</h3>
@@ -455,7 +450,7 @@
   >>> v2.inverse = True
   ```
 
-  Instead use either:
+  Instead use:
 
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
@@ -468,7 +463,7 @@
   PauliX(wires=[0])**-1
   ```
 
-  `adjoint` takes the conjugate transpose of an operator, while `qml.pow(op, -1)` indicates matrix
+  `qml.adjoint` takes the conjugate transpose of an operator, while `qml.pow(op, -1)` indicates matrix
   inversion. For unitary operators, `adjoint` will be more efficient than `qml.pow(op, -1)`, even
   though they represent the same thing.
 
@@ -481,7 +476,7 @@
   [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
   
 * Corrected the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
-  to say that the diagonalizing gates implemented $U$, the unitary such that :math:`O = U \Sigma U^{\dagger}`, where :math:`O` is 
+  to say that the diagonalizing gates implemented :math:`U`, the unitary such that :math:`O = U \Sigma U^{\dagger}`, where :math:`O` is 
   the original observable and :math:`\Sigma` a diagonal matrix. However, the diagonalizing gates actually implement 
   :math:`U^{\dagger}`, since :math:`\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle`, 
   making :math:`U^{\dagger} | \psi \rangle` the actual state being measured in the Z-basis.
