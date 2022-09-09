@@ -207,24 +207,23 @@ class Sum(CompositeOp):
             tensor_like: matrix representation
         """
 
-        def matrix_gen(summands, wire_order=None):
+        def matrix_gen(summands):
             """Helper function to construct a generator of matrices"""
             for op in summands:
                 if isinstance(op, qml.Hamiltonian):
-                    yield qml.matrix(op, wire_order=wire_order)
+                    yield qml.matrix(op, wire_order=self.wires)
                 else:
-                    yield op.matrix(wire_order=wire_order)
+                    yield op.matrix(wire_order=self.wires)
 
-        if wire_order is None:
-            wire_order = self.wires
+        reduced_mat = _sum(matrix_gen(self.operands))
 
-        return _sum(matrix_gen(self.operands, wire_order))
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
-        wire_order = wire_order or self.wires
-        mats_gen = (op.sparse_matrix(wire_order=wire_order) for op in self)
-        return reduce(math.add, mats_gen)
+        mats_gen = (op.sparse_matrix(wire_order=self.wires) for op in self)
+        reduced_matrix = reduce(math.add, mats_gen)
+        return math.expand_matrix(reduced_matrix, self.wires, wire_order=wire_order)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!

@@ -206,21 +206,22 @@ class Prod(CompositeOp):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
         mats = (
-            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
+            qml.matrix(op, wire_order=self.wires)
             if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+            else op.matrix(wire_order=self.wires)
             for op in self
         )
 
-        return reduce(math.dot, mats)
+        reduced_mat = reduce(math.dot, mats)
+
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        wire_order = wire_order or self.wires
-        mats = (op.sparse_matrix(wire_order=wire_order) for op in self)
-        return reduce(math.dot, mats)
+        mats = (op.sparse_matrix(wire_order=self.wires) for op in self)
+        reduced_mat = reduce(math.dot, mats)
+        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property

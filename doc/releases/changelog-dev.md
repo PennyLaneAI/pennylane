@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* Added a new optimizer `qml.QNSPSAOptimizer` that implements the quantum natural simultaneous
+  perturbation stochastic approximation method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
+  executions per optimization step, in comparison to the number of 3 from `qml.SPSAOptimizer`.
+  The additional circuit executions are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence. 
+
+  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:   
+  ```python
+  max_iterations = 50
+  opt = qml.QNSPSAOptimizer() 
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
+
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
 
@@ -22,7 +41,6 @@
   >>> op.batch_size
   3
   ```
-
   An exception is `BasisEmbedding`, which is not broadcastable.
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -151,6 +169,29 @@
          [ 0.162,  0.477]])
   ```
 
+* Added the possibility to compute general Renyi entropies in the `ClassicalShadow` class.
+  [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
+
+  We can access the general Renyi entropy of a given subsystem by specifying its `wires`.
+
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> Renyi_entropy = shadow.entropy(wires=[0, 3], alpha=1.5)
+  ```
+
+  We can access the von Neumann entropy by setting `alpha=1`.
+
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  ```
+
+  Setting `alpha=2` corresponds to the special case of computing (the logarithm of) the purity of a reduced state.
+
+  ```pycon
+  >>> log_purity = shadow.entropy(wires=[1, 2, 6], alpha=2)
+  ```
+
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
   a larger hilbert space.
   [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
@@ -186,6 +227,14 @@
   ```
 
 <h3>Improvements</h3>
+
+* `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
+  broadcasted operations, or non-broadcasted operations after broadcasted ones.
+  [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
+
+  A common scenario in which this becomes relevant is the decomposition of broadcasted
+  operations: the decomposition in general will contain one or multiple broadcasted
+  operations as well as operations with no or fixed parameters that are not broadcasted.
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
@@ -330,6 +379,10 @@
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
@@ -410,6 +463,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola,
 Utkarsh Azad,
 Olivia Di Matteo,
+Yiheng Duan,
 Josh Izaac,
 Soran Jahangiri,
 Edward Jiang,
@@ -427,3 +481,4 @@ Jay Soni,
 Antal Száva
 Cody Wang,
 David Wierichs
+
