@@ -17,6 +17,7 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
+from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
@@ -349,7 +350,6 @@ class Prod(Operator):
         mats = (op.sparse_matrix() for op in self.factors)
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
-
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the product is represented in diagrams and drawings.
