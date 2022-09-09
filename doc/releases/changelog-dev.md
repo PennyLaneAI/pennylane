@@ -5,23 +5,23 @@
 <h3>New features since last release</h3>
 
 * Added a new optimizer `qml.QNSPSAOptimizer` that implements the quantum natural simultaneous
-  perturbation stochastic approximation method based on
-  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/).
-  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818)
+  perturbation stochastic approximation method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
 
-  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
   executions per optimization step, in comparison to the number of 3 from `qml.SPSAOptimizer`.
   The additional circuit executions are used to provide a stochastic estimation of a second-order
-  metric tensor, which often helps the optimizer to achieve faster convergence.
+  metric tensor, which often helps the optimizer to achieve faster convergence. 
 
-  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:
+  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:   
   ```python
   max_iterations = 50
-  opt = qml.QNSPSAOptimizer()
+  opt = qml.QNSPSAOptimizer() 
 
   for _ in range(max_iterations):
       params, cost = opt.step_and_cost(cost, params)
-  ```
+  ```  
 
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
@@ -309,7 +309,7 @@
 
 * Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
   will return a dictionary containing all possible outcomes. [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
-
+  
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2, shots=1000)
   >>>
@@ -322,7 +322,7 @@
   >>> print(result)
   {'00': 495, '01': 0, '10': 0,  '11': 505}
   ```
-
+  
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
 
