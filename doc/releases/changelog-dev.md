@@ -125,12 +125,12 @@
 
   - QNodes returning `qml.classical_shadow` will return two entities: 
 
-    + `bits`: `0` or `1` if the 1 or -1 eigenvalue is sampled, respectively
+    + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
     + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer:
   
-      = 0 for Pauli X
-      = 1 for Pauli Y
-      = 2 for Pauli Z
+      > 0 for Pauli X
+      > 1 for Pauli Y
+      > 2 for Pauli Z
 
     ```python
     dev = qml.device("default.qubit", wires=2, shots=3)
@@ -209,7 +209,7 @@
   - combining rotation angles of identical rotation gates
 
   Here is an example of `qml.simplify` in action with parameterized rotation gates. 
-  In this case, the angles of rotation are simplified to be modulo 4 $\pi$.
+  In this case, the angles of rotation are simplified to be modulo 4 :math:`\pi`.
 
   ```pycon
   >>> op1 = qml.RX(30.0, wires=0)
@@ -343,7 +343,7 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
 * `qml.ops.op_math.Controlled` now has basic decomposition functionality.
   [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
 
-* Automatic circuit cutting is improved by making better partition imbalance derivations.
+* Automatic circuit cutting has been improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
@@ -369,9 +369,6 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
   
 * Internal use of in-place inversion is eliminated in preparation for its deprecation.
   [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
-
-* `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
-  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
 
 * `Controlled` operators now work with `qml.is_commuting`.
   [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
@@ -400,13 +397,10 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
 * More correct and intuitive outputs for printing some operators have been added.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
-* Use `Operator.hash` instead of `Operator.matrix` to cache the eigendecomposition results in `Prod` and
-  `Sum` classes. When `Prod` and `Sum` operators have no overlapping wires, compute the eigenvalues
-  and the diagonalising gates using the factors/summands instead of using the full matrix.
+* Results for the matrix of the sum or product of operators are stored in a more efficient manner.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
-* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
-  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+* The computation of the (sparse) matrix for the sum or product of operators is now more efficient.
   [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
 
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
@@ -469,15 +463,15 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
   
 * Corrected the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
-  to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is 
-  the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement 
-  $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, 
-  making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
+  to say that the diagonalizing gates implemented $U$, the unitary such that :math:`O = U \Sigma U^{\dagger}`, where :math:`O` is 
+  the original observable and :math:`\Sigma` a diagonal matrix. However, the diagonalizing gates actually implement 
+  :math:`U^{\dagger}`, since :math:`\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle`, 
+  making :math:`U^{\dagger} | \psi \rangle` the actual state being measured in the Z-basis.
   [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
+* Fixed a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
   [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
 
