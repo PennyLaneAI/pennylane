@@ -170,9 +170,9 @@ def reduce_operators(
             mat2 = qml.math.expand_matrix(mat2, wires2, wire_order=prod_wires)
         return reduce_func(mat1, mat2), prod_wires
 
-    reduced_mat, prod_wires = reduce(expand_and_reduce, mats_and_wires_gen)
+    reduced_mat, final_wires = reduce(expand_and_reduce, mats_and_wires_gen)
 
-    return reduced_mat, prod_wires
+    return reduced_mat, final_wires
 
 
 def _local_sparse_swap_mat(i, n, format="csr"):
