@@ -462,6 +462,9 @@
   `~/math/matrix_manipulation.py`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
+* `qml.grouping.utils.is_commuting` is removed, and its Pauli word logic is now part of `qml.is_commuting`.
+  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
+
 <h3>Deprecations</h3>
 
 * In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
