@@ -338,6 +338,10 @@
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
@@ -360,6 +364,29 @@
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
+
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  ```pycon
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+  ```
+
+  Instead use:
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+  ```
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
