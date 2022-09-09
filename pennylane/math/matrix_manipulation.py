@@ -146,7 +146,7 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
 
 def reduce_matrices(
-    mats_and_wires_gen: Generator[tuple[np.ndarray, Wires], None, None], reduce_func: callable
+    mats_and_wires_gen: Generator[Tuple[np.ndarray, Wires], None, None], reduce_func: callable
 ) -> Tuple[np.ndarray, Wires]:
     """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
     generator, from left to right, so as to reduce the sequence to a tuple containing a single
