@@ -17,7 +17,6 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
-from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
@@ -206,22 +205,30 @@ class Prod(CompositeOp):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        mats = (
-            qml.matrix(op, wire_order=self.wires)
-            if isinstance(op, qml.Hamiltonian)
-            else op.matrix(wire_order=self.wires)
+        mats_and_wires_gen = (
+            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self
         )
 
-        reduced_mat = reduce(math.dot, mats)
+        reduced_mat, prod_wires = math.reduce_matrices(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+        )
 
-        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
+        wire_order = wire_order or self.wires
+
+        return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        mats = (op.sparse_matrix(wire_order=self.wires) for op in self)
-        reduced_mat = reduce(math.dot, mats)
-        return math.expand_matrix(reduced_mat, self.wires, wire_order=wire_order)
+        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+
+        reduced_mat, prod_wires = math.reduce_matrices(
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+        )
+
+        wire_order = wire_order or self.wires
+
+        return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property

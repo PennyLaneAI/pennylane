@@ -26,7 +26,7 @@ import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
 from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Sum, op_sum
-from pennylane.ops.op_math.sum import _sum, _sum_sort  # pylint: disable=protected-access
+from pennylane.ops.op_math.sum import _sum_sort  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -642,8 +642,8 @@ class TestSortWires:
             qml.PauliY(0),
             qml.CRX(1, [0, 2]),
             qml.CRY(1, [1, 2]),
-            qml.Toffoli([2, 3, 4]),
             qml.CNOT([2, 5]),
+            qml.Toffoli([2, 3, 4]),
             qml.PauliX(3),
             qml.PauliZ(3),
             qml.PauliX(5),
@@ -671,8 +671,8 @@ class TestSortWires:
             qml.PauliY(0),
             qml.CRX(1, ["test", 2]),
             qml.CRY(1, ["test", 2]),
-            qml.Toffoli([2, "three", 4]),
             qml.CNOT([2, 5]),
+            qml.Toffoli([2, "three", 4]),
             qml.PauliX("three"),
             qml.PauliZ("three"),
             qml.PauliX(5),
@@ -704,40 +704,6 @@ class TestWrapperFunc:
         assert sum_class_op.id == sum_func_op.id
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
-
-
-class TestPrivateSum:
-    """Test private _sum() method."""
-
-    def test_sum_private(self):
-        """Test the sum private method generates expected matrices."""
-        mats_gen = (qnp.eye(2) for _ in range(3))
-
-        sum_mat = _sum(mats_gen)
-        expected_sum_mat = 3 * qnp.eye(2)
-        assert qnp.allclose(sum_mat, expected_sum_mat)
-
-    def test_dtype(self):
-        """Test dtype keyword arg casts matrix correctly"""
-        dtype = "complex128"
-        mats_gen = (qnp.eye(2) for _ in range(3))
-
-        sum_mat = _sum(mats_gen, dtype=dtype)
-        expected_sum_mat = 3 * qnp.eye(2, dtype=dtype)
-
-        assert sum_mat.dtype == "complex128"
-        assert qnp.allclose(sum_mat, expected_sum_mat)
-
-    def test_cast_like(self):
-        """Test cast_like keyword arg casts matrix correctly"""
-        cast_like = qnp.array(2, dtype="complex128")
-        mats_gen = (qnp.eye(2) for _ in range(3))
-
-        sum_mat = _sum(mats_gen, cast_like=cast_like)
-        expected_sum_mat = 3 * qnp.eye(2, dtype="complex128")
-
-        assert sum_mat.dtype == "complex128"
-        assert qnp.allclose(sum_mat, expected_sum_mat)
 
 
 class TestIntegration:
