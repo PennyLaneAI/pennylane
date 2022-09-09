@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* Added a new optimizer `qml.QNSPSAOptimizer` that implements the quantum natural simultaneous
+  perturbation stochastic approximation method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
+  executions per optimization step, in comparison to the number of 3 from `qml.SPSAOptimizer`.
+  The additional circuit executions are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence. 
+
+  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:   
+  ```python
+  max_iterations = 50
+  opt = qml.QNSPSAOptimizer() 
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
+
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
 
@@ -22,7 +41,6 @@
   >>> op.batch_size
   3
   ```
-
   An exception is `BasisEmbedding`, which is not broadcastable.
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -59,6 +77,7 @@
 **Classical shadows**
 
 * Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
   The measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
@@ -100,6 +119,7 @@
   ```
 
 * Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
 
   ```python
   H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
@@ -115,6 +135,61 @@
   x = np.array(0.5, requires_grad=True)
 
   print(qnode(x, H), qml.grad(qnode)(x, H))
+  ```
+
+* Added the `qml.shadows.shadow_expval` and `qml.shadows.shadow_state` QNode transforms for
+  computing expectation values and states from a classical shadow measurement. These transforms
+  are fully differentiable.
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
+
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=1000)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RY(x, wires=0)
+      return qml.classical_shadow(wires=[0])
+  ```
+
+  ```pycon
+  >>> x = np.array(1.2)
+  >>> expval_circuit = qml.shadows.shadow_expval(qml.PauliZ(0))(circuit)
+  >>> expval_circuit(x)
+  tensor(0.282, requires_grad=True)
+  >>> qml.grad(expval_circuit)(x)
+  -1.0439999999999996
+  ```
+  ```pycon
+  >>> state_circuit = qml.shadows.shadow_state(wires=[0], diffable=True)(circuit)
+  >>> state_circuit(x)
+  tensor([[0.7055+0.j    , 0.447 +0.0075j],
+          [0.447 -0.0075j, 0.2945+0.j    ]], requires_grad=True)
+  >>> qml.jacobian(lambda x: np.real(state_circuit(x)))(x)
+  array([[-0.477,  0.162],
+         [ 0.162,  0.477]])
+  ```
+
+* Added the possibility to compute general Renyi entropies in the `ClassicalShadow` class.
+  [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
+
+  We can access the general Renyi entropy of a given subsystem by specifying its `wires`.
+
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> Renyi_entropy = shadow.entropy(wires=[0, 3], alpha=1.5)
+  ```
+
+  We can access the von Neumann entropy by setting `alpha=1`.
+
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  ```
+
+  Setting `alpha=2` corresponds to the special case of computing (the logarithm of) the purity of a reduced state.
+
+  ```pycon
+  >>> log_purity = shadow.entropy(wires=[1, 2, 6], alpha=2)
   ```
 
 * `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
@@ -152,6 +227,14 @@
   ```
 
 <h3>Improvements</h3>
+
+* `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
+  broadcasted operations, or non-broadcasted operations after broadcasted ones.
+  [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
+
+  A common scenario in which this becomes relevant is the decomposition of broadcasted
+  operations: the decomposition in general will contain one or multiple broadcasted
+  operations as well as operations with no or fixed parameters that are not broadcasted.
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
   improve both readability and performance. The `Wires.all_wires` method has been rewritten
@@ -268,7 +351,7 @@
 
 * `Prod` and `Sum` class now support the `sparse_matrix()` method.
   [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
-  
+
   ```pycon
   >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
   >>> op = qml.op_sum(xy, qml.Identity(0))
@@ -296,6 +379,13 @@
   and the diagonalising gates using the factors/summands instead of using the full matrix.
   [(#3022)](https://github.com/PennyLaneAI/pennylane/pull/3022)
 
+* When computing the (sparse) matrix for `Prod` and `Sum` classes, move the matrix expansion using
+  the `wire_order` to the end to avoid computing unnecessary sums and products of huge matrices.
+  [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
+
+* `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable`, instead of raising an error.
+  [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
+
 <h3>Breaking changes</h3>
 
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
@@ -315,6 +405,29 @@
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 <h3>Deprecations</h3>
+
+* In-place inversion is now deprecated. This includes `op.inv()` and `op.inverse=value`. Please
+  use `qml.adjoint` instead. Support for these methods will remain till v0.28.
+  [(#2988)](https://github.com/PennyLaneAI/pennylane/pull/2988)
+
+  Don't use:
+
+  ```pycon
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+  ```
+
+  Instead use:
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  >>> qml.PauliX(0) ** -1
+  ```
+
+  `adjoint` takes the conjugate transpose of an operator, while `op ** -1` indicates matrix
+  inversion. For unitary operators, `adjoint` will be more efficient than `op ** -1`, even
+  though they represent the same thing.
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
@@ -346,6 +459,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola,
 Utkarsh Azad,
 Olivia Di Matteo,
+Yiheng Duan,
 Josh Izaac,
 Soran Jahangiri,
 Edward Jiang,
@@ -363,3 +477,4 @@ Jay Soni,
 Antal Száva
 Cody Wang,
 David Wierichs
+
