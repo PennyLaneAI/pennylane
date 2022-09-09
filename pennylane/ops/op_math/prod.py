@@ -313,7 +313,6 @@ class Prod(Operator):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self.factors

@@ -287,7 +287,6 @@ class Sum(Operator):
         Returns:
             tensor_like: matrix representation
         """
-
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self.summands
