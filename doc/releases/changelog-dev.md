@@ -322,8 +322,8 @@
          [0., 0., 1., 0.]])
   ```
 
-* `qml.matrix` now can also compute the matrix of tapes/QNodes that contain multiple
-  broadcasted operations, or non-broadcasted operations after broadcasted ones.
+* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple
+broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
 
   A common scenario in which this becomes relevant is the decomposition of broadcasted
@@ -334,8 +334,7 @@
   [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
-  improve both readability and performance. The `Wires.all_wires` method has been rewritten
-  to improve performance.
+  improve both readability and performance. 
   [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
 
 * The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
@@ -351,7 +350,7 @@
 * Added `sparse_matrix()` support for single qubit observables.
   [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
-* Per default, counts returns only the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
+* By default, `qml.counts` only returns the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
   will return a dictionary containing all possible outcomes. 
   [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
   
@@ -466,10 +465,10 @@
 
 <h3>Documentation</h3>
 
-* Fixed the Fourier transform docs to use `circuit_spectrum`.
+* Updated the Fourier transform docs to use `circuit_spectrum` instead of `spectrum`, which has been deprecated.
   [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
   
-* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
+* Corrected the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
   to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is 
   the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement 
   $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, 
