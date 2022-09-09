@@ -171,7 +171,7 @@ class Controlled(SymbolicOp):
                 )
                 control_values = [(x == "1") for x in control_values]
 
-            control_values = [control_values] if isinstance(control_values, int) else control_values
+            control_values = [bool(control_values)] if isinstance(control_values, int) else [bool(control_value) for control_value in control_values]
 
             if len(control_values) != len(control_wires):
                 raise ValueError("control_values should be the same length as control_wires")
