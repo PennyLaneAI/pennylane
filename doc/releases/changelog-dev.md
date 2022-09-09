@@ -53,6 +53,7 @@
   - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
   which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
 
+
   - Custom unitary operations via `qml.QutritUnitary`.
 
   - `qml.state` and `qml.probs` measurements.
@@ -103,6 +104,9 @@
     ```
   
     We will continue to add more and more support for qutrits in future releases!
+    
+* Added the `qml.TAdd` and `qml.TSWAP` qutrit operations which are the ternary analogs of the CNOT and SWAP operations respectively.
+  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
 
 <h4>Classical shadows 👤</h4>
 
