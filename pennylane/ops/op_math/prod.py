@@ -246,7 +246,6 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
 
-        return "@".join(_label(f, decimals, None, cache) for f in self.factors)
 
     # pylint: disable=protected-access
     @property
