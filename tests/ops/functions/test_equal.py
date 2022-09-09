@@ -930,3 +930,95 @@ class TestEqual:
         op1 = qml.PauliX(0)
         op2 = qml.PauliX(0).inv()
         assert not qml.equal(op1, op2)
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_adjoint_op(self, ops):
+        """Test different Adjoint operators return False"""
+        assert not qml.equal(qml.adjoint(ops[0]), qml.adjoint(ops[1]))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_same_adjoint_op(self, op1):
+        """Test same Adjoint operators return True"""
+        assert qml.equal(qml.adjoint(op1), qml.adjoint(op1))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_controlled_op(self, ops):
+        """Test different Controlled operators return False"""
+        assert not qml.equal(
+            qml.ops.Controlled(ops[0], [8, 9, 10]), qml.ops.Controlled(ops[1], [8, 9, 10])
+        )
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_same_controlled_op(self, op1):
+        """Test same Controlled operators return True"""
+        assert qml.equal(qml.ops.Controlled(op1, [8, 9, 10]), qml.ops.Controlled(op1, [8, 9, 10]))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_same_controlled_op_different_wires(self, op1):
+        """Test same Controlled operators with different wires return False"""
+        assert not qml.equal(qml.ops.Controlled(op1, [8, 9, 10]), qml.ops.Controlled(op1, [9, 10]))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_prod_op(self, ops):
+        """Test different Prod operators return False"""
+        assert not qml.equal(qml.prod(qml.adjoint(ops[0]), ops[1]), qml.prod(ops[1], ops[0]))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_same_prod_op(self, ops):
+        """Test same Prod operators return True"""
+        assert qml.equal(qml.prod(ops[0], ops[1]), qml.prod(ops[0], ops[1]))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_sum_op(self, ops):
+        """Test different Sum operators return False"""
+        assert not qml.equal(qml.op_sum(qml.adjoint(ops[0]), ops[1]), qml.op_sum(ops[1], ops[0]))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_same_sum_op(self, ops):
+        """Test same Sum operators return True"""
+        assert qml.equal(qml.op_sum(ops[0], ops[1]), qml.op_sum(ops[1], ops[0]))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_exp_op(self, ops):
+        """Test different Exp operators return False"""
+        assert not qml.equal(qml.exp(ops[0], 3), qml.exp(ops[1], 3))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_same_exp_op(self, op1):
+        """Test same Exp operators return True"""
+        assert qml.equal(qml.exp(op1, 3), qml.exp(op1, 3))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_exp_op_same_base_different_coeff(self, op1):
+        """Test Exp operators with same base but different coeffs return False"""
+        assert qml.equal(qml.exp(op1, 3), qml.exp(op1, 2))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_pow_op(self, ops):
+        """Test different Pow operators return False"""
+        assert not qml.equal(qml.ops.Pow(ops[0], 3), qml.ops.Pow(ops[1], 3))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_same_pow_op(self, op1):
+        """Test same Pow operators return True"""
+        assert qml.equal(qml.ops.Pow(op1, 3), qml.ops.Pow(op1, 3))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_pow_op_same_base_different_coeff(self, op1):
+        """Test Pow operators with same base but different coeffs return False"""
+        assert not qml.equal(qml.ops.Pow(op1, 3), qml.ops.Pow(op1, 2))
+
+    @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
+    def test_diff_sprod_op(self, ops):
+        """Test different SProd operators return False"""
+        assert not qml.equal(qml.s_prod(3, ops[0]), qml.s_prod(3, ops[1]))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_same_sprod_op(self, op1):
+        """Test same SProd operators return True"""
+        assert qml.equal(qml.s_prod(3, op1), qml.s_prod(3, op1))
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    def test_sprod_op_same_base_different_coeff(self, op1):
+        """Test SProd operators with same base but different coeffs return False"""
+        assert qml.equal(qml.s_prod(3, op1), qml.s_prod(2, op1))
