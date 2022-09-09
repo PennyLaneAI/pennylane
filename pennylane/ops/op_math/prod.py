@@ -21,7 +21,6 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
-import numpy as np
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
