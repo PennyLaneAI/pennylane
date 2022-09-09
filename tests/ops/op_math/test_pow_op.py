@@ -328,7 +328,7 @@ class TestSimplify:
 
     def test_simplify_with_pow_not_defined(self):
         """Test the simplify method with an operator that has not defined the op.pow method."""
-        op = Pow(qml.U2(1, 1, 0), z=3)
+        op = Pow(qml.U2(1.0, 1.0, 0), z=3)
         simplified_op = op.simplify()
         assert qml.equal(op, simplified_op)
 

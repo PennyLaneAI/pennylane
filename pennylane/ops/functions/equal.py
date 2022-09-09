@@ -17,6 +17,7 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.ops.op_math import Adjoint, Controlled, Exp, Pow, Prod, SProd, Sum
 
 
 def equal(
@@ -72,6 +73,8 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
+    if isinstance(op1, (Adjoint, Controlled, Exp, Pow, Prod, SProd, Sum)):
+        return op1.hash == op2.hash
     if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
         return False
     if not all(
