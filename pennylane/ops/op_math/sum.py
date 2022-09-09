@@ -166,7 +166,7 @@ class Sum(CompositeOp):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return [1.0] * len(self), list(self.operands)
+        return [1.0] * len(self), list(self)
 
     def eigvals(self):
         r"""Return the eigenvalues of the specified operator.

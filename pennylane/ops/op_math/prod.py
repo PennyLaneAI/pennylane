@@ -184,7 +184,7 @@ class Prod(CompositeOp):
         """
         if qml.queuing.QueuingContext.recording():
             return [qml.apply(op) for op in self[::-1]]
-        return list(self.operands[::-1])
+        return list(self[::-1])
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
