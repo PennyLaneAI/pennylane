@@ -222,8 +222,7 @@ class Prod(CompositeOp):
 
             return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
         mats_gen = (
-            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix()
-            for op in self
+            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
         )
         full_mat = reduce(math.kron, mats_gen)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
@@ -243,8 +242,6 @@ class Prod(CompositeOp):
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
-
-
 
     # pylint: disable=protected-access
     @property
