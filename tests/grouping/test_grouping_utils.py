@@ -28,7 +28,6 @@ from pennylane.grouping.utils import (
     pauli_word_to_string,
     string_to_pauli_word,
     pauli_word_to_matrix,
-    is_commuting,
     is_qwc,
     are_pauli_words_qwc,
     observables_to_binary_matrix,
@@ -477,38 +476,3 @@ class TestGroupingUtils:
         """Ensure invalid inputs are handled properly when converting Pauli words to matrices."""
         with pytest.raises(TypeError):
             pauli_word_to_matrix(non_pauli_word)
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,commute_status",
-        [
-            (Identity(0), PauliZ(0), {0: 0}, True),
-            (PauliY(0), PauliZ(0), {0: 0}, False),
-            (PauliX(0), PauliX(1), {0: 0, 1: 1}, True),
-            (PauliY("x"), PauliX("y"), None, True),
-            (
-                PauliZ("a") @ PauliY("b") @ PauliZ("d"),
-                PauliX("a") @ PauliZ("c") @ PauliY("d"),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
-                True,
-            ),
-            (
-                PauliX("a") @ PauliY("b") @ PauliZ("d"),
-                PauliX("a") @ PauliZ("c") @ PauliY("d"),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
-                False,
-            ),
-        ],
-    )
-    def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
-        """Test that (non)-commuting Pauli words are correctly identified."""
-        do_they_commute = is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
-        assert do_they_commute == commute_status
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2",
-        [(non_pauli_words[0], PauliX(0) @ PauliY(2)), (PauliX(0) @ PauliY(2), non_pauli_words[0])],
-    )
-    def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
-        """Ensure invalid inputs are handled properly when determining commutativity."""
-        with pytest.raises(TypeError):
-            is_commuting(pauli_word_1, pauli_word_2)
