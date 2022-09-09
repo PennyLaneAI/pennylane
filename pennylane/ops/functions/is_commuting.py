@@ -39,9 +39,6 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
     Returns:
         bool: returns True if the input Pauli commute, False otherwise
 
-    Raises:
-        TypeError: if either of the Pauli words is not valid.
-
     **Example**
 
     >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
