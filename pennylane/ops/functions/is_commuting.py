@@ -40,8 +40,6 @@ def _get_target_name(op):
         return _control_base_map[op.name]
     if isinstance(op, qml.ops.op_math.Controlled):  # pylint: disable=no-member
         return op.base.name
-    if op.name == "ControlledOperation":
-        return op.control_base
     return op.name
 
 
@@ -302,12 +300,6 @@ def is_commuting(operation1, operation2):
         operation2, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
-
-    if operation1.name == "ControlledOperation" and operation1.control_base == "MultipleTargets":
-        raise qml.QuantumFunctionError(f"{operation1.control_base} controlled is not supported.")
-
-    if operation2.name == "ControlledOperation" and operation2.control_base == "MultipleTargets":
-        raise qml.QuantumFunctionError(f"{operation2.control_base} controlled is not supported.")
 
     # Case 1 operations are disjoints
     if not intersection(operation1.wires, operation2.wires):

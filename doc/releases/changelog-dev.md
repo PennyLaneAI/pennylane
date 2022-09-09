@@ -322,8 +322,37 @@
          [0., 0., 1., 0.]])
   ```
 
-* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple
-broadcasted operations or non-broadcasted operations after broadcasted ones.
+* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the
+  Operator before exponentiation. Internally, this constructor functions creates the new
+  class `qml.ops.op_math.Exp`.
+  [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
+
+  The function can be used to create either observables or generic rotation gates:
+
+  ```pycon
+  >>> obs = qml.exp(qml.PauliX(0), 3)
+  >>> qml.is_hermitian(obs)
+  True
+  >>> x = 1.234
+  >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
+  >>> isingxy = qml.exp(t, 0.25j * x)
+  >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
+  True
+  >>> qml.is_unitary(isingxy)
+  True
+  ```
+
+<h3>Improvements</h3>
+
+* `qml.ctrl` now uses `Controlled` instead of `ControlledOperation`.  The new `Controlled` class
+  wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
+
+* The new `qml.pow` provides a top-level constructor for raising operators to powers.
+  [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
+
+* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple 
+  broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
 
   A common scenario in which this becomes relevant is the decomposition of broadcasted
@@ -417,6 +446,10 @@ broadcasted operations or non-broadcasted operations after broadcasted ones.
 * Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+* The `ControlledOperation` class is removed.  This was a developer-only class, so the change should not be evident to
+  any users. It is replaced by `Controlled`.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
 * The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
   with an additional keyword argument `circuit`, which represents the quantum tape

@@ -170,28 +170,11 @@ class TestCommutingFunction:
     def test_cz_mcz(self, wires, res):
         """Commutation between CZ and MCZ."""
 
-        def z():
-            qml.PauliZ(wires=wires[1][2])
+        op1 = qml.ctrl(qml.PauliZ(wires=wires[1][-1]), control=wires[1][:-1])
+        op2 = qml.CZ(wires=wires[0])
 
-        commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.ctrl(z, control=wires[1][:-1])())
-        assert commutation == res
-
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0, 1], [0, 1, 2]], True),
-            ([[0, 2], [0, 1, 2]], True),
-            ([[0, 2], [0, 2, 1]], True),
-        ],
-    )
-    def test_mcz_cz(self, wires, res):
-        """Commutation between MCZ and CZ"""
-
-        def z():
-            qml.PauliZ(wires=wires[1][2])
-
-        commutation = qml.is_commuting(qml.ctrl(z, control=wires[1][:-1])(), qml.CZ(wires=wires[0]))
-        assert commutation == res
+        assert qml.is_commuting(op1, op2) == res
+        assert qml.is_commuting(op2, op1) == res
 
     @pytest.mark.parametrize(
         "wires,res",
@@ -204,32 +187,11 @@ class TestCommutingFunction:
     def test_rx_mcz(self, wires, res):
         """Commutation between RX and MCZ"""
 
-        def z():
-            qml.PauliZ(wires=wires[1][2])
+        op1 = qml.RX(0.1, wires=wires[0][0])
+        op2 = qml.ctrl(qml.PauliZ(wires=wires[1][2]), control=wires[1][:-1])
 
-        commutation = qml.is_commuting(
-            qml.RX(0.1, wires=wires[0][0]), qml.ctrl(z, control=wires[1][:-1])()
-        )
-        assert commutation == res
-
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[0], [0, 1, 2]], True),
-            ([[1], [0, 1, 2]], True),
-            ([[2], [0, 1, 2]], True),
-        ],
-    )
-    def test_mcz_rx(self, wires, res):
-        """Commutation between MCZ and RZ"""
-
-        def z():
-            qml.PauliZ(wires=wires[1][2])
-
-        commutation = qml.is_commuting(
-            qml.ctrl(z, control=wires[1][:-1])(), qml.RZ(0.1, wires=wires[0][0])
-        )
-        assert commutation == res
+        assert qml.is_commuting(op1, op2) == res
+        assert qml.is_commuting(op2, op1) == res
 
     @pytest.mark.parametrize(
         "wires,res",
@@ -242,17 +204,11 @@ class TestCommutingFunction:
     def test_mcz_mcz(self, wires, res):
         """Commutation between MCZ and MCZ."""
 
-        def z_1():
-            qml.PauliZ(wires=wires[0][2])
+        op1 = qml.ctrl(qml.PauliZ(wires=wires[0][2]), control=wires[0][:-1])
+        op2 = qml.ctrl(qml.PauliZ(wires=wires[1][2]), control=wires[1][:-1])
 
-        def z_2():
-            qml.PauliZ(wires=wires[1][2])
-
-        commutation = qml.is_commuting(
-            qml.ctrl(z_1, control=wires[0][:-1])(),
-            qml.ctrl(z_2, control=wires[1][:-1])(),
-        )
-        assert commutation == res
+        assert qml.is_commuting(op1, op2) == res
+        assert qml.is_commuting(op2, op1) == res
 
     @pytest.mark.parametrize(
         "wires,res",
@@ -267,13 +223,10 @@ class TestCommutingFunction:
     def test_cnot_mcz(self, wires, res):
         """Commutation between CNOT and MCZ."""
 
-        def z():
-            qml.PauliZ(wires=wires[1][2])
-
-        commutation = qml.is_commuting(
-            qml.CNOT(wires=wires[0]), qml.ctrl(z, control=wires[1][:-1])()
-        )
-        assert commutation == res
+        op1 = qml.CNOT(wires=wires[0])
+        op2 = qml.ctrl(qml.PauliZ(wires=wires[1][2]), control=wires[1][:-1])
+        assert qml.is_commuting(op1, op2) == res
+        assert qml.is_commuting(op2, op1) == res
 
     @pytest.mark.parametrize(
         "wires,res",
@@ -285,21 +238,10 @@ class TestCommutingFunction:
     )
     def test_x_cnot(self, wires, res):
         """Commutation between PauliX and CNOT."""
-        commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CNOT(wires=wires[1]))
-        assert commutation == res
-
-    @pytest.mark.parametrize(
-        "wires,res",
-        [
-            ([[1], [0, 1]], True),
-            ([[0], [0, 1]], False),
-            ([[2], [0, 1]], True),
-        ],
-    )
-    def test_cnot_x(self, wires, res):
-        """Commutation between CNOT and PauliX."""
-        commutation = qml.is_commuting(qml.CNOT(wires=wires[1]), qml.PauliX(wires=wires[0]))
-        assert commutation == res
+        op1 = qml.PauliX(wires=wires[0])
+        op2 = qml.CNOT(wires=wires[1])
+        assert qml.is_commuting(op1, op2) == res
+        assert qml.is_commuting(op2, op1) == res
 
     @pytest.mark.parametrize(
         "wires,res",
@@ -646,10 +588,10 @@ class TestCommutingFunction:
     )
     def test_crot_hadamard_simplified(self, wires, res):
         """Commutation between CRot(np.pi, np.pi / 2, 0) and Hadamard."""
-        commutation = qml.is_commuting(
-            qml.CRot(np.pi, np.pi / 2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1])
-        )
-        assert commutation == res
+        op1 = qml.CRot(np.pi, np.pi / 2, 0, wires=wires[0])
+        op2 = qml.Hadamard(wires=wires[1])
+        assert qml.is_commuting(op1, op2) == res
+        assert qml.is_commuting(op2, op1) == res
 
     @pytest.mark.parametrize(
         "wires,res",
@@ -849,30 +791,6 @@ class TestCommutingFunction:
 
         with pytest.raises(qml.QuantumFunctionError, match="Operation PauliRot not supported."):
             qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
-
-    def test_operation_1_multiple_targets(self):
-        """Test that giving a multiple target controlled operation raises an error."""
-
-        def op():
-            qml.PauliZ(wires=2)
-            qml.PauliY(wires=2)
-
-        with pytest.raises(
-            qml.QuantumFunctionError, match="MultipleTargets controlled is not supported."
-        ):
-            qml.is_commuting(qml.ctrl(op, control=[0, 1])(), qml.PauliX(wires=0))
-
-    def test_operation_2_multiple_targets(self):
-        """Test that giving a multiple target controlled operation raises an error."""
-
-        def op():
-            qml.PauliZ(wires=2)
-            qml.PauliY(wires=2)
-
-        with pytest.raises(
-            qml.QuantumFunctionError, match="MultipleTargets controlled is not supported."
-        ):
-            qml.is_commuting(qml.PauliX(wires=0), qml.ctrl(op, control=[0, 1])())
 
     def test_non_commuting(self):
         """Test the function with an operator from the non-commuting list."""
