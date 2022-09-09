@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* Added a new optimizer `qml.QNSPSAOptimizer` that implements the quantum natural simultaneous
+  perturbation stochastic approximation method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
+  executions per optimization step, in comparison to the number of 3 from `qml.SPSAOptimizer`.
+  The additional circuit executions are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence. 
+
+  `qml.QNSPSAOptimizer` provides a similar interface as the other optimizers:   
+  ```python
+  max_iterations = 50
+  opt = qml.QNSPSAOptimizer() 
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
+
 * Embedding templates now support parameter broadcasting.
   [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
 
@@ -22,7 +41,6 @@
   >>> op.batch_size
   3
   ```
-
   An exception is `BasisEmbedding`, which is not broadcastable.
 
 * Added `QutritDevice` as an abstract base class for qutrit devices.
@@ -383,6 +401,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola,
 Utkarsh Azad,
 Olivia Di Matteo,
+Yiheng Duan,
 Josh Izaac,
 Soran Jahangiri,
 Edward Jiang,
@@ -400,3 +419,4 @@ Jay Soni,
 Antal Száva
 Cody Wang,
 David Wierichs
+
