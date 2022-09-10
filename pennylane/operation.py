@@ -1187,7 +1187,7 @@ class Operator(abc.ABC):
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
-            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
+            return qml.pow(self, z=other)
         raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
@@ -1389,6 +1389,11 @@ class Operation(Operator):
 
     @inverse.setter
     def inverse(self, boolean):
+        warnings.warn(
+            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
+            " qml.pow instead.",
+            UserWarning,
+        )
         self._inverse = boolean
 
     def inv(self):

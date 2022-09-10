@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math.controlled_class import ControlledOp
-from pennylane.ops.op_math.pow_class import Pow, PowOperation
+from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
 class TempOperator(qml.operation.Operator):
@@ -37,7 +37,59 @@ def pow_using_dunder_method(base, z, do_queue=True, id=None):
     return base**z
 
 
-@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
+class TestConstructor:
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Pow`, even if a simplification exists."""
+
+        op = qml.pow(qml.PauliX(0), 2)
+        assert isinstance(op, Pow)
+        assert op.z == 2
+        assert qml.equal(op.base, qml.PauliX(0))
+
+    def test_nonlazy_no_simplification(self):
+        """Test that if lazy=False, but no decomposition exists, then the operator is simply
+        wrapped in a Pow class."""
+
+        op = qml.pow(TempOperator(0), 2, lazy=False)
+        assert isinstance(op, Pow)
+        assert isinstance(op.base, TempOperator)
+
+    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
+    def test_nonlazy_identity_simplification(self, op):
+        """Test that nonlazy pow returns a single identity if the power decomposes
+        to the identity."""
+
+        op = qml.pow(op, 2, lazy=False)
+        assert qml.equal(op, qml.Identity(0))
+
+    def test_simplification_multiple_ops(self):
+        """Test that when the simplification method returns a list of multiple operators,
+        pow returns a list of multiple operators."""
+
+        class Temp(qml.operation.Operator):
+            num_wires = 1
+
+            def pow(self, z):
+                return [qml.S(0), qml.T(0)]
+
+        new_op = qml.pow(Temp(0), 2, lazy=False)
+        assert isinstance(new_op, qml.ops.Prod)
+        assert qml.equal(new_op.operands[0], qml.S(0))
+        assert qml.equal(new_op.operands[1], qml.T(0))
+
+    def test_nonlazy_simplification_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            original_op = qml.PauliX(0)
+            new_op = qml.pow(original_op, 0.5, lazy=False)
+
+        assert q._queue[original_op]["owner"] is new_op
+        assert q._queue[new_op]["owns"] is original_op
+
+
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInheritanceMixins:
     """Test the inheritance structure and mixin addition through dynamic __new__ method."""
 
@@ -102,7 +154,7 @@ class TestInheritanceMixins:
         assert "grad_recipe" not in dir(ob)
 
 
-@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
@@ -191,7 +243,7 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
-@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestProperties:
     """Test Pow properties."""
 
@@ -694,7 +746,8 @@ class TestInverse:
     def test_base_already_inverted(self):
         """Test that if the base is already inverted, then initialization un-inverts
         it and applies a negative sign to the exponent."""
-        base = qml.S(0).inv()
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
+            base = qml.S(0).inv()
         op = Pow(base, 2)
 
         assert base.inverse is False
@@ -710,7 +763,8 @@ class TestInverse:
         base = qml.S(0)
         op = Pow(base, 2)
 
-        op.inv()
+        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
+            op.inv()
 
         assert base.inverse is False
 
@@ -730,7 +784,7 @@ class TestInverse:
             op.inverse = True
 
 
-@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method])
+@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestOperationProperties:
     """Test Operation specific properties."""
 

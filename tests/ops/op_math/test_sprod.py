@@ -540,7 +540,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert isinstance(s2, SProd)
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -791,7 +791,7 @@ class TestArithmetic:
         """Test the pow method for SProd Operators."""
 
         sprod_op = SProd(3, qml.RX(1.23, wires=0))
-        final_op = SProd(scalar=3**2, base=qml.ops.Pow(base=qml.RX(1.23, wires=0), z=2))
+        final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
         pow_op = sprod_op.pow(z=2)[0]
 
         # TODO: Use qml.equal when supported for nested operators

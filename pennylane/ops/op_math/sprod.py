@@ -19,7 +19,7 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops.op_math.pow_class import Pow
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
@@ -249,10 +249,7 @@ class SProd(SymbolicOp):
         new_base = self.base.simplify()
         if isinstance(new_base, Sum):
             return Sum(
-                *(
-                    SProd(scalar=self.scalar, base=summand).simplify()
-                    for summand in new_base.summands
-                )
+                *(SProd(scalar=self.scalar, base=summand).simplify() for summand in new_base)
             )
         if isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()
