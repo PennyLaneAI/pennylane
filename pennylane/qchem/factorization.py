@@ -292,17 +292,23 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         ops_l_ = 0.0
         for i in range(len(coeff) // 2):
             for j in range(len(coeff) // 2):
-                cc = coeff[i + j]
+                c = coeff[i + j]
                 if i == j:
-                    ops_l_ += cc * (
-                        qml.Identity(i) - qml.PauliZ(i) - qml.PauliZ(i) + qml.Identity(i)
+                    ops_l_ += (
+                        c
+                        * 0.25
+                        * (qml.Identity(i) - qml.PauliZ(i) - qml.PauliZ(i) + qml.Identity(i))
                     )
                 else:
-                    ops_l_ += cc * (
-                        qml.Identity(i)
-                        - qml.PauliZ(i)
-                        - qml.PauliZ(j)
-                        + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
+                    ops_l_ += (
+                        c
+                        * 0.25
+                        * (
+                            qml.Identity(i)
+                            - qml.PauliZ(i)
+                            - qml.PauliZ(j)
+                            + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
+                        )
                     )
         ops_l.append(ops_l_.tolist())
 
