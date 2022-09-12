@@ -34,7 +34,7 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .composite import CompositeOp
 
 MAX_NUM_WIRES_KRON_PRODUCT = 11
-"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.prod`` for
+"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
 
 
