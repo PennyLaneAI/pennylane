@@ -10,6 +10,8 @@
 
 <h3>Deprecations</h3>
 
+<h3>Documentation</h3>
+
 <h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
