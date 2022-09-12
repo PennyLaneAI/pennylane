@@ -342,14 +342,18 @@ class TestMatrix:
         wire_order1, wire_order2 = ([0, 1], [1, 0])
         sum_op = qml.op_sum(qml.PauliX(wires=0), qml.RZ(1.23, wires=1))
 
-        mat1 = sum_op.matrix(wire_order=wire_order1, cache=True)
-        mat2 = sum_op.matrix(wire_order=wire_order2, cache=True)
+        mat1 = sum_op.matrix(wire_order=wire_order1, cache=True)  # store into cache
+        mat2 = sum_op.matrix(wire_order=wire_order2, cache=True)  # use from cache and re-order wires
+        mat3 = sum_op.matrix(wire_order=wire_order1, cache=True)  # use out-right from cache
 
         mat_hash1 = hash(Wires(wire_order1))
         mat_hash2 = hash(Wires(wire_order2))
 
         assert (sum_op._mat_cache[mat_hash1] == mat1).all()
         assert (sum_op._mat_cache[mat_hash2] == mat2).all()
+        assert (sum_op._mat_cache[mat_hash1] == mat3).all()
+
+
 
     def test_sum_hamiltonian(self):
         """Test that a hamiltonian object can be summed."""
