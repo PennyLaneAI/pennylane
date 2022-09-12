@@ -172,7 +172,11 @@ def test_empty_error(two_tensor):
 @pytest.mark.parametrize(
     ("one_matrix", "two_tensor", "tol_factor", "coeffs_ref"),
     [
-        (
+        (  # one_matrix and two_tensor are obtained with:
+            # symbols  = ['H', 'H']
+            # geometry = np.array([[0.0, 0.0, 0.0], [1.39839789, 0.0, 0.0]], requires_grad = False)
+            # mol = qml.qchem.Molecule(symbols, geometry)
+            # core, one_matrix, two_tensor = qml.qchem.electron_integrals(mol)()
             np.array([[-1.25330961e00, -2.07722728e-13], [-2.07611706e-13, -4.75069041e-01]]),
             np.array(  # two-electron integral tensor in physicist notation
                 [

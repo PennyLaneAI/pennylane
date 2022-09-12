@@ -185,7 +185,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
     Returns:
         tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing the
         grouped coefficients and grouped opservables of a Hamiltonian and the basis rotation
-        unitaries obtained with the basis rotation grouping method
+        transformation matrices obtained with the basis rotation grouping method
 
     **Example**
 
@@ -249,7 +249,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         .. math::
 
             H = U_0 \left ( \sum_p d_p n_p \right ) U_0^{\dagger} + \sum_r^R U_r \left ( \sum_{pq}
-            d_{pq}^{(r)} n_p n_q \right ) U_r^{\dagger}
+            d_{pq}^{(r)} n_p n_q \right ) U_r^{\dagger},
 
         where the coefficients :math:`d` are obtained by diagonalizing the :math:`T` and
         :math:`L^{(r)}` matrices. The number operators :math:`n_p = a_p^{\dagger} a_p` can be
@@ -266,7 +266,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
            H = U_0 \left ( \sum_p O_p^{(0)} \right ) U_0^{\dagger} + \sum_r^R U_r \left ( \sum_{q} O_q^{(r)} \right ) U_r^{\dagger},
 
-        where :math:`O = \sum_i c_i P_i` is a linear combination of Pauli words :math:`P_` that are
+        where :math:`O = \sum_i c_i P_i` is a linear combination of Pauli words :math:`P_i` that are
         a tensor product of Pauli :math:`Z` and Identity operators. This allows all the Pauli words
         in each of the :math:`O` terms to be measured simultaneously. This function returns the
         coefficients and the Pauli words grouped for each of the :math:`O` terms as well as the
@@ -295,7 +295,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
                 cc = coeff[i + j]
                 if i == j:
                     ops_l_ += cc * (
-                        qml.Identity(i) - qml.PauliZ(i) - qml.PauliZ(j) + qml.Identity(i)
+                        qml.Identity(i) - qml.PauliZ(i) - qml.PauliZ(i) + qml.Identity(i)
                     )
                 else:
                     ops_l_ += cc * (
