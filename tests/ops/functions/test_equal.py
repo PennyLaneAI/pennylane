@@ -833,3 +833,110 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
+    def test_equal_trainable_different_interface(self, op1):
+        """Test equal method with two operators with trainable inputs and
+        different interfaces.
+
+        This test case tests the 4 interface with each other pairwise,
+        totalling a 4*3/2=6 total assertions in the following order (assuming
+        symmetry doesn't affect the behaviour):
+
+        -JAX and Autograd
+        -JAX and TF
+        -JAX and Torch
+        -TF and Autograd
+        -TF and Torch
+        -Autograd and Torch
+        """
+        import jax
+        import tensorflow as tf
+        import torch
+
+        wire = 0
+
+        pl_tensor = qml.numpy.array(0.3, requires_grad=True)
+        tf_tensor = tf.Variable(0.3)
+        torch_tensor = torch.tensor(0.3, requires_grad=True)
+
+        non_jax_tensors = [pl_tensor, tf_tensor, torch_tensor]
+
+        # JAX and the others
+        # ------------------
+        # qml.math.requires_grad returns True for a Tracer with JAX, the
+        # assertion involves using a JAX function that transforms a JAX NumPy
+        # array into a Tracer
+        def jax_assertion_func(x, other_tensor):
+            operation1 = op1(jax.numpy.array(x), wires=1)
+            operation2 = op1(other_tensor, wires=1)
+            if isinstance(other_tensor, tf.Variable):
+                with tf.GradientTape() as tape:
+                    assert qml.equal(
+                        operation1, operation2, check_interface=False, check_trainability=True
+                    )
+            else:
+                assert qml.equal(
+                    operation1, operation2, check_interface=False, check_trainability=True
+                )
+            return x
+
+        par = 0.3
+        for tensor in non_jax_tensors:
+            jax.grad(jax_assertion_func, argnums=0)(par, tensor)
+
+        # TF and Autograd
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(tf_tensor, wires=wire),
+                op1(pl_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+
+        # TF and Torch
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(tf_tensor, wires=wire),
+                op1(torch_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+
+        # Autograd and Torch
+        # ------------------
+        assert qml.equal(
+            op1(pl_tensor, wires=wire),
+            op1(torch_tensor, wires=wire),
+            check_trainability=True,
+            check_interface=False,
+        )
+
+    def test_equal_with_different_arithmetic_depth(self):
+        """Test equal method with two operators with different arithmetic depth."""
+        assert not qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.adjoint(qml.PauliX(0))))
+
+    def test_equal_with_nested_operators_raises_error(self):
+        """Test that the equal method with two operators with the same arithmetic depth (>0) raises
+        an error."""
+        with pytest.raises(
+            NotImplementedError,
+            match="Comparison of operators with an arithmetic"
+            + " depth larger than 0 is not yet implemented.",
+        ):
+            qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)))
+
+    def test_equal_same_inversion(self):
+        """Test operations are equal if they are both inverted."""
+        op1 = qml.RX(1.2, wires=0).inv()
+        op2 = qml.RX(1.2, wires=0).inv()
+        assert qml.equal(op1, op2)
+
+    def test_not_equal_different_inversion(self):
+        """Test operations are not equal if one is inverted and the other is not."""
+        op1 = qml.PauliX(0)
+        op2 = qml.PauliX(0).inv()
+        assert not qml.equal(op1, op2)

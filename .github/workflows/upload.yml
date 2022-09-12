@@ -121,7 +121,7 @@ jobs:
         run: |
           python -m pytest tests -m all_interfaces -n auto
 
-  qcut:
+  qcut-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -166,7 +166,7 @@ jobs:
         run: |
           python -m pytest tests -m qcut -n auto
 
-  qchem:
+  qchem-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -203,6 +203,49 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest tests -m qchem -n auto
+
+  # Testing the new return types suite
+  return-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/returntypes -n auto
 
   device-tests:
     runs-on: ubuntu-latest
@@ -263,7 +306,7 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     # Make sure that the PennyLane is not released unless the tests are passing.
-    needs: [core-and-interface-tests, all-interfaces-tests, qcut, qchem, device-tests]
+    needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, return-tests, device-tests]
     steps:
       - uses: actions/checkout@v2
         with:

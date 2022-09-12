@@ -16,13 +16,15 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
-from scipy.sparse import csr_matrix
+from copy import copy
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import AllWires, AnyWires, Observable
 from pennylane.wires import Wires
+
 from .matrix_ops import QubitUnitary
 
 
@@ -93,7 +95,7 @@ class Hermitian(Observable):
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
-        if not qml.math.allclose(A, A.conj().T):
+        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
             raise ValueError("Observable must be Hermitian.")
 
         return A
@@ -136,7 +138,7 @@ class Hermitian(Observable):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -437,7 +439,7 @@ class Projector(Observable):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -458,4 +460,4 @@ class Projector(Observable):
         return []
 
     def pow(self, z):
-        return [self.__copy__()] if (isinstance(z, int) and z > 0) else super().pow(z)
+        return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)

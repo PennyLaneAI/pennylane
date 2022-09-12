@@ -31,19 +31,23 @@ The available measurement functions are
 
     ~pennylane.expval
     ~pennylane.sample
+    ~pennylane.counts
     ~pennylane.var
     ~pennylane.probs
     ~pennylane.state
     ~pennylane.density_matrix
     ~pennylane.vn_entropy
     ~pennylane.mutual_info
+    ~pennylane.classical_shadow
+    ~pennylane.shadow_expval
 
 :html:`</div>`
 
 .. note::
 
     All measurement functions support analytic differentiation, with the
-    exception of :func:`~.pennylane.sample`, as it returns *stochastic*
+    exception of :func:`~.pennylane.sample`, :func:`~.pennylane.counts`, and
+    :func:`~.pennylane.classical_shadow`, as they return *stochastic*
     results.
 
 Combined measurements
@@ -129,9 +133,11 @@ and :func:`~.pennylane.sample`.
 Counts
 ------
 
-To avoid dealing with long arrays for the larger numbers of shots, one can pass an argument counts=True
-to :func:`~pennylane.sample`. In this case, the result will be a dictionary containing the number of occurrences for each
-unique sample. The previous example will be modified as follows:
+To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
+:func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the
+possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes.
+
+The previous example will be modified as follows:
 
 .. code-block:: python
 
@@ -141,16 +147,14 @@ unique sample. The previous example will be modified as follows:
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0, 1])
-        # passing the counts flag
-        return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+        return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
 
 After executing the circuit, we can directly see how many times each measurement outcome occurred:
-        
->>> result = circuit()
->>> print(result)
-[{-1: 526, 1: 474} {-1: 526, 1: 474}]
- 
-Similarly, if the observable is not provided, the count of each computational basis state is returned.
+
+>>> circuit()
+({-1: 496, 1: 504}, {-1: 496, 1: 504})
+
+Similarly, if the observable is not provided, the count of the observed computational basis state is returned.
 
 .. code-block:: python
 
@@ -160,17 +164,38 @@ Similarly, if the observable is not provided, the count of each computational ba
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0, 1])
-        # passing the counts flag
-        return qml.sample(counts=True)
+        return qml.counts()
 
 And the result is:
-           
->>> result = circuit()
->>> print(result)
+
+>>> circuit()
 {'00': 495, '11': 505}
 
+Per default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can 
+be used to display all possible outcomes, including those that were observed ``0`` times in sampling.
+
+For example, we could run the previous circuit with ``all_outcomes=True``:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.counts(all_outcomes=True)
+
+>>> result = circuit()
+>>> print(result)
+{'00': 518, '01': 0, '10': 0, '11': 482}
+
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
+eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
+dictionary showing possible computational basis states grows rapidly. 
+
 If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
-a tensor of tensors is returned to provide differentiability for the outputs of QNodes.
+a tuple is returned to provide differentiability for the outputs of QNodes.
 
 .. code-block:: python
 
@@ -178,13 +203,11 @@ a tensor of tensors is returned to provide differentiability for the outputs of 
     def circuit():
         qml.Hadamard(wires=0)
         qml.CNOT(wires=[0,1])
-        qml.PauliX(wires=2)
-        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.sample(counts=True)
+        qml.PauliX(wires=1)
+        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
 
->>> result = circuit()
->>> print(result)
-[tensor(0.026, requires_grad=True) tensor(0.026, requires_grad=True)
- tensor({'001': 513, '111': 487}, dtype=object, requires_grad=True)]
+>>> circuit()
+(-0.036, 0.036, {'01': 482, '10': 518}) 
 
 Probability
 -----------

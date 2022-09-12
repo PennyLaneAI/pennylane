@@ -261,7 +261,7 @@ class TestTFMatrix:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
 
         tf_mat = op(tf.Variable(param), wires=wires).matrix()
-        obtained_mat = qml.operation.expand_matrix(tf_mat, wires, list(range(4)))
+        obtained_mat = qml.math.expand_matrix(tf_mat, wires, list(range(4)))
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
@@ -1457,7 +1457,6 @@ class TestQNodeIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
@@ -2111,6 +2110,22 @@ class TestPassthruIntegration:
             match="default.qubit.tf only supports diff_method='backprop' when using the tf interface",
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
+
+    def test_hermitian_backprop(self, tol):
+        """Test that backprop with qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        K = tf.linalg.diag([1, 2, 3, 4])
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(op):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            return qml.expval(op)
+
+        res = circuit(qml.Hermitian(K, wires=range(2)))
+        assert isinstance(res, tf.Tensor)
+        assert res == 4.0
 
 
 @pytest.mark.tf

@@ -14,17 +14,18 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access
-from collections.abc import Sequence
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
 import functools
 import inspect
 import warnings
+from collections.abc import Sequence
 
 import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
+from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.tape import QuantumTape
 
 
 class QNode:
@@ -297,7 +298,6 @@ class QNode:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
         if diff_method == "best":
             return QNode.get_best_method(device, interface)
 
@@ -511,7 +511,7 @@ class QNode:
         )
 
     @property
-    def tape(self):
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 
@@ -529,7 +529,9 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if not isinstance(self._qfunc_output, Sequence):
+        if isinstance(self._qfunc_output, qml.numpy.ndarray):
+            measurement_processes = tuple(self.tape.measurements)
+        elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
             measurement_processes = self._qfunc_output
@@ -585,7 +587,7 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
         override_shots = False
 
         if not self._qfunc_uses_shots_arg:
@@ -616,6 +618,46 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        if qml.active_return():
+            res = qml.execute_new(
+                [self.tape],
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
+
+            res = res[0]
+
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list):
+                if len(self._qfunc_output) == 1:
+                    return [res]
+
+            # Autograd or tensorflow: they do not support tuple return with backpropagation
+            backprop = False
+            if not isinstance(
+                self._qfunc_output, qml.measurements.MeasurementProcess
+            ) and self.interface in ("tf", "autograd"):
+                backprop = any(qml.math.in_backprop(x) for x in res)
+            if self.gradient_fn == "backprop" and backprop:
+                res = self.device._asarray(res)
+
+            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+            if (
+                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
+                and not backprop
+            ):
+                if not self.device._shot_vector:
+                    res = type(self.tape._qfunc_output)(res)
+                else:
+                    res = [type(self.tape._qfunc_output)(r) for r in res]
+                    res = tuple(res)
+
+            return res
+
         res = qml.execute(
             [self.tape],
             device=self.device,
@@ -640,9 +682,9 @@ class QNode:
 
             res = res[0]
 
-        if (
-            not isinstance(self._qfunc_output, Sequence)
-            and self._qfunc_output.return_type is qml.measurements.Counts
+        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
+            qml.measurements.Counts,
+            qml.measurements.AllCounts,
         ):
 
             if not self.device._has_partitioned_shots():
@@ -652,7 +694,8 @@ class QNode:
             return tuple(res)
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
@@ -670,6 +713,11 @@ class QNode:
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
             return res
+
+        if self._qfunc_output.return_type is qml.measurements.Shadow:
+            # if classical shadows is returned, then don't squeeze the
+            # last axis corresponding to the number of qubits
+            return qml.math.squeeze(res, axis=0)
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)

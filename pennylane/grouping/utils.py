@@ -25,7 +25,7 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qml
-from pennylane import PauliX, PauliY, PauliZ, Identity
+from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -60,9 +60,6 @@ def is_pauli_word(observable):
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
 
-    Raises:
-        TypeError: if input observable is not an Observable instance.
-
     **Example**
 
     >>> is_pauli_word(qml.Identity(0))
@@ -74,7 +71,7 @@ def is_pauli_word(observable):
     """
 
     if not isinstance(observable, Observable):
-        raise TypeError(f"Expected {Observable} instance, instead got {type(observable)} instance.")
+        return False
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
@@ -532,56 +529,6 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     return reduce(np.kron, pauli_mats)
 
 
-def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
-    r"""Checks if two Pauli words commute.
-
-    To determine if two Pauli words commute, we can check the value of the
-    symplectic inner product of their binary vector representations.
-    For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
-    and :math:`p_2 = [x_2, z_2],` the symplectic inner product is defined as
-    :math:`\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
-    product is :math:`0` they commute, while if it is :math:`1`, they don't commute.
-
-    Args:
-        pauli_word_1 (Observable): first Pauli word in commutator
-        pauli_word_2 (Observable): second Pauli word in commutator
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
-            the Pauli word as keys, and unique integer labels as their values
-
-    Returns:
-        bool: returns True if the input Pauli commute, False otherwise
-
-    Raises:
-        TypeError: if either of the Pauli words is not valid.
-
-    **Example**
-
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-    >>> pauli_word_1 = qml.PauliX('a') @ qml.PauliY('b')
-    >>> pauli_word_2 = qml.PauliZ('a') @ qml.PauliZ('c')
-    >>> is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
-    False
-    """
-
-    if not (is_pauli_word(pauli_word_1) and is_pauli_word(pauli_word_2)):
-        raise TypeError(
-            f"Expected Pauli word observables, instead got {pauli_word_1} and {pauli_word_2}"
-        )
-
-    if wire_map is None:
-        wire_map = _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2)
-
-    n_qubits = len(wire_map)
-
-    pauli_vec_1 = pauli_to_binary(pauli_word_1, n_qubits=n_qubits, wire_map=wire_map)
-    pauli_vec_2 = pauli_to_binary(pauli_word_2, n_qubits=n_qubits, wire_map=wire_map)
-
-    x1, z1 = pauli_vec_1[:n_qubits], pauli_vec_1[n_qubits:]
-    x2, z2 = pauli_vec_2[:n_qubits], pauli_vec_2[n_qubits:]
-
-    return (np.dot(z1, x2) + np.dot(z2, x1)) % 2 == 0
-
-
 def is_qwc(pauli_vec_1, pauli_vec_2):
     """Checks if two Pauli words in the binary vector representation are qubit-wise commutative.
 
@@ -659,10 +606,11 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
 
 def are_pauli_words_qwc(lst_pauli_words):
-    """Given a list of observables assumed to be valid Pauli words, determine if they
-     are pairwise qubit-wise commuting.
+    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
+    qubit-wise commuting.
 
-    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the number of distinct wire labels used to represent the Pauli words.
+    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the
+    number of distinct wire labels used to represent the Pauli words.
 
     Args:
         lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).

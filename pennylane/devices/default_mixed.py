@@ -24,21 +24,21 @@ import itertools
 from string import ascii_letters as ABC
 
 import pennylane as qml
-from pennylane import numpy as np
 import pennylane.math as qnp
-from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
-from pennylane import Snapshot
-from pennylane.operation import Channel
-from pennylane.wires import Wires
-from pennylane.measurements import (
-    Sample,
-    Counts,
-    State,
-    VnEntropy,
-    MutualInfo,
+from pennylane import (
+    BasisState,
+    DeviceError,
+    QubitDensityMatrix,
+    QubitDevice,
+    QubitStateVector,
+    Snapshot,
 )
-
+from pennylane import numpy as np
+from pennylane.measurements import Counts, AllCounts, MutualInfo, Sample, State, VnEntropy
+from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.wires import Wires
+
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -141,12 +141,18 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
+        if not isinstance(array, (list, tuple)):
+            if qnp.shape(array) == ():
+                return array
+
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
         is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
 
         if not is_ragged:
-            res = qnp.cast(qnp.stack(array), dtype=dtype)
+            res = qnp.stack(array)
+            if dtype is not None:
+                res = qnp.cast(res, dtype=dtype)
 
         if is_ragged or res.dtype is np.dtype("O"):
             return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
@@ -551,7 +557,7 @@ class DefaultMixed(QubitDevice):
 
         * :meth:`~.probability`
 
-        Additional keyword arguments may be passed to the this method
+        Additional keyword arguments may be passed to this method
         that can be utilised by :meth:`apply`. An example would be passing
         the ``QNode`` hash that can be used later for parametric compilation.
 
@@ -573,7 +579,7 @@ class DefaultMixed(QubitDevice):
                     # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
-                if obs.return_type in (Sample, Counts):
+                if obs.return_type in (Sample, Counts, AllCounts):
                     if obs.name == "Identity" and obs.wires in (qml.wires.Wires([]), self.wires):
                         # Sample, Counts: Readout error applied to all device wires when wires
                         # not specified or all wires specified.

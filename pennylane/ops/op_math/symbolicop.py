@@ -106,14 +106,6 @@ class SymbolicOp(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
@@ -135,3 +127,12 @@ class SymbolicOp(Operator):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                self.base.hash,
+            )
+        )

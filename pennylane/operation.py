@@ -108,6 +108,7 @@ from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.math import expand_matrix
 
 from .utils import pauli_eigs
 
@@ -124,113 +125,6 @@ def __getattr__(name):
         return globals()[name]
     except KeyError as e:
         raise AttributeError from e
-
-
-def expand_matrix(base_matrix, wires, wire_order=None):
-    """Re-express a base matrix acting on a subspace defined by a set of wire labels
-    according to a global wire order.
-
-    Args:
-        base_matrix (tensor_like): base matrix to expand
-        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
-            dimension :math:`2^n` acts on a subspace of :math:`n` wires
-        wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
-            contain additional labels
-
-    Returns:
-        tensor_like: expanded matrix
-
-    **Example**
-
-    If the wire order is identical to ``wires``, the original matrix gets returned:
-
-    >>> base_matrix = np.array([[1, 2, 3, 4],
-    ...                         [5, 6, 7, 8],
-    ...                         [9, 10, 11, 12],
-    ...                         [13, 14, 15, 16]])
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
-    [[ 1  2  3  4]
-     [ 5  6  7  8]
-     [ 9 10 11 12]
-     [13 14 15 16]]
-
-    If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
-
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0]))
-    [[ 1  3  2  4]
-     [ 9 11 10 12]
-     [ 5  7  6  8]
-     [13 15 14 16]]
-
-    If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
-
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2]))
-    [[ 1  2  0  0  3  4  0  0]
-     [ 5  6  0  0  7  8  0  0]
-     [ 0  0  1  2  0  0  3  4]
-     [ 0  0  5  6  0  0  7  8]
-     [ 9 10  0  0 11 12  0  0]
-     [13 14  0  0 15 16  0  0]
-     [ 0  0  9 10  0  0 11 12]
-     [ 0  0 13 14  0  0 15 16]]
-
-    The method works with tensors from all autodifferentiation frameworks, for example:
-
-    >>> base_matrix_torch = torch.tensor([[1., 2.],
-    ...                                   [3., 4.]], requires_grad=True)
-    >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
-    >>> type(res)
-    torch.Tensor
-    >>> res.requires_grad
-    True
-
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
-    [[ 1  2  3  4]
-     [ 5  6  7  8]
-     [ 9 10 11 12]
-     [13 14 15 16]]
-
-    """
-
-    if (wire_order is None) or (wire_order == wires):
-        return base_matrix
-
-    wire_order = Wires(wire_order)
-    n = len(wires)
-    shape = qml.math.shape(base_matrix)
-    batch_dim = shape[0] if len(shape) == 3 else None
-    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
-
-    # operator's wire positions relative to wire ordering
-    op_wire_pos = wire_order.indices(wires)
-
-    identity = qml.math.reshape(
-        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
-    )
-    # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
-    axes = (list(range(-n, 0)), op_wire_pos)
-
-    # reshape op.matrix()
-    op_matrix_interface = qml.math.convert_like(base_matrix, identity)
-    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
-    mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
-    mat_tensordot = qml.math.tensordot(
-        mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
-    )
-
-    unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
-    # permute matrix axes to match wire ordering
-    perm = op_wire_pos + unused_idxs
-    sources = wire_order.indices(wire_order)
-    if batch_dim:
-        perm = [p + 1 for p in perm]
-        sources = [s + 1 for s in sources]
-
-    mat = qml.math.moveaxis(mat_tensordot, sources, perm)
-    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
-    mat = qml.math.reshape(mat, shape)
-
-    return mat
 
 
 # =============================================================================
@@ -627,9 +521,6 @@ class Operator(abc.ABC):
         operator's wires in the global wire order. Otherwise, the wire order defaults to the
         operator's wires.
 
-        .. note::
-            The wire_order argument is currently not implemented, and using it will raise an error.
-
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
         .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
@@ -641,12 +532,11 @@ class Operator(abc.ABC):
             scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
-        if wire_order is not None:
-            raise NotImplementedError("The wire_order argument is not yet implemented")
         canonical_sparse_matrix = self.compute_sparse_matrix(
             *self.parameters, **self.hyperparameters
         )
-        return canonical_sparse_matrix
+
+        return expand_matrix(canonical_sparse_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):
@@ -673,7 +563,7 @@ class Operator(abc.ABC):
         raise EigvalsUndefinedError
 
     def eigvals(self):
-        r"""Eigenvalues of the operator in the computational basis (static method).
+        r"""Eigenvalues of the operator in the computational basis.
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
         can be reconstructed as
@@ -766,7 +656,7 @@ class Operator(abc.ABC):
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
-            cache=None (dict): dictionary that caries information between label calls
+            cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
 
         Returns:
@@ -886,7 +776,16 @@ class Operator(abc.ABC):
         self._wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if self.num_wires not in {AllWires, AnyWires} and len(self._wires) != self.num_wires:
+        if self.num_wires in {AllWires, AnyWires}:
+            if (
+                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian))
+                and len(qml.wires.Wires(wires)) == 0
+            ):
+                raise ValueError(
+                    f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
+                )
+
+        elif len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
@@ -1070,7 +969,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1092,7 +991,7 @@ class Operator(abc.ABC):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -1131,7 +1030,7 @@ class Operator(abc.ABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z):
+    def pow(self, z) -> List["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1170,15 +1069,12 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
-    def adjoint(self):  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
 
         Returns:
             The adjointed operation.
@@ -1267,7 +1163,7 @@ class Operator(abc.ABC):
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
-            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
+            return qml.pow(self, z=other)
         raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
@@ -1469,6 +1365,11 @@ class Operation(Operator):
 
     @inverse.setter
     def inverse(self, boolean):
+        warnings.warn(
+            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
+            " qml.pow instead.",
+            UserWarning,
+        )
         self._inverse = boolean
 
     def inv(self):
@@ -1800,7 +1701,7 @@ class Tensor(Observable):
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
                 Must be same length as ``obs`` attribute.
-            cache=None (dict): dictionary that caries information between label calls
+            cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
 
         Returns:
@@ -1930,6 +1831,10 @@ class Tensor(Observable):
             in the tensor product
         """
         return [obs for obs in self.obs if not isinstance(obs, qml.Identity)]
+
+    @property
+    def arithmetic_depth(self) -> int:
+        return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
         if isinstance(other, Tensor):

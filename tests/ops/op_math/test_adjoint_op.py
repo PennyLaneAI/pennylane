@@ -233,22 +233,6 @@ class TestProperties:
         op = Adjoint(DummyOp(0))
         assert op.is_hermitian == value
 
-    def test_batching_properties(self):
-        """Test that Adjoint batching behavior mirrors that of the base."""
-
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op = Adjoint(base)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
-
 
 class TestSimplify:
     """Test Adjoint simplify method and depth property."""
@@ -261,20 +245,22 @@ class TestSimplify:
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         adj_op = Adjoint(Adjoint(Adjoint(qml.RZ(1.32, wires=0))))
-        final_op = Adjoint(qml.RZ(1.32, wires=0))
+        final_op = qml.RZ(4 * np.pi - 1.32, wires=0)
         simplified_op = adj_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, Adjoint)
+        assert isinstance(simplified_op, qml.RZ)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
-        adj_op = Adjoint(qml.op_sum(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)))
-        sum_op = qml.op_sum(Adjoint(qml.PauliX(0)), Adjoint(qml.PauliY(0)), Adjoint(qml.PauliZ(0)))
+        adj_op = Adjoint(qml.op_sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
+        sum_op = qml.op_sum(
+            qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
+        )
         simplified_op = adj_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -284,7 +270,7 @@ class TestSimplify:
         assert sum_op.wires == simplified_op.wires
         assert sum_op.arithmetic_depth == simplified_op.arithmetic_depth
 
-        for s1, s2 in zip(sum_op.summands, simplified_op.summands):
+        for s1, s2 in zip(sum_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -293,8 +279,10 @@ class TestSimplify:
     def test_simplify_adj_of_prod(self):
         """Test that the simplify method converts an adjoint of products to a (reverse) product
         of adjoints."""
-        adj_op = Adjoint(qml.prod(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)))
-        final_op = qml.prod(Adjoint(qml.PauliZ(0)), Adjoint(qml.PauliY(0)), Adjoint(qml.PauliX(0)))
+        adj_op = Adjoint(qml.prod(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
+        final_op = qml.prod(
+            qml.RZ(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0)
+        )
         simplified_op = adj_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Prod)
@@ -302,21 +290,42 @@ class TestSimplify:
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
+    def test_simplify_with_adjoint_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.adjoint method."""
+        op = Adjoint(qml.T(0))
+        simplified_op = op.simplify()
+        assert isinstance(simplified_op, Adjoint)
+        assert op.data == simplified_op.data
+        assert op.wires == simplified_op.wires
+        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+
 
 class TestMiscMethods:
     """Test miscellaneous small methods on the Adjoint class."""
+
+    def test_repr(self):
+        """Test __repr__ method."""
+        assert repr(Adjoint(qml.S(0))) == "Adjoint(S(wires=[0]))"
+
+        base = qml.S(0) + qml.T(0)
+        op = Adjoint(base)
+        assert repr(op) == "Adjoint(S(wires=[0]) + T(wires=[0]))"
 
     def test_label(self):
         """Test that the label method for the adjoint class adds a † to the end."""
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         op = Adjoint(base)
         assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
+
+        base = qml.S(0) + qml.T(0)
+        op = Adjoint(base)
+        assert op.label() == "(S+T)†"
 
     def test_adjoint_of_adjoint(self):
         """Test that the adjoint of an adjoint is the original operation."""
@@ -518,6 +527,15 @@ class TestQueueing:
 class TestMatrix:
     """Test the matrix method for a variety of interfaces."""
 
+    def test_batching_error(self):
+        """Test that a MatrixUndefinedError is raised if the base is batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        base = qml.RX(x, wires=0)
+        op = Adjoint(base)
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
     def check_matrix(self, x, interface):
         """Compares matrices in a interface independent manner."""
         base = qml.RX(x, wires=0)
@@ -565,6 +583,15 @@ class TestMatrix:
 
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).matrix()
+
+    def test_adj_hamiltonian(self):
+        """Test that a we can take the adjoint of a hamiltonian."""
+        U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])
+        adj_op = Adjoint(base=U)  # hamiltonian = hermitian = self-adjoint
+        mat = adj_op.matrix()
+
+        true_mat = qml.matrix(U)
+        assert np.allclose(mat, true_mat)
 
 
 def test_sparse_matrix():
@@ -701,3 +728,18 @@ class TestIntegration:
         expected_grad = np.cos(x)
 
         assert qml.math.allclose(grad, expected_grad)
+
+    def test_adj_batching(self):
+        """Test execution of the adjoint of an operation with batched parameters."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            Adjoint(qml.RX(x, wires=0))
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array([1.234, 2.34, 3.456])
+        res = circuit(x)
+
+        expected = np.sin(x)
+        assert qml.math.allclose(res, expected)

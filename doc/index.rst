@@ -116,11 +116,9 @@ If you are doing research using PennyLane, please cite
 
 .. rst-class:: admonition warning
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-    Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-    Zeyue Niu, Antal Száva, and Nathan Killoran.
-    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
-    `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+    Ville Bergholm et al. *PennyLane: Automatic differentiation of hybrid
+    quantum-classical computations.* 2018. `arXiv:1811.04968
+    <https://arxiv.org/abs/1811.04968>`_
 
 Support and contribution
 ------------------------
@@ -183,12 +181,14 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_grouping
    code/qml_kernels
    code/qml_math
+   code/qml_ops_op_math
    code/qml_qinfo
    code/qml_numpy
    code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
    code/qml_resource
+   code/qml_shadows
    code/qml_tape
    code/qml_transforms
    code/qml_drawer

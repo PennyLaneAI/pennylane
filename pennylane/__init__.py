@@ -56,9 +56,11 @@ from pennylane.measurements import (
     var,
     vn_entropy,
     mutual_info,
+    classical_shadow,
+    shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, op_sum, prod, s_prod
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -67,6 +69,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
+from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
@@ -87,15 +90,14 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
-    is_commuting,
     pattern_matching,
     pattern_matching_optimization,
-    simplify,
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
+from pennylane.shadows import ClassicalShadow
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
