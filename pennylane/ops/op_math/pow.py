@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
+from warnings import warn
 
 from scipy.linalg import fractional_matrix_power
 
@@ -37,6 +38,63 @@ from .symbolicop import SymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
+def pow(base, z=1, lazy=True, do_queue=True, id=None):
+    """Raise an Operator to a power.
+
+    Args:
+        base (~.operation.Operator): the operator to be raised to a power
+        z=1 (float): the exponent
+
+    Keyword Args:
+        lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
+            and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+
+    Returns:
+        Operator
+
+    .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
+
+    **Example**
+
+    >>> qml.pow(qml.PauliX(0), 0.5)
+    PauliX(wires=[0])**0.5
+    >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
+    SX(wires=[0])
+    >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
+    PauliX(wires=[0])**0.1
+    >>> qml.pow(qml.PauliX(0), 2, lazy=False)
+    Identity(wires=[0])
+
+    Lazy behavior can also be accessed via ``op ** z``.
+
+    """
+    if lazy:
+        return Pow(base, z, do_queue=do_queue, id=id)
+    try:
+        pow_ops = base.pow(z)
+    except PowUndefinedError:
+        return Pow(base, z, do_queue=do_queue, id=id)
+
+    num_ops = len(pow_ops)
+    if num_ops == 0:
+        # needs to be identity (not prod of identities) so device knows to skip
+        pow_op = qml.Identity(base.wires[0], id=id)
+    elif num_ops == 1:
+        pow_op = pow_ops[0]
+    else:
+        pow_op = qml.prod(*pow_ops)
+
+    if do_queue:
+        QueuingContext.safe_update_info(base, owner=pow_op)
+        QueuingContext.safe_update_info(pow_op, owns=base)
+
+    return pow_op
+
+
 # pylint: disable=no-member
 class PowOperation(Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
@@ -52,6 +110,10 @@ class PowOperation(Operation):
     grad_method = None
 
     def inv(self):
+        warn(
+            "In-place inversion with inv is deprecated. Please use qml.adjoint instead or qml.pow.",
+            UserWarning,
+        )
         self.hyperparameters["z"] *= -1
         self._name = f"{self.base.name}**{self.z}"
         return self
