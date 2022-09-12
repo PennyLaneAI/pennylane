@@ -214,8 +214,12 @@ class Prod(CompositeOp):
                 for op in self
             )
 
+            def idot(mat1, mat2):
+                mat1 @= mat2
+                return mat1
+
             reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=idot
             )
 
             wire_order = wire_order or self.wires
@@ -232,8 +236,12 @@ class Prod(CompositeOp):
         if self.has_overlapping_wires:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
+            def idot(mat1, mat2):
+                mat1 @= mat2
+                return mat1
+
             reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=idot
             )
 
             wire_order = wire_order or self.wires

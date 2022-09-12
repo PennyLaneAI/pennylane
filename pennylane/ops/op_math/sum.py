@@ -185,8 +185,12 @@ class Sum(CompositeOp):
             for op in self
         )
 
+        def iadd(mat1, mat2):
+            mat1 += mat2
+            return mat1
+
         reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=iadd
         )
 
         wire_order = wire_order or self.wires
@@ -197,8 +201,12 @@ class Sum(CompositeOp):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
+        def iadd(mat1, mat2):
+            mat1 += mat2
+            return mat1
+
         reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
+            mats_and_wires_gen=mats_and_wires_gen, reduce_func=iadd
         )
 
         wire_order = wire_order or self.wires

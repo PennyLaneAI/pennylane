@@ -76,7 +76,7 @@ class Hadamard(Observable, Operation):
         [[ 0.70710678  0.70710678]
          [ 0.70710678 -0.70710678]]
         """
-        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]], dtype=np.complex128)
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
@@ -219,7 +219,7 @@ class PauliX(Observable, Operation):
         [[0 1]
          [1 0]]
         """
-        return np.array([[0, 1], [1, 0]])
+        return np.array([[0, 1], [1, 0]], dtype=np.complex128)
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
@@ -367,7 +367,7 @@ class PauliY(Observable, Operation):
         [[ 0.+0.j -0.-1.j]
          [ 0.+1.j  0.+0.j]]
         """
-        return np.array([[0, -1j], [1j, 0]])
+        return np.array([[0, -1j], [1j, 0]], dtype=np.complex128)
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
@@ -513,7 +513,7 @@ class PauliZ(Observable, Operation):
         [[ 1  0]
          [ 0 -1]]
         """
-        return np.array([[1, 0], [0, -1]])
+        return np.array([[1, 0], [0, -1]], dtype=np.complex128)
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
@@ -996,7 +996,9 @@ class CNOT(Operation):
          [0 0 0 1]
          [0 0 1 0]]
         """
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+        return np.array(
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=np.complex128
+        )
 
     def adjoint(self):
         return CNOT(wires=self.wires)
