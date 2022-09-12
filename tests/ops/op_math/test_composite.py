@@ -15,6 +15,7 @@
 Unit tests for the composite operator class of qubit operations
 """
 from copy import copy
+
 import numpy as np
 import pytest
 
@@ -200,13 +201,7 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         copied_op = copy(op)
 
-        assert op.id == copied_op.id
-        assert op.data == copied_op.data
-        assert op.wires == copied_op.wires
-
-        for o1, o2 in zip(op.operands, copied_op.operands):
-            assert qml.equal(o1, o2)
-            assert o1 is not o2
+        assert qml.equal(op, copied_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_len(self, ops_lst):

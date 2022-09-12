@@ -14,10 +14,10 @@
 
 from copy import copy
 
+import numpy as onp
 import pytest
 from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
-import numpy as onp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -310,10 +310,7 @@ class TestMiscMethods:
 
         copied_op = copy(op)
 
-        assert copied_op.__class__ is op.__class__
-        assert copied_op.control_wires == op.control_wires
-        assert copied_op.control_values == op.control_values
-        assert copied_op.data == [param1]
+        assert qml.equal(copied_op, op)
 
         copied_op.data = [6.54]
         assert op.data == [param1]

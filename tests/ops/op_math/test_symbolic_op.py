@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from copy import copy
+
 import pytest
 
 import pennylane as qml
@@ -46,8 +47,7 @@ def test_copy():
 
     copied_op = copy(op)
 
-    assert copied_op.__class__ is op.__class__
-    assert copied_op.data == [param1]
+    assert qml.equal(copied_op, op)
 
     copied_op.data = [6.54]
     assert op.data == [param1]

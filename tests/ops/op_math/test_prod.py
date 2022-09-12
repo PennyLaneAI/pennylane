@@ -14,8 +14,6 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-from copy import copy
-
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -793,11 +791,7 @@ class TestWrapperFunc:
         prod_func_op = prod(*factors, id=op_id, do_queue=do_queue)
         prod_class_op = Prod(*factors, id=op_id, do_queue=do_queue)
 
-        assert prod_class_op.operands == prod_func_op.operands
-        assert np.allclose(prod_class_op.matrix(), prod_func_op.matrix())
-        assert prod_class_op.id == prod_func_op.id
-        assert prod_class_op.wires == prod_func_op.wires
-        assert prod_class_op.parameters == prod_func_op.parameters
+        assert qml.equal(prod_class_op, prod_func_op)
 
 
 class TestIntegration:

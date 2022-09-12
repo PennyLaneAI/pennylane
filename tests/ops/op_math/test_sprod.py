@@ -180,15 +180,7 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op, id="something")
         copied_op = copy(sprod_op)
 
-        assert sprod_op.scalar == copied_op.scalar
-
-        assert sprod_op.id == copied_op.id
-        assert sprod_op.data == copied_op.data
-        assert sprod_op.wires == copied_op.wires
-
-        assert sprod_op.base.name == copied_op.base.name
-        assert sprod_op.base.wires == copied_op.base.wires
-        assert sprod_op.base.data == copied_op.base.data
+        assert qml.equal(sprod_op, copied_op)
         assert (
             sprod_op.base.data is not copied_op.base.data
         )  # we want different object with same content
@@ -551,12 +543,7 @@ class TestWrapperFunc:
         sprod_func_op = s_prod(coeff, op, id=op_id, do_queue=do_queue)
         sprod_class_op = SProd(coeff, op, id=op_id, do_queue=do_queue)
 
-        assert sprod_class_op.scalar == sprod_func_op.scalar
-        assert sprod_class_op.base == sprod_func_op.base
-        assert np.allclose(sprod_class_op.matrix(), sprod_func_op.matrix())
-        assert sprod_class_op.id == sprod_func_op.id
-        assert sprod_class_op.wires == sprod_func_op.wires
-        assert sprod_class_op.parameters == sprod_func_op.parameters
+        assert qml.equal(sprod_class_op, sprod_func_op)
 
 
 class TestIntegration:

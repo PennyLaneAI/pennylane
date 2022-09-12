@@ -407,9 +407,7 @@ class TestInverse:
         decomp = qml.T(0).expand().circuit
 
         for op1, op2 in zip(decomp, decomp_adj_inv):
-            assert type(op1) == type(op2)
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
+            qml.equal(op1, op2)
 
     def test_inverse_setter(self):
         """Test the inverse getting updated by property setter."""

@@ -14,7 +14,6 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-from copy import copy
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -676,11 +675,7 @@ class TestWrapperFunc:
         sum_func_op = op_sum(*summands, id=op_id, do_queue=do_queue)
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
-        assert sum_class_op.operands == sum_func_op.operands
-        assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
-        assert sum_class_op.id == sum_func_op.id
-        assert sum_class_op.wires == sum_func_op.wires
-        assert sum_class_op.parameters == sum_func_op.parameters
+        assert qml.equal(sum_class_op, sum_func_op)
 
 
 class TestIntegration:

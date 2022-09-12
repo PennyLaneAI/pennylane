@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import copy
-
 import pytest
 
 import pennylane as qml
@@ -295,8 +293,8 @@ class TestMiscMethods:
 
         op = Exp(s_op, 3j)
         new_op = op.simplify()
-        assert qml.equal(new_op.base, qml.PauliX(0))
-        assert new_op.coeff == 6.0j
+        final_op = Exp(qml.PauliX(0), coeff=6.0j)
+        assert qml.equal(new_op, final_op)
 
     def test_simplify(self):
         """Test that the simplify method simplifies the base."""
@@ -304,8 +302,8 @@ class TestMiscMethods:
 
         op = Exp(orig_base, coeff=0.2)
         new_op = op.simplify()
-        assert qml.equal(new_op.base, qml.PauliX(0))
-        assert new_op.coeff == 0.2
+        final_op = Exp(qml.PauliX(0), coeff=0.2)
+        assert qml.equal(new_op, final_op)
 
 
 class TestIntegration:
