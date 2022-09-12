@@ -209,6 +209,7 @@ class Prod(CompositeOp):
 
         return qml.math.prod(eigvals, axis=0)
 
+    @staticmethod
     def _key_func(*args, **kwargs):
         w_hash = hash(Wires(kwargs["wire_order"])) if kwargs else hash(args[0].wires)
         return hash((args[0].hash, w_hash))
