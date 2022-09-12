@@ -216,7 +216,6 @@ class Prod(CompositeOp):
     @cached(cache=_mat_cache, key=_key_func)
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        
         wire_order = wire_order or self.wires
         mat_hash = hash((self.hash, hash(self.wires)))
 
@@ -240,7 +239,6 @@ class Prod(CompositeOp):
         )
         full_mat = reduce(math.kron, mats_gen)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
-
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
