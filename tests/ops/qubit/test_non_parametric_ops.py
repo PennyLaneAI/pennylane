@@ -615,7 +615,7 @@ class TestBarrier:
         op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
         simplified = op.simplify()
         assert isinstance(simplified, qml.ops.op_math.Prod)
-        for i, op in enumerate(simplified.factors):
+        for i, op in enumerate(simplified.operands):
             assert qml.equal(op, qml.Identity(i))
 
     def test_simplify_only_visual_False(self):
