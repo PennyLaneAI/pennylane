@@ -18,7 +18,8 @@ cv and qubit computing paradigms in PennyLane.
 import numpy as np
 from scipy import sparse
 
-from pennylane.operation import CVObservable, Operation
+import pennylane as qml
+from pennylane.operation import AnyWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
@@ -34,7 +35,7 @@ class Identity(CVObservable, Operation):
     simulators should always be equal to 1.
     """
     num_params = 0
-    num_wires = 1
+    num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
     grad_method = None
@@ -95,6 +96,28 @@ class Identity(CVObservable, Operation):
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
         return sparse.csr_matrix([[1, 0], [0, 1]])
+
+    def matrix(self, wire_order=None):
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Identity.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.Identity.compute_matrix())
+        [[1. 0.]
+         [0. 1.]]
+        """
+        return qml.math.eye(int(2 ** len(self.wires)))
+
+    def sparse_matrix(self, wire_order=None):
+        return sparse.eye(int(2 ** len(self.wires)), format="csr")
 
     @staticmethod
     def _heisenberg_rep(p):
