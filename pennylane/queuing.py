@@ -86,7 +86,7 @@ class QueuingContext:
             obj: the object to be appended
         """
         if cls.recording():
-            cls.active_context().append(obj, **kwargs)  # pylint: disable=protected-access
+            cls.active_context().append(obj, **kwargs)
 
     @classmethod
     def remove(cls, obj):
@@ -96,7 +96,7 @@ class QueuingContext:
             obj: the object to be removed
         """
         if cls.recording():
-            cls.active_context().remove(obj)  # pylint: disable=protected-access
+            cls.active_context().remove(obj)
 
     @classmethod
     def update_info(cls, obj, **kwargs):
@@ -106,7 +106,7 @@ class QueuingContext:
             obj: the object with metadata to be updated
         """
         if cls.recording():
-            cls.active_context().update_info(obj, **kwargs)  # pylint: disable=protected-access
+            cls.active_context().update_info(obj, **kwargs)
 
     # pylint: disable=protected-access
     @classmethod
@@ -130,7 +130,7 @@ class QueuingContext:
             object metadata
         """
         if cls.recording():
-            return cls.active_context().get_info(obj)  # pylint: disable=protected-access
+            return cls.active_context().get_info(obj)
 
         return None
 
