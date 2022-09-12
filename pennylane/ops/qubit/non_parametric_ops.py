@@ -29,6 +29,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
+from pennylane.ops.PauliArithmetic import PauliSentence, PauliWord, X,Y,Z
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
@@ -322,9 +323,9 @@ class PauliX(Observable, Operation):
         return [np.pi / 2, np.pi, -np.pi / 2]
 
     @property
-    def _pauli_rep(self):
-        pw = qml.ops.op_math.PauliArithetic.PauliWord({self.wires: qml.ops.op_math.PauliArithetic.X})
-        return qml.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+    def pauli_rep(self):
+        pw = PauliWord({self.wires.labels[0]: X})
+        return PauliSentence({pw: 1.0})
 
 
 class PauliY(Observable, Operation):
@@ -475,9 +476,9 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
     @property
-    def _pauli_rep(self):
-        pw = qml.ops.op_math.PauliArithetic.PauliWord({self.wires: qml.ops.op_math.PauliArithetic.Y})
-        return qml.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+    def pauli_rep(self):
+        pw = PauliWord({self.wires.labels[0]: Y})
+        return PauliSentence({pw: 1.0})
 
 
 class PauliZ(Observable, Operation):
@@ -627,9 +628,9 @@ class PauliZ(Observable, Operation):
         return [np.pi, 0.0, 0.0]
 
     @property
-    def _pauli_rep(self):
-        pw = qml.ops.op_math.PauliArithetic.PauliWord({self.wires: qml.ops.op_math.PauliArithetic.Z})
-        return qml.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+    def pauli_rep(self):
+        pw = PauliWord({self.wires.labels[0]: Z})
+        return PauliSentence({pw: 1.0})
 
 
 class S(Operation):

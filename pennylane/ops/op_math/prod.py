@@ -238,12 +238,15 @@ class Prod(Operator):
         return self._has_overlapping_wires
 
     @property
-    def _pauli_rep(self):
-        final_pauli_sentence = qml.ops.op_math.PauliArithmetic.PauliSentence({})
+    def pauli_rep(self):
+        final_pauli_sentence = qml.ops.PauliArithmetic.PauliSentence({})
         for factor in self.factors:
-            if factor._pauli_rep is None:
+            print(f"here, {factor}, {factor.pauli_rep}")
+            if factor.pauli_rep is None:
                 return None
-            final_pauli_sentence *= factor._pauli_rep
+            print(f"pauli sentence before: {final_pauli_sentence}")
+            final_pauli_sentence *= factor.pauli_rep
+            print(f"pauli sentence after: {final_pauli_sentence}")
         return final_pauli_sentence
 
     def decomposition(self):

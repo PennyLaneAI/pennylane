@@ -19,6 +19,7 @@ import numpy as np
 from scipy import sparse
 
 from pennylane.operation import CVObservable, Operation
+from pennylane.ops.PauliArithmetic import PauliWord, PauliSentence, I
 
 
 class Identity(CVObservable, Operation):
@@ -48,9 +49,9 @@ class Identity(CVObservable, Operation):
         return base_label or "I"
 
     @property
-    def _pauli_rep(self):
-        pw = pennylane.ops.op_math.PauliArithetic.PauliWord({self.wires: pennylane.ops.op_math.PauliArithetic.I})
-        return pennylane.ops.op_math.PauliArithetic.PauliSentence({pw: 1.0})
+    def pauli_rep(self):
+        pw = PauliWord({self.wires.labels[0]: I})
+        return PauliSentence({pw: 1.0})
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -99,7 +100,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
-        return sparse.csr_matrix([[1, 0], [0, 1]])
+        return sparse.eye(2, format="csr")
 
     @staticmethod
     def _heisenberg_rep(p):

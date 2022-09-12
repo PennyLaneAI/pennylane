@@ -649,6 +649,14 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
+    @property
+    def pauli_rep(self):
+        return self._pauli_rep
+
+    @pauli_rep.setter
+    def pauli_rep(self, rep):
+        self._pauli_rep = rep
+
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 

@@ -215,12 +215,12 @@ class Sum(Operator):
         return self._has_overlapping_wires
 
     @property
-    def _pauli_rep(self):
-        final_pauli_sentence = qml.ops.op_math.PauliArithmetic.PauliSentence({})
+    def pauli_rep(self):
+        final_pauli_sentence = qml.ops.PauliArithmetic.PauliSentence({})
         for term in self.summands:
-            if term._pauli_rep is None:
+            if term.pauli_rep is None:
                 return None
-            final_pauli_sentence += term._pauli_rep
+            final_pauli_sentence += term.pauli_rep
         return final_pauli_sentence
 
     def terms(self):
