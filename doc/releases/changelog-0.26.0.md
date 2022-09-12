@@ -4,27 +4,84 @@
 
 <h3>New features since last release</h3>
 
-<h4>QNSPSA optimizer 😤</h4>
+<h4>Classical shadows 👤</h4>
 
-* A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
-  perturbation stochastic approximation (QNSPSA) method based on 
-  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
-  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+* All-new features for implementing the classical-shadows protocol are now available. 
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+  [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
+  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
+  [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
+  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
 
-  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
-  executions per optimization step compared to 3 for `qml.SPSAOptimizer`.
-  The additional circuit executions are used to provide a stochastic estimation of a second-order
-  metric tensor, which often helps the optimizer to achieve faster convergence. 
+  The classical-shadow measurement protocol is described in detail in the
+  [classical shadows paper](https://arxiv.org/abs/2002.08953).
+  As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
 
-  Use `qml.QNSPSAOptimizer` like you would any other optimizer:
+  - QNodes returning `qml.classical_shadow` will return two entities: 
+
+    + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
+    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
+    
+    ```python
+    dev = qml.device("default.qubit", wires=2, shots=3)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.classical_shadow(wires=[0, 1])
+    ```
+
+    ```pycon
+    >>> bits, recipes = circuit()
+    >>> bits
+    tensor([[0, 0],
+            [1, 0],
+            [0, 1]], dtype=uint8, requires_grad=True)
+    >>> recipes
+    tensor([[2, 2],
+            [0, 2],
+            [0, 2]], dtype=uint8, requires_grad=True)
+    ```
+
+  - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
+
+    ```python
+    dev = qml.device("default.qubit", wires=range(2), shots=10000)
+
+    @qml.qnode(dev)
+    def circuit(x, H):
+        qml.Hadamard(0)
+        qml.CNOT((0,1))
+        qml.RX(x, wires=0)
+        return qml.shadow_expval(H)
+
+    x = np.array(0.5, requires_grad=True) 
+    H = qml.Hamiltonian(
+            [1., 1.], 
+            [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+        )  
+    ```
+
+    ```pycon
+    >>> circuit(x, H), 
+    tensor(1.8486, requires_grad=True) 
+    >>> qml.grad(circuit)(x, H))
+    -0.4797000000000001
+    ```
+
+  Fully-differentiable QNode transforms for both new classical-shadows measurements are also available via
+  `qml.shadows.shadow_state` and `qml.shadows.shadow_expval`, respectively.
   
-  ```python
-  max_iterations = 50
-  opt = qml.QNSPSAOptimizer() 
+  For convenient post-processing, we've also added the ability to calculate general Renyi entropies 
+  by way of the `ClassicalShadow` class' `entropy` method, which requires the wires of the subsystem of interest
+  and the Renyi entropy order:
 
-  for _ in range(max_iterations):
-      params, cost = opt.step_and_cost(cost, params)
-  ```  
+  ```pycon
+  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  ``` 
 
 <h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
 
@@ -108,85 +165,6 @@
   ```
 
   We will continue to add more and more support for qutrits in future releases.
-    
-<h4>Classical shadows 👤</h4>
-
-* All-new features for implementing the classical-shadows protocol are now available. 
-  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
-  [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
-  [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
-  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
-  [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
-  [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
-
-  The classical-shadow measurement protocol is described in detail in the
-  [classical shadows paper](https://arxiv.org/abs/2002.08953).
-  As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
-
-  - QNodes returning `qml.classical_shadow` will return two entities: 
-
-    + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
-    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
-    
-    ```python
-    dev = qml.device("default.qubit", wires=2, shots=3)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.Hadamard(wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.classical_shadow(wires=[0, 1])
-    ```
-
-    ```pycon
-    >>> bits, recipes = circuit()
-    >>> bits
-    tensor([[0, 0],
-            [1, 0],
-            [0, 1]], dtype=uint8, requires_grad=True)
-    >>> recipes
-    tensor([[2, 2],
-            [0, 2],
-            [0, 2]], dtype=uint8, requires_grad=True)
-    ```
-
-  - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
-
-    ```python
-    dev = qml.device("default.qubit", wires=range(2), shots=10000)
-
-    @qml.qnode(dev)
-    def circuit(x, H):
-        qml.Hadamard(0)
-        qml.CNOT((0,1))
-        qml.RX(x, wires=0)
-        return qml.shadow_expval(H)
-
-    x = np.array(0.5, requires_grad=True) 
-    H = qml.Hamiltonian(
-            [1., 1.], 
-            [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
-        )  
-    ```
-
-    ```pycon
-    >>> circuit(x, H), 
-    tensor(1.8486, requires_grad=True) 
-    >>> qml.grad(circuit)(x, H))
-    -0.4797000000000001
-    ```
-
-  Fully-differentiable QNode transforms for both new classical-shadows measurements are also available via
-  `qml.shadows.shadow_state` and `qml.shadows.shadow_expval`, respectively.
-  
-  For convenient post-processing, we've also added the ability to calculate general Renyi entropies 
-  by way of the `ClassicalShadow` class' `entropy` method, which requires the wires of the subsystem of interest
-  and the Renyi entropy order:
-
-  ```pycon
-  >>> shadow = ClassicalShadow(bits, recipes)
-  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
-  ``` 
 
 <h4>Simplifying just got... simpler 🫰</h4>
 
@@ -232,7 +210,29 @@
   >>> list(circuit.tape)
   [RZ(-11.566370614359172, wires=[0]) @ RY(-11.566370614359172, wires=[0]) @ RX(-11.566370614359172, wires=[0]), probs(wires=[0])]
   ```
+
+<h4>QNSPSA optimizer 😤</h4>
+
+* A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
+  perturbation stochastic approximation (QNSPSA) method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
+  executions per optimization step compared to 3 for `qml.SPSAOptimizer`.
+  The additional circuit executions are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence. 
+
+  Use `qml.QNSPSAOptimizer` like you would any other optimizer:
   
+  ```python
+  max_iterations = 50
+  opt = qml.QNSPSAOptimizer() 
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
+
 <h4>Operator and parameter broadcasting supplements 📈</h4>
 
 * Operator methods for exponentiation and raising to a power have been added.
