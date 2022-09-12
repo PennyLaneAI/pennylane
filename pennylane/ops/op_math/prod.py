@@ -19,6 +19,7 @@ import itertools
 from copy import copy
 from itertools import combinations
 from typing import List, Tuple, Union
+from cachetools import LRUCache, cached
 
 import pennylane as qml
 from pennylane import math
@@ -153,6 +154,7 @@ class Prod(CompositeOp):
     """
 
     _op_symbol = "@"
+    _mat_cache = LRUCache(maxsize=10)  # max size is a required argument, is 10 good enough?
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
@@ -204,8 +206,19 @@ class Prod(CompositeOp):
 
         return qml.math.prod(eigvals, axis=0)
 
+    def _key_func(*args, **kwargs):
+        w_hash = hash(Wires(kwargs["wire_order"])) if kwargs else hash(args[0].wires)
+        return hash((args[0].hash, w_hash))
+
+    @cached(cache=_mat_cache, key=_key_func)
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
+        wire_order = wire_order or self.wires
+        mat_hash = hash((self.hash, hash(self.wires)))
+
+        if mat_hash in self._mat_cache:
+            return math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order)
+
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self
@@ -214,8 +227,6 @@ class Prod(CompositeOp):
         reduced_mat, prod_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
         )
-
-        wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
 

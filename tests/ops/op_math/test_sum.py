@@ -345,8 +345,11 @@ class TestMatrix:
         mat1 = qml.matrix(sum_op, wire_order=wire_order1)
         mat2 = qml.matrix(sum_op, wire_order=wire_order2)
 
-        assert (sum_op._mat_cache[Wires(wire_order1)] == mat1).all()
-        assert (sum_op._mat_cache[Wires(wire_order2)] == mat2).all()
+        mat_hash1 = hash((sum_op.hash, hash(Wires(wire_order1))))
+        mat_hash2 = hash((sum_op.hash, hash(Wires(wire_order2))))
+
+        assert (sum_op._mat_cache[mat_hash1] == mat1).all()
+        assert (sum_op._mat_cache[mat_hash2] == mat2).all()
 
     def test_sum_hamiltonian(self):
         """Test that a hamiltonian object can be summed."""

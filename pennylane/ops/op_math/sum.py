@@ -17,6 +17,7 @@ computing the sum of operations.
 """
 from copy import copy
 from typing import List
+from cachetools import LRUCache, cached
 
 import numpy as np
 
@@ -122,6 +123,7 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
+    _mat_cache = LRUCache(maxsize=10)  # max size is a required argument, is 10 good enough?
 
     @property
     def is_hermitian(self):
@@ -160,27 +162,19 @@ class Sum(CompositeOp):
         ]
         return qml.math.sum(eigvals, axis=0)
 
+    def _key_func(*args, **kwargs):
+        w_hash = hash(Wires(kwargs["wire_order"])) if kwargs else hash(args[0].wires)
+        return hash((args[0].hash, w_hash))
+
+    @cached(cache=_mat_cache, key=_key_func)
     def matrix(self, wire_order=None):
-        r"""Representation of the operator as a matrix in the computational basis.
+        """Representation of the operator as a matrix in the computational basis."""
+        wire_order = wire_order or self.wires
+        mat_hash = hash((self.hash, hash(self.wires)))
 
-        If ``wire_order`` is provided, the numerical representation considers the position of the
-        operator's wires in the global wire order. Otherwise, the wire order defaults to the
-        operator's wires.
+        if mat_hash in self._mat_cache:
+            return math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order)
 
-        If the matrix depends on trainable parameters, the result
-        will be cast in the same autodifferentiation framework as the parameters.
-
-        A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
-
-        .. seealso:: :meth:`~.Operator.compute_matrix`
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the
-            operator's wires
-
-        Returns:
-            tensor_like: matrix representation
-        """
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
             for op in self
@@ -189,8 +183,6 @@ class Sum(CompositeOp):
         reduced_mat, sum_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
         )
-
-        wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
