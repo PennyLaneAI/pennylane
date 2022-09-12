@@ -389,9 +389,7 @@ class TestInverse:
         decomp = qml.S(0).expand().circuit
 
         for op1, op2 in zip(decomp, decomp_adj_inv):
-            assert type(op1) == type(op2)
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
+            qml.equal(op1, op2)
 
     def test_inv_method(self):
         """Test that calling inv on an Adjoint op defers to base op."""
