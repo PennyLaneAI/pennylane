@@ -333,35 +333,3 @@ class _SumSummandsGrouping:
                 new_summands.append(qml.s_prod(coeff, summand))
 
         return new_summands
-
-
-def _sum_sort(op_list, wire_map: dict = None) -> List[Operator]:
-    """Sort algorithm that sorts a list of sum summands by their wire indices.
-
-    Args:
-        op_list (List[.Operator]): list of operators to be sorted
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
-
-    Returns:
-        List[.Operator]: sorted list of operators
-    """
-
-    if isinstance(op_list, tuple):
-        op_list = list(op_list)
-
-    def _sort_key(op: Operator) -> bool:
-        """Sorting key.
-
-        Args:
-            op (.Operator): Operator.
-
-        Returns:
-            int: Minimum wire value.
-        """
-        wires = op.wires
-        if wire_map is not None:
-            wires = wires.map(wire_map)
-        return np.min(wires), op.name
-
-    return sorted(op_list, key=_sort_key)

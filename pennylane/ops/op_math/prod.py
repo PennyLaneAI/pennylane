@@ -302,14 +302,6 @@ class Prod(CompositeOp):
         op = Sum(*factors).simplify()
         return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
 
-    @property
-    def hash(self):
-        if self._hash is None:
-            self._hash = hash(
-                (self.name, str([factor.hash for factor in self._sort(self.operands)]))
-            )
-        return self._hash
-
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
         """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
