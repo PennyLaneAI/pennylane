@@ -221,12 +221,7 @@ class Prod(CompositeOp):
         mat_hash = hash((self.hash, hash(self.wires)))
 
         if mat_hash in self._mat_cache:
-            return math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order)
-
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in self
-        )
+            return math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order=wire_order)
 
         if self.has_overlapping_wires:
             mats_and_wires_gen = (
@@ -234,17 +229,12 @@ class Prod(CompositeOp):
                 for op in self
             )
 
-
             reduced_mat, prod_wires = math.reduce_matrices(
                 mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
             )
 
-
-        # return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
- 
-            wire_order = wire_order or self.wires
-
             return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+
         mats_gen = (
             qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
         )
