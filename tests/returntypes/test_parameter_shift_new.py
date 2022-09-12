@@ -829,7 +829,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    # TODO: remove xfail when var/finite diff works
+    # TODO: remove xfail when finite diff works
     @pytest.mark.xfail
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
@@ -859,7 +859,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    # TODO: remove xfail when var/finite diff works
+    # TODO: remove xfail when finite diff works
     @pytest.mark.autograd
     @pytest.mark.xfail
     def test_fallback(self, mocker, tol):
