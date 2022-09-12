@@ -743,7 +743,7 @@ class TestArithmetic:
         """Test the pow method for SProd Operators."""
 
         sprod_op = SProd(3, qml.RX(1.23, wires=0))
-        final_op = SProd(scalar=3**2, base=qml.ops.Pow(base=qml.RX(1.23, wires=0), z=2))
+        final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
         pow_op = sprod_op.pow(z=2)[0]
 
         assert qml.equal(final_op, pow_op)
