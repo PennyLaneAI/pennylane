@@ -230,15 +230,8 @@ class Controlled(SymbolicOp):
             )
         else:
             base_hash = self.base.hash
-        return hash(
-            (
-                "Controlled",
-                base_hash,
-                tuple(self.control_wires.tolist()),
-                tuple(self.control_values),
-                tuple(self.work_wires.tolist()),
-            )
-        )
+
+        return hash((self.name, tuple(self.wires), tuple(self.control_values), base_hash))
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -445,10 +438,6 @@ class Controlled(SymbolicOp):
             control_values=self.control_values,
             work_wires=self.work_wires,
         )
-
-    @property
-    def hash(self):
-        return hash((self.name, tuple(self.wires), tuple(self.control_values), self.base.hash))
 
 
 class ControlledOp(Controlled, Operation):
