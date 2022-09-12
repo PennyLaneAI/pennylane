@@ -358,7 +358,9 @@ class TestMatrix:
         prod_op = qml.prod(qml.PauliX(wires=0), qml.RZ(1.23, wires=1))
 
         mat1 = prod_op.matrix(wire_order=wire_order1, cache=True)  # store into cache
-        mat2 = prod_op.matrix(wire_order=wire_order2, cache=True)  # use from cache and re-order wires
+        mat2 = prod_op.matrix(
+            wire_order=wire_order2, cache=True
+        )  # use from cache and re-order wires
         mat3 = prod_op.matrix(wire_order=wire_order1, cache=True)  # use out-right from cache
 
         mat_hash1 = hash(Wires(wire_order1))
