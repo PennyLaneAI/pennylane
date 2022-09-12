@@ -240,7 +240,7 @@ class Prod(CompositeOp):
             )
 
 
-        return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+        # return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
  
             wire_order = wire_order or self.wires
 
