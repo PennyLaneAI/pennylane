@@ -17,6 +17,7 @@ from copy import copy
 import pytest
 from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
+import numpy as onp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -150,9 +151,9 @@ class TestInitialization:
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
-        """Test checking control_values are booleans."""
-        with pytest.raises(ValueError, match="control_values can only take on"):
-            Controlled(self.temp_op, (0, 1), ["b", 2])
+        """Test control values are converted to booleans."""
+        op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
+        assert op.control_values == [False, False, True]
 
     def test_control_values_wrong_length(self):
         """Test checking control_values length error."""
@@ -382,6 +383,31 @@ class TestMiscMethods:
             assert op1.__class__ is op2.__class__
             assert op1.wires == op2.wires
 
+    def test_hash(self):
+        """Test that op.hash uniquely describes an op up to work wires."""
+
+        base = qml.RY(1.2, wires=0)
+        # different control wires
+        op1 = Controlled(base, (1, 2), [0, 1])
+        op2 = Controlled(base, (2, 1), [0, 1])
+        assert op1.hash != op2.hash
+
+        # different control values
+        op3 = Controlled(base, (1, 2), [1, 0])
+        assert op1.hash != op3.hash
+        assert op2.hash != op3.hash
+
+        # all variations on default control_values
+        op4 = Controlled(base, (1, 2))
+        op5 = Controlled(base, (1, 2), [True, True])
+        op6 = Controlled(base, (1, 2), [1, 1])
+        assert op4.hash == op5.hash
+        assert op4.hash == op6.hash
+
+        # work wires
+        op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
+        assert op7.hash != op1.hash
+
 
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
@@ -499,7 +525,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Controlled)
-        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
+        for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -846,3 +872,99 @@ class TestArithmetic:
         assert pow_op.control_wires == self.control_wires
         assert pow_op.control_values == self.control_values
         assert pow_op.work_wires == self.work_wires
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+class TestDifferentiation:
+    """Tests for differentiation"""
+
+    @pytest.mark.autograd
+    def test_autograd(self, diff_method):
+        """Test differentiation using autograd"""
+        from pennylane import numpy as pnp
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = pnp.array(0.123, requires_grad=True)
+        res = qml.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.torch
+    def test_torch(self, diff_method):
+        """Test differentiation using torch"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = torch.tensor(0.123, requires_grad=True)
+        loss = circuit(b)
+        loss.backward()
+
+        res = b.grad.detach()
+        expected = np.sin(b.detach() / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    def test_jax(self, diff_method, jax_interface):
+        """Test differentiation using JAX"""
+
+        import jax
+
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
+        def circuit(b):
+            init_state = onp.array([1.0, -1.0]) / np.sqrt(2)
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = jnp.array(0.123)
+        res = jax.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.tf
+    def test_tf(self, diff_method):
+        """Test differentiation using TF"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = tf.Variable(0.123, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            loss = circuit(b)
+
+        res = tape.gradient(loss, b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
