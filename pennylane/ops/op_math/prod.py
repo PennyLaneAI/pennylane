@@ -306,7 +306,7 @@ class Prod(CompositeOp):
     def hash(self):
         if self._hash is None:
             self._hash = hash(
-                (self.name, str([factor.hash for factor in self._sort(self.factors)]))
+                (self.name, str([factor.hash for factor in self._sort(self.operands)]))
             )
         return self._hash
 
