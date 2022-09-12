@@ -229,7 +229,7 @@ class Prod(CompositeOp):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        if self.has_overlapping_wires:
+        if self.has_overlapping_wires or self.num_wires > 11:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
             reduced_mat, prod_wires = math.reduce_matrices(
