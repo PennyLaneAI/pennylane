@@ -342,11 +342,11 @@ class TestMatrix:
         wire_order1, wire_order2 = ([0, 1], [1, 0])
         sum_op = qml.op_sum(qml.PauliX(wires=0), qml.RZ(1.23, wires=1))
 
-        mat1 = qml.matrix(sum_op, wire_order=wire_order1)
-        mat2 = qml.matrix(sum_op, wire_order=wire_order2)
+        mat1 = sum_op.matrix(wire_order=wire_order1, cache=True)
+        mat2 = sum_op.matrix(wire_order=wire_order2, cache=True)
 
-        mat_hash1 = hash((sum_op.hash, hash(Wires(wire_order1))))
-        mat_hash2 = hash((sum_op.hash, hash(Wires(wire_order2))))
+        mat_hash1 = hash(Wires(wire_order1))
+        mat_hash2 = hash(Wires(wire_order2))
 
         assert (sum_op._mat_cache[mat_hash1] == mat1).all()
         assert (sum_op._mat_cache[mat_hash2] == mat2).all()

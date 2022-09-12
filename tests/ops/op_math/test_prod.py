@@ -357,11 +357,11 @@ class TestMatrix:
         wire_order1, wire_order2 = ([0, 1], [1, 0])
         prod_op = qml.prod(qml.PauliX(wires=0), qml.RZ(1.23, wires=1))
 
-        mat1 = qml.matrix(prod_op, wire_order=wire_order1)
-        mat2 = qml.matrix(prod_op, wire_order=wire_order2)
+        mat1 = prod_op.matrix(wire_order=wire_order1, cache=True)
+        mat2 = prod_op.matrix(wire_order=wire_order2, cache=True)
 
-        mat_hash1 = hash((prod_op.hash, hash(Wires(wire_order1))))
-        mat_hash2 = hash((prod_op.hash, hash(Wires(wire_order2))))
+        mat_hash1 = hash(Wires(wire_order1))
+        mat_hash2 = hash(Wires(wire_order2))
 
         assert (prod_op._mat_cache[mat_hash1] == mat1).all()
         assert (prod_op._mat_cache[mat_hash2] == mat2).all()

@@ -20,7 +20,6 @@ from copy import copy
 from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
-from cachetools import LRUCache, cached
 
 from scipy.sparse import kron as sparse_kron
 
@@ -157,7 +156,6 @@ class Prod(CompositeOp):
     """
 
     _op_symbol = "@"
-    _mat_cache = LRUCache(maxsize=10)  # max size is a required argument, is 10 good enough?
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
@@ -209,19 +207,19 @@ class Prod(CompositeOp):
 
         return qml.math.prod(eigvals, axis=0)
 
-    @staticmethod
-    def _key_func(*args, **kwargs):
-        w_hash = hash(Wires(kwargs["wire_order"])) if kwargs else hash(args[0].wires)
-        return hash((args[0].hash, w_hash))
-
-    @cached(cache=_mat_cache, key=_key_func)
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order=None, cache=False):
         """Representation of the operator as a matrix in the computational basis."""
         wire_order = wire_order or self.wires
-        mat_hash = hash((self.hash, hash(self.wires)))
+        mat_hash = hash(Wires(wire_order))
 
         if mat_hash in self._mat_cache:
-            return math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order=wire_order)
+            return self._mat_cache[mat_hash]
+
+        elif hash((self.hash, hash(self.wires))) in self._mat_cache:
+            res = math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order=wire_order)
+            if cache:
+                self._mat_cache[hash(Wires(wire_order))] = res
+            return res
 
         if self.has_overlapping_wires:
             mats_and_wires_gen = (
@@ -239,7 +237,10 @@ class Prod(CompositeOp):
             qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
         )
         full_mat = reduce(math.kron, mats_gen)
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        res = math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        if cache:
+            self._mat_cache[hash(Wires(wire_order))] = res
+        return res
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""

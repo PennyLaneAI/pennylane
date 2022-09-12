@@ -17,7 +17,6 @@ computing the sum of operations.
 """
 from copy import copy
 from typing import List
-from cachetools import LRUCache, cached
 
 import numpy as np
 
@@ -123,7 +122,6 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
-    _mat_cache = LRUCache(maxsize=10)  # max size is a required argument, is 10 good enough?
 
     @property
     def is_hermitian(self):
@@ -162,19 +160,21 @@ class Sum(CompositeOp):
         ]
         return qml.math.sum(eigvals, axis=0)
 
-    @staticmethod
-    def _key_func(*args, **kwargs):
-        w_hash = hash(Wires(kwargs["wire_order"])) if kwargs else hash(args[0].wires)
-        return hash((args[0].hash, w_hash))
-
-    @cached(cache=_mat_cache, key=_key_func)
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order=None, cache=False):
         """Representation of the operator as a matrix in the computational basis."""
         wire_order = wire_order or self.wires
-        mat_hash = hash((self.hash, hash(self.wires)))
+        mat_hash = hash(Wires(wire_order))
 
-        if mat_hash in self._mat_cache:
-            return math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order)
+        if mat_hash in self._mat_cache:  # result already cached
+            return self._mat_cache[mat_hash]
+
+        elif (
+            hash((self.hash, hash(self.wires))) in self._mat_cache
+        ):  # result not in cache, but base in cache
+            res = math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order)
+            if cache:
+                self._mat_cache[hash(Wires(wire_order))] = res
+            return res
 
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
@@ -185,7 +185,10 @@ class Sum(CompositeOp):
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
         )
 
-        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+        res = math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+        if cache:
+            self._mat_cache[hash(Wires(wire_order))] = res
+        return res
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""

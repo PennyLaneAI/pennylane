@@ -47,6 +47,7 @@ class CompositeOp(Operator, abc.ABC):
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
+        self._mat_cache = {}  # instance based matrix cache
 
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
