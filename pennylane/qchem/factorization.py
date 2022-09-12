@@ -290,8 +290,9 @@ def basis_rotation(one_electron, two_electron, tol_factor):
     ops_l = []
     for coeff in eigvals[1:]:
         ops_l_ = 0.0
-        for i in range(len(coeff) // 2):
-            for j in range(len(coeff) // 2):
+        n = int(len(coeff) ** 0.5)
+        for i in range(n):
+            for j in range(n):
                 c = coeff[i + j]
                 if i == j:
                     ops_l_ += (
