@@ -157,10 +157,10 @@ class NullQubit(QubitDevice):
             self._apply_operation(None, op)
 
     def _apply_operation(self, state, operation):
+        self._operation_calls[operation.base_name] += 1
+
         if operation.__class__.__name__ in self._apply_ops:
             return self._apply_ops[operation.base_name](state, axes=None, inverse=operation.inverse)
-
-        self._operation_calls[operation.name] += 1
 
         wires = operation.wires
         if operation in diagonal_in_z_basis:
@@ -171,37 +171,37 @@ class NullQubit(QubitDevice):
         return self._apply_unitary(state, None, wires)
 
     def _apply_x(self, state, axes, **kwargs):
-        self._operation_calls["PauliX"] += 1
+        pass
 
     def _apply_y(self, state, axes, **kwargs):
-        self._operation_calls["PauliY"] += 1
+        pass
 
     def _apply_z(self, state, axes, **kwargs):
-        self._operation_calls["PauliZ"] += 1
+        pass
 
     def _apply_hadamard(self, state, axes, **kwargs):
-        self._operation_calls["Hadamard"] += 1
+        pass
 
     def _apply_s(self, state, axes, inverse=False):
-        self._operation_calls["S"] += 1
+        pass
 
     def _apply_t(self, state, axes, inverse=False):
-        self._operation_calls["T"] += 1
+        pass
 
     def _apply_sx(self, state, axes, inverse=False):
-        self._operation_calls["SX"] += 1
+        pass
 
     def _apply_cnot(self, state, axes, **kwargs):
-        self._operation_calls["CNOT"] += 1
+        pass
 
     def _apply_swap(self, state, axes, **kwargs):
-        self._operation_calls["SWAP"] += 1
+        pass
 
     def _apply_cz(self, state, axes, **kwargs):
-        self._operation_calls["CZ"] += 1
+        pass
 
     def _apply_toffoli(self, state, axes, **kwargs):
-        self._operation_calls["Toffoli"] += 1
+        pass
 
     def _apply_phase(self, state, axes, parameters, inverse=False):
         pass
@@ -222,10 +222,10 @@ class NullQubit(QubitDevice):
             supports_broadcasting=True,
             returns_state=True,
             passthru_devices={
-                "tf": "null.qubit.tf",
-                "torch": "null.qubit.torch",
-                "autograd": "null.qubit.autograd",
-                "jax": "null.qubit.jax",
+                "tf": "null.qubit",
+                "torch": "null.qubit",
+                "autograd": "null.qubit",
+                "jax": "null.qubit",
             },
         )
         return capabilities
@@ -257,7 +257,7 @@ class NullQubit(QubitDevice):
         pass
 
     def reset(self):
-        pass
+        self._operation_calls = defaultdict(int)
 
     def analytic_probability(self, wires=None):
         pass
