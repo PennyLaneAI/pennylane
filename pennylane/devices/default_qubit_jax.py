@@ -174,10 +174,7 @@ class DefaultQubitJax(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            passthru_interface="jax",
-            supports_reversible_diff=False,
-        )
+        capabilities.update(passthru_interface="jax")
         return capabilities
 
     @staticmethod

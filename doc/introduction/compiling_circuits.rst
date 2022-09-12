@@ -15,6 +15,83 @@ or replace a large circuit by a number of smaller circuits.
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 
+Simplifying Operators
+----------------------
+
+PennyLane provides the :func:`~.pennylane.simplify` function to simplify single operators, quantum
+functions, QNodes and tapes. This function has several purposes:
+
+* Reducing the arithmetic depth of the given operators to its minimum.
+* Grouping like terms in sums and products.
+* Resolving products of Pauli operators.
+* Combining identical rotation gates by summing its angles.
+
+Here are some simple simplification routines:
+
+>>> qml.simplify(qml.RX(4*np.pi+0.1, 0 ))
+RX(0.09999999999999964, wires=[0])
+>>> qml.simplify(qml.adjoint(qml.RX(1.23, 0)))
+RX(11.336370614359172, wires=[0])
+>>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
+RX(3.0, wires=[0])
+>>> qml.simplify(qml.op_sum(qml.PauliY(3), qml.PauliY(3)))
+2*(PauliY(wires=[3]))
+>>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
+RX(2.0, wires=[0])
+>>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+-1j*(PauliY(wires=[0]))
+
+Now lets simplify a nested operator:
+
+>>> sum_op = qml.RX(1, 0) + qml.PauliX(0)
+>>> prod1 = qml.PauliX(0) @ sum_op
+>>> nested_op = prod1 @ qml.RX(1, 0)
+>>> qml.simplify(nested_op)
+(PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
+
+Several simplifications steps are happening here. First of all, the nested products are removed:
+
+.. code-block:: python
+
+    qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
+
+Then the product of sums is transformed into a sum of products:
+
+.. code-block:: python
+
+    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
+
+And finally like terms in the obtained products are grouped together, removing all identities: 
+
+.. code-block:: python
+
+    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
+
+As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit(x):
+        (
+            qml.RX(x[0], wires=0)
+            @ qml.RY(x[1], wires=1)
+            @ qml.RZ(x[2], wires=2)
+            @ qml.RX(-1, wires=0)
+            @ qml.RY(-2, wires=1)
+            @ qml.RZ(2, wires=2)
+        )
+        return qml.probs([0, 1, 2])
+
+>>> x = [1, 2, 3]
+>>> print(qml.draw(circuit)(x))
+0: ───────────┤ ╭Probs
+1: ───────────┤ ├Probs
+2: ──RZ(5.00)─┤ ╰Probs
+
 Compilation transforms for circuit optimization
 -----------------------------------------------
 

@@ -19,7 +19,6 @@ These operators can be used in quantum functions, like shown in the following ex
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        qml.T(wires=0).inv()
         qml.AmplitudeDamping(0.1, wires=0)
         return qml.expval(qml.PauliZ(1))
 
@@ -52,6 +51,7 @@ Operator to Operator functions
     ~pennylane.adjoint
     ~pennylane.ctrl
     ~pennylane.cond
+    ~pennylane.exp
     ~pennylane.op_sum
     ~pennylane.prod
     ~pennylane.s_prod
@@ -71,8 +71,10 @@ Operator to Other functions
 
     ~pennylane.matrix
     ~pennylane.eigvals
+    ~pennylane.is_commuting
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
+    ~pennylane.simplify
 
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.

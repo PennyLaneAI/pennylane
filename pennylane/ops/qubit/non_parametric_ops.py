@@ -2306,6 +2306,13 @@ class Barrier(Operation):
     def pow(self, z):
         return [copy(self)]
 
+    def simplify(self):
+        if self.only_visual:
+            if len(self.wires) == 1:
+                return qml.Identity(self.wires[0])
+            return qml.prod(*(qml.Identity(w) for w in self.wires))
+        return self
+
 
 class WireCut(Operation):
     r"""WireCut(wires)
