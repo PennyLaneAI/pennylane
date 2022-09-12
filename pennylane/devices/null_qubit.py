@@ -18,13 +18,14 @@ from collections import defaultdict
 
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-from pennylane import QubitDevice  # , DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane import QubitDevice
 from pennylane import numpy as np
 from .._version import __version__
 
 # pylint: disable=unused-argument
 class NullQubit(QubitDevice):
-    """Null qubit device for PennyLane.
+    """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
+       Instead the time spent in execution is dominated by support (or setting up) operations, like tape creation etc.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -219,7 +220,7 @@ class NullQubit(QubitDevice):
             model="qubit",
             supports_inverse_operations=True,
             supports_analytic_computation=True,
-            supports_broadcasting=True,
+            supports_broadcasting=False,
             returns_state=True,
             passthru_devices={
                 "tf": "null.qubit",

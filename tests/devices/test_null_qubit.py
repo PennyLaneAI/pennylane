@@ -360,7 +360,7 @@ class TestNullQubitIntegration:
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
-            "supports_broadcasting": True,
+            "supports_broadcasting": False,
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "returns_probs": True,
