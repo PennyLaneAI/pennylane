@@ -215,8 +215,8 @@ class Prod(CompositeOp):
         if mat_hash in self._mat_cache:
             return self._mat_cache[mat_hash]
 
-        if hash((self.hash, hash(self.wires))) in self._mat_cache:
-            res = math.expand_matrix(self._mat_cache[mat_hash], self.wires, wire_order=wire_order)
+        if hash(self.wires) in self._mat_cache:
+            res = math.expand_matrix(self._mat_cache[hash(self.wires)], self.wires, wire_order=wire_order)
             if cache:
                 self._mat_cache[hash(Wires(wire_order))] = res
             return res
