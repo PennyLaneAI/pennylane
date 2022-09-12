@@ -17,9 +17,12 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
+from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 from cachetools import LRUCache, cached
+
+from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
@@ -213,6 +216,7 @@ class Prod(CompositeOp):
     @cached(cache=_mat_cache, key=_key_func)
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
+        
         wire_order = wire_order or self.wires
         mat_hash = hash((self.hash, hash(self.wires)))
 
@@ -224,23 +228,45 @@ class Prod(CompositeOp):
             for op in self
         )
 
-        reduced_mat, prod_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-        )
+        if self.has_overlapping_wires:
+            mats_and_wires_gen = (
+                (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+                for op in self
+            )
+
+
+            reduced_mat, prod_wires = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            )
+
 
         return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+ 
+            wire_order = wire_order or self.wires
+
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+        mats_gen = (
+            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
+        )
+        full_mat = reduce(math.kron, mats_gen)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+        if self.has_overlapping_wires:
+            mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-        reduced_mat, prod_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-        )
+            reduced_mat, prod_wires = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            )
 
-        wire_order = wire_order or self.wires
+            wire_order = wire_order or self.wires
 
-        return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+        mats = (op.sparse_matrix() for op in self)
+        full_mat = reduce(sparse_kron, mats)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property
