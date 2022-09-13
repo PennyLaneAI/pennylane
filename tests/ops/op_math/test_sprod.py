@@ -739,7 +739,7 @@ class TestArithmetic:
         """Test the adjoint method for Sprod Operators."""
 
         sprod_op = SProd(3j, qml.RX(1.23, wires=0))
-        final_op = SProd(scalar=-3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
+        final_op = SProd(scalar=0 - 3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
         adj_op = sprod_op.adjoint()
 
         assert qml.equal(final_op, adj_op)

@@ -233,3 +233,7 @@ class Exp(SymbolicOp):
         if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
             return Exp(self.base.base.simplify(), self.coeff * self.base.scalar)
         return Exp(self.base.simplify(), self.coeff)
+
+    @property
+    def hash(self):
+        return hash((str(self.name), self.base.hash, str(self.coeff)))

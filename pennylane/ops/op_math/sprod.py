@@ -250,3 +250,7 @@ class SProd(SymbolicOp):
         if isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
+
+    @property
+    def hash(self):
+        return hash((str(self.name), self.base.hash, str(self.scalar)))

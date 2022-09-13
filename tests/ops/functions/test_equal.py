@@ -991,7 +991,7 @@ class TestEqual:
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_exp_op_same_base_different_coeff(self, op1):
         """Test Exp operators with same base but different coeffs return False"""
-        assert qml.equal(qml.exp(op1, 3), qml.exp(op1, 2))
+        assert not qml.equal(qml.exp(op1, 3), qml.exp(op1, 2))
 
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_diff_pow_op(self, ops):
@@ -1021,4 +1021,4 @@ class TestEqual:
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_sprod_op_same_base_different_coeff(self, op1):
         """Test SProd operators with same base but different coeffs return False"""
-        assert qml.equal(qml.s_prod(3, op1), qml.s_prod(2, op1))
+        assert not qml.equal(qml.s_prod(3, op1), qml.s_prod(2, op1))
