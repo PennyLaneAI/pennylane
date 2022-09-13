@@ -328,13 +328,13 @@ GM_OBSERVABLES = [
 ]
 
 
-class TestGellMannObservables:
+class TestGellMannervables:
     """Tests for simple single-qutrit observables"""
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_diagonalization(self, index, mat, eigs, tol):
         """Test the method transforms Gell-Mann observables appropriately."""
-        ob = qml.GellMannObs(index, wires=0)
+        ob = qml.GellMann(wires=0, index=index)
         A = ob.matrix()
 
         diag_gates = ob.diagonalizing_gates()
@@ -357,20 +357,20 @@ class TestGellMannObservables:
         with pytest.raises(
             ValueError, match="The index must be an integer between 1 and 8 inclusive"
         ):
-            qml.GellMannObs(index, wires=0)
+            qml.GellMann(wires=0, index=index)
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_matrix(self, index, mat, eigs, tol):
-        res_static = qml.GellMannObs.compute_matrix(index)
-        res_dynamic = qml.GellMannObs(index, wires=0).matrix()
+        res_static = qml.GellMann.compute_matrix(index)
+        res_dynamic = qml.GellMann(wires=0, index=index).matrix()
 
         assert np.allclose(res_static, mat)
         assert np.allclose(res_dynamic, mat)
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_eigvals(self, index, mat, eigs, tol):
-        res_static = qml.GellMannObs.compute_eigvals(index)
-        res_dynamic = qml.GellMannObs(index, wires=0).eigvals()
+        res_static = qml.GellMann.compute_eigvals(index)
+        res_dynamic = qml.GellMann(wires=0, index=index).eigvals()
 
         assert np.allclose(res_static, eigs)
         assert np.allclose(res_dynamic, eigs)

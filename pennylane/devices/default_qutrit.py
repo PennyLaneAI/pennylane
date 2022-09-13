@@ -65,7 +65,7 @@ class DefaultQutrit(QutritDevice):
     # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
     observables = {
         "THermitian",
-        "GellMannObs",
+        "GellMann",
         "Identity",
     }
 

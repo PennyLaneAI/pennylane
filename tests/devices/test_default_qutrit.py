@@ -401,22 +401,22 @@ class TestExpval:
                 0,
                 [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
             ),
-            (qml.GellMannObs, [1, 0, 0], 0, 1),
-            (qml.GellMannObs, [0, 0, 1], 0, 1),
-            (qml.GellMannObs, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], -1, 2),
-            (qml.GellMannObs, [1, 0, 0], 0, 2),
-            (qml.GellMannObs, [1, 0, 0], 1, 3),
-            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], -0.5, 3),
-            (qml.GellMannObs, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], -1, 4),
-            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 4),
-            (qml.GellMannObs, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 1, 5),
-            (qml.GellMannObs, [0, 1, 0], 0, 5),
-            (qml.GellMannObs, [0, 0, 1], 0, 6),
-            (qml.GellMannObs, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0, 6),
-            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 1, 7),
-            (qml.GellMannObs, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], -1, 7),
-            (qml.GellMannObs, [0, 0, 1], -2 / math.sqrt(3), 8),
-            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 0, 8),
+            (qml.GellMann, [1, 0, 0], 0, 1),
+            (qml.GellMann, [0, 0, 1], 0, 1),
+            (qml.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], -1, 2),
+            (qml.GellMann, [1, 0, 0], 0, 2),
+            (qml.GellMann, [1, 0, 0], 1, 3),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], -0.5, 3),
+            (qml.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], -1, 4),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 4),
+            (qml.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 1, 5),
+            (qml.GellMann, [0, 1, 0], 0, 5),
+            (qml.GellMann, [0, 0, 1], 0, 6),
+            (qml.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0, 6),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 1, 7),
+            (qml.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], -1, 7),
+            (qml.GellMann, [0, 0, 1], -2 / math.sqrt(3), 8),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 0, 8),
         ],
     )
     def test_expval_single_wire_with_parameters(
@@ -425,7 +425,7 @@ class TestExpval:
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
         obs = (
-            observable(par, wires=[0])
+            observable(wires=[0], index=par)
             if isinstance(par, int)
             else observable(np.array(par), wires=[0])
         )
@@ -539,22 +539,22 @@ class TestVar:
                 2 / 3,
                 [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
             ),
-            (qml.GellMannObs, [1, 0, 0], 1, 1),
-            (qml.GellMannObs, [0, 0, 1], 0, 1),
-            (qml.GellMannObs, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], 0, 2),
-            (qml.GellMannObs, [1, 0, 0], 1, 2),
-            (qml.GellMannObs, [1, 0, 0], 0, 3),
-            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], 0.25, 3),
-            (qml.GellMannObs, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], 0, 4),
-            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 9, 4),
-            (qml.GellMannObs, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 0, 5),
-            (qml.GellMannObs, [0, 1, 0], 0, 5),
-            (qml.GellMannObs, [0, 0, 1], 1, 6),
-            (qml.GellMannObs, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0.5, 6),
-            (qml.GellMannObs, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 0, 7),
-            (qml.GellMannObs, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], 0, 7),
-            (qml.GellMannObs, [0, 0, 1], 0, 8),
-            (qml.GellMannObs, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 8),
+            (qml.GellMann, [1, 0, 0], 1, 1),
+            (qml.GellMann, [0, 0, 1], 0, 1),
+            (qml.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], 0, 2),
+            (qml.GellMann, [1, 0, 0], 1, 2),
+            (qml.GellMann, [1, 0, 0], 0, 3),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], 0.25, 3),
+            (qml.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], 0, 4),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 9, 4),
+            (qml.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 0, 5),
+            (qml.GellMann, [0, 1, 0], 0, 5),
+            (qml.GellMann, [0, 0, 1], 1, 6),
+            (qml.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0.5, 6),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 0, 7),
+            (qml.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], 0, 7),
+            (qml.GellMann, [0, 0, 1], 0, 8),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 8),
         ],
     )
     def test_var_single_wire_with_parameters(
@@ -563,7 +563,7 @@ class TestVar:
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
         obs = (
-            observable(par, wires=[0])
+            observable(wires=[0], index=par)
             if isinstance(par, int)
             else observable(np.array(par), wires=[0])
         )
@@ -840,7 +840,7 @@ class TestTensorExpval:
         """Test that the expectation value of the tensor product of two Gell-Mann observables is
         correct"""
         dev = qml.device("default.qutrit", wires=2)
-        obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
+        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
         dev.apply(
             [
@@ -864,7 +864,7 @@ class TestTensorVar:
     def test_gell_mann_tensor(self, index_1, index_2, tol):
         """Test that the variance of tensor products of Gell-Mann observables is correct"""
         dev = qml.device("default.qutrit", wires=2)
-        obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
+        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
         dev.apply(
             [
@@ -921,7 +921,7 @@ class TestTensorSample:
         """Test that sampling tensor products  involving Gell-Mann observables works correctly"""
         dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
 
-        obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
+        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
         dev.apply(
             [
@@ -963,7 +963,7 @@ class TestTensorSample:
 
         A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
 
-        obs = qml.GellMannObs(index, wires=0) @ qml.THermitian(A, wires=1)
+        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
 
         dev.apply(
             [
