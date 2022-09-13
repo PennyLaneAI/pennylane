@@ -171,14 +171,14 @@ class PauliSentence(dict):
 
         return rep_str
 
-    def _to_mat(self, wire_order, sparse=False):
+    def _to_mat(self, wire_order, is_sparse=False):
         """Get the matrix by iterating over each term and getting its matrix
         representation for each wire listed in the wire order."""
-        matrix_map = sparse_mat_map if sparse else mat_map
-        final_mat = sparse.eye(2, format="csr") if sparse else np.eye(2)
+        matrix_map = sparse_mat_map if is_sparse else mat_map
+        final_mat = sparse.eye(2, format="csr") if is_sparse else np.eye(2)
 
         for i, (pw, coeff) in enumerate(self.items()):
-            mat = sparse.eye(2, format="csr") if sparse else np.eye(2)
+            mat = sparse.eye(2, format="csr") if is_sparse else np.eye(2)
             for j, wire in enumerate(wire_order):
                 mat = math.dot(mat, matrix_map[pw[wire]]) if j == 0 else math.kron(mat, matrix_map[pw[wire]])
 
@@ -191,4 +191,4 @@ class PauliSentence(dict):
         return self._to_mat(wire_order=wire_order)
 
     def to_sparse_mat(self, wire_order):
-        return self._to_mat(wire_order=wire_order, sparse=True)
+        return self._to_mat(wire_order=wire_order, is_sparse=False)

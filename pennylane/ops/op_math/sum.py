@@ -132,7 +132,7 @@ class Sum(CompositeOp):
         """The reduced pauli representation of a sum of operators
         is just the sum of each representation."""
         final_pauli_sentence = qml.ops.PauliArithmetic.PauliSentence({})
-        for index, term in enumerate(self.summands):
+        for index, term in enumerate(self.operands):
             if term.pauli_rep is None:
                 return None
             if index == 0:
