@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``adjoint_jacobian_new`` method of the :mod:`pennylane` :class:`QubitDevice` class.
+Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
 import pytest
 
@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 
 class TestAdjointJacobian:
-    """Tests for the ``adjoint_jacobian_new`` method"""
+    """Tests for the ``adjoint_jacobian`` method"""
 
     @pytest.fixture
     def dev(self):
@@ -36,7 +36,7 @@ class TestAdjointJacobian:
             qml.var(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
-            dev.adjoint_jacobian_new(tape)
+            dev.adjoint_jacobian(tape)
 
     def test_finite_shots_warns(self):
         """Tests warning raised when finite shots specified"""
@@ -49,7 +49,7 @@ class TestAdjointJacobian:
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
-            dev.adjoint_jacobian_new(tape)
+            dev.adjoint_jacobian(tape)
 
     def test_hamiltonian_error(self, dev):
         """Test that error is raised for qml.Hamiltonian"""
@@ -66,7 +66,7 @@ class TestAdjointJacobian:
             qml.QuantumFunctionError,
             match="Adjoint differentiation method does not support Hamiltonian observables",
         ):
-            dev.adjoint_jacobian_new(tape)
+            dev.adjoint_jacobian(tape)
 
     def test_unsupported_op(self, dev):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
@@ -77,7 +77,7 @@ class TestAdjointJacobian:
             qml.expval(qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="The CRot operation is not"):
-            dev.adjoint_jacobian_new(tape)
+            dev.adjoint_jacobian(tape)
 
     def test_trainable_hermitian_warns(self, tol):
         """Test attempting to compute the gradient of a tape that obtains the
@@ -93,7 +93,7 @@ class TestAdjointJacobian:
         with pytest.warns(
             UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
         ):
-            res = dev.adjoint_jacobian_new(tape)
+            res = dev.adjoint_jacobian(tape)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -108,7 +108,7 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1}
 
-        calculated_val = dev.adjoint_jacobian_new(tape)
+        calculated_val = dev.adjoint_jacobian(tape)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -129,7 +129,7 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        calculated_val = dev.adjoint_jacobian_new(tape)
+        calculated_val = dev.adjoint_jacobian(tape)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -151,7 +151,7 @@ class TestAdjointJacobian:
         exact = np.cos(par)
         tapes, fn = qml.gradients.finite_diff(tape)
         grad_F = fn(qml.execute(tapes, dev, None))
-        grad_A = dev.adjoint_jacobian_new(tape)
+        grad_A = dev.adjoint_jacobian(tape)
 
         # different methods must agree
         assert np.allclose(grad_F, exact, atol=tol, rtol=0)
@@ -166,7 +166,7 @@ class TestAdjointJacobian:
             qml.expval(qml.PauliZ(0))
 
         # circuit jacobians
-        dev_jacobian = dev.adjoint_jacobian_new(tape)
+        dev_jacobian = dev.adjoint_jacobian(tape)
         expected_jacobian = -np.sin(a)
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
@@ -184,7 +184,7 @@ class TestAdjointJacobian:
                 qml.expval(qml.PauliZ(idx))
 
         # circuit jacobians
-        dev_jacobian = dev.adjoint_jacobian_new(tape)
+        dev_jacobian = dev.adjoint_jacobian(tape)
         assert isinstance(dev_jacobian, tuple)
         assert len(dev_jacobian) == 3
         assert all(jac.shape == (3,) for jac in dev_jacobian)
@@ -221,7 +221,7 @@ class TestAdjointJacobian:
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
         grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
-        grad_D = dev.adjoint_jacobian_new(tape)
+        grad_D = dev.adjoint_jacobian(tape)
         assert isinstance(grad_D, tuple)
         assert len(grad_D) == 2
         assert all(jac.shape == (op.num_params,) for jac in grad_D)
@@ -241,7 +241,7 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        grad_D = dev.adjoint_jacobian_new(tape)
+        grad_D = dev.adjoint_jacobian(tape)
         grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
 
         # gradient has the correct shape and every element is nonzero
@@ -264,10 +264,10 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        dM1 = dev.adjoint_jacobian_new(tape)
+        dM1 = dev.adjoint_jacobian(tape)
 
         qml.execute([tape], dev, None)
-        dM2 = dev.adjoint_jacobian_new(tape, use_device_state=True)
+        dM2 = dev.adjoint_jacobian(tape, use_device_state=True)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
@@ -283,10 +283,10 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        dM1 = dev.adjoint_jacobian_new(tape)
+        dM1 = dev.adjoint_jacobian(tape)
 
         qml.execute([tape], dev, None)
-        dM2 = dev.adjoint_jacobian_new(tape, starting_state=dev._pre_rotated_state)
+        dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
@@ -311,7 +311,7 @@ class TestAdjointJacobian:
             qml.expval(qml.Hermitian(mx, wires=[0, 2]))
 
         tape.trainable_params = {0, 1, 2}
-        res = dev.adjoint_jacobian_new(tape)
+        res = dev.adjoint_jacobian(tape)
 
         expected = [
             np.cos(a) * np.sin(b) * np.sin(c),
@@ -352,7 +352,7 @@ class TestAdjointJacobian:
 
         tape.trainable_params = {1, 2, 3}
 
-        grad_D = dev.adjoint_jacobian_new(tape)
+        grad_D = dev.adjoint_jacobian(tape)
 
         # check that the type and format of the adjoint jacobian is correct
         assert isinstance(grad_D, tuple)
@@ -370,4 +370,4 @@ class TestAdjointJacobian:
 
             assert isinstance(grad_D[i], np.ndarray)
             assert grad_D[i].shape == (3,)
-            assert np.allclose(grad_D[i], dev.adjoint_jacobian_new(indiv_tape))
+            assert np.allclose(grad_D[i], dev.adjoint_jacobian(indiv_tape))
