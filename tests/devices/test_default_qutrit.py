@@ -862,7 +862,7 @@ class TestTensorVar:
     @pytest.mark.parametrize("index_1", list(range(1, 9)))
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_tensor(self, index_1, index_2, tol):
-        """Test that the variance of tensor Gell-Mann observables is correct"""
+        """Test that the variance of tensor products of Gell-Mann observables is correct"""
         dev = qml.device("default.qutrit", wires=2)
         obs = qml.GellMannObs(index_1, wires=0) @ qml.GellMannObs(index_2, wires=1)
 
