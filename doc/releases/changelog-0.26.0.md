@@ -110,13 +110,9 @@
 
   - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
   which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
-
   - The `qml.TAdd` and `qml.TSWAP` operations which are the qutrit analogs of the CNOT and SWAP operations, respectively.
-
   - Custom unitary operations via `qml.QutritUnitary`.
-
   - `qml.state` and `qml.probs` measurements.
-
   - Measuring user-specified Hermitian matrix observables via `qml.THermitian`.
 
   A comprehensive example of these features is given below:
@@ -322,9 +318,6 @@
   wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
   [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
-* The new `qml.pow` provides a top-level constructor for raising operators to powers.
-  [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
-
 * `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple 
   broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
@@ -349,9 +342,6 @@
 * Automatic circuit cutting has been improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
-
-* Added `sparse_matrix()` support for single qubit observables.
-  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 * By default, `qml.counts` only returns the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
   will return a dictionary containing all possible outcomes. 
@@ -393,11 +383,14 @@
   [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
   ```
 
-* `qml.Barrier` with `only_visual=True` now simplifies via `op.simplify()` to the identity
-  or a product of identities.
+* Provided `sparse_matrix()` support for single qubit observables.
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
+
+* `qml.Barrier` with `only_visual=True` now simplifies via `op.simplify()` to the identity operator
+  or a product of identity operators.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
-* More correct and intuitive outputs for printing some operators have been added.
+* More accurate and intuitive outputs for printing some operators have been added.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
 * Results for the matrix of the sum or product of operators are stored in a more efficient manner.
@@ -406,7 +399,7 @@
 * The computation of the (sparse) matrix for the sum or product of operators is now more efficient.
   [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
 
-* When the factors of `Prod` don't share any wires, the matrix and sparse matrix are computed using
+* When the factors of `qml.prod` don't share any wires, the matrix and sparse matrix are computed using
   a kronecker product for improved efficiency.
   [(#3040)](https://github.com/PennyLaneAI/pennylane/pull/3040)
   
@@ -416,32 +409,6 @@
 * Added `len`, `iter` and `getitem` dunder methods to a new `CompositeOp` class to help iterate over `Sum` and `Prod` operands.
   [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
 
-<h3>Breaking changes</h3>
-
-* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
-  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
-  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
-
-* The `ControlledOperation` class has been removed.  This was a developer-only class, so the change should not be evident to
-  any users. It is replaced by `Controlled`.
-  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
-
-* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
-  with an additional keyword argument `circuit`, which represents the quantum tape
-  being executed.
-  Any device that overrides `statistics` should edit the signature of the method to include
-  the new `circuit` keyword argument.
-  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
-
-* The `expand_matrix()` has been moved from `~/operation.py` to
-  `~/math/matrix_manipulation.py`
-  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
-
-* `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
-  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
-
-* `qml.is_commuting` has been moved from `pennylane/transforms/commutation_dag.py` to `pennylane/ops/functions`.
-  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
 
 <h3>Deprecations</h3>
 
@@ -476,6 +443,36 @@
 
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
+
+<h3>Breaking changes</h3>
+
+* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
+  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+* PennyLane no longer supports TensorFlow `<2.3.0`. Please ensure that you're using `>= 2.3.0`
+  [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683/files)
+
+* The `ControlledOperation` class has been removed.  This was a developer-only class, so the change should not be evident to
+  any users. It is replaced by `Controlled`.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
+
+* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
+  with an additional keyword argument `circuit`, which represents the quantum tape
+  being executed.
+  Any device that overrides `statistics` should edit the signature of the method to include
+  the new `circuit` keyword argument.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+
+* The `expand_matrix()` has been moved from `~/operation.py` to
+  `~/math/matrix_manipulation.py`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+
+* `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
+  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
+
+* `qml.is_commuting` has been moved from `pennylane/transforms/commutation_dag.py` to `pennylane/ops/functions`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
 
 <h3>Documentation</h3>
 
