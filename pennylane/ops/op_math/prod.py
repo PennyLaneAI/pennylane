@@ -239,6 +239,8 @@ class Prod(Operator):
 
     @property
     def pauli_rep(self):
+        """The reduced pauli representation of a product
+        is just the product if each representation."""
         final_pauli_sentence = qml.ops.PauliArithmetic.PauliSentence({})
         for index, factor in enumerate(self.factors):
             if factor.pauli_rep is None:

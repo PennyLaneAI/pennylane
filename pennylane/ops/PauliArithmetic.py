@@ -101,6 +101,8 @@ class PauliWord(dict):
     }
 
     def __missing__(self, key):
+        """If the wire is not in the Pauli word,
+        then no operator acts on it, so return the Identity."""
         return I
 
     def __setitem__(self, key, item):
@@ -131,9 +133,13 @@ class PauliWord(dict):
 class PauliSentence(dict):
     """Dict representing a Pauli Sentence."""
     def __missing__(self, key):
+        """If the pauliword is not in the sentence then the coefficient
+        associated with it should be 0."""
         return 0.0
 
     def __add__(self, other):
+        """Add two Pauli sentence together by iterating over the smaller
+        one and adding its terms to the larger one."""
         smaller_ps, larger_ps = (self, other) if len(self) < len(other) else (other, self)
         for key in smaller_ps:
             larger_ps[key] += smaller_ps[key]
@@ -141,6 +147,8 @@ class PauliSentence(dict):
         return larger_ps
 
     def __mul__(self, other):
+        """Multiply two Pauli sentences by iterating over each sentence and multiplying
+        the Pauli words pair-wise"""
         final_ps = PauliSentence({})
         for pw1 in self:
             for pw2 in other:
@@ -164,6 +172,8 @@ class PauliSentence(dict):
         return rep_str
 
     def _to_mat(self, wire_order, sparse=False):
+        """Get the matrix by iterating over each term and getting its matrix
+        representation for each wire listed in the wire order."""
         matrix_map = sparse_mat_map if sparse else mat_map
         final_mat = sparse.eye(2, format="csr") if sparse else np.eye(2)
 

@@ -651,6 +651,8 @@ class Operator(abc.ABC):
 
     @property
     def pauli_rep(self):
+        """The reduced pauli representation of an operator.
+        Will be None for most operators except for pauli ops."""
         return self._pauli_rep
 
     @pauli_rep.setter

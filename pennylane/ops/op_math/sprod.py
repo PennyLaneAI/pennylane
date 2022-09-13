@@ -162,6 +162,8 @@ class SProd(SymbolicOp):
 
     @property
     def pauli_rep(self):
+        """The reduced pauli representation of a scalar product
+        is just the base representation with each scalar scaled."""
         if self.base.pauli_rep is None:
             return None
         final_pauli_sentence = copy(self.base.pauli_rep)
