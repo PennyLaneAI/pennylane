@@ -25,19 +25,52 @@ import pickle
 import dill
 import requests
 
+from pennylane.qdata.dataset import Dataset
+from pennylane.qdata.qchem_dataset import ChemDataset
+from pennylane.qdata.qspin_dataset import SpinDataset
 
 DATA_STRUCT = {
     "qchem": {
         "params": ["molname", "basis", "bondlength"],
-        "keys": {},
+        "keys": ['vqe_params',
+                 'molecule',
+                 'hamiltonian',
+                 'fci_energy',
+                 'spinz_op',
+                 'full',
+                 'sparse_hamiltonian',
+                 'dipole_op',
+                 'spin2_op',
+                 'vqe_circuit',
+                 'num_op',
+                 'tapered_spinz_op',
+                 'paulix_ops',
+                 'ham_wire_map',
+                 'meas_groupings',
+                 'tapered_spin2_op',
+                 'vqe_energy',
+                 'symmetries',
+                 'hf_state',
+                 'tapered_dipole_op',
+                 'tapered_num_op',
+                 'tapered_hamiltonian',
+                 'optimal_sector',
+                 'tapered_hf_state'],
     },
     "qspin": {
         "params": ["sysname", "periodicity", "lattice", "layout"],
-        "keys": {},
+        "keys": ['parameters',
+                 'ground_states',
+                 'full',
+                 'phase_labels',
+                 'ground_energies',
+                 'hamiltonians',
+                 'order_parameters',
+                 'classical_shadows'],
     },
 }
 
-URL = "https://pl-qd-flask-app.herokuapp.com/"
+URL = "https://pl-qd-flask-app.herokuapp.com"
 
 
 def _convert_size(size_bytes):
@@ -155,7 +188,7 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
 
     if not force:
         force = _check_data_exist(data_type, data_params, directory_path)
-
+    print(directory_path)
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
@@ -201,14 +234,21 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
 
     data_files = []
     with zipfile.ZipFile(f"{directory_path}/data.zip", "r") as zpf:
-        for file in zpf.namelist():
-            if file[-3:] == "pkl":
-                try:
-                    fl = pickle.load(zpf.open(file))
-                except:
-                    fl = dill.load(zpf.open(file))
-                data_files.append(fl)
         zpf.extractall(f"{directory_path}")
+        for file in zpf.namelist():
+            if file[-3:] == "dat":
+                data = Dataset.read_data(f"{directory_path}/{file}")
+                if data_type == "qchem":
+                    obj = ChemDataset()
+                elif data_type == "qspin":
+                    obj = SpinDataset()
+                if filter_params == ["full"]:
+                    for key, vals in data.items():
+                        setattr(obj, key, vals)
+                else:
+                    key = '_'.join(file.split('_')[len(DATA_STRUCT[data_type]["params"]):]).split('.')[0]
+                    setattr(obj, key, data)
+                data_files.append(obj)
     os.remove(f"{directory_path}/data.zip")
 
     return data_files

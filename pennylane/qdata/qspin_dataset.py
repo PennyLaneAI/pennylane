@@ -72,18 +72,18 @@ class SpinDataset(Dataset):
         self._parameters = value
 
     @property
-    def hamiltonian(self):
+    def hamiltonians(self):
         """Hamiltonian property of SpinDataset"""
-        if self._hamiltonian is None:
+        if self._hamiltonians is None:
             if self._data_file:
-                self._hamiltonian = self.read_data(f"{self._data_file}_hamiltonian.dat")
-        return self._hamiltonian
+                self._hamiltonians = self.read_data(f"{self._data_file}_hamiltonians.dat")
+        return self._hamiltonians
 
-    @hamiltonian.setter
-    def hamiltonian(self, value, write=False):
+    @hamiltonians.setter
+    def hamiltonians(self, value, write=False):
         if self._data_file and write:
-            self.write_data(f"{self._data_file}_hamiltonian.dat", value)
-        self._hamiltonian = value
+            self.write_data(f"{self._data_file}_hamiltonians.dat", value)
+        self._hamiltonians = value
 
     @property
     def phase_labels(self):
