@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Added the `qml.GellMannObs` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as the first
-  argument when using `GellMannObs`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
 <h3>Improvements</h3>
