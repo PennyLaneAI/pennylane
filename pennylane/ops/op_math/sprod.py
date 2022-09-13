@@ -16,6 +16,7 @@ This file contains the implementation of the SProd class which contains logic fo
 computing the scalar product of operations.
 """
 from typing import Union
+from copy import copy
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -160,13 +161,13 @@ class SProd(SymbolicOp):
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
     @property
-    def _pauli_rep(self):
-        if self.base._pauli_rep is None:
+    def pauli_rep(self):
+        if self.base.pauli_rep is None:
             return None
-
-        for pw in self.base._pauli_rep:
-            self.base._pauli_rep[pw] *= self.scalar
-        return self.base._pauli_rep
+        final_pauli_sentence = copy(self.base.pauli_rep)
+        for pw in final_pauli_sentence:
+            final_pauli_sentence[pw] *= self.scalar
+        return final_pauli_sentence
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.

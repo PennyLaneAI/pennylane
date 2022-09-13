@@ -68,24 +68,33 @@ class PauliWord(dict):
 
     >>> w = PauliWord({"a": X, 2: Y, 3: z})
     """
-
+    _map_I = {
+        I: (1, I),
+        X: (1, X),
+        Y: (1, Y),
+        Z: (1, Z),
+    }
     _map_X = {
+        I: (1, X),
         X: (1, I),
         Y: (1.0j, Z),
         Z: (-1.0j, Y),
     }
     _map_Y = {
+        I: (1, Y),
         X: (-1.0j, Z),
         Y: (1, I),
         Z: (1j, X),
     }
     _map_Z = {
+        I: (1, Z),
         X: (1j, Y),
         Y: (-1.0j, X),
         Z: (1, I),
     }
 
     mul_map = {
+        I: _map_I,
         X: _map_X,
         Y: _map_Y,
         Z: _map_Z
@@ -105,6 +114,7 @@ class PauliWord(dict):
         coeff = 1
 
         for wire, term in other.items():
+
             if wire in d:
                 factor, new_op = self.mul_map[d[wire]][term]
                 if new_op == I:

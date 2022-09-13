@@ -240,13 +240,13 @@ class Prod(Operator):
     @property
     def pauli_rep(self):
         final_pauli_sentence = qml.ops.PauliArithmetic.PauliSentence({})
-        for factor in self.factors:
-            print(f"here, {factor}, {factor.pauli_rep}")
+        for index, factor in enumerate(self.factors):
             if factor.pauli_rep is None:
                 return None
-            print(f"pauli sentence before: {final_pauli_sentence}")
-            final_pauli_sentence *= factor.pauli_rep
-            print(f"pauli sentence after: {final_pauli_sentence}")
+            if index == 0:
+                final_pauli_sentence = copy(factor.pauli_rep)
+            else:
+                final_pauli_sentence *= factor.pauli_rep
         return final_pauli_sentence
 
     def decomposition(self):

@@ -217,10 +217,13 @@ class Sum(Operator):
     @property
     def pauli_rep(self):
         final_pauli_sentence = qml.ops.PauliArithmetic.PauliSentence({})
-        for term in self.summands:
+        for index, term in enumerate(self.summands):
             if term.pauli_rep is None:
                 return None
-            final_pauli_sentence += term.pauli_rep
+            if index == 0:
+                final_pauli_sentence = copy(term.pauli_rep)
+            else:
+                final_pauli_sentence += term.pauli_rep
         return final_pauli_sentence
 
     def terms(self):
