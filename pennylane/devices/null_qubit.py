@@ -283,3 +283,6 @@ class NullQubit(QubitDevice):
         for c in circuits:
             res.append(self.execute(c))
         return res
+
+    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
+        return None
