@@ -128,7 +128,7 @@ def _validate_params(data_type, data_params, filter_params=None):
     if not isinstance(data_params, dict):
         raise TypeError(f"Args 'data_params' should be a dict, but got {type(data_params)}.")
 
-    if list(data_params.keys()) != DATA_STRUCT[data_type]["params"]:
+    if sorted(list(data_params.keys())) != sorted(DATA_STRUCT[data_type]["params"]):
         raise ValueError(
             f"Supported parameter values for {data_type} are {DATA_STRUCT[data_type]['params']}, but got {list(data_params.keys())}."
         )
