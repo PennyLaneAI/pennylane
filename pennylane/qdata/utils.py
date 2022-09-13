@@ -248,7 +248,7 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
                     obj = ChemDataset()
                 elif data_type == "qspin":
                     obj = SpinDataset()
-                if filter_params == ["full"]:
+                if filter_params == ["full"] or filter_params is None:
                     for key, vals in data.items():
                         setattr(obj, key, vals)
                 else:
