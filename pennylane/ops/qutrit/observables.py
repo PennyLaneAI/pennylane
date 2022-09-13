@@ -310,8 +310,7 @@ class GellMann(Observable):
         .. seealso:: :meth:`~.GellMann.diagonalizing_gates`.
 
         Args:
-            index (int): The index of the Gell-Mann matrix to be used. Must be between 1
-            and 8 inclusive
+            index (int): The index of the Gell-Mann matrix to be used. Must be between 1 and 8 inclusive
             wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
