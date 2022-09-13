@@ -155,7 +155,7 @@ class GellMann(Observable):
     r"""
     The Gell-Mann observables for qutrits
 
-    The Gell-Mann matrices are a set of 8 linearly independent :math:`3x3` traceless, Hermitian matrices which
+    The Gell-Mann matrices are a set of 8 linearly independent :math:`3 \times 3` traceless, Hermitian matrices which
     naturally generalize the Pauli matrices from :math:`SU(2)` to :math:`SU(3)`.
 
     .. math::

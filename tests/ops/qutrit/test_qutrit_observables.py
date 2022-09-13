@@ -354,6 +354,7 @@ class TestGellMannervables:
 
     @pytest.mark.parametrize("index", [0, 9, 1.0, 2.5, "c"])
     def test_index_error(self, index):
+        """Test that using bad index values throws the appropriate error"""
         with pytest.raises(
             ValueError,
             match="The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive.",
@@ -362,6 +363,7 @@ class TestGellMannervables:
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_matrix(self, index, mat, eigs, tol):
+        """Test that the Gell-Mann matrices are correct"""
         res_static = qml.GellMann.compute_matrix(index)
         res_dynamic = qml.GellMann(wires=0, index=index).matrix()
 
@@ -370,6 +372,7 @@ class TestGellMannervables:
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_eigvals(self, index, mat, eigs, tol):
+        """Test that the Gell-Mann eigenvalues are correct"""
         res_static = qml.GellMann.compute_eigvals(index)
         res_dynamic = qml.GellMann(wires=0, index=index).eigvals()
 

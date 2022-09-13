@@ -781,6 +781,31 @@ class TestDefaultQutritIntegration:
 class TestTensorExpval:
     """Test tensor expectation values"""
 
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_gell_mann_hermitian(self, index, tol):
+        """Test that the variance of the tensor product of a Gell-Mann observable and a Hermitian
+        matrix behaves correctly."""
+        dev = qml.device("default.qutrit", wires=2)
+        A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
+        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.expval(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index - 1], A)
+
+        expected = state.conj() @ obs_mat @ state.T
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
     def test_hermitian_hermitian(self, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qutrit", wires=3)
@@ -830,13 +855,9 @@ class TestTensorExpval:
         expected = 3.5 * 1 * 1
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "index_1, eval_1", list(zip(list(range(1, 9)), [0, 0, -1, 0, 0, 0, 0, 1 / math.sqrt(3)]))
-    )
-    @pytest.mark.parametrize(
-        "index_2, eval_2", list(zip(list(range(1, 9)), [0, 0, 0, 0, 0, 0, 0, -2 / math.sqrt(3)]))
-    )
-    def test_gell_mann_tensor(self, index_1, index_2, eval_1, eval_2, tol):
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
+    def test_gell_mann_tensor(self, index_1, index_2, tol):
         """Test that the expectation value of the tensor product of two Gell-Mann observables is
         correct"""
         dev = qml.device("default.qutrit", wires=2)
@@ -844,16 +865,19 @@ class TestTensorExpval:
 
         dev.apply(
             [
-                qml.QutritUnitary(TSHIFT, wires=0),
-                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(U_thadamard_01, wires=0),
                 qml.QutritUnitary(TADD, wires=[0, 1]),
             ],
             obs.diagonalizing_gates(),
         )
         res = dev.expval(obs)
 
-        expected = eval_1 * eval_2
-        assert np.isclose(res, expected, atol=tol, rtol=0)
+        obs_mat = np.kron(
+            qml.GellMann.compute_matrix(index_1), qml.GellMann.compute_matrix(index_2)
+        )
+        state = np.array([[1, 0, 0, 0, 1, 0, 0, 0, 0]]) / np.sqrt(2)
+        expected = state.conj() @ obs_mat @ state.T
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
 
 
 class TestTensorVar:
@@ -885,10 +909,38 @@ class TestTensorVar:
         )
         assert np.isclose(res, expected[0], atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_gell_mann_hermitian(self, index, tol):
+        """Test that the variance of the tensor product of a Gell-Mann observable and a Hermitian
+        matrix behaves correctly."""
+        dev = qml.device("default.qutrit", wires=2)
+        A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
+        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.var(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index - 1], A)
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
     def test_hermitian(self, tol):
+        """Test that the variance of tensor product of two Hermitian matrices behaves correctly"""
         dev = qml.device("default.qutrit", wires=3)
 
-        A1 = np.array([[3, 0, 0], [0, -3, 0], [0, 0, -2]])
+        A1 = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
         A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
         B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
@@ -907,7 +959,15 @@ class TestTensorVar:
         )
 
         res = dev.var(obs)
-        expected = 36
+
+        state = np.zeros((1, 27))
+        state[0, 21] = 1 / np.sqrt(2)
+        state[0, 22] = 1 / np.sqrt(2)
+        obs_mat = np.kron(A1, A2)
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
         assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
