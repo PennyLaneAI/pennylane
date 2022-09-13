@@ -71,10 +71,6 @@ class Identity(CVObservable, Operation):
         """
         return np.eye(2)
 
-    @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
-        return sparse.csr_matrix([[1, 0], [0, 1]])
-
     def matrix(self, wire_order=None):
         return qml.math.eye(int(2 ** len(self.wires)))
 
