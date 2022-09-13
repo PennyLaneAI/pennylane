@@ -1,13 +1,30 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Contains the Dataset utility functions.
+"""
 import os
 import sys
 import math
 import json
-import dill
-import pickle
-import zipfile
-import requests
-import itertools
 import glob
+import itertools
+import zipfile
+import pickle
+import dill
+import requests
+
 
 DATA_STRUCT = {
     "qchem": {
@@ -20,11 +37,11 @@ DATA_STRUCT = {
     },
 }
 
-URL = "http://127.0.0.1:5001"
+URL = "https://pl-qd-flask-app.herokuapp.com/"
 
 
 def _convert_size(size_bytes):
-    r""" Convert file size for the dataset into appropriate units from bytes    
+    r"""Convert file size for the dataset into appropriate units from bytes
 
     Args:
         size_bytes(float): size of a file in bytes
@@ -50,7 +67,7 @@ def _convert_size(size_bytes):
 
 
 def _write_prog_bar(progress, completed, barsize, barlength, total_length):
-    r""" Helper function for printing progress bar for downloads
+    r"""Helper function for printing progress bar for downloads
 
     Args:
         progress (float): File size in bytes of the file currently being downloaded
@@ -68,7 +85,7 @@ def _write_prog_bar(progress, completed, barsize, barlength, total_length):
 
 
 def _validate_params(data_type, data_params, filter_params=None):
-    r""" Validate parameters for loading the data """
+    r"""Validate parameters for loading the data"""
 
     if data_type not in list(DATA_STRUCT.keys()):
         raise ValueError(
@@ -93,7 +110,7 @@ def _validate_params(data_type, data_params, filter_params=None):
 
 
 def _check_data_exist(data_type, data_params, directory_path):
-    r""" Check if the data has to be redownloaded or not """
+    r"""Check if the data has to be redownloaded or not"""
     exist = False
     if "full" in data_params.values():
         exist = True
@@ -108,9 +125,10 @@ def _check_data_exist(data_type, data_params, directory_path):
                 break
     return exist
 
+
 def load(data_type, data_params, filter_params=None, folder_path=None, force=True):
-    r""" Downloads the data if it is not already present in the directory and return it to user as a Datset object 
-    
+    r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
+
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
         data_params (dict): A dictionary with parameters for the required type of data
@@ -119,8 +137,8 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
         force (Bool): Bool representing whether data has to be downloaded even if it is still present
 
     Returns:
-        list[DatasetFile] 
-         
+        list[DatasetFile]
+
     """
 
     _validate_params(data_type, data_params, filter_params)
@@ -146,8 +164,10 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
             "dparams": data_params,
             "filters": filter_params if filter_params is not None else ["full"],
         }
-        response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
-        if response.status_code == 200:
+        try:
+            response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
+            response.raise_for_status()
+
             print(f"Downloading data to {directory_path}")
             total_length = response.headers.get("Content-Length")
             if total_length is None:
@@ -163,8 +183,21 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
                         if not idx % 1000:
                             _write_prog_bar(progress, completed, barsize, barlength, total_length)
                 _write_prog_bar(progress, completed, barsize, barlength, total_length)
-        else:
-            response.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            os.remove(f"{directory_path}/data.zip")
+            raise Exception(f"HTTP Error: {err}") from err
+        except requests.exceptions.ConnectionError as err:
+            os.remove(f"{directory_path}/data.zip")
+            raise Exception(f"Connection Error: {err}") from err
+        except requests.exceptions.Timeout as err:
+            os.remove(f"{directory_path}/data.zip")
+            raise Exception(f"Timeout Error: {err}") from err
+        except requests.exceptions.TooManyRedirects as err:
+            os.remove(f"{directory_path}/data.zip")
+            raise Exception(f"Redirection Error: {err}") from err
+        except requests.exceptions.RequestException as err:
+            os.remove(f"{directory_path}/data.zip")
+            raise Exception(f"Fatal Error: {err}") from err
 
     data_files = []
     with zipfile.ZipFile(f"{directory_path}/data.zip", "r") as zpf:
@@ -182,7 +215,7 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
 
 
 def _direc_to_dict(path):
-    r""" Helper function to create dictionary structure from directory path """
+    r"""Helper function to create dictionary structure from directory path"""
     for root, dirs, files in os.walk(path):
         if dirs:
             tree = {x: _direc_to_dict(os.path.join(root, x)) for x in dirs}
@@ -198,11 +231,11 @@ def _direc_to_dict(path):
 
 
 def list_datasets(folder_path=None):
-    r""" Returns a list of datasets and their sizes 
-    
+    r"""Returns a list of datasets and their sizes
+
     Args:
         folder_path (str): Optional argument for getting datasets descriptor for some local database folder.
-    
+
     Return:
         dict: Nested dictionary representing the directory structure of the hosted and local databases.
 
@@ -229,7 +262,7 @@ def list_datasets(folder_path=None):
 
 
 def _data_dfs(t, path=[]):
-    r""" Perform Depth-First search on the nested directory structure """
+    r"""Perform Depth-First search on the nested directory structure"""
     if isinstance(t, dict):
         for key, val in t.items():
             yield from _data_dfs(val, [*path, key])
@@ -238,8 +271,8 @@ def _data_dfs(t, path=[]):
 
 
 def get_params(data, data_type, **kwargs):
-    r""" Help prepare list of `data_param` arguments using nested directory structure
-    
+    r"""Help prepare list of `data_param` arguments using nested directory structure
+
     Args:
         data (dict): Nested dictionary representing the directory structure of the database
         data_type (str): A string representing the type of the data required - qchem or qspin
@@ -295,8 +328,8 @@ def get_params(data, data_type, **kwargs):
 
 
 def get_keys(data_type, data_params):
-    r""" Help obtain the `filter_params` for given `data_type` and `data_param` from the database 
-    
+    r"""Help obtain the `filter_params` for given `data_type` and `data_param` from the database
+
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
         data_param (dict): A dictionary with parameters for the required type of data.
@@ -304,7 +337,6 @@ def get_keys(data_type, data_params):
     Returns:
         list[str]: List of strings representing all the filter keys available for the requested dataset
     """
-
 
     if data_type not in list(DATA_STRUCT.keys()):
         raise ValueError(
@@ -319,4 +351,3 @@ def get_keys(data_type, data_params):
         return json.loads(response.content)
     else:
         response.raise_for_status()
-

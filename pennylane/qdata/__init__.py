@@ -15,7 +15,9 @@
 The quantum datasets module can be used to load and manage data related
 to quantum systems.
 """
-from .dataset import *
-from .chemdata import *
-from .spindata import *
+from .dataset import Dataset
+from .qchem_dataset import ChemDataset
+from .qspin_dataset import SpinDataset
 from .utils import *
+#from .generate import *
+#from .spin import *
