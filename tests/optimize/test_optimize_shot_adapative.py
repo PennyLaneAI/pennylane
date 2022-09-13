@@ -127,7 +127,6 @@ class TestSingleShotGradientIntegration:
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
     def test_single_argument_step(self, cost_fn, mocker, monkeypatch):
         """Test that a simple QNode with a single argument correctly performs an optimization step,
