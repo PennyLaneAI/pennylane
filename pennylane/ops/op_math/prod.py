@@ -289,11 +289,7 @@ class Prod(CompositeOp):
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                op = (
-                    Prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                op = qml.Identity(self.wires)
             else:
                 op = factor[0] if len(factor) == 1 else Prod(*factor)
             return op if global_phase == 1 else qml.s_prod(global_phase, op)

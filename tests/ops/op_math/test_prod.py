@@ -770,17 +770,16 @@ class TestSimplify:
             qml.PauliX(0),
             qml.PauliZ(3),
         )
-        final_op = qml.prod(*[qml.Identity(wire) for wire in range(6)])
+        final_op = qml.Identity(range(7))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        assert isinstance(simplified_op, qml.Identity)
+        assert final_op.name == simplified_op.name
+        assert final_op.wires == simplified_op.wires
+        assert final_op.data == simplified_op.data
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
