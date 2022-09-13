@@ -181,6 +181,23 @@ class GellMann(Observable):
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
+
+    **Example:**
+
+    >>> dev = qml.device("default.qutrit", wires=2)
+    >>> @qml.qnode(dev)
+    ... def test_qnode():
+    ...     qml.TShift(wires=0)
+    ...     qml.TClock(wires=0)
+    ...     qml.TShift(wires=1)
+    ...     qml.TAdd(wires=[0, 1])
+    ...     return qml.expval(qml.GellMann(wires=0, index=1))
+    >>> print(test_qnode())
+    0.0
+    >>> print(qml.draw(test_qnode)())
+    0: ──TShift──TClock─╭●────┤  <GellMann(1)>
+    1: ──TShift─────────╰TAdd─┤
+
     """
     num_wires = 1
     num_params = 0
@@ -197,6 +214,9 @@ class GellMann(Observable):
         }
 
         super().__init__(wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "GellMann(" + str(self._hyperparameters["index"]) + ")"
 
     _eigvecs = {
         1: np.array(

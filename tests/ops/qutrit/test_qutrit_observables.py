@@ -378,3 +378,16 @@ class TestGellMannervables:
 
         assert np.allclose(res_static, eigs)
         assert np.allclose(res_dynamic, eigs)
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_label(self, index):
+        """Test that the label is correct"""
+
+        label = f"GellMann({index})"
+        obs = qml.GellMann(wires=0, index=index)
+
+        assert obs.label() == label
+        assert obs.label(decimals=2) == label
+
+        obs.inv()
+        assert obs.label() == label
