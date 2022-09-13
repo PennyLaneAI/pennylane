@@ -185,7 +185,7 @@ class GellMannObs(Observable):
 
     def __init__(self, index, wires, do_queue=True, id=None):
         if not isinstance(index, int) or index < 1 or index > 8:
-            raise ValueError("The index must be an integer between 1 and 8 inclusive.")
+            raise ValueError("The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive.")
 
         super().__init__(index, wires, do_queue=do_queue, id=id)
 
