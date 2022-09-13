@@ -956,7 +956,7 @@ class TestTensorSample:
 
     @pytest.mark.parametrize("index", list(range(1, 9)))
     def test_hermitian(self, index, tol_stochastic):
-        """Tests that tensor product of hermitian obervable with another observable works
+        """Tests that sampling on a tensor product of Hermitian observables with another observable works
         correctly"""
 
         dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
