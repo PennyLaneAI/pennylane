@@ -477,10 +477,6 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    if isinstance(op, Prod):
-                        self._factors += tuple(
-                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
-                        )
                     elif not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
