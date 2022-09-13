@@ -15,6 +15,8 @@
 Contains the dataset generation pipelines.
 """
 
+# pylint: disable= too-many-instance-attributes too-many-arguments wrong-import-position f-string-without-interpolation consider-using-generator missing-function-docstring
+
 import dill
 import zstd
 
