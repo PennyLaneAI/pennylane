@@ -178,7 +178,7 @@ For each spin system, we obtain the following data for `100` different `paramete
 
 
 Quantum dataset APIs and classes
----------------------
+---------------------------------
 
 Dataset Classes
 ^^^^^^^^^^^^^^^^
