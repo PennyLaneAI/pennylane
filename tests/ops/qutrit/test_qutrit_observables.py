@@ -328,7 +328,7 @@ GM_OBSERVABLES = [
 ]
 
 
-class TestGellMannervables:
+class TestGellMann:
     """Tests for simple single-qutrit observables"""
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
@@ -388,6 +388,3 @@ class TestGellMannervables:
 
         assert obs.label() == label
         assert obs.label(decimals=2) == label
-
-        obs.inv()
-        assert obs.label() == label
