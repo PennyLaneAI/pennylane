@@ -48,7 +48,7 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
-    def eigvals(self):  # pylint: disable=arguments-differ
+    def eigvals(self):
         return np.ones(2 ** len(self.wires))
 
     @staticmethod
@@ -76,22 +76,6 @@ class Identity(CVObservable, Operation):
         return sparse.csr_matrix([[1, 0], [0, 1]])
 
     def matrix(self, wire_order=None):
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.Identity.matrix`
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.Identity.compute_matrix())
-        [[1. 0.]
-         [0. 1.]]
-        """
         return qml.math.eye(int(2 ** len(self.wires)))
 
     def sparse_matrix(self, wire_order=None):
