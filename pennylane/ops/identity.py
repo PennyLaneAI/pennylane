@@ -48,30 +48,8 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
-    @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
-        r"""Eigenvalues of the operator in the computational basis (static method).
-
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
-        the operator can be reconstructed as
-
-        .. math:: O = U \Sigma U^{\dagger},
-
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
-        Otherwise, no particular order for the eigenvalues is guaranteed.
-
-        .. seealso:: :meth:`~.Identity.eigvals`
-
-        Returns:
-            array: eigenvalues
-
-        **Example**
-
-        >>> print(qml.Identity.compute_eigvals())
-        [ 1 1]
-        """
-        return np.array([1, 1])
+    def eigvals(self):  # pylint: disable=arguments-differ
+        return np.ones(2 ** len(self.wires))
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ

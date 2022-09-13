@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Identity Operator."""
+import numpy as np
 import pytest
 
 from pennylane import Identity
-import numpy as np
 
 
 def test_identity_eigvals(tol):
     """Test identity eigenvalues are correct"""
-    res = Identity.compute_eigvals()
+    res = Identity(0).eigvals()
     expected = np.array([1, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
