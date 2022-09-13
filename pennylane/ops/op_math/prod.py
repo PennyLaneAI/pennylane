@@ -33,6 +33,10 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
 from .composite import CompositeOp
 
+MAX_NUM_WIRES_KRON_PRODUCT = 11
+"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
+computing the sparse matrix representation."""
+
 
 def prod(*ops, do_queue=True, id=None):
     """Construct an operator which represents the generalized product of the
@@ -229,7 +233,7 @@ class Prod(CompositeOp):
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""
-        if self.has_overlapping_wires:
+        if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
             reduced_mat, prod_wires = math.reduce_matrices(
