@@ -32,41 +32,45 @@ from pennylane.qdata.qspin_dataset import SpinDataset
 DATA_STRUCT = {
     "qchem": {
         "params": ["molname", "basis", "bondlength"],
-        "keys": ['vqe_params',
-                 'molecule',
-                 'hamiltonian',
-                 'fci_energy',
-                 'spinz_op',
-                 'full',
-                 'sparse_hamiltonian',
-                 'dipole_op',
-                 'spin2_op',
-                 'vqe_circuit',
-                 'num_op',
-                 'tapered_spinz_op',
-                 'paulix_ops',
-                 'ham_wire_map',
-                 'meas_groupings',
-                 'tapered_spin2_op',
-                 'vqe_energy',
-                 'symmetries',
-                 'hf_state',
-                 'tapered_dipole_op',
-                 'tapered_num_op',
-                 'tapered_hamiltonian',
-                 'optimal_sector',
-                 'tapered_hf_state'],
+        "keys": [
+            "vqe_params",
+            "molecule",
+            "hamiltonian",
+            "fci_energy",
+            "spinz_op",
+            "full",
+            "sparse_hamiltonian",
+            "dipole_op",
+            "spin2_op",
+            "vqe_circuit",
+            "num_op",
+            "tapered_spinz_op",
+            "paulix_ops",
+            "ham_wire_map",
+            "meas_groupings",
+            "tapered_spin2_op",
+            "vqe_energy",
+            "symmetries",
+            "hf_state",
+            "tapered_dipole_op",
+            "tapered_num_op",
+            "tapered_hamiltonian",
+            "optimal_sector",
+            "tapered_hf_state",
+        ],
     },
     "qspin": {
         "params": ["sysname", "periodicity", "lattice", "layout"],
-        "keys": ['parameters',
-                 'ground_states',
-                 'full',
-                 'phase_labels',
-                 'ground_energies',
-                 'hamiltonians',
-                 'order_parameters',
-                 'classical_shadows'],
+        "keys": [
+            "parameters",
+            "ground_states",
+            "full",
+            "phase_labels",
+            "ground_energies",
+            "hamiltonians",
+            "order_parameters",
+            "classical_shadows",
+        ],
     },
 }
 
@@ -133,7 +137,9 @@ def _validate_params(data_type, data_params, filter_params=None):
             f"Supported parameter values for {data_type} are {DATA_STRUCT[data_type]['params']}, but got {list(data_params.keys())}."
         )
 
-    if filter_params is not None and not set(filter_params).issubset(DATA_STRUCT[data_type]["keys"]):
+    if filter_params is not None and not set(filter_params).issubset(
+        DATA_STRUCT[data_type]["keys"]
+    ):
         raise ValueError(
             f"Supported key values for {data_type} are {DATA_STRUCT[data_type]['keys']}, but got {filter_params}."
         )
@@ -246,7 +252,9 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
                     for key, vals in data.items():
                         setattr(obj, key, vals)
                 else:
-                    key = '_'.join(file.split('_')[len(DATA_STRUCT[data_type]["params"]):]).split('.')[0]
+                    key = "_".join(file.split("_")[len(DATA_STRUCT[data_type]["params"]) :]).split(
+                        "."
+                    )[0]
                     setattr(obj, key, data)
                 data_files.append(obj)
     os.remove(f"{directory_path}/data.zip")
