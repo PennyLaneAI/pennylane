@@ -355,7 +355,7 @@ class TestGellMannervables:
     @pytest.mark.parametrize("index", [0, 9, 1.0, 2.5, "c"])
     def test_index_error(self, index):
         with pytest.raises(
-            ValueError, match="The index must be an integer between 1 and 8 inclusive"
+            ValueError, match="The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive."
         ):
             qml.GellMann(wires=0, index=index)
 
