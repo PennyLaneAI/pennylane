@@ -493,6 +493,7 @@
 
 * Fixes a bug with `qml.ops.Exp` operators when the coefficient is autograd but the diagonalizing gates
   don't act on all wires.
+  [(#3057)](https://github.com/PennyLaneAI/pennylane/pull/3057)
 
 * Fixed a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
