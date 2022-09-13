@@ -49,7 +49,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     2
     >>> type(sim_op)
     pennylane.ops.op_math.sum.Sum
-    >>> sim_op.summands
+    >>> sim_op.operands
     (Adjoint(RX)(0.54, wires=[0]),
     Adjoint(PauliX)(wires=[0]),
     Adjoint(PauliZ)(wires=[1]))
