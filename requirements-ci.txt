@@ -15,3 +15,4 @@ matplotlib
 opt_einsum
 dill
 zstd
+requests

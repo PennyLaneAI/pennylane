@@ -16,3 +16,4 @@ matplotlib~=3.5
 opt_einsum~=3.3
 dill
 zstd
+requests
