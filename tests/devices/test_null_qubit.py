@@ -28,18 +28,13 @@ from collections import defaultdict
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def nullqubit_device_1_wire(request):
-    return qml.device("null.qubit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
+def nullqubit_device(request):
+    def _device(wires):
+        return qml.device(
+            "null.qubit", wires=wires, r_dtype=request.param[0], c_dtype=request.param[1]
+        )
 
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def nullqubit_device_2_wires(request):
-    return qml.device("null.qubit", wires=2, r_dtype=request.param[0], c_dtype=request.param[1])
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def nullqubit_device_4_wires(request):
-    return qml.device("null.qubit", wires=4, r_dtype=request.param[0], c_dtype=request.param[1])
+    return _device
 
 
 def test_analytic_deprecation():
@@ -97,13 +92,14 @@ class TestApply:
             ),
         ],
     )
-    def test_apply_operation_state_preparation(self, nullqubit_device_2_wires, operation, input):
+    def test_apply_operation_state_preparation(self, nullqubit_device, operation, input):
         """Tests that the null.qubit does nothing regarding state initialization."""
 
         input = np.array(input)
-        nullqubit_device_2_wires.reset()
-        nullqubit_device_2_wires.apply([operation(input, wires=[0, 1])])
-        assert nullqubit_device_2_wires._state == None
+        dev = nullqubit_device(wires=2)
+        dev.reset()
+        dev.apply([operation(input, wires=[0, 1])])
+        assert dev._state == None
 
     test_data_single_wire_with_parameters = [
         (qml.PhaseShift, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
@@ -128,9 +124,6 @@ class TestApply:
     ]
 
     @pytest.mark.parametrize(
-        "r_dtype,c_dtype", [(np.float32, np.complex64), (np.float64, np.complex128)]
-    )
-    @pytest.mark.parametrize(
         "op",
         [
             qml.SingleExcitation,
@@ -144,10 +137,10 @@ class TestApply:
             qml.QubitCarry,
         ],
     )
-    def test_advanced_op(self, r_dtype, c_dtype, op, tol):
+    def test_advanced_op(self, nullqubit_device, op):
         """Test qchem and arithmetic operations."""
 
-        dev = qml.device("null.qubit", wires=4, r_dtype=r_dtype, c_dtype=c_dtype)
+        dev = nullqubit_device(wires=4)
 
         n_wires = op.num_wires
         n_params = op.num_params
@@ -178,16 +171,15 @@ class TestExpval:
             (qml.Identity, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
         ],
     )
-    def test_expval_single_wire_no_parameters(self, nullqubit_device_1_wire, operation, input):
+    def test_expval_single_wire_no_parameters(self, nullqubit_device, operation, input):
         """Tests that expectation values are properly calculated for single-wire observables without parameters."""
 
         obs = operation(wires=[0])
 
-        nullqubit_device_1_wire.reset()
-        nullqubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
-        )
-        res = nullqubit_device_1_wire.expval(obs)
+        dev = nullqubit_device(wires=1)
+        dev.reset()
+        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        res = dev.expval(obs)
         assert res == None
 
     @pytest.mark.parametrize(
@@ -198,18 +190,15 @@ class TestExpval:
             (qml.Hermitian, [1 / math.sqrt(2), -1 / math.sqrt(2)], [[1, 1j], [-1j, 1]]),
         ],
     )
-    def test_expval_single_wire_with_parameters(
-        self, nullqubit_device_1_wire, operation, input, par
-    ):
+    def test_expval_single_wire_with_parameters(self, nullqubit_device, operation, input, par):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
         obs = operation(np.array(par), wires=[0])
 
-        nullqubit_device_1_wire.reset()
-        nullqubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
-        )
-        res = nullqubit_device_1_wire.expval(obs)
+        dev = nullqubit_device(wires=1)
+        dev.reset()
+        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        res = dev.expval(obs)
 
         assert res == None
 
@@ -233,18 +222,15 @@ class TestExpval:
             ),
         ],
     )
-    def test_expval_two_wires_with_parameters(
-        self, nullqubit_device_2_wires, tol, operation, input, par
-    ):
+    def test_expval_two_wires_with_parameters(self, nullqubit_device, operation, input, par):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
         obs = operation(np.array(par), wires=[0, 1])
 
-        nullqubit_device_2_wires.reset()
-        nullqubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
-        )
-        res = nullqubit_device_2_wires.expval(obs)
+        dev = nullqubit_device(wires=2)
+        dev.reset()
+        dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
+        res = dev.expval(obs)
 
         assert res == None
 
@@ -262,16 +248,15 @@ class TestVar:
             (qml.Identity, [1 / math.sqrt(5), 2 / math.sqrt(5)]),
         ],
     )
-    def test_var_single_wire_no_parameters(self, nullqubit_device_1_wire, operation, input):
+    def test_var_single_wire_no_parameters(self, nullqubit_device, operation, input):
         """Tests that variances are properly (not) calculated for single-wire observables without parameters."""
 
         obs = operation(wires=[0])
 
-        nullqubit_device_1_wire.reset()
-        nullqubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
-        )
-        res = nullqubit_device_1_wire.var(obs)
+        dev = nullqubit_device(wires=1)
+        dev.reset()
+        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        res = dev.var(obs)
         assert res == None
 
     @pytest.mark.parametrize(
@@ -282,16 +267,15 @@ class TestVar:
             (qml.Hermitian, [1 / math.sqrt(2), -1 / math.sqrt(2)], [[1, 1j], [-1j, 1]]),
         ],
     )
-    def test_var_single_wire_with_parameters(self, nullqubit_device_1_wire, operation, input, par):
+    def test_var_single_wire_with_parameters(self, nullqubit_device, operation, input, par):
         """Tests that variances are properly (not) calculated for single-wire observables with parameters."""
 
         obs = operation(np.array(par), wires=[0])
 
-        nullqubit_device_1_wire.reset()
-        nullqubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
-        )
-        res = nullqubit_device_1_wire.var(obs)
+        dev = nullqubit_device(wires=1)
+        dev.reset()
+        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        res = dev.var(obs)
 
         assert res == None
 
@@ -315,18 +299,15 @@ class TestVar:
             ),
         ],
     )
-    def test_var_two_wires_with_parameters(
-        self, nullqubit_device_2_wires, tol, operation, input, par
-    ):
+    def test_var_two_wires_with_parameters(self, nullqubit_device, operation, input, par):
         """Tests that variances are properly (not) calculated for two-wire observables with parameters."""
 
         obs = operation(np.array(par), wires=[0, 1])
 
-        nullqubit_device_2_wires.reset()
-        nullqubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
-        )
-        res = nullqubit_device_2_wires.var(obs)
+        dev = nullqubit_device(wires=2)
+        dev.reset()
+        dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
+        res = dev.var(obs)
 
         assert res == None
 
@@ -377,12 +358,12 @@ class TestNullQubitIntegration:
         assert cap == capabilities
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit_state(self, nullqubit_device_1_wire, r_dtype):
+    def test_qubit_circuit_state(self, nullqubit_device, r_dtype):
         """Test that the NullQubit plugin provides the correct state for a simple circuit"""
 
         p = 0.543
 
-        dev = nullqubit_device_1_wire
+        dev = nullqubit_device(wires=1)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -393,12 +374,12 @@ class TestNullQubitIntegration:
         assert circuit(p) == None
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit_expval(self, nullqubit_device_1_wire, r_dtype):
+    def test_qubit_circuit_expval(self, nullqubit_device, r_dtype):
         """Test that the NullQubit plugin provides the correct expval for a simple circuit"""
 
         p = 0.543
 
-        dev = nullqubit_device_1_wire
+        dev = nullqubit_device(wires=1)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -409,12 +390,12 @@ class TestNullQubitIntegration:
         assert circuit(p) == np.array(None, dtype=object)
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit_var(self, nullqubit_device_1_wire, r_dtype):
+    def test_qubit_circuit_var(self, nullqubit_device, r_dtype):
         """Test that the NullQubit plugin provides the correct var for a simple circuit"""
 
         p = 0.543
 
-        dev = nullqubit_device_1_wire
+        dev = nullqubit_device(wires=1)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -424,12 +405,12 @@ class TestNullQubitIntegration:
 
         assert circuit(p) == np.array(None, dtype=object)
 
-    def test_qubit_identity(self, nullqubit_device_1_wire, tol):
+    def test_qubit_identity(self, nullqubit_device):
         """Test that the NullQubit plugin provides correct result for the Identity expectation"""
 
         p = 0.543
 
-        @qml.qnode(nullqubit_device_1_wire, diff_method="parameter-shift")
+        @qml.qnode(nullqubit_device(wires=1), diff_method="parameter-shift")
         def circuit(x):
             """Test quantum function"""
             qml.RX(x, wires=0)
@@ -439,8 +420,7 @@ class TestNullQubitIntegration:
 
     def test_nonzero_shots(self):
         """Test that the NullQubit plugin provides correct result for high shot number"""
-        shots = 10**5
-        dev = qml.device("null.qubit", wires=1, shots=shots)
+        dev = qml.device("null.qubit", wires=1, shots=10**5)
 
         p = 0.543
 
@@ -465,16 +445,15 @@ class TestNullQubitIntegration:
             ("Hadamard", [1 / math.sqrt(5), 2 / math.sqrt(5)]),
         ],
     )
-    def test_supported_observable_single_wire_no_parameters(
-        self, nullqubit_device_1_wire, name, state
-    ):
+    def test_supported_observable_single_wire_no_parameters(self, nullqubit_device, name, state):
         """Tests supported observables on single wires without parameters."""
 
         obs = getattr(qml.ops, name)
 
-        assert nullqubit_device_1_wire.supports_observable(name)
+        dev = nullqubit_device(wires=1)
+        assert dev.supports_observable(name)
 
-        @qml.qnode(nullqubit_device_1_wire, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.QubitStateVector(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
@@ -489,15 +468,16 @@ class TestNullQubitIntegration:
         ],
     )
     def test_supported_observable_single_wire_with_parameters(
-        self, nullqubit_device_1_wire, name, state, par
+        self, nullqubit_device, name, state, par
     ):
         """Tests supported observables on single wires with parameters."""
 
         obs = getattr(qml.ops, name)
 
-        assert nullqubit_device_1_wire.supports_observable(name)
+        dev = nullqubit_device(wires=1)
+        assert dev.supports_observable(name)
 
-        @qml.qnode(nullqubit_device_1_wire, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.QubitStateVector(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
@@ -525,15 +505,16 @@ class TestNullQubitIntegration:
         ],
     )
     def test_supported_observable_two_wires_with_parameters(
-        self, nullqubit_device_2_wires, tol, name, state, par
+        self, nullqubit_device, name, state, par
     ):
         """Tests supported observables on two wires with parameters."""
 
         obs = getattr(qml.ops, name)
 
-        assert nullqubit_device_2_wires.supports_observable(name)
+        dev = nullqubit_device(wires=2)
+        assert dev.supports_observable(name)
 
-        @qml.qnode(nullqubit_device_2_wires, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.QubitStateVector(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
@@ -544,12 +525,12 @@ class TestNullQubitIntegration:
         "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
     )
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_diff_method(self, nullqubit_device_1_wire, method, r_dtype):
+    def test_qubit_diff_method(self, nullqubit_device, method, r_dtype):
         """Test that the NullQubit works with all, except for "device", diff_method options."""
 
         p = 0.543
 
-        dev = nullqubit_device_1_wire
+        dev = nullqubit_device(wires=1)
         dev.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method=method)
@@ -558,6 +539,26 @@ class TestNullQubitIntegration:
             return qml.state()
 
         assert circuit(p) == None
+
+    @pytest.mark.parametrize(
+        "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
+    )
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_qubit_diff_method_multi_results(self, nullqubit_device, method, r_dtype):
+        """Test that the NullQubit works with all, except for "device", diff_method options."""
+
+        p = 0.543
+
+        dev = nullqubit_device(wires=4)
+        dev.R_DTYPE = r_dtype
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit(x):
+            for n in range(4):
+                qml.RX(x, wires=n)
+            return [qml.expval(qml.PauliZ(i)) for i in range(4)]
+
+        assert np.all(circuit(p) == np.array(None, dtype=object))
 
 
 THETA = np.linspace(0.11, 1, 3)
@@ -569,10 +570,9 @@ VARPHI = np.linspace(0.02, 1, 3)
 class TestTensorExpval:
     """Test if tensor expectation values returns None"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi):
+    def test_paulix_pauliy(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("null.qubit", wires=3)
-        dev.reset()
+        dev = nullqubit_device(wires=3)
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -589,10 +589,9 @@ class TestTensorExpval:
 
         assert dev.expval(obs) == None
 
-    def test_pauliz_identity(self, theta, phi, varphi):
+    def test_pauliz_identity(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("null.qubit", wires=3)
-        dev.reset()
+        dev = nullqubit_device(wires=3)
 
         obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
 
@@ -609,12 +608,11 @@ class TestTensorExpval:
 
         assert dev.expval(obs) == None
 
-    def test_pauliz_hadamard(self, theta, phi, varphi):
+    def test_pauliz_hadamard(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("null.qubit", wires=3)
+        dev = nullqubit_device(wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
-        dev.reset()
         dev.apply(
             [
                 qml.RX(theta, wires=[0]),
@@ -628,10 +626,9 @@ class TestTensorExpval:
 
         assert dev.expval(obs) == None
 
-    def test_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("null.qubit", wires=3)
-        dev.reset()
+        dev = nullqubit_device(wires=3)
 
         A = np.array(
             [
@@ -657,9 +654,9 @@ class TestTensorExpval:
 
         assert dev.expval(obs) == None
 
-    def test_hermitian_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("null.qubit", wires=3)
+        dev = nullqubit_device(wires=3)
 
         A1 = np.array([[1, 2], [2, 4]])
 
@@ -687,9 +684,9 @@ class TestTensorExpval:
 
         assert dev.expval(obs) == None
 
-    def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
+    def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("null.qubit", wires=2)
+        dev = nullqubit_device(wires=2)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -704,9 +701,9 @@ class TestTensorExpval:
 
         assert dev.expval(obs) == None
 
-    def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
+    def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("null.qubit", wires=3)
+        dev = nullqubit_device(wires=3)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -727,10 +724,9 @@ class TestTensorExpval:
 class TestTensorVar:
     """Test if tensor variance returns None"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi):
+    def test_paulix_pauliy(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("null.qubit", wires=3)
-        dev.reset()
+        dev = nullqubit_device(wires=3)
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -747,10 +743,9 @@ class TestTensorVar:
 
         assert dev.var(obs) == None
 
-    def test_pauliz_identity(self, theta, phi, varphi):
+    def test_pauliz_identity(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("null.qubit", wires=3)
-        dev.reset()
+        dev = nullqubit_device(wires=3)
 
         obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
 
@@ -767,12 +762,11 @@ class TestTensorVar:
 
         assert dev.var(obs) == None
 
-    def test_pauliz_hadamard(self, theta, phi, varphi):
+    def test_pauliz_hadamard(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("null.qubit", wires=3)
+        dev = nullqubit_device(wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
-        dev.reset()
         dev.apply(
             [
                 qml.RX(theta, wires=[0]),
@@ -786,10 +780,9 @@ class TestTensorVar:
 
         assert dev.var(obs) == None
 
-    def test_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("null.qubit", wires=3)
-        dev.reset()
+        dev = nullqubit_device(wires=3)
 
         A = np.array(
             [
@@ -815,9 +808,9 @@ class TestTensorVar:
 
         assert dev.var(obs) == None
 
-    def test_hermitian_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("null.qubit", wires=3)
+        dev = nullqubit_device(wires=3)
 
         A1 = np.array([[1, 2], [2, 4]])
 
@@ -845,9 +838,9 @@ class TestTensorVar:
 
         assert dev.var(obs) == None
 
-    def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
+    def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("null.qubit", wires=2)
+        dev = nullqubit_device(wires=2)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -862,9 +855,9 @@ class TestTensorVar:
 
         assert dev.var(obs) == None
 
-    def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
+    def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("null.qubit", wires=3)
+        dev = nullqubit_device(wires=3)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -1010,8 +1003,6 @@ class TestStateInitialization:
 class TestOpCallIntegration:
     """Integration tests for operation call statistics."""
 
-    # dev_2_qubits = qml.device("null.qubit", wires=2)
-
     single_qubit_ops = [
         (qml.PauliX, {"PauliX": 1}),
         (qml.PauliY, {"PauliY": 1}),
@@ -1027,11 +1018,13 @@ class TestOpCallIntegration:
     ]
 
     @pytest.mark.parametrize("operation,expected", single_qubit_ops)
-    def test_single_qubit_op(self, nullqubit_device_2_wires, operation, expected):
+    def test_single_qubit_op(self, nullqubit_device, operation, expected):
         """Test if the application of single qubit operations, without parameters,
         is being accounted for."""
 
-        @qml.qnode(nullqubit_device_2_wires, diff_method="parameter-shift")
+        dev = nullqubit_device(wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             operation(wires=[0])
             return qml.state()
@@ -1039,14 +1032,16 @@ class TestOpCallIntegration:
         circuit()
 
         expected_dict = defaultdict(int, **expected)
-        assert nullqubit_device_2_wires.operation_calls() == expected_dict
+        assert dev.operation_calls() == expected_dict
 
     @pytest.mark.parametrize("operation,expected", two_qubit_ops)
-    def test_two_qubit_op(self, nullqubit_device_2_wires, operation, expected):
+    def test_two_qubit_op(self, nullqubit_device, operation, expected):
         """Test if the application of two qubit operations, without parameters,
         is being accounted for."""
 
-        @qml.qnode(nullqubit_device_2_wires, diff_method="parameter-shift")
+        dev = nullqubit_device(wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             operation(wires=[0, 1])
             return qml.state()
@@ -1054,7 +1049,7 @@ class TestOpCallIntegration:
         circuit()
 
         expected_dict = defaultdict(int, **expected)
-        assert nullqubit_device_2_wires.operation_calls() == expected_dict
+        assert dev.operation_calls() == expected_dict
 
     single_qubit_ops_par = [
         (qml.RX, [math.pi / 4], {"RX": 1}),
@@ -1085,11 +1080,13 @@ class TestOpCallIntegration:
     ]
 
     @pytest.mark.parametrize("operation,input,expected", single_qubit_ops_par)
-    def test_single_qubit_op_with_par(self, nullqubit_device_2_wires, operation, input, expected):
+    def test_single_qubit_op_with_par(self, nullqubit_device, operation, input, expected):
         """Test if the application of single qubit operations, with parameters,
         is being accounted for."""
 
-        @qml.qnode(nullqubit_device_2_wires, diff_method="parameter-shift")
+        dev = nullqubit_device(wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(input):
             operation(input, wires=[0])
             return qml.state()
@@ -1097,14 +1094,16 @@ class TestOpCallIntegration:
         circuit(input)
 
         expected_dict = defaultdict(int, **expected)
-        assert nullqubit_device_2_wires.operation_calls() == expected_dict
+        assert dev.operation_calls() == expected_dict
 
     @pytest.mark.parametrize("operation,input,expected", two_qubit_ops_par)
-    def test_two_qubit_op_with_par(self, nullqubit_device_2_wires, operation, input, expected):
+    def test_two_qubit_op_with_par(self, nullqubit_device, operation, input, expected):
         """Test if the application of two qubit operations, with parameters,
         is being accounted for."""
 
-        @qml.qnode(nullqubit_device_2_wires, diff_method="parameter-shift")
+        dev = nullqubit_device(wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(input):
             operation(input, wires=[0, 1])
             return qml.state()
@@ -1112,7 +1111,7 @@ class TestOpCallIntegration:
         circuit(input)
 
         expected_dict = defaultdict(int, **expected)
-        assert nullqubit_device_2_wires.operation_calls() == expected_dict
+        assert dev.operation_calls() == expected_dict
 
     @pytest.mark.parametrize(
         "op,expected",
@@ -1128,12 +1127,14 @@ class TestOpCallIntegration:
             (qml.QubitCarry, {"QubitCarry": 1}),
         ],
     )
-    def test_advanced_op(self, nullqubit_device_4_wires, op, expected):
+    def test_advanced_op(self, nullqubit_device, op, expected):
         """Test qchem and arithmetic operations."""
         n_wires = op.num_wires
         n_params = op.num_params
 
-        @qml.qnode(nullqubit_device_4_wires, diff_method="parameter-shift")
+        dev = nullqubit_device(wires=4)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             if n_params == 0:
                 op(wires=range(n_wires))
@@ -1145,7 +1146,7 @@ class TestOpCallIntegration:
 
         circuit()
         expected_dict = defaultdict(int, **expected)
-        assert nullqubit_device_4_wires.operation_calls() == expected_dict
+        assert dev.operation_calls() == expected_dict
 
 
 class TestState:
