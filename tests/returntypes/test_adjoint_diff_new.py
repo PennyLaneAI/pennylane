@@ -55,7 +55,7 @@ class TestAdjointJacobian:
         """Test that error is raised for qml.Hamiltonian"""
 
         with qml.tape.QuantumTape() as tape:
-            return qml.expval(
+            qml.expval(
                 qml.Hamiltonian(
                     [np.array(-0.05), np.array(0.17)],
                     [qml.PauliX(0), qml.PauliZ(0)],
