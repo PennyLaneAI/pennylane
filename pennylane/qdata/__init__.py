@@ -19,5 +19,5 @@ from .dataset import Dataset
 from .qchem_dataset import ChemDataset
 from .qspin_dataset import SpinDataset
 from .utils import *
-from .generate import *
-from .spin import *
+#from .generate import *
+#from .spin import *
