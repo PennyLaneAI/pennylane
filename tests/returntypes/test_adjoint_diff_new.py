@@ -185,6 +185,10 @@ class TestAdjointJacobian:
 
         # circuit jacobians
         dev_jacobian = dev.adjoint_jacobian_new(tape)
+        assert isinstance(dev_jacobian, tuple)
+        assert len(dev_jacobian) == 3
+        assert all(jac.shape == (3,) for jac in dev_jacobian)
+
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
@@ -218,6 +222,9 @@ class TestAdjointJacobian:
 
         grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
         grad_D = dev.adjoint_jacobian_new(tape)
+        assert isinstance(grad_D, tuple)
+        assert len(grad_D) == 2
+        assert all(jac.shape == (op.num_params,) for jac in grad_D)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
