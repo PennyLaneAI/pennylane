@@ -350,8 +350,6 @@ class TestAdjointJacobian:
         # check that the type and format of the adjoint jacobian is correct
         assert isinstance(grad_D, tuple)
         assert len(grad_D) == 4
-        assert isinstance(grad_D[0], np.ndarray)
-        assert grad_D[0].shape == (3,)
 
         # check the results against individually executed tapes
         for i, ob in enumerate(observables):
@@ -362,4 +360,7 @@ class TestAdjointJacobian:
                 qml.expval(ob)
 
             indiv_tape.trainable_params = {1, 2, 3}
+
+            assert isinstance(grad_D[i], np.ndarray)
+            assert grad_D[i].shape == (3,)
             assert np.allclose(grad_D[i], dev.adjoint_jacobian_new(indiv_tape))
