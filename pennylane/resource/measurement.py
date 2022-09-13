@@ -18,7 +18,7 @@ for computing expectation values.
 from pennylane import numpy as np
 
 
-def estimate_samples(coeffs, variances=None, error=0.0016):
+def estimate_shots(coeffs, variances=None, error=0.0016):
     r"""Estimate the number of measurements required to compute an expectation value with a target
     error.
 
@@ -35,15 +35,15 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> qml.resource.estimate_samples(coeffs)
+    >>> qml.resource.estimate_shots(coeffs)
     419217
 
     .. details::
         :title: Theory
 
         An estimation for the number of measurements :math:`M` required to predict the expectation
-        value of an observable :math:`H = \sum_i A_i` with :math:`A = \sum_j c_j O_j` representing a
-        linear combination of Pauli words can be obtained following Eq. (34) of
+        value of an observable :math:`H = \sum_i A_i`, with :math:`A = \sum_j c_j O_j` representing
+        a linear combination of Pauli words, can be obtained following Eq. (34) of
         [`PRX Quantum 2, 040320 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040320>`_]
         as
 
@@ -84,7 +84,7 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
 
         .. math::
 
-            M \approx \frac{\left ( \sum_i \sqrt{\sum_j c_j^2} \right )^2}{\epsilon^2},
+            M \approx \frac{\left ( \sum_i \sqrt{\sum_j c_{ij}^2} \right )^2}{\epsilon^2},
 
         where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
         group, respectively.
@@ -99,7 +99,7 @@ def estimate_samples(coeffs, variances=None, error=0.0016):
 def estimate_error(coeffs, variances=None, shots=1000):
     r"""Estimate the error in computing an expectation value with a given number of measurements.
 
-    See also :func:`estimate_samples`.
+    See also :func:`estimate_shots`.
 
     Args:
         coeffs (list[tensor_like]): list of coefficient groups
@@ -112,13 +112,13 @@ def estimate_error(coeffs, variances=None, shots=1000):
     **Example**
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
-    >>> qml.resource.estimate_error(coeffs, shots=419217)
-    0.0016
+    >>> qml.resource.estimate_error(coeffs, shots=100000)
+    0.00327597
 
     .. details::
         :title: Theory
 
-        An estimation for the error :math:`\epsilon` in predicting the the expectation
+        An estimation for the error :math:`\epsilon` in predicting the expectation
         value of an observable :math:`H = \sum_i A_i` with :math:`A = \sum_j c_j O_j` representing a
         linear combination of Pauli words can be obtained following Eq. (34) of
         [`PRX Quantum 2, 040320 (2021) <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040320>`_]
@@ -161,7 +161,7 @@ def estimate_error(coeffs, variances=None, shots=1000):
 
         .. math::
 
-            \epsilon \approx \frac{\sum_i \sqrt{\sum_j c_j^2}}{\sqrt{M}},
+            \epsilon \approx \frac{\sum_i \sqrt{\sum_j c_{ij}^2}}{\sqrt{M}},
 
         where :math:`i` and :math:`j` run over the observable groups and the Pauli words inside the
         group, respectively.

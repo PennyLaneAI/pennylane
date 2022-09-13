@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for estimating complexity of measuring expectation values.
+Unit tests for functions needed for estimating the complexity of measuring expectation values.
 """
 import pytest
 import pennylane as qml
@@ -31,10 +31,10 @@ variances = [0.73058343, 0.03283723]  # obtained with the upper bound var(pauli_
         (coeffs, error, shots, variances),
     ],
 )
-def test_estimate_samples(coefficients, error, shots, variances):
-    r"""Test that the estimate_samples function returns the correct number of measurements."""
-    m_novar = qml.resource.estimate_samples(coefficients, error=error)
-    m_var = qml.resource.estimate_samples(coefficients, variances=variances, error=error)
+def test_estimate_shots(coefficients, error, shots, variances):
+    r"""Test that the estimate_shots function returns the correct number of measurements."""
+    m_novar = qml.resource.estimate_shots(coefficients, error=error)
+    m_var = qml.resource.estimate_shots(coefficients, variances=variances, error=error)
 
     assert m_novar == shots
     assert m_var == shots
