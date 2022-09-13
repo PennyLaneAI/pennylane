@@ -133,7 +133,7 @@ def _validate_params(data_type, data_params, filter_params=None):
             f"Supported parameter values for {data_type} are {DATA_STRUCT[data_type]['params']}, but got {list(data_params.keys())}."
         )
 
-    if filter_params is not None and set(filter_params).issubset(DATA_STRUCT[data_type]["keys"]):
+    if filter_params is not None and not set(filter_params).issubset(DATA_STRUCT[data_type]["keys"]):
         raise ValueError(
             f"Supported key values for {data_type} are {DATA_STRUCT[data_type]['keys']}, but got {filter_params}."
         )
@@ -200,13 +200,14 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
         try:
             response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
             response.raise_for_status()
-
+            print(response)
             print(f"Downloading data to {directory_path}")
             total_length = response.headers.get("Content-Length")
             if total_length is None:
                 file.write(response.content)
             else:
                 total_length, barsize, progress = int(total_length), 60, 0
+                print(total_length)
                 for idx, chunk in enumerate(response.iter_content(chunk_size=4096)):
                     if chunk:
                         file.write(chunk)
