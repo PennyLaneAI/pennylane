@@ -13,3 +13,5 @@ dask[delayed]
 autoray
 matplotlib
 opt_einsum
+dill
+zstd
