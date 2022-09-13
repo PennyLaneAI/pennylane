@@ -188,7 +188,7 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
 
     if not force:
         force = _check_data_exist(data_type, data_params, directory_path)
-    print(directory_path)
+
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
@@ -200,14 +200,13 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
         try:
             response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
             response.raise_for_status()
-            print(response)
+
             print(f"Downloading data to {directory_path}")
             total_length = response.headers.get("Content-Length")
             if total_length is None:
                 file.write(response.content)
             else:
                 total_length, barsize, progress = int(total_length), 60, 0
-                print(total_length)
                 for idx, chunk in enumerate(response.iter_content(chunk_size=4096)):
                     if chunk:
                         file.write(chunk)
