@@ -1021,7 +1021,7 @@ class TestTensorSample:
 
         dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
 
-        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
         obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
 
