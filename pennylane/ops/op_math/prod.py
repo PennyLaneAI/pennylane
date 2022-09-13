@@ -477,7 +477,7 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    elif not isinstance(op, qml.Identity):
+                    if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: List[int]):
