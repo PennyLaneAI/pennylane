@@ -276,7 +276,7 @@ class NullQubit(QubitDevice):
         return self._operation_calls
 
     def execute(self, circuit, **kwargs):
-        self.apply(circuit.operations)
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
     def batch_execute(self, circuits, **kwargs):
         res = []
