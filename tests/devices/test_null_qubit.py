@@ -378,7 +378,7 @@ class TestNullQubitIntegration:
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_qubit_circuit_state(self, nullqubit_device_1_wire, r_dtype):
-        """Test that the null qubit plugin provides the correct state for a simple circuit"""
+        """Test that the NullQubit plugin provides the correct state for a simple circuit"""
 
         p = 0.543
 
@@ -394,7 +394,7 @@ class TestNullQubitIntegration:
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_qubit_circuit_expval(self, nullqubit_device_1_wire, r_dtype):
-        """Test that the null qubit plugin provides the correct expval for a simple circuit"""
+        """Test that the NullQubit plugin provides the correct expval for a simple circuit"""
 
         p = 0.543
 
@@ -410,7 +410,7 @@ class TestNullQubitIntegration:
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_qubit_circuit_var(self, nullqubit_device_1_wire, r_dtype):
-        """Test that the null qubit plugin provides the correct var for a simple circuit"""
+        """Test that the NullQubit plugin provides the correct var for a simple circuit"""
 
         p = 0.543
 
@@ -425,7 +425,7 @@ class TestNullQubitIntegration:
         assert circuit(p) == np.array(None, dtype=object)
 
     def test_qubit_identity(self, nullqubit_device_1_wire, tol):
-        """Test that the null qubit plugin provides correct result for the Identity expectation"""
+        """Test that the NullQubit plugin provides correct result for the Identity expectation"""
 
         p = 0.543
 
@@ -438,7 +438,7 @@ class TestNullQubitIntegration:
         assert circuit(p) == np.array(None, dtype=object)
 
     def test_nonzero_shots(self):
-        """Test that the null qubit plugin provides correct result for high shot number"""
+        """Test that the NullQubit plugin provides correct result for high shot number"""
         shots = 10**5
         dev = qml.device("null.qubit", wires=1, shots=shots)
 
@@ -539,6 +539,25 @@ class TestNullQubitIntegration:
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert circuit() == np.array(None, dtype=object)
+
+    @pytest.mark.parametrize(
+        "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
+    )
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_qubit_diff_method(self, nullqubit_device_1_wire, method, r_dtype):
+        """Test that the NullQubit works with all, except for "device", diff_method options."""
+
+        p = 0.543
+
+        dev = nullqubit_device_1_wire
+        dev.R_DTYPE = r_dtype
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        assert circuit(p) == None
 
 
 THETA = np.linspace(0.11, 1, 3)
@@ -1143,5 +1162,5 @@ class TestState:
         ],
     )
     def test_state_measurement(self, measurement):
-        """Test that the null qubit plugin provides correct state results for a simple circuit"""
+        """Test that the NullQubit plugin provides correct state results for a simple circuit"""
         assert measurement == None
