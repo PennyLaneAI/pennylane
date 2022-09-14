@@ -17,7 +17,6 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
-from warnings import warn
 import pkg_resources
 
 
@@ -112,8 +111,10 @@ from pennylane.interfaces import execute, execute_new  # pylint:disable=wrong-im
 def __getattr__(name):
     # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
     if name == "QueuingContext":
-        warn("QueuingContext has been renamed qml.queuing.QueuingManager.", UserWarning)
+        from warnings import warn  # pylint: disable=import-outside-toplevel
         from pennylane.queuing import QueuingManager  # pylint: disable=import-outside-toplevel
+
+        warn("QueuingContext has been renamed qml.queuing.QueuingManager.", UserWarning)
 
         return QueuingManager
     try:
