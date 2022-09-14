@@ -170,7 +170,7 @@ def test_empty_error(two_tensor):
 
 
 @pytest.mark.parametrize(
-    ("one_matrix", "two_tensor", "tol_factor", "coeffs_ref", "ops_ref"),
+    ("one_matrix", "two_tensor", "tol_factor", "coeffs_ref", "ops_ref", "eigvecs_ref"),
     [
         (  # one_matrix and two_tensor are obtained with:
             # symbols  = ['H', 'H']
@@ -203,10 +203,16 @@ def test_empty_error(two_tensor):
                 [qml.Identity(1), qml.PauliZ(0), qml.PauliZ(1)],
                 [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)],
             ],
+            [
+                np.array([[-1.00000000e00, 4.67809646e-13], [-4.67809646e-13, -1.00000000e00]]),
+                np.array([[-1.00000000e00, -2.27711575e-14], [2.27711575e-14, -1.00000000e00]]),
+                np.array([[-0.70710678, -0.70710678], [-0.70710678, 0.70710678]]),
+                np.array([[2.21447776e-11, -1.00000000e00], [1.00000000e00, 2.21447776e-11]]),
+            ],
         ),
     ],
 )
-def test_basis_rotation(one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref):
+def test_basis_rotation(one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref):
     coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
 
     for i, coeff in enumerate(coeffs):
@@ -216,3 +222,6 @@ def test_basis_rotation(one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref)
         ops_ref_str = [qml.grouping.pauli_word_to_string(t) for t in ops_ref[i]]
         for o in op:
             assert qml.grouping.pauli_word_to_string(o) in ops_ref_str
+
+    for i, vec in enumerate(eigvecs):
+        assert np.allclose(vec, eigvecs_ref[i])
