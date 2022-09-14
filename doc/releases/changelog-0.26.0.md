@@ -406,9 +406,18 @@
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable` instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
-* Added `len`, `iter` and `getitem` dunder methods to a new `CompositeOp` class to help iterate over `Sum` and `Prod` operands.
+* Added functionality to iterate over operators created from `qml.op_sum` and `qml.prod`.
   [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
 
+  ```pycon
+  >>> op = qml.op_sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+  >>> len(op)
+  3
+  >>> op[1]
+  PauliY(wires=[1])
+  >>> [o.name for o in op]
+  ['PauliX', 'PauliY', 'PauliZ']
+  ```
 
 <h3>Deprecations</h3>
 
