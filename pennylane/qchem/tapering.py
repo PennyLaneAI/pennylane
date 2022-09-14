@@ -543,19 +543,19 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
 # pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
 def taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op=None):
-    r"""Transform the gate operation with a Clifford operator and taper qubits.
+    r"""Transforms a gate operation with a Clifford operator and taper qubits.
 
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
     manually via `gen_op` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
-    the molecular Hamiltonian, then this operator is tranformed using the Clifford operators :math:`U` and
-    tapered, otherwise it is discarded. Fianlly, the tapered generator is exponentiated using :func:`~.PauliRot`
+    the molecular Hamiltonian, then this operator is transformed using the Clifford operators :math:`U` and
+    tapered, otherwise it is discarded. Finally, the tapered generator is exponentiated using :func:`~.PauliRot`
     for building the tapered unitary.
 
     Args:
         operation (Operation): qubit operation to be tapered
-        generators (list[Hamiltonian]): list of generators of symmetries for the Hamiltonian
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
-        paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
+        paulix_sector (list[int]): eigenvalues of the Pauli-X operators
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
         gen_op (Hamiltonian): optional argument to provide the generator of the operation
 
@@ -590,6 +590,35 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     >>> print(drawer(params=[0.38686753]))
         0: ─╭RXY(-0.10+0.00j)─╭RYX(-0.10+0.00j)─┤ ╭<Z@Z>
         1: ─╰RXY(-0.10+0.00j)─╰RYX(-0.10+0.00j)─┤ ╰<Z@Z>
+
+    .. details::
+        :title: Theory
+
+        Consider :math:`G` to be the generator of a unitrary :math:`V(\theta)`, i.e.,
+
+        .. math::
+
+            V(\theta) = e^{i G \theta}.
+
+        Then, for :math:`V` to have a non-trivial and compatible tapering with the generators of symmetry
+        :math:`tau`, we should have :math:`[V, \tau_i] = 0\ \forall \theta \in \mathbb{R},\ \forall \tau_i`.
+        This would hold only when its generator itself commutes with each :math:`tau_i`,
+
+        .. math::
+
+            [V, \tau_i] = 0 \iff [G, \tau_i]\quad \forall \theta \in \mathbb{R},\ \forall \tau_i.
+
+        By ensuring this, we can taper the generator :math:`G` using the Clifford operators :math:`U`,
+        and exponentiate the transformed generator :math:`G^{\prime}` to obtain a tapered unitary
+        :math:`V^{\prime}`,
+
+        .. math::
+
+            V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
+
+        This directly extends to non-parameterized gates, as these gates can be written as a parametrized
+        gate with some fixed parameter :math:`\phi`. For example, applying :func:`~.PauliX` gate is equivalent
+        to applying :func:`~.RX` gate with :math:`\phi=\pi`.
     """
 
     if gen_op is None:
