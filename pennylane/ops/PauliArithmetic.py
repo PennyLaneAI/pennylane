@@ -14,7 +14,8 @@
 from enum import Enum
 from functools import reduce
 
-from pennylane import math
+import pennylane as qml
+from pennylane import math,
 import numpy as np
 from scipy import sparse
 
@@ -61,6 +62,45 @@ sparse_mat_map = {
     Z: sparse_matZ,
 }
 
+op_map = {
+    I: qml.Identity,
+    X: qml.PauliX,
+    Y: qml.PauliY,
+    Z: qml.PauliZ,
+}
+
+_map_I = {
+    I: (1, I),
+    X: (1, X),
+    Y: (1, Y),
+    Z: (1, Z),
+}
+_map_X = {
+    I: (1, X),
+    X: (1, I),
+    Y: (1.0j, Z),
+    Z: (-1.0j, Y),
+}
+_map_Y = {
+    I: (1, Y),
+    X: (-1.0j, Z),
+    Y: (1, I),
+    Z: (1j, X),
+}
+_map_Z = {
+    I: (1, Z),
+    X: (1j, Y),
+    Y: (-1.0j, X),
+    Z: (1, I),
+}
+
+mul_map = {
+    I: _map_I,
+    X: _map_X,
+    Y: _map_Y,
+    Z: _map_Z
+}
+
 
 class PauliWord(dict):
     """Immutable dictionary used to represent a Pauli Word.
@@ -68,37 +108,6 @@ class PauliWord(dict):
 
     >>> w = PauliWord({"a": X, 2: Y, 3: z})
     """
-    _map_I = {
-        I: (1, I),
-        X: (1, X),
-        Y: (1, Y),
-        Z: (1, Z),
-    }
-    _map_X = {
-        I: (1, X),
-        X: (1, I),
-        Y: (1.0j, Z),
-        Z: (-1.0j, Y),
-    }
-    _map_Y = {
-        I: (1, Y),
-        X: (-1.0j, Z),
-        Y: (1, I),
-        Z: (1j, X),
-    }
-    _map_Z = {
-        I: (1, Z),
-        X: (1j, Y),
-        Y: (-1.0j, X),
-        Z: (1, I),
-    }
-
-    mul_map = {
-        I: _map_I,
-        X: _map_X,
-        Y: _map_Y,
-        Z: _map_Z
-    }
 
     def __missing__(self, key):
         """If the wire is not in the Pauli word,
@@ -118,7 +127,7 @@ class PauliWord(dict):
         for wire, term in other.items():
 
             if wire in d:
-                factor, new_op = self.mul_map[d[wire]][term]
+                factor, new_op = mul_map[d[wire]][term]
                 if new_op == I:
                     del d[wire]
                 else:
@@ -192,3 +201,21 @@ class PauliSentence(dict):
 
     def to_sparse_mat(self, wire_order):
         return self._to_mat(wire_order=wire_order, is_sparse=False)
+
+    def to_op(self):
+        """Generate a native PL operator from the reduced representation"""
+        pl_op = qml.op_sum(
+            *(qml.s_prod(coeff, qml.prod(
+                *(op_map[op](w) for w, op in pw.items())
+            )) for pw, coeff in self.items())
+        )
+        return pl_op
+
+    def to_hamiltonian(self):
+        """Generate a native PL hamiltonian from the reduced representation"""
+        coeffs, terms = ([], [])
+
+        for pw, coeff in self.items():
+            coeffs.append(coeff)
+            terms.append(qml.Tensor(*(op_map[op](w) for w, op in pw.items)))
+        return qml.Hamiltonian(coeffs, terms)
