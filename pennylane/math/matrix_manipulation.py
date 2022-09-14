@@ -187,10 +187,10 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
         return int(f"0b{''.join(s)}", 2)  # convert to int
 
     data = [1] * (2**n)
-    index_i = list(range(2**n))  # bra's (we don't change anything)
+    index_i = list(range(2**n))  # bras (we don't change anything)
     index_j = [
         swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
-    ]  # ket's (we swap qubits i and j): <10| --> <01|
+    ]  # kets (we swap qubits i and j): <10| --> <01|
     return coo_matrix((data, (index_i, index_j)))
 
 
