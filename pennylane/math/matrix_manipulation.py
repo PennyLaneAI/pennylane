@@ -210,6 +210,8 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
     Returns:
         tensor_like: expanded matrix
     """
+    base_matrix.eliminate_zeros()
+
     n_total_wires = len(wire_order)
 
     wires = wires.tolist() if isinstance(wires, qml.wires.Wires) else list(copy.copy(wires))
@@ -235,6 +237,7 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
 
     if len(mats) > 1:
         expanded_matrix = reduce(lambda i, j: kron(i, j, format="coo"), mats)
+        expanded_matrix.eliminate_zeros()
     else:
         expanded_matrix = copy.copy(base_matrix)
 
@@ -245,10 +248,12 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
                 U = eye(2**n_total_wires, format=format)
             j = expanded_wires.index(wire_order[i])  # location of correct wire
             U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
+            U.eliminate_zeros()
 
             expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
     if U is not None:
         expanded_matrix = U.T @ expanded_matrix @ U
+        expanded_matrix.eliminate_zeros()
     if format != "coo":
         expanded_matrix = expanded_matrix.asformat(format)
     return expanded_matrix
