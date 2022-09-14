@@ -160,10 +160,11 @@ class TestMatrix:
         assert qml.math.allclose(exp_rz.matrix(), rz.matrix())
 
     @pytest.mark.autograd
-    def test_tensor_with_pauliz_autograd(self):
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_tensor_with_pauliz_autograd(self, requires_grad):
         """Test the matrix for the case when the coefficient is autograd and
         the diagonalizing gates don't act on every wire for the matrix."""
-        phi = qml.numpy.array(-0.345)
+        phi = qml.numpy.array(-0.345, requires_grad=requires_grad)
         base = qml.PauliZ(0) @ qml.PauliY(1)
         autograd_op = Exp(base, phi)
         mat = qml.math.expm(phi * qml.matrix(base))
