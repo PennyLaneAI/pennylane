@@ -183,9 +183,8 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         tol_factor (float): threshold error value for discarding the negligible factors
 
     Returns:
-        tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing the
-        grouped coefficients and grouped opservables of a Hamiltonian and the basis rotation
-        transformation matrices obtained with the basis rotation grouping method
+        tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing
+        grouped coefficients, grouped ob-servables and basis rotation transformation matrices
 
     **Example**
 
@@ -216,7 +215,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
             V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta},
 
         where :math:`V_{pqrs}` denotes a two-electron integral in the chemist notation and
-        :math:`T_{pq}` is obtained from the one- and two electron integrals, :math:`h_{pq}` and
+        :math:`T_{pq}` is obtained from the one- and two-electron integrals, :math:`h_{pq}` and
         :math:`h_{pssq}`, as
 
         .. math::
@@ -230,8 +229,8 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
             V_{pqrs} = \sum_r^R L_{pq}^{(r)} L_{rs}^{(r) T},
 
-        where :math:`L` denotes the eigenvectors of the matrix. The molecular Hamiltonian can then
-        be rewritten following Eq. (7) of
+        where :math:`L` denotes the matrix of eigenvectors of the matrix :math:`V`. The molecular
+        Hamiltonian can then be rewritten following Eq. (7) of
         [`Phys. Rev. Research 3, 033055, 2021 <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.3.033055>`_]
         as
 
@@ -257,7 +256,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
         .. math::
 
-            n_p = \frac{1-Z_p}{2}
+            n_p = \frac{1-Z_p}{2},
 
         where :math:`Z_p` is the Pauli :math:`Z` operator applied to qubit :math:`p`. This gives
         the qubit Hamiltonian
@@ -289,28 +288,23 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
     ops_l = []
     for coeff in eigvals[1:]:
-        ops_l_ = 0.0
         n = int(len(coeff) ** 0.5)
+        ops_l_ = 0.0
+        count = 0
         for i in range(n):
             for j in range(n):
-                c = coeff[i + j]
-                if i == j:
-                    ops_l_ += (
-                        c
-                        * 0.25
-                        * (qml.Identity(i) - qml.PauliZ(i) - qml.PauliZ(i) + qml.Identity(i))
+                c = coeff[count]
+                count += 1
+                ops_l_ += (
+                    c
+                    * 0.25
+                    * (
+                        qml.Identity(i)
+                        - qml.PauliZ(i)
+                        - qml.PauliZ(j)
+                        + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
                     )
-                else:
-                    ops_l_ += (
-                        c
-                        * 0.25
-                        * (
-                            qml.Identity(i)
-                            - qml.PauliZ(i)
-                            - qml.PauliZ(j)
-                            + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
-                        )
-                    )
+                )
         ops_l.append(ops_l_.tolist())
 
     ops = [ops_t.tolist()] + ops_l
