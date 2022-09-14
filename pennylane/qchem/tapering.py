@@ -655,7 +655,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     if np.all(
         [
             [
-                qml.grouping.is_commuting(op1, op2)
+                qml.is_commuting(op1, op2)
                 for op1, op2 in itertools.product(generator.ops, gen_op.ops)
             ]
             for generator in generators
