@@ -224,23 +224,31 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     Returns:
         tensor_like: expanded matrix
     """
-    n_wires = len(wires)
     n_total_wires = len(wire_order)
 
-    if isinstance(wires, qml.wires.Wires):
-        expanded_wires = wires.tolist()
-    else:
-        expanded_wires = list(copy.copy(wires))
+    wires = wires.tolist() if isinstance(wires, qml.wires.Wires) else list(copy.copy(wires))
 
+    expanded_wires = []
+    mats = []
+    op_wires_in_list = False
+    i_count = 0
     for wire in wire_order:
         if wire not in wires:
+            i_count += 1
             expanded_wires.append(wire)
+        elif not op_wires_in_list:
+            if i_count > 0:
+                mats.append(eye(2**i_count, format="coo"))
+            i_count = 0
+            mats.append(base_matrix)
+            op_wires_in_list = True
+            expanded_wires.extend(wires)
 
-    num_missing_wires = n_total_wires - n_wires
-    if num_missing_wires > 0:
-        expanded_matrix = kron(
-            base_matrix, eye(2**num_missing_wires, format=format), format=format
-        )  # added missing wires at the end
+    if i_count > 0:
+        mats.append(eye(2**i_count, format="coo"))
+
+    if len(mats) > 1:
+        expanded_matrix = reduce(lambda i, j: kron(i, j, format="coo"), mats)
     else:
         expanded_matrix = copy.copy(base_matrix)
 
