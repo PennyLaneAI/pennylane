@@ -10,7 +10,7 @@
   influence PennyLane behaviour outside of the `queueing.py` module.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
 
-   - `QueuingContext` should now be the global communication point for place queuable objects into queues.
+   - `QueuingContext` should now be the global communication point for putting queuable objects into the active queue.
    - `QueuingContext` is no longer an abstract base class.
    - `AnnotatedQueue` and its children no longer inherit from `QueuingContext`.
    - `QueuingContext` is no longer a context manager.
