@@ -829,6 +829,7 @@ def test_consistent_taper_ops(operation, gen_op):
     assert np.all([qml.equal(op1, op2) for op1, op2 in zip(taper_circuit1, taper_op1)])
     assert np.all([qml.equal(op1, op2) for op1, op2 in zip(taper_circuit2, taper_op2)])
 
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge", "fci_energy"),
     [
@@ -841,14 +842,14 @@ def test_consistent_taper_ops(operation, gen_op):
             1,
             -2.85102402,
         ),
-    ]
+    ],
 )
 def test_tapered_vqe(symbols, geometry, charge, fci_energy):
     r"""Test that the vqe routines with tapered operation can converge to ground-state energy"""
     num_electrons, num_wires = 2, 4
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
-    
+
     generators = qml.symmetry_generators(hamiltonian)
     paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
@@ -860,20 +861,31 @@ def test_tapered_vqe(symbols, geometry, charge, fci_energy):
 
     singles, doubles = qml.qchem.excitations(num_electrons, num_wires)
 
-    dev = qml.device('default.qubit', wires=tapered_ham.wires)
+    dev = qml.device("default.qubit", wires=tapered_ham.wires)
+
     @qml.qnode(dev)
     def circuit(params):
         qml.BasisState(hf_state_tapered, wires=tapered_ham.wires)
         for idx, double in enumerate(doubles):
-            qml.qchem.taper_operation(qml.DoubleExcitation(params[idx], wires=double),
-                                    generators, paulixops, paulix_sector, range(num_wires))
+            qml.qchem.taper_operation(
+                qml.DoubleExcitation(params[idx], wires=double),
+                generators,
+                paulixops,
+                paulix_sector,
+                range(num_wires),
+            )
         for idx, single in enumerate(singles):
-            qml.qchem.taper_operation(qml.SingleExcitation(params[len(doubles) + idx], wires=single),
-                                    generators, paulixops, paulix_sector, range(num_wires))
+            qml.qchem.taper_operation(
+                qml.SingleExcitation(params[len(doubles) + idx], wires=single),
+                generators,
+                paulixops,
+                paulix_sector,
+                range(num_wires),
+            )
         return qml.expval(tapered_ham)
 
     optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
-    params = np.zeros(len(doubles)+len(singles), requires_grad=True)
+    params = np.zeros(len(doubles) + len(singles), requires_grad=True)
 
     converge = False
     for _ in range(50):
