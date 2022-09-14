@@ -14,8 +14,9 @@
 from enum import Enum
 from functools import reduce
 
-import pennylane as qml
-from pennylane import math,
+# import pennylane as qml
+# import pennylane.ops
+from pennylane import math
 import numpy as np
 from scipy import sparse
 
@@ -62,12 +63,12 @@ sparse_mat_map = {
     Z: sparse_matZ,
 }
 
-op_map = {
-    I: qml.Identity,
-    X: qml.PauliX,
-    Y: qml.PauliY,
-    Z: qml.PauliZ,
-}
+# op_map = {
+#     I: pennylane.ops.Identity,
+#     X: qml.PauliX,
+#     Y: qml.PauliY,
+#     Z: qml.PauliZ,
+# }
 
 _map_I = {
     I: (1, I),
@@ -200,22 +201,27 @@ class PauliSentence(dict):
         return self._to_mat(wire_order=wire_order)
 
     def to_sparse_mat(self, wire_order):
-        return self._to_mat(wire_order=wire_order, is_sparse=False)
+        return self._to_mat(wire_order=wire_order, is_sparse=True)
 
-    def to_op(self):
-        """Generate a native PL operator from the reduced representation"""
-        pl_op = qml.op_sum(
-            *(qml.s_prod(coeff, qml.prod(
-                *(op_map[op](w) for w, op in pw.items())
-            )) for pw, coeff in self.items())
-        )
-        return pl_op
+    def simplify(self, tol=1e-8):
+        for pw in self:
+            if abs(self[pw]) <= tol:
+                del self[pw]
 
-    def to_hamiltonian(self):
-        """Generate a native PL hamiltonian from the reduced representation"""
-        coeffs, terms = ([], [])
-
-        for pw, coeff in self.items():
-            coeffs.append(coeff)
-            terms.append(qml.Tensor(*(op_map[op](w) for w, op in pw.items)))
-        return qml.Hamiltonian(coeffs, terms)
+    # def to_op(self):
+    #     """Generate a native PL operator from the reduced representation"""
+    #     pl_op = qml.op_sum(
+    #         *(qml.s_prod(coeff, qml.prod(
+    #             *(op_map[op](w) for w, op in pw.items())
+    #         )) for pw, coeff in self.items())
+    #     )
+    #     return pl_op
+    #
+    # def to_hamiltonian(self):
+    #     """Generate a native PL hamiltonian from the reduced representation"""
+    #     coeffs, terms = ([], [])
+    #
+    #     for pw, coeff in self.items():
+    #         coeffs.append(coeff)
+    #         terms.append(qml.Tensor(*(op_map[op](w) for w, op in pw.items)))
+    #     return qml.Hamiltonian(coeffs, terms)
