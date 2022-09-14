@@ -446,14 +446,14 @@
 
 <h3>Breaking changes</h3>
 
-* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
+* Measuring an operator that might not be hermitian now raises a warning instead of an
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
-* PennyLane no longer supports TensorFlow `<2.3.0`. Please ensure that you're using `>= 2.3.0`
+* PennyLane no longer supports TensorFlow `<2.3.0`. Please ensure that you're using `>=2.3.0`.
   [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683/files)
 
-* The `ControlledOperation` class has been removed.  This was a developer-only class, so the change should not be evident to
+* The `ControlledOperation` class has been removed. This was a developer-only class, so the change should not be evident to
   any users. It is replaced by `Controlled`.
   [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
