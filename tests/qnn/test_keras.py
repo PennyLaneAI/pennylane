@@ -341,7 +341,7 @@ class TestKerasLayer:
         layer_out = layer(x)
         weights = [w.numpy() for w in layer.qnode_weights.values()]
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
@@ -371,7 +371,7 @@ class TestKerasLayer:
         weights = [w.numpy() for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
@@ -401,7 +401,7 @@ class TestKerasLayer:
         weights = [w.numpy() for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
