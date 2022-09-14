@@ -18,7 +18,7 @@ from functools import reduce
 from typing import Generator, Tuple
 
 import numpy as np
-from scipy.sparse import csr_matrix, eye, issparse, kron
+from scipy.sparse import coo_matrix, eye, issparse, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -174,41 +174,25 @@ def reduce_matrices(
     return reduced_mat, final_wires
 
 
-def _local_sparse_swap_mat(i, n, format="csr"):
-    """Helper function which generates the sparse matrix of SWAP
-    for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
-    assert i < n - 1
-    swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-    j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
-    return kron(
-        kron(eye(2 ** (j - 1)), swap_mat), eye(2 ** (n - (j + 1))), format=format
-    )  # (j - 1) + 2 + (n - (j+1)) = n
-
-
-def _sparse_swap_mat(i, j, n, format="csr"):
+def _sparse_swap_mat(qubit_i, qubit_j, n):
     """Helper function which generates the sparse matrix of SWAP
     for qubits: i <--> j with final shape (2**n, 2**n)."""
-    assert i < n and j < n
-    if i == j:
-        return eye(2**n, format=format)
 
-    (small_i, big_j) = (i, j) if i < j else (j, i)
-    store_swaps = [
-        _local_sparse_swap_mat(index, n, format=format) for index in range(small_i, big_j)
-    ]
+    def swap_qubits(index, i, j):
+        s = list(format(index, f"0{n}b"))  # convert to binary
+        si, sj = s[i], s[j]
+        if si == sj:
+            return index
+        s[i], s[j] = sj, si  # swap qubits
+        return int(f"0b{''.join(s)}", 2)  # convert to int
 
-    res = eye(2**n, format=format)
-    for mat in store_swaps:  # swap i --> j
-        res @= mat
-
-    for mat in store_swaps[-2::-1]:  # bring j --> old_i
-        res @= mat
-
-    return res
+    data = [1] * (2**n)
+    index_i = list(range(2**n))
+    index_j = [swap_qubits(idx, qubit_i, qubit_j) for idx in index_i]
+    return coo_matrix((data, (index_i, index_j)))
 
 
-def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
+def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
     """Re-express a sparse base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -258,11 +242,11 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
             if U is None:
                 U = eye(2**n_total_wires, format=format)
             j = expanded_wires.index(wire_order[i])  # location of correct wire
-            U = U @ _sparse_swap_mat(
-                i, j, n_total_wires, format=format
-            )  # swap incorrect wire for correct wire
+            U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
 
             expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
     if U is not None:
         expanded_matrix = U.T @ expanded_matrix @ U
-    return expanded_matrix.asformat(format)
+    if format != "coo":
+        expanded_matrix = expanded_matrix.asformat(format)
+    return expanded_matrix
