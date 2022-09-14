@@ -459,9 +459,6 @@
   error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
   [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
 
-* PennyLane no longer supports TensorFlow `<2.3.0`. Please ensure that you're using `>=2.3.0`.
-  [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683/files)
-
 * The `ControlledOperation` class has been removed. This was a developer-only class, so the change should not be evident to
   any users. It is replaced by `Controlled`.
   [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
