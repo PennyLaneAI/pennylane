@@ -12,25 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :class:`QueuingContext` abstract base class.
+This module contains the :class:`QueuingManager`.
 """
 
 import copy
 from collections import OrderedDict
+from warnings import warn
+
+
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    if name == "QueuingContext":
+        warn("QueuingContext has been renamed qml.queuing.QueuingManager.", UserWarning)
+        return QueuingManager
+    try:
+        return globals()[name]
+    except KeyError as e:
+        raise AttributeError from e
 
 
 class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
 
 
-class QueuingContext:
+class QueuingManager:
     """Singleton global entry point for managing active recording contexts.
 
     This class consists purely of class methods. It both maintains a list of
     recording queues and allows communication with the currently active object.
 
     Queueable objects, like :class:`~.operation.Operator` and :class:`~.measurements.MeasurementProcess`, should
-    use ``QueuingContext`` as an entry point for accessing the active queue.
+    use ``QueuingManager`` as an entry point for accessing the active queue.
 
     See also: :class:`~.AnnotatedQueue`, :class:`~.tape.QuantumTape`, :meth:`~.operation.Operator.queue`.
 
@@ -73,10 +85,7 @@ class QueuingContext:
     @classmethod
     def active_context(cls):
         """Returns the currently active queuing context."""
-        if cls.recording():
-            return cls._active_contexts[-1]
-
-        return None
+        return cls._active_contexts[-1] if cls.recording() else None
 
     @classmethod
     def append(cls, obj, **kwargs):
@@ -85,8 +94,7 @@ class QueuingContext:
         Args:
             obj: the object to be appended
         """
-        if cls.recording():
-            cls.active_context().append(obj, **kwargs)
+        return cls.active_context().append(obj, **kwargs) if cls.recording() else None
 
     @classmethod
     def remove(cls, obj):
@@ -95,8 +103,7 @@ class QueuingContext:
         Args:
             obj: the object to be removed
         """
-        if cls.recording():
-            cls.active_context().remove(obj)
+        return cls.active_context().remove(obj) if cls.recording() else None
 
     @classmethod
     def update_info(cls, obj, **kwargs):
@@ -105,8 +112,7 @@ class QueuingContext:
         Args:
             obj: the object with metadata to be updated
         """
-        if cls.recording():
-            cls.active_context().update_info(obj, **kwargs)
+        return cls.active_context().update_info(obj, **kwargs) if cls.recording() else None
 
     # pylint: disable=protected-access
     @classmethod
@@ -116,8 +122,7 @@ class QueuingContext:
         Args:
             obj: the object with metadata to be updated
         """
-        if cls.recording():
-            cls.active_context().safe_update_info(obj, **kwargs)
+        return cls.active_context().safe_update_info(obj, **kwargs) if cls.recording() else None
 
     @classmethod
     def get_info(cls, obj):
@@ -129,10 +134,7 @@ class QueuingContext:
         Returns:
             object metadata
         """
-        if cls.recording():
-            return cls.active_context().get_info(obj)
-
-        return None
+        return cls.active_context().get_info(obj) if cls.recording() else None
 
 
 class AnnotatedQueue:
@@ -146,15 +148,15 @@ class AnnotatedQueue:
         """Adds this instance to the global list of active contexts.
 
         Returns:
-            QueuingContext: this instance
+            QueuingManager: this instance
         """
-        QueuingContext.add_active_queue(self)
+        QueuingManager.add_active_queue(self)
 
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         """Remove this instance from the global list of active contexts."""
-        QueuingContext.remove_active_queue()
+        QueuingManager.remove_active_queue()
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
@@ -190,12 +192,12 @@ class AnnotatedQueue:
         return list(self._queue.keys())
 
 
-def apply(op, context=QueuingContext):
+def apply(op, context=QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
 
     Args:
         op (.Operator or .MeasurementProcess): the operator or measurement to apply/queue
-        context (.QueuingContext): The queuing context to queue the operator to.
+        context (.QueuingManager): The queuing context to queue the operator to.
             Note that if no context is specified, the operator is
             applied to the currently active queuing context.
     Returns:
@@ -291,10 +293,10 @@ def apply(op, context=QueuingContext):
         >>> tape2.operations
         [PauliX(wires=[0]), RZ(0.2, wires=[0])]
     """
-    if not QueuingContext.recording():
+    if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    if op in getattr(context, "queue", QueuingContext.active_context().queue):
+    if op in getattr(context, "queue", QueuingManager.active_context().queue):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)

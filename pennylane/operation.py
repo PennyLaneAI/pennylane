@@ -1049,7 +1049,7 @@ class Operator(abc.ABC):
             return [copy.copy(self)]
         raise PowUndefinedError
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.queuing.QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -1726,7 +1726,9 @@ class Tensor(Observable):
 
         return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
-    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
+    def queue(
+        self, context=qml.queuing.QueuingManager, init=False
+    ):  # pylint: disable=arguments-differ
         constituents = self.obs
 
         if init:
@@ -1847,21 +1849,21 @@ class Tensor(Observable):
             raise ValueError("Can only perform tensor products between observables.")
 
         if (
-            qml.QueuingContext.recording()
-            and self not in qml.QueuingContext.active_context()._queue
+            qml.queuing.QueuingManager.recording()
+            and self not in qml.queuing.QueuingManager.active_context()._queue
         ):
-            qml.QueuingContext.append(self)
+            qml.queuing.QueuingManager.append(self)
 
-        qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
-        qml.QueuingContext.safe_update_info(other, owner=self)
+        qml.queuing.QueuingManager.safe_update_info(self, owns=tuple(self.obs))
+        qml.queuing.QueuingManager.safe_update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
-            qml.QueuingContext.safe_update_info(other, owner=self)
+            qml.queuing.QueuingManager.safe_update_info(self, owns=tuple(self.obs))
+            qml.queuing.QueuingManager.safe_update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")

@@ -17,13 +17,15 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
+from warnings import warn
 import pkg_resources
+
 
 import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.queuing import apply, QueuingContext
+from pennylane.queuing import apply
 
 import pennylane.fourier
 import pennylane.kernels
@@ -99,12 +101,26 @@ from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 
-# QueuingContext and collections needs to be imported after all other pennylane imports
+# collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute, execute_new  # pylint:disable=wrong-import-order
+
+
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    if name == "QueuingContext":
+        warn("QueuingContext has been renamed qml.queuing.QueuingManager.", UserWarning)
+        from pennylane.queuing import QueuingManager  # pylint: disable=import-outside-toplevel
+
+        return QueuingManager
+    try:
+        return globals()[name]
+    except KeyError as e:
+        raise AttributeError from e
+
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

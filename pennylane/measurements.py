@@ -489,7 +489,7 @@ class MeasurementProcess:
 
         return tape
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.queuing.QueuingManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
             context.safe_update_info(self.obs, owner=self)

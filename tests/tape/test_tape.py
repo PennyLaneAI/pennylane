@@ -1588,14 +1588,14 @@ class TestStopRecording:
 
         with QuantumTape() as tape:
             op0 = qml.RX(0, wires=0)
-            assert qml.queuing.QueuingContext.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
             with tape.stop_recording():
                 op1 = qml.RY(1.0, wires=1)
-                assert qml.queuing.QueuingContext.active_context() is None
+                assert qml.queuing.QueuingManager.active_context() is None
 
             op2 = qml.RZ(2, wires=1)
-            assert qml.queuing.QueuingContext.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
@@ -1606,21 +1606,21 @@ class TestStopRecording:
 
         with QuantumTape() as tape1:
             op0 = qml.RX(0, wires=0)
-            assert qml.queuing.QueuingContext.active_context() is tape1
+            assert qml.queuing.QueuingManager.active_context() is tape1
 
             with QuantumTape() as tape2:
-                assert qml.queuing.QueuingContext.active_context() is tape2
+                assert qml.queuing.QueuingManager.active_context() is tape2
                 op1 = qml.RY(1.0, wires=1)
 
                 with tape2.stop_recording():
-                    assert qml.queuing.QueuingContext.active_context() is None
+                    assert qml.queuing.QueuingManager.active_context() is None
                     op2 = qml.RZ(0.6, wires=2)
                     op3 = qml.CNOT(wires=[0, 2])
 
                 op4 = qml.Hadamard(wires=0)
 
             op5 = qml.RZ(2, wires=1)
-            assert qml.queuing.QueuingContext.active_context() is tape1
+            assert qml.queuing.QueuingManager.active_context() is tape1
 
         assert len(tape1.operations) == 3
         assert tape1.operations[0] == op0
@@ -1636,14 +1636,14 @@ class TestStopRecording:
         space is properly created and accessible"""
         with QuantumTape() as tape:
             op0 = qml.RX(0, wires=0)
-            assert qml.queuing.QueuingContext.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
             with tape.stop_recording(), QuantumTape() as temp_tape:
-                assert qml.queuing.QueuingContext.active_context() is temp_tape
+                assert qml.queuing.QueuingManager.active_context() is temp_tape
                 op1 = qml.RY(1.0, wires=1)
 
             op2 = qml.RZ(2, wires=1)
-            assert qml.queuing.QueuingContext.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
