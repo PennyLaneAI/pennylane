@@ -15,7 +15,9 @@
    - `AnnotatedQueue` and its children no longer inherit from `QueuingContext`.
    - `QueuingContext` is no longer a context manager.
    -  Recording queues should start and stop recording via the `QueuingContext.add_active_queue` and 
-     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property. 
+     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+      is now only available through `QueuingContext`.
    - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
    
