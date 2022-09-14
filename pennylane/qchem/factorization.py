@@ -216,7 +216,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
         where :math:`V_{pqrs}` denotes a two-electron integral in the chemist notation and
         :math:`T_{pq}` is obtained from the one- and two-electron integrals, :math:`h_{pq}` and
-        :math:`h_{pssq}`, as
+        :math:`h_{pqrs}`, as
 
         .. math::
 
