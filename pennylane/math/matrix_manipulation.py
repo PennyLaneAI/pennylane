@@ -237,9 +237,10 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
 
     if len(mats) > 1:
         expanded_matrix = reduce(lambda i, j: kron(i, j, format="coo"), mats)
-        expanded_matrix.eliminate_zeros()
     else:
         expanded_matrix = copy.copy(base_matrix)
+
+    expanded_matrix.eliminate_zeros()
 
     U = None
     for i in range(n_total_wires):
