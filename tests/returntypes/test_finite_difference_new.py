@@ -118,13 +118,16 @@ class TestFiniteDiff:
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
         dev = qml.device("default.qubit", wires=2)
-        tapes, fn = finite_diff(tape)
+        tapes, fn = finite_diff_new(tape)
 
-        # For now, we must squeeze the results of the device execution, since
-        # qml.probs results in a nested result. Later, we will revisit device
-        # execution to avoid this issue.
-        res = fn(qml.math.squeeze(dev.batch_execute(tapes)))
-        assert res.shape == (4, 2)
+        res = fn(dev.batch_execute_new(tapes))
+        assert isinstance(res, tuple)
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert res[0].shape == (4,)
+
+        assert isinstance(res[1], numpy.ndarray)
+        assert res[1].shape == (4,)
 
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
@@ -345,10 +348,7 @@ class TestFiniteDiff:
         assert len(tapes) == tape.num_params + 1
 
     def test_y0_provided(self):
-        """Test that if first order finite differences is used,
-        and the original tape output is provided, then
-        the tape is executed only once using the current parameter
-        values."""
+        """Test that by providing y0 the number of tapes is equal the number of parameters."""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape:
@@ -359,7 +359,6 @@ class TestFiniteDiff:
         f0 = dev.execute_new(tape)
         tapes, fn = finite_diff_new(tape, approx_order=1, f0=f0)
 
-        # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params
 
     def test_independent_parameters(self):

@@ -498,10 +498,10 @@ def finite_diff_new(
 
         for i, _ in enumerate(tape.measurements):
             dim = output_dims[i]
-            sub_list_zeros = []
-            for _ in range(0, len(tape.trainable_params)):
-                sub_list_zeros.append(qml.math.zeros(dim))
+
+            sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
             sub_list_zeros = tuple(sub_list_zeros)
+
             list_zeros.append(sub_list_zeros)
 
         if len(tape.measurements) == 1:
@@ -557,20 +557,22 @@ def finite_diff_new(
             res = results[start : start + s]
             start = start + s
             # compute the linear combination of results and coefficients
+
             # First compute the multiplication with coeff
-            l = []
+            linear_comb = []
             for i, c in enumerate(coeffs):
                 if isinstance(res[i], (tuple, list)):
                     elem = [r * c for r in res[i]]
                 else:
                     elem = [res[i] * c]
-                l.append(elem)
-            # Second add all the term for each measurement separately
-            g = []
+                linear_comb.append(elem)
 
-            for i in range(0, len(tape.measurements)):
-                elem = sum(r[i] for r in l)
-                g.append(elem)
+            # Second add all the terms for each measurement separately
+            pre_grads = []
+
+            for i in range(len(tape.measurements)):
+                elem = sum(r[i] for r in linear_comb)
+                pre_grads.append(elem)
 
             # Add on the unshifted term
             if c0 is not None:
@@ -579,30 +581,30 @@ def finite_diff_new(
                     c0r0 = [c0 * r for r in r0]
                 else:
                     c0r0 = [c0 * r0]
-                g = [i + j for i, j in zip(g, c0r0)]
+                pre_grads = [i + j for i, j in zip(pre_grads, c0r0)]
 
-            if len(g) > 1:
-                if isinstance(results[0][0], np.ndarray) and len(tape):
-                    grads.append(tuple(np.array(i / (h**n)) for i in g))
+            if len(pre_grads) > 1:
+                if isinstance(results[0][0], np.ndarray):
+                    pre_grads = tuple(np.array(i / (h**n)) for i in pre_grads)
+                    grads.append(pre_grads)
                 else:
-                    grads.append(tuple(i / (h**n) for i in g))
+                    pre_grads = tuple(i / (h**n) for i in pre_grads)
+                    grads.append(pre_grads)
             else:
+                pre_grads = pre_grads[0]
                 if isinstance(results[0], np.ndarray):
-                    grads.append(np.array(g[0] / (h**n)))
+                    grads.append(np.array(pre_grads / (h**n)))
                 else:
-                    grads.append(g[0] / (h**n))
+                    grads.append(pre_grads / (h**n))
 
         # Single measurement
         if len(tape.measurements) == 1:
-            return tuple(elem for elem in grads)
+            return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
-        grads_reorder = [
-            [0 for _ in range(0, len(tape.trainable_params))]
-            for _ in range(0, len(tape.measurements))
-        ]
-        for i in range(0, len(tape.measurements)):
-            for j in range(0, len(tape.trainable_params)):
+        grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
+        for i in range(len(tape.measurements)):
+            for j in range(len(tape.trainable_params)):
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
