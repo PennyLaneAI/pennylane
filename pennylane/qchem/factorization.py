@@ -269,8 +269,8 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         a tensor product of Pauli :math:`Z` and Identity operators. This allows all the Pauli words
         in each of the :math:`O` terms to be measured simultaneously. This function returns the
         coefficients and the Pauli words grouped for each of the :math:`O` terms as well as the
-        eigenvectors of the :math:`T` and :math:`L^{(r)}` matrices that can be used to construct the
-        basis rotation unitaries :math:`U`.
+        basis rotation transformation matrices that are constructed from the eigenvectors of the
+        :math:`T` and :math:`L^{(r)}` matrices.
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
 
@@ -311,5 +311,6 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
     c_group = [op.coeffs for op in ops]
     o_group = [op.ops for op in ops]
+    u_transform = [eigvec.T for eigvec in eigvecs]
 
-    return c_group, o_group, eigvecs
+    return c_group, o_group, u_transform
