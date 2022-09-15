@@ -1161,7 +1161,7 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2.graph.hash
 
-    @pytest.mark.parametrize("ret", [expval, var, sample, counts, probs])
+    @pytest.mark.parametrize("ret", [expval, var])
     def test_expand_tape_multiple_wires_non_commuting(self, ret):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables are on the same wire"""
@@ -1172,6 +1172,26 @@ class TestExpand:
             ret(op=qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.expand(expand_measurements=True)
+
+    @pytest.mark.parametrize("ret", [sample, counts, probs])
+    def test_expand_tape_multiple_wires_non_commuting_for_sample_type_measurements(self, ret):
+        """Test if a more verbose QuantumFunctionError is raised during tape expansion of non-commuting
+        observables on the same wire with sample type measurements present"""
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            ret(op=qml.PauliZ(0))
+
+        expected_error_msg = (
+            "Only observables that are qubit-wise commuting "
+            "Pauli words can be returned on the same wire.\n"
+            "Try removing all probability, sample and counts measurements "
+            "to allow for separate measurements of each observable."
+        )
+
+        with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
             tape.expand(expand_measurements=True)
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
