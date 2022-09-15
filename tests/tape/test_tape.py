@@ -1188,7 +1188,8 @@ class TestExpand:
             "Only observables that are qubit-wise commuting "
             "Pauli words can be returned on the same wire.\n"
             "Try removing all probability, sample and counts measurements "
-            "to allow for separate measurements of each observable."
+            "this will allow for splitting of execution and separate measurements "
+            "for each non-commuting observable."
         )
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
