@@ -20,7 +20,10 @@
       is now only available through `QueuingContext`.
    - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
-   
+
+* Added matrix caching functionality to `Composite` ops. This will help reduce memory requirements when computing and
+  re-using the matrix representation of large composite operators. 
+  [(#3038)](https://github.com/PennyLaneAI/pennylane/pull/3038)
 
 <h3>Breaking changes</h3>
 
@@ -34,4 +37,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christina Lee
+Christina Lee, Jay Soni

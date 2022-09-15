@@ -166,7 +166,7 @@ class CompositeOp(Operator, abc.ABC):  # pylint: disable=too-many-instance-attri
     def compute_matrix(*args, **kwargs):
         """Compute the matrix representation in the computational basis."""
 
-    def matrix(self, wire_order=None, cache=False):
+    def matrix(self, wire_order=None, cache=False):  # pylint: disable=arguments-differ
         """Representation of the operator as a matrix in the computational basis."""
         return self._get_cached_matrix(wire_order=wire_order, cache=cache)
 

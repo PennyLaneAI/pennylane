@@ -489,6 +489,18 @@ class TestProperties:
         assert op.label(decimals=2, cache=cache) == "-1.20*U(M0)"
         assert len(cache["matrices"]) == 1
 
+    def test_hash(self):
+        """Test the hash method takes into account the scalar value."""
+        base = qml.PauliX(wires=0)
+        op1 = s_prod(1.2, base)
+        op2 = s_prod(4.5j, base)
+        op3 = s_prod(np.array(-0.123), base)
+
+        assert op1.hash != op2.hash
+        assert (
+            op3.hash is not None
+        )  # assert we can hash even when then scaler is an un-hashable type
+
 
 class TestSimplify:
     """Test SProd simplify method and depth property."""
