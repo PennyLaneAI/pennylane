@@ -21,6 +21,7 @@
    - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
    
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.[(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
 <h3>Breaking changes</h3>
 
@@ -34,4 +35,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christina Lee
+Guillermo Alonso-Linaje, Christina Lee
