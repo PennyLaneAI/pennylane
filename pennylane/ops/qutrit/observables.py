@@ -209,9 +209,7 @@ class GellMann(Observable):
                 "The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive."
             )
 
-        self._hyperparameters = {
-            "index": index,
-        }
+        self.hyperparameters["index"] = index
 
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
