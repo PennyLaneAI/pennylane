@@ -215,6 +215,7 @@ class Sum(CompositeOp):
         """
         return None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
         return True

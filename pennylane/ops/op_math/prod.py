@@ -269,6 +269,7 @@ class Prod(CompositeOp):
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
         return True
