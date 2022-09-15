@@ -237,6 +237,7 @@ Qubit tapering
     ~pennylane.symmetry_generators
     ~pennylane.taper
     ~pennylane.qchem.taper_hf
+    ~pennylane.qchem.taper_operation
 
 :html:`</div>`
 
