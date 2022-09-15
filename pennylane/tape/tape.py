@@ -23,7 +23,7 @@ from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 
@@ -158,9 +158,18 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     tape._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
+                if any(m.return_type in (Probability, Sample, Counts, AllCounts) for m in tape.measurements):
+                    raise qml.QuantumFunctionError(
+                        "Only observables that are qubit-wise commuting "
+                        "Pauli words can be returned on the same wire.\n"
+                        "Try removing all probability, sample and counts measurements "
+                        "to allow for separate measurements of each observable."
+                    ) from e
+
                 raise qml.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
-                    "Pauli words can be returned on the same wire"
+                    "Pauli words can be returned on the same wire, "
+                    f"some of the following measurements do not commute:\n{tape.measurements}"
                 ) from e
 
             tape._ops.extend(rotations)
