@@ -166,7 +166,7 @@ def _finite_diff_new(
     validate_params=True,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
-    parameters with respect to its inputs.
+    parameters with respect to its inputs. This function is adapted to the new return system.
 
     Args:
         qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -205,65 +205,7 @@ def _finite_diff_new(
 
     **Example**
 
-    This transform can be registered directly as the quantum gradient transform
-    to use during autodifferentiation:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
-    tensor([[-0.38751725, -0.18884792, -0.38355708],
-            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
-
-
-    .. details::
-        :title: Usage Details
-
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
-
-        >>> @qml.qnode(dev)
-        ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-        >>> qml.gradients.finite_diff(circuit)(params)
-        tensor([[-0.38751725, -0.18884792, -0.38355708],
-                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
-
-        This quantum gradient transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
-        device evaluation. Instead, the processed tapes, and post-processing
-        function, which together define the gradient are directly returned:
-
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     qml.expval(qml.PauliZ(0))
-        ...     qml.var(qml.PauliZ(0))
-        >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
-        >>> gradient_tapes
-        [<QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>,
-         <QuantumTape: wires=[0], params=3>]
-
-        This can be useful if the underlying circuits representing the gradient
-        computation need to be analyzed.
-
-        The output tapes can then be evaluated and post-processed to retrieve
-        the gradient:
-
-        >>> dev = qml.device("default.qubit", wires=2)
-        >>> fn(qml.execute(gradient_tapes, dev, None))
-        [[-0.38751721 -0.18884787 -0.38355704]
-         [ 0.69916862  0.34072424  0.69202359]]
+    #TODO: Add example for new return type.
     """
     if argnum is None and not tape.trainable_params:
         warnings.warn(
