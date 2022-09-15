@@ -14,22 +14,14 @@
 """
 Unit tests for the qubit matrix-based operations.
 """
-import pytest
 import numpy as np
+import pytest
+from gate_data import H, I, S, T, X, Z
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
-
-from gate_data import (
-    I,
-    X,
-    Z,
-    H,
-    S,
-    T,
-)
+from pennylane.wires import Wires
 
 
 class TestQubitUnitary:
@@ -119,12 +111,6 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
-        # test non-unitary matrix
-        U3 = U.copy()
-        U3[0, 0] += 0.5
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
-
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
@@ -150,12 +136,6 @@ class TestQubitUnitary:
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
-
-        # test non-unitary matrix
-        U3 = U.detach().clone()
-        U3[0, 0] += 0.5
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
@@ -183,11 +163,6 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
 
-        # test non-unitary matrix
-        U3 = tf.Variable(U + 0.5)
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
-
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
@@ -213,11 +188,6 @@ class TestQubitUnitary:
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
-
-        # test non-unitary matrix
-        U3 = U + 0.5
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
