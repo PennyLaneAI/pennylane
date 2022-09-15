@@ -105,40 +105,52 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
         return base_matrix
 
     interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
+
     if interface == "scipy" and issparse(base_matrix):
         return _sparse_expand_matrix(base_matrix, wires, wire_order, format=sparse_format)
 
     wire_order = qml.wires.Wires(wire_order)
-    n = len(wires)
+    expanded_wires = qml.wires.Wires([])
+    mats = []
+    op_wires_in_list = False
+    i_count = 0
+    for wire in wire_order:
+        if wire not in wires:
+            i_count += 1
+            expanded_wires += wire
+        elif not op_wires_in_list:
+            if i_count > 0:
+                mats.append(
+                    qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix)
+                )
+            i_count = 0
+            mats.append(base_matrix)
+            op_wires_in_list = True
+            expanded_wires += wires
+
+    if i_count > 0:
+        mats.append(qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix))
+
+    expanded_matrix = reduce(qml.math.kron, mats) if len(mats) > 1 else mats[0]
+    n = len(wire_order)
     shape = qml.math.shape(base_matrix)
     batch_dim = shape[0] if len(shape) == 3 else None
 
-    # operator's wire positions relative to wire ordering
-    op_wire_pos = wire_order.indices(wires)
-
-    identity = qml.math.reshape(
-        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
-    )
-    # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
-    axes = (list(range(-n, 0)), op_wire_pos)
-
-    # reshape op.matrix()
-    op_matrix_interface = qml.math.convert_like(base_matrix, identity)
     shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
-    mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
-    mat_tensordot = qml.math.tensordot(
-        mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
-    )
+    mat = qml.math.reshape(expanded_matrix, shape)
 
-    unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
     # permute matrix axes to match wire ordering
-    perm = op_wire_pos + unused_idxs
-    sources = wire_order.indices(wire_order)
-    if batch_dim:
-        perm = [p + 1 for p in perm]
-        sources = [s + 1 for s in sources]
-
-    mat = qml.math.moveaxis(mat_tensordot, sources, perm)
+    perm = []
+    sources = []
+    for p, s in zip(wire_order.indices(wires), expanded_wires.indices(wires)):
+        if batch_dim:
+            p += 1
+            s += 1
+        if p != s:
+            perm.extend([p, p + n])
+            sources.extend([s, s + n])
+    if perm:
+        mat = qml.math.moveaxis(mat, sources, perm)
     shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
     mat = qml.math.reshape(mat, shape)
 
