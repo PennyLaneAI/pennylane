@@ -148,7 +148,7 @@ class AnnotatedQueue:
         """Adds this instance to the global list of active contexts.
 
         Returns:
-            QueuingManager: this instance
+            AnnotatedQueue: this instance
         """
         QueuingManager.add_active_queue(self)
 
