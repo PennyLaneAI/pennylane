@@ -88,6 +88,11 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.queuing.QueuingContext.active_context"
+    )
+    warn(message, UserWarning)
     return QueuingContext.active_context()
 
 
@@ -426,6 +431,7 @@ class QuantumTape(AnnotatedQueue):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
+    # pylint: disable=no-self-use
     @contextlib.contextmanager
     def stop_recording(self):
         """Context manager to temporarily stop recording operations

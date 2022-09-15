@@ -14,13 +14,126 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
 """
-import contextlib
-
 import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.queuing import (
+    AnnotatedQueue,
+    AnnotatedQueue,
+    QueuingContext,
+    QueuingError,
+    stop_recording,
+)
+
+
+class TestStopRecording:
+    def test_stop_recording_on_function_inside_QNode(self):
+        """Test that the stop_recording transform when applied to a function
+        is not recorded by a QNode"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @stop_recording()
+        def my_op():
+            return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
+
+        res = []
+
+        @qml.qnode(dev)
+        def my_circuit():
+            res.extend(my_op())
+            return qml.expval(qml.PauliZ(0))
+
+        my_circuit.construct([], {})
+        tape = my_circuit.qtape
+
+        assert len(tape.operations) == 0
+        assert len(res) == 3
+
+    def test_stop_recording_directly_on_op(self):
+        """Test that stop_recording transform works when directly applied to an op"""
+        dev = qml.device("default.qubit", wires=1)
+        res = []
+
+        @qml.qnode(dev)
+        def my_circuit():
+            op1 = stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
+            op2 = qml.RY(np.pi / 4.0, wires=0)
+            res.extend([op1, op2])
+            return qml.expval(qml.PauliZ(0))
+
+        my_circuit.construct([], {})
+        tape = my_circuit.qtape
+
+        assert len(tape.operations) == 1
+        assert tape.operations[0] == res[1]
+        assert len(res) == 2
+
+    def test_nested_stop_recording_on_function(self):
+        """Test that stop_recording works when nested with other stop_recordings"""
+
+        @stop_recording()
+        @stop_recording()
+        def my_op():
+            return [
+                qml.RX(0.123, wires=0),
+                qml.RY(2.32, wires=0),
+                qml.RZ(1.95, wires=0),
+            ]
+
+        # the stop_recording function will still work outside of any queuing contexts
+        res = my_op()
+        assert len(res) == 3
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def my_circuit():
+            my_op()
+
+            with stop_recording():
+                qml.PauliX(wires=0)
+                my_op()
+
+            qml.Hadamard(wires=0)
+            my_op()
+            return qml.state()
+
+        my_circuit.construct([], {})
+        tape = my_circuit.qtape
+
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "Hadamard"
+
+    def test_stop_recording_qnode_qfunc(self):
+        """A QNode with a stop_recording qfunc will result in no quantum measurements."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        @stop_recording()
+        def my_circuit():
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = my_circuit()
+        assert len(result) == 0
+
+        tape = my_circuit.qtape
+        assert len(tape.operations) == 0
+        assert len(tape.measurements) == 0
+
+    def test_stop_recording_qnode(self):
+        """A stop_recording QNode is unaffected"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @stop_recording()
+        @qml.qnode(dev)
+        def my_circuit():
+            qml.RX(np.pi, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = my_circuit()
+        assert result == -1.0
 
 
 class TestQueuingContext:

@@ -21,3 +21,4 @@ TensorFlow, and PyTorch.
 .. automodapi:: pennylane.tape
     :no-main-docstr:
     :include-all-objects:
+    :skip: queuing_stop_recording, warn
