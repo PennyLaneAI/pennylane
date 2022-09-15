@@ -223,16 +223,13 @@ def _finite_diff_new(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        output_dims = []
-        for m in tape.measurements:
-            if m.return_type is qml.measurements.Probability:
-                output_dims.append(2 ** len(m.wires))
-            else:
-                output_dims.append(1)
         list_zeros = []
 
-        for i, _ in enumerate(tape.measurements):
-            dim = output_dims[i]
+        for i, m in enumerate(tape.measurements):
+            if m.return_type is qml.measurements.Probability:
+                dim = 2 ** len(m.wires)
+            else:
+                dim = 1
 
             sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
             sub_list_zeros = tuple(sub_list_zeros)
@@ -281,11 +278,23 @@ def _finite_diff_new(
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
 
+        output_dims = []
+        for m in tape.measurements:
+            if m.return_type is qml.measurements.Probability:
+                output_dims.append(2 ** len(m.wires))
+            else:
+                output_dims.append(1)
+
         for s in shapes:
 
             if s == 0:
                 # parameter has zero gradient
-                g = qml.math.zeros_like(results[0])
+                if not isinstance(results[0], tuple):
+                    g = qml.math.zeros_like(results[0])
+                else:
+                    g = []
+                    for i in output_dims:
+                        g.append(qml.math.zeros(i))
                 grads.append(g)
                 continue
 
@@ -318,7 +327,7 @@ def _finite_diff_new(
                     c0r0 = [c0 * r0]
                 pre_grads = [i + j for i, j in zip(pre_grads, c0r0)]
 
-            if len(pre_grads) > 1:
+            if len(tape.measurements) > 1:
                 if isinstance(results[0][0], np.ndarray):
                     pre_grads = tuple(np.array(i / (h**n)) for i in pre_grads)
                     grads.append(pre_grads)

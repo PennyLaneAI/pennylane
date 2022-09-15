@@ -637,6 +637,39 @@ class TestFiniteDiffIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_multiple_expectation_value_with_argnum_one(
+        self, approx_order, strategy, validate, tol
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with a multiple measurement, where only one parameter is chosen to
+        be trainable.
+
+        This test relies on the fact that exactly one term of the estimated
+        jacobian will match the expected analytical value.
+        """
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.probs(wires=[0, 1])
+
+        # we choose only 1 trainable parameter
+        tapes, fn = finite_diff(
+            tape, argnum=1, approx_order=approx_order, strategy=strategy, validate_params=validate
+        )
+        res = fn(dev.batch_execute(tapes))
+
+        assert isinstance(res, tuple)
+        assert isinstance(res[0], tuple)
+        assert np.allclose(res[0][0], 0)
+        assert isinstance(res[1], tuple)
+        assert np.allclose(res[1][0], 0)
+
     def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
