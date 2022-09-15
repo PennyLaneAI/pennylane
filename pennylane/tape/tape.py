@@ -158,7 +158,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     tape._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
-                if any(m.return_type in (Probability, Sample, Counts, AllCounts) for m in tape.measurements):
+                if any(
+                    m.return_type in (Probability, Sample, Counts, AllCounts)
+                    for m in tape.measurements
+                ):
                     raise qml.QuantumFunctionError(
                         "Only observables that are qubit-wise commuting "
                         "Pauli words can be returned on the same wire.\n"

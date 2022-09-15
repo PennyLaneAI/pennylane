@@ -29,6 +29,7 @@ from pennylane.measurements import (
     expval,
     sample,
     var,
+    probs,
 )
 from pennylane.tape import QuantumTape, TapeError
 
@@ -1160,7 +1161,7 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2.graph.hash
 
-    @pytest.mark.parametrize("ret", [expval, var, sample, counts])
+    @pytest.mark.parametrize("ret", [expval, var, sample, counts, probs])
     def test_expand_tape_multiple_wires_non_commuting(self, ret):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables are on the same wire"""
@@ -1168,7 +1169,7 @@ class TestExpand:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             qml.expval(qml.PauliX(0))
-            ret(qml.PauliZ(0))
+            ret(op=qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
