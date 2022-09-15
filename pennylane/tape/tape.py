@@ -1373,7 +1373,10 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-            rotation_gates.extend(observable.diagonalizing_gates())
+            # some observables do not have diagonalizing gates,
+            # in which case we just don't append any
+            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
+                rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
     @property

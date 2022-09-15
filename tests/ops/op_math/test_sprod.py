@@ -220,6 +220,17 @@ class TestMscMethods:
         sprod_op = SProd(0.4, MyOp(0.23, wires="a"))
         assert sprod_op.has_matrix is False
 
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that SProd defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = SProd(0.21319, DummyOp(1))
+        assert op.has_diagonalizing_gates is value
+
 
 class TestMatrix:
     """Tests of the matrix of a SProd class."""

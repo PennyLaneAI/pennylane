@@ -208,9 +208,9 @@ class TestProperties:
 
         assert op.has_decomposition is True
 
-    def test_has_decomposition_true_via_base_adjoint(self):
-        """Test `has_decomposition` property is activated because the base operation defines an
-        `adjoint` method."""
+    def test_has_decomposition_true_via_base_decomposition(self):
+        """Test `has_decomposition` property is activated because the base operation defines a
+        `decomposition` method."""
 
         class MyOp(qml.operation.Operation):
             num_wires = 1
@@ -252,6 +252,26 @@ class TestProperties:
 
         assert op.has_adjoint is True
         assert op.base.has_adjoint is True
+
+    def test_has_diagonalizing_gates_true_via_base_diagonalizing_gates(self):
+        """Test `has_diagonalizing_gates` property is activated because the
+        base operation defines a `diagonalizing_gates` method."""
+
+        op = Adjoint(qml.PauliX(0))
+
+        assert op.has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false(self):
+        """Test `has_diagonalizing_gates` property is not activated if the base neither
+        `has_adjoint` nor `has_diagonalizing_gates`."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+            has_diagonalizing_gates = False
+
+        op = Adjoint(MyOp(0))
+
+        assert op.has_diagonalizing_gates is False
 
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""

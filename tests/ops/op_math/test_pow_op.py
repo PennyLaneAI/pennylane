@@ -320,6 +320,17 @@ class TestProperties:
         assert op.has_decomposition is False
 
     @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value, power_method):
+        """Test that Pow defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op: Pow = power_method(base=DummyOp("a"), z=2.124)
+        assert op.has_diagonalizing_gates is value
+
+    @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value, power_method):
         """Test that if the base is hermitian, then the power is hermitian."""
 

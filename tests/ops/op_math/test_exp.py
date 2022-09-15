@@ -78,6 +78,17 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires(5)
 
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value, constructor):
+        """Test that Exp defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = constructor(DummyOp(1), 2.312)
+        assert op.has_diagonalizing_gates is value
+
 
 class TestProperties:
     """Test of the properties of the Exp class."""

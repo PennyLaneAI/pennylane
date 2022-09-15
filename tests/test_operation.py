@@ -421,6 +421,45 @@ class TestOperatorConstruction:
         assert MyOp.has_decomposition is False
         assert MyOp(wires=0).has_decomposition is False
 
+    def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
+        """Test has_diagonalizing_gates property detects
+        overriding of `compute_diagonalizing_gates` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            @staticmethod
+            def compute_diagonalizing_gates(x, wires=None):
+                return []
+
+        assert MyOp.has_diagonalizing_gates is True
+        assert MyOp(0.2, wires=1).has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_true_diagonalizing_gates(self):
+        """Test has_diagonalizing_gates property detects
+        overriding of `diagonalizing_gates` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            def diagonalizing_gates(self):
+                return [qml.RX(self.parameters[0], wires=self.wires)]
+
+        assert MyOp.has_diagonalizing_gates is True
+        assert MyOp(0.2, wires=1).has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false(self):
+        """Test has_diagonalizing_gates property defaults to false if neither
+        `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_diagonalizing_gates is False
+        assert MyOp(wires=0).has_diagonalizing_gates is False
+
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_with_tf_function(self, jit_compile):
