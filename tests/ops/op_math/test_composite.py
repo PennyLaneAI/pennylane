@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.wires
 from pennylane import numpy as qnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
@@ -52,6 +53,10 @@ class ValidOp(CompositeOp):
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]
+
+    def compute_matrix(*args, **kwargs):
+        base_wires = args[1]
+        return np.eye(2**len(base_wires))
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None):
@@ -165,6 +170,8 @@ class TestConstruction:
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
+    simple_operands = (qml.S(0), qml.T(1))
+
     @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, ops_rep):
         """Test __repr__ method."""
@@ -227,6 +234,37 @@ class TestMscMethods:
         op = ValidOp(*ops_lst)
         for i in range(len(ops_lst)):
             assert op[i] == ops_lst[i]
+
+    def test_get_cached_matrix(self):
+        """Test that the matrix gets cached into the instance attribute and obtained"""
+        wires = pennylane.wires.Wires([0, 1])
+        base_wire_hash = hash(wires)
+
+        mat1 = np.reshape(np.arange(16), (4, 4))
+        re_ordered_mat = np.array([[0,  2,  1,  3],
+                                   [8, 10,  9, 11],
+                                   [4,  6,  5,  7],
+                                   [12, 14, 13, 15]])
+
+        op = ValidOp(*self.simple_operands)
+        assert np.allclose(op._get_cached_matrix(cache=False), np.eye(4))
+        # the cache is empty, should return the result of compute_matrix
+
+        op._mat_cache[base_wire_hash] = mat1  # add mat to cache manually
+        assert np.allclose(op._get_cached_matrix(), mat1)  # get mat from cache
+        assert np.allclose(op._get_cached_matrix(wire_order=[1, 0]), re_ordered_mat)  # re-order matrix from cache
+
+    def test_add_matrix_to_cache_get_cached_matrix(self):
+        """Test that we can add matrices to cache using the cache kwarg"""
+        wires = pennylane.wires.Wires([0, 1])
+        base_wire_hash = hash(wires)
+
+        op = ValidOp(*self.simple_operands)
+        assert op._mat_cache == {}
+
+        op._get_cached_matrix(cache=True)
+        assert base_wire_hash in op._mat_cache
+        assert np.allclose(op._mat_cache[base_wire_hash], np.eye(4))
 
 
 class TestProperties:

@@ -257,6 +257,6 @@ class SProd(SymbolicOp):
             (
                 str(self.name),
                 self.base.hash,
-                self.scalar,
+                str(self.scalar),
             )
         )

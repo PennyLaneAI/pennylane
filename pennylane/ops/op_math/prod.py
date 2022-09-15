@@ -211,26 +211,16 @@ class Prod(CompositeOp):
 
         return qml.math.prod(eigvals, axis=0)
 
-    def matrix(self, wire_order=None, cache=False):
+    def compute_matrix(*args, **kwargs):
         """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
-        mat_hash = hash(Wires(wire_order))
+        base_wires, wire_order = (args[1], args[2])
+        operands = kwargs["operands"]
+        has_overlapping_wires = kwargs["has_overlapping_wires"]
 
-        if mat_hash in self._mat_cache:
-            return self._mat_cache[mat_hash]
-
-        if hash(self.wires) in self._mat_cache:
-            res = math.expand_matrix(
-                self._mat_cache[hash(self.wires)], self.wires, wire_order=wire_order
-            )
-            if cache:
-                self._mat_cache[hash(Wires(wire_order))] = res
-            return res
-
-        if self.has_overlapping_wires:
+        if has_overlapping_wires:
             mats_and_wires_gen = (
                 (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-                for op in self
+                for op in operands
             )
 
             reduced_mat, prod_wires = math.reduce_matrices(
@@ -240,13 +230,10 @@ class Prod(CompositeOp):
             return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
 
         mats_gen = (
-            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
+            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in operands
         )
         full_mat = reduce(math.kron, mats_gen)
-        res = math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
-        if cache:
-            self._mat_cache[hash(Wires(wire_order))] = res
-        return res
+        return math.expand_matrix(full_mat, base_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Prod op in csr representation."""

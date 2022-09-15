@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
 
 
 class CompositeOp(Operator, abc.ABC):
@@ -136,9 +137,36 @@ class CompositeOp(Operator, abc.ABC):
     def eigvals(self):
         """Return the eigenvalues of the specified operator."""
 
+    def _get_cached_matrix(self, wire_order=None, cache=False):
+        """Contains the caching logic for the matrix representation of the operator."""
+        wire_order = wire_order or self.wires
+        wire_order_hash = hash(Wires(wire_order))
+        base_wire_hash = hash(self.wires)
+
+        if wire_order_hash in self._mat_cache:  # result already cached
+            return self._mat_cache[wire_order_hash]
+
+        if base_wire_hash in self._mat_cache:  # result not in cache, but base in cache
+            res = math.expand_matrix(self._mat_cache[base_wire_hash], self.wires, wire_order)
+
+        else:
+            res = self.compute_matrix(
+                self.wires, wire_order,
+                operands=self.operands,
+                has_overlapping_wires=self.has_overlapping_wires,
+            )
+
+        if cache:
+            self._mat_cache[wire_order_hash] = res  # set cache
+        return res
+
     @abc.abstractmethod
-    def matrix(self, wire_order=None):
+    def compute_matrix(*args, **kwargs):
+        """Compute the matrix representation in the computational basis."""
+
+    def matrix(self, wire_order=None, cache=False):
         """Representation of the operator as a matrix in the computational basis."""
+        return self._get_cached_matrix(wire_order=wire_order, cache=cache)
 
     @property
     def eigendecomposition(self):

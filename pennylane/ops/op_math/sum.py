@@ -160,33 +160,21 @@ class Sum(CompositeOp):
         ]
         return qml.math.sum(eigvals, axis=0)
 
-    def matrix(self, wire_order=None, cache=False):
-        """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
-        mat_hash = hash(Wires(wire_order))
-
-        if mat_hash in self._mat_cache:  # result already cached
-            return self._mat_cache[mat_hash]
-
-        if hash(self.wires) in self._mat_cache:  # result not in cache, but base in cache
-            res = math.expand_matrix(self._mat_cache[hash(self.wires)], self.wires, wire_order)
-            if cache:
-                self._mat_cache[hash(Wires(wire_order))] = res
-            return res
+    def compute_matrix(*args, **kwargs):
+        """Compute the matrix representation in the computational basis."""
+        operands = kwargs["operands"]
+        wire_order = args[2]
 
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in self
+            for op in operands
         )
 
         reduced_mat, sum_wires = math.reduce_matrices(
             mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
         )
 
-        res = math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
-        if cache:
-            self._mat_cache[hash(Wires(wire_order))] = res
-        return res
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
         """Compute the sparse matrix representation of the Sum op in csr representation."""
