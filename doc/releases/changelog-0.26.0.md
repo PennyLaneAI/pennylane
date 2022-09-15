@@ -207,10 +207,14 @@
   [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
   [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
 
-  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
-  executions per optimization step compared to 3 for `qml.SPSAOptimizer`.
-  The additional circuit executions are used to provide a stochastic estimation of a second-order
-  metric tensor, which often helps the optimizer to achieve faster convergence. 
+  `qml.QNSPSAOptimizer` is a second-order [SPSA algorithm](https://en.wikipedia.org/wiki/Simultaneous_perturbation_stochastic_approximation), 
+  which combines the convergence power of the quantum-aware Quantum Natural Gradient
+  (QNG) optimization method with the reduced quantum evaluations of SPSA methods.
+
+  While the QNSPSA optimizer requires additional circuit executions (10 executions per
+  step) compared to standard SPSA optimization (3 executions per step), these additional
+  evaluations are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence.
 
   Use `qml.QNSPSAOptimizer` like you would any other optimizer:
   
