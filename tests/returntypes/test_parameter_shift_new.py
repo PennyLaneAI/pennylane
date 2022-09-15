@@ -825,6 +825,7 @@ class TestParameterShiftRule:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
 
+        # TODO: finite diff update
         grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
@@ -934,6 +935,7 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+        # TODO: finite diff update
         tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
         assert len(tapes) == 1 + 2
 
@@ -1471,6 +1473,7 @@ class TestParameterShiftRuleBroadcast:
 
         assert spy.call_args[1]["shifts"] == (shift,)
 
+        # TODO: finite diff update
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute_new(tapes))
@@ -1542,6 +1545,7 @@ class TestParameterShiftRuleBroadcast:
         expected = np.sin(b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+        # TODO: finite diff update
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute_new(tapes))
@@ -1605,6 +1609,7 @@ class TestParameterShiftRuleBroadcast:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
 
+        # TODO: finite diff update
         grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
@@ -1635,6 +1640,7 @@ class TestParameterShiftRuleBroadcast:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
 
+        # TODO: finite diff update
         grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
@@ -1666,6 +1672,7 @@ class TestParameterShiftRuleBroadcast:
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
 
+            # TODO: finite diff update
             tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff, broadcast=True)
             assert len(tapes) == 4
 
@@ -1714,6 +1721,7 @@ class TestParameterShiftRuleBroadcast:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+        # TODO: finite diff update
         tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff, broadcast=True)
         assert len(tapes) == 1 + 2
 
@@ -1884,6 +1892,7 @@ class TestParameterShiftRuleBroadcast:
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == 2
 
+        # TODO: finite diff update
         tapes, fn = qml.gradients.finite_diff(tape)
         gradF = fn(dev.batch_execute_new(tapes))
         assert len(tapes) == 2
@@ -1916,6 +1925,7 @@ class TestParameterShiftRuleBroadcast:
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == tapes[2].batch_size == 2
 
+        # TODO: finite diff update
         tapes, fn = qml.gradients.finite_diff(tape)
         gradF = fn(dev.batch_execute_new(tapes))
         assert len(tapes) == 2
