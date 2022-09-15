@@ -222,6 +222,8 @@
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
+  Check out [our amazing demo](https://pennylane.ai/qml/demos/qnspsa.html) on the QNSPSA optimizer for more information!
+
 <h4>Operator and parameter broadcasting supplements 📈</h4>
 
 * Operator methods for exponentiation and raising to a power have been added.
