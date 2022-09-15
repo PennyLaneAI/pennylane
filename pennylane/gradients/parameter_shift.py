@@ -183,10 +183,7 @@ def _evaluate_gradient(tape, res, data, broadcast, r0, scalar_qfunc_output):
 
             res = qml.math.stack(res)
 
-            if (
-                tape.measurements[0].return_type == qml.measurements.Probability
-                or len(res.shape) > 1
-            ):
+            if len(res.shape) > 1:
                 res = qml.math.squeeze(res)
 
             g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
