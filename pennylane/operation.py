@@ -2552,6 +2552,7 @@ def defines_diagonalizing_gates(obj):
     """
     return obj.has_diagonalizing_gates
 
+
 @qml.BooleanFn
 def gen_is_multi_term_hamiltonian(obj):
     """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
