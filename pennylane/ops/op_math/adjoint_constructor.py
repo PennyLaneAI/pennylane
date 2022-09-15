@@ -17,7 +17,7 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 from functools import wraps
 
 from pennylane.operation import Operator, AdjointUndefinedError
-from pennylane.queuing import QueuingContext, stop_recording
+from pennylane.queuing import QueuingContext
 from pennylane.tape import QuantumTape
 
 from .adjoint_class import Adjoint
@@ -123,7 +123,7 @@ def adjoint(fn, lazy=True):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with stop_recording(), QuantumTape() as tape:
+        with QueuingContext.stop_recording(), QuantumTape() as tape:
             fn(*args, **kwargs)
 
         if lazy:

@@ -153,7 +153,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        with qml.queuing.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        with QueuingContext.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
                     tape._obs_sharing_wires
@@ -776,7 +776,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        with qml.queuing.stop_recording():
+        with QueuingContext.stop_recording():
             new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 
