@@ -15,12 +15,11 @@
 This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
-import warnings
+# pylint:disable=arguments-differ
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation, DecompositionUndefinedError
+from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
 from pennylane.wires import Wires
 
 
@@ -73,26 +72,10 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
+            if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
-                    f"to act on {len(wires)} wires."
-                )
-
-            # Check for unitarity; due to variable precision across the different ML frameworks,
-            # here we issue a warning to check the operation, instead of raising an error outright.
-            if not (
-                qml.math.is_abstract(U)
-                or qml.math.allclose(
-                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
-                    qml.math.eye(dim),
-                    atol=1e-6,
-                )
-            ):
-                warnings.warn(
-                    f"Operator {U}\n may not be unitary."
-                    "Verify unitarity of operation, or use a datatype with increased precision.",
-                    UserWarning,
+                    + "to act on {len(wires)} wires."
                 )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
