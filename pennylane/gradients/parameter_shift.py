@@ -356,14 +356,6 @@ def _expval_param_shift_tuple(
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
     def processing_fn(results):
-        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(
-            tape._qfunc_output, Sequence
-        )
-        if scalar_qfunc_output:
-            results = [qml.math.squeeze(res) for res in results]
-
         grads = []
         start = 1 if at_least_one_unshifted and f0 is None else 0
         r0 = f0 or results[0]
