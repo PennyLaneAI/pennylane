@@ -29,7 +29,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
-from pennylane.ops.PauliArithmetic import PauliSentence, PauliWord, X,Y,Z
+from pennylane.ops.PauliArithmetic import PauliSentence, PauliWord, X, Y, Z
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 

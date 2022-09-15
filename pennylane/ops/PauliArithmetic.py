@@ -95,12 +95,7 @@ _map_Z = {
     Z: (1, I),
 }
 
-mul_map = {
-    I: _map_I,
-    X: _map_X,
-    Y: _map_Y,
-    Z: _map_Z
-}
+mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
 
 class PauliWord(dict):
@@ -142,6 +137,7 @@ class PauliWord(dict):
 
 class PauliSentence(dict):
     """Dict representing a Pauli Sentence."""
+
     def __missing__(self, key):
         """If the pauliword is not in the sentence then the coefficient
         associated with it should be 0."""
@@ -190,7 +186,11 @@ class PauliSentence(dict):
         for i, (pw, coeff) in enumerate(self.items()):
             mat = sparse.eye(2, format="csr") if is_sparse else np.eye(2)
             for j, wire in enumerate(wire_order):
-                mat = math.dot(mat, matrix_map[pw[wire]]) if j == 0 else math.kron(mat, matrix_map[pw[wire]])
+                mat = (
+                    math.dot(mat, matrix_map[pw[wire]])
+                    if j == 0
+                    else math.kron(mat, matrix_map[pw[wire]])
+                )
 
             mat = coeff * mat
             final_mat = mat if i == 0 else final_mat + mat
