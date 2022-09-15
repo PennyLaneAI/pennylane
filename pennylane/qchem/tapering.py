@@ -601,7 +601,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
             V(\theta) = e^{i G \theta}.
 
         Then, for :math:`V` to have a non-trivial and compatible tapering with the generators of symmetry
-        :math:`\tau`, we should have :math:`[V, \tau_i] = 0\` for all :math:`\theta` and :math:`\tau_i`.
+        :math:`\tau`, we should have :math:`[V, \tau_i] = 0` for all :math:`\theta` and :math:`\tau_i`.
         This would hold only when its generator itself commutes with each :math:`\tau_i`,
 
         .. math::
