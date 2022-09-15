@@ -26,6 +26,9 @@
 
 <h3>Deprecations</h3>
 
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.queuing.QueuingManager.stop_recording`. They old functions will still be available
+  untill v0.29.
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>

@@ -17,7 +17,7 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
-from pennylane.tape import stop_recording
+from pennylane.queuing import stop_recording
 
 
 @qfunc_transform

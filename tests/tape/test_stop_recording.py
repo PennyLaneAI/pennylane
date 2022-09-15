@@ -15,7 +15,7 @@
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape.stop_recording import stop_recording
+from pennylane.tape import stop_recording
 
 
 def test_stop_recording_on_function_inside_QNode():

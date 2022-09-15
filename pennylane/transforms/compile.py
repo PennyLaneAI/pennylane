@@ -16,7 +16,7 @@
 from functools import partial
 
 from pennylane import apply
-from pennylane.tape import stop_recording
+from pennylane.queuing import stop_recording
 from pennylane.ops import __all__ as all_ops
 
 from pennylane.transforms import single_tape_transform, qfunc_transform
@@ -161,7 +161,9 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
             # expand barriers when `only_visual=True`
-            stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+            def stop_at(obj):
+                return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+
             expanded_tape = tape.expand(stop_at=stop_at)
 
         # Apply the full set of compilation transforms num_passes times

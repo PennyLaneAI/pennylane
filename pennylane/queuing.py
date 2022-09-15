@@ -17,6 +17,7 @@ This module contains the :class:`QueuingContext` abstract base class.
 
 import copy
 from collections import OrderedDict
+from contextlib import contextmanager
 
 
 class QueuingError(Exception):
@@ -79,6 +80,59 @@ class QueuingContext:
         return None
 
     @classmethod
+    @contextmanager
+    def stop_recording(cls):
+        """A context manager and decorator to ensure that contained logic is non-recordable
+        or non-queueable within a QNode or quantum tape context.
+
+        This function can be accessed either by ``qml.queuing.QueuingContext.stop_recording`` or its alias
+        ``qml.queuing.stop_recording``.
+
+        **Example:**
+
+        Consider the function:
+
+        >>> def qfunc(x):
+        ...     qml.RX(x, 0)
+
+        If executed in a recording context, the operations constructed in the function will be queued:
+
+        >>> @qml.qnode(qml.device('default.qubit', wires=1))
+        ... def circuit(x):
+        ...     qfunc(x)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)("x"))
+        ... 0: ──RX(x)─┤  <Z>
+
+        Using the ``stop_recording`` context manager, all logic contained inside is not queued or recorded.
+
+        >>> @qml.qnode(qml.device('default.qubit', wires=1))
+        ... def circuit(x):
+        ...     with qml.queuing.stop_recording():
+        ...         qfunc(x)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)("x"))
+        0: ───┤  <Z>
+
+        The context manager can also be used as a decorator on a function:
+
+        >>> @qml.queuing.stop_recording()
+        ... def qfunc_stopped(y):
+        ...     qml.RY(y, 0)
+        >>> @qml.qnode(qml.device('default.qubit', wires=1))
+        ... def circuit(x):
+        ...     qfunc_stopped(x)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)("y"))
+        0: ───┤  <Z>
+
+        """
+        previously_active_contexts = cls._active_contexts
+        cls._active_contexts = []
+        yield
+        cls._active_contexts = previously_active_contexts
+
+    @classmethod
     def append(cls, obj, **kwargs):
         """Append an object to the queue(s).
 
@@ -133,6 +187,9 @@ class QueuingContext:
             return cls.active_context().get_info(obj)
 
         return None
+
+
+stop_recording = QueuingContext.stop_recording
 
 
 class AnnotatedQueue:

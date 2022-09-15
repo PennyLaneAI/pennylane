@@ -1560,29 +1560,6 @@ class TestTapeCopying:
 class TestStopRecording:
     """Test that the stop_recording function works as expected"""
 
-    def test_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-
-        with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-            with tape.stop_recording():
-                pass
-
-    def test_nested_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape1:
-            qml.RX(0.1, wires=0)
-
-            with QuantumTape() as tape2:
-                qml.RX(0.1, wires=0)
-
-                with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-                    with tape1.stop_recording():
-                        pass
-
     def test_recording_stopped(self):
         """Test that recording is stopped within a tape context"""
 

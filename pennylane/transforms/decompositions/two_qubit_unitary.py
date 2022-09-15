@@ -591,7 +591,7 @@ def two_qubit_decomposition(U, wires):
     # the form of the decomposition.
     num_cnots = _compute_num_cnots(U)
 
-    with qml.tape.stop_recording():
+    with qml.queuing.stop_recording():
         if num_cnots == 0:
             decomp = _decomposition_0_cnots(U, wires)
         elif num_cnots == 1:

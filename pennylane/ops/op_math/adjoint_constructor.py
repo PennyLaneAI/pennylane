@@ -17,8 +17,8 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 from functools import wraps
 
 from pennylane.operation import Operator, AdjointUndefinedError
-from pennylane.queuing import QueuingContext
-from pennylane.tape import QuantumTape, stop_recording
+from pennylane.queuing import QueuingContext, stop_recording
+from pennylane.tape import QuantumTape
 
 from .adjoint_class import Adjoint
 

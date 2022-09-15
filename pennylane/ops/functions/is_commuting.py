@@ -361,7 +361,7 @@ def is_commuting(operation1, operation2, wire_map=None):
         return True
 
     # Simplify the rotations if possible
-    with qml.tape.stop_recording():
+    with qml.queuing.stop_recording():
         operation1 = qml.simplify(operation1)
         operation2 = qml.simplify(operation2)
 

@@ -22,8 +22,8 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
-from pennylane.queuing import QueuingContext
-from pennylane.tape import QuantumTape, stop_recording
+from pennylane.queuing import QueuingContext, stop_recording
+from pennylane.tape import QuantumTape
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):

@@ -11,7 +11,7 @@ from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
-from pennylane.tape import stop_recording
+from pennylane.queuing import stop_recording
 from pennylane.wires import Wires
 
 
@@ -102,7 +102,9 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     # or newly applied swap gates
     with stop_recording():
         # this unrolls everything in the current tape (in particular templates)
-        stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+        def stop_at(obj):
+            return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+
         expanded_tape = tape.expand(stop_at=stop_at)
 
         # make copy of ops

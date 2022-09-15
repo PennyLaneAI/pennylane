@@ -68,7 +68,7 @@ def make_tape(fn):
         active_tape = qml.tape.get_active_tape()
 
         if active_tape is not None:
-            with active_tape.stop_recording(), active_tape.__class__() as tape:
+            with qml.queuing.stop_recording(), active_tape.__class__() as tape:
                 fn(*args, **kwargs)
         else:
             with qml.tape.QuantumTape() as tape:
