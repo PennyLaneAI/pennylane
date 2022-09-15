@@ -362,6 +362,7 @@ def _expval_param_shift_tuple(
 
         multi_measure = len(tape.measurements) > 1
 
+        zero_rep = None
         for data in gradient_data:
 
             num_tapes, *_, batch_size = data
@@ -377,12 +378,13 @@ def _expval_param_shift_tuple(
             g = _evaluate_gradient_new(tape, res, data, r0)
 
             grads.append(g)
-            if not multi_measure:
-                # This clause will be hit at least once (because otherwise all gradients would have
-                # been zero), providing a representative for a zero gradient to emulate its type/shape.
-                zero_rep = qml.math.zeros_like(g)
-            else:
-                zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
+            if zero_rep is None:
+                if not multi_measure:
+                    # This clause will be hit at least once (because otherwise all gradients would have
+                    # been zero), providing a representative for a zero gradient to emulate its type/shape.
+                    zero_rep = qml.math.zeros_like(g)
+                else:
+                    zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
 
         for i, g in enumerate(grads):
             # Fill in zero-valued gradients
