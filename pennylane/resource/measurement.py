@@ -36,7 +36,7 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
 
     >>> coeffs = [np.array([-0.32707061, 0.7896887]), np.array([0.18121046])]
     >>> qml.resource.estimate_shots(coeffs)
-    419217
+    419218
 
     .. details::
         :title: Theory
