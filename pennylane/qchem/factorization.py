@@ -270,7 +270,8 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         in each of the :math:`O` terms to be measured simultaneously. This function returns the
         coefficients and the Pauli words grouped for each of the :math:`O` terms as well as the
         basis rotation transformation matrices that are constructed from the eigenvectors of the
-        :math:`T` and :math:`L^{(r)}` matrices.
+        :math:`T` and :math:`L^{(r)}` matrices. Each column of the transformation matrix is an
+        eigenvector of the corresponding :math:`T` or :math:`L^{(r)}` matrix.
     """
     two_electron = np.swapaxes(two_electron, 1, 3)
 
