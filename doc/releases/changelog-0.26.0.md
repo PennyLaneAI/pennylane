@@ -14,14 +14,13 @@
   [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
   [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
 
-  The classical-shadow measurement protocol is described in detail in the
-  [classical shadows paper](https://arxiv.org/abs/2002.08953).
+  The classical-shadow measurement protocol is described in detail in the paper
+  [Predicting Many Properties of a Quantum System from Very Few Measurements](https://arxiv.org/abs/2002.08953).
   As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
 
-  - QNodes returning `qml.classical_shadow` will return two entities: 
-
-    + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
-    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
+- QNodes returning the new measurement `qml.classical_shadow()` will return two entities;
+  `bits` (0 or 1 if the 1 or -1 eigenvalue is sampled, respectively) and `recipes`
+  (the randomized Pauli measurements that are performed for each qubit, labelled by integer):
     
     ```python
     dev = qml.device("default.qubit", wires=2, shots=3)
@@ -45,7 +44,7 @@
             [0, 2]], dtype=uint8, requires_grad=True)
     ```
 
-  - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
+  - QNodes returning `qml.shadow_expval()` yield the expectation value estimation using classical shadows:
 
     ```python
     dev = qml.device("default.qubit", wires=range(2), shots=10000)
@@ -470,14 +469,14 @@
   the new `circuit` keyword argument.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
 
-* The `expand_matrix()` has been moved from `~/operation.py` to
-  `~/math/matrix_manipulation.py`
+* The `expand_matrix()` has been moved from `pennylane.operation` to
+  `pennylane.math.matrix_manipulation`
   [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
 
 * `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
   [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
 
-* `qml.is_commuting` has been moved from `pennylane/transforms/commutation_dag.py` to `pennylane/ops/functions`.
+* `qml.is_commuting` has been moved from `pennylane.transforms.commutation_dag` to `pennylane.ops.functions`.
   [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
 
 <h3>Documentation</h3>
