@@ -191,19 +191,19 @@ def test_empty_error(two_tensor):
                 ]
             ),
             1.0e-5,
-            [
+            [  # computed manually
                 np.array([-1.29789639, 0.84064639, 0.45725]),
-                np.array([-4.86900854e-05, 2.79961519e-03, 4.78575140e-05, -2.79878262e-03]),
-                np.array([-0.04530262, 0.04530262]),
-                np.array([-0.34038856, 0.50623005, -0.33456812, 0.16872662]),
+                np.array([-4.86901636e-05, 0.00279961503, 4.7857589e-05, -0.00279878246]),
+                np.array([-0.04530261, 0.04530261]),
+                np.array([-0.340388555, 0.50623004, -0.3345681, 0.168726619]),
             ],
-            [
+            [  # computed manually
                 [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1)],
-                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)],
-                [qml.Identity(1), qml.PauliZ(0), qml.PauliZ(1)],
-                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)],
+                [qml.PauliZ(0), qml.Identity(0), qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)],
+                [qml.PauliZ(0) @ qml.PauliZ(1), qml.Identity(1)],
+                [qml.PauliZ(0), qml.Identity(0), qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)],
             ],
-            [
+            [  # computed manually
                 np.array([[-1.00000000e00, 4.67809646e-13], [-4.67809646e-13, -1.00000000e00]]),
                 np.array([[-1.00000000e00, -2.27711575e-14], [2.27711575e-14, -1.00000000e00]]),
                 np.array([[-0.70710678, -0.70710678], [-0.70710678, 0.70710678]]),
