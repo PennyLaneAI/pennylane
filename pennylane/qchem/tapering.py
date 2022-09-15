@@ -333,7 +333,7 @@ def clifford(generators, paulixops):
 
 
 def taper(h, generators, paulixops, paulix_sector):
-    r"""Transform a Hamiltonian with a Clifford operator and taper qubits.
+    r"""Transform a Hamiltonian with a Clifford operator, and taper qubits.
 
     The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
     operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
@@ -472,7 +472,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
 
 def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
-    r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
+    r"""Transform a Hartree-Fock state with a Clifford operator, and taper qubits.
 
     The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
     using the Jordan-Wigner encoding. This operator is then transformed using the Clifford operators :math:`U`
@@ -543,12 +543,12 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
 # pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
 def taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op=None):
-    r"""Transforms a gate operation with a Clifford operator and taper qubits.
+    r"""Transforms a gate operation with a Clifford operator, and taper qubits.
 
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
     manually via `gen_op` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
     the molecular Hamiltonian, then this operator is transformed using the Clifford operators :math:`U` and
-    tapered, otherwise it is discarded. Finally, the tapered generator is exponentiated using :func:`~.PauliRot`
+    tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :func:`~.PauliRot`
     for building the tapered unitary.
 
     Args:
@@ -574,11 +574,11 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, genera  tors, mol.n_electrons)
-    >>> qchem.taper_operation(qml.SingleExcitation(1, wires=[0, 2]),
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
                                 generators, paulixops, paulix_sector, wire_order=H.wires)
-    [PauliRot(0.5+0.j, 'RY', wires=[0])]
+    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
 
-    This can even be used for within a :class:`~.pennylane.QNode`:
+    This can even be used within a :class:`~.pennylane.QNode`:
 
     >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
@@ -587,9 +587,9 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     ...                             generators, paulixops, paulix_sector, H.wires)
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
-    >>> print(drawer(params=[0.38686753]))
-        0: ─╭RXY(-0.10+0.00j)─╭RYX(-0.10+0.00j)─┤ ╭<Z@Z>
-        1: ─╰RXY(-0.10+0.00j)─╰RYX(-0.10+0.00j)─┤ ╰<Z@Z>
+    >>> print(drawer(params=[3.14159]))
+        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
 
     .. details::
         :title: Theory
@@ -601,12 +601,12 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
             V(\theta) = e^{i G \theta}.
 
         Then, for :math:`V` to have a non-trivial and compatible tapering with the generators of symmetry
-        :math:`tau`, we should have :math:`[V, \tau_i] = 0\ \forall \theta \in \mathbb{R},\ \forall \tau_i`.
-        This would hold only when its generator itself commutes with each :math:`tau_i`,
+        :math:`\tau`, we should have :math:`[V, \tau_i] = 0\` for all :math:`\theta` and :math:`\tau_i`.
+        This would hold only when its generator itself commutes with each :math:`\tau_i`,
 
         .. math::
 
-            [V, \tau_i] = 0 \iff [G, \tau_i]\quad \forall \theta \in \mathbb{R},\ \forall \tau_i.
+            [V, \tau_i] = 0 \iff [G, \tau_i]\quad \forall \theta, \tau_i.
 
         By ensuring this, we can taper the generator :math:`G` using the Clifford operators :math:`U`,
         and exponentiate the transformed generator :math:`G^{\prime}` to obtain a tapered unitary
@@ -615,15 +615,11 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
         .. math::
 
             V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
-
-        This directly extends to non-parameterized gates, as these gates can be written as a parametrized
-        gate with some fixed parameter :math:`\phi`. For example, applying :func:`~.PauliX` gate is equivalent
-        to applying :func:`~.RX` gate with :math:`\phi=\pi`.
     """
 
     if gen_op is None:
         if operation.num_params < 1:  # Non-parameterized gates
-            gen_mat = -1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
+            gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
             gen_op = qml.Hamiltonian(
                 *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
             )
@@ -633,19 +629,23 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
         else:  # Single-parameter gates
             try:
                 gen_op = qml.generator(operation, "hamiltonian")
+
             except ValueError as exc:
                 raise NotImplementedError(
                     f"Generator for {operation} is not implemented, please provide it with 'gen_op' args."
                 ) from exc
-    else:
+    else:  # check that user-provided generator is correct
         if not isinstance(gen_op, qml.Hamiltonian):
             raise ValueError(
-                f"Generator for the operation needs to a qml.Hamiltonian, but got {type(gen_op)}."
+                f"Generator for the operation needs to be a qml.Hamiltonian, but got {type(gen_op)}."
             )
-        mat1 = scipy.linalg.expm(1j * qml.matrix(gen_op, wire_order=wire_order))
+        coeffs = 1.0
+        if operation.parameters:
+            coeffs = functools.reduce(lambda i, j: i * j, operation.parameters)
+        mat1 = scipy.linalg.expm(1j * qml.matrix(gen_op, wire_order=wire_order) * coeffs)
         mat2 = qml.matrix(operation, wire_order=wire_order)
         phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
-            np.nonzero(mat1)
+            np.nonzero(np.round(mat1, 10))
         ]
         if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
             raise ValueError(
@@ -670,11 +670,11 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     if qml.queuing.QueuingContext.recording():
         qml.queuing.QueuingContext.safe_update_info(operation, owner=gen_tapered)
         for coeff, op in zip(*gen_tapered.terms()):
-            qml.PauliRot(params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+            qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
     else:
         ops_tapered = []
         for coeff, op in zip(*gen_tapered.terms()):
             ops_tapered.append(
-                qml.PauliRot(params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+                qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
             )
         return ops_tapered

@@ -16,12 +16,12 @@
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> qchem.taper_operation(qml.SingleExcitation(1, wires=[0, 2]),
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
                                 generators, paulixops, paulix_sector, wire_order=H.wires)
-    [PauliRot(0.5+0.j, 'RY', wires=[0])]
+    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
     ```
 
-  This method when used within a QNode, applies the tapered operation directly:
+  When used within a QNode, this method applies the tapered operation directly:
 
   ```pycon
     >>> dev = qml.device('default.qubit', wires=[0, 1])
@@ -31,9 +31,9 @@
     ...                             generators, paulixops, paulix_sector, H.wires)
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
-    >>> print(drawer(params=[0.38686753]))
-        0: ─╭RXY(-0.10+0.00j)─╭RYX(-0.10+0.00j)─┤ ╭<Z@Z>
-        1: ─╰RXY(-0.10+0.00j)─╰RYX(-0.10+0.00j)─┤ ╰<Z@Z>
+    >>> print(drawer(params=[3.14159]))
+        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
 
 <h3>Improvements</h3>
@@ -50,4 +50,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
+Juan Miguel Arrazola,
+Utkarsh Azad,
+Soran Jahangiri,
+Jay Soni,
