@@ -214,7 +214,7 @@ class GellMann(Observable):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "GellMann(" + str(self._hyperparameters["index"]) + ")"
+        return base_label or "GellMann(" + str(self.hyperparameters["index"]) + ")"
 
     _eigvecs = {
         1: np.array(
