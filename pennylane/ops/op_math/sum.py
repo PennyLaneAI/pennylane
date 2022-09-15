@@ -23,7 +23,6 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.wires import Wires
 
 from .composite import CompositeOp
 
@@ -160,10 +159,11 @@ class Sum(CompositeOp):
         ]
         return qml.math.sum(eigvals, axis=0)
 
+    @staticmethod
     def compute_matrix(*args, **kwargs):
         """Compute the matrix representation in the computational basis."""
         operands = kwargs["operands"]
-        wire_order = args[2]
+        wire_order = args[1]
 
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)

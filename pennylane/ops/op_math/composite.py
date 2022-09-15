@@ -25,7 +25,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 
-class CompositeOp(Operator, abc.ABC):
+class CompositeOp(Operator, abc.ABC):  # pylint: disable=too-many-instance-attributes
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -161,6 +161,7 @@ class CompositeOp(Operator, abc.ABC):
             self._mat_cache[wire_order_hash] = res  # set cache
         return res
 
+    @staticmethod
     @abc.abstractmethod
     def compute_matrix(*args, **kwargs):
         """Compute the matrix representation in the computational basis."""

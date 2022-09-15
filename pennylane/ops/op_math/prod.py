@@ -26,7 +26,6 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.wires import Wires
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -211,9 +210,10 @@ class Prod(CompositeOp):
 
         return qml.math.prod(eigvals, axis=0)
 
+    @staticmethod
     def compute_matrix(*args, **kwargs):
         """Representation of the operator as a matrix in the computational basis."""
-        base_wires, wire_order = (args[1], args[2])
+        base_wires, wire_order = args
         operands = kwargs["operands"]
         has_overlapping_wires = kwargs["has_overlapping_wires"]
 
