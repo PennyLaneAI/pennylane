@@ -158,85 +158,86 @@ class TestParamShift:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
 
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self, mocker):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(dev, "expval")
+    # TODO: uncomment when QNode decorator uses new qml.execute pipeline
+    # @pytest.mark.autograd
+    # def test_no_trainable_params_qnode_autograd(self, mocker):
+    #     """Test that the correct ouput and warning is generated in the absence of any trainable
+    #     parameters"""
+    #     dev = qml.device("default.qubit", wires=2)
+    #     spy = mocker.spy(dev, "expval")
 
-        @qml.qnode(dev, interface="autograd")
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    #     @qml.qnode(dev, interface="autograd")
+    #     def circuit(weights):
+    #         qml.RX(weights[0], wires=0)
+    #         qml.RY(weights[1], wires=0)
+    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift(circuit)(weights)
+    #     weights = [0.1, 0.2]
+    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+    #         res = qml.gradients.param_shift(circuit)(weights)
 
-        assert res == ()
-        spy.assert_not_called()
+    #     assert res == ()
+    #     spy.assert_not_called()
 
-    @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch(self, mocker):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(dev, "expval")
+    # @pytest.mark.torch
+    # def test_no_trainable_params_qnode_torch(self, mocker):
+    #     """Test that the correct ouput and warning is generated in the absence of any trainable
+    #     parameters"""
+    #     dev = qml.device("default.qubit", wires=2)
+    #     spy = mocker.spy(dev, "expval")
 
-        @qml.qnode(dev, interface="torch")
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    #     @qml.qnode(dev, interface="torch")
+    #     def circuit(weights):
+    #         qml.RX(weights[0], wires=0)
+    #         qml.RY(weights[1], wires=0)
+    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift(circuit)(weights)
+    #     weights = [0.1, 0.2]
+    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+    #         res = qml.gradients.param_shift(circuit)(weights)
 
-        assert res == ()
-        spy.assert_not_called()
+    #     assert res == ()
+    #     spy.assert_not_called()
 
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self, mocker):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(dev, "expval")
+    # @pytest.mark.tf
+    # def test_no_trainable_params_qnode_tf(self, mocker):
+    #     """Test that the correct ouput and warning is generated in the absence of any trainable
+    #     parameters"""
+    #     dev = qml.device("default.qubit", wires=2)
+    #     spy = mocker.spy(dev, "expval")
 
-        @qml.qnode(dev, interface="tf")
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    #     @qml.qnode(dev, interface="tf")
+    #     def circuit(weights):
+    #         qml.RX(weights[0], wires=0)
+    #         qml.RY(weights[1], wires=0)
+    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift(circuit)(weights)
+    #     weights = [0.1, 0.2]
+    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+    #         res = qml.gradients.param_shift(circuit)(weights)
 
-        assert res == ()
-        spy.assert_not_called()
+    #     assert res == ()
+    #     spy.assert_not_called()
 
-    @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax(self, mocker):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(dev, "expval")
+    # @pytest.mark.jax
+    # def test_no_trainable_params_qnode_jax(self, mocker):
+    #     """Test that the correct ouput and warning is generated in the absence of any trainable
+    #     parameters"""
+    #     dev = qml.device("default.qubit", wires=2)
+    #     spy = mocker.spy(dev, "expval")
 
-        @qml.qnode(dev, interface="jax")
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+    #     @qml.qnode(dev, interface="jax")
+    #     def circuit(weights):
+    #         qml.RX(weights[0], wires=0)
+    #         qml.RY(weights[1], wires=0)
+    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift(circuit)(weights)
+    #     weights = [0.1, 0.2]
+    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+    #         res = qml.gradients.param_shift(circuit)(weights)
 
-        assert res == ()
-        spy.assert_not_called()
+    #     assert res == ()
+    #     spy.assert_not_called()
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_no_trainable_params_tape(self, broadcast):
@@ -261,24 +262,25 @@ class TestParamShift:
         assert isinstance(res, np.ndarray)
         assert res.shape == (1, 0)
 
-    @pytest.mark.parametrize("broadcast", [True, False])
-    def test_all_zero_diff_methods(self, broadcast):
-        """Test that the transform works correctly when the diff method for every parameter is
-        identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.qubit", wires=4)
+    # TODO: uncomment when QNode decorator uses new qml.execute pipeline
+    # @pytest.mark.parametrize("broadcast", [True, False])
+    # def test_all_zero_diff_methods(self, broadcast):
+    #     """Test that the transform works correctly when the diff method for every parameter is
+    #     identified to be 0, and that no tapes were generated."""
+    #     dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
-        def circuit(params):
-            qml.Rot(*params, wires=0)
-            return qml.probs([2, 3])
+    #     @qml.qnode(dev)
+    #     def circuit(params):
+    #         qml.Rot(*params, wires=0)
+    #         return qml.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+    #     params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.param_shift(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+    #     result = qml.gradients.param_shift(circuit)(params)
+    #     assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
 
-        tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
-        assert tapes == []
+    #     tapes, _ = qml.gradients.param_shift(circuit.tape, broadcast=broadcast)
+    #     assert tapes == []
 
     def test_with_gradient_recipes(self):
         """Test that the function behaves as expected"""
@@ -680,6 +682,7 @@ class TestParameterShiftRule:
 
         assert spy.call_args[1]["shifts"] == (shift,)
 
+        # TODO: finite diff update
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute_new(tapes))
@@ -729,6 +732,7 @@ class TestParameterShiftRule:
             assert np.allclose(a_val, m_val, atol=tol, rtol=0)
             assert spy.call_args[1]["shifts"] == (shift,)
 
+        # TODO: finite diff update
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = np.squeeze(fn(dev.batch_execute_new(tapes)))
@@ -756,6 +760,7 @@ class TestParameterShiftRule:
         expected = np.sin(b / 2) / 2
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+        # TODO: finite diff update
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute_new(tapes))
@@ -795,6 +800,7 @@ class TestParameterShiftRule:
         for idx, g in enumerate(grad):
             assert np.allclose(g, expected[idx], atol=tol, rtol=0)
 
+        # TODO: finite diff update
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = np.squeeze(fn(dev.batch_execute_new(tapes)))
