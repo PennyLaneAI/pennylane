@@ -168,14 +168,17 @@ class Exp(SymbolicOp):
     def matrix(self, wire_order=None):
 
         coeff_interface = math.get_interface(self.coeff)
-        if coeff_interface == "autograd":
+        if coeff_interface == "autograd" and math.requires_grad(self.coeff):
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
             #
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
-                diagonalizing_mat = qml.matrix(self.diagonalizing_gates)()
+                if len(self.diagonalizing_gates()) == 0:
+                    eigvals_mat = math.diag(self.eigvals())
+                    return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
+                diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
                 eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
