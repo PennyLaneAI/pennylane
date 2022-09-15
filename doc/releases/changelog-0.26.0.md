@@ -6,7 +6,7 @@
 
 <h4>Classical shadows 👤</h4>
 
-* All-new features for implementing the classical-shadows protocol are now available. 
+* PennyLane now provides built-in support for implementing the classical-shadows measurement protocol. 
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
   [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
   [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
@@ -78,7 +78,7 @@
   and the Renyi entropy order:
 
   ```pycon
-  >>> shadow = ClassicalShadow(bits, recipes)
+  >>> shadow = qml.ClassicalShadow(bits, recipes)
   >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
   ``` 
 
@@ -96,16 +96,14 @@
   [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*. 
   The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
   
-  To facilitate qutrit circuits requires a new device: `"default.qutrit"`.
-  The `"default.qutrit"` device is a Python-based simulator, akin to `"default.qubit"`, and is defined as per usual:
+  To facilitate qutrit circuits requires a new device: `default.qutrit`.
+  The `default.qutrit` device is a Python-based simulator, akin to `default.qubit`, and is defined as per usual:
 
   ```pycon
   >>> dev = qml.device("default.qutrit", wires=1)
-  >>> type(dev)
-  <class 'pennylane.devices.default_qutrit.DefaultQutrit'>
   ```
 
-  The following operations are supported on `"default.qutrit"` devices:
+  The following operations are supported on `default.qutrit` devices:
 
   - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
   which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
@@ -117,9 +115,6 @@
   A comprehensive example of these features is given below:
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
   dev = qml.device("default.qutrit", wires=2)
 
   U = np.array([
@@ -136,19 +131,18 @@
       ]
   ) / np.sqrt(2)
 
-  def qutrit_function(U):
+  @qml.qnode(dev)
+  def qutrit_state(U, obs)
       qml.TShift(0)
       qml.TClock(0)
       qml.QutritUnitary(U, wires=0)
-
-  @qml.qnode(dev)
-  def qutrit_state(U, obs)
-      qutrit_function(U, obs)
       return qml.state()
 
   @qml.qnode(dev)
   def qutrit_expval(U, obs)
-      qutrit_function(U, obs)
+      qml.TShift(0)
+      qml.TClock(0)
+      qml.QutritUnitary(U, wires=0)
       return qml.expval(qml.THermitian(obs, wires=0))
   ```
 
@@ -161,21 +155,21 @@
 
   We will continue to add more and more support for qutrits in future releases.
 
-<h4>Simplifying just got... simpler 🫰</h4>
+<h4>Simplifying just got... simpler 😌</h4>
 
-* The `qml.simplify` module has several intuitive additions with this release.
+* The `qml.simplify()` function has several intuitive improvements with this release.
   [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
   [(#2982)](https://github.com/PennyLaneAI/pennylane/pull/2982)
   [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
   [(#3012)](https://github.com/PennyLaneAI/pennylane/pull/3012)
 
-  `qml.simplify` can now simplify or do the following:
+  `qml.simplify` can now perform the following:
 
-  - parametrized operations
-  - the adjoint and power of specific operators
-  - grouping of like terms in a sum
-  - resolving products of Pauli operators
-  - combining rotation angles of identical rotation gates
+  - simplify parametrized operations
+  - simplify the adjoint and power of specific operators
+  - group like terms in a sum
+  - resolve products of Pauli operators
+  - combine rotation angles of identical rotation gates
 
   Here is an example of `qml.simplify` in action with parameterized rotation gates. 
   In this case, the angles of rotation are simplified to be modulo :math:`4\pi`.
@@ -242,13 +236,13 @@
     >>> isingxy = qml.exp(t, 0.25j * x)
     >>> isingxy.matrix()
     array([[1.       +0.j        , 0.       +0.j        ,
-        0.       +0.j        , 0.       +0.j        ],
+        1.       +0.j        , 0.       +0.j        ],
        [0.       +0.j        , 0.8156179+0.j        ,
-        0.       +0.57859091j, 0.       +0.j        ],
+        1.       +0.57859091j, 0.       +0.j        ],
        [0.       +0.j        , 0.       +0.57859091j,
         0.8156179+0.j        , 0.       +0.j        ],
        [0.       +0.j        , 0.       +0.j        ,
-        0.       +0.j        , 1.       +0.j        ]]) 
+        1.       +0.j        , 1.       +0.j        ]]) 
     ```
 
   - The `qml.pow` function raises a given operator to a power:
