@@ -119,7 +119,7 @@ class TestFiniteDiff:
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = finite_diff(tape)
 
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], numpy.ndarray)
@@ -140,7 +140,7 @@ class TestFiniteDiff:
 
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = finite_diff(tape)
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -376,13 +376,13 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = finite_diff(tape1, approx_order=1)
-        j1 = fn(dev.batch_execute_new(tapes))
+        j1 = fn(dev.batch_execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
         assert dev.num_executions == 2
 
         tapes, fn = finite_diff(tape2, approx_order=1)
-        j2 = fn(dev.batch_execute_new(tapes))
+        j2 = fn(dev.batch_execute(tapes))
 
         exp = -np.sin(1)
 
@@ -518,7 +518,7 @@ class TestFiniteDiffIntegration:
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
 
@@ -550,7 +550,7 @@ class TestFiniteDiffIntegration:
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -586,7 +586,7 @@ class TestFiniteDiffIntegration:
             strategy=strategy,
             validate_params=validate,
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -622,7 +622,7 @@ class TestFiniteDiffIntegration:
         tapes, fn = finite_diff(
             tape, argnum=1, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -654,7 +654,7 @@ class TestFiniteDiffIntegration:
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -688,7 +688,7 @@ class TestFiniteDiffIntegration:
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -722,7 +722,7 @@ class TestFiniteDiffIntegration:
         tapes, fn = finite_diff(
             tape, approx_order=approx_order, strategy=strategy, validate_params=validate
         )
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -783,7 +783,7 @@ class TestFiniteDiffGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = np.array(fn(dev.batch_execute_new(tapes)))
+            jac = np.array(fn(dev.batch_execute(tapes)))
             return jac
 
         res = qml.jacobian(cost_fn)(params)
@@ -814,7 +814,7 @@ class TestFiniteDiffGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(dev.batch_execute_new(tapes))
+            jac = fn(dev.batch_execute(tapes))
             return jac[1][0]
 
         x, y = params
@@ -841,7 +841,7 @@ class TestFiniteDiffGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac_0, jac_1 = fn(dev.batch_execute_new(tapes))
+            jac_0, jac_1 = fn(dev.batch_execute(tapes))
 
         x, y = 1.0 * params
 
@@ -876,7 +876,7 @@ class TestFiniteDiffGradients:
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
 
-            jac_01 = fn(dev.batch_execute_new(tapes))[1][0]
+            jac_01 = fn(dev.batch_execute(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -903,7 +903,7 @@ class TestFiniteDiffGradients:
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(dev.batch_execute_new(tapes))
+            jac = fn(dev.batch_execute(tapes))
             return jac
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
@@ -942,7 +942,7 @@ class TestFiniteDiffGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(dev.batch_execute_new(tapes))
+            jac = fn(dev.batch_execute(tapes))
             return jac
 
         res = jax.jacobian(cost_fn)(params)

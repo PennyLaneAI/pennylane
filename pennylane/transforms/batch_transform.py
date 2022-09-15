@@ -299,28 +299,16 @@ class batch_transform:
             if interface is None or not self.differentiable:
                 gradient_fn = None
 
-            if qml.active_return():
-                res = qml.execute_new(
-                    tapes,
-                    device=qnode.device,
-                    gradient_fn=gradient_fn,
-                    interface=interface,
-                    max_diff=max_diff,
-                    override_shots=shots,
-                    gradient_kwargs=gradient_kwargs,
-                    **execute_kwargs,
-                )
-            else:
-                res = qml.execute(
-                    tapes,
-                    device=qnode.device,
-                    gradient_fn=gradient_fn,
-                    interface=interface,
-                    max_diff=max_diff,
-                    override_shots=shots,
-                    gradient_kwargs=gradient_kwargs,
-                    **execute_kwargs,
-                )
+            res = qml.execute(
+                tapes,
+                device=qnode.device,
+                gradient_fn=gradient_fn,
+                interface=interface,
+                max_diff=max_diff,
+                override_shots=shots,
+                gradient_kwargs=gradient_kwargs,
+                **execute_kwargs,
+            )
 
             return processing_fn(res)
 
@@ -415,7 +403,9 @@ class batch_transform:
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
         if processing_fn is None:
-            processing_fn = lambda x: x
+
+            def processing_fn(x):
+                return x
 
         return tapes, processing_fn
 
