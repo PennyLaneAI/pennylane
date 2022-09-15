@@ -215,11 +215,6 @@ class Prod(CompositeOp):
 
         return qml.math.prod(eigvals, axis=0)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self.factors)
-
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         if self.has_overlapping_wires:

@@ -159,11 +159,6 @@ class Sum(CompositeOp):
         ]
         return qml.math.sum(eigvals, axis=0)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self.summands)
-
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
