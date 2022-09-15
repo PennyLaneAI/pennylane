@@ -937,7 +937,7 @@ class TestTensorVar:
         assert np.isclose(res, expected[0], atol=tol, rtol=0)
 
     def test_hermitian(self, tol):
-        """Test that the variance of tensor product of two Hermitian matrices behaves correctly"""
+        """Test that the variance of a tensor product of two Hermitian matrices behaves correctly"""
         dev = qml.device("default.qutrit", wires=3)
 
         A1 = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
