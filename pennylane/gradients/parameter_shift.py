@@ -552,14 +552,18 @@ def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     the gradient value with 0 (the known, correct gradient for involutory
     variables).
     """
-    zero = qml.math.convert_like(0, pdA2)
     new_pdA2 = []
     for i in range(len(tape.observables)):
         if i in var_idx:
             obs_involutory = i not in non_involutory
-            new_pdA2.append(zero if obs_involutory else pdA2[i])
+            if obs_involutory:
+                length = getattr(pdA2[i], "len", 1)
+                item = tuple(np.array(0) for _ in range(length)) if length > 1 else np.array(0)
+            else:
+                item = pdA2[i]
+            new_pdA2.append(item)
 
-    return qml.math.array(new_pdA2)
+    return new_pdA2
 
 
 def _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
