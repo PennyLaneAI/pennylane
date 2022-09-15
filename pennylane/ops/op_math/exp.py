@@ -202,6 +202,7 @@ class Exp(SymbolicOp):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
+    # pylint: disable=invalid-overriden-method
     @property
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates

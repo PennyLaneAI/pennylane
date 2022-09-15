@@ -159,6 +159,7 @@ class SProd(SymbolicOp):
         then the scalar product operator is hermitian."""
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
+    # pylint: disable=invalid-overriden-method
     @property
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
