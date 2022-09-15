@@ -151,7 +151,8 @@ class CompositeOp(Operator, abc.ABC):
 
         else:
             res = self.compute_matrix(
-                self.wires, wire_order,
+                self.wires,
+                wire_order,
                 operands=self.operands,
                 has_overlapping_wires=self.has_overlapping_wires,
             )

@@ -56,7 +56,7 @@ class ValidOp(CompositeOp):
 
     def compute_matrix(*args, **kwargs):
         base_wires = args[1]
-        return np.eye(2**len(base_wires))
+        return np.eye(2 ** len(base_wires))
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None):
@@ -241,10 +241,7 @@ class TestMscMethods:
         base_wire_hash = hash(wires)
 
         mat1 = np.reshape(np.arange(16), (4, 4))
-        re_ordered_mat = np.array([[0,  2,  1,  3],
-                                   [8, 10,  9, 11],
-                                   [4,  6,  5,  7],
-                                   [12, 14, 13, 15]])
+        re_ordered_mat = np.array([[0, 2, 1, 3], [8, 10, 9, 11], [4, 6, 5, 7], [12, 14, 13, 15]])
 
         op = ValidOp(*self.simple_operands)
         assert np.allclose(op._get_cached_matrix(cache=False), np.eye(4))
@@ -252,7 +249,9 @@ class TestMscMethods:
 
         op._mat_cache[base_wire_hash] = mat1  # add mat to cache manually
         assert np.allclose(op._get_cached_matrix(), mat1)  # get mat from cache
-        assert np.allclose(op._get_cached_matrix(wire_order=[1, 0]), re_ordered_mat)  # re-order matrix from cache
+        assert np.allclose(
+            op._get_cached_matrix(wire_order=[1, 0]), re_ordered_mat
+        )  # re-order matrix from cache
 
     def test_add_matrix_to_cache_get_cached_matrix(self):
         """Test that we can add matrices to cache using the cache kwarg"""
