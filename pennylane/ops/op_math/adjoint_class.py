@@ -244,6 +244,10 @@ class Adjoint(SymbolicOp):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
 
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 

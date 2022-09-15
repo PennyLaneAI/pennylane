@@ -160,6 +160,13 @@ class CompositeOp(Operator, abc.ABC):
 
         return self._eigs[self.hash]
 
+    @property
+    def has_diagonalizing_gates(self):
+        if self.has_overlapping_wires:
+            return True
+
+        return all(op.has_diagonalizing_gates for op in self)
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 

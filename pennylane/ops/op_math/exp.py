@@ -202,6 +202,10 @@ class Exp(SymbolicOp):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 

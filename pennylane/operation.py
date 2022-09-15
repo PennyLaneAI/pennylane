@@ -973,6 +973,20 @@ class Operator(abc.ABC):
         """
         raise DecompositionUndefinedError
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_diagonalizing_gates(cls):
+        r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            or cls.diagonalizing_gates != Operator.diagonalizing_gates
+        )
+
     @staticmethod
     def compute_diagonalizing_gates(
         *params, wires, **hyperparams
@@ -1926,6 +1940,12 @@ class Tensor(Observable):
                         self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(cls):
+        r"""Bool: Whether or not the Tensor returns defined diagonalizing gates."""
+        return all(o.has_diagonalizing_gates for o in self.obs)
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the

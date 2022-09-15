@@ -378,6 +378,10 @@ class Controlled(SymbolicOp):
 
         return qmlmath.concatenate([ones, base_eigvals])
 
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
