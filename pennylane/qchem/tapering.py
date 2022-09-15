@@ -333,7 +333,7 @@ def clifford(generators, paulixops):
 
 
 def taper(h, generators, paulixops, paulix_sector):
-    r"""Transform a Hamiltonian with a Clifford operator, and taper qubits.
+    r"""Transform a Hamiltonian with a Clifford operator and then taper qubits.
 
     The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
     operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
@@ -472,7 +472,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
 
 def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
-    r"""Transform a Hartree-Fock state with a Clifford operator, and taper qubits.
+    r"""Transform a Hartree-Fock state with a Clifford operator and then taper qubits.
 
     The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
     using the Jordan-Wigner encoding. This operator is then transformed using the Clifford operators :math:`U`
@@ -543,7 +543,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
 # pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
 def taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op=None):
-    r"""Transforms a gate operation with a Clifford operator, and taper qubits.
+    r"""Transform a gate operation with a Clifford operator and then taper qubits.
 
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
     manually via `gen_op` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
@@ -564,7 +564,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
 
     Raises:
         NotImplementedError: generator of the operation cannot be constructed internally
-        ValueError: operation needs to be a :class:`~.pennylane.Hamiltonian` and a valid generator of the operation
+        ValueError: optional argument `gen_op` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
 
     **Example**
 
