@@ -6,11 +6,11 @@
 
 <h3>Improvements</h3>
 
-* Structural improvements are made to `QueuingContext`, now `QueuingManager`, and `AnnotatedQueue`.
+* Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-   - `QueuingContext` is renamed to `QueuingManager`. It is no longer imported top level.
+   - `QueuingContext` is renamed to `QueuingManager`.
    - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
    - `QueuingManager` is no longer an abstract base class.
    - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
@@ -25,8 +25,7 @@
 
 <h3>Breaking changes</h3>
 
- * `QueuingContext` is renamed `QueuingManager` and it is no longer updated top-level. The class may be accessed
-  as `qml.queuing.QueuingManager`.
+ * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
 <h3>Deprecations</h3>

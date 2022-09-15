@@ -224,7 +224,7 @@ class CompositeOp(Operator, abc.ABC):
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
 
-    def queue(self, context=qml.queuing.QueuingManager):
+    def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self:

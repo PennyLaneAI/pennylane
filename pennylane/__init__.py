@@ -24,7 +24,7 @@ import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.queuing import apply
+from pennylane.queuing import QueuingManager, apply
 
 import pennylane.fourier
 import pennylane.kernels
@@ -106,21 +106,6 @@ import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute, execute_new  # pylint:disable=wrong-import-order
-
-
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    if name == "QueuingContext":
-        from warnings import warn  # pylint: disable=import-outside-toplevel
-        from pennylane.queuing import QueuingManager  # pylint: disable=import-outside-toplevel
-
-        warn("QueuingContext has been renamed qml.queuing.QueuingManager.", UserWarning)
-
-        return QueuingManager
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
 
 
 # Look for an existing configuration file
