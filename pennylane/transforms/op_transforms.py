@@ -488,7 +488,7 @@ class op_transform:
             wires = tape.wires
 
         elif inspect.isclass(obj) and issubclass(obj, qml.operation.Operator):
-            with qml.queuing.stop_recording():
+            with qml.QueuingContext.stop_recording():
                 tape = obj(*args, **kwargs)
 
             wires = tape.wires

@@ -26,8 +26,7 @@
 
 <h3>Deprecations</h3>
 
-* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.queuing.QueuingManager.stop_recording`. This
-  method can also be accessed via the alias `qml.queuing.stop_recording`.
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.queuing.QueuingManager.stop_recording`.
   The old functions will still be available untill v0.29.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 

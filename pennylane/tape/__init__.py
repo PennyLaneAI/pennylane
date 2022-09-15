@@ -15,10 +15,6 @@
 This subpackage contains the quantum tape, which tracks, queues, and
 validates quantum operations and measurements.
 """
-from warnings import warn
-
-from pennylane.queuing import stop_recording as queuing_stop_recording
-
 from .tape import QuantumTape, get_active_tape, TapeError
 from .operation_recorder import OperationRecorder
 from .unwrap import Unwrap, UnwrapTape
@@ -26,8 +22,11 @@ from .unwrap import Unwrap, UnwrapTape
 
 def __getattr__(name):
     if name == "stop_recording":
+        from warnings import warn  # pylint: disable=import-outside-toplevel
+        from pennylane.queuing import QueuingContext  # pylint: disable=import-outside-toplevel
+
         warn("qml.tape.stop_recording has been moved to qml.queuing.stop_recording", UserWarning)
-        return queuing_stop_recording
+        return QueuingContext.stop_recording
     try:
         return globals()[name]
     except KeyError as e:

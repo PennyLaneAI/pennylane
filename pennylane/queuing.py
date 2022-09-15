@@ -189,9 +189,6 @@ class QueuingContext:
         return None
 
 
-stop_recording = QueuingContext.stop_recording
-
-
 class AnnotatedQueue:
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""

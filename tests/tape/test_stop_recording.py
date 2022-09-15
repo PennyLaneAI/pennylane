@@ -20,8 +20,8 @@ import pennylane as qml
 def test_tape_stop_recording():
     """Test that accessing qml.tape.stop_recording raises a deprecation warning and returns
     qml.queuing.stop_recording."""
-    message = "qml.tape.stop_recording has been moved to qml.queuing.stop_recording"
+    message = "qml.tape.stop_recording has been moved to qml.QueuingContext.stop_recording"
     with pytest.warns(UserWarning, match=message):
         obj = qml.tape.stop_recording
 
-    assert obj is qml.queuing.stop_recording
+    assert obj is qml.QueuingContext.stop_recording

@@ -17,7 +17,7 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
-from pennylane.queuing import stop_recording
+from pennylane.queuing import QueuingContext
 
 
 @qfunc_transform
@@ -79,7 +79,7 @@ def undo_swaps(tape):
             change_wires += map_wires[wire]
         return change_wires
 
-    with stop_recording():
+    with QueuingContext.stop_recording():
         while len(list_copy) > 0:
             current_gate = list_copy[0]
             params = current_gate.parameters

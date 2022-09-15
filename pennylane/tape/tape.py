@@ -90,7 +90,7 @@ def get_active_tape():
     """
     message = (
         "qml.tape.get_active_tape is now deprecated."
-        " Please use qml.queuing.QueuingContext.active_context"
+        " Please use qml.QueuingContext.active_context"
     )
     warn(message, UserWarning)
     return QueuingContext.active_context()
@@ -437,7 +437,7 @@ class QuantumTape(AnnotatedQueue):
         """Context manager to temporarily stop recording operations
         onto the tape. This is useful is scratch space is needed.
 
-        **Deprecated Method:** Please use ``qml.queuing.stop_recording`` instead.
+        **Deprecated Method:** Please use ``qml.QueuingContext.stop_recording`` instead.
 
         **Example**
 
@@ -449,7 +449,10 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        warn("QuantumTape.stop_recording has moved to qml.queuing.stop_recording.", UserWarning)
+        warn(
+            "QuantumTape.stop_recording has moved to qml.QueuingContext.stop_recording.",
+            UserWarning,
+        )
         with QueuingContext.stop_recording():
             yield
 

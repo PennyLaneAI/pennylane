@@ -23,17 +23,18 @@ from pennylane.queuing import (
     AnnotatedQueue,
     QueuingContext,
     QueuingError,
-    stop_recording,
 )
 
 
 class TestStopRecording:
+    """Test the stop_recording method of QeuuingContext."""
+
     def test_stop_recording_on_function_inside_QNode(self):
         """Test that the stop_recording transform when applied to a function
         is not recorded by a QNode"""
         dev = qml.device("default.qubit", wires=1)
 
-        @stop_recording()
+        @QueuingContext.stop_recording()
         def my_op():
             return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
 
@@ -57,7 +58,7 @@ class TestStopRecording:
 
         @qml.qnode(dev)
         def my_circuit():
-            op1 = stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
+            op1 = QueuingContext.stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
             op2 = qml.RY(np.pi / 4.0, wires=0)
             res.extend([op1, op2])
             return qml.expval(qml.PauliZ(0))
@@ -72,8 +73,8 @@ class TestStopRecording:
     def test_nested_stop_recording_on_function(self):
         """Test that stop_recording works when nested with other stop_recordings"""
 
-        @stop_recording()
-        @stop_recording()
+        @QueuingContext.stop_recording()
+        @QueuingContext.stop_recording()
         def my_op():
             return [
                 qml.RX(0.123, wires=0),
@@ -91,7 +92,7 @@ class TestStopRecording:
         def my_circuit():
             my_op()
 
-            with stop_recording():
+            with QueuingContext.stop_recording():
                 qml.PauliX(wires=0)
                 my_op()
 
@@ -110,7 +111,7 @@ class TestStopRecording:
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
-        @stop_recording()
+        @QueuingContext.stop_recording()
         def my_circuit():
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -126,7 +127,7 @@ class TestStopRecording:
         """A stop_recording QNode is unaffected"""
         dev = qml.device("default.qubit", wires=1)
 
-        @stop_recording()
+        @QueuingContext.stop_recording()
         @qml.qnode(dev)
         def my_circuit():
             qml.RX(np.pi, wires=0)
