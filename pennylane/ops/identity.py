@@ -72,10 +72,12 @@ class Identity(CVObservable, Operation):
         return np.eye(2)
 
     def matrix(self, wire_order=None):
-        return qml.math.eye(int(2 ** len(self.wires)))
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
+        return qml.math.eye(int(2**n_wires))
 
     def sparse_matrix(self, wire_order=None):
-        return sparse.eye(int(2 ** len(self.wires)), format="csr")
+        n_wires = len(self.wires) if wire_order is None else len(wire_order)
+        return sparse.eye(int(2**n_wires), format="csr")
 
     @staticmethod
     def _heisenberg_rep(p):
