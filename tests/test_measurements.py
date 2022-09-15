@@ -1292,8 +1292,9 @@ class TestExpansion:
         """Test that measurements of Hermitians report to have a decomposition."""
 
         class HermitianNoDiagGates(qml.Hermitian):
-            def diagonalizing_gates(self):
-                raise qml.operation.DiagGatesUndefinedError
+            @property
+            def has_diagonalizing_gates(self):
+                return False
 
         H = np.array([[1, 2], [2, 4]])
         obs = HermitianNoDiagGates(H, wires=["a"])

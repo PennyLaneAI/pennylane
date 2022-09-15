@@ -1943,7 +1943,7 @@ class Tensor(Observable):
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_diagonalizing_gates(cls):
+    def has_diagonalizing_gates(self):
         r"""Bool: Whether or not the Tensor returns defined diagonalizing gates."""
         return all(o.has_diagonalizing_gates for o in self.obs)
 
@@ -2550,14 +2550,7 @@ def defines_diagonalizing_gates(obj):
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.
     """
-
-    with qml.tape.stop_recording():
-        try:
-            obj.diagonalizing_gates()
-        except DiagGatesUndefinedError:
-            return False
-        return True
-
+    return obj.has_diagonalizing_gates
 
 @qml.BooleanFn
 def gen_is_multi_term_hamiltonian(obj):

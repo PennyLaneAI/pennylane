@@ -129,7 +129,7 @@ class CompositeOp(Operator, abc.ABC):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return all(op.has_matrix for op in self)
+        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self)
 
     @abc.abstractmethod
     def eigvals(self):

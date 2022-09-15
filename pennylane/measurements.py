@@ -455,13 +455,9 @@ class MeasurementProcess:
         if self.obs is None:
             return False
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
-        # which we have to check to be possible. The following creation of the new
-        # MeasurementProcess in `expand` should never fail with the given parameters.
-        try:
-            self.obs.diagonalizing_gates()
-        except qml.operation.DiagGatesUndefinedError:
-            return False
-        return True
+        # which we have to check to be defined. The subsequent creation of the new
+        # `MeasurementProcess` within `expand` should never fail with the given parameters.
+        return self.obs.has_diagonalizing_gates
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
