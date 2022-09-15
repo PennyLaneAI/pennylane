@@ -266,12 +266,31 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "factors",
         (
+            [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY(0)],
+            [qml.Hamiltonian([0.523], [qml.PauliX(3)]), qml.PauliZ(3)],
+            [
+                qml.Hamiltonian([0.523], [qml.PauliX(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([-1.301], [qml.PauliY(2) @ qml.PauliZ(1)]),
+            ],
+        ),
+    )
+    def test_has_diagonalizing_gates_true_via_overlapping_factors(self, factors):
+        """Test that a product of operators that have `has_diagonalizing_gates=True`
+        has `has_diagonalizing_gates=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_diagonalizing_gates is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
             [qml.PauliX(wires=0), qml.PauliX(wires=1)],
             [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY("s")],
             [qml.Hermitian(np.eye(4), wires=[0, 2]), qml.PauliX(wires=1)],
         ),
     )
-    def test_has_diagonalizing_gates_true(self, factors):
+    def test_has_diagonalizing_gates_true_via_factors(self, factors):
         """Test that a product of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
