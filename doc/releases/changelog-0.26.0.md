@@ -28,6 +28,11 @@
 
 <h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
 
+* Functionality is added to estimate the number of measurements required to compute an expectation
+  value with a target error and estimate the error in computing an expectation value with a given 
+  number of measurements.
+  [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
+
 * An entirely new framework for quantum computing is now simulatable with the addition of qutrit functionalities.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
   [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
@@ -490,6 +495,10 @@
   [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug with `qml.ops.Exp` operators when the coefficient is autograd but the diagonalizing gates
+  don't act on all wires.
+  [(#3057)](https://github.com/PennyLaneAI/pennylane/pull/3057)
 
 * Fixed a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
