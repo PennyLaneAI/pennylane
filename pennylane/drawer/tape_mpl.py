@@ -70,8 +70,7 @@ def _add_barrier(drawer, layer, mapped_wires, op):
 def _add_wirecut(drawer, layer, mapped_wires, op):
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
-    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+    drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle='--')
 
 
 special_cases = {
