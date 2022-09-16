@@ -136,7 +136,12 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
     mats_list = list(itertools.product(*mats))
     expanded_matrix = qml.math.stack(
-        [reduce(qml.math.kron, mats) if len(mats) > 1 else mats[0] for mats in mats_list],
+        [
+            reduce(lambda i, j: qml.math.kron(i, j, like=interface), mats)
+            if len(mats) > 1
+            else mats[0]
+            for mats in mats_list
+        ],
         like=interface,
     )
     n = len(wire_order)
