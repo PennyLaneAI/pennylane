@@ -16,6 +16,8 @@ This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
+import warnings
+
 import numpy as np
 
 import pennylane as qml
@@ -61,7 +63,7 @@ class QubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, *params, wires, do_queue=True):
+    def __init__(self, *params, wires, do_queue=True, unitary_check=True):
         wires = Wires(wires)
 
         # For pure QubitUnitary operations (not controlled), check that the number
@@ -76,6 +78,19 @@ class QubitUnitary(Operation):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
                     + "to act on {len(wires)} wires."
+                )
+            if unitary_check and not (
+                qml.math.is_abstract(U)
+                or qml.math.allclose(
+                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+                    qml.math.eye(dim),
+                    atol=1e-6,
+                )
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
                 )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
