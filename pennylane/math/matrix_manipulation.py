@@ -14,6 +14,7 @@
 """This module contains methods to expand the matrix representation of an operator
 to a higher hilbert space with re-ordered wires."""
 import copy
+import itertools
 from functools import reduce
 from typing import Generator, Tuple
 
@@ -109,6 +110,8 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     if interface == "scipy" and issparse(base_matrix):
         return _sparse_expand_matrix(base_matrix, wires, wire_order, format=sparse_format)
 
+    shape = qml.math.shape(base_matrix)
+    batch_dim = shape[0] if len(shape) == 3 else None
     wire_order = qml.wires.Wires(wire_order)
     expanded_wires = qml.wires.Wires([])
     mats = []
@@ -121,20 +124,22 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
         elif not op_wires_in_list:
             if i_count > 0:
                 mats.append(
-                    qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix)
+                    (qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix),)
                 )
             i_count = 0
-            mats.append(base_matrix)
+            mats.append(tuple(base_matrix) if batch_dim else (base_matrix,))
             op_wires_in_list = True
             expanded_wires += wires
 
     if i_count > 0:
-        mats.append(qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix))
+        mats.append((qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix),))
 
-    expanded_matrix = reduce(qml.math.kron, mats) if len(mats) > 1 else mats[0]
+    mats_list = list(itertools.product(*mats))
+    expanded_matrix = qml.math.stack(
+        [reduce(qml.math.kron, mats) if len(mats) > 1 else mats[0] for mats in mats_list],
+        like=interface,
+    )
     n = len(wire_order)
-    shape = qml.math.shape(base_matrix)
-    batch_dim = shape[0] if len(shape) == 3 else None
 
     shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
     mat = qml.math.reshape(expanded_matrix, shape)
@@ -151,12 +156,12 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
                 permuted_wires[new_wire_idx],
                 permuted_wires[perm_wire_idx],
             )
-            old_wire_idx = expanded_wires.index(wire)
-            if batch_dim:
-                new_wire_idx += 1
-                old_wire_idx += 1
-            perm.extend([new_wire_idx, new_wire_idx + n])
-            sources.extend([old_wire_idx, old_wire_idx + n])
+        old_wire_idx = expanded_wires.index(wire)
+        if batch_dim:
+            new_wire_idx += 1
+            old_wire_idx += 1
+        perm.extend([new_wire_idx, new_wire_idx + n])
+        sources.extend([old_wire_idx, old_wire_idx + n])
 
     if perm:
         mat = qml.math.moveaxis(mat, sources, perm)
