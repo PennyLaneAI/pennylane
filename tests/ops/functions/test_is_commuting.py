@@ -832,9 +832,10 @@ class TestCommutingFunction:
     arithmetic_ops = (
         (qml.op_sum(qml.PauliX(0), qml.Identity(1)), "Sum"),
         (qml.prod(qml.PauliX(0), qml.Identity(1)), "Prod"),
-        (qml.s_prod(1.23, qml.PauliX(0)), "SProd")
+        (qml.s_prod(1.23, qml.PauliX(0)), "SProd"),
+        (qml.exp(qml.PauliX(0), 1.2), "Exp")
     )
-    
+
     @pytest.mark.parametrize("op, name", arithmetic_ops)
     def test_composite_arithmetic_ops_not_supported(self, op, name):
         """Test that giving a non supported operation raises an error."""
