@@ -140,15 +140,24 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     mat = qml.math.reshape(expanded_matrix, shape)
 
     # permute matrix axes to match wire ordering
-    perm = []
+    permuted_wires = copy.copy(list(expanded_wires))
+    wire_order = list(wire_order)
     sources = []
-    for p, s in zip(wire_order.indices(wires), expanded_wires.indices(wires)):
-        if batch_dim:
-            p += 1
-            s += 1
-        if p != s:
-            perm.extend([p, p + n])
-            sources.extend([s, s + n])
+    perm = []
+    for wire in wires:
+        perm_wire_idx, new_wire_idx = permuted_wires.index(wire), wire_order.index(wire)
+        if perm_wire_idx != new_wire_idx:
+            permuted_wires[perm_wire_idx], permuted_wires[new_wire_idx] = (
+                permuted_wires[new_wire_idx],
+                permuted_wires[perm_wire_idx],
+            )
+            old_wire_idx = expanded_wires.index(wire)
+            if batch_dim:
+                new_wire_idx += 1
+                old_wire_idx += 1
+            perm.extend([new_wire_idx, new_wire_idx + n])
+            sources.extend([old_wire_idx, old_wire_idx + n])
+
     if perm:
         mat = qml.math.moveaxis(mat, sources, perm)
     shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
