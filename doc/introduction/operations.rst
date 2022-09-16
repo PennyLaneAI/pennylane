@@ -391,12 +391,12 @@ CV observables
 .. _intro_ref_ops_qutrit:
 
 Qutrit operators
----------------
+----------------
 
 .. _intro_ref_ops_qutrit_nonparam:
 
 Qutrit non-parametrized gates
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -414,7 +414,7 @@ Qutrit non-parametrized gates
 .. _intro_ref_ops_qutrit_matrix:
 
 Qutrit gates constructed from a matrix
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -429,7 +429,7 @@ Qutrit gates constructed from a matrix
 .. _intro_ref_ops_qutrit_obs:
 
 Qutrit Observables
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
