@@ -1201,7 +1201,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
-    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    The protocol is described in detail in the paper `Predicting Many Properties of a Quantum System from Very Few Measurements <https://arxiv.org/abs/2002.08953>`_.
     This measurement process returns the randomized Pauli measurements (the ``recipes``)
     that are performed for each qubit and snapshot as an integer:
 
@@ -1348,7 +1348,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
 
         dev = qml.device("default.qubit", wires=range(2), shots=10000)
         @qml.qnode(dev)
