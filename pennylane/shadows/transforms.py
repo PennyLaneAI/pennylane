@@ -210,5 +210,10 @@ def shadow_state(wires, diffable=False):
             [ 0.33705002-0.01125j   ,  0.011025  +0.232575j  ,
              -0.006075  +0.225225j  ,  0.33475   +0.j        ]],
            dtype=complex64, requires_grad=True)
+    >>> qml.jacobian(lambda x: np.real(circuit(x)))(x)
+    array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
+           [-0.005325,  0.235275,  0.2358  , -0.004275],
+           [ 0.004275,  0.2358  ,  0.244875, -0.002175],
+           [-0.2358  , -0.004275, -0.002175, -0.235125]])
     """
     return _shadow_state_diffable(wires) if diffable else _shadow_state_undiffable(wires)

@@ -301,7 +301,7 @@ class ClassicalShadow:
 
         or of a Hamiltonian using `the same` measurement results
 
-        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
         >>> shadow.expval(H, k=1)
         array(1.9980000000000002)
         """
@@ -367,8 +367,8 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            wires=4
-            dev = qml.device("default.qubit", wires=range(4), shots=1000)
+            wires = 4
+            dev = qml.device("default.qubit", wires=range(wires), shots=1000)
 
             @qml.qnode(dev)
             def max_entangled_circuit():
@@ -392,21 +392,19 @@ class ClassicalShadow:
             @qml.qnode(dev)
             def qnode(x):
                 for i in range(wires):
-
                     qml.RY(x[i], wires=i)
 
-                for i in range(wires-1):
-                    qml.CNOT((i,i+1))
+                for i in range(wires - 1):
+                    qml.CNOT((i, i+1))
 
-                return qml.classical_shadow(wires=dev.wires)
+                return qml.classical_shadow(wires=range(wires))
 
+            x = np.linspace(0.5, 1.5, num=wires)
             bitstrings, recipes = qnode(x)
             shadow = qml.ClassicalShadow(bitstrings, recipes)
 
-            entropies = [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
-
-        >>> print(entropies)
-        [0.6727522114759635, 0.6252047673044356, 0.5996592216299593]
+        >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
+        [1.6245959539047377, -0.4674863228619727, 1.0863471726828164]
 
         """
 
@@ -418,7 +416,7 @@ class ClassicalShadow:
 
         if alpha == 2:
             # special case of purity
-            res = -qml.math.log(qml.math.trace(rdm @ rdm))
+            res = -qml.math.log(qml.math.cast(qml.math.trace(rdm @ rdm), np.float64))
             return res / div
 
         # Else
