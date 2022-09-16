@@ -94,7 +94,8 @@ class QueuingManager:
         Args:
             obj: the object to be appended
         """
-        return cls.active_context().append(obj, **kwargs) if cls.recording() else None
+        if cls.recording():
+            cls.active_context().append(obj, **kwargs)
 
     @classmethod
     def remove(cls, obj):
@@ -103,7 +104,8 @@ class QueuingManager:
         Args:
             obj: the object to be removed
         """
-        return cls.active_context().remove(obj) if cls.recording() else None
+        if cls.recording():
+            cls.active_context().remove(obj)
 
     @classmethod
     def update_info(cls, obj, **kwargs):
@@ -112,7 +114,8 @@ class QueuingManager:
         Args:
             obj: the object with metadata to be updated
         """
-        return cls.active_context().update_info(obj, **kwargs) if cls.recording() else None
+        if cls.recording():
+            cls.active_context().update_info(obj, **kwargs)
 
     # pylint: disable=protected-access
     @classmethod
@@ -122,7 +125,8 @@ class QueuingManager:
         Args:
             obj: the object with metadata to be updated
         """
-        return cls.active_context().safe_update_info(obj, **kwargs) if cls.recording() else None
+        if cls.recording():
+            cls.active_context().safe_update_info(obj, **kwargs)
 
     @classmethod
     def get_info(cls, obj):

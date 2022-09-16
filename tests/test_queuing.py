@@ -23,16 +23,6 @@ import numpy as np
 from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, QueuingManager, QueuingError
 
 
-def test_top_level_import_warning():
-    """Test that a warning is raised and QueuingManager returned when QueuingContext is requested
-    top level."""
-    with pytest.warns(
-        UserWarning, match=r"QueuingContext has been renamed qml.queuing.QueuingManager."
-    ):
-        out = qml.QueuingContext
-    assert out is QueuingManager
-
-
 def test_name_change_warning():
     """Test that a warning is raised when QueuingContext is requested from the queuing module."""
     with pytest.warns(
