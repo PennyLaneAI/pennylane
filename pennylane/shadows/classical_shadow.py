@@ -394,8 +394,8 @@ class ClassicalShadow:
                 for i in range(wires):
                     qml.RY(x[i], wires=i)
 
-                for i in range(wires - 1):
-                    qml.CNOT((i, i+1))
+                for i in range(1, wires):
+                    qml.CNOT((0, i))
 
                 return qml.classical_shadow(wires=range(wires))
 
@@ -404,7 +404,7 @@ class ClassicalShadow:
             shadow = qml.ClassicalShadow(bitstrings, recipes)
 
         >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
-        [1.6245959539047377, -0.4674863228619727, 1.0863471726828164]
+        [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
 
         """
 
@@ -414,10 +414,12 @@ class ClassicalShadow:
         # Allow for different log base
         div = np.log(base) if base else 1
 
-        if alpha == 2:
-            # special case of purity
-            res = -qml.math.log(qml.math.cast(qml.math.trace(rdm @ rdm), np.float64))
-            return res / div
+        # This was returning negative values in most cases, so commenting it out
+        # until we figure out the issue.
+        # if alpha == 2:
+        #     # special case of purity
+        #     res = -qml.math.log(qml.math.trace(rdm @ rdm))
+        #     return res / div
 
         # Else
         # Compute Eigenvalues and choose only those >>0
