@@ -597,7 +597,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         # the return value of expval is always a scalar
         if self.return_type is ShadowExpval:
-            return ()
+            return (1,)
 
         # otherwise, the return type requires a device
         if device is None:
@@ -608,7 +608,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, device.shots, len(self.wires))
+        return (1, 2, device.shots, len(self.wires))
 
     @property
     def wires(self):
