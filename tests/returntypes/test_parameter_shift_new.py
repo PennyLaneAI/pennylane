@@ -1319,7 +1319,7 @@ class TestParameterShiftRule:
         (cost4, [3, 4], False),
         (cost5, [3, 4], True),
         # The output shape of transforms for 2D qnode outputs (cost6) is currently
-        # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
+        # transposed, e.g. (2, 3, 4) instead of (2, 4, 3).
         # TODO: fix qnode/expected once #2296 is resolved
         (cost6, [2, 3, 4], True),
     ]

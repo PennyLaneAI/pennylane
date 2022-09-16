@@ -362,7 +362,6 @@ def _expval_param_shift_tuple(
 
         multi_measure = len(tape.measurements) > 1
 
-        zero_rep = None
         for data in gradient_data:
 
             num_tapes, *_, batch_size = data
@@ -378,13 +377,13 @@ def _expval_param_shift_tuple(
             g = _evaluate_gradient_new(tape, res, data, r0)
 
             grads.append(g)
-            if zero_rep is None:
-                if not multi_measure:
-                    # This clause will be hit at least once (because otherwise all gradients would have
-                    # been zero), providing a representative for a zero gradient to emulate its type/shape.
-                    zero_rep = qml.math.zeros_like(g)
-                else:
-                    zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
+
+        if not multi_measure:
+            # This clause will be hit at least once (because otherwise all gradients would have
+            # been zero), providing a representative for a zero gradient to emulate its type/shape.
+            zero_rep = qml.math.zeros_like(g)
+        else:
+            zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
 
         for i, g in enumerate(grads):
             # Fill in zero-valued gradients
@@ -659,7 +658,7 @@ def _create_variance_proc_fn(
     return processing_fn
 
 
-def var_param_shift_tuple(
+def _var_param_shift_tuple(
     tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
@@ -793,7 +792,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         function to be applied to the results of the evaluated tapes.
     """
     if qml.active_return():
-        return var_param_shift_tuple(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+        return _var_param_shift_tuple(tape, argnum, shifts, gradient_recipes, f0, broadcast)
 
     argnum = argnum or tape.trainable_params
 
