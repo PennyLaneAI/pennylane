@@ -230,7 +230,8 @@
   ```pycon
   >>> circuit()
   >>> list(circuit.tape)
-  [RZ(-11.566370614359172, wires=[0]) @ RY(-11.566370614359172, wires=[0]) @ RX(-11.566370614359172, wires=[0]), probs(wires=[0])]
+  [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
+   probs(wires=[0])]
   ```
   
 <h4>Operator and parameter broadcasting supplements 📈</h4>
