@@ -28,6 +28,11 @@
 
 <h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
 
+* Functionality is added to estimate the number of measurements required to compute an expectation
+  value with a target error and estimate the error in computing an expectation value with a given 
+  number of measurements.
+  [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
+
 * An entirely new framework for quantum computing is now simulatable with the addition of qutrit functionalities.
   [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
   [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
@@ -508,6 +513,10 @@
 
 * Fixed a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
   [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3004)
+
+* Added a more descriptive error message when measuring non-commuting observables at the end of a circuit with
+  `probs`, `samples`, `counts` and `allcounts`.
+  [(#3065](https://github.com/PennyLaneAI/pennylane/pull/3065)
 
 <h3>Contributors</h3>
 
