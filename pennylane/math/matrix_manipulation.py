@@ -110,17 +110,19 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     if interface == "scipy" and issparse(base_matrix):
         return _sparse_expand_matrix(base_matrix, wires, wire_order, format=sparse_format)
 
+    wire_order = list(wire_order)
+
     shape = qml.math.shape(base_matrix)
     batch_dim = shape[0] if len(shape) == 3 else None
-    wire_order = qml.wires.Wires(wire_order)
-    expanded_wires = qml.wires.Wires([])
-    mats = []
+
+    expanded_wires = []
+    mats = []  # list of tuples with (Id,) and (base_matrix,) or (mat1, mat2, ...) if batch_dim
     op_wires_in_list = False
-    i_count = 0
+    i_count = 0  # identity count
     for wire in wire_order:
         if wire not in wires:
             i_count += 1
-            expanded_wires += wire
+            expanded_wires.append(wire)
         elif not op_wires_in_list:
             if i_count > 0:
                 mats.append(
@@ -129,34 +131,37 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
             i_count = 0
             mats.append(tuple(base_matrix) if batch_dim else (base_matrix,))
             op_wires_in_list = True
-            expanded_wires += wires
+            expanded_wires.extend(wires)
 
     if i_count > 0:
         mats.append((qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix),))
 
+    # itertools.product will create a tuple of matrices for each different batch
     mats_list = list(itertools.product(*mats))
-    expanded_matrix = qml.math.stack(
-        [
-            reduce(
-                lambda i, j: qml.math.kron(
-                    i.contiguous() if interface == "torch" else i,
-                    j.contiguous() if interface == "torch" else j,
-                    like=interface,
-                ),
-                mats,
-            )
-            if len(mats) > 1
-            else mats[0]
-            for mats in mats_list
-        ],
-        like=interface,
-    )
-    n = len(wire_order)
+    # here we compute the kron product of each different tuple and stack them back together
+    expanded_batch_matrices = [
+        reduce(
+            lambda i, j: qml.math.kron(
+                i.contiguous() if interface == "torch" else i,
+                j.contiguous() if interface == "torch" else j,
+                like=interface,
+            ),
+            mats,
+        )
+        if len(mats) > 1
+        else mats[0]
+        for mats in mats_list
+    ]
+    expanded_matrix = qml.math.stack(expanded_batch_matrices, like=interface)
 
-    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
+    num_wires = len(wire_order)
+
+    # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <0000|mat|0000>
+    # with this reshape we can easily swap wires
+    shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
     mat = qml.math.reshape(expanded_matrix, shape)
 
-    # permute matrix axes to match wire ordering
+    # compute the permutations needed to match wire order
     permuted_wires = copy.copy(list(expanded_wires))
     wire_order = list(wire_order)
     sources = []
@@ -172,11 +177,15 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
         if batch_dim:
             new_wire_idx += 1
             old_wire_idx += 1
-        perm.extend([new_wire_idx, new_wire_idx + n])
-        sources.extend([old_wire_idx, old_wire_idx + n])
+        # e.g. if we have 2 wires, mat.shape = (2, 2, 2, 2)
+        # thus all values related to qubit 0 will be in indices 0 and 0 + 2 = 2
+        perm.extend([new_wire_idx, new_wire_idx + num_wires])
+        sources.extend([old_wire_idx, old_wire_idx + num_wires])
 
     if perm:
         mat = qml.math.moveaxis(mat, sources, perm)
+
+    # reshape back
     shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
     mat = qml.math.reshape(mat, shape)
 
