@@ -5,9 +5,7 @@ TensorFlow interface
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
-QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
-translated into a quantum node that interfaces with TensorFlow by calling the
-:meth:`QNode.to_tf() <pennylane.qnode.QNode.to_tf>` method.
+QNode decorator or QNode class constructor.
 
 .. note::
     To use the TensorFlow interface in PennyLane, you must first install TensorFlow.

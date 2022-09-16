@@ -5,9 +5,7 @@ PyTorch interface
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='torch'`` keyword in
-the QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
-translated into a quantum node that interfaces with PyTorch by calling the
-:meth:`QNode.to_torch() <pennylane.qnode.QNode.to_torch>` method.
+the QNode decorator or QNode class constructor.
 
 .. note::
 
