@@ -171,7 +171,7 @@ And the result is:
 >>> circuit()
 {'00': 495, '11': 505}
 
-Per default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can 
+By default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can
 be used to display all possible outcomes, including those that were observed ``0`` times in sampling.
 
 For example, we could run the previous circuit with ``all_outcomes=True``:
