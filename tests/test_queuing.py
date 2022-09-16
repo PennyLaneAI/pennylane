@@ -153,10 +153,10 @@ class TestAnnotatedQueue:
             q.append(A, inv=True)
             assert QueuingManager.get_info(A) == {"inv": True}
 
-            qml.queuing.QueuingManager.update_info(A, key="value1")
+            QueuingManager.update_info(A, key="value1")
 
         # should pass silently because no longer recording
-        qml.queuing.QueuingManager.update_info(A, key="value2")
+        QueuingManager.update_info(A, key="value2")
 
         assert q.get_info(A) == {"inv": True, "key": "value1"}
 
@@ -182,9 +182,9 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(op, key="value1")
             assert q.get_info(op) == {"key": "value1"}
-            qml.queuing.QueuingManager.safe_update_info(op, key="value2")
+            QueuingManager.safe_update_info(op, key="value2")
 
-        qml.queuing.QueuingManager.safe_update_info(op, key="no changes here")
+        QueuingManager.safe_update_info(op, key="no changes here")
         assert q.get_info(op) == {"key": "value2"}
 
         q.safe_update_info(op, key="value3")
@@ -196,8 +196,8 @@ class TestAnnotatedQueue:
         op = qml.RX(0.5, wires=1)
 
         with AnnotatedQueue() as q:
-            qml.queuing.QueuingManager.safe_update_info(op, key="value2")
-        qml.queuing.QueuingManager.safe_update_info(op, key="no changes here")
+            QueuingManager.safe_update_info(op, key="value2")
+        QueuingManager.safe_update_info(op, key="no changes here")
 
         assert len(q.queue) == 0
 
