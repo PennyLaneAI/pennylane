@@ -79,6 +79,9 @@ class QubitUnitary(Operation):
                     f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
                     + "to act on {len(wires)} wires."
                 )
+
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
             if unitary_check and not (
                 qml.math.is_abstract(U)
                 or qml.math.allclose(
