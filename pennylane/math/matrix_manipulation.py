@@ -18,7 +18,7 @@ from functools import reduce
 from typing import Generator, Tuple
 
 import numpy as np
-from scipy.sparse import coo_matrix, eye, issparse, kron
+from scipy.sparse import csr_matrix, eye, issparse, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -191,10 +191,10 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
     index_j = [
         swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
     ]  # kets (we swap qubits i and j): <10| --> <01|
-    return coo_matrix((data, (index_i, index_j)))
+    return csr_matrix((data, (index_i, index_j)))
 
 
-def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
+def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     """Re-express a sparse base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -226,17 +226,17 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="coo"):
             expanded_wires.append(wire)
         elif not op_wires_in_list:
             if i_count > 0:
-                mats.append(eye(2**i_count, format="coo"))
+                mats.append(eye(2**i_count, format="csr"))
             i_count = 0
             mats.append(base_matrix)
             op_wires_in_list = True
             expanded_wires.extend(wires)
 
     if i_count > 0:
-        mats.append(eye(2**i_count, format="coo"))
+        mats.append(eye(2**i_count, format="csr"))
 
     if len(mats) > 1:
-        expanded_matrix = reduce(lambda i, j: kron(i, j, format="coo"), mats)
+        expanded_matrix = reduce(lambda i, j: kron(i, j, format="csr"), mats)
     else:
         expanded_matrix = copy.copy(base_matrix)
 
