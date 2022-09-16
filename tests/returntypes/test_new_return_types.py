@@ -778,8 +778,7 @@ scalar_sample_multi = [
 ]
 
 scalar_sample_no_obs_multi = [
-    # TODO: for copy=1, the wires syntax has a bug
-    # -----
+    (qml.expval(qml.PauliZ(wires=1)), qml.sample()),
     (qml.expval(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
     (qml.var(qml.PauliZ(wires=1)), qml.sample(wires=[0, 1])),
 ]
@@ -798,8 +797,7 @@ scalar_counts_multi = [
 ]
 
 scalar_counts_no_obs_multi = [
-    # TODO: for copy=1, the wires syntax has a bug
-    # -----
+    (qml.expval(qml.PauliZ(wires=1)), qml.counts()),
     (qml.expval(qml.PauliZ(wires=1)), qml.counts(wires=[0, 1])),
     (qml.var(qml.PauliZ(wires=1)), qml.counts(wires=[0, 1])),
 ]
@@ -956,7 +954,6 @@ class TestMixMeasurementsShotVector:
                     assert sum(r.values()) == shots
 
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
-    @pytest.mark.xfail
     def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis counts measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
@@ -979,17 +976,16 @@ class TestMixMeasurementsShotVector:
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
         assert all(isinstance(r, tuple) for r in res[0])
-        assert all(isinstance(m, np.ndarray) for measurement_res in res[0] for m in measurement_res)
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[0][idx]):
-                expected_sample_shape_item = len(meas2.wires)
-                if i % 2 == 0 or shots == 1:
+                if i % 2 == 0:
+                    assert isinstance(r, np.ndarray)
                     obs_provided = meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
                 else:
-                    assert r.shape == (shots,)
+                    assert isinstance(r, dict)
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_sample(self, shot_vector, sample_obs, device):
