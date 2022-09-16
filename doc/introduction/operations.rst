@@ -436,7 +436,6 @@ Qutrit Observables
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.GellMann
     ~pennylane.THermitian
 
 :html:`</div>`
