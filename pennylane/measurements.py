@@ -848,7 +848,7 @@ def counts(op=None, wires=None, all_outcomes=False):
     >>> circuit(0.5)
     {'00': 3, '01': 1}
 
-    Per default, outcomes that were not observed will not be included in the dictionary.
+    By default, outcomes that were not observed will not be included in the dictionary.
 
     .. code-block:: python3
 
