@@ -586,7 +586,6 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            # Insert control on value here
             res = self._execute_new(circuit)
             results.append(res)
 
