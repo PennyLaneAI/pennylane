@@ -7,14 +7,14 @@
 <h4>QNSPSA optimizer 😤</h4>
 
 * A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
-  perturbation stochastic approximation (QNSPSA) method based on 
-  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
-  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+  perturbation stochastic approximation (QNSPSA) method based on
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/).
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818)
 
-  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
+  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit
   executions per optimization step compared to 3 for `qml.SPSAOptimizer`.
   The additional circuit executions are used to provide a stochastic estimation of a second-order
-  metric tensor, which often helps the optimizer to achieve faster convergence. 
+  metric tensor, which often helps the optimizer to achieve faster convergence.
 
   Use `qml.QNSPSAOptimizer` like you would any other optimizer:
   
@@ -29,7 +29,7 @@
 <h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
 
 * Functionality is added to estimate the number of measurements required to compute an expectation
-  value with a target error and estimate the error in computing an expectation value with a given 
+  value with a target error and estimate the error in computing an expectation value with a given
   number of measurements.
   [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
 
@@ -42,7 +42,7 @@
   ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
   ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
 
-  [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*. 
+  [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*.
   The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
   
   To facilitate qutrit circuits requires a new device: `"default.qutrit"`.
@@ -56,16 +56,16 @@
 
   The following operations are supported on `"default.qutrit"` devices:
 
-  - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
+  * The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
   which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
 
-  - The `qml.TAdd` and `qml.TSWAP` operations which are the qutrit analogs of the CNOT and SWAP operations, respectively.
+  * The `qml.TAdd` and `qml.TSWAP` operations which are the qutrit analogs of the CNOT and SWAP operations, respectively.
 
-  - Custom unitary operations via `qml.QutritUnitary`.
+  * Custom unitary operations via `qml.QutritUnitary`.
 
-  - `qml.state` and `qml.probs` measurements.
+  * `qml.state` and `qml.probs` measurements.
 
-  - Measuring user-specified Hermitian matrix observables via `qml.THermitian`.
+  * Measuring user-specified Hermitian matrix observables via `qml.THermitian`.
 
   A comprehensive example of these features is given below:
 
@@ -113,10 +113,10 @@
   ```
 
   We will continue to add more and more support for qutrits in future releases.
-    
+
 <h4>Classical shadows 👤</h4>
 
-* All-new features for implementing the classical-shadows protocol are now available. 
+* All-new features for implementing the classical-shadows protocol are now available.
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
   [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
   [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
@@ -126,13 +126,13 @@
 
   The classical-shadow measurement protocol is described in detail in the
   [classical shadows paper](https://arxiv.org/abs/2002.08953).
-  As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
+  As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available:
 
-  - QNodes returning `qml.classical_shadow` will return two entities: 
+  * QNodes returning `qml.classical_shadow` will return two entities:
 
-    + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
-    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
-    
+    * `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
+    * `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
+
     ```python
     dev = qml.device("default.qubit", wires=2, shots=3)
 
@@ -155,7 +155,7 @@
             [0, 2]], dtype=uint8, requires_grad=True)
     ```
 
-  - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
+  * QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
 
     ```python
     dev = qml.device("default.qubit", wires=range(2), shots=10000)
@@ -184,14 +184,14 @@
   Fully-differentiable QNode transforms for both new classical-shadows measurements are also available via
   `qml.shadows.shadow_state` and `qml.shadows.shadow_expval`, respectively.
   
-  For convenient post-processing, we've also added the ability to calculate general Renyi entropies 
+  For convenient post-processing, we've also added the ability to calculate general Renyi entropies
   by way of the `ClassicalShadow` class' `entropy` method, which requires the wires of the subsystem of interest
   and the Renyi entropy order:
 
   ```pycon
   >>> shadow = ClassicalShadow(bits, recipes)
   >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
-  ``` 
+  ```
 
 <h4>Simplifying just got... simpler 🫰</h4>
 
@@ -203,13 +203,13 @@
 
   `qml.simplify` can now simplify or do the following:
 
-  - parametrized operations
-  - the adjoint and power of specific operators
-  - grouping of like terms in a sum
-  - resolving products of Pauli operators
-  - combining rotation angles of identical rotation gates
+  * parametrized operations
+  * the adjoint and power of specific operators
+  * grouping of like terms in a sum
+  * resolving products of Pauli operators
+  * combining rotation angles of identical rotation gates
 
-  Here is an example of `qml.simplify` in action with parameterized rotation gates. 
+  Here is an example of `qml.simplify` in action with parameterized rotation gates.
   In this case, the angles of rotation are simplified to be modulo :math:`4\pi`.
 
   ```pycon
@@ -235,8 +235,7 @@
   ```pycon
   >>> circuit()
   >>> list(circuit.tape)
-  [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
-   probs(wires=[0])]
+  [RZ(-11.566370614359172, wires=[0]) @ RY(-11.566370614359172, wires=[0]) @ RX(-11.566370614359172, wires=[0]), probs(wires=[0])]
   ```
   
 <h4>Operator and parameter broadcasting supplements 📈</h4>
@@ -245,7 +244,7 @@
   [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
   [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
 
-  - The `qml.exp` function can be used to create observables or generic rotation gates:
+  * The `qml.exp` function can be used to create observables or generic rotation gates:
 
     ```pycon
     >>> x = 1.234
@@ -262,7 +261,7 @@
         0.       +0.j        , 1.       +0.j        ]]) 
     ```
 
-  - The `qml.pow` function raises a given operator to a power:
+  * The `qml.pow` function raises a given operator to a power:
 
     ```pycon
     >>> op = qml.pow(qml.PauliX(0), 2)
@@ -331,7 +330,7 @@
 * The new `qml.pow` provides a top-level constructor for raising operators to powers.
   [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
 
-* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple 
+* `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple
   broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
 
@@ -343,7 +342,7 @@
   [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
 
 * Some methods of the `QuantumTape` class have been simplified and reordered to
-  improve both readability and performance. 
+  improve both readability and performance.
   [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
 
 * The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
@@ -360,7 +359,7 @@
   [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
 
 * By default, `qml.counts` only returns the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
-  will return a dictionary containing all possible outcomes. 
+  will return a dictionary containing all possible outcomes.
   [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
   
   ```pycon
@@ -488,10 +487,10 @@
 * Updated the Fourier transform docs to use `circuit_spectrum` instead of `spectrum`, which has been deprecated.
   [(#3018)](https://github.com/PennyLaneAI/pennylane/pull/3018)
   
-* Corrected the docstrings for diagonalizing gates for all relevant operations. The docstrings used 
-  to say that the diagonalizing gates implemented :math:`U`, the unitary such that :math:`O = U \Sigma U^{\dagger}`, where :math:`O` is 
-  the original observable and :math:`\Sigma` a diagonal matrix. However, the diagonalizing gates actually implement 
-  :math:`U^{\dagger}`, since :math:`\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle`, 
+* Corrected the docstrings for diagonalizing gates for all relevant operations. The docstrings used
+  to say that the diagonalizing gates implemented :math:`U`, the unitary such that :math:`O = U \Sigma U^{\dagger}`, where :math:`O` is
+  the original observable and :math:`\Sigma` a diagonal matrix. However, the diagonalizing gates actually implement
+  :math:`U^{\dagger}`, since :math:`\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle`,
   making :math:`U^{\dagger} | \psi \rangle` the actual state being measured in the Z-basis.
   [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
 

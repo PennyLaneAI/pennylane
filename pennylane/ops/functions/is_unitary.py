@@ -19,11 +19,11 @@ from pennylane.operation import Operator
 
 
 def is_unitary(op: Operator):
-    r"""Check if the operation is unitary.
+    """Check if the operation is unitary.
 
     A matrix is unitary if its adjoint is also its inverse, that is, if
 
-    .. math:: O^\dagger O = OO^\dagger = I
+    .. math:: O†O = OO† = I
 
     Args:
         op (~.operation.Operator): the operator to check against

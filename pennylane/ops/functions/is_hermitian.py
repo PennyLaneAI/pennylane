@@ -19,11 +19,11 @@ from pennylane.operation import Operator
 
 
 def is_hermitian(op: Operator):
-    r"""Check if the operation is hermitian.
+    """Check if the operation is hermitian.
 
     A hermitian matrix is a complex square matrix that is equal to its own adjoint
 
-    .. math:: O^\dagger = O
+    .. math:: O† = O
 
     Args:
         op (~.operation.Operator): the operator to check against
