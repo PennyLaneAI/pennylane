@@ -1201,7 +1201,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
-    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    The protocol is described in detail in the paper `Predicting Many Properties of a Quantum System from Very Few Measurements <https://arxiv.org/abs/2002.08953>`_.
     This measurement process returns the randomized Pauli measurements (the ``recipes``)
     that are performed for each qubit and snapshot as an integer:
 
