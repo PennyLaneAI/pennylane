@@ -367,6 +367,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if qml.active_return():
+            return self._execute_new(circuit, **kwargs)
+
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -466,7 +469,7 @@ class QubitDevice(Device):
             #     r = r[0]
 
             if single_measurement:
-                r = r[0]  # if counts_exist else qml.math.squeeze(r)
+                r = r[0]
             else:
                 if shot_tuple.copies == 1:
                     r = tuple(
@@ -583,7 +586,6 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            # Insert control on value here
             res = self._execute_new(circuit)
             results.append(res)
 
