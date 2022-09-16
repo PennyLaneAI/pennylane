@@ -226,19 +226,19 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
             expanded_wires.append(wire)
         elif not op_wires_in_list:
             if i_count > 0:
-                mats.append(eye(2**i_count, format="csr"))
+                mats.append(eye(2**i_count, format="coo"))
             i_count = 0
             mats.append(base_matrix)
             op_wires_in_list = True
             expanded_wires.extend(wires)
 
     if i_count > 0:
-        mats.append(eye(2**i_count, format="csr"))
+        mats.append(eye(2**i_count, format="coo"))
 
     if len(mats) > 1:
         expanded_matrix = reduce(lambda i, j: kron(i, j, format="csr"), mats)
     else:
-        expanded_matrix = copy.copy(base_matrix)
+        expanded_matrix = copy.copy(base_matrix).asformat("csr")
 
     expanded_matrix.eliminate_zeros()
 
@@ -246,7 +246,7 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     for i in range(n_total_wires):
         if expanded_wires[i] != wire_order[i]:
             if U is None:
-                U = eye(2**n_total_wires, format=format)
+                U = eye(2**n_total_wires, format="csr")
             j = expanded_wires.index(wire_order[i])  # location of correct wire
             U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
             U.eliminate_zeros()
