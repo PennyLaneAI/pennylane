@@ -1648,7 +1648,6 @@ class QubitDevice(Device):
                     qml.RX(x, wires=0)
                     return qml.counts(all_outcomes=True)
 
-
         """
 
         outcomes = []
