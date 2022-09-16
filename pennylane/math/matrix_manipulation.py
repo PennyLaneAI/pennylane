@@ -255,6 +255,4 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     if U is not None:
         expanded_matrix = U.T @ expanded_matrix @ U
         expanded_matrix.eliminate_zeros()
-    if format != "coo":
-        expanded_matrix = expanded_matrix.asformat(format)
-    return expanded_matrix
+    return expanded_matrix.asformat(format)
