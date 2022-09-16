@@ -53,8 +53,10 @@ The available measurement functions are
 Combined measurements
 ---------------------
 
-Quantum functions can also return combined measurements of multiple observables, as long as each wire
-is not measured more than once:
+Quantum functions can also return combined measurements of multiple observables. If the observables are not
+qubit-wise-commuting, then multiple device executions may occur behind the scenes. Non-commuting oberservables
+can not be simultaneously measured in conjunction with non-observable type measurements such as :func:`sample`,
+:func:`counts`, :func:`probs`, :func:`state`, and :func:`density_matrix`.
 
 .. code-block:: python
 
@@ -62,7 +64,7 @@ is not measured more than once:
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0, 1])
         qml.RY(y, wires=1)
-        return qml.expval(qml.PauliZ(1)), qml.var(qml.PauliX(0))
+        return qml.expval(qml.PauliZ(0))), qml.var(qml.PauliX(0))
 
 You can also use list comprehensions, and other common Python patterns:
 
