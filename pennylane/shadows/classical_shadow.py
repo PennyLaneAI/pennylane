@@ -392,6 +392,7 @@ class ClassicalShadow:
             @qml.qnode(dev)
             def qnode(x):
                 for i in range(wires):
+
                     qml.RY(x[i], wires=i)
 
                 for i in range(wires-1):
