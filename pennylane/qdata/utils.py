@@ -386,14 +386,16 @@ def get_keys(data_type, data_params):
         list[str]: List of strings representing all the filter keys available for the requested dataset
     """
 
-    if data_type not in list(DATA_STRUCT.keys()):
-        raise ValueError(
-            f"Currently we have data hosted from types: qchem and qspin, but got {data_type}."
-        )
+    _validate_params(data_type, data_params)
+
+    data_params = {
+        key: (val if isinstance(val, list) else [val]) for (key, val) in data_params.items()
+    }
 
     request_data = {
         "dparams": data_params,
     }
+
     response = requests.post(f"{URL}/download/about/{data_type}/keys", json=request_data)
     if response.status_code == 200:
         return json.loads(response.content)
