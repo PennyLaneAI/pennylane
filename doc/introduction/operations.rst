@@ -387,3 +387,56 @@ CV observables
     ~pennylane.X
 
 :html:`</div>`
+
+.. _intro_ref_ops_qutrit:
+
+Qutrit operators
+---------------
+
+.. _intro_ref_ops_qutrit_nonparam:
+
+Qutrit non-parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TShift
+    ~pennylane.TClock
+    ~pennylane.TAdd
+    ~pennylane.TSWAP
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_matrix:
+
+Qutrit gates constructed from a matrix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_obs:
+
+Qutrit Observables
+^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.GellMann
+    ~pennylane.THermitian
+
+:html:`</div>`
