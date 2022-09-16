@@ -394,8 +394,8 @@ class ClassicalShadow:
                 for i in range(wires):
                     qml.RY(x[i], wires=i)
 
-                for i in range(1, wires):
-                    qml.CNOT((0, i))
+                for i in range(wires - 1):
+                    qml.CNOT((i, i + 1))
 
                 return qml.classical_shadow(wires=range(wires))
 
