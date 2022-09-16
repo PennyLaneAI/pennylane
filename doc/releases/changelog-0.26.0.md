@@ -18,7 +18,7 @@
   [Predicting Many Properties of a Quantum System from Very Few Measurements](https://arxiv.org/abs/2002.08953).
   As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
 
-- QNodes returning the new measurement `qml.classical_shadow()` will return two entities;
+  - QNodes returning the new measurement `qml.classical_shadow()` will return two entities;
   `bits` (0 or 1 if the 1 or -1 eigenvalue is sampled, respectively) and `recipes`
   (the randomized Pauli measurements that are performed for each qubit, labelled by integer):
     
@@ -226,7 +226,7 @@
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-  Check out [our amazing demo](https://pennylane.ai/qml/demos/qnspsa.html) on the QNSPSA optimizer for more information!
+  Check out [our demo](https://pennylane.ai/qml/demos/qnspsa.html) on the QNSPSA optimizer for more information.
 
 <h4>Operator and parameter broadcasting supplements 📈</h4>
 
@@ -493,7 +493,7 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug with `qml.ops.Exp` operators when the coefficient is autograd but the diagonalizing gates
+* Fixed a bug with `qml.ops.Exp` operators when the coefficient is autograd but the diagonalizing gates
   don't act on all wires.
   [(#3057)](https://github.com/PennyLaneAI/pennylane/pull/3057)
 
@@ -504,7 +504,7 @@
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
-* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` now raise an error, with
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
