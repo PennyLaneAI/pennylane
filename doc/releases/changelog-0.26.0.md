@@ -197,7 +197,8 @@
   ```pycon
   >>> circuit()
   >>> list(circuit.tape)
-  [RZ(-11.566370614359172, wires=[0]) @ RY(-11.566370614359172, wires=[0]) @ RX(-11.566370614359172, wires=[0]), probs(wires=[0])]
+  [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
+   probs(wires=[0])]
   ```
 
 <h4>QNSPSA optimizer 😤</h4>
@@ -510,6 +511,10 @@
 
 * Fixed a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
   [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3004)
+
+* Added a more descriptive error message when measuring non-commuting observables at the end of a circuit with
+  `probs`, `samples`, `counts` and `allcounts`.
+  [(#3065](https://github.com/PennyLaneAI/pennylane/pull/3065)
 
 <h3>Contributors</h3>
 
