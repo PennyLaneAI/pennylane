@@ -367,6 +367,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if qml.active_return():
+            return self._execute_new(circuit, **kwargs)
+
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
