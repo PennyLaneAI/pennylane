@@ -64,9 +64,9 @@
     ```
 
     ```pycon
-    >>> circuit(x, H), 
+    >>> circuit(x, H)
     tensor(1.8486, requires_grad=True) 
-    >>> qml.grad(circuit)(x, H))
+    >>> qml.grad(circuit)(x, H)
     -0.4797000000000001
     ```
 
@@ -79,7 +79,7 @@
 
   ```pycon
   >>> shadow = qml.ClassicalShadow(bits, recipes)
-  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  >>> vN_entropy = shadow.entropy(wires=[0, 1], alpha=1)
   ``` 
 
 <h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
@@ -89,9 +89,9 @@
   [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
   [(#2782)](https://github.com/PennyLaneAI/pennylane/pull/2782)
   [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
-  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
-  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
-  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
+  [(#2784)](https://github.com/PennyLaneAI/pennylane/pull/2784)
+  [(#2841)](https://github.com/PennyLaneAI/pennylane/pull/2841)
+  [(#2843)](https://github.com/PennyLaneAI/pennylane/pull/2843)
 
   [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*. 
   The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
@@ -115,7 +115,7 @@
   A comprehensive example of these features is given below:
 
   ```python
-  dev = qml.device("default.qutrit", wires=2)
+  dev = qml.device("default.qutrit", wires=1)
 
   U = np.array([
           [1, 1, 1], 
@@ -132,14 +132,14 @@
   ) / np.sqrt(2)
 
   @qml.qnode(dev)
-  def qutrit_state(U, obs)
+  def qutrit_state(U, obs):
       qml.TShift(0)
       qml.TClock(0)
       qml.QutritUnitary(U, wires=0)
       return qml.state()
 
   @qml.qnode(dev)
-  def qutrit_expval(U, obs)
+  def qutrit_expval(U, obs):
       qml.TShift(0)
       qml.TClock(0)
       qml.QutritUnitary(U, wires=0)
@@ -356,7 +356,7 @@
   ...     qml.CNOT(wires=[0, 1])
   ...     return qml.counts(all_outcomes=True)
   >>> result = circuit()
-  >>> print(result)
+  >>> result
   {'00': 495, '01': 0, '10': 0,  '11': 505}
   ```
   
@@ -376,7 +376,7 @@
   >>> sparse_mat = op.sparse_matrix(wire_order=[0,1])
   >>> type(sparse_mat)
   <class 'scipy.sparse.csr.csr_matrix'>
-  >>> print(sparse_mat.toarray())
+  >>> sparse_mat.toarray()
   [[1.+1.j 0.+0.j 0.+0.j 0.+0.j]
   [0.+0.j 1.-1.j 0.+0.j 0.+0.j]
   [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
@@ -520,27 +520,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola,
-Utkarsh Azad,
-Tom Bromley,
-Olivia Di Matteo,
-Isaac De Vlugt,
-Yiheng Duan,
-Lillian Marie Austin Frederiksen,
-Josh Izaac,
-Soran Jahangiri,
-Edward Jiang,
-Ankit Khandelwal,
-Korbinian Kottmann,
-Meenu Kumari,
-Christina Lee,
-Albert Mitjans Coma,
-Romain Moyard,
-Rashid N H M,
-Zeyue Niu,
-Mudit Pandey,
-Matthew Silverman,
-Jay Soni,
-Antal Száva,
-Cody Wang,
-David Wierichs.
+Juan Miguel Arrazola, Utkarsh Azad, Tom Bromley, Olivia Di Matteo, Isaac De Vlugt, Yiheng Duan, 
+Lillian Marie Austin Frederiksen, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, 
+Korbinian Kottmann, Meenu Kumari, Christina Lee, Albert Mitjans Coma, Romain Moyard, Rashid N H M,
+Zeyue Niu, Mudit Pandey, Matthew Silverman, Jay Soni, Antal Száva, Cody Wang, David Wierichs.
