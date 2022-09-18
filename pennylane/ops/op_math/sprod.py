@@ -15,8 +15,11 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
+from typing import Union
+
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
@@ -102,7 +105,7 @@ class SProd(SymbolicOp):
     """
     _name = "SProd"
 
-    def __init__(self, scalar, base, do_queue=True, id=None):
+    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
         self.scalar = scalar
         super().__init__(base=base, do_queue=do_queue, id=id)
 
@@ -161,7 +164,7 @@ class SProd(SymbolicOp):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -224,6 +227,12 @@ class SProd(SymbolicOp):
         """
         return None
 
+    def pow(self, z):
+        return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
+
+    def adjoint(self):
+        return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
+
     def simplify(self) -> Operator:
         if self.scalar == 1:
             return self.base.simplify()
@@ -232,12 +241,12 @@ class SProd(SymbolicOp):
             if scalar == 1:
                 return self.base.base.simplify()
             return SProd(scalar=scalar, base=self.base.base.simplify())
-        if isinstance(self.base, Sum):
-            simplified_sum = self.base.simplify()
+
+        new_base = self.base.simplify()
+        if isinstance(new_base, Sum):
             return Sum(
-                *(
-                    SProd(scalar=self.scalar, base=summand).simplify()
-                    for summand in simplified_sum.summands
-                )
+                *(SProd(scalar=self.scalar, base=summand).simplify() for summand in new_base)
             )
-        return SProd(scalar=self.scalar, base=self.base.simplify())
+        if isinstance(new_base, SProd):
+            return SProd(scalar=self.scalar, base=new_base).simplify()
+        return SProd(scalar=self.scalar, base=new_base)

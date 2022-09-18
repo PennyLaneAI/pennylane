@@ -537,6 +537,6 @@ class TestWarnings:
         """Test warning occurs when calling deprecated qml.utils.expand"""
         with pytest.warns(
             UserWarning,
-            match="qml.utils.expand is deprecated; using qml.operation.expand_matrix instead.",
+            match="qml.utils.expand is deprecated; using qml.math.expand_matrix instead.",
         ):
             pu.expand(U, [9], [0, 4, 9])

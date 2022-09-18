@@ -76,7 +76,7 @@ Features
 
 ..
 
-- *Device independent*.
+- *Device-independent*.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to access even more
   devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
@@ -188,6 +188,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_qchem
    code/qml_qnn
    code/qml_resource
+   code/qml_shadows
    code/qml_tape
    code/qml_transforms
    code/qml_drawer

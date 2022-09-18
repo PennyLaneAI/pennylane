@@ -129,12 +129,25 @@ class TestShadowMeasurement:
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
-        assert res.shape(device=dev) == (2, shots, wires)
+        assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
         msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
             res.shape(device=None)
+
+    def test_shape_matches(self, wires):
+        """Test that the shape of the MeasurementProcess matches the shape
+        of the tape execution"""
+        shots = 100
+
+        circuit = get_circuit(wires, shots, True)
+        circuit.construct((), {})
+
+        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(device=circuit.device)
+
+        assert res.shape == expected_shape
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_copy(self, wires, seed):
@@ -156,14 +169,23 @@ class TestShadowMeasurement:
     def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
+        import tensorflow as tf
         import torch
 
         circuit = get_circuit(wires, shots, seed, interface, device)
         shadow = circuit()
 
-        # test shape and dtype are correct
+        # test shape is correct
         assert shadow.shape == (2, shots, wires)
-        assert shadow.dtype == np.uint8 if interface != "torch" else torch.uint8
+
+        # test dtype is correct
+        expected_dtype = np.int8
+        if interface == "tf":
+            expected_dtype = tf.int8
+        elif interface == "torch":
+            expected_dtype = torch.int8
+
+        assert shadow.dtype == expected_dtype
 
         bits, recipes = shadow
 

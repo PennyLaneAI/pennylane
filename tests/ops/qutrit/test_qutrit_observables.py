@@ -18,6 +18,7 @@ from unittest.mock import PropertyMock, patch
 import pytest
 import pennylane as qml
 import numpy as np
+from gate_data import GELL_MANN
 
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
@@ -316,24 +317,24 @@ class TestTHermitian:
 
 
 GM_OBSERVABLES = [
-    (1, np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), [1, -1, 0]),
-    (2, np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]]), [1, -1, 0]),
-    (3, np.diag([1, -1, 0]), [1, -1, 0]),
-    (4, np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]]), [1, -1, 0]),
-    (5, np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]]), [1, -1, 0]),
-    (6, np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]]), [1, -1, 0]),
-    (7, np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]]), [1, -1, 0]),
-    (8, np.diag([1, 1, -2]) / np.sqrt(3), np.array([1, 1, -2]) / np.sqrt(3)),
+    (1, GELL_MANN[0], [1, -1, 0]),
+    (2, GELL_MANN[1], [1, -1, 0]),
+    (3, GELL_MANN[2], [1, -1, 0]),
+    (4, GELL_MANN[3], [1, -1, 0]),
+    (5, GELL_MANN[4], [1, -1, 0]),
+    (6, GELL_MANN[5], [1, -1, 0]),
+    (7, GELL_MANN[6], [1, -1, 0]),
+    (8, GELL_MANN[7], np.array([1, 1, -2]) / np.sqrt(3)),
 ]
 
 
-class TestGellMannObservables:
+class TestGellMann:
     """Tests for simple single-qutrit observables"""
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_diagonalization(self, index, mat, eigs, tol):
         """Test the method transforms Gell-Mann observables appropriately."""
-        ob = qml.GellMannObs(index, wires=0)
+        ob = qml.GellMann(wires=0, index=index)
         A = ob.matrix()
 
         diag_gates = ob.diagonalizing_gates()
@@ -353,23 +354,37 @@ class TestGellMannObservables:
 
     @pytest.mark.parametrize("index", [0, 9, 1.0, 2.5, "c"])
     def test_index_error(self, index):
+        """Test that using bad index values throws the appropriate error"""
         with pytest.raises(
-            ValueError, match="The index must be an integer between 1 and 8 inclusive"
+            ValueError,
+            match="The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive.",
         ):
-            qml.GellMannObs(index, wires=0)
+            qml.GellMann(wires=0, index=index)
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_matrix(self, index, mat, eigs, tol):
-        res_static = qml.GellMannObs.compute_matrix(index)
-        res_dynamic = qml.GellMannObs(index, wires=0).matrix()
+        """Test that the Gell-Mann matrices are correct"""
+        res_static = qml.GellMann.compute_matrix(index)
+        res_dynamic = qml.GellMann(wires=0, index=index).matrix()
 
         assert np.allclose(res_static, mat)
         assert np.allclose(res_dynamic, mat)
 
     @pytest.mark.parametrize("index, mat, eigs", GM_OBSERVABLES)
     def test_eigvals(self, index, mat, eigs, tol):
-        res_static = qml.GellMannObs.compute_eigvals(index)
-        res_dynamic = qml.GellMannObs(index, wires=0).eigvals()
+        """Test that the Gell-Mann eigenvalues are correct"""
+        res_static = qml.GellMann.compute_eigvals(index)
+        res_dynamic = qml.GellMann(wires=0, index=index).eigvals()
 
         assert np.allclose(res_static, eigs)
         assert np.allclose(res_dynamic, eigs)
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_label(self, index):
+        """Test that the label is correct"""
+
+        label = f"GellMann({index})"
+        obs = qml.GellMann(wires=0, index=index)
+
+        assert obs.label() == label
+        assert obs.label(decimals=2) == label

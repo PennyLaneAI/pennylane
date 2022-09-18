@@ -40,7 +40,7 @@ ops = {
 
 obs = {
     "THermitian",
-    "GellMannObs",
+    "GellMann",
 }
 
 __all__ = list(ops | obs)
