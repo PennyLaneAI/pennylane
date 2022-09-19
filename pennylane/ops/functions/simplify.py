@@ -83,7 +83,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():
-            with stop_recording():
+            with QueuingManager.stop_recording():
                 new_op = copy(input.simplify())
             QueuingManager.safe_update_info(input, owner=new_op)
             return qml.apply(new_op)
@@ -103,7 +103,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         @wraps(func)
         def qfunc(*args, **kwargs):
             tape = QuantumTape()
-            with QueuingContext.stop_recording(), tape:
+            with QueuingManager.stop_recording(), tape:
                 func(*args, **kwargs)
 
             _ = [qml.simplify(op) for op in tape.operations]

@@ -11,7 +11,7 @@ from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
@@ -100,7 +100,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of templates
     # or newly applied swap gates
-    with QueuingContext.stop_recording():
+    with QueuingManager.stop_recording():
         # this unrolls everything in the current tape (in particular templates)
         def stop_at(obj):
             return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))

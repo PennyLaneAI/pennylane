@@ -23,10 +23,10 @@ from .unwrap import Unwrap, UnwrapTape
 def __getattr__(name):
     if name == "stop_recording":
         from warnings import warn  # pylint: disable=import-outside-toplevel
-        from pennylane.queuing import QueuingContext  # pylint: disable=import-outside-toplevel
+        from pennylane.queuing import QueuingManager  # pylint: disable=import-outside-toplevel
 
         warn("qml.tape.stop_recording has been moved to qml.queuing.stop_recording", UserWarning)
-        return QueuingContext.stop_recording
+        return QueuingManager.stop_recording
     try:
         return globals()[name]
     except KeyError as e:

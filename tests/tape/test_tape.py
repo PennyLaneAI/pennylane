@@ -1583,7 +1583,7 @@ class TestStopRecording:
     """Test that the stop_recording function works as expected"""
 
     deprecation_warning = (
-        "QuantumTape.stop_recording has moved to qml.QueuingContext.stop_recording"
+        "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording"
     )
 
     def test_recording_stopped(self):
@@ -1664,7 +1664,7 @@ def test_get_active_tape():
     recording tape, or None if no tape is recording"""
     message = (
         "qml.tape.get_active_tape is now deprecated."
-        " Please use qml.QueuingContext.active_context"
+        " Please use qml.QueuingManager.active_context"
     )
     with pytest.warns(UserWarning, match=message):
         assert qml.tape.get_active_tape() is None

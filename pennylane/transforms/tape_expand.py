@@ -99,7 +99,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     def expand_fn(tape, depth=depth, **kwargs):
 
-        with qml.QueuingContext.stop_recording():
+        with qml.QueuingManager.stop_recording():
 
             if stop_at is None:
                 tape = tape.expand(depth=depth)

@@ -94,9 +94,6 @@ class QueuingManager:
         """A context manager and decorator to ensure that contained logic is non-recordable
         or non-queueable within a QNode or quantum tape context.
 
-        This function can be accessed either by ``qml.queuing.QueuingContext.stop_recording`` or its alias
-        ``qml.queuing.stop_recording``.
-
         **Example:**
 
         Consider the function:
@@ -117,7 +114,7 @@ class QueuingManager:
 
         >>> @qml.qnode(qml.device('default.qubit', wires=1))
         ... def circuit(x):
-        ...     with qml.queuing.stop_recording():
+        ...     with qml.QueuingManager.stop_recording():
         ...         qfunc(x)
         ...     return qml.expval(qml.PauliZ(0))
         >>> print(qml.draw(circuit)("x"))
@@ -125,7 +122,7 @@ class QueuingManager:
 
         The context manager can also be used as a decorator on a function:
 
-        >>> @qml.queuing.stop_recording()
+        >>> @qml.QueuingManager.stop_recording()
         ... def qfunc_stopped(y):
         ...     qml.RY(y, 0)
         >>> @qml.qnode(qml.device('default.qubit', wires=1))

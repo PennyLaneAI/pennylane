@@ -16,7 +16,7 @@
 from functools import partial
 
 from pennylane import apply
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingManager
 from pennylane.ops import __all__ as all_ops
 
 from pennylane.transforms import single_tape_transform, qfunc_transform
@@ -153,7 +153,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     # First, though, we have to stop whatever tape may be recording so that we
     # don't queue anything as a result of the expansion or transform pipeline
 
-    with QueuingContext.stop_recording():
+    with QueuingManager.stop_recording():
         if basis_set is not None:
             expanded_tape = tape.expand(
                 depth=expand_depth, stop_at=lambda obj: obj.name in basis_set

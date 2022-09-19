@@ -657,7 +657,7 @@ def expand_fragment_tape(
                     elif not isinstance(op, MeasureNode):
                         apply(op)
 
-                with qml.QueuingContext.stop_recording():
+                with qml.QueuingManager.stop_recording():
                     measurements = _get_measurements(group, tape.measurements)
                 for meas in measurements:
                     apply(meas)
