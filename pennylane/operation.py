@@ -2505,7 +2505,7 @@ def defines_diagonalizing_gates(obj):
     a queuing context, but the resulting gates must not be queued.
     """
 
-    with qml.queuing.stop_recording():
+    with qml.QueuingManager.stop_recording():
         try:
             obj.diagonalizing_gates()
         except DiagGatesUndefinedError:

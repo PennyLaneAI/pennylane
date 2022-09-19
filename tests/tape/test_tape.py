@@ -1593,7 +1593,7 @@ class TestStopRecording:
             op0 = qml.RX(0, wires=0)
             assert qml.queuing.QueuingManager.active_context() is tape
 
-            with pytest.warns(UserWarning, self.deprecation_warning):
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
                 with tape.stop_recording():
                     op1 = qml.RY(1.0, wires=1)
                     assert qml.queuing.QueuingManager.active_context() is None
@@ -1616,7 +1616,7 @@ class TestStopRecording:
                 assert qml.queuing.QueuingManager.active_context() is tape2
                 op1 = qml.RY(1.0, wires=1)
 
-                with pytest.warns(UserWarning, self.deprecation_warning):
+                with pytest.warns(UserWarning, match=self.deprecation_warning):
                     with tape2.stop_recording():
                         assert qml.queuing.QueuingManager.active_context() is None
                         op2 = qml.RZ(0.6, wires=2)
@@ -1643,7 +1643,7 @@ class TestStopRecording:
             op0 = qml.RX(0, wires=0)
             assert qml.queuing.QueuingManager.active_context() is tape
 
-            with pytest.warns(UserWarning, self.deprecation_warning):
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
                 with tape.stop_recording(), QuantumTape() as temp_tape:
                     assert qml.queuing.QueuingManager.active_context() is temp_tape
                     op1 = qml.RY(1.0, wires=1)

@@ -24,4 +24,8 @@ def test_tape_stop_recording():
     with pytest.warns(UserWarning, match=message):
         obj = qml.tape.stop_recording
 
-    assert obj is qml.QueuingManager.stop_recording
+    with qml.queuing.AnnotatedQueue() as q:
+        with obj():
+            qml.PauliZ(0)
+
+    assert len(q.queue) == 0
