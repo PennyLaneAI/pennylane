@@ -226,6 +226,7 @@ def _finite_diff_new(
         list_zeros = []
 
         for i, m in enumerate(tape.measurements):
+            # TODO: Update shape for CV variables
             if m.return_type is qml.measurements.Probability:
                 dim = 2 ** len(m.wires)
             else:
@@ -279,6 +280,7 @@ def _finite_diff_new(
         r0 = f0 or results[0]
 
         output_dims = []
+        # TODO: Update shape for CV variables
         for m in tape.measurements:
             if m.return_type is qml.measurements.Probability:
                 output_dims.append(2 ** len(m.wires))
@@ -330,16 +332,15 @@ def _finite_diff_new(
             if len(tape.measurements) > 1:
                 if isinstance(results[0][0], np.ndarray):
                     pre_grads = tuple(np.array(i / (h**n)) for i in pre_grads)
-                    grads.append(pre_grads)
                 else:
                     pre_grads = tuple(i / (h**n) for i in pre_grads)
-                    grads.append(pre_grads)
             else:
                 pre_grads = pre_grads[0]
                 if isinstance(results[0], np.ndarray):
-                    grads.append(np.array(pre_grads / (h**n)))
+                    pre_grads = np.array(pre_grads / (h**n))
                 else:
-                    grads.append(pre_grads / (h**n))
+                    pre_grads = pre_grads / (h**n)
+            grads.append(pre_grads)
 
         # Single measurement
         if len(tape.measurements) == 1:
