@@ -513,7 +513,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert isinstance(s2, SProd)
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -540,6 +540,19 @@ class TestSimplify:
 
         assert isinstance(simplified_op, qml.PauliX)
         assert simplified_op.name == final_op.name
+        assert simplified_op.wires == final_op.wires
+        assert simplified_op.data == final_op.data
+        assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_simplify_with_sum_operator(self):
+        """Test the simplify method a scalar product of a Sum operator."""
+        sprod_op = s_prod(0 - 3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        final_op = s_prod(0 - 6j, qml.PauliX(0))
+        simplified_op = sprod_op.simplify()
+
+        assert isinstance(simplified_op, qml.ops.SProd)
+        assert simplified_op.name == final_op.name
+        assert repr(simplified_op) == repr(final_op)
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
@@ -742,3 +755,37 @@ class TestIntegration:
         res = circuit(tf.Variable(2))
 
         assert qml.math.allclose(res, 2)
+
+
+class TestArithmetic:
+    """Test arithmetic decomposition methods."""
+
+    def test_pow(self):
+        """Test the pow method for SProd Operators."""
+
+        sprod_op = SProd(3, qml.RX(1.23, wires=0))
+        final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
+        pow_op = sprod_op.pow(z=2)[0]
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(pow_op, SProd)
+        assert pow_op.name == final_op.name
+        assert pow_op.wires == final_op.wires
+        assert pow_op.data == final_op.data
+        assert pow_op.arithmetic_depth == final_op.arithmetic_depth
+
+    def test_adjoint(self):
+        """Test the adjoint method for Sprod Operators."""
+
+        sprod_op = SProd(3j, qml.RX(1.23, wires=0))
+        final_op = SProd(scalar=-3j, base=qml.adjoint(qml.RX(1.23, wires=0)))
+        adj_op = sprod_op.adjoint()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(adj_op, SProd)
+        assert adj_op.name == final_op.name
+        assert adj_op.wires == final_op.wires
+        assert adj_op.data == final_op.data
+        assert adj_op.arithmetic_depth == final_op.arithmetic_depth

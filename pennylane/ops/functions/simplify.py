@@ -49,7 +49,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     2
     >>> type(sim_op)
     pennylane.ops.op_math.sum.Sum
-    >>> sim_op.summands
+    >>> sim_op.operands
     (Adjoint(RX)(0.54, wires=[0]),
     Adjoint(PauliX)(wires=[0]),
     Adjoint(PauliZ)(wires=[1]))
@@ -106,7 +106,8 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
                 func(*args, **kwargs)
 
             _ = [qml.simplify(op) for op in tape.operations]
-            return tuple(qml.simplify(m) for m in tape.measurements)
+            m = tuple(qml.simplify(m) for m in tape.measurements)
+            return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):
             return QNode(

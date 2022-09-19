@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.op_transforms import OperationTransformError
 
-from gate_data import I, X, Y, Z, H, S, CNOT, Roty as RY
+from gate_data import I, X, Y, Z, H, S, CNOT, Rotx as RX, Roty as RY
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -34,6 +34,11 @@ one_qubit_no_parameter = [
     qml.SX,
 ]
 
+
+I_CNOT = np.kron(I, CNOT)
+S_H = np.kron(S, H)
+I_S_H = np.kron(I, S_H)
+X_S_H = np.kron(X, S_H)
 
 one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
@@ -122,14 +127,14 @@ class TestSingleOperation:
         perm = np.swapaxes(
             np.swapaxes(np.arange(2**5).reshape([2] * 5), 0, 1), 0, target_wire
         ).flatten()
-        expected = reduce(np.kron, [CNOT, I, I, I])[:, perm][perm]
+        expected = np.kron(CNOT, np.eye(8))[:, perm][perm]
         assert np.allclose(res, expected)
 
     def test_hamiltonian(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
         H = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
         mat = qml.matrix(H, wire_order=[1, 0, 2])
-        expected = reduce(np.kron, [Y, Z, I]) - 0.5 * reduce(np.kron, [X, I, I])
+        expected = reduce(np.kron, [Y, Z, I]) - 0.5 * np.kron(X, np.eye(4))
 
     @pytest.mark.xfail(
         reason="This test will fail because Hamiltonians are not queued to tapes yet!"
@@ -142,7 +147,7 @@ class TestSingleOperation:
 
         x = 0.5
         mat = qml.matrix(ansatz, wire_order=[1, 0, 2])(x)
-        expected = reduce(np.kron, [Y, Z, I]) - x * reduce(np.kron, [X, I, I])
+        expected = reduce(np.kron, [Y, Z, I]) - x * np.kron(X, np.eye(4))
 
 
 class TestMultipleOperations:
@@ -157,7 +162,7 @@ class TestMultipleOperations:
             qml.CNOT(wires=["b", "c"])
 
         matrix = qml.matrix(tape, wire_order)
-        expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(S, H))
+        expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_qfunc(self):
@@ -171,7 +176,7 @@ class TestMultipleOperations:
             qml.CNOT(wires=["b", "c"])
 
         matrix = qml.matrix(testcircuit, wire_order)()
-        expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(S, H))
+        expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_qnode(self):
@@ -187,7 +192,91 @@ class TestMultipleOperations:
             return qml.expval(qml.PauliZ("a"))
 
         matrix = qml.matrix(testcircuit)()
-        expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(np.linalg.inv(S), H))
+        expected_matrix = I_CNOT @ (X_S_H.conj().T)
+        assert np.allclose(matrix, expected_matrix)
+
+
+class TestWithParameterBroadcasting:
+    def test_multiple_operations_tape_single_broadcasted_op(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a single broadcasted gate."""
+        wire_order = ["a", "b", "c"]
+
+        angles = np.array([0.0, np.pi, 0.7])
+        with qml.tape.QuantumTape() as tape:
+            qml.S(wires="b")
+            qml.RX(angles, wires="a")
+            qml.Hadamard(wires="c")
+            qml.CNOT(wires=["b", "c"])
+
+        matrix = qml.matrix(tape, wire_order)
+        expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
+        assert np.allclose(matrix, expected_matrix)
+
+    def test_multiple_operations_tape_leading_broadcasted_op(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a leading single broadcasted gate."""
+        wire_order = ["a", "b", "c"]
+
+        angles = np.array([0.0, np.pi, 0.7])
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(angles, wires="a")
+            qml.S(wires="b")
+            qml.Hadamard(wires="c")
+            qml.CNOT(wires=["b", "c"])
+
+        matrix = qml.matrix(tape, wire_order)
+        expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
+        assert np.allclose(matrix, expected_matrix)
+
+    def test_multiple_operations_tape_multi_broadcasted_op(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a multiple broadcasted gate."""
+        wire_order = ["a", "b", "c"]
+
+        angles1 = np.array([0.0, np.pi, 0.0, np.pi])
+        angles2 = np.array([0.0, 0.0, np.pi, np.pi])
+        with qml.tape.QuantumTape() as tape:
+            qml.S(wires="b")
+            qml.RX(angles1, wires="a")
+            qml.Hadamard(wires="c")
+            qml.CNOT(wires=["b", "c"])
+            qml.RX(angles2, wires="c")
+
+        matrix = qml.matrix(tape, wire_order)
+        I_I_X = np.kron(np.eye(4), X)
+        expected_matrix = [
+            I_CNOT @ I_S_H,
+            -1j * I_CNOT @ X_S_H,
+            -1j * I_I_X @ I_CNOT @ I_S_H,
+            -I_I_X @ I_CNOT @ X_S_H,
+        ]
+        assert np.allclose(matrix, expected_matrix)
+
+    def test_multiple_operations_tape_bcasting_matches_Hilbert_dim(self):
+        """Check the total matrix for a tape containing multiple gates
+        and a multiple broadcasted gate."""
+        wire_order = ["a", "b"]
+
+        angles1 = np.array([0.0, np.pi, 0.0, np.pi])
+        angles2 = np.array([0.0, 0.0, np.pi, np.pi])
+        with qml.tape.QuantumTape() as tape:
+            qml.S(wires="b")
+            qml.RX(angles1, wires="a")
+            qml.Hadamard(wires="b")
+            qml.CNOT(wires=["a", "b"])
+            qml.RX(angles2, wires="b")
+
+        matrix = qml.matrix(tape, wire_order)
+        I_HS = np.kron(I, H @ S)
+        X_HS = np.kron(X, H @ S)
+        I_X = np.kron(I, X)
+        expected_matrix = [
+            CNOT @ I_HS,
+            -1j * CNOT @ X_HS,
+            -1j * I_X @ CNOT @ I_HS,
+            -I_X @ CNOT @ X_HS,
+        ]
         assert np.allclose(matrix, expected_matrix)
 
 

@@ -17,6 +17,49 @@ Defines `is_commuting`, an function for determining if two functions commute.
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.grouping.utils import is_pauli_word, pauli_to_binary, _wire_map_from_pauli_pair
+
+
+def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
+    r"""Checks if two Pauli words commute.
+
+    To determine if two Pauli words commute, we can check the value of the
+    symplectic inner product of their binary vector representations.
+    For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
+    and :math:`p_2 = [x_2, z_2],` the symplectic inner product is defined as
+    :math:`\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
+    product is :math:`0` they commute, while if it is :math:`1`, they don't commute.
+
+    Args:
+        pauli_word_1 (Observable): first Pauli word in commutator
+        pauli_word_2 (Observable): second Pauli word in commutator
+        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
+            the Pauli word as keys, and unique integer labels as their values
+
+    Returns:
+        bool: returns True if the input Pauli commute, False otherwise
+
+    **Example**
+
+    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> pauli_word_1 = qml.PauliX('a') @ qml.PauliY('b')
+    >>> pauli_word_2 = qml.PauliZ('a') @ qml.PauliZ('c')
+    >>> is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
+    False
+    """
+
+    if wire_map is None:
+        wire_map = _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2)
+
+    n_qubits = len(wire_map)
+
+    pauli_vec_1 = pauli_to_binary(pauli_word_1, n_qubits=n_qubits, wire_map=wire_map)
+    pauli_vec_2 = pauli_to_binary(pauli_word_2, n_qubits=n_qubits, wire_map=wire_map)
+
+    x1, z1 = pauli_vec_1[:n_qubits], pauli_vec_1[n_qubits:]
+    x2, z2 = pauli_vec_2[:n_qubits], pauli_vec_2[n_qubits:]
+
+    return (np.dot(z1, x2) + np.dot(z2, x1)) % 2 == 0
 
 
 def _get_target_name(op):
@@ -40,8 +83,6 @@ def _get_target_name(op):
         return _control_base_map[op.name]
     if isinstance(op, qml.ops.op_math.Controlled):  # pylint: disable=no-member
         return op.base.name
-    if op.name == "ControlledOperation":
-        return op.control_base
     return op.name
 
 
@@ -168,21 +209,6 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
     return False
 
 
-def check_simplify_identity_commutation(op):
-    r"""Check that a parametric operation can be simplified to the identity operator.
-    If simplification is not possible, it returns None.
-
-    Args:
-        op (pennylane.Operation): First operation.
-
-    Returns:
-        Bool, None: True if op can be simplified to the identity, None otherwise.
-    """
-    return (
-        True if op.data and op.name != "U2" and np.allclose(np.mod(op.data, 2 * np.pi), 0) else None
-    )
-
-
 def check_commutation_two_non_simplified_rotations(operation1, operation2):
     r"""Check that the operations are two non simplified operations. If it is the case, then it checks commutation
     for two rotations that were not simplified.
@@ -228,6 +254,8 @@ unsupported_operations = [
     "CommutingEvolution",
     "DisplacementEmbedding",
     "SqueezingEmbedding",
+    "Prod",
+    "Sum",
 ]
 non_commuting_operations = [
     # State Prep
@@ -276,7 +304,7 @@ non_commuting_operations = [
 ]
 
 
-def is_commuting(operation1, operation2):
+def is_commuting(operation1, operation2, wire_map=None):
     r"""Check if two operations are commuting using a lookup table.
 
     A lookup table is used to check the commutation between the
@@ -296,6 +324,8 @@ def is_commuting(operation1, operation2):
     Args:
         operation1 (.Operation): A first quantum operation.
         operation2 (.Operation): A second quantum operation.
+        wire_map (dict[Union[str, int], int]): dictionary for Pauli word commutation containing all
+            wire labels used in the Pauli word as keys, and unique integer labels as their values
 
     Returns:
          bool: True if the operations commute, False otherwise.
@@ -318,13 +348,15 @@ def is_commuting(operation1, operation2):
     ):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
-    if operation1.name == "ControlledOperation" and operation1.control_base == "MultipleTargets":
-        raise qml.QuantumFunctionError(f"{operation1.control_base} controlled is not supported.")
+    if is_pauli_word(operation1) and is_pauli_word(operation2):
+        return _pword_is_commuting(operation1, operation2, wire_map)
 
-    if operation2.name == "ControlledOperation" and operation2.control_base == "MultipleTargets":
-        raise qml.QuantumFunctionError(f"{operation2.control_base} controlled is not supported.")
+    # aside from Pauli words, Tensor commutation evaluation is not supported
+    if isinstance(operation1, qml.operation.Tensor) or isinstance(operation2, qml.operation.Tensor):
+        # pylint: disable=raise-missing-from
+        raise qml.QuantumFunctionError("Tensor operations are not supported.")
 
-    # Case 1 operations are disjoints
+    # operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
         return True
 
@@ -341,15 +373,8 @@ def is_commuting(operation1, operation2):
     if operation1.name == "CRot" and operation2.name == "CRot":
         return check_commutation_two_non_simplified_crot(operation1, operation2)
 
-    # Parametric operation might implement the identity operator
-    commutation_identity_simplification_1 = check_simplify_identity_commutation(operation1)
-    if commutation_identity_simplification_1 is not None:
-        return commutation_identity_simplification_1
-
-    # pylint:disable=arguments-out-of-order
-    commutation_identity_simplification_2 = check_simplify_identity_commutation(operation2)
-    if commutation_identity_simplification_2 is not None:
-        return commutation_identity_simplification_2
+    if "Identity" in (operation1.name, operation2.name):
+        return True
 
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
