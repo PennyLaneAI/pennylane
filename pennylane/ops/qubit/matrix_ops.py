@@ -39,6 +39,15 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+        unitary_check (bool): check for unitarity of the given matrix
+
+    Raises:
+        ValueError: if the number of wires doesn't fit the dimensions of the matrix
+        UserWarning: if the input matrix might not be unitary
 
     **Example**
 
@@ -64,7 +73,7 @@ class QubitUnitary(Operation):
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, do_queue=True, unitary_check=False, id=None
+        self, U, wires, do_queue=True, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
 
