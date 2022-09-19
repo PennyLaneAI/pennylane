@@ -5,9 +5,7 @@ TensorFlow interface
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
-QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
-translated into a quantum node that interfaces with TensorFlow by calling the
-:meth:`QNode.to_tf() <pennylane.qnode.QNode.to_tf>` method.
+QNode decorator or QNode class constructor.
 
 .. note::
     To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
@@ -78,21 +76,6 @@ QNode:
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
 
-.. _tf_interf_convert:
-
-Construction from an existing QNode
------------------------------------
-
-Let's say we change our mind and now want ``qnode1()`` to interface with TensorFlow. We can easily
-perform the conversion by using the :meth:`~.QNode.to_tf` method:
-
->>> qnode1.to_tf()
->>> qnode1
-<QNode: device='default.mixed', func=circuit1, wires=2, interface=TensorFlow>
-
-``qnode1()`` is now a TensorFlow-capable QNode, as well.
-
-
 .. _tf_qgrad:
 
 Quantum gradients using TensorFlow
@@ -127,9 +110,9 @@ For example:
 Now, printing the gradients, we get:
 
 >>> phi_grad
-array([-0.47942549,  0.        ])
+<tf.Tensor: shape=(2,), dtype=float32, numpy=array([-0.47942555,  0.        ], dtype=float32)>
 >>> theta_grad
--5.5511151231257827e-17
+<tf.Tensor: shape=(), dtype=float32, numpy=3.469447e-18>
 
 To include non-differentiable data arguments, simply use ``tf.constant``:
 
@@ -145,7 +128,8 @@ To include non-differentiable data arguments, simply use ``tf.constant``:
         return qml.expval(qml.PauliZ(0))
 
     weights = tf.Variable([0.1, 0.2, 0.3])
-    data = tf.constant(np.random.random([4]))
+    rng = np.random.default_rng(seed=111)
+    data = tf.constant(rng.random([4]))
 
     with tf.GradientTape() as tape:
         result = circuit3(weights, data)
@@ -154,7 +138,7 @@ Calculating the gradient:
 
 >>> grad = tape.gradient(result, weights)
 >>> grad
-<tf.Tensor: shape=(3,), dtype=float64, numpy=array([-2.26641213e-02,  8.32667268e-17,  5.55111512e-17])>
+<tf.Tensor: shape=(3,), dtype=float32, numpy=array([0.08575502, 0.        , 0.        ], dtype=float32)>
 
 
 .. _tf_optimize:
