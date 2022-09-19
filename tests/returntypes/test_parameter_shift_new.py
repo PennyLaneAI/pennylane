@@ -645,6 +645,70 @@ class TestParamShiftBroadcast:
         assert np.allclose(grad, -np.sin(x))
 
 
+class TestParamShiftShotVector:
+    """Unit tests for the param_shift function used with a device that has a
+    shot vector defined"""
+
+    def test_multi_measure_probs_expval(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+
+        dev = qml.device("default.qubit", wires=2, shots=(1000000, 10000000))
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        assert len(tapes) == 4
+
+        res = fn(dev.batch_execute_new(tapes))
+        assert len(res) == 2
+
+        for r in res:
+            assert len(r) == 2
+
+        expval_expected = [-2 * np.sin(x) / 2, 0]
+        probs_expected = (
+            np.array(
+                [
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
+        )
+
+        print(res, expval_expected, probs_expected)
+        for r in res:
+            # Expvals
+            assert np.allclose(r[0][0], expval_expected[0])
+            assert np.allclose(r[0][1], expval_expected[1])
+
+            # Probs
+            assert np.allclose(r[1][0], probs_expected[:, 0])
+            assert np.allclose(r[1][1], probs_expected[:, 1])
+
+
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
 
