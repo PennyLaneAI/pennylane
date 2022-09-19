@@ -120,7 +120,7 @@ def _check_gates_adjoint_hessian(tape, trainable_params):
         return op.name in squares_to_identity
 
     for idx in trainable_params:
-        op = tape._par_info[idx]["op"]
+        op = tape._par_info[idx]["op"] # pylint: disable=protected-access
         # Check that the operation is a single-parameter operation
         if len(op.data) > 1:
             raise qml.QuantumFunctionError(
@@ -2013,7 +2013,7 @@ class QubitDevice(Device):
         return self._stack(d_kets), self._stack(prefactors)
 
     def _contract_with_observable(self, state, observables):
-        """Compute :math:`Re{<\psi| H_j |\psi>}` for one or multiple state(s)
+        r"""Compute :math:`Re{<\psi| H_j |\psi>}` for one or multiple state(s)
         :math:`|\psi>` and observables :math:`H_j`.
         The returned array has shape ``(num_obs, num_states)`` where ``num_obs``
         is the number of Hamiltonian terms :math:`H_j` and ``num_states`` is the
@@ -2022,7 +2022,7 @@ class QubitDevice(Device):
         use_broadcasting = self.capabilities()["supports_broadcasting"]
         contract_axes = list(range(-self.num_wires, 0))
         expvals = []
-        for j, obs in enumerate(observables):
+        for obs in observables:
             H_j_state = self._stack(self._apply_operation_multistate(state, obs, use_broadcasting))
             expvals.append(
                 self._real(self._reduce_sum(self._conj(state) * H_j_state, axes=contract_axes))
@@ -2031,7 +2031,7 @@ class QubitDevice(Device):
         return self._stack(expvals)
 
     def adjoint_hessian_diagonal(self, tape, starting_state=None, use_device_state=False):
-        """Implements an adjoint method for second-order derivatives,
+        r"""Implements an adjoint method for second-order derivatives,
         i.e. the diagonal of the Hessian.
 
         The derivative states are co-evolved, potentially making use of NumPy-style broadcasting.
