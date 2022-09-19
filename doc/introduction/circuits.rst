@@ -125,7 +125,7 @@ Alternatively, you can use custom labels by passing an iterable that contains un
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
+    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -198,7 +198,7 @@ A QNode can be explicitly created as follows:
 
 .. code-block:: python
 
-    circuit = qml.QNode(my_quantum_function, dev)
+    circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
@@ -217,6 +217,7 @@ aux: ───────────╭●─┤
 or the :func:`~.pennylane.draw_mpl` transform:
 
 >>> import matplotlib.pyplot as plt
+>>> qml.drawer.use_style("black_white")
 >>> fig, ax = qml.draw_mpl(circuit)(np.pi/4, 0.7)
 >>> plt.show()
 

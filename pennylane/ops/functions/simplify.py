@@ -76,9 +76,10 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
             return qml.probs(wires=0)
     >>> circuit()
-    tensor([[0.64596329, 0.35403671]], requires_grad=True)
+    tensor([0.64596329, 0.35403671], requires_grad=True)
     >>> list(circuit.tape)
-    [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+    [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
+     probs(wires=[0])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingContext.recording():
