@@ -15,7 +15,7 @@
 This submodule defines a base class for composite operations.
 """
 import abc
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -120,6 +120,33 @@ class CompositeOp(Operator, abc.ABC):
                 wires.extend(list(op.wires))
             self._has_overlapping_wires = len(wires) != len(set(wires))
         return self._has_overlapping_wires
+
+    @property
+    def overlapping_ops(self) -> Tuple[List[Operator], List[Operator]]:
+        """Operators that act on overlapping wires.
+
+        Returns:
+            Tuple[List[Operator], List[Operator]]: tuple containing a list of the operators that
+                act on overlapping wires and another list with the remaining operators
+        """
+        overlapping_ops = []
+        non_overlapping_ops = {}
+        unique_wires = set()
+        for op in self:
+            op_wires = op.wires
+            if any(wire in unique_wires for wire in op_wires):
+                overlapping_ops.append(op)
+                overlapping_ops.extend(
+                    non_overlapping_ops.pop(wire_key)
+                    for wire_key in list(non_overlapping_ops.keys())
+                    if any(wire in wire_key for wire in op_wires)
+                )
+            else:
+                non_overlapping_ops[op_wires] = op
+
+            unique_wires |= set(op_wires)
+
+        return list(overlapping_ops), list(non_overlapping_ops.values())
 
     @property
     @abc.abstractmethod

@@ -151,13 +151,30 @@ class Sum(CompositeOp):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        if self.has_overlapping_wires:
-            return self.eigendecomposition["eigval"]
+        overlapping_ops, non_overlapping_ops = self.overlapping_ops
         eigvals = [
             qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
-            for summand in self
+            for summand in non_overlapping_ops
         ]
+        if overlapping_ops:
+            tmp_sum = Sum(*overlapping_ops)
+            eigvals.append(
+                qml.utils.expand_vector(
+                    tmp_sum.eigendecomposition["eigval"], list(tmp_sum.wires), list(self.wires)
+                )
+            )
+
         return qml.math.sum(eigvals, axis=0)
+
+    def diagonalizing_gates(self):
+        overlapping_ops, non_overlapping_ops = self.overlapping_ops
+        diag_gates = []
+        for op in non_overlapping_ops:
+            diag_gates.extend(op.diagonalizing_gates())
+        if overlapping_ops:
+            eigvecs = Sum(*overlapping_ops).eigendecomposition["eigvec"]
+            diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=self.wires))
+        return diag_gates
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
