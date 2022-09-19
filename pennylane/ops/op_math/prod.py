@@ -188,7 +188,7 @@ class Prod(CompositeOp):
         to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
         that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
         """
-        if qml.queuing.QueuingContext.recording():
+        if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
