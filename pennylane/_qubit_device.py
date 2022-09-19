@@ -120,7 +120,7 @@ def _check_gates_adjoint_hessian(tape, trainable_params):
         return op.name in squares_to_identity
 
     for idx in trainable_params:
-        op = tape._par_info[idx]["op"] # pylint: disable=protected-access
+        op = tape._par_info[idx]["op"]  # pylint: disable=protected-access
         # Check that the operation is a single-parameter operation
         if len(op.data) > 1:
             raise qml.QuantumFunctionError(
@@ -2045,7 +2045,7 @@ class QubitDevice(Device):
             * As it requires knowledge of the statevector, only statevector simulator devices can be
               used.
 
-            * It requires that only gates with generators that square to the 
+            * It requires that only gates with generators that square to the
               identity be differentiated.
 
             * Only expectation values are supported as measurements.
