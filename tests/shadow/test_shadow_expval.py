@@ -75,8 +75,23 @@ class TestExpvalMeasurement:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
-        assert res.shape() == ()
-        assert res.shape(dev) == ()
+        assert res.shape() == (1,)
+        assert res.shape(dev) == (1,)
+
+    def test_shape_matches(self):
+        """Test that the shape of the MeasurementProcess matches the shape
+        of the tape execution"""
+        wires = 2
+        shots = 100
+        H = qml.PauliZ(0)
+
+        circuit = hadamard_circuit(wires, shots)
+        circuit.construct((H,), {})
+
+        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        expected_shape = qml.shadow_expval(H).shape()
+
+        assert res.shape == expected_shape
 
     def test_measurement_process_copy(self):
         """Test that the attributes of the MeasurementProcess instance are
