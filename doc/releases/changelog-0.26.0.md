@@ -514,7 +514,7 @@
 
 * Added a more descriptive error message when measuring non-commuting observables at the end of a circuit with
   `probs`, `samples`, `counts` and `allcounts`.
-  [(#3065](https://github.com/PennyLaneAI/pennylane/pull/3065)
+  [(#3065)](https://github.com/PennyLaneAI/pennylane/pull/3065)
 
 <h3>Contributors</h3>
 
