@@ -201,7 +201,7 @@
    probs(wires=[0])]
   ```
 
-<h4>QNSPSA optimizer 😤</h4>
+<h4>QNSPSA optimizer 💪</h4>
 
 * A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
   perturbation stochastic approximation (QNSPSA) method based on 
@@ -514,7 +514,7 @@
 
 * Added a more descriptive error message when measuring non-commuting observables at the end of a circuit with
   `probs`, `samples`, `counts` and `allcounts`.
-  [(#3065](https://github.com/PennyLaneAI/pennylane/pull/3065)
+  [(#3065)](https://github.com/PennyLaneAI/pennylane/pull/3065)
 
 <h3>Contributors</h3>
 
