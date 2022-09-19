@@ -15,10 +15,146 @@
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
 import pytest
+import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import QNode, qnode
+from pennylane._qubit_device import (
+    _check_adjoint_diffability,
+    _get_trainable_params_wo_obs,
+    _check_gates_adjoint_hessian,
+)
+
+
+class TestCheckAdjointDiffability:
+    """Tests for the helper method _check_adjoint_diffability in _qubit_device.py"""
+
+    def test_not_expval(self):
+        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
+        expectation values"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.var(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
+            _check_adjoint_diffability(tape, dev)
+
+    def test_finite_shots_warns(self):
+        """Tests warning raised when finite shots specified"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1, shots=1)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+            _check_adjoint_diffability(tape, dev)
+
+
+class TestCheckGatesAdjointHessian:
+    """Tests for the helper method _check_gates_adjoint_hessian in _qubit_device.py"""
+
+    @pytest.mark.parametrize("trainable_params", [(0,), (2,), (0, 1, 2)])
+    def test_multipar_op(self, trainable_params):
+        """Test if a QuantumFunctionError is raised for a multi-parameter operation"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only single-parameter gates"):
+            _check_gates_adjoint_hessian(tape, trainable_params)
+
+    def test_generator_not_hamiltonian(self):
+        """Test if a QuantumFunctionError is raised for an operation that is not generated
+        by a ``Hamiltonian``."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PhaseShift(0.2, 0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only gates that are generated"):
+            _check_gates_adjoint_hessian(tape, (0,))
+
+    def test_generator_multi_term_hamiltonian(self):
+        """Test if a QuantumFunctionError is raised for an operation that is generated
+        by a ``Hamiltonian`` but the Hamiltonian has multiple terms."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.IsingXY(0.2, [0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only gates that are generated"):
+            _check_gates_adjoint_hessian(tape, (0,))
+
+    def test_generator_does_not_square_to_id(self):
+        """Test if a QuantumFunctionError is raised for an operation that is generated
+        by a ``Hamiltonian`` but the operator in the Hamiltonian does not square to the identity."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CRY(0.2, [0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only gates that are generated"):
+            _check_gates_adjoint_hessian(tape, (0,))
+
+
+class TestGetTrainableParamsWoObs:
+    """Tests for the helper method _get_trainable_params_wo_obs in _qubit_device.py"""
+
+    def test_trainable_params(self, tol):
+        """Test that getting the trainable parameters of a tape that obtains the
+        expectation value of a Hermitian operator emits a warning if the
+        parameters to Hermitian are trainable, and skips the parameters in the output."""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CRot(0.5, 2.1, -0.4, wires=[1, 0])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {0, 2}
+        trainable = _get_trainable_params_wo_obs(tape)
+        assert trainable == [0, 2]
+
+    def test_trainable_hermitian_warns(self, tol):
+        """Test that getting the trainable parameters of a tape that obtains the
+        expectation value of a Hermitian operator emits a warning if the
+        parameters to Hermitian are trainable, and skips the parameters in the output."""
+        dev = qml.device("default.qubit", wires=3)
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, 0)
+            qml.expval(qml.Hermitian(mx, wires=[0, 2]))
+
+        tape.trainable_params = {0, 1}
+        with pytest.warns(
+            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
+        ):
+            trainable = _get_trainable_params_wo_obs(tape)
+        assert trainable == [0]
+
+    def test_nontrainable_hermitian_does_not_warn(self, tol):
+        """Test that getting the trainable parameters of a tape that obtains the
+        expectation value of a Hermitian operator does not emit a warning if the
+        parameters to the Hermitian are not trainable, but skips the parameters in the output."""
+        dev = qml.device("default.qubit", wires=3)
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.Hermitian(mx, wires=[0, 2]))
+
+        tape.trainable_params = {}
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            trainable = _get_trainable_params_wo_obs(tape)
+        assert trainable == []
 
 
 class TestAdjointJacobian:
@@ -27,30 +163,6 @@ class TestAdjointJacobian:
     @pytest.fixture
     def dev(self):
         return qml.device("default.qubit", wires=2)
-
-    def test_not_expval(self, dev):
-        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
-        expectation values"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-            qml.var(qml.PauliZ(0))
-
-        with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
-            dev.adjoint_jacobian(tape)
-
-    def test_finite_shots_warns(self):
-        """Tests warning raised when finite shots specified"""
-
-        dev = qml.device("default.qubit", wires=1, shots=1)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
-        ):
-            dev.adjoint_jacobian(tape)
 
     def test_unsupported_op(self, dev):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
@@ -155,8 +267,6 @@ class TestAdjointJacobian:
         dev_jacobian = dev.adjoint_jacobian(tape)
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
-
-    ops = {qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.CRX, qml.CRY, qml.CRZ, qml.Rot}
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("obs", [qml.PauliY])
@@ -279,22 +389,6 @@ class TestAdjointJacobian:
             np.cos(c) * np.sin(b) * np.sin(a),
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_trainable_hermitian_warns(self, tol):
-        """Test attempting to compute the gradient of a tape that obtains the
-        expectation value of a Hermitian operator emits a warning if the
-        parameters to Hermitian are trainable."""
-        dev = qml.device("default.qubit", wires=3)
-
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
-        with qml.tape.QuantumTape() as tape:
-            qml.expval(qml.Hermitian(mx, wires=[0, 2]))
-
-        tape.trainable_params = {0}
-        with pytest.warns(
-            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
-        ):
-            res = dev.adjoint_jacobian(tape)
 
 
 class TestAdjointJacobianQNode:
@@ -557,3 +651,226 @@ class TestAdjointJacobianQNode:
             np.cos(c) * np.sin(b) * np.sin(a),
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+class TestAdjointHessianDiag:
+    """Tests for the adjoint_hessian_diagonal method"""
+
+    @pytest.fixture
+    def dev(self):
+        return qml.device("default.qubit", wires=2)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("U", [qml.RX, qml.RY, qml.RZ, qml.IsingXX])
+    def test_rotation_hessian(self, U, theta, tol, dev):
+        """Tests that the automatic gradients of Pauli rotations are correct."""
+        np.random.seed(214)
+        init_state = np.random.random(4)
+        init_state /= np.linalg.norm(init_state)
+
+        with qml.tape.QuantumTape() as tape:
+            # qml.QubitStateVector(init_state, wires=[0, 1])
+            U(theta, wires=list(range(U.num_wires)))
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0}
+
+        calculated_val = dev.adjoint_hessian_diagonal(tape)
+
+        # compare to finite differences
+        tapes, fn = qml.gradients.finite_diff(tape, n=2, h=1e-4)
+        numeric_val = fn(qml.execute(tapes, dev, None))
+        assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
+
+    def test_ry_gradient(self, tol, dev):
+        """Test that the second derivative of the RY gate matches the exact analytic formula."""
+
+        par = 0.23
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(par, wires=[0])
+            qml.expval(qml.PauliX(0))
+
+        tape.trainable_params = {0}
+
+        # gradients
+        exact = -np.sin(par)
+        tapes, fn = qml.gradients.finite_diff(tape, n=2, h=1e-4)
+        hess_F = fn(qml.execute(tapes, dev, None))
+        hess_A = dev.adjoint_hessian_diagonal(tape)
+
+        # different methods must agree
+        assert np.allclose(hess_F, exact, atol=tol, rtol=0)
+        assert np.allclose(hess_A, exact, atol=tol, rtol=0)
+
+    def test_rx_gradient(self, tol, dev):
+        """Test that the secon derivative of the RX gate matches the known formula."""
+        a = 0.7418
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        # circuit jacobians
+        dev_hessian = dev.adjoint_hessian_diagonal(tape)
+        expected_hessian = -np.cos(a)
+        assert np.allclose(dev_hessian, expected_hessian, atol=tol, rtol=0)
+
+    def test_multiple_rx_gradient(self, tol):
+        """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
+        dev = qml.device("default.qubit", wires=3)
+        params = np.array([np.pi, np.pi / 2, np.pi / 3])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            qml.RX(params[2], wires=2)
+
+            for idx in range(3):
+                qml.expval(qml.PauliZ(idx))
+
+        # circuit jacobians
+        dev_hessian = dev.adjoint_hessian_diagonal(tape)
+        expected_hessian = -np.diag(np.cos(params))
+        assert np.allclose(dev_hessian, expected_hessian, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("obs", [qml.PauliY])
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.RX(0.4, wires=0),
+            qml.IsingZZ(1.0, wires=[0, 1]),
+            qml.PauliRot(0.51, "YX", wires=[1, 0]),
+        ],
+    )
+    def test_hessians(self, op, obs, tol, dev):
+        """Tests that the hessians of circuits match between the
+        finite difference and device methods."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.RX(0.543, wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            qml.apply(op)
+
+            qml.Rot(1.3, -2.3, 0.5, wires=[0])
+            qml.RZ(-0.5, wires=0)
+            qml.RY(0.5, wires=1).inv()
+            qml.CNOT(wires=[0, 1])
+
+            qml.expval(obs(wires=0))
+            qml.expval(qml.PauliZ(wires=1))
+
+        tape.trainable_params = {1}
+
+        hess_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(
+            *qml.gradients.finite_diff(tape, n=2, h=1e-4)
+        )
+        hess_D = dev.adjoint_hessian_diagonal(tape)
+
+        assert np.allclose(hess_D, hess_F, atol=tol, rtol=0)
+
+    def test_use_device_state(self, tol, dev):
+        """Tests that when using the device state, the correct answer is still returned."""
+
+        z = -0.8
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=[0])
+            qml.RZ(z, wires=[0])
+            qml.RY(-0.2, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1}
+
+        hess_1 = dev.adjoint_hessian_diagonal(tape)
+
+        qml.execute([tape], dev, None)
+        hess_2 = dev.adjoint_hessian_diagonal(tape, use_device_state=True)
+
+        assert np.allclose(hess_1, hess_2, atol=tol, rtol=0)
+
+    def test_provide_starting_state(self, tol, dev):
+        """Tests provides correct answer when provided starting state."""
+        z = -0.8
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=[0])
+            qml.PauliRot(z, "ZY", wires=[0, 1])
+            qml.RY(-0.2, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {1}
+
+        hess_1 = dev.adjoint_hessian_diagonal(tape)
+
+        qml.execute([tape], dev, None)
+        hess_2 = dev.adjoint_hessian_diagonal(tape, starting_state=dev._pre_rotated_state)
+
+        assert np.allclose(hess_1, hess_2, atol=tol, rtol=0)
+
+    def test_hessian_of_tape_with_hermitian(self, tol):
+        """Test that computing the hessian of a tape that obtains the
+        expectation value of a Hermitian operator works correctly."""
+        dev = qml.device("default.qubit", wires=3)
+
+        a, b, c = [0.5, 0.3, -0.7]
+
+        def ansatz(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        with qml.tape.QuantumTape() as tape:
+            ansatz(a, b, c)
+            qml.RX(a, wires=0)
+            qml.expval(qml.Hermitian(mx, wires=[0, 2]))
+
+        tape.trainable_params = {0, 1, 2}
+        res = dev.adjoint_hessian_diagonal(tape)
+
+        expected = [
+            -np.sin(a) * np.sin(b) * np.sin(c),
+            -np.sin(b) * np.sin(a) * np.sin(c),
+            -np.sin(c) * np.sin(b) * np.sin(a),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_large_circuit(self, tol):
+        """Test the hessian diagonal is correct for a more complex circuit."""
+        dev = qml.device("default.qubit", wires=5)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(0)
+            qml.RZ(-0.4, 0)
+            qml.IsingYY(1.24, [0, 1])
+            qml.RX(0.3, 1)
+            qml.Hadamard(3)
+            qml.PauliRot(0.412, "XYXZ", wires=[0, 1, 2, 3])
+            qml.CNOT([2, 1])
+            qml.CNOT([1, 3])
+            qml.IsingYY(-0.5123, [0, 2])
+            qml.expval(qml.PauliX(0))
+            qml.expval(
+                qml.Hermitian(
+                    qml.matrix(0.3 * qml.Hadamard(1) @ qml.Projector([1], wires=2)), wires=[1, 2]
+                )
+            )
+            qml.expval(qml.PauliX(3))
+            qml.expval(qml.PauliZ(4))
+
+        tape.trainable_params = {0, 1, 2, 3, 4}
+
+        hess_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(
+            *qml.gradients.finite_diff(tape, n=2, h=1e-4)
+        )
+        hess_D = dev.adjoint_hessian_diagonal(tape)
+
+        assert np.allclose(hess_D, hess_F, atol=tol, rtol=0)
