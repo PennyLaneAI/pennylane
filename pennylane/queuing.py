@@ -92,11 +92,11 @@ class QueuingManager:
     @contextmanager
     def stop_recording(cls):
         """A context manager and decorator to ensure that contained logic is non-recordable
-            or non-queueable within a QNode or quantum tape context.
+        or non-queueable within a QNode or quantum tape context.
 
-            **Example:**
+        **Example:**
 
-            Consider the function:
+        Consider the function:
 
         >>> def list_of_ops(params, wires):
         ...     return [
@@ -105,44 +105,44 @@ class QueuingManager:
         ...         qml.RZ(params[2], wires=wires)
         ...     ]
 
-            If executed in a recording context, the operations constructed in the function will be queued:
+        If executed in a recording context, the operations constructed in the function will be queued:
 
-            >>> dev = qml.device("default.qubit", wires=2)
-            >>> @qml.qnode(dev)
-            ... def circuit(params):
-            ...     ops = list_of_ops(params, wires=0)
-            ...     qml.apply(ops[-1])  # apply only the last operation from the list
-            ...     return qml.expval(qml.PauliZ(0))
-            >>> print(qml.draw(circuit)([1, 2, 3]))
-            0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     ops = list_of_ops(params, wires=0)
+        ...     qml.apply(ops[-1])  # apply only the last operation from the list
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)([1, 2, 3]))
+        0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
 
-            Using the ``stop_recording`` context manager, all logic contained inside is not queued or recorded.
+        Using the ``stop_recording`` context manager, all logic contained inside is not queued or recorded.
 
-            >>> @qml.qnode(dev)
-            ... def circuit(params):
-            ...     with qml.QueuingManager.stop_recording():
-            ...         ops = list_of_ops(params, wires=0)
-            ...     qml.apply(ops[-1])
-            ...     return qml.expval(qml.PauliZ(0))
-            >>> print(qml.draw(circuit)([1, 2, 3]))
-            0: ──RZ(3.00)─┤  <Z>
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     with qml.QueuingManager.stop_recording():
+        ...         ops = list_of_ops(params, wires=0)
+        ...     qml.apply(ops[-1])
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)([1, 2, 3]))
+        0: ──RZ(3.00)─┤  <Z>
 
-            The context manager can also be used as a decorator on a function:
+        The context manager can also be used as a decorator on a function:
 
-            >>> @qml.QueuingManager.stop_recording()
-            ... def list_of_ops(params, wires):
-            ...     return [
-            ...         qml.RX(params[0], wires=wires),
-            ...         qml.RY(params[1], wires=wires),
-            ...         qml.RZ(params[2], wires=wires)
-            ...     ]
-            >>> @qml.qnode(dev)
-            ... def circuit(params):
-            ...     ops = list_of_ops(params, wires=0)
-            ...     qml.apply(ops[-1])
-            ...     return qml.expval(qml.PauliZ(0))
-            >>> print(qml.draw(circuit)([1, 2, 3]))
-            0: ──RZ(3.00)─┤  <Z>
+        >>> @qml.QueuingManager.stop_recording()
+        ... def list_of_ops(params, wires):
+        ...     return [
+        ...         qml.RX(params[0], wires=wires),
+        ...         qml.RY(params[1], wires=wires),
+        ...         qml.RZ(params[2], wires=wires)
+        ...     ]
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     ops = list_of_ops(params, wires=0)
+        ...     qml.apply(ops[-1])
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)([1, 2, 3]))
+        0: ──RZ(3.00)─┤  <Z>
 
         """
         previously_active_contexts = cls._active_contexts
