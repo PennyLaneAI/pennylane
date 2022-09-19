@@ -63,7 +63,7 @@ class QubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, *params, wires, do_queue=True, unitary_check=True):
+    def __init__(self, *params, wires, do_queue=True, unitary_check=False):
         wires = Wires(wires)
 
         # For pure QubitUnitary operations (not controlled), check that the number
