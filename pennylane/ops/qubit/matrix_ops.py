@@ -77,7 +77,7 @@ class QubitUnitary(Operation):
             if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
-                    + "to act on {len(wires)} wires."
+                    + f"to act on {len(wires)} wires."
                 )
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
