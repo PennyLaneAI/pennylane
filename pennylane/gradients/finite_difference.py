@@ -343,6 +343,8 @@ def _finite_diff_new(
 
         # Single measurement
         if len(tape.measurements) == 1:
+            if len(tape.trainable_params) == 1:
+                return grads[0]
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements

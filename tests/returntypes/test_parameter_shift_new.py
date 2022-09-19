@@ -1102,14 +1102,12 @@ class TestParameterShiftRule:
         gradA = fn(dev.batch_execute(tapes))
         assert len(tapes) == 1 + 2 * 1
 
-        # TODO: check when finite diff ready:
-        # tapes, fn = qml.gradients.finite_diff(tape)
-        # gradF = fn(dev.batch_execute(tapes))
-        # assert len(tapes) == 2
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 2
 
         expected = 2 * np.sin(a) * np.cos(a)
-
-        # assert gradF == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
     def test_non_involutory_variance(self, tol):
