@@ -104,6 +104,12 @@ For example:
     :width: 400px
     :target: javascript:void(0);
 
+>>> print(qml.draw(circuit)(1.2345,1.2345))
+0: ─╭QFT─╭IsingXX(1.23)─╭●─╭●─────RX(1.23)─╭RZ(1.23)─┤  <Z>
+1: ─├QFT─│──────────────├●─│───────────────│─────────┤     
+2: ─├QFT─╰IsingXX(1.23)─╰X─├SWAP───────────│─────────┤     
+3: ─╰QFT───────────────────╰SWAP───────────╰●────────┤     
+
 More information, including various fine-tuning options, can be found in
 the :doc:`drawing module <../code/qml_drawer>`.
 

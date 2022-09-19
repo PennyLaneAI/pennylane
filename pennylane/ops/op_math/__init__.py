@@ -24,7 +24,9 @@ Constructor Functions
 
     ~adjoint
     ~ctrl
+    ~exp
     ~op_sum
+    ~pow
     ~prod
     ~s_prod
 
@@ -37,9 +39,10 @@ Symbolic Classes
     :toctree: api
 
     ~Adjoint
-    ~ControlledOperation
+    ~CompositeOp
     ~Controlled
     ~ControlledOp
+    ~Exp
     ~Pow
     ~Prod
     ~Sum
@@ -51,6 +54,7 @@ Symbolic Classes
 from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
 from .controlled_class import Controlled, ControlledOp
+from .exp import exp, Exp
 
 from .prod import prod, Prod
 
@@ -58,7 +62,9 @@ from .sum import op_sum, Sum
 
 from .sprod import s_prod, SProd
 
-from .control import ctrl, ControlledOperation
-from .pow_class import Pow
+from .control import ctrl
+from .pow import pow, Pow
 
 from .symbolicop import SymbolicOp
+
+from .composite import CompositeOp

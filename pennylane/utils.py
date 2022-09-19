@@ -21,27 +21,12 @@ import functools
 import inspect
 import itertools
 import numbers
-import warnings
 from operator import matmul
 
 import numpy as np
 import scipy
 
 import pennylane as qml
-
-
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    if name == "expand":
-        warning_string = (
-            "qml.utils.expand is deprecated; using qml.operation.expand_matrix instead."
-        )
-        warnings.warn(warning_string, UserWarning)
-        return qml.operation.expand_matrix
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
 
 
 def decompose_hamiltonian(H, hide_identity=False, wire_order=None):

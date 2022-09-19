@@ -21,12 +21,15 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
+from collections.abc import Iterable
+import warnings
 from enum import Enum
 from typing import Generic, TypeVar
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -39,6 +42,7 @@ class ObservableReturnTypes(Enum):
 
     Sample = "sample"
     Counts = "counts"
+    AllCounts = "allcounts"
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
@@ -47,6 +51,7 @@ class ObservableReturnTypes(Enum):
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
+    ShadowExpval = "shadowexpval"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -58,7 +63,12 @@ Sample = ObservableReturnTypes.Sample
 
 Counts = ObservableReturnTypes.Counts
 """Enum: An enumeration which represents returning the number of times
- each sample was obtained."""
+ each of the observed outcomes occurred in sampling."""
+
+AllCounts = ObservableReturnTypes.AllCounts
+"""Enum: An enumeration which represents returning the number of times
+ each of the possible outcomes occurred in sampling, including 0 counts
+ for unobserved outcomes."""
 
 Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
@@ -89,6 +99,10 @@ Shadow = ObservableReturnTypes.Shadow
 """Enum: An enumeration which represents returning the bitstrings and recipes from
 the classical shadow protocol"""
 
+ShadowExpval = ObservableReturnTypes.ShadowExpval
+"""Enum: An enumeration which represents returning the estimated expectation value
+from a classical shadow measurement"""
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -114,7 +128,9 @@ class MeasurementProcess:
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None, log_base=None):
+    def __init__(
+        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+    ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
@@ -473,10 +489,10 @@ class MeasurementProcess:
 
         return tape
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            context.safe_update_info(self.obs, owner=self)
+            context.update_info(self.obs, owner=self)
             context.append(self, owns=self.obs)
         else:
             context.append(self)
@@ -514,28 +530,54 @@ class MeasurementProcess:
 
         return hash(fingerprint)
 
+    def simplify(self):
+        """Reduce the depth of the observable to the minimum.
+
+        Returns:
+            .MeasurementProcess: A measurement process with a simplified observable.
+        """
+        if self.obs is None:
+            return self
+
+        return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+
 
 class ShadowMeasurementProcess(MeasurementProcess):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    This has the same arguments as the base class MeasurementProcess, along with
-    a seed that is used to seed the random measurement selection for the classical
-    shadow protocol.
+    This has the same arguments as the base class MeasurementProcess, plus other additional
+    arguments specific to the classical shadow protocol.
+
+    Args:
+        args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+        seed (Union[int, None]): The seed used to generate the random measurements
+        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
+            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
+            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
+            when ``return_type`` is ``ShadowExpval``.
+        kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
-    def __init__(self, *args, seed=None, **kwargs):
+    def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
         super().__init__(*args, **kwargs)
         self.seed = seed
+        self.H = H
+        self.k = k
 
     @property
     def numeric_type(self):
         """The Python numeric type of the measurement result.
 
         Returns:
-            type: This is always ``int``.
+            type: This is ``int`` when the return type is ``Shadow``,
+            and ``float`` when the return type is ``ShadowExpval``.
         """
-        return int
+        if self.return_type is Shadow:
+            return int
+
+        return float
 
     def shape(self, device=None):
         """The expected output shape of the ShadowMeasurementProcess.
@@ -544,14 +586,20 @@ class ShadowMeasurementProcess(MeasurementProcess):
             device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
-            tuple: the output shape; this is always ``(2, T, n)``, where ``T`` is the
-                number of device shots and ``n`` is the number of measured wires.
+            tuple: the output shape; this is ``(2, T, n)`` when the return type
+            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
+            the number of measured wires, and is a scalar when the return type
+            is ``ShadowExpval``
 
         Raises:
-            MeasurementShapeError: when a device is not provided, since the output
-                shape is dependent on the device.
+            MeasurementShapeError: when a device is not provided and the return
+            type is ``Shadow``, since the output shape is dependent on the device.
         """
-        # the return type requires a device
+        # the return value of expval is always a scalar
+        if self.return_type is ShadowExpval:
+            return (1,)
+
+        # otherwise, the return type requires a device
         if device is None:
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of a classical "
@@ -560,11 +608,27 @@ class ShadowMeasurementProcess(MeasurementProcess):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, device.shots, len(self.wires))
+        return (1, 2, device.shots, len(self.wires))
+
+    @property
+    def wires(self):
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
+        if self.return_type is Shadow:
+            return self._wires
+
+        if isinstance(self.H, Iterable):
+            return qml.wires.Wires.all_wires([h.wires for h in self.H])
+
+        return self.H.wires
 
     def __copy__(self):
         obj = super().__copy__()
         obj.seed = self.seed
+        obj.H = self.H
+        obj.k = self.k
         return obj
 
 
@@ -596,9 +660,7 @@ def expval(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with expval"
-        )
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     return MeasurementProcess(Expectation, obs=op)
 
@@ -631,8 +693,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
-        raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
-
+        warnings.warn(f"{op.name} might not be hermitian.")
     return MeasurementProcess(Variance, obs=op)
 
 
@@ -710,12 +771,7 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with sample"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -728,7 +784,7 @@ def sample(op=None, wires=None):
     return MeasurementProcess(Sample, obs=op, wires=wires)
 
 
-def counts(op=None, wires=None):
+def counts(op=None, wires=None, all_outcomes=False):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -740,7 +796,9 @@ def counts(op=None, wires=None):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-        op is None
+            op is None
+        all_outcomes(bool): determines whether the returned dict will contain only the observed
+            outcomes (default), or whether it will display all possible outcomes for the system
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -790,6 +848,36 @@ def counts(op=None, wires=None):
     >>> circuit(0.5)
     {'00': 3, '01': 1}
 
+    By default, outcomes that were not observed will not be included in the dictionary.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2, shots=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.counts()
+
+    Executing this QNode shows only the observed outcomes:
+
+    >>> circuit()
+    {'01': 4}
+
+    Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=0)
+            return qml.counts(all_outcomes=True)
+
+    Executing this QNode shows counts for all states:
+
+    >>> circuit()
+    {'00': 0, '01': 0, '10': 4, '11': 0}
+
     .. note::
 
         QNodes that return samples cannot, in general, be differentiated, since the derivative
@@ -799,12 +887,7 @@ def counts(op=None, wires=None):
         observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with counts"
-        )
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError("Symbolic Operations are not supported for sampling yet.")
+        warnings.warn(f"{op.name} might not be hermitian.")
 
     if wires is not None:
         if op is not None:
@@ -813,6 +896,9 @@ def counts(op=None, wires=None):
                 "provided. The wires to sample will be determined directly from the observable."
             )
         wires = qml.wires.Wires(wires)
+
+    if all_outcomes:
+        return MeasurementProcess(AllCounts, obs=op, wires=wires)
 
     return MeasurementProcess(Counts, obs=op, wires=wires)
 
@@ -1115,7 +1201,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
-    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    The protocol is described in detail in the paper `Predicting Many Properties of a Quantum System from Very Few Measurements <https://arxiv.org/abs/2002.08953>`_.
     This measurement process returns the randomized Pauli measurements (the ``recipes``)
     that are performed for each qubit and snapshot as an integer:
 
@@ -1231,6 +1317,67 @@ def classical_shadow(wires, seed_recipes=True):
 
     seed = np.random.randint(2**30) if seed_recipes else None
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
+
+
+def shadow_expval(H, k=1, seed_recipes=True):
+    r"""Compute expectation values using classical shadows in a differentiable manner.
+
+    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
+    This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
+    parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
+
+    Args:
+        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
+        seed_recipes (bool): If True, a seed will be generated that
+            is used for the randomly sampled Pauli measurements. This is to
+            ensure that the same recipes are used when a tape containing this
+            measurement is copied. Different seeds are still generated for
+            different constructed tapes.
+
+    Returns:
+        float: expectation value estimate.
+
+    .. note::
+
+        This measurement uses the measurement :func:`~.pennylane.classical_shadow` and the class :class:`~.pennylane.ClassicalShadow` for post-processing
+        internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
+        you need to use this measurement.
+
+    **Example**
+
+    .. code-block:: python3
+
+        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
+
+        dev = qml.device("default.qubit", wires=range(2), shots=10000)
+        @qml.qnode(dev)
+        def qnode(x, obs):
+            qml.Hadamard(0)
+            qml.CNOT((0,1))
+            qml.RX(x, wires=0)
+            return qml.shadow_expval(obs)
+
+        x = np.array(0.5, requires_grad=True)
+
+    We can compute the expectation value of H as well as its gradient in the usual way.
+
+    >>> qnode(x, H)
+    tensor(1.827, requires_grad=True)
+    >>> qml.grad(qnode)(x, H)
+    -0.44999999999999984
+
+    In `shadow_expval`, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
+    to include all observables that you want to estimate from a single measurement in the same execution.
+
+    >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+    >>> qnode(x, Hs)
+    [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
+    >>> qml.jacobian(qnode)(x, Hs)
+    [-0.48312, -0.00198, -0.00375,  0.00168]
+    """
+    seed = np.random.randint(2**30) if seed_recipes else None
+    return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
 
 
 T = TypeVar("T")

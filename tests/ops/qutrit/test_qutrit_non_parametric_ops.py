@@ -21,7 +21,6 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.wires import Wires
-from tests.ops.qubit.test_non_parametric_ops import NON_PARAMETRIZED_OPERATIONS
 
 from gate_data import TSHIFT, TCLOCK, TADD, TSWAP
 
@@ -76,6 +75,13 @@ class TestEigenval:
     def test_tadd_eigenval(self):
         """Tests that the TAdd eigenvalue matches the numpy eigenvalues of the TAdd matrix"""
         op = qml.TAdd(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
+    def test_tswap_eigenval(self):
+        """Tests that the TSWAP eigenvalue matches the numpy eigenvalues of the TSWAP matrix"""
+        op = qml.TSWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
@@ -166,9 +172,9 @@ adjoint_ops = [  # ops that are not their own inverses
     qml.TAdd(wires=[0, 1]),
 ]
 
-involution_ops = [
-    qml.TSWAP([0, 1]),
-]  # ops that are their own inverses
+involution_ops = [  # ops that are their own inverses
+    qml.TSWAP(wires=[0, 1]),
+]
 
 
 @pytest.mark.parametrize("op", adjoint_ops)

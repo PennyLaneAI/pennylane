@@ -65,8 +65,9 @@ class DefaultQutrit(QutritDevice):
     # Identity is supported as an observable for qml.state() to work correctly. However, any
     # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
     observables = {
-        "Identity",
         "THermitian",
+        "GellMann",
+        "Identity",
     }
 
     def __init__(
@@ -191,8 +192,10 @@ class DefaultQutrit(QutritDevice):
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
 
     def _apply_tadd(self, state, axes, inverse=False):
-        """Applies a controlled add gate by slicing along the first axis specified in ``axes`` and
-        applying a TShift transformation along the second axis
+        """Applies a controlled ternary add gate by slicing along the first axis specified in ``axes`` and
+        applying a TShift transformation along the second axis. The ternary add gate acts on the computational
+        basis states like :math:`\text{TAdd}\vert i, j\rangle \rightarrow \vert i, i+j \rangle`, where addition
+        is taken modulo 3.
 
         By slicing along the first axis, we are able to select all of the amplitudes with corresponding
         :math:`|1\rangle` and :math:`|2\rangle` for the control qutrit. This means we just need to apply
@@ -214,18 +217,16 @@ class DefaultQutrit(QutritDevice):
         # roll. If axes[1] is larger than axes[0], then we need to shift the target axis down by
         # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
         # target=3. Then, state[slices[1]] has 3 axes and target=3 now corresponds to the second axis.
-        if axes[1] > axes[0]:
-            target_axes = [axes[1] - 1]
-        else:
-            target_axes = [axes[1]]
+        target_axes = [axes[1] - 1] if axes[1] > axes[0] else [axes[1]]
 
         state_1 = self._apply_tshift(state[slices[1]], axes=target_axes, inverse=inverse)
         state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=not inverse)
         return self._stack([state[slices[0]], state_1, state_2], axis=axes[0])
 
-    def _apply_tswap(self, state, axes, **kwargs):
+    def _apply_tswap(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a ternary SWAP gate by performing a partial transposition along the
-        specified axes.
+        specified axes. The ternary SWAP gate acts on the computational basis states like
+        :math:`\vert i, j\rangle \rightarrow \vert j, i \rangle`.
 
         Args:
             state (array[complex]): input state
@@ -239,7 +240,9 @@ class DefaultQutrit(QutritDevice):
         all_axes[axes[1]] = axes[0]
         return self._transpose(state, all_axes)
 
-    def _apply_phase(self, state, axes, index, parameters, inverse=False):
+    def _apply_phase(
+        self, state, axes, index, phase, inverse=False
+    ):  # pylint: disable=too-many-arguments
         """Applies a phase onto the specified index along the axis specified in ``axes``.
 
         Args:

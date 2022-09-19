@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
+from warnings import warn
 
 from scipy.linalg import fractional_matrix_power
 
@@ -27,15 +28,71 @@ from pennylane.operation import (
     Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
-    expand_matrix,
 )
 from pennylane.ops.identity import Identity
-from pennylane.queuing import QueuingContext, apply
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
+
+
+def pow(base, z=1, lazy=True, do_queue=True, id=None):
+    """Raise an Operator to a power.
+
+    Args:
+        base (~.operation.Operator): the operator to be raised to a power
+        z=1 (float): the exponent
+
+    Keyword Args:
+        lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
+            and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+
+    Returns:
+        Operator
+
+    .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
+
+    **Example**
+
+    >>> qml.pow(qml.PauliX(0), 0.5)
+    PauliX(wires=[0])**0.5
+    >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
+    SX(wires=[0])
+    >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
+    PauliX(wires=[0])**0.1
+    >>> qml.pow(qml.PauliX(0), 2, lazy=False)
+    Identity(wires=[0])
+
+    Lazy behavior can also be accessed via ``op ** z``.
+
+    """
+    if lazy:
+        return Pow(base, z, do_queue=do_queue, id=id)
+    try:
+        pow_ops = base.pow(z)
+    except PowUndefinedError:
+        return Pow(base, z, do_queue=do_queue, id=id)
+
+    num_ops = len(pow_ops)
+    if num_ops == 0:
+        # needs to be identity (not prod of identities) so device knows to skip
+        pow_op = qml.Identity(base.wires[0], id=id)
+    elif num_ops == 1:
+        pow_op = pow_ops[0]
+    else:
+        pow_op = qml.prod(*pow_ops)
+
+    if do_queue:
+        QueuingManager.update_info(base, owner=pow_op)
+        QueuingManager.update_info(pow_op, owns=base)
+
+    return pow_op
 
 
 # pylint: disable=no-member
@@ -53,6 +110,10 @@ class PowOperation(Operation):
     grad_method = None
 
     def inv(self):
+        warn(
+            "In-place inversion with inv is deprecated. Please use qml.adjoint instead or qml.pow.",
+            UserWarning,
+        )
         self.hyperparameters["z"] *= -1
         self._name = f"{self.base.name}**{self.z}"
         return self
@@ -155,6 +216,13 @@ class Pow(SymbolicOp):
 
         super().__init__(base, do_queue=do_queue, id=id)
 
+    def __repr__(self):
+        return (
+            f"({self.base})**{self.z}"
+            if self.base.arithmetic_depth > 0
+            else f"{self.base}**{self.z}"
+        )
+
     @property
     def z(self):
         """The exponent."""
@@ -170,7 +238,10 @@ class Pow(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
-        return self.base.label(decimals, base_label, cache=cache) + z_string
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return (
+            f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
+        )
 
     def matrix(self, wire_order=None):
         if isinstance(self.base, qml.Hamiltonian):
@@ -186,7 +257,7 @@ class Pow(SymbolicOp):
         if wire_order is None or self.wires == Wires(wire_order):
             return mat
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -201,7 +272,7 @@ class Pow(SymbolicOp):
             return self.base.pow(self.z)
         except PowUndefinedError as e:
             if isinstance(self.z, int) and self.z > 0:
-                if QueuingContext.recording():
+                if QueuingManager.recording():
                     return [apply(self.base) for _ in range(self.z)]
                 return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
@@ -254,9 +325,16 @@ class Pow(SymbolicOp):
         """
         return self.z * self.base.generator()
 
+    def pow(self, z):
+        return [Pow(base=self.base, z=self.z * z)]
+
+    def adjoint(self):
+        return Pow(base=qml.adjoint(self.base), z=self.z)
+
     def simplify(self) -> Union["Pow", Identity]:
+        base = self.base.simplify()
         try:
-            ops = self.base.pow(z=self.z)
+            ops = base.pow(z=self.z)
             if not ops:
                 return (
                     qml.prod(*(qml.Identity(w) for w in self.wires))
@@ -266,4 +344,4 @@ class Pow(SymbolicOp):
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:
-            return Pow(base=self.base.simplify(), z=self.z)
+            return Pow(base=base, z=self.z)

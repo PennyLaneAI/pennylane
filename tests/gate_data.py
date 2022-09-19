@@ -123,6 +123,16 @@ TADD = np.array(
     dtype=np.complex128,
 )  # Ternary add gate
 
+GELL_MANN = np.zeros((8, 3, 3), dtype=np.complex128)
+GELL_MANN[0] = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+GELL_MANN[1] = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+GELL_MANN[2] = np.diag([1, -1, 0])
+GELL_MANN[3] = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
+GELL_MANN[4] = np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]])
+GELL_MANN[5] = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+GELL_MANN[6] = np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]])
+GELL_MANN[7] = np.diag([1, 1, -2]) / np.sqrt(3)
+
 
 # ========================================================
 #  parametrized gates

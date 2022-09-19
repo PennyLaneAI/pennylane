@@ -17,9 +17,12 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
-from copy import copy
 import warnings
+from copy import copy
+
 import numpy as np
+
+from scipy import sparse
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -74,6 +77,10 @@ class Hadamard(Observable, Operation):
          [ 0.70710678 -0.70710678]]
         """
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -214,6 +221,10 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[0, 1], [1, 0]])
+
+    @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -303,7 +314,7 @@ class PauliX(Observable, Operation):
         return super().pow(z_mod2)
 
     def _controlled(self, wire):
-        CNOT(wires=Wires(wire) + self.wires)
+        return CNOT(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
@@ -356,6 +367,10 @@ class PauliY(Observable, Operation):
          [ 0.+1.j  0.+0.j]]
         """
         return np.array([[0, -1j], [1j, 0]])
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[0, -1j], [1j, 0]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -447,7 +462,7 @@ class PauliY(Observable, Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        CY(wires=Wires(wire) + self.wires)
+        return CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
@@ -498,6 +513,10 @@ class PauliZ(Observable, Operation):
          [ 0 -1]]
         """
         return np.array([[1, 0], [0, -1]])
+
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[1, 0], [0, -1]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
@@ -590,7 +609,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
     def _controlled(self, wire):
-        CZ(wires=Wires(wire) + self.wires)
+        return CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -985,11 +1004,15 @@ class CNOT(Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        Toffoli(wires=Wires(wire) + self.wires)
+        return Toffoli(wires=wire + self.wires)
 
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class CZ(Operation):
@@ -1079,6 +1102,10 @@ class CZ(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class CY(Operation):
@@ -1175,6 +1202,10 @@ class CY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -1256,7 +1287,11 @@ class SWAP(Operation):
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
-        CSWAP(wires=wire + self.wires)
+        return CSWAP(wires=wire + self.wires)
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class ECR(Operation):
@@ -1745,6 +1780,10 @@ class CSWAP(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Toffoli(Operation):
     r"""Toffoli(wires)
@@ -1836,42 +1875,41 @@ class Toffoli(Operation):
 
         **Example:**
 
-        >>> print(qml.Toffoli.compute_decomposition((0,1,2)))
+        >>> qml.Toffoli.compute_decomposition((0,1,2))
         [Hadamard(wires=[2]),
         CNOT(wires=[1, 2]),
-        T.inv(wires=[2]),
+        Adjoint(T)(wires=[2]),
         CNOT(wires=[0, 2]),
         T(wires=[2]),
         CNOT(wires=[1, 2]),
-        T.inv(wires=[2]),
+        Adjoint(T)(wires=[2]),
         CNOT(wires=[0, 2]),
         T(wires=[2]),
         T(wires=[1]),
         CNOT(wires=[0, 1]),
         Hadamard(wires=[2]),
         T(wires=[0]),
-        T.inv(wires=[1]),
+        Adjoint(T)(wires=[1]),
         CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
+        return [
             Hadamard(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
-            T(wires=wires[2]).inv(),
+            qml.adjoint(T(wires=wires[2])),
             CNOT(wires=[wires[0], wires[2]]),
             T(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
-            T(wires=wires[2]).inv(),
+            qml.adjoint(T(wires=wires[2])),
             CNOT(wires=[wires[0], wires[2]]),
             T(wires=wires[2]),
             T(wires=wires[1]),
             CNOT(wires=[wires[0], wires[1]]),
             Hadamard(wires=wires[2]),
             T(wires=wires[0]),
-            T(wires=wires[1]).inv(),
+            qml.adjoint(T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
@@ -1882,6 +1920,10 @@ class Toffoli(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[:2])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class MultiControlledX(Operation):
@@ -2196,6 +2238,10 @@ class MultiControlledX(Operation):
 
         return gates
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Barrier(Operation):
     r"""Barrier(wires)
@@ -2251,13 +2297,20 @@ class Barrier(Operation):
         return "||"
 
     def _controlled(self, _):
-        return Barrier(wires=self.wires)
+        return copy(self).queue()
 
     def adjoint(self):
-        return Barrier(wires=self.wires)
+        return copy(self)
 
     def pow(self, z):
         return [copy(self)]
+
+    def simplify(self):
+        if self.only_visual:
+            if len(self.wires) == 1:
+                return qml.Identity(self.wires[0])
+            return qml.prod(*(qml.Identity(w) for w in self.wires))
+        return self
 
 
 class WireCut(Operation):

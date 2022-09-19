@@ -91,7 +91,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for i, tape in enumerate(tapes):
         # convert output to TensorFlow tensors
 
-        if any(m.return_type is qml.measurements.Counts for m in tape.measurements):
+        if any(
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in tape.measurements
+        ):
             continue
 
         if isinstance(res[i], np.ndarray):

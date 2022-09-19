@@ -15,16 +15,17 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
-from collections.abc import Sequence
 import functools
 import inspect
 import warnings
+from collections.abc import Sequence
 
 import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
+from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.tape import QuantumTape
 
 
 class QNode:
@@ -510,7 +511,7 @@ class QNode:
         )
 
     @property
-    def tape(self):
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 
@@ -618,7 +619,7 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
-            res = qml.execute_new(
+            res = qml.execute(
                 [self.tape],
                 device=self.device,
                 gradient_fn=self.gradient_fn,
@@ -681,9 +682,9 @@ class QNode:
 
             res = res[0]
 
-        if (
-            not isinstance(self._qfunc_output, Sequence)
-            and self._qfunc_output.return_type is qml.measurements.Counts
+        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
+            qml.measurements.Counts,
+            qml.measurements.AllCounts,
         ):
 
             if not self.device._has_partitioned_shots():
@@ -693,7 +694,8 @@ class QNode:
             return tuple(res)
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
