@@ -17,7 +17,6 @@ Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 import contextlib
 
 import pytest
-from torch import qint8
 import pennylane as qml
 import numpy as np
 
