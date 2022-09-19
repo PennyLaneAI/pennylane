@@ -109,7 +109,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
         if flip_control_on_zero:
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
 
-        if qml.QueuingContext.recording():
+        if qml.QueuingManager.recording():
             _ = [qml.apply(m) for m in tape.measurements]
 
         return tape.measurements
