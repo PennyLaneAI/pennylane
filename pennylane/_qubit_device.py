@@ -2045,7 +2045,8 @@ class QubitDevice(Device):
             * As it requires knowledge of the statevector, only statevector simulator devices can be
               used.
 
-            * Currently it requires that only gates with Pauli words as generators are used.
+            * It requires that only gates with generators that square to the 
+              identity be differentiated.
 
             * Only expectation values are supported as measurements.
 
