@@ -172,8 +172,9 @@ class Sum(CompositeOp):
         for op in non_overlapping_ops:
             diag_gates.extend(op.diagonalizing_gates())
         if overlapping_ops:
-            eigvecs = Sum(*overlapping_ops).eigendecomposition["eigvec"]
-            diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=self.wires))
+            tmp_sum = Sum(*overlapping_ops)
+            eigvecs = tmp_sum.eigendecomposition["eigvec"]
+            diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=tmp_sum.wires))
         return diag_gates
 
     def matrix(self, wire_order=None):
