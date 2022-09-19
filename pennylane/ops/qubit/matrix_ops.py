@@ -63,13 +63,14 @@ class QubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, *params, wires, do_queue=True, unitary_check=False):
+    def __init__(
+        self, U, wires, do_queue=True, unitary_check=False, id=None
+    ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
 
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
-            U = params[0]
             U_shape = qml.math.shape(U)
 
             dim = 2 ** len(wires)
@@ -96,7 +97,7 @@ class QubitUnitary(Operation):
                     UserWarning,
                 )
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
