@@ -1611,7 +1611,7 @@ class QubitDevice(Device):
         each possible outcome.
 
         The format of the dictionary depends on obs.return_type, which is set when
-        calling measurements.counts by setting the kwarg all_outcomes (bool). Per default,
+        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
@@ -1633,7 +1633,7 @@ class QubitDevice(Device):
                     [0, 0],
                     [1, 0]], requires_grad=True)
 
-            Per default, this will return:
+            By default, this will return:
             >>> self._samples_to_counts(samples, obs, num_wires)
             {'00': 2, '10': 1}
 
@@ -1651,7 +1651,6 @@ class QubitDevice(Device):
                 def circuit(x):
                     qml.RX(x, wires=0)
                     return qml.counts(all_outcomes=True)
-
 
         """
 

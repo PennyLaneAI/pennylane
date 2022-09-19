@@ -17,7 +17,7 @@ This submodule defines a base class for symbolic operations representing operato
 from copy import copy
 
 from pennylane.operation import Operator
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingManager
 
 
 class SymbolicOp(Operator):
@@ -119,7 +119,7 @@ class SymbolicOp(Operator):
     def _queue_category(self):
         return self.base._queue_category  # pylint: disable=protected-access
 
-    def queue(self, context=QueuingContext):
+    def queue(self, context=QueuingManager):
         context.safe_update_info(self.base, owner=self)
         context.append(self, owns=self.base)
         return self
