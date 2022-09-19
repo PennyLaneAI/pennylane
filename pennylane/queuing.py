@@ -14,126 +14,56 @@
 """
 This module contains the :class:`QueuingContext` abstract base class.
 """
-import abc
+
 import copy
-from collections import OrderedDict, deque
-from typing import Deque
+from collections import OrderedDict
 
 
 class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
 
 
-class QueuingContext(abc.ABC):
-    """Abstract base class for classes that exposes a queue for objects.
+class QueuingContext:
+    """Singleton global entry point for managing active recording contexts.
 
-    This class provides a context manager that tracks queuable objects and queuing functions.
-    Queuable objects are objects that queue themselves via ``QueuingContext.append(self)``, while
-    queuing functions queue external objects.
+    This class consists purely of class methods. It both maintains a list of
+    recording queues and allows communication with the currently active object.
 
-    Queuable objects make use of the following ``QueuingContext`` methods and properties:
+    Queueable objects, like :class:`~.operation.Operator` and :class:`~.measurements.MeasurementProcess`, should
+    use ``QueuingContext`` as an entry point for accessing the active queue.
 
-    * :attr:`~.recording`: determine whether a queuing context is actively recording operations
-    * :meth:`~.append`: append an object to the active queuing context
-    * :meth:`~.remove`: remove an object from the queuing context. If the object is queued multiple
-      times, only the first occurrence is removed.
-    * :meth:`~.update_info`: updates metadata attached to an object in the queue (not supported by
-      all queuing contexts).
-    * :meth:`~.get_info`: retrieves metadata attached to an object in the queue (not supported by
-      all queuing contexts).
+    See also: :class:`~.AnnotatedQueue`, :class:`~.tape.QuantumTape`, :meth:`~.operation.Operator.queue`.
 
-    Queuing context subclasses must define the following abstract methods:
+    Recording queues, such as :class:`~.AnnotatedQueue`, must define the following methods:
 
-    * :meth:`~._append`: define an action to perform when an object append
+    * ``append``: define an action to perform when an object append
       request is made.
 
-    * :meth:`~._remove`: define an action to perform when an object removal request is made.
+    * ``remove``: define an action to perform when an object removal request is made.
 
-    In addition, the optional methods :meth:`~._update_info` and ``get_info`` may also be
-    defined as required.
+    * ``get_info``: retrieve the object's metadata
 
-    **Example**
+    * ``update_info``: Update an object's metadata if it is already queued. Else, raise a ``QueuingError``.
 
-    To create a queuing context, simply subclass from ``QueuingContext`` and define
-    the required methods:
+    * ``safe_update_info``: Update an object's metadata without raising errors
 
-    >>> class MyQueue(QueuingContext):
-    ...     def __init__(self):
-    ...         self.queue = []
-    ...     def _append(self, obj):
-    ...         self.queue.append(obj)
-    ...     def _remove(self, obj):
-    ...         self.queue.remove(obj)
+    To start and end recording, the recording queue can use the :meth:`add_active_queue` and
+    :meth:`remove_active_queue` methods.
 
-    Once defined, it can be used as a queuing context to track queuable objects
-    and queuing functions:
-
-    >>> with MyQueue() as q:
-    ...     QueuingContext.append("object")
-    >>> print(q.queue)
-    ['object']
-
-    Note that ``QueuingContext`` subclasses support nesting; objects are only queued to the
-    first surrounding queuing context:
-
-    >>> with MyQueue() as q1:
-    ...     with MyQueue() as q2:
-    ...         QueuingContext.append("first object")
-    ...     QueuingContext.append("second object")
-    ...
-    >>> print(q1.queue)
-    ['second object']
-    >>> print(q2.queue)
-    ['first object']
-
-    Finally, queuing contexts *themselves* can be queuable objects:
-
-    >>> class QueuableQueue(QueuingContext):
-    ...     def __init__(self):
-    ...         self.queue = []
-    ...         QueuingContext.append(self)
-    ...     def _append(self, obj):
-    ...         self.queue.append(obj)
-    ...     def _remove(self, obj):
-    ...         self.queue.remove(obj)
-
-    We can see that nested ``QueuableQueue`` objects are queued to their surrounding queuing
-    context:
-
-    >>> with QueuableQueue() as q1:
-    ...     with QueuableQueue() as q2:
-    ...         QueuingContext.append("first object")
-    ...     QueuingContext.append("second object")
-    >>> print(q1.queue)
-    [<__main__.QueuableQueue object at 0x7f94c432b6d0>, 'second object']
-    >>> print(q1.queue[0].queue)
-    ['first object']
     """
 
-    _active_contexts: Deque["QueuingContext"] = deque()
+    _active_contexts = []
     """The stack of contexts that are currently active."""
 
-    def __enter__(self):
-        """Adds this instance to the global list of active contexts.
+    @classmethod
+    def add_active_queue(cls, queue):
+        """Makes a queue the currently active recording context."""
+        cls._active_contexts.append(queue)
 
-        Returns:
-            QueuingContext: this instance
-        """
-        QueuingContext._active_contexts.append(self)
-
-        return self
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        """Remove this instance from the global list of active contexts."""
-        QueuingContext._active_contexts.pop()
-
-    @abc.abstractmethod
-    def _append(self, obj, **kwargs):
-        """Append an object to this QueuingContext instance.
-
-        Args:
-            obj: The object to be appended
-        """
+    @classmethod
+    def remove_active_queue(cls):
+        """Ends recording on the currently active recording queue."""
+        return cls._active_contexts.pop()
 
     @classmethod
     def recording(cls):
@@ -156,15 +86,7 @@ class QueuingContext(abc.ABC):
             obj: the object to be appended
         """
         if cls.recording():
-            cls.active_context()._append(obj, **kwargs)  # pylint: disable=protected-access
-
-    @abc.abstractmethod
-    def _remove(self, obj):
-        """Remove an object from this QueuingContext instance.
-
-        Args:
-            obj: the object to be removed
-        """
+            cls.active_context().append(obj, **kwargs)
 
     @classmethod
     def remove(cls, obj):
@@ -174,7 +96,7 @@ class QueuingContext(abc.ABC):
             obj: the object to be removed
         """
         if cls.recording():
-            cls.active_context()._remove(obj)  # pylint: disable=protected-access
+            cls.active_context().remove(obj)
 
     @classmethod
     def update_info(cls, obj, **kwargs):
@@ -184,7 +106,7 @@ class QueuingContext(abc.ABC):
             obj: the object with metadata to be updated
         """
         if cls.recording():
-            cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
+            cls.active_context().update_info(obj, **kwargs)
 
     # pylint: disable=protected-access
     @classmethod
@@ -195,18 +117,7 @@ class QueuingContext(abc.ABC):
             obj: the object with metadata to be updated
         """
         if cls.recording():
-            cls.active_context()._safe_update_info(obj, **kwargs)
-
-    @abc.abstractmethod
-    def _safe_update_info(self, obj, **kwargs):
-        """Updates information of an object in the queue instance only if the object is in the queue.
-        If the object is not in the queue, nothing is done and no errors are raised.
-        """
-
-    @abc.abstractmethod
-    def _update_info(self, obj, **kwargs):
-        """Updates information of an object in the queue instance. Raises a ``QueuingError`` if the object
-        is not in the queue."""
+            cls.active_context().safe_update_info(obj, **kwargs)
 
     @classmethod
     def get_info(cls, obj):
@@ -219,52 +130,59 @@ class QueuingContext(abc.ABC):
             object metadata
         """
         if cls.recording():
-            return cls.active_context()._get_info(obj)  # pylint: disable=protected-access
+            return cls.active_context().get_info(obj)
 
         return None
 
-    @abc.abstractmethod
-    def _get_info(self, obj):
-        """Retrieves information of an object in the queue instance."""
 
-
-class AnnotatedQueue(QueuingContext):
+class AnnotatedQueue:
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
 
     def __init__(self):
         self._queue = OrderedDict()
 
-    def _append(self, obj, **kwargs):
+    def __enter__(self):
+        """Adds this instance to the global list of active contexts.
+
+        Returns:
+            QueuingContext: this instance
+        """
+        QueuingContext.add_active_queue(self)
+
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        """Remove this instance from the global list of active contexts."""
+        QueuingContext.remove_active_queue()
+
+    def append(self, obj, **kwargs):
+        """Append ``obj`` into the queue with ``kwargs`` metadata."""
         self._queue[obj] = kwargs
 
-    def _remove(self, obj):
+    def remove(self, obj):
+        """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
         del self._queue[obj]
 
-    def _safe_update_info(self, obj, **kwargs):
+    def safe_update_info(self, obj, **kwargs):
+        """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
         if obj in self._queue:
             self._queue[obj].update(kwargs)
 
-    def _update_info(self, obj, **kwargs):
+    def update_info(self, obj, **kwargs):
+        """Update ``obj``'s metadata with ``kwargs``.
+        Raises a ``QueuingError`` if it doesn't exist in the queue."""
         if obj not in self._queue:
             raise QueuingError(f"Object {obj} not in the queue.")
 
         self._queue[obj].update(kwargs)
 
-    def _get_info(self, obj):
+    def get_info(self, obj):
+        """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
         if obj not in self._queue:
             raise QueuingError(f"Object {obj} not in the queue.")
 
         return self._queue[obj]
-
-    # Overwrite the inherited class methods, so that if annotated_queue.append is called,
-    # it is appended to the instantiated queue (rather than being added to the
-    # currently active queuing context, which may be a different queue).
-    append = _append
-    remove = _remove
-    update_info = _update_info
-    safe_update_info = _safe_update_info
-    get_info = _get_info
 
     @property
     def queue(self):

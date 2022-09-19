@@ -33,7 +33,7 @@ import pennylane.qnn
 import pennylane.resource
 import pennylane.templates
 import pennylane.qchem
-from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
+from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
@@ -104,7 +104,7 @@ from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
-from pennylane.interfaces import execute, execute_new  # pylint:disable=wrong-import-order
+from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

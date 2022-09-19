@@ -619,7 +619,7 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
-            res = qml.execute_new(
+            res = qml.execute(
                 [self.tape],
                 device=self.device,
                 gradient_fn=self.gradient_fn,
