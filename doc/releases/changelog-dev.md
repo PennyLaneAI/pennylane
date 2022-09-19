@@ -56,6 +56,8 @@
    - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are removed.  Their functionality is moved to
       `update_info`.
    
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.
+  [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
 <h3>Breaking changes</h3>
 
@@ -75,6 +77,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Utkarsh Azad,
 Soran Jahangiri,
