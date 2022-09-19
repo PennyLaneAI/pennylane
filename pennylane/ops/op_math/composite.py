@@ -191,12 +191,12 @@ class CompositeOp(Operator, abc.ABC):
         r"""How the composite operator is represented in diagrams and drawings.
 
         Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``operands`` attribute.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
+            decimals (int): If ``None``, no parameters are included. Else,
+                how to round the parameters. Defaults to ``None``.
+            base_label (Iterable[str]): Overwrite the non-parameter component of the label.
+                Must be same length as ``operands`` attribute. Defaults to ``None``.
+            cache (dict): Dictionary that carries information between label calls
+                in the same drawing. Defaults to ``None``.
 
         Returns:
             str: label to use in drawings
