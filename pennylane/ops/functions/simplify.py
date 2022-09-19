@@ -84,7 +84,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         if QueuingManager.recording():
             with stop_recording():
                 new_op = copy(input.simplify())
-            QueuingManager.safe_update_info(input, owner=new_op)
+            QueuingManager.update_info(input, owner=new_op)
             return qml.apply(new_op)
         return input.simplify()
 

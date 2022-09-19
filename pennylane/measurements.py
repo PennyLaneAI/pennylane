@@ -492,7 +492,7 @@ class MeasurementProcess:
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            context.safe_update_info(self.obs, owner=self)
+            context.update_info(self.obs, owner=self)
             context.append(self, owns=self.obs)
         else:
             context.append(self)

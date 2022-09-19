@@ -646,6 +646,6 @@ class Hamiltonian(Observable):
     def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self

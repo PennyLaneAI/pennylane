@@ -53,12 +53,17 @@
       is now only available through `QueuingManager`.
    - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
+   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are removed.  Their functionality is moved to
+      `update_info`.
    
 
 <h3>Breaking changes</h3>
 
  * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
+
+ * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are removed. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
 
 <h3>Deprecations</h3>
 

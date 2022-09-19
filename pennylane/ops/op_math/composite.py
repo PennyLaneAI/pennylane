@@ -228,7 +228,7 @@ class CompositeOp(Operator, abc.ABC):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self:
-            context.safe_update_info(op, owner=self)
+            context.update_info(op, owner=self)
         context.append(self, owns=self.operands)
         return self
 
