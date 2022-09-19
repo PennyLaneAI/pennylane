@@ -24,9 +24,9 @@ from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingContext
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
 
@@ -90,10 +90,10 @@ def get_active_tape():
     """
     message = (
         "qml.tape.get_active_tape is now deprecated."
-        " Please use qml.QueuingContext.active_context"
+        " Please use qml.QueuingManager.active_context"
     )
     warn(message, UserWarning)
-    return QueuingContext.active_context()
+    return QueuingManager.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -164,9 +164,22 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     tape._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
+                if any(
+                    m.return_type in (Probability, Sample, Counts, AllCounts)
+                    for m in tape.measurements
+                ):
+                    raise qml.QuantumFunctionError(
+                        "Only observables that are qubit-wise commuting "
+                        "Pauli words can be returned on the same wire.\n"
+                        "Try removing all probability, sample and counts measurements "
+                        "this will allow for splitting of execution and separate measurements "
+                        "for each non-commuting observable."
+                    ) from e
+
                 raise qml.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
-                    "Pauli words can be returned on the same wire"
+                    "Pauli words can be returned on the same wire, "
+                    f"some of the following measurements do not commute:\n{tape.measurements}"
                 ) from e
 
             tape._ops.extend(rotations)
@@ -372,7 +385,7 @@ class QuantumTape(AnnotatedQueue):
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
-                QueuingContext.append(self)
+                QueuingManager.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
@@ -450,10 +463,10 @@ class QuantumTape(AnnotatedQueue):
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
         warn(
-            "QuantumTape.stop_recording has moved to qml.QueuingContext.stop_recording.",
+            "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording.",
             UserWarning,
         )
-        with QueuingContext.stop_recording():
+        with QueuingManager.stop_recording():
             yield
 
     # ========================================================
@@ -793,7 +806,7 @@ class QuantumTape(AnnotatedQueue):
         # transform requires that the returned inverted object
         # is automatically queued.
         with QuantumTape._lock:
-            QueuingContext.append(new_tape)
+            QueuingManager.append(new_tape)
 
         return new_tape
 

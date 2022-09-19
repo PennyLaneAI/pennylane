@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
+Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
 import pytest
 import pennylane as qml
@@ -20,8 +20,7 @@ import numpy as np
 
 from pennylane.queuing import (
     AnnotatedQueue,
-    AnnotatedQueue,
-    QueuingContext,
+    QueuingManager,
     QueuingError,
 )
 
@@ -34,7 +33,7 @@ class TestStopRecording:
         is not recorded by a QNode"""
         dev = qml.device("default.qubit", wires=1)
 
-        @QueuingContext.stop_recording()
+        @QueuingManager.stop_recording()
         def my_op():
             return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
 
@@ -58,7 +57,7 @@ class TestStopRecording:
 
         @qml.qnode(dev)
         def my_circuit():
-            op1 = QueuingContext.stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
+            op1 = QueuingManager.stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
             op2 = qml.RY(np.pi / 4.0, wires=0)
             res.extend([op1, op2])
             return qml.expval(qml.PauliZ(0))
@@ -73,8 +72,8 @@ class TestStopRecording:
     def test_nested_stop_recording_on_function(self):
         """Test that stop_recording works when nested with other stop_recordings"""
 
-        @QueuingContext.stop_recording()
-        @QueuingContext.stop_recording()
+        @QueuingManager.stop_recording()
+        @QueuingManager.stop_recording()
         def my_op():
             return [
                 qml.RX(0.123, wires=0),
@@ -92,7 +91,7 @@ class TestStopRecording:
         def my_circuit():
             my_op()
 
-            with QueuingContext.stop_recording():
+            with QueuingManager.stop_recording():
                 qml.PauliX(wires=0)
                 my_op()
 
@@ -111,7 +110,7 @@ class TestStopRecording:
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
-        @QueuingContext.stop_recording()
+        @QueuingManager.stop_recording()
         def my_circuit():
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -127,7 +126,7 @@ class TestStopRecording:
         """A stop_recording QNode is unaffected"""
         dev = qml.device("default.qubit", wires=1)
 
-        @QueuingContext.stop_recording()
+        @QueuingManager.stop_recording()
         @qml.qnode(dev)
         def my_circuit():
             qml.RX(np.pi, wires=0)
@@ -137,22 +136,31 @@ class TestStopRecording:
         assert result == -1.0
 
 
-class TestQueuingContext:
-    """Test the logic associated with the QueuingContext class."""
+def test_name_change_warning():
+    """Test that a warning is raised when QueuingContext is requested from the queuing module."""
+    with pytest.warns(
+        UserWarning, match=r"QueuingContext has been renamed qml.queuing.QueuingManager"
+    ):
+        out = qml.queuing.QueuingContext
+    assert out is QueuingManager
+
+
+class TestQueuingManager:
+    """Test the logic associated with the QueuingManager class."""
 
     def test_append_no_context(self):
         """Test that append does not fail when no context is present."""
 
-        QueuingContext.append(qml.PauliZ(0))
+        QueuingManager.append(qml.PauliZ(0))
 
     def test_remove_no_context(self):
         """Test that remove does not fail when no context is present."""
 
-        QueuingContext.remove(qml.PauliZ(0))
+        QueuingManager.remove(qml.PauliZ(0))
 
     def test_no_active_context(self):
         """Test that if there are no active contexts, active_context() returns None"""
-        assert QueuingContext.active_context() is None
+        assert QueuingManager.active_context() is None
 
 
 class TestAnnotatedQueue:
@@ -248,7 +256,7 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
 
-        assert QueuingContext.get_info(A) is None
+        assert QueuingManager.get_info(A) is None
 
     def test_update_info(self):
         """Test that update_info correctly updates an annotation"""
@@ -256,12 +264,12 @@ class TestAnnotatedQueue:
 
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
-            assert QueuingContext.get_info(A) == {"inv": True}
+            assert QueuingManager.get_info(A) == {"inv": True}
 
-            qml.QueuingContext.update_info(A, key="value1")
+            QueuingManager.update_info(A, key="value1")
 
         # should pass silently because no longer recording
-        qml.QueuingContext.update_info(A, key="value2")
+        QueuingManager.update_info(A, key="value2")
 
         assert q.get_info(A) == {"inv": True, "key": "value1"}
 
@@ -287,9 +295,9 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(op, key="value1")
             assert q.get_info(op) == {"key": "value1"}
-            qml.QueuingContext.safe_update_info(op, key="value2")
+            QueuingManager.safe_update_info(op, key="value2")
 
-        qml.QueuingContext.safe_update_info(op, key="no changes here")
+        QueuingManager.safe_update_info(op, key="no changes here")
         assert q.get_info(op) == {"key": "value2"}
 
         q.safe_update_info(op, key="value3")
@@ -301,8 +309,8 @@ class TestAnnotatedQueue:
         op = qml.RX(0.5, wires=1)
 
         with AnnotatedQueue() as q:
-            qml.QueuingContext.safe_update_info(op, key="value2")
-        qml.QueuingContext.safe_update_info(op, key="no changes here")
+            QueuingManager.safe_update_info(op, key="value2")
+        QueuingManager.safe_update_info(op, key="no changes here")
 
         assert len(q.queue) == 0
 
