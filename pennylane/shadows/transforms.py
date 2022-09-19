@@ -69,7 +69,7 @@ def shadow_expval(H, k=1):
         H = qml.PauliZ(0) @ qml.PauliZ(1)
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.shadows.expval(H, k=1)
+        @qml.shadows.shadow_expval(H, k=1)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -191,7 +191,7 @@ def shadow_state(wires, diffable=False):
 
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.shadows.state(wires=[0, 1], diffable=True)
+        @qml.shadows.shadow_state(wires=[0, 1], diffable=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -210,7 +210,7 @@ def shadow_state(wires, diffable=False):
             [ 0.33705002-0.01125j   ,  0.011025  +0.232575j  ,
              -0.006075  +0.225225j  ,  0.33475   +0.j        ]],
            dtype=complex64, requires_grad=True)
-    >>> qml.jacobian(circuit)(x)
+    >>> qml.jacobian(lambda x: np.real(circuit(x)))(x)
     array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
            [-0.005325,  0.235275,  0.2358  , -0.004275],
            [ 0.004275,  0.2358  ,  0.244875, -0.002175],
