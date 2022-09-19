@@ -201,7 +201,7 @@
    probs(wires=[0])]
   ```
 
-<h4>QNSPSA optimizer 😤</h4>
+<h4>QNSPSA optimizer 💪</h4>
 
 * A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
   perturbation stochastic approximation (QNSPSA) method based on 
