@@ -57,6 +57,9 @@
   indicates whether the user wants to check for unitarity of the input matrix or not. Its default
   value is `false`.
   [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
+   
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.
+  [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
 <h3>Breaking changes</h3>
 
@@ -70,7 +73,9 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
+Albert Mitjans Coma,
 Utkarsh Azad,
 Soran Jahangiri,
 Christina Lee,
