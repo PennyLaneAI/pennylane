@@ -167,18 +167,18 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
 
     expanded_wires = []
     mats = []
-    op_wires_in_list = False
+    base_matrix_encountered = False
     identity_count = 0
     for wire in wire_order:
         if wire not in wires:
             identity_count += 1
             expanded_wires.append(wire)
-        elif not op_wires_in_list:
+        elif not base_matrix_encountered:
             if identity_count > 0:
                 mats.append(eye(2**identity_count, format="coo"))
             identity_count = 0
             mats.append(base_matrix)
-            op_wires_in_list = True
+            base_matrix_encountered = True
             expanded_wires.extend(wires)
 
     if identity_count > 0:
