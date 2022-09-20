@@ -200,7 +200,7 @@ class TestQNSPSAOptimizer:
         grad_res = opt._post_process_grad(raw_results, grad_dirs)
 
         # gradient computed analytically
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
@@ -314,7 +314,7 @@ class TestQNSPSAOptimizer:
         # test the next-step parameter
         _, grad_dirs = target_opt._get_spsa_grad_tapes(qnode, params, {})
         _, tensor_dirs = target_opt._get_tensor_tapes(qnode, params, {})
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
