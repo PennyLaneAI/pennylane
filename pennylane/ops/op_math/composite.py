@@ -16,7 +16,7 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
@@ -142,7 +142,7 @@ class CompositeOp(Operator, abc.ABC):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> Tuple[List[Operator], List[Operator]]:
+    def overlapping_ops(self) -> List[List[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires taking
         into account operator commutivity.
 
