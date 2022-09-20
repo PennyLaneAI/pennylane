@@ -26,7 +26,7 @@ from pennylane.queuing import (
 
 
 class TestStopRecording:
-    """Test the stop_recording method of QeuuingContext."""
+    """Test the stop_recording method of QueuingManager."""
 
     def test_stop_recording_on_function_inside_QNode(self):
         """Test that the stop_recording transform when applied to a function

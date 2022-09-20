@@ -111,7 +111,7 @@ class QueuingManager:
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     ops = list_of_ops(params, wires=0)
-        ...     qml.apply(ops[-1])  # apply only the last operation from the list
+        ...     qml.apply(ops[-1])  # apply the last operation from the list again
         ...     return qml.expval(qml.PauliZ(0))
         >>> print(qml.draw(circuit)([1, 2, 3]))
         0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
