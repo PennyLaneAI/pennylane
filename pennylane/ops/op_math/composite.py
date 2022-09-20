@@ -16,7 +16,7 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -142,6 +142,34 @@ class CompositeOp(Operator, abc.ABC):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
+    def overlapping_ops(self) -> Tuple[List[Operator], List[Operator]]:
+        """Operators that act on overlapping wires.
+
+        Returns:
+            List[Tuple[Operator]]: list of tuples of operators that act on overlapping wires
+        """
+        if self._overlapping_ops is None:
+            overlapping_ops = []  # [(wires, [ops])]
+            for op in self:
+                op_idx = False
+                ops = [op]
+                wires = op.wires
+                for idx, (wire_keys, _) in reversed(list(enumerate(overlapping_ops))):
+                    if any(wire in wire_keys for wire in wires):
+                        old_wires, old_ops = overlapping_ops.pop(idx)
+                        ops = old_ops + ops
+                        wires = old_wires + wires
+                        op_idx = idx
+                if op_idx is not False:
+                    overlapping_ops.insert(op_idx, (wires, ops))
+                else:
+                    overlapping_ops += [(wires, ops)]
+
+            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+
+        return self._overlapping_ops
+
+    @property
     def eigendecomposition(self):
         r"""Return the eigendecomposition of the matrix specified by the operator.
 
@@ -179,12 +207,14 @@ class CompositeOp(Operator, abc.ABC):
         Returns:
             list[.Operator] or None: a list of operators
         """
-        if self.has_overlapping_wires:
-            eigen_vectors = self.eigendecomposition["eigvec"]
-            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
         diag_gates = []
-        for op in self:
-            diag_gates.extend(op.diagonalizing_gates())
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                diag_gates.extend(ops[0].diagonalizing_gates())
+            else:
+                tmp_sum = self.__class__(*ops)
+                eigvecs = tmp_sum.eigendecomposition["eigvec"]
+                diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=tmp_sum.wires))
         return diag_gates
 
     def label(self, decimals=None, base_label=None, cache=None):

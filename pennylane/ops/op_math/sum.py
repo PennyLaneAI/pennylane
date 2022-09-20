@@ -16,7 +16,7 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 from copy import copy
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 
@@ -142,30 +142,6 @@ class Sum(CompositeOp):
         """
         return [1.0] * len(self), list(self)
 
-    @property
-    def overlapping_ops(self) -> Tuple[List[Operator], List[Operator]]:
-        """Operators that act on overlapping wires.
-
-        Returns:
-            List[Tuple[Operator]]: list of tuples of operators that act on overlapping wires
-        """
-        if self._overlapping_ops is None:
-            overlapping_ops = {}
-            for op in self:
-                op_added = False
-                op_wires = op.wires
-                for wire_keys in list(overlapping_ops.keys()):
-                    if any(wire in wire_keys for wire in op_wires):
-                        overlapping_ops[wire_keys + op_wires] = overlapping_ops.pop(wire_keys) + (
-                            op,
-                        )
-                        op_added = True
-                if not op_added:
-                    overlapping_ops[op_wires] = (op,)
-            self._overlapping_ops = list(overlapping_ops.values())
-
-        return self._overlapping_ops
-
     def eigvals(self):
         r"""Return the eigenvalues of the specified operator.
 
@@ -190,17 +166,6 @@ class Sum(CompositeOp):
                 )
 
         return qml.math.sum(eigvals, axis=0)
-
-    def diagonalizing_gates(self):
-        diag_gates = []
-        for ops in self.overlapping_ops:
-            if len(ops) == 1:
-                diag_gates.extend(ops[0].diagonalizing_gates())
-            else:
-                tmp_sum = Sum(*ops)
-                eigvecs = tmp_sum.eigendecomposition["eigvec"]
-                diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=tmp_sum.wires))
-        return diag_gates
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.

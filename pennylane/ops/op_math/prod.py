@@ -201,12 +201,21 @@ class Prod(CompositeOp):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        if self.has_overlapping_wires:
-            return self.eigendecomposition["eigval"]
-        eigvals = [
-            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
-            for factor in self
-        ]
+        eigvals = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                eigvals.append(
+                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                )
+            else:
+                tmp_prod = Prod(*ops)
+                eigvals.append(
+                    qml.utils.expand_vector(
+                        tmp_prod.eigendecomposition["eigval"],
+                        list(tmp_prod.wires),
+                        list(self.wires),
+                    )
+                )
 
         return qml.math.prod(eigvals, axis=0)
 
