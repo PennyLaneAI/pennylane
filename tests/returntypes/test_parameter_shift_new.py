@@ -893,6 +893,10 @@ class TestParameterShiftRule:
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == ()
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == ()
 
         assert isinstance(res[1], tuple)
         assert len(res[1]) == 2
@@ -941,6 +945,10 @@ class TestParameterShiftRule:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
+
+        for r in res:
+            assert isinstance(r, np.ndarray)
+            assert r.shape == ()
 
         expval_expected = [-np.sin(x + y), -np.sin(x + y)]
         assert np.allclose(res[0], expval_expected[0])
@@ -1340,7 +1348,10 @@ class TestParameterShiftRule:
         ).T
         assert isinstance(gradA, tuple)
         for a, e in zip(gradA, expected):
-            assert np.allclose(np.squeeze(np.stack(a)), e, atol=tol, rtol=0)
+            for a_comp, e_comp in zip(a, e):
+                assert isinstance(a_comp, np.ndarray)
+                assert a_comp.shape == ()
+                assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
         assert gradF == pytest.approx(expected, abs=tol)
 
     def test_projector_variance(self, tol):

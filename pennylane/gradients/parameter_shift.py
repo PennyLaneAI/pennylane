@@ -537,8 +537,11 @@ def expval_param_shift(
 
 def _get_var_with_second_order(pdA2, f0, pdA):
     """Auxiliary function to compute d(var(A))/dp = d<A^2>/dp -2 * <A> *
-    d<A>/dp for the variances"""
-    return pdA2 - 2 * f0 * pdA
+    d<A>/dp for the variances
+
+    Squeezing is performed on the result to get scalar arrays.
+    """
+    return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
 
 
 def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
@@ -1222,7 +1225,7 @@ def param_shift(
             if not multi_measure:
                 res = []
                 for i, j in zip(unsupported_grads, supported_grads):
-                    component = qml.math.squeeze(i + j)
+                    component = qml.math.array(i + j)
                     res.append(component)
                 return tuple(res)
 
@@ -1230,7 +1233,7 @@ def param_shift(
             for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads):
                 meas_grad = []
                 for param_res1, param_res2 in zip(meas_res1, meas_res2):
-                    component = qml.math.squeeze(param_res1 + param_res2)
+                    component = qml.math.array(param_res1 + param_res2)
                     meas_grad.append(component)
 
                 meas_grad = tuple(meas_grad)

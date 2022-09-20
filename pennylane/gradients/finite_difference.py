@@ -294,7 +294,9 @@ def _finite_diff_new(
                 else:
                     g = []
                     for i in output_dims:
-                        g.append(qml.math.zeros(i))
+                        zero = qml.math.squeeze(qml.math.zeros(i))
+                        g.append(zero)
+
                 grads.append(g)
                 continue
 
