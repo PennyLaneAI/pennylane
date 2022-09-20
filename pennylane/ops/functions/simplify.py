@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape, stop_recording
 
 
@@ -82,10 +82,10 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
      probs(wires=[0])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
-        if QueuingContext.recording():
+        if QueuingManager.recording():
             with stop_recording():
                 new_op = copy(input.simplify())
-            QueuingContext.safe_update_info(input, owner=new_op)
+            QueuingManager.safe_update_info(input, owner=new_op)
             return qml.apply(new_op)
         return input.simplify()
 
