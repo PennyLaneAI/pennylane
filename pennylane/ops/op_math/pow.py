@@ -30,7 +30,7 @@ from pennylane.operation import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.identity import Identity
-from pennylane.queuing import QueuingContext, apply
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -89,8 +89,8 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
         pow_op = qml.prod(*pow_ops)
 
     if do_queue:
-        QueuingContext.safe_update_info(base, owner=pow_op)
-        QueuingContext.safe_update_info(pow_op, owns=base)
+        QueuingManager.safe_update_info(base, owner=pow_op)
+        QueuingManager.safe_update_info(pow_op, owns=base)
 
     return pow_op
 
@@ -272,7 +272,7 @@ class Pow(SymbolicOp):
             return self.base.pow(self.z)
         except PowUndefinedError as e:
             if isinstance(self.z, int) and self.z > 0:
-                if QueuingContext.recording():
+                if QueuingManager.recording():
                     return [apply(self.base) for _ in range(self.z)]
                 return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?

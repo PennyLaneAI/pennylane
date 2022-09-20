@@ -18,14 +18,14 @@ import contextlib
 import copy
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from threading import RLock
 from typing import List
 
 import pennylane as qml
 from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingManager, QueuingError
 
 from .unwrap import UnwrapTape
 
@@ -87,7 +87,7 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
-    return QueuingContext.active_context()
+    return QueuingManager.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -379,7 +379,7 @@ class QuantumTape(AnnotatedQueue):
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
-                QueuingContext.append(self)
+                QueuingManager.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
@@ -453,15 +453,15 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        if QueuingContext.active_context() is not self:
+        if QueuingManager.active_context() is not self:
             raise QueuingError(
                 "Cannot stop recording requested tape as it is not currently recording."
             )
 
-        active_contexts = QueuingContext._active_contexts
-        QueuingContext._active_contexts = deque()
+        active_contexts = QueuingManager._active_contexts
+        QueuingManager._active_contexts = []
         yield
-        QueuingContext._active_contexts = active_contexts
+        QueuingManager._active_contexts = active_contexts
 
     # ========================================================
     # construction methods
@@ -800,7 +800,7 @@ class QuantumTape(AnnotatedQueue):
         # transform requires that the returned inverted object
         # is automatically queued.
         with QuantumTape._lock:
-            QueuingContext.append(new_tape)
+            QueuingManager.append(new_tape)
 
         return new_tape
 
