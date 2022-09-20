@@ -16,6 +16,7 @@ This module contains the base quantum tape.
 """
 import contextlib
 import copy
+from warnings import warn
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 from collections import Counter, defaultdict
@@ -25,7 +26,7 @@ from typing import List
 import pennylane as qml
 from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingManager, QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
 
@@ -87,6 +88,11 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    warn(message, UserWarning)
     return QueuingManager.active_context()
 
 
@@ -152,7 +158,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
                     tape._obs_sharing_wires
@@ -438,10 +444,13 @@ class QuantumTape(AnnotatedQueue):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
+    # pylint: disable=no-self-use
     @contextlib.contextmanager
     def stop_recording(self):
         """Context manager to temporarily stop recording operations
         onto the tape. This is useful is scratch space is needed.
+
+        **Deprecated Method:** Please use ``qml.QueuingManager.stop_recording`` instead.
 
         **Example**
 
@@ -453,15 +462,12 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        if QueuingManager.active_context() is not self:
-            raise QueuingError(
-                "Cannot stop recording requested tape as it is not currently recording."
-            )
-
-        active_contexts = QueuingManager._active_contexts
-        QueuingManager._active_contexts = []
-        yield
-        QueuingManager._active_contexts = active_contexts
+        warn(
+            "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording.",
+            UserWarning,
+        )
+        with QueuingManager.stop_recording():
+            yield
 
     # ========================================================
     # construction methods
@@ -792,7 +798,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        with qml.tape.stop_recording():
+        with QueuingManager.stop_recording():
             new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 

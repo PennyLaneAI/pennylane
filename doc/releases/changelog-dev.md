@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
-  symmetries of the Hamiltonian. 
+  symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
@@ -53,7 +53,14 @@
       is now only available through `QueuingManager`.
    - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
+   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+      `update_info`.
 
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
+   
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
@@ -65,7 +72,17 @@
  * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
+ * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
+
 <h3>Deprecations</h3>
+
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
 <h3>Documentation</h3>
 
@@ -77,6 +94,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
+Albert Mitjans Coma,
 Utkarsh Azad,
 Amintor Dusko,
 Soran Jahangiri,
