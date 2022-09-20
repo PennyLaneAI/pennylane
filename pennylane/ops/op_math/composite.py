@@ -179,7 +179,7 @@ class CompositeOp(Operator, abc.ABC):
         """
         if self.has_overlapping_wires:
             eigen_vectors = self.eigendecomposition["eigvec"]
-            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires, unitary_check=False)]
         diag_gates = []
         for op in self:
             diag_gates.extend(op.diagonalizing_gates())
@@ -228,7 +228,7 @@ class CompositeOp(Operator, abc.ABC):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self:
-            context.safe_update_info(op, owner=self)
+            context.update_info(op, owner=self)
         context.append(self, owns=self.operands)
         return self
 

@@ -18,7 +18,7 @@ from functools import wraps
 
 from pennylane.operation import Operator, AdjointUndefinedError
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, stop_recording
+from pennylane.tape import QuantumTape
 
 from .adjoint_class import Adjoint
 
@@ -27,7 +27,7 @@ def _single_op_eager(op, update_queue=False):
     try:
         adj = op.adjoint()
         if update_queue:
-            QueuingManager.safe_update_info(op, owner=adj)
+            QueuingManager.update_info(op, owner=adj)
             QueuingManager.append(adj, owns=op)
         return adj
     except AdjointUndefinedError:
@@ -123,7 +123,7 @@ def adjoint(fn, lazy=True):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with stop_recording(), QuantumTape() as tape:
+        with QueuingManager.stop_recording(), QuantumTape() as tape:
             fn(*args, **kwargs)
 
         if lazy:
