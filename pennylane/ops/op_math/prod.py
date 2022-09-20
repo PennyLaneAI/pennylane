@@ -221,23 +221,31 @@ class Prod(CompositeOp):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        if self.has_overlapping_wires:
-            mats_and_wires_gen = (
-                (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-                for op in self
-            )
 
-            reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-            )
+        def mats_gen():
+            for ops in self.overlapping_ops:
+                if len(ops) == 1:
+                    yield (
+                        qml.matrix(ops[0])
+                        if isinstance(ops[0], qml.Hamiltonian)
+                        else ops[0].matrix()
+                    )
+                else:
+                    mats_and_wires_gen = (
+                        (
+                            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
+                            op.wires,
+                        )
+                        for op in ops
+                    )
 
-            wire_order = wire_order or self.wires
+                    reduced_mat, _ = math.reduce_matrices(
+                        mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+                    )
 
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
-        mats_gen = (
-            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
-        )
-        full_mat = reduce(math.kron, mats_gen)
+                    yield reduced_mat
+
+        full_mat = reduce(math.kron, mats_gen())
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
