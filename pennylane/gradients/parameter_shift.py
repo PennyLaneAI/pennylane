@@ -628,24 +628,23 @@ def _create_variance_proc_fn(
 
         multi_measure = len(tape.measurements) > 1
         if multi_measure:
-
             res = []
             for idx, m in enumerate(mask):
 
                 if isinstance(pdA2, (Sequence, np.ndarray)):
                     r = _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx]) if m else pdA[idx]
                 elif (
-                    isinstance(pdA, tuple)
+                    isinstance(pdA, (Sequence, np.ndarray))
                     and len(pdA) > 0
-                    and isinstance(pdA, (Sequence, np.ndarray))
                 ):
-                    r = (
+                    num_params = len(tape.trainable_params)
+                    r = tuple(
                         [
                             _get_var_with_second_order(pdA2, f0[idx], pdA[idx][i])
-                            for i in range(len(pdA))
+                            for i in range(num_params)
                         ]
                         if m
-                        else [pdA[idx][i] for i in range(len(pdA))]
+                        else [pdA[idx][i] for i in range(num_params)]
                     )
 
                 res.append(r)
@@ -1219,7 +1218,27 @@ def param_shift(
         def processing_fn(results):
             unsupported_grads = fallback_proc_fn(results[:fallback_len])
             supported_grads = fn(results[fallback_len:])
-            return unsupported_grads + supported_grads
+            if not qml.active_return():
+                return unsupported_grads + supported_grads
+
+            multi_measure = len(tape.measurements) > 1
+            if not multi_measure:
+                if tape.measurements[0].return_type in (qml.measurements.Expectation, qml.measurements.Variance):
+                    res = []
+                    for i, j in zip(unsupported_grads, supported_grads):
+                        res.append(i + j)
+                    return tuple(res)
+
+            combined_grad = []
+            for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads):
+                meas_grad = []
+                for param_res1, param_res2 in zip(meas_res1, meas_res2):
+                    component = qml.math.squeeze(param_res1 + param_res2)
+                    meas_grad.append(component)
+
+                meas_grad = tuple(meas_grad)
+                combined_grad.append(meas_grad)
+            return tuple(combined_grad)
 
         return gradient_tapes, processing_fn
 
