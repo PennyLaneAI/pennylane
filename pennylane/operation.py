@@ -1743,7 +1743,7 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -1850,16 +1850,16 @@ class Tensor(Observable):
         if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
             QueuingManager.append(self)
 
-        QueuingManager.safe_update_info(self, owns=tuple(self.obs))
-        QueuingManager.safe_update_info(other, owner=self)
+        QueuingManager.update_info(self, owns=tuple(self.obs))
+        QueuingManager.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            QueuingManager.safe_update_info(self, owns=tuple(self.obs))
-            QueuingManager.safe_update_info(other, owner=self)
+            QueuingManager.update_info(self, owns=tuple(self.obs))
+            QueuingManager.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
