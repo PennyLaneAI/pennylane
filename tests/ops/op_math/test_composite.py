@@ -15,6 +15,7 @@
 Unit tests for the composite operator class of qubit operations
 """
 from copy import copy
+
 import numpy as np
 import pytest
 
@@ -258,3 +259,33 @@ class TestProperties:
 
         op = ValidOp(qml.PauliX(0), ValidOp(qml.Identity(wires=0), qml.RX(1.9, wires=1)))
         assert op.arithmetic_depth == 2
+
+    def test_overlapping_ops_property(self):
+        """Test the overlapping_ops property."""
+        valid_op = ValidOp(
+            qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+            qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+            qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+            qml.PauliY(7),
+            qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+        )
+        overlapping_ops = [
+            [
+                qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+                qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+                qml.PauliY(7),
+            ],
+            [
+                qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+                qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+            ],
+        ]
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
+            for op1, op2 in zip(list_op1, list_op2):
+                assert op1.name == op2.name
+                assert op1.wires == op2.wires
+                assert op1.data == op2.data
+                assert op1.arithmetic_depth == op2.arithmetic_depth
