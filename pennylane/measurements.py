@@ -489,7 +489,7 @@ class MeasurementProcess:
 
         return tape
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
             context.safe_update_info(self.obs, owner=self)
@@ -597,7 +597,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         # the return value of expval is always a scalar
         if self.return_type is ShadowExpval:
-            return ()
+            return (1,)
 
         # otherwise, the return type requires a device
         if device is None:
@@ -608,7 +608,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, device.shots, len(self.wires))
+        return (1, 2, device.shots, len(self.wires))
 
     @property
     def wires(self):
@@ -848,7 +848,7 @@ def counts(op=None, wires=None, all_outcomes=False):
     >>> circuit(0.5)
     {'00': 3, '01': 1}
 
-    Per default, outcomes that were not observed will not be included in the dictionary.
+    By default, outcomes that were not observed will not be included in the dictionary.
 
     .. code-block:: python3
 
@@ -1201,7 +1201,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
-    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    The protocol is described in detail in the paper `Predicting Many Properties of a Quantum System from Very Few Measurements <https://arxiv.org/abs/2002.08953>`_.
     This measurement process returns the randomized Pauli measurements (the ``recipes``)
     that are performed for each qubit and snapshot as an integer:
 
@@ -1348,7 +1348,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
 
         dev = qml.device("default.qubit", wires=range(2), shots=10000)
         @qml.qnode(dev)

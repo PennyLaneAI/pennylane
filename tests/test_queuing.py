@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
+Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
 import contextlib
 
@@ -20,25 +20,34 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, QueuingManager, QueuingError
 
 
-class TestQueuingContext:
-    """Test the logic associated with the QueuingContext class."""
+def test_name_change_warning():
+    """Test that a warning is raised when QueuingContext is requested from the queuing module."""
+    with pytest.warns(
+        UserWarning, match=r"QueuingContext has been renamed qml.queuing.QueuingManager"
+    ):
+        out = qml.queuing.QueuingContext
+    assert out is QueuingManager
+
+
+class TestQueuingManager:
+    """Test the logic associated with the QueuingManager class."""
 
     def test_append_no_context(self):
         """Test that append does not fail when no context is present."""
 
-        QueuingContext.append(qml.PauliZ(0))
+        QueuingManager.append(qml.PauliZ(0))
 
     def test_remove_no_context(self):
         """Test that remove does not fail when no context is present."""
 
-        QueuingContext.remove(qml.PauliZ(0))
+        QueuingManager.remove(qml.PauliZ(0))
 
     def test_no_active_context(self):
         """Test that if there are no active contexts, active_context() returns None"""
-        assert QueuingContext.active_context() is None
+        assert QueuingManager.active_context() is None
 
 
 class TestAnnotatedQueue:
@@ -134,7 +143,7 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
 
-        assert QueuingContext.get_info(A) is None
+        assert QueuingManager.get_info(A) is None
 
     def test_update_info(self):
         """Test that update_info correctly updates an annotation"""
@@ -142,12 +151,12 @@ class TestAnnotatedQueue:
 
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
-            assert QueuingContext.get_info(A) == {"inv": True}
+            assert QueuingManager.get_info(A) == {"inv": True}
 
-            qml.QueuingContext.update_info(A, key="value1")
+            QueuingManager.update_info(A, key="value1")
 
         # should pass silently because no longer recording
-        qml.QueuingContext.update_info(A, key="value2")
+        QueuingManager.update_info(A, key="value2")
 
         assert q.get_info(A) == {"inv": True, "key": "value1"}
 
@@ -173,9 +182,9 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(op, key="value1")
             assert q.get_info(op) == {"key": "value1"}
-            qml.QueuingContext.safe_update_info(op, key="value2")
+            QueuingManager.safe_update_info(op, key="value2")
 
-        qml.QueuingContext.safe_update_info(op, key="no changes here")
+        QueuingManager.safe_update_info(op, key="no changes here")
         assert q.get_info(op) == {"key": "value2"}
 
         q.safe_update_info(op, key="value3")
@@ -187,8 +196,8 @@ class TestAnnotatedQueue:
         op = qml.RX(0.5, wires=1)
 
         with AnnotatedQueue() as q:
-            qml.QueuingContext.safe_update_info(op, key="value2")
-        qml.QueuingContext.safe_update_info(op, key="no changes here")
+            QueuingManager.safe_update_info(op, key="value2")
+        QueuingManager.safe_update_info(op, key="no changes here")
 
         assert len(q.queue) == 0
 
