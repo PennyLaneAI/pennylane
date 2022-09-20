@@ -314,11 +314,7 @@ def _finite_diff_new(
                 linear_comb.append(elem)
 
             # Second add all the terms for each measurement separately
-            pre_grads = []
-
-            for i in range(len(tape.measurements)):
-                elem = sum(r[i] for r in linear_comb)
-                pre_grads.append(elem)
+            pre_grads = [sum(r[i] for r in linear_comb) for i in range(len(tape.measurements))]
 
             # Add on the unshifted term
             if c0 is not None:
