@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
-  symmetries of the Hamiltonian. 
+  symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
@@ -42,24 +42,28 @@
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-   - `QueuingContext` is renamed to `QueuingManager`.
-   - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
-   - `QueuingManager` is no longer an abstract base class.
-   - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
-   - `QueuingManager` is no longer a context manager.
-   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and 
+  * `QueuingContext` is renamed to `QueuingManager`.
+  * `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+  * `QueuingManager` is no longer an abstract base class.
+  * `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+  * `QueuingManager` is no longer a context manager.
+  * Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
      `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
-   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+  * `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
       is now only available through `QueuingManager`.
-   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
+  * `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
-   
+
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
+* Add `overlapping_ops` property to the `Composite` class, and use this property to improve the
+  performance of the `eigvals` and `diagonalizing_gates` methods.
+  [(#3084)](https://github.com/PennyLaneAI/pennylane/pull/3084)
+
 <h3>Breaking changes</h3>
 
- * `QueuingContext` is renamed `QueuingManager`.
+* `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
 <h3>Deprecations</h3>

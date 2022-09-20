@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as qnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
 
