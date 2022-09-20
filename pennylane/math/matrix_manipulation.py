@@ -15,7 +15,7 @@
 to a higher hilbert space with re-ordered wires."""
 import copy
 from functools import reduce
-from typing import Generator, Tuple
+from typing import Generator, Iterable, Tuple
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, issparse, kron
@@ -145,55 +145,6 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     return mat
 
 
-def reduce_matrices(
-    mats_and_wires_gen: Generator[Tuple[np.ndarray, Wires], None, None], reduce_func: callable
-) -> Tuple[np.ndarray, Wires]:
-    """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
-    generator, from left to right, so as to reduce the sequence to a tuple containing a single
-    matrix and the wires it acts on.
-
-    Args:
-        mats_and_wires_gen (Generator): generator of tuples containing the matrix and the wires of
-            each operator
-        reduce_func (callable): function used to reduce the sequence of operators
-
-    Returns:
-        Tuple[tensor, Wires]: a tuple containing the reduced matrix and the wires it acts on
-    """
-
-    def expand_and_reduce(op1_tuple: Tuple[np.ndarray, Wires], op2_tuple: Tuple[np.ndarray, Wires]):
-        mat1, wires1 = op1_tuple
-        mat2, wires2 = op2_tuple
-        expanded_wires = wires1 + wires2
-        mat1 = expand_matrix(mat1, wires1, wire_order=expanded_wires)
-        mat2 = expand_matrix(mat2, wires2, wire_order=expanded_wires)
-        return reduce_func(mat1, mat2), expanded_wires
-
-    reduced_mat, final_wires = reduce(expand_and_reduce, mats_and_wires_gen)
-
-    return reduced_mat, final_wires
-
-
-def _sparse_swap_mat(qubit_i, qubit_j, n):
-    """Helper function which generates the sparse matrix of SWAP
-    for qubits: i <--> j with final shape (2**n, 2**n)."""
-
-    def swap_qubits(index, i, j):
-        s = list(format(index, f"0{n}b"))  # convert to binary
-        si, sj = s[i], s[j]
-        if si == sj:
-            return index
-        s[i], s[j] = sj, si  # swap qubits
-        return int(f"0b{''.join(s)}", 2)  # convert to int
-
-    data = [1] * (2**n)
-    index_i = list(range(2**n))  # bras (we don't change anything)
-    index_j = [
-        swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
-    ]  # kets (we swap qubits i and j): <10| --> <01|
-    return csr_matrix((data, (index_i, index_j)))
-
-
 def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     """Re-express a sparse base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
@@ -211,8 +162,6 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
         tensor_like: expanded matrix
     """
     base_matrix.eliminate_zeros()
-
-    n_total_wires = len(wire_order)
 
     wires = wires.tolist() if isinstance(wires, qml.wires.Wires) else list(copy.copy(wires))
 
@@ -242,6 +191,47 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
 
     expanded_matrix.eliminate_zeros()
 
+    U = _permutation_sparse_matrix(expanded_wires, wire_order)
+
+    if U is not None:
+        expanded_matrix = U.T @ expanded_matrix @ U
+        expanded_matrix.eliminate_zeros()
+
+    return expanded_matrix.asformat(format)
+
+
+def _sparse_swap_mat(qubit_i, qubit_j, n):
+    """Helper function which generates the sparse matrix of SWAP
+    for qubits: i <--> j with final shape (2**n, 2**n)."""
+
+    def swap_qubits(index, i, j):
+        s = list(format(index, f"0{n}b"))  # convert to binary
+        si, sj = s[i], s[j]
+        if si == sj:
+            return index
+        s[i], s[j] = sj, si  # swap qubits
+        return int(f"0b{''.join(s)}", 2)  # convert to int
+
+    data = [1] * (2**n)
+    index_i = list(range(2**n))  # bras (we don't change anything)
+    index_j = [
+        swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
+    ]  # kets (we swap qubits i and j): <10| --> <01|
+    return csr_matrix((data, (index_i, index_j)))
+
+
+def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -> csr_matrix:
+    """Helper function which generates a permutation matrix in sparse format that swaps the wires
+    in ``expanded_wires`` to match the order given by the ``wire_order`` argument.
+
+    Args:
+        expanded_wires (Iterable): inital wires
+        wire_order (Iterable): final wires
+
+    Returns:
+        csr_matrix: permutation matrix in CSR sparse format
+    """
+    n_total_wires = len(wire_order)
     U = None
     for i in range(n_total_wires):
         if expanded_wires[i] != wire_order[i]:
@@ -252,7 +242,34 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
             U.eliminate_zeros()
 
             expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
-    if U is not None:
-        expanded_matrix = U.T @ expanded_matrix @ U
-        expanded_matrix.eliminate_zeros()
-    return expanded_matrix.asformat(format)
+
+    return U
+
+
+def reduce_matrices(
+    mats_and_wires_gen: Generator[Tuple[np.ndarray, Wires], None, None], reduce_func: callable
+) -> Tuple[np.ndarray, Wires]:
+    """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
+    generator, from left to right, so as to reduce the sequence to a tuple containing a single
+    matrix and the wires it acts on.
+
+    Args:
+        mats_and_wires_gen (Generator): generator of tuples containing the matrix and the wires of
+            each operator
+        reduce_func (callable): function used to reduce the sequence of operators
+
+    Returns:
+        Tuple[tensor, Wires]: a tuple containing the reduced matrix and the wires it acts on
+    """
+
+    def expand_and_reduce(op1_tuple: Tuple[np.ndarray, Wires], op2_tuple: Tuple[np.ndarray, Wires]):
+        mat1, wires1 = op1_tuple
+        mat2, wires2 = op2_tuple
+        expanded_wires = wires1 + wires2
+        mat1 = expand_matrix(mat1, wires1, wire_order=expanded_wires)
+        mat2 = expand_matrix(mat2, wires2, wire_order=expanded_wires)
+        return reduce_func(mat1, mat2), expanded_wires
+
+    reduced_mat, final_wires = reduce(expand_and_reduce, mats_and_wires_gen)
+
+    return reduced_mat, final_wires
