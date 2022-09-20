@@ -73,6 +73,7 @@
    if the object isn't in the queue.
 
  * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
 <h3>Deprecations</h3>
 
