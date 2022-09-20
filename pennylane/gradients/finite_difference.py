@@ -213,7 +213,9 @@ def _finite_diff_new(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: qml.math.zeros([tape.output_dim, 0])
+        if len(tape.measurements) == 1:
+            return [], lambda _: qml.math.zeros([0])
+        return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
@@ -302,40 +304,44 @@ def _finite_diff_new(
 
             res = results[start : start + s]
             start = start + s
-            # compute the linear combination of results and coefficients
+            # compute the lin
+            # ear combination of results and coefficients
+            pre_grads = []
 
-            # First compute the multiplication with coeff
-            linear_comb = []
-            for i, c in enumerate(coeffs):
-                if isinstance(res[i], (tuple, list)):
-                    elem = [r * c for r in res[i]]
-                else:
-                    elem = [res[i] * c]
-                linear_comb.append(elem)
-
-            # Second add all the terms for each measurement separately
-            pre_grads = [sum(r[i] for r in linear_comb) for i in range(len(tape.measurements))]
+            if len(tape.measurements) == 1:
+                res = qml.math.stack(res)
+                c = qml.math.convert_like(coeffs, res)
+                lin_comb = qml.math.tensordot(res, c, [[0], [0]])
+                pre_grads.append(lin_comb)
+            else:
+                for i in range(len(tape.measurements)):
+                    r = qml.math.stack([r[i] for r in res])
+                    c = qml.math.convert_like(coeffs, r)
+                    lin_comb = qml.math.tensordot(r, c, [[0], [0]])
+                    pre_grads.append(lin_comb)
 
             # Add on the unshifted term
             if c0 is not None:
-                # unshifted term
-                if isinstance(r0, (tuple, list)):
-                    c0r0 = [c0 * r for r in r0]
+                if len(tape.measurements) == 1:
+                    c = qml.math.convert_like(c0, r0)
+                    pre_grads = pre_grads + c * r0
                 else:
-                    c0r0 = [c0 * r0]
-                pre_grads = [i + j for i, j in zip(pre_grads, c0r0)]
+                    for i in range(len(tape.measurements)):
+                        r_i = r0[i]
+                        c = qml.math.convert_like(c0, r_i)
+                        pre_grads[i] = pre_grads[i] + c * r_i
+
+            coeff_div = qml.math.cast_like(
+                qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
+            )
 
             if len(tape.measurements) > 1:
-                if isinstance(results[0][0], np.ndarray):
-                    pre_grads = tuple(np.array(i / (h**n)) for i in pre_grads)
-                else:
-                    pre_grads = tuple(i / (h**n) for i in pre_grads)
+                pre_grads = tuple(
+                    qml.math.convert_like(i * coeff_div, coeff_div) for i in pre_grads
+                )
             else:
-                pre_grads = pre_grads[0]
-                if isinstance(results[0], np.ndarray):
-                    pre_grads = np.array(pre_grads / (h**n))
-                else:
-                    pre_grads = pre_grads / (h**n)
+                pre_grads = qml.math.convert_like(pre_grads[0] * coeff_div, coeff_div)
+
             grads.append(pre_grads)
 
         # Single measurement
