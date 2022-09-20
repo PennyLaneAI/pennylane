@@ -159,6 +159,7 @@ class Prod(CompositeOp):
     """
 
     _op_symbol = "@"
+    _math_op = math.prod
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
@@ -191,33 +192,6 @@ class Prod(CompositeOp):
         if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
-
-    def eigvals(self):
-        """Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        eigvals = []
-        for ops in self.overlapping_ops:
-            if len(ops) == 1:
-                eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
-                )
-            else:
-                tmp_prod = Prod(*ops)
-                eigvals.append(
-                    qml.utils.expand_vector(
-                        tmp_prod.eigendecomposition["eigval"],
-                        list(tmp_prod.wires),
-                        list(self.wires),
-                    )
-                )
-
-        return qml.math.prod(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""

@@ -121,6 +121,7 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
+    _math_op = math.sum
 
     @property
     def is_hermitian(self):
@@ -141,31 +142,6 @@ class Sum(CompositeOp):
             and list of operations :math:`O_i`
         """
         return [1.0] * len(self), list(self)
-
-    def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        eigvals = []
-        for ops in self.overlapping_ops:
-            if len(ops) == 1:
-                eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
-                )
-            else:
-                tmp_sum = Sum(*ops)
-                eigvals.append(
-                    qml.utils.expand_vector(
-                        tmp_sum.eigendecomposition["eigval"], list(tmp_sum.wires), list(self.wires)
-                    )
-                )
-
-        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.

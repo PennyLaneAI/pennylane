@@ -16,7 +16,7 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
@@ -41,6 +41,7 @@ class CompositeOp(Operator, abc.ABC):
     """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
+    _math_op: Callable
 
     def __init__(
         self, *operands: Operator, do_queue=True, id=None
@@ -133,9 +134,32 @@ class CompositeOp(Operator, abc.ABC):
     def has_matrix(self):
         return all(op.has_matrix for op in self)
 
-    @abc.abstractmethod
     def eigvals(self):
-        """Return the eigenvalues of the specified operator."""
+        """Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        eigvals = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                eigvals.append(
+                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                )
+            else:
+                tmp_composite = self.__class__(*ops)
+                eigvals.append(
+                    qml.utils.expand_vector(
+                        tmp_composite.eigendecomposition["eigval"],
+                        list(tmp_composite.wires),
+                        list(self.wires),
+                    )
+                )
+
+        return self._math_op(eigvals, axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):
