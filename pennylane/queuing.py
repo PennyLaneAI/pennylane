@@ -55,9 +55,7 @@ class QueuingManager:
 
     * ``get_info``: retrieve the object's metadata
 
-    * ``update_info``: Update an object's metadata if it is already queued. Else, raise a ``QueuingError``.
-
-    * ``safe_update_info``: Update an object's metadata without raising errors
+    * ``update_info``: Update an object's metadata if it is already queued.
 
     To start and end recording, the recording queue can use the :meth:`add_active_queue` and
     :meth:`remove_active_queue` methods.
@@ -109,7 +107,7 @@ class QueuingManager:
 
     @classmethod
     def update_info(cls, obj, **kwargs):
-        """Updates information of an object in the active queue.
+        """Updates information of an object in the active queue if it is already in the queue.
 
         Args:
             obj: the object with metadata to be updated
@@ -117,7 +115,6 @@ class QueuingManager:
         if cls.recording():
             cls.active_context().update_info(obj, **kwargs)
 
-    # pylint: disable=protected-access
     @classmethod
     def safe_update_info(cls, obj, **kwargs):
         """Updates information of an object in the active queue if it is already in the queue.
@@ -125,8 +122,12 @@ class QueuingManager:
         Args:
             obj: the object with metadata to be updated
         """
-        if cls.recording():
-            cls.active_context().safe_update_info(obj, **kwargs)
+        warn(
+            "QueuingManager.safe_update_info is deprecated."
+            "It's behavior has been moved to `update_info`.",
+            UserWarning,
+        )
+        cls.update_info(obj, **kwargs)
 
     @classmethod
     def get_info(cls, obj):
@@ -170,18 +171,19 @@ class AnnotatedQueue:
         """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
         del self._queue[obj]
 
-    def safe_update_info(self, obj, **kwargs):
+    def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
         if obj in self._queue:
             self._queue[obj].update(kwargs)
 
-    def update_info(self, obj, **kwargs):
-        """Update ``obj``'s metadata with ``kwargs``.
-        Raises a ``QueuingError`` if it doesn't exist in the queue."""
-        if obj not in self._queue:
-            raise QueuingError(f"Object {obj} not in the queue.")
-
-        self._queue[obj].update(kwargs)
+    def safe_update_info(self, obj, **kwargs):
+        """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
+        warn(
+            "AnnotatedQueue.safe_update_info is deprecated."
+            "It's behavior has been moved to `update_info`.",
+            UserWarning,
+        )
+        self.update_info(obj, **kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
