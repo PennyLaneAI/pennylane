@@ -909,6 +909,124 @@ class TestParameterShiftRule:
         # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    def test_fallback_single_meas(self, mocker, tol):
+        """Test that fallback gradient functions are correctly used for a single measurement."""
+        spy = mocker.spy(qml.gradients, "finite_diff")
+        dev = qml.device("default.qubit.autograd", wires=2)
+        x = 0.543
+        y = -0.654
+
+        class RX(qml.RX):
+            grad_method = "F"
+
+        params = np.array([x, y], requires_grad=True)
+
+        def cost_fn(params):
+
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(params[0], wires=[0])
+                RX(params[1], wires=[0])
+                qml.expval(qml.PauliZ(0))
+
+            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+            assert len(tapes) == 4
+
+            # check that the fallback method was called for the specified argnums
+            spy.assert_called()
+            assert spy.call_args[1]["argnum"] == {1}
+
+            return fn(dev.batch_execute(tapes))
+
+        res = cost_fn(params)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        expval_expected = [-np.sin(x + y), -np.sin(x + y)]
+        assert np.allclose(res[0], expval_expected[0])
+        assert np.allclose(res[1], expval_expected[1])
+
+    class RY(qml.RY):
+        grad_method = "F"
+
+    class RX(qml.RX):
+        grad_method = "F"
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("RX, RY, argnum", [(RX, qml.RY, 0), (qml.RX, RY, 1)])
+    def test_fallback_probs(self, RX, RY, argnum, mocker, tol):
+        """Test that fallback gradient functions are correctly used with probs"""
+        spy = mocker.spy(qml.gradients, "finite_diff")
+        dev = qml.device("default.qubit.autograd", wires=2)
+        x = 0.543
+        y = -0.654
+
+        params = np.array([x, y], requires_grad=True)
+
+        def cost_fn(params):
+
+            with qml.tape.QuantumTape() as tape:
+                RX(params[0], wires=[0])
+                RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[0, 1])
+
+            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+            assert len(tapes) == 4
+
+            # check that the fallback method was called for the specified argnums
+            spy.assert_called()
+            assert spy.call_args[1]["argnum"] == {argnum}
+
+            return fn(dev.batch_execute(tapes))
+
+        res = cost_fn(params)
+
+        assert isinstance(res, tuple)
+
+        assert len(res) == 2
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
+
+        expval_expected = [-2 * np.sin(x) / 2, 0]
+        probs_expected = (
+            np.array(
+                [
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
+        )
+
+        # Expvals
+        assert np.allclose(res[0][0], expval_expected[0])
+        assert np.allclose(res[0][1], expval_expected[1])
+
+        # Probs
+        assert np.allclose(res[1][0], probs_expected[:, 0])
+        assert np.allclose(res[1][1], probs_expected[:, 1])
+
+    @pytest.mark.autograd
     def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""

@@ -633,10 +633,7 @@ def _create_variance_proc_fn(
 
                 if isinstance(pdA2, (Sequence, np.ndarray)):
                     r = _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx]) if m else pdA[idx]
-                elif (
-                    isinstance(pdA, (Sequence, np.ndarray))
-                    and len(pdA) > 0
-                ):
+                elif isinstance(pdA, (Sequence, np.ndarray)) and len(pdA) > 0:
                     num_params = len(tape.trainable_params)
                     r = tuple(
                         [
@@ -1223,11 +1220,11 @@ def param_shift(
 
             multi_measure = len(tape.measurements) > 1
             if not multi_measure:
-                if tape.measurements[0].return_type in (qml.measurements.Expectation, qml.measurements.Variance):
-                    res = []
-                    for i, j in zip(unsupported_grads, supported_grads):
-                        res.append(i + j)
-                    return tuple(res)
+                res = []
+                for i, j in zip(unsupported_grads, supported_grads):
+                    component = qml.math.squeeze(i + j)
+                    res.append(component)
+                return tuple(res)
 
             combined_grad = []
             for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads):
