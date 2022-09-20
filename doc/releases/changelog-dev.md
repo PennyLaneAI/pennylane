@@ -58,7 +58,7 @@
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
 * Add `overlapping_ops` property to the `Composite` class, and use this property to improve the
-  performance of the `eigvals` and `diagonalizing_gates` methods.
+  performance of the `eigvals`, `diagonalizing_gates` and `Prod.matrix` methods.
   [(#3084)](https://github.com/PennyLaneAI/pennylane/pull/3084)
 
 <h3>Breaking changes</h3>
