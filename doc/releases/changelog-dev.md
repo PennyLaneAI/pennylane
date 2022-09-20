@@ -72,6 +72,8 @@
  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
    if the object isn't in the queue.
 
+ * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+
 <h3>Deprecations</h3>
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
