@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
-  symmetries of the Hamiltonian. 
+  symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
@@ -53,6 +53,11 @@
       is now only available through `QueuingManager`.
    - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
+
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
    
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
@@ -74,6 +79,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
+Albert Mitjans Coma,
 Utkarsh Azad,
 Soran Jahangiri,
 Christina Lee,
