@@ -219,21 +219,21 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     expanded_wires = []
     mats = []
     op_wires_in_list = False
-    i_count = 0
+    identity_count = 0
     for wire in wire_order:
         if wire not in wires:
-            i_count += 1
+            identity_count += 1
             expanded_wires.append(wire)
         elif not op_wires_in_list:
-            if i_count > 0:
-                mats.append(eye(2**i_count, format="coo"))
-            i_count = 0
+            if identity_count > 0:
+                mats.append(eye(2**identity_count, format="coo"))
+            identity_count = 0
             mats.append(base_matrix)
             op_wires_in_list = True
             expanded_wires.extend(wires)
 
-    if i_count > 0:
-        mats.append(eye(2**i_count, format="coo"))
+    if identity_count > 0:
+        mats.append(eye(2**identity_count, format="coo"))
 
     if len(mats) > 1:
         expanded_matrix = reduce(lambda i, j: kron(i, j, format="csr"), mats)
