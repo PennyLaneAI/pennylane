@@ -995,11 +995,20 @@ class TestParameterShiftRule:
 
         assert len(res) == 2
 
-        assert isinstance(res[0], tuple)
-        assert len(res[0]) == 2
+        expval_res = res[0]
+        assert isinstance(expval_res, tuple)
+        assert len(expval_res) == 2
 
-        assert isinstance(res[1], tuple)
-        assert len(res[1]) == 2
+        for param_r in expval_res:
+            assert isinstance(param_r, np.ndarray)
+            assert param_r.shape == ()
+
+        probs_res = res[1]
+        assert isinstance(probs_res, tuple)
+        assert len(probs_res) == 2
+        for param_r in probs_res:
+            assert isinstance(param_r, np.ndarray)
+            assert param_r.shape == (4,)
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
@@ -1226,6 +1235,8 @@ class TestParameterShiftRule:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
         assert len(tapes) == 1 + 2 * 1
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1255,6 +1266,8 @@ class TestParameterShiftRule:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
         assert len(tapes) == 1 + 4 * 1
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1287,6 +1300,14 @@ class TestParameterShiftRule:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
+
+        assert isinstance(gradA, tuple)
+        assert len(gradA) == 2
+        print(gradA)
+        for g in gradA:
+            assert isinstance(g, np.ndarray)
+            assert g.shape == ()
+
         assert len(tapes) == 1 + 2 * 4
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1346,6 +1367,7 @@ class TestParameterShiftRule:
                 [0, 0, np.cos(b) ** 2 * np.sin(2 * c)],
             ]
         ).T
+        print(gradA)
         assert isinstance(gradA, tuple)
         for a, e in zip(gradA, expected):
             for a_comp, e_comp in zip(a, e):
@@ -1995,6 +2017,9 @@ class TestParameterShiftRuleBroadcast:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
+
         assert len(tapes) == 2
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == 2
@@ -2027,6 +2052,9 @@ class TestParameterShiftRuleBroadcast:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
+
         assert len(tapes) == 1 + 2 * 1
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == tapes[2].batch_size == 2

@@ -541,6 +541,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
 
     Squeezing is performed on the result to get scalar arrays.
     """
+    print("_get_var_with_second_order: ", pdA2, f0, pdA, pdA2 - 2 * f0 * pdA)
     return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
 
 
@@ -570,7 +571,7 @@ def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     return new_pdA2
 
 
-def _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
+def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
     """Auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
@@ -622,7 +623,7 @@ def _create_variance_proc_fn(
 
         pdA = pdA_fn(results[1:tape_boundary])
 
-        pdA2 = _get_pda2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
+        pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
@@ -635,6 +636,7 @@ def _create_variance_proc_fn(
             for idx, m in enumerate(mask):
 
                 if isinstance(pdA2, (Sequence, np.ndarray)):
+                    print('in here1', pdA, f0[idx])
                     r = _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx]) if m else pdA[idx]
                 elif isinstance(pdA, (Sequence, np.ndarray)) and len(pdA) > 0:
                     num_params = len(tape.trainable_params)
@@ -647,6 +649,7 @@ def _create_variance_proc_fn(
                         else [pdA[idx][i] for i in range(num_params)]
                     )
 
+                print(r)
                 res.append(r)
             return tuple(res)
 
