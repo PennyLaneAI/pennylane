@@ -117,6 +117,7 @@ class DefaultMixed(QubitDevice):
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
+        "FermionicSWAP",
         "QFT",
         "ThermalRelaxationError",
         "ECR",

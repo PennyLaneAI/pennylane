@@ -108,6 +108,7 @@ single_scalar_multi_wire_ops = [
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
     "OrbitalRotation",
+    "FermionicSWAP",
 ]
 
 two_scalar_single_wire_ops = [

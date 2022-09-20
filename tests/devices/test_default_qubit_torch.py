@@ -49,6 +49,7 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     OrbitalRotation,
+    FermionicSWAP,
     Rot3,
     Rotx,
     Roty,
@@ -121,6 +122,7 @@ two_qubit_param = [
     (qml.SingleExcitation, SingleExcitation),
     (qml.SingleExcitationPlus, SingleExcitationPlus),
     (qml.SingleExcitationMinus, SingleExcitationMinus),
+    (qml.FermionicSWAP, FermionicSWAP),
 ]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
 four_qubit_param = [

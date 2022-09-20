@@ -205,6 +205,7 @@ Quantum chemistry gates
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
     ~pennylane.OrbitalRotation
+    ~pennylane.FermionicSWAP
 
 :html:`</div>`
 

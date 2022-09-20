@@ -96,6 +96,7 @@ ops = {
     "QubitCarry",
     "QubitSum",
     "OrbitalRotation",
+    "FermionicSWAP",
     "Barrier",
     "WireCut",
 }
