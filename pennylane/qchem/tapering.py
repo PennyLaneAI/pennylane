@@ -668,7 +668,7 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
 
     params = operation.parameters[0] if len(operation.parameters) else 1.0
     if qml.QueuingManager.recording():
-        qml.QueuingManager.safe_update_info(operation, owner=gen_tapered)
+        qml.QueuingManager.update_info(operation, owner=gen_tapered)
         for coeff, op in zip(*gen_tapered.terms()):
             qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
     else:

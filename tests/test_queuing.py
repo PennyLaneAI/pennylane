@@ -162,6 +162,15 @@ class TestQueuingManager:
         """Test that if there are no active contexts, active_context() returns None"""
         assert QueuingManager.active_context() is None
 
+    def test_safe_update_info_deprecation(self):
+        """Test that safe_update_info raises a deprecation warning."""
+        with AnnotatedQueue() as q:
+            op = qml.PauliZ(0)
+            with pytest.warns(UserWarning, match=r"QueuingManager.safe_update_info is deprecated."):
+                QueuingManager.safe_update_info(op, owner=4)
+
+            assert QueuingManager.get_info(op) == {"owner": 4}
+
 
 class TestAnnotatedQueue:
     """Tests for the annotated queue class"""
@@ -276,46 +285,17 @@ class TestAnnotatedQueue:
         q.update_info(A, inv=False, owner=None)
         assert q.get_info(A) == {"inv": False, "owner": None, "key": "value1"}
 
-    def test_update_error(self):
-        """Test that an exception is raised if get_info is called
-        for a non-existent object"""
+    def test_update_info_not_in_queue(self):
+        """Test that no exception is raised if get_info is called
+        for a non-existent object."""
 
         with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
 
         B = qml.PauliY(1)
 
-        with pytest.raises(QueuingError, match="not in the queue"):
-            q.update_info(B, inv=True)
-
-    def test_safe_update_info_queued(self):
-        """Test the `safe_update_info` method if the object is already queued."""
-        op = qml.RX(0.5, wires=1)
-
-        with AnnotatedQueue() as q:
-            q.append(op, key="value1")
-            assert q.get_info(op) == {"key": "value1"}
-            QueuingManager.safe_update_info(op, key="value2")
-
-        QueuingManager.safe_update_info(op, key="no changes here")
-        assert q.get_info(op) == {"key": "value2"}
-
-        q.safe_update_info(op, key="value3")
-        assert q.get_info(op) == {"key": "value3"}
-
-    def test_safe_update_info_not_queued(self):
-        """Tests the safe_update_info method passes silently if the object is
-        not already queued."""
-        op = qml.RX(0.5, wires=1)
-
-        with AnnotatedQueue() as q:
-            QueuingManager.safe_update_info(op, key="value2")
-        QueuingManager.safe_update_info(op, key="no changes here")
-
-        assert len(q.queue) == 0
-
-        q.safe_update_info(op, key="value3")
-        assert len(q.queue) == 0
+        q.update_info(B, inv=True)
+        assert len(q.queue) == 1
 
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
@@ -329,6 +309,15 @@ class TestAnnotatedQueue:
         assert q.get_info(A) == {"owner": tensor_op}
         assert q.get_info(B) == {"owner": tensor_op}
         assert q.get_info(tensor_op) == {"owns": (A, B)}
+
+    def test_annotated_queue_safe_update_info_deprecation(self):
+        """Test that AnnotatedQueue.safe_update_info raises a deprecation warning."""
+        with AnnotatedQueue() as q:
+            op = qml.PauliZ(0)
+            with pytest.warns(UserWarning, match=r"AnnotatedQueue.safe_update_info is deprecated."):
+                q.safe_update_info(op, owner=4)
+
+            assert q.get_info(op) == {"owner": 4}
 
 
 test_observables = [

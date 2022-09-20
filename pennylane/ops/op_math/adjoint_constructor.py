@@ -27,7 +27,7 @@ def _single_op_eager(op, update_queue=False):
     try:
         adj = op.adjoint()
         if update_queue:
-            QueuingManager.safe_update_info(op, owner=adj)
+            QueuingManager.update_info(op, owner=adj)
             QueuingManager.append(adj, owns=op)
         return adj
     except AdjointUndefinedError:
