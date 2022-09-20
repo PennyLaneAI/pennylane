@@ -17,6 +17,7 @@ This module contains the :class:`QueuingManager`.
 
 import copy
 from collections import OrderedDict
+from contextlib import contextmanager
 from warnings import warn
 
 
@@ -55,9 +56,7 @@ class QueuingManager:
 
     * ``get_info``: retrieve the object's metadata
 
-    * ``update_info``: Update an object's metadata if it is already queued. Else, raise a ``QueuingError``.
-
-    * ``safe_update_info``: Update an object's metadata without raising errors
+    * ``update_info``: Update an object's metadata if it is already queued.
 
     To start and end recording, the recording queue can use the :meth:`add_active_queue` and
     :meth:`remove_active_queue` methods.
@@ -88,6 +87,68 @@ class QueuingManager:
         return cls._active_contexts[-1] if cls.recording() else None
 
     @classmethod
+    @contextmanager
+    def stop_recording(cls):
+        """A context manager and decorator to ensure that contained logic is non-recordable
+        or non-queueable within a QNode or quantum tape context.
+
+        **Example:**
+
+        Consider the function:
+
+        >>> def list_of_ops(params, wires):
+        ...     return [
+        ...         qml.RX(params[0], wires=wires),
+        ...         qml.RY(params[1], wires=wires),
+        ...         qml.RZ(params[2], wires=wires)
+        ...     ]
+
+        If executed in a recording context, the operations constructed in the function will be queued:
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     ops = list_of_ops(params, wires=0)
+        ...     qml.apply(ops[-1])  # apply the last operation from the list again
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)([1, 2, 3]))
+        0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
+
+        Using the ``stop_recording`` context manager, all logic contained inside is not queued or recorded.
+
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     with qml.QueuingManager.stop_recording():
+        ...         ops = list_of_ops(params, wires=0)
+        ...     qml.apply(ops[-1])
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)([1, 2, 3]))
+        0: ──RZ(3.00)─┤  <Z>
+
+        The context manager can also be used as a decorator on a function:
+
+        >>> @qml.QueuingManager.stop_recording()
+        ... def list_of_ops(params, wires):
+        ...     return [
+        ...         qml.RX(params[0], wires=wires),
+        ...         qml.RY(params[1], wires=wires),
+        ...         qml.RZ(params[2], wires=wires)
+        ...     ]
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     ops = list_of_ops(params, wires=0)
+        ...     qml.apply(ops[-1])
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(circuit)([1, 2, 3]))
+        0: ──RZ(3.00)─┤  <Z>
+
+        """
+        previously_active_contexts = cls._active_contexts
+        cls._active_contexts = []
+        yield
+        cls._active_contexts = previously_active_contexts
+
+    @classmethod
     def append(cls, obj, **kwargs):
         """Append an object to the queue(s).
 
@@ -109,7 +170,7 @@ class QueuingManager:
 
     @classmethod
     def update_info(cls, obj, **kwargs):
-        """Updates information of an object in the active queue.
+        """Updates information of an object in the active queue if it is already in the queue.
 
         Args:
             obj: the object with metadata to be updated
@@ -117,7 +178,6 @@ class QueuingManager:
         if cls.recording():
             cls.active_context().update_info(obj, **kwargs)
 
-    # pylint: disable=protected-access
     @classmethod
     def safe_update_info(cls, obj, **kwargs):
         """Updates information of an object in the active queue if it is already in the queue.
@@ -125,8 +185,12 @@ class QueuingManager:
         Args:
             obj: the object with metadata to be updated
         """
-        if cls.recording():
-            cls.active_context().safe_update_info(obj, **kwargs)
+        warn(
+            "QueuingManager.safe_update_info is deprecated."
+            "It's behavior has been moved to `update_info`.",
+            UserWarning,
+        )
+        cls.update_info(obj, **kwargs)
 
     @classmethod
     def get_info(cls, obj):
@@ -170,18 +234,19 @@ class AnnotatedQueue:
         """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
         del self._queue[obj]
 
-    def safe_update_info(self, obj, **kwargs):
+    def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
         if obj in self._queue:
             self._queue[obj].update(kwargs)
 
-    def update_info(self, obj, **kwargs):
-        """Update ``obj``'s metadata with ``kwargs``.
-        Raises a ``QueuingError`` if it doesn't exist in the queue."""
-        if obj not in self._queue:
-            raise QueuingError(f"Object {obj} not in the queue.")
-
-        self._queue[obj].update(kwargs)
+    def safe_update_info(self, obj, **kwargs):
+        """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
+        warn(
+            "AnnotatedQueue.safe_update_info is deprecated."
+            "It's behavior has been moved to `update_info`.",
+            UserWarning,
+        )
+        self.update_info(obj, **kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""

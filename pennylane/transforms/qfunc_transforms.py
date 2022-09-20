@@ -65,15 +65,12 @@ def make_tape(fn):
     """
 
     def wrapper(*args, **kwargs):
-        active_tape = qml.tape.get_active_tape()
+        active_tape = qml.QueuingManager.active_context()
+        new_tape = qml.tape.QuantumTape() if active_tape is None else active_tape.__class__()
+        with qml.QueuingManager.stop_recording(), new_tape:
+            fn(*args, **kwargs)
 
-        if active_tape is not None:
-            with active_tape.stop_recording(), active_tape.__class__() as tape:  # pylint: disable=not-context-manager
-                fn(*args, **kwargs)
-        else:
-            with qml.tape.QuantumTape() as tape:
-                fn(*args, **kwargs)
-        return tape
+        return new_tape
 
     return wrapper
 
