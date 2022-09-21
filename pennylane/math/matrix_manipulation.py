@@ -162,42 +162,44 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
         tensor_like: expanded matrix
     """
     base_matrix.eliminate_zeros()
-
     wires = wires.tolist() if isinstance(wires, qml.wires.Wires) else list(copy.copy(wires))
+    num_initial_wires = len(wires)
 
-    expanded_wires = []
-    mats = []
-    base_matrix_encountered = False
+    wire_indices = [wire_order.index(wire) for wire in wires]
+    subset_permuted_wires = wire_order[min(wire_indices) : max(wire_indices) + 1]
+
+    subset_matrix = kron(
+        base_matrix, eye(2 ** (len(subset_permuted_wires) - num_initial_wires), format="csr")
+    )
+    subset_wires = wires + list(set(subset_permuted_wires) - set(wires))
+
+    U = _permutation_sparse_matrix(subset_wires, subset_permuted_wires)
+    if U is not None:
+        subset_matrix = U.T @ subset_matrix @ U
+        subset_matrix.eliminate_zeros()
+
     identity_count = 0
+    subset_matrix_encountered = False
+    mats = []
     for wire in wire_order:
-        if wire not in wires:
+        if wire not in subset_wires:
             identity_count += 1
-            expanded_wires.append(wire)
-        elif not base_matrix_encountered:
+        elif not subset_matrix_encountered:
             if identity_count > 0:
                 mats.append(eye(2**identity_count, format="coo"))
             identity_count = 0
-            mats.append(base_matrix)
-            base_matrix_encountered = True
-            expanded_wires.extend(wires)
+            mats.append(subset_matrix)
+            subset_matrix_encountered = True
 
     if identity_count > 0:
         mats.append(eye(2**identity_count, format="coo"))
 
     if len(mats) > 1:
-        expanded_matrix = reduce(lambda i, j: kron(i, j, format="csr"), mats)
+        expanded_matrix = reduce(lambda i, j: kron(i, j, format=format), mats)
     else:
-        expanded_matrix = copy.copy(base_matrix).asformat("csr")
-
+        expanded_matrix = subset_matrix.asformat(format)
     expanded_matrix.eliminate_zeros()
-
-    U = _permutation_sparse_matrix(expanded_wires, wire_order)
-
-    if U is not None:
-        expanded_matrix = U.T @ expanded_matrix @ U
-        expanded_matrix.eliminate_zeros()
-
-    return expanded_matrix.asformat(format)
+    return expanded_matrix
 
 
 def _sparse_swap_mat(qubit_i, qubit_j, n):
