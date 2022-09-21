@@ -81,7 +81,6 @@ class TestEigenval:
 
     def test_tswap_eigenval(self):
         """Tests that the TSWAP eigenvalue matches the numpy eigenvalues of the TSWAP matrix"""
-
         op = qml.TSWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
