@@ -25,52 +25,90 @@ import pickle
 import dill
 import requests
 
-from pennylane.qdata.dataset import Dataset
-from pennylane.qdata.qchem_dataset import ChemDataset
-from pennylane.qdata.qspin_dataset import SpinDataset
+from pennylane.data.dataset import Dataset
+#from pennylane.qdata.qchem_dataset import ChemDataset
+#from pennylane.qdata.qspin_dataset import SpinDataset
 
 DATA_STRUCT = {
     "qchem": {
+        "docstr": "Quantum chemistry dataset.",
         "params": ["molname", "basis", "bondlength"],
         "keys": [
-            "vqe_params",
             "molecule",
             "hamiltonian",
-            "fci_energy",
-            "spinz_op",
-            "full",
             "sparse_hamiltonian",
-            "dipole_op",
-            "spin2_op",
-            "vqe_circuit",
-            "num_op",
-            "tapered_spinz_op",
-            "paulix_ops",
-            "ham_wire_map",
-            "meas_groupings",
-            "tapered_spin2_op",
-            "vqe_energy",
-            "symmetries",
             "hf_state",
+            "meas_groupings",
+            "fci_energy",
+            "dipole_op",
+            "num_op",
+            "spin2_op",
+            "spinz_op",
+            "symmetries",
+            "paulix_ops",
+            "optimal_sector",
+            "ham_wire_map",
+            "tapered_hamiltonian",
             "tapered_dipole_op",
             "tapered_num_op",
-            "tapered_hamiltonian",
-            "optimal_sector",
+            "tapered_spin2_op",
+            "tapered_spinz_op",
             "tapered_hf_state",
+            "vqe_circuit",
+            "vqe_params",
+            "vqe_energy",
+            "full",
         ],
+        "docstrings": [
+            "Molecule object describing the chemical system",
+            "Hamiltonian of the system using Jordan-Wigner mapping",
+            "Sparse Hamiltonian of the system",
+            "Hartree-Fock state for the system",
+            "Qubit-wise commuting measurement groupings",
+            "FCI ground state energy",
+            "Dipole moment operator of the system",
+            "Number operator of the system",
+            "Total spin operator of the system",
+            "Spin projection operator of the system",
+            "Symmetries of the hamiltonian used to taper qubits",
+            "Pauli-X operators used in buiding Clifford unitary for tapering",
+            "Eigensector containing ground state of the tapered Hamiltonian",
+            "Hamiltonian wire map post tapering",
+            "Tapered hamiltonian operator",
+            "Tapered dipole moment operator",
+            "Tapered number operator",
+            "Tapered total spin operator",
+            "Tapered spin projection operator",
+            "Tapered Hartree-Fock state",
+            "Variational circuit for obtaining ground-state",
+            "Variational parameters for which ansatz evolve to ground state",
+            "Variational energy given by the vqe_circuit for provided vqe_params",
+            "Contains all the attributes related to the quantum chemistry datatset"
+        ]
     },
     "qspin": {
+        "docstr": "Quantum many-body spin system dataset.",
         "params": ["sysname", "periodicity", "lattice", "layout"],
         "keys": [
             "parameters",
-            "ground_states",
-            "full",
-            "phase_labels",
-            "ground_energies",
             "hamiltonians",
+            "ground_states",
+            "ground_energies",
+            "phase_labels",
             "order_parameters",
             "classical_shadows",
+            "full",
         ],
+        "docstrings" : [
+            "Parameters describing the spin system",
+            "Hamiltonians for the spin systems with different parameter values",
+            "Ground states for the spin systems with different parameter values",
+            "Ground state energies for the spin systems with different parameter values",
+            "Phase labels for the spin systems with different parameter values",
+            "Order parameters required to determine the phase labels",
+            "Classical shadow description of the ground state of the spin systems",
+            "Contains all the attributes related to the quantum spin datatset",
+        ]
     },
 }
 
@@ -121,7 +159,7 @@ def _write_prog_bar(progress, completed, barsize, barlength, total_length):
     sys.stdout.flush()
 
 
-def _validate_params(data_type, data_params, filter_params=None):
+def _validate_params(data_type, description, attributes=None):
     r"""Validate parameters for loading the data"""
 
     if data_type not in list(DATA_STRUCT.keys()):
@@ -129,32 +167,32 @@ def _validate_params(data_type, data_params, filter_params=None):
             f"Currently we have data hosted from types: qchem and qspin, but got {data_type}."
         )
 
-    if not isinstance(data_params, dict):
-        raise TypeError(f"Args 'data_params' should be a dict, but got {type(data_params)}.")
+    if not isinstance(description, dict):
+        raise TypeError(f"Args 'description' should be a dict, but got {type(description)}.")
 
-    if sorted(list(data_params.keys())) != sorted(DATA_STRUCT[data_type]["params"]):
+    if sorted(list(description.keys())) != sorted(DATA_STRUCT[data_type]["params"]):
         raise ValueError(
-            f"Supported parameter values for {data_type} are {DATA_STRUCT[data_type]['params']}, but got {list(data_params.keys())}."
+            f"Supported parameter values for {data_type} are {DATA_STRUCT[data_type]['params']}, but got {list(description.keys())}."
         )
 
-    if filter_params is not None and not set(filter_params).issubset(
+    if attributes is not None and not set(attributes).issubset(
         DATA_STRUCT[data_type]["keys"]
     ):
         raise ValueError(
-            f"Supported key values for {data_type} are {DATA_STRUCT[data_type]['keys']}, but got {filter_params}."
+            f"Supported key values for {data_type} are {DATA_STRUCT[data_type]['keys']}, but got {attributes}."
         )
 
-    if filter_params is not None and not isinstance(filter_params, list):
-        raise TypeError(f"Args 'filter_params' should be a list, but got {type(filter_params)}.")
+    if attributes is not None and not isinstance(attributes, list):
+        raise TypeError(f"Args 'attributes' should be a list, but got {type(attributes)}.")
 
 
-def _check_data_exist(data_type, data_params, directory_path):
+def _check_data_exist(data_type, description, directory_path):
     r"""Check if the data has to be redownloaded or not"""
     exist = False
-    if "full" in data_params.values():
+    if "full" in description.values():
         exist = True
     else:
-        subdirec_path = [data_params[param] for param in DATA_STRUCT[data_type]["params"]]
+        subdirec_path = [description[param] for param in DATA_STRUCT[data_type]["params"]]
         for subdirec in itertools.product(*subdirec_path):
             path = os.path.join(directory_path, *subdirec)
             if not os.path.exists(path) or not glob.glob(
@@ -165,13 +203,13 @@ def _check_data_exist(data_type, data_params, directory_path):
     return exist
 
 
-def load(data_type, data_params, filter_params=None, folder_path=None, force=True):
+def load(data_type, description, attributes=None, lazy=False, folder_path=None, force=True):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
 
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
-        data_params (dict): A dictionary with parameters for the required type of data
-        filter_params (list): An optional list to specify individual data element that are required
+        description (dict): A dictionary with parameters for the required type of data
+        attributes (list): An optional list to specify individual data element that are required
         folder_path (str): Path to the root folder where download takes place. By default dataset folder will be created in the working directory.
         force (Bool): Bool representing whether data has to be downloaded even if it is still present
 
@@ -180,10 +218,10 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
 
     """
 
-    _validate_params(data_type, data_params, filter_params)
+    _validate_params(data_type, description, attributes)
 
-    data_params = {
-        key: (val if isinstance(val, list) else [val]) for (key, val) in data_params.items()
+    description = {
+        key: (val if isinstance(val, list) else [val]) for (key, val) in description.items()
     }
 
     directory_path = f"datasets/{data_type}"
@@ -193,15 +231,15 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
         directory_path = f"/{folder_path}/{directory_path}"
 
     if not force:
-        force = _check_data_exist(data_type, data_params, directory_path)
+        force = _check_data_exist(data_type, description, directory_path)
 
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
     with open(f"{directory_path}/data.zip", "wb") as file:
         request_data = {
-            "dparams": data_params,
-            "filters": filter_params if filter_params is not None else ["full"],
+            "dparams": description,
+            "filters": attributes if attributes is not None else ["full"],
         }
         try:
             response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
@@ -241,24 +279,39 @@ def load(data_type, data_params, filter_params=None, folder_path=None, force=Tru
     data_files = []
     with zipfile.ZipFile(f"{directory_path}/data.zip", "r") as zpf:
         zpf.extractall(f"{directory_path}")
-        for file in zpf.namelist():
-            if file[-3:] == "dat":
-                data = Dataset.read_data(f"{directory_path}/{file}")
-                if data_type == "qchem":
-                    obj = ChemDataset()
-                elif data_type == "qspin":
-                    obj = SpinDataset()
-                if filter_params == ["full"] or filter_params is None:
-                    for key, vals in data.items():
-                        setattr(obj, key, vals)
-                else:
-                    key = "_".join(file.split("_")[len(DATA_STRUCT[data_type]["params"]) :]).split(
-                        "."
-                    )[0]
-                    setattr(obj, key, data)
-                data_files.append(obj)
+        file_list, file_idx = sorted([x for x in zpf.namelist() if x[-3:] == "dat"]), 0
+        dtype_key_len = len(DATA_STRUCT[data_type]["params"])
+        while file_idx < len(file_list):
+            file = file_list[file_idx]
+            cur_name = "_".join(file.split("_")[:dtype_key_len])    
+            obj = Dataset(dfile=f"{directory_path}/{file}", dtype=data_type)
+            if attributes == ["full"] or attributes is None:
+                data = Dataset._read_file(f"{directory_path}/{file}")
+                for key, vals in data.items():
+                    obj.setattr(key, vals)
+                doc_keys, doc_vals = list(data.keys()), list(map(type, data.vals()))
+                file_idx += 1
+            else:
+                key, flag = "_".join(file.split("_")[dtype_key_len:]).split(".")[0], False
+                data = Dataset._read_file(f"{directory_path}/{file}")
+                doc_keys, doc_vals = [key], [type(data)]
+                obj.setattr(key, data)
+                for key_idx in range(file_idx+1, len(file_list)):
+                    nfile, flag = file_list[key_idx], True
+                    nxt_name = "_".join(nfile.split("_")[:dtype_key_len])
+                    if cur_name == nxt_name:
+                        key = "_".join(nfile.split("_")[dtype_key_len:]).split(".")[0]
+                        data = Dataset._read_file(f"{directory_path}/{nfile}")
+                        doc_keys.append(key); doc_vals.append(type(data))  
+                        obj.setattr(key, data)
+                    else:
+                        break
+                file_idx = key_idx if flag else file_idx+1
+            args_idx = [DATA_STRUCT[data_type]["keys"].index(x) for x in doc_keys]
+            argsdocs = [DATA_STRUCT[data_type]["docstrings"][x] for x in args_idx]
+            obj.setdocstr(DATA_STRUCT[data_type]["docstr"], doc_keys, doc_vals, argsdocs)
+            data_files.append(obj)
     os.remove(f"{directory_path}/data.zip")
-
     return data_files
 
 
@@ -318,7 +371,7 @@ def _data_dfs(t, path=[]):
         yield path, t
 
 
-def get_params(data, data_type, **kwargs):
+def get_description(data, data_type, **kwargs):
     r"""Help prepare list of `data_param` arguments using nested directory structure
 
     Args:
@@ -333,7 +386,7 @@ def get_params(data, data_type, **kwargs):
 
     .. code-block :: pycon
 
-        >>> qml.qdata.get_params(qml.qdata.list_datasets(), "qchem")
+        >>> qml.qdata.get_description(qml.qdata.list_datasets(), "qchem")
         [{'molname': ['full'], 'basis': ['full'], 'bondlength': ['full']}]
 
     """
@@ -344,19 +397,19 @@ def get_params(data, data_type, **kwargs):
             f"Expected kwargs for the module {module} are {params}, but got {list(kwargs.items())}"
         )
 
-    data_params = [["full"] for params in params]
+    description = [["full"] for params in params]
     mtch_params = []
     for key, val in kwargs.items():
-        data_params[params.index(key)] = val if isinstance(val, list) else [val]
+        description[params.index(key)] = val if isinstance(val, list) else [val]
         mtch_params.append(params.index(key))
 
     traverse_data = list(
         filter(
             lambda x: all(
                 [
-                    x[0][m] in data_params[m]
+                    x[0][m] in description[m]
                     if m < len(params) - 1
-                    else set(data_params[m]).issubset(x[1])
+                    else set(description[m]).issubset(x[1])
                     for m in mtch_params
                 ]
             ),
@@ -364,19 +417,19 @@ def get_params(data, data_type, **kwargs):
         )
     )
 
-    data_params = []
+    description = []
     for data in traverse_data:
         dparams = {param: ["full"] for param in params}
         for idx in mtch_params:
             dparams[params[idx]] = [data[0][idx]] if idx < len(params) - 1 else data[1]
-        if dparams not in data_params:
-            data_params.append(dparams)
+        if dparams not in description:
+            description.append(dparams)
 
-    return data_params
+    return description
 
 
-def get_keys(data_type, data_params):
-    r"""Help obtain the `filter_params` for given `data_type` and `data_param` from the database
+def get_attributes(data_type, description):
+    r"""Help obtain the `attributes` for given `data_type` and `data_param` from the database
 
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
@@ -386,14 +439,14 @@ def get_keys(data_type, data_params):
         list[str]: List of strings representing all the filter keys available for the requested dataset
     """
 
-    _validate_params(data_type, data_params)
+    _validate_params(data_type, description)
 
-    data_params = {
-        key: (val if isinstance(val, list) else [val]) for (key, val) in data_params.items()
+    description = {
+        key: (val if isinstance(val, list) else [val]) for (key, val) in description.items()
     }
 
     request_data = {
-        "dparams": data_params,
+        "dparams": description,
     }
 
     response = requests.post(f"{URL}/download/about/{data_type}/keys", json=request_data)
