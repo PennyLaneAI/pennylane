@@ -665,7 +665,7 @@ class TestParamShiftShotVector:
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 4
 
-        res = fn(dev.batch_execute_new(tapes))
+        res = fn(dev.batch_execute(tapes))
         assert len(res) == 2
 
         for r in res:
@@ -696,15 +696,34 @@ class TestParamShiftShotVector:
             / 2
         )
 
-        print(res, expval_expected, probs_expected)
         for r in res:
+
             # Expvals
-            assert np.allclose(r[0][0], expval_expected[0])
-            assert np.allclose(r[0][1], expval_expected[1])
+            r_to_check = r[0][0]
+            exp = expval_expected[0]
+            assert np.allclose(r_to_check, exp, atol=10e-3)
+            assert isinstance(r_to_check, np.ndarray)
+            assert r_to_check.shape == ()
+
+            r_to_check = r[1][0]
+            exp = expval_expected[1]
+            assert np.allclose(r_to_check, exp, atol=10e-3)
+            assert isinstance(r_to_check, np.ndarray)
+            assert r_to_check.shape == ()
 
             # Probs
-            assert np.allclose(r[1][0], probs_expected[:, 0])
-            assert np.allclose(r[1][1], probs_expected[:, 1])
+
+            r_to_check = r[0][1]
+            exp = probs_expected[:, 0]
+            assert np.allclose(r_to_check, exp, atol=10e-3)
+            assert isinstance(r_to_check, np.ndarray)
+            assert r_to_check.shape == (4,)
+
+            r_to_check = r[1][1]
+            exp = probs_expected[:, 1]
+            assert np.allclose(r_to_check, exp, atol=10e-3)
+            assert isinstance(r_to_check, np.ndarray)
+            assert r_to_check.shape == (4,)
 
 
 class TestParameterShiftRule:

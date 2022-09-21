@@ -147,6 +147,7 @@ def _unshifted_coeff(g, unshifted_coeff, r0):
         g = g + unshifted_coeff * r0
     return g
 
+
 def _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff):
 
     # Multiple measurements case, so we can extract the first result
@@ -158,12 +159,12 @@ def _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff):
         # Gather the measurement results
         single_result = [param_result[meas_idx] for param_result in res]
         coeffs = qml.math.convert_like(coeffs, single_result)
-        print(single_result, coeffs)
         g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
         g.append(g_component)
 
     g = _unshifted_coeff(g, unshifted_coeff, r0)
     return tuple(g)
+
 
 def _evaluate_gradient_new(tape, res, data, r0):
     """Use shifted tape evaluations and parameter-shift rule coefficients
@@ -193,8 +194,10 @@ def _evaluate_gradient_new(tape, res, data, r0):
 
         shot_vector = isinstance(res[0], tuple) and len(res[0]) > 0 and isinstance(res[0][0], tuple)
         if shot_vector:
-            for r in res:
-                g.append(_eval_grad_multi_meas(r, coeffs, r0, unshifted_coeff))
+            num_shot_components = len(res[0][0])
+            for idx_shot_comp in range(num_shot_components):
+                _r = [r[idx_shot_comp] for r in res]
+                g.append(_eval_grad_multi_meas(_r, coeffs, r0, unshifted_coeff))
 
             g = tuple(g)
         else:
@@ -397,11 +400,15 @@ def _expval_param_shift_tuple(
             zero_rep = qml.math.zeros_like(g)
         else:
 
-            shot_vector = isinstance(res[0], tuple) and len(res[0]) > 0 and isinstance(res[0][0], tuple)
+            shot_vector = (
+                isinstance(res[0], tuple) and len(res[0]) > 0 and isinstance(res[0][0], tuple)
+            )
             if not shot_vector:
                 zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
             else:
-                zero_rep = tuple(tuple(qml.math.zeros_like(_g) for _g in grad_component) for grad_component in g)
+                zero_rep = tuple(
+                    tuple(qml.math.zeros_like(_g) for _g in grad_component) for grad_component in g
+                )
 
         for i, g in enumerate(grads):
             # Fill in zero-valued gradients
