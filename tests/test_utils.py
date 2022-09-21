@@ -528,15 +528,3 @@ class TestExpandVector:
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             pu.expand_vector(TestExpandVector.VECTOR1, [0, 1], 4)
-
-
-class TestWarnings:
-    """Tests deprecation warnings"""
-
-    def test_expand_raises_warning(self):
-        """Test warning occurs when calling deprecated qml.utils.expand"""
-        with pytest.warns(
-            UserWarning,
-            match="qml.utils.expand is deprecated; using qml.math.expand_matrix instead.",
-        ):
-            pu.expand(U, [9], [0, 4, 9])
