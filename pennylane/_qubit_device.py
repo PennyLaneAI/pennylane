@@ -1888,4 +1888,19 @@ class QubitDevice(Device):
             for kk in range(n_obs):
                 bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
+        if qml.active_return():
+            # postprocess the jacobian for the new return_type system
+            return self._adjoint_jacobian_processing(jac)
+
         return jac
+
+    @staticmethod
+    def _adjoint_jacobian_processing(jac):
+        """
+        Post-process the Jacobian matrix returned by ``adjoint_jacobian`` for
+        the new return type system.
+        """
+        if jac.shape[0] == 1:
+            return jac[0]
+
+        return tuple(jac)
