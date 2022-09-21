@@ -38,6 +38,33 @@
 
 <h3>Improvements</h3>
 
+* Adds a new class `pennylane.tape.QuantumScript`. Now `QuantumTape` inherits from `QuantumScript` as well
+  as `AnnotatedQueue`. `QuantumScript` contains all the non-queuing behavior of `QuantumTape`. Both classes
+  can be now constructed from optional iterables of operations, measurements, and state preperation operators.
+  This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
+  should rely on `QNode`'s.
+  [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
+
+  ```pycon
+  >>> ops = [qml.RX(0.432, 0),
+  ...     qml.RY(0.543, 0),
+  ...     qml.CNOT((0,"a")),
+  ...     qml.RX(0.133, "a")]
+  >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+  >>> print(qml.drawer.tape_text(qscript))
+  0: ──RX──RY─╭●─────┤  <Z>
+  a: ─────────╰X──RX─┤     
+  ```
+
+  This quantum script can be executed by a device:
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=(0, "a"))
+  >>> qml.execute([qscript], dev, gradient_fn=None)
+  [array([0.77750694])]
+  ```
+
+
 * Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
