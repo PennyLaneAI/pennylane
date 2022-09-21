@@ -102,7 +102,7 @@ class PauliWord(dict):
     """Immutable dictionary used to represent a Pauli Word.
     Can be constructed from a standard dictionary.
 
-    >>> w = PauliWord({"a": X, 2: Y, 3: z})
+    >>> w = PauliWord({"a": X, 2: Y, 3: Z})
     """
 
     def __missing__(self, key):
@@ -136,7 +136,14 @@ class PauliWord(dict):
 
 
 class PauliSentence(dict):
-    """Dict representing a Pauli Sentence."""
+    """Dict representing a Pauli Sentence. The keys are
+    PauliWord instances and the values correspond to coefficients.
+
+    >>> ps = PauliSentence({
+            PauliWord({0:X, 1:Y}): 1.23
+            PauliWord({2:Z, 0:Y}): -0.45j
+        })
+    """
 
     def __missing__(self, key):
         """If the pauliword is not in the sentence then the coefficient
