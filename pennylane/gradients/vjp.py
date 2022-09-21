@@ -17,7 +17,52 @@ of tapes.
 """
 import numpy as np
 
+import pennylane as qml
 from pennylane import math
+
+
+def _compute_vjp_new(dy, jac, num=None):
+    """Convenience function to compute the vector-Jacobian product for a given
+    vector of gradient outputs and a Jacobian.
+
+    Args:
+        dy (tensor_like): vector of gradient outputs
+        jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
+            vector, the first n-dimensions of ``jac`` should match
+            the shape of ``dy``.
+        num (int): The length of the flattened ``dy`` argument. This is an
+            optional argument, but can be useful to provide if ``dy`` potentially
+            has no shape (for example, due to tracing or just-in-time compilation).
+
+    Returns:
+        tensor_like: the vector-Jacobian product
+    """
+    if jac is None:
+        return None
+    # Single measurement
+    if not isinstance(jac[0], tuple):
+        if dy.shape == ():
+            res = dy * jac
+        else:
+            res = []
+            for a in jac:
+                res.append(sum(dy * a))
+
+    # Multiple measurements
+    else:
+        vjp = []
+        for a, b in zip(dy, jac):
+            vjp.append(tuple(np.array(a * c) for c in b))
+
+        res = [0] * len(vjp[0])
+        for i in range(0, len(vjp[0])):
+            for v in vjp:
+                if v[i].shape == ():
+                    res[i] += v[i]
+                else:
+                    res[i] += sum(v[i])
+
+    return res
 
 
 def compute_vjp(dy, jac, num=None):
@@ -183,6 +228,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
+
+        if qml.active_return():
+            jac = fn(results)
+            return _compute_vjp_new(dy, jac, num=num)
+
         jac = fn(results)
         return compute_vjp(dy, jac, num=num)
 

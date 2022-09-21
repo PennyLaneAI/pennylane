@@ -444,7 +444,6 @@ def _execute_new(
     # return batch_fn(res)
 
 
-
 def _get_jax_execute_fn(interface, tapes):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
