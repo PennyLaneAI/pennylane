@@ -26,6 +26,7 @@ from pennylane.wires import Wires
 
 
 def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
+    # pylint: disable=too-many-branches
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
@@ -107,6 +108,9 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
     interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
 
+    def eye_interface(dim):
+        return qml.math.cast_like(qml.math.eye(2**dim, like=interface), base_matrix)
+
     if interface == "scipy" and issparse(base_matrix):
         return _sparse_expand_matrix(base_matrix, wires, wire_order, format=sparse_format)
 
@@ -115,54 +119,36 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     shape = qml.math.shape(base_matrix)
     batch_dim = shape[0] if len(shape) == 3 else None
 
-    expanded_wires = []
-    mats = []  # list of tuples with (Id,) and (base_matrix,) or (mat1, mat2, ...) if batch_dim
-    op_wires_in_list = False
-    i_count = 0  # identity count
-    for wire in wire_order:
-        if wire not in wires:
-            i_count += 1
-            expanded_wires.append(wire)
-        elif not op_wires_in_list:
-            if i_count > 0:
-                mats.append(
-                    (qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix),)
-                )
-            i_count = 0
-            mats.append(tuple(base_matrix) if batch_dim else (base_matrix,))
-            op_wires_in_list = True
-            expanded_wires.extend(wires)
+    # get a subset of `wire_order` values that contain all wire labels inside `wires` argument
+    # e.g. wire_order = [0, 1, 2, 3, 4]; wires = [3, 0, 2]
+    # --> subset_wire_order = [0, 1, 2, 3]; expanded_wires = [3, 0, 2, 1]
+    wire_indices = [wire_order.index(wire) for wire in wires]
+    subset_wire_order = wire_order[min(wire_indices) : max(wire_indices) + 1]
+    wire_difference = list(set(subset_wire_order) - set(wires))
+    expanded_wires = wires + wire_difference
 
-    if i_count > 0:
-        mats.append((qml.math.cast_like(qml.math.eye(2**i_count, like=interface), base_matrix),))
+    # expand matrix if needed
+    if wire_difference:
+        if batch_dim is not None:
+            batch_matrices = [
+                qml.math.kron(batch, eye_interface(len(wire_difference)), like=interface)
+                for batch in base_matrix
+            ]
+            base_matrix = qml.math.stack(batch_matrices, like=interface)
+        else:
+            base_matrix = qml.math.kron(
+                base_matrix, eye_interface(len(wire_difference)), like=interface
+            )
 
-    # itertools.product will create a tuple of matrices for each different batch
-    mats_list = list(itertools.product(*mats))
-    # here we compute the kron product of each different tuple and stack them back together
-    expanded_batch_matrices = [
-        reduce(
-            lambda i, j: qml.math.kron(
-                i.contiguous() if interface == "torch" else i,
-                j.contiguous() if interface == "torch" else j,
-                like=interface,
-            ),
-            mats,
-        )
-        if len(mats) > 1
-        else mats[0]
-        for mats in mats_list
-    ]
-    expanded_matrix = qml.math.stack(expanded_batch_matrices, like=interface)
-
-    num_wires = len(wire_order)
+    num_wires = len(subset_wire_order)
 
     # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <0000|mat|0000>
     # with this reshape we can easily swap wires
     shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
-    mat = qml.math.reshape(expanded_matrix, shape)
+    mat = qml.math.reshape(base_matrix, shape)
 
     # compute the permutations needed to match wire order
-    perm = [expanded_wires.index(wire) for wire in wire_order]
+    perm = [expanded_wires.index(wire) for wire in subset_wire_order]
     perm += [p + num_wires for p in perm]
     if batch_dim:
         perm = [0] + [p + 1 for p in perm]
@@ -171,8 +157,46 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
         mat = qml.math.transpose(mat, axes=perm)
 
     # reshape back
-    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
+    shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
     mat = qml.math.reshape(mat, shape)
+
+    # expand the matrix even further by adding the missing wires
+    if len(wire_order) > len(expanded_wires):
+        mats = []  # list of tuples with (Id,) and (base_matrix,) or (mat1, mat2, ...) if batch_dim
+        op_wires_in_list = False
+        identity_count = 0
+        for wire in wire_order:
+            if wire not in expanded_wires:
+                identity_count += 1
+            elif not op_wires_in_list:
+                if identity_count > 0:
+                    mats.append((eye_interface(identity_count),))
+                    identity_count = 0
+                mats.append(tuple(mat) if batch_dim else (mat,))
+                op_wires_in_list = True
+
+        if identity_count > 0:
+            mats.append((eye_interface(identity_count),))
+
+        # itertools.product will create a tuple of matrices for each different batch
+        mats_list = list(itertools.product(*mats))
+        # here we compute the kron product of each different tuple and stack them back together
+        expanded_batch_matrices = [
+            reduce(
+                lambda i, j: qml.math.kron(
+                    i.contiguous() if interface == "torch" else i,
+                    j.contiguous() if interface == "torch" else j,
+                    like=interface,
+                ),
+                mats,
+            )
+            for mats in mats_list
+        ]
+        mat = (
+            qml.math.stack(expanded_batch_matrices, like=interface)
+            if len(expanded_batch_matrices) > 1
+            else expanded_batch_matrices[0]
+        )
 
     return mat
 
