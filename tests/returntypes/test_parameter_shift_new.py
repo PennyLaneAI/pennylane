@@ -1316,7 +1316,6 @@ class TestParameterShiftRule:
         assert gradA[0] == pytest.approx(expected[0], abs=tol)
         assert gradA[1] == pytest.approx(expected[1], abs=tol)
 
-        print(gradF)
         assert gradF[0] == pytest.approx(expected[0], abs=tol)
         assert gradF[1] == pytest.approx(expected[1], abs=tol)
 

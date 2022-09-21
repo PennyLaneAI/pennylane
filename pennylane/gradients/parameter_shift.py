@@ -654,7 +654,6 @@ def _create_variance_proc_fn(
             p_idx = 0
             var_grad = []
             for m_idx in range(len(tape.measurements)):
-                print("Measurements: ", m_idx)
                 m = mask[m_idx]
                 if m:
                     _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 and pdA2[m_idx] != 0 else pdA2
