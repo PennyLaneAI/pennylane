@@ -340,7 +340,7 @@ class GellMann(Observable):
                [ 0.70710678-0.j,  0.        -0.j, -0.70710678-0.j],
                [ 0.        -0.j,  1.        -0.j,  0.        -0.j]]), wires=[0])]
         """
-        if index in {3, 8}:
+        if index in (3, 8):
             return []
 
         v = GellMann._eigvecs[index]
