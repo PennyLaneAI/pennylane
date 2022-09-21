@@ -78,6 +78,13 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Deprecations</h3>
 
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
