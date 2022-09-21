@@ -543,6 +543,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
     """
     return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
 
+
 def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     """Auxiliary function for post-processing the partial derivative of <A^2>
     if there are involutory observables.
@@ -648,8 +649,19 @@ def _create_variance_proc_fn(
                     else:
                         m_res = tuple(qml.math.squeeze(p) for p in pdA[m_idx])
                     var_grad.append(m_res)
+                return tuple(var_grad)
 
-            print('in here',num_params )
+            p_idx = 0
+            var_grad = []
+            for m_idx in range(len(tape.measurements)):
+                print("Measurements: ", m_idx)
+                m = mask[m_idx]
+                if m:
+                    _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 and pdA2[m_idx] != 0 else pdA2
+                    m_res = _get_var_with_second_order(_pdA2, f0[m_idx], pdA[m_idx][p_idx])
+                else:
+                    m_res = qml.math.squeeze(pdA[m_idx])
+                var_grad.append(m_res)
             return tuple(var_grad)
 
         # Scalar
