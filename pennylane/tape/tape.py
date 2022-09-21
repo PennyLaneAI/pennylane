@@ -16,16 +16,17 @@ This module contains the base quantum tape.
 """
 import contextlib
 import copy
+from warnings import warn
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
 
@@ -87,7 +88,12 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
-    return QueuingContext.active_context()
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    warn(message, UserWarning)
+    return QueuingManager.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -152,15 +158,28 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
                     tape._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
+                if any(
+                    m.return_type in (Probability, Sample, Counts, AllCounts)
+                    for m in tape.measurements
+                ):
+                    raise qml.QuantumFunctionError(
+                        "Only observables that are qubit-wise commuting "
+                        "Pauli words can be returned on the same wire.\n"
+                        "Try removing all probability, sample and counts measurements "
+                        "this will allow for splitting of execution and separate measurements "
+                        "for each non-commuting observable."
+                    ) from e
+
                 raise qml.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
-                    "Pauli words can be returned on the same wire"
+                    "Pauli words can be returned on the same wire, "
+                    f"some of the following measurements do not commute:\n{tape.measurements}"
                 ) from e
 
             tape._ops.extend(rotations)
@@ -366,7 +385,7 @@ class QuantumTape(AnnotatedQueue):
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
-                QueuingContext.append(self)
+                QueuingManager.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
@@ -425,10 +444,13 @@ class QuantumTape(AnnotatedQueue):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
+    # pylint: disable=no-self-use
     @contextlib.contextmanager
     def stop_recording(self):
         """Context manager to temporarily stop recording operations
         onto the tape. This is useful is scratch space is needed.
+
+        **Deprecated Method:** Please use ``qml.QueuingManager.stop_recording`` instead.
 
         **Example**
 
@@ -440,15 +462,12 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        if QueuingContext.active_context() is not self:
-            raise QueuingError(
-                "Cannot stop recording requested tape as it is not currently recording."
-            )
-
-        active_contexts = QueuingContext._active_contexts
-        QueuingContext._active_contexts = deque()
-        yield
-        QueuingContext._active_contexts = active_contexts
+        warn(
+            "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording.",
+            UserWarning,
+        )
+        with QueuingManager.stop_recording():
+            yield
 
     # ========================================================
     # construction methods
@@ -502,7 +521,8 @@ class QuantumTape(AnnotatedQueue):
         self.num_wires = len(self.wires)
 
         is_sample_type = [
-            m.return_type in (Sample, Counts, Shadow, ShadowExpval) for m in self.measurements
+            m.return_type in (Sample, Counts, AllCounts, Shadow, ShadowExpval)
+            for m in self.measurements
         ]
         self.is_sampled = any(is_sample_type)
         self.all_sampled = all(is_sample_type)
@@ -778,7 +798,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        with qml.tape.stop_recording():
+        with QueuingManager.stop_recording():
             new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 
@@ -786,7 +806,7 @@ class QuantumTape(AnnotatedQueue):
         # transform requires that the returned inverted object
         # is automatically queued.
         with QuantumTape._lock:
-            QueuingContext.append(new_tape)
+            QueuingManager.append(new_tape)
 
         return new_tape
 

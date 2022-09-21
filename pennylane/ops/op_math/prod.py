@@ -21,15 +21,21 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
-import numpy as np
+from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
-from pennylane.ops.op_math.pow_class import Pow
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+
+from .composite import CompositeOp
+
+MAX_NUM_WIRES_KRON_PRODUCT = 11
+"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
+computing the sparse matrix representation."""
 
 
 def prod(*ops, do_queue=True, id=None):
@@ -64,7 +70,7 @@ def prod(*ops, do_queue=True, id=None):
     return Prod(*ops, do_queue=do_queue, id=id)
 
 
-class Prod(Operator):
+class Prod(CompositeOp):
     r"""Symbolic operator representing the product of operators.
 
     Args:
@@ -151,67 +157,16 @@ class Prod(Operator):
         >>> qml.grad(circuit)(weights)
         array([-0.07059289])
     """
-    _name = "Prod"
-    _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(
-        self, *factors: Operator, do_queue=True, id=None
-    ):  # pylint: disable=super-init-not-called
-        """Initialize a Prod instance"""
-        self._id = id
-        self.queue_idx = None
-
-        if len(factors) < 2:
-            raise ValueError(f"Require at least two operators to multiply; got {len(factors)}")
-
-        self.factors = factors
-        self._wires = qml.wires.Wires.all_wires([f.wires for f in self.factors])
-        self._hash = None
-
-        if do_queue:
-            self.queue()
-
-    def __repr__(self):
-        """Constructor-call-like representation."""
-        return " @ ".join([f"({f})" if f.arithmetic_depth > 0 else f"{f}" for f in self.factors])
-
-    def __copy__(self):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-        copied_op.factors = tuple(copy(f) for f in self.factors)
-
-        for attr, value in vars(self).items():
-            if attr not in {"factors"}:
-                setattr(copied_op, attr, value)
-
-        return copied_op
+    _op_symbol = "@"
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
 
     @property
-    def data(self):
-        """Create data property"""
-        return [f.parameters for f in self.factors]
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        for new_entry, op in zip(new_data, self.factors):
-            op.data = new_entry
-
-    @property
     def batch_size(self):
         """Batch size of input parameters."""
-        return next((op.batch_size for op in self.factors if op.batch_size is not None), None)
-
-    @property
-    def num_params(self):
-        return sum(op.num_params for op in self.factors)
-
-    @property
-    def num_wires(self):
-        return len(self.wires)
+        return next((op.batch_size for op in self if op.batch_size is not None), None)
 
     @property
     def is_hermitian(self):
@@ -221,10 +176,10 @@ class Prod(Operator):
         yields false, which ARE hermitian. So a false result only implies a more explicit check
         must be performed.
         """
-        for o1, o2 in combinations(self.factors, r=2):
+        for o1, o2 in combinations(self.operands, r=2):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
-        return all(op.is_hermitian for op in self.factors)
+        return all(op.is_hermitian for op in self)
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
@@ -233,55 +188,12 @@ class Prod(Operator):
         to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
         that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
         """
-        if qml.queuing.QueuingContext.recording():
-            return [qml.apply(op) for op in self.factors[::-1]]
-        return list(self.factors[::-1])
-
-    @property
-    def eigendecomposition(self):
-        r"""Return the eigendecomposition of the matrix specified by the operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        It transforms the input operator according to the wires specified.
-
-        Returns:
-            dict[str, array]: dictionary containing the eigenvalues and the
-                eigenvectors of the operator.
-        """
-        Hmat = self.matrix()
-        Hmat = math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in self._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
-
-        return self._eigs[Hkey]
-
-    def diagonalizing_gates(self):
-        r"""Sequence of gates that diagonalize the operator in the computational basis.
-
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
-
-        The diagonalizing gates rotate the state into the eigenbasis
-        of the operator.
-
-        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
-
-        Returns:
-            list[.Operator] or None: a list of operators
-        """
-
-        eigen_vectors = self.eigendecomposition["eigvec"]
-        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+        if qml.queuing.QueuingManager.recording():
+            return [qml.apply(op) for op in self[::-1]]
+        return list(self[::-1])
 
     def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
+        """Return the eigenvalues of the specified operator.
 
         This method uses pre-stored eigenvalues for standard observables where
         possible and stores the corresponding eigenvectors from the eigendecomposition.
@@ -289,63 +201,50 @@ class Prod(Operator):
         Returns:
             array: array containing the eigenvalues of the operator
         """
-        return self.eigendecomposition["eigval"]
+        if self.has_overlapping_wires:
+            return self.eigendecomposition["eigval"]
+        eigvals = [
+            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
+            for factor in self
+        ]
+
+        return qml.math.prod(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        wire_order = wire_order or self.wires
-        mats = (
-            math.expand_matrix(qml.matrix(op), op.wires, wire_order=wire_order)
-            if isinstance(op, qml.Hamiltonian)
-            else math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
-            for op in self.factors
-        )
-
-        return reduce(math.dot, mats)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        r"""How the product is represented in diagrams and drawings.
-
-        Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``factors`` attribute.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
-
-        Returns:
-            str: label to use in drawings
-
-        >>> op = qml.prod(qml.PauliX(0), qml.prod(qml.RY(1, wires=1), qml.PauliX(0)))
-        >>> op.label()
-        'X@(RY@X)'
-        >>> op.label(decimals=2, base_label=["X0a", ["RY1", "X0b"]])
-        'X0a@(RY1\n(1.00)@X0b)'
-
-        """
-
-        def _label(factor, decimals, base_label, cache):
-            sub_label = factor.label(decimals, base_label, cache)
-            return f"({sub_label})" if factor.arithmetic_depth > 0 else sub_label
-
-        if base_label is not None:
-            if isinstance(base_label, str) or len(base_label) != len(self.factors):
-                raise ValueError(
-                    "Prod label requires ``base_label`` keyword to be same length"
-                    " as product factors."
-                )
-            return "@".join(
-                _label(f, decimals, lbl, cache) for f, lbl in zip(self.factors, base_label)
+        if self.has_overlapping_wires:
+            mats_and_wires_gen = (
+                (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+                for op in self
             )
 
-        return "@".join(_label(f, decimals, None, cache) for f in self.factors)
+            reduced_mat, prod_wires = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            )
+
+            wire_order = wire_order or self.wires
+
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+        mats_gen = (
+            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
+        )
+        full_mat = reduce(math.kron, mats_gen)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Prod op in csr representation."""
-        wire_order = wire_order or self.wires
-        mats = (op.sparse_matrix(wire_order=wire_order) for op in self.factors)
-        return reduce(math.dot, mats)
+        if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
+            mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+
+            reduced_mat, prod_wires = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            )
+
+            wire_order = wire_order or self.wires
+
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+        mats = (op.sparse_matrix() for op in self)
+        full_mat = reduce(sparse_kron, mats)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     # pylint: disable=protected-access
     @property
@@ -362,22 +261,14 @@ class Prod(Operator):
 
         Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
-        return "_ops" if all(op._queue_category == "_ops" for op in self.factors) else None
-
-    def queue(self, context=qml.QueuingContext):
-        """Updates each operator's owner to Prod, this ensures
-        that the operators are not applied to the circuit repeatedly."""
-        for op in self.factors:
-            context.safe_update_info(op, owner=self)
-        context.append(self, owns=self.factors)
-        return self
+        return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
     def adjoint(self):
-        return Prod(*(qml.adjoint(factor) for factor in self.factors[::-1]))
+        return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
     @property
     def arithmetic_depth(self) -> int:
-        return 1 + max(factor.arithmetic_depth for factor in self.factors)
+        return 1 + max(factor.arithmetic_depth for factor in self)
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
@@ -395,7 +286,7 @@ class Prod(Operator):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
-        global_phase, factors = self._simplify_factors(factors=self.factors)
+        global_phase, factors = self._simplify_factors(factors=self.operands)
 
         factors = list(itertools.product(*factors))
         if len(factors) == 1:
@@ -414,42 +305,34 @@ class Prod(Operator):
         op = Sum(*factors).simplify()
         return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
 
-    @property
-    def hash(self):
-        if self._hash is None:
-            self._hash = hash(
-                (str(self.name), str([factor.hash for factor in _prod_sort(self.factors)]))
-            )
-        return self._hash
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+        """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
+        into account the operator commutivity.
 
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
 
-def _prod_sort(op_list, wire_map: dict = None):
-    """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
-    into account the operator commutivity.
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
 
-    Args:
-        op_list (List[.Operator]): list of operators to be sorted
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
+        if isinstance(op_list, tuple):
+            op_list = list(op_list)
 
-    Returns:
-        List[.Operator]: sorted list of operators
-    """
+        for i in range(1, len(op_list)):
 
-    if isinstance(op_list, tuple):
-        op_list = list(op_list)
+            key_op = op_list[i]
 
-    for i in range(1, len(op_list)):
+            j = i - 1
+            while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
+                op_list[j + 1] = op_list[j]
+                j -= 1
+            op_list[j + 1] = key_op
 
-        key_op = op_list[i]
-
-        j = i - 1
-        while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
-            op_list[j + 1] = op_list[j]
-            j -= 1
-        op_list[j + 1] = key_op
-
-    return op_list
+        return op_list
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -519,12 +402,12 @@ class _ProductFactorsGrouping:
         """
         wires = factor.wires
         if isinstance(factor, Prod):
-            for prod_factor in factor.factors:
+            for prod_factor in factor:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
             self._remove_pauli_factors(wires=wires)
             self._remove_non_pauli_factors(wires=wires)
-            self._factors += (factor.summands,)
+            self._factors += (factor.operands,)
         elif not isinstance(factor, qml.Identity):
             if isinstance(factor, SProd):
                 self.global_phase *= factor.scalar
@@ -603,9 +486,7 @@ class _ProductFactorsGrouping:
                         op = Pow(base=op, z=exponent).simplify()
                     if isinstance(op, Prod):
                         self._factors += tuple(
-                            (factor,)
-                            for factor in op.factors
-                            if not isinstance(factor, qml.Identity)
+                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
                         )
                     elif not isinstance(op, qml.Identity):
                         self._factors += ((op,),)

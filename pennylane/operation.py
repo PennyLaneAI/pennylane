@@ -107,6 +107,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 from pennylane.math import expand_matrix
 
@@ -1049,7 +1050,7 @@ class Operator(abc.ABC):
             return [copy.copy(self)]
         raise PowUndefinedError
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -1163,7 +1164,7 @@ class Operator(abc.ABC):
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
-            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
+            return qml.pow(self, z=other)
         raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
@@ -1365,6 +1366,11 @@ class Operation(Operator):
 
     @inverse.setter
     def inverse(self, boolean):
+        warnings.warn(
+            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
+            " qml.pow instead.",
+            UserWarning,
+        )
         self._inverse = boolean
 
     def inv(self):
@@ -1721,7 +1727,7 @@ class Tensor(Observable):
 
         return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
-    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
+    def queue(self, context=QueuingManager, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
 
         if init:
@@ -1737,7 +1743,7 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -1841,22 +1847,19 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if (
-            qml.QueuingContext.recording()
-            and self not in qml.QueuingContext.active_context()._queue
-        ):
-            qml.QueuingContext.append(self)
+        if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
+            QueuingManager.append(self)
 
-        qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
-        qml.QueuingContext.safe_update_info(other, owner=self)
+        QueuingManager.update_info(self, owns=tuple(self.obs))
+        QueuingManager.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
-            qml.QueuingContext.safe_update_info(other, owner=self)
+            QueuingManager.update_info(self, owns=tuple(self.obs))
+            QueuingManager.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
@@ -2502,7 +2505,7 @@ def defines_diagonalizing_gates(obj):
     a queuing context, but the resulting gates must not be queued.
     """
 
-    with qml.tape.stop_recording():
+    with qml.QueuingManager.stop_recording():
         try:
             obj.diagonalizing_gates()
         except DiagGatesUndefinedError:
