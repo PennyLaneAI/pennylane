@@ -641,7 +641,9 @@ def _create_variance_proc_fn(
                     if measurement_is_var:
                         for p_idx in range(num_params):
                             _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
-                            r = _get_var_with_second_order(_pdA2, f0[m_idx], pdA[m_idx][p_idx])
+                            _f0 = f0[m_idx]
+                            _pdA = pdA[m_idx][p_idx]
+                            r = _get_var_with_second_order(_pdA2, _f0, _pdA)
                             m_res.append(r)
                         m_res = tuple(m_res)
                     else:
@@ -653,11 +655,12 @@ def _create_variance_proc_fn(
             var_grad = []
             for m_idx in range(len(tape.measurements)):
                 measurement_is_var = mask[m_idx]
+                m_res = pdA[m_idx][p_idx]
                 if measurement_is_var:
                     _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
-                    m_res = _get_var_with_second_order(_pdA2, f0[m_idx], pdA[m_idx][p_idx])
-                else:
-                    m_res = pdA[m_idx[p_idx]]
+                    _f0 = f0[m_idx]
+                    m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
+
                 var_grad.append(m_res)
             return tuple(var_grad)
 
