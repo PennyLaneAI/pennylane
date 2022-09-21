@@ -541,9 +541,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
 
     Squeezing is performed on the result to get scalar arrays.
     """
-    print("_get_var_with_second_order: ", pdA2, f0, pdA, pdA2 - 2 * f0 * pdA)
     return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
-
 
 def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     """Auxiliary function for post-processing the partial derivative of <A^2>
@@ -558,12 +556,12 @@ def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     variables).
     """
     new_pdA2 = []
-    for i in range(len(tape.observables)):
+    for i in range(len(tape.measurements)):
         if i in var_idx:
             obs_involutory = i not in non_involutory
             if obs_involutory:
-                length = getattr(pdA2[i], "len", 1)
-                item = tuple(np.array(0) for _ in range(length)) if length > 1 else np.array(0)
+                num_params = len(tape.trainable_params)
+                item = tuple(np.array(0) for _ in range(num_params))
             else:
                 item = pdA2[i]
             new_pdA2.append(item)
@@ -632,30 +630,31 @@ def _create_variance_proc_fn(
 
         multi_measure = len(tape.measurements) > 1
         if multi_measure:
-            res = []
-            for idx, m in enumerate(mask):
+            num_params = len(tape.trainable_params)
 
-                if isinstance(pdA2, (Sequence, np.ndarray)):
-                    print('in here1', pdA, f0[idx])
-                    r = _get_var_with_second_order(pdA2[idx], f0[idx], pdA[idx]) if m else pdA[idx]
-                elif isinstance(pdA, (Sequence, np.ndarray)) and len(pdA) > 0:
-                    num_params = len(tape.trainable_params)
-                    r = tuple(
-                        [
-                            _get_var_with_second_order(pdA2, f0[idx], pdA[idx][i])
-                            for i in range(num_params)
-                        ]
-                        if m
-                        else [pdA[idx][i] for i in range(num_params)]
-                    )
+            # TODO: think this over: how to handle num_params == 1 case?
+            # Need more tests?
+            if num_params > 1:
+                var_grad = []
+                for m_idx in range(len(tape.measurements)):
+                    m_res = []
+                    m = mask[m_idx]
+                    if m:
+                        for p_idx in range(num_params):
+                            _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 and pdA2[m_idx] != 0 else pdA2
+                            r = _get_var_with_second_order(_pdA2, f0[m_idx], pdA[m_idx][p_idx])
+                            m_res.append(r)
+                        m_res = tuple(m_res)
+                    else:
+                        m_res = tuple(qml.math.squeeze(p) for p in pdA[m_idx])
+                    var_grad.append(m_res)
 
-                print(r)
-                res.append(r)
-            return tuple(res)
+            print('in here',num_params )
+            return tuple(var_grad)
 
         # Scalar
-        res = _get_var_with_second_order(pdA2, f0, pdA) if mask else pdA
-        return res
+        var_grad = _get_var_with_second_order(pdA2, f0, pdA) if mask else pdA
+        return var_grad
 
     return processing_fn
 
