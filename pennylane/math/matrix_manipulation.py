@@ -165,6 +165,12 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
 
     wires = wires.tolist() if isinstance(wires, qml.wires.Wires) else list(copy.copy(wires))
 
+    # `expanded_wires` and `mats` will contain the wires and matrices of:
+    #       1) identities before the matrix in wire order
+    #       2) the matrix
+    #       3) identities after or in the middle of the matrix in wire order
+    # Any identity wires in between matrix wires will be added after the matrix in `expanded_wires`
+    # and permutation will bring them inside
     expanded_wires = []
     mats = []
     base_matrix_encountered = False
@@ -190,6 +196,8 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
         expanded_matrix = copy.copy(base_matrix).asformat("csr")
 
     expanded_matrix.eliminate_zeros()
+
+    # Permute the expanded_matrix to match its wires with the `wire_order` argument
 
     U = _permutation_sparse_matrix(expanded_wires, wire_order)
 
