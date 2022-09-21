@@ -377,26 +377,6 @@ def __execute_new(
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-    for i, r in enumerate(res):
-
-        if any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in tapes[i].measurements
-        ):
-            continue
-
-        if isinstance(r, np.ndarray):
-            # For backwards compatibility, we flatten ragged tape outputs
-            # when there is no sampling
-            r = np.hstack(r) if r.dtype == np.dtype("object") else r
-            res[i] = np.tensor(r)
-
-        elif isinstance(res[i], tuple):
-            res[i] = tuple(np.tensor(r) for r in res[i])
-
-        else:
-            res[i] = qml.math.toarray(res[i])
-
     return res, jacs
 
 
@@ -539,4 +519,4 @@ def _vjp_new(
     return grad_fn
 
 
-autograd.extend.defvjp(_execute_new, _vjp_new, argnums=[0])
+autograd.extend.defvjp(__execute_new, _vjp_new, argnums=[0])
