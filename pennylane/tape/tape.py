@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.measurements import Counts, Sample, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
-from pennylane.qscript import QuantumScript
+from .qscript import QuantumScript
 
 
 class TapeError(ValueError):
