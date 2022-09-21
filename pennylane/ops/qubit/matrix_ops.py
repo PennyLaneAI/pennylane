@@ -15,12 +15,13 @@
 This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+# pylint:disable=arguments-differ
 import warnings
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation, DecompositionUndefinedError
+from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
 from pennylane.wires import Wires
 
 
@@ -38,6 +39,15 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+        unitary_check (bool): check for unitarity of the given matrix
+
+    Raises:
+        ValueError: if the number of wires doesn't fit the dimensions of the matrix
+        UserWarning: if the input matrix might not be unitary
 
     **Example**
 
@@ -62,18 +72,19 @@ class QubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, *params, wires, do_queue=True):
+    def __init__(
+        self, U, wires, do_queue=True, id=None, unitary_check=False
+    ):  # pylint: disable=too-many-arguments
         wires = Wires(wires)
 
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
-            U = params[0]
             U_shape = qml.math.shape(U)
 
             dim = 2 ** len(wires)
 
-            if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
+            if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
                     f"to act on {len(wires)} wires."
@@ -81,7 +92,7 @@ class QubitUnitary(Operation):
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not (
+            if unitary_check and not (
                 qml.math.is_abstract(U)
                 or qml.math.allclose(
                     qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
@@ -95,7 +106,7 @@ class QubitUnitary(Operation):
                     UserWarning,
                 )
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ

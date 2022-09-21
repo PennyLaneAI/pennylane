@@ -352,7 +352,8 @@ class TestSpecialGates:
         layer = 0
 
         assert len(ax.lines) == 2
-        assert len(ax.collections) == 2
+        assert len(ax.texts) == 3
+        assert len(ax.collections) == 1
 
         plt.close()
 
