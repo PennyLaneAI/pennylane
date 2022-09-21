@@ -1225,12 +1225,9 @@ def param_shift(
         # If there are unsupported parameters, we must process
         # the quantum results separately, once for the fallback
         # function and once for the parameter-shift rule, and recombine.
-
-        def processing_fn(results):
+        def _processing_fn_tuple(results):
             unsupported_grads = fallback_proc_fn(results[:fallback_len])
             supported_grads = fn(results[fallback_len:])
-            if not qml.active_return():
-                return unsupported_grads + supported_grads
 
             multi_measure = len(tape.measurements) > 1
             if not multi_measure:
@@ -1250,6 +1247,14 @@ def param_shift(
                 meas_grad = tuple(meas_grad)
                 combined_grad.append(meas_grad)
             return tuple(combined_grad)
+
+        def processing_fn(results):
+            if qml.active_return():
+                return _processing_fn_tuple(results)
+
+            unsupported_grads = fallback_proc_fn(results[:fallback_len])
+            supported_grads = fn(results[fallback_len:])
+            return unsupported_grads + supported_grads
 
         return gradient_tapes, processing_fn
 
