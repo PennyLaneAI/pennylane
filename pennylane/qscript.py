@@ -68,17 +68,86 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 class QuantumScript:
-    """docstring"""
+    """The state preparation, operations, and measurments that represent instructions for
+    execution on a quantum device.
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None):
+    Args:
+        ops (Iterable[Operator]): An iterable of the operations to be performed
+        measurements (Iterable[MeasurementProcess]): All the measurements to be performed
+        prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
+        name (str): a name given to the quantum tape
+
+    ..see-also: :class:`pennylane.tape.QuantumTape`
+
+    **Example:**
+
+    .. code-block:: python
+
+        from pennylane.qscript import QuantumScript
+
+        ops = [qml.RX(0.432, 0),
+               qml.RY(0.543, 0),
+               qml.CNOT((0,"a")),
+               qml.RX(0.133, "a")]
+
+        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+
+    >>> list(qscript)
+    [RX(0.432, wires=[0]),
+    RY(0.543, wires=[0]),
+    CNOT(wires=[0, 'a']),
+    RX(0.133, wires=['a']),
+    expval(PauliZ(wires=[0]))]
+    >>> qscript.operations
+    [RX(0.432, wires=[0]),
+    RY(0.543, wires=[0]),
+    CNOT(wires=[0, 'a']),
+    RX(0.133, wires=['a'])]
+    >>> qscript.measurements
+    [expval(PauliZ(wires=[0]))]
+
+    Iterating over the quantum script can be done by:
+
+    >>> for op in qscript:
+    ...     print(op)
+    RX(0.432, wires=[0])
+    RY(0.543, wires=[0])
+    CNOT(wires=[0, 'a'])
+    RX(0.133, wires=['a'])
+    expval(PauliZ(wires=[0]))'
+
+    Quantum scripts also support indexing and length determination:
+
+    >>> qscript[0]
+    RX(0.432, wires=[0])
+    >>> len(qscript)
+    5
+
+    Once constructed, the script can be executed directly on a quantum device
+    using the :func:`~.pennylane.execute` function:
+
+    >>> dev = qml.device('default.qubit', wires=(0,'a'))
+    >>> qml.execute([qscript], dev, gradient_fn=None)
+    [array([0.77750694])]
+
+    ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
+    so those arguments accept any iterable object:
+
+    >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
+    >>> qscript.circuit
+    [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])]
+
+    """
+
+    def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
         # are we going to queue these?
         self.name = name
-        self._prep = prep or []
-        self._ops = ops or []
-        self._measurements = measurements or []
+        self._prep = [] if prep is None else list(prep)
+        self._ops = [] if ops is None else list(ops)
+        self._measurements = [] if measurements is None else list(measurements)
 
         self._par_info = {}
-        """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
+        """dict[int, dict[str, Operator or int]]: Parameter information. Keys are
         parameter indices (in the order they appear on the tape), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
@@ -100,7 +169,8 @@ class QuantumScript:
         i.e., that do not have their own unique set of wires."""
         self._obs_sharing_wires_id = []
 
-        self._update()
+        if _update:
+            self._update()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -161,24 +231,15 @@ class QuantumScript:
 
     @property
     def operations(self) -> List[Operator]:
-        """Returns the operations on the quantum tape.
+        """Returns the state preparations and operations on the quantum tape.
 
         Returns:
-            list[.Operation]: recorded quantum operations
+            list[.Operator]: recorded quantum operations
 
-        **Example**
-
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
-
-        >>> tape.operations
-        [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript.operations
+        [QubitStateVector([0, 1], wires=[0]), RX(0.432, wires=[0])]
         """
         return self._prep + self._ops
 
@@ -188,20 +249,13 @@ class QuantumScript:
         """Returns the observables on the quantum tape.
 
         Returns:
-            list[.Observable]: list of recorded quantum operations
+            list[.Operator]]: list of recorded quantum operations
 
         **Example**
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
-
-        >>> tape.observables
+        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript.observables
         [expval(PauliZ(wires=[0]))]
         """
         # TODO: modify this property once devices
@@ -227,16 +281,9 @@ class QuantumScript:
 
         **Example**
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
-
-        >>> tape.measurements
+        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript.measurements
         [expval(PauliZ(wires=[0]))]
         """
         return self._measurements
@@ -248,19 +295,19 @@ class QuantumScript:
 
     @property
     def batch_size(self):
-        r"""The batch size of the quantum tape inferred from the batch sizes
+        r"""The batch size of the quantum script inferred from the batch sizes
         of the used operations for parameter broadcasting.
 
         .. seealso:: :attr:`~.Operator.batch_size` for details.
 
         Returns:
-            int or None: The batch size of the quantum tape if present, else ``None``.
+            int or None: The batch size of the quantum script if present, else ``None``.
         """
         return self._batch_size
 
     @property
     def output_dim(self):
-        """The (inferred) output dimension of the quantum tape."""
+        """The (inferred) output dimension of the quantum script."""
         return self._output_dim
 
     @property
@@ -279,8 +326,6 @@ class QuantumScript:
             with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
                 rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
-
-    # Do we
 
     ##### SET METHODS ###############
 
@@ -454,19 +499,13 @@ class QuantumScript:
 
         **Example**
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
-
-        >>> tape.trainable_params
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript.trainable_params
         [0, 1, 2]
-        >>> tape.trainable_params = [0] # set only the first parameter as trainable
-        >>> tape.get_parameters()
+        >>> qscript.trainable_params = [0] # set only the first parameter as trainable
+        >>> qscript.get_parameters()
         [0.432]
         """
         return self._trainable_params
@@ -516,7 +555,7 @@ class QuantumScript:
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
     ):  # pylint:disable=unused-argument
-        """Return the parameters incident on the tape operations.
+        """Return the parameters incident on the quantum script operations.
 
         The returned parameters are provided in order of appearance
         on the tape.
@@ -528,31 +567,26 @@ class QuantumScript:
 
         **Example**
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
 
         By default, all parameters are trainable and will be returned:
 
-        >>> tape.get_parameters()
+        >>> qscript.get_parameters()
         [0.432, 0.543, 0.133]
 
         Setting the trainable parameter indices will result in only the specified
         parameters being returned:
 
-        >>> tape.trainable_params = [1] # set the second parameter as trainable
-        >>> tape.get_parameters()
+        >>> qscript.trainable_params = [1] # set the second parameter as trainable
+        >>> qscript.get_parameters()
         [0.543]
 
         The ``trainable_only`` argument can be set to ``False`` to instead return
         all parameters:
 
-        >>> tape.get_parameters(trainable_only=False)
+        >>> qscript.get_parameters(trainable_only=False)
         [0.432, 0.543, 0.133]
         """
         params = []
@@ -578,35 +612,30 @@ class QuantumScript:
 
         **Example**
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
 
         By default, all parameters are trainable and can be modified:
 
-        >>> tape.set_parameters([0.1, 0.2, 0.3])
-        >>> tape.get_parameters()
+        >>> qscript.set_parameters([0.1, 0.2, 0.3])
+        >>> qscript.get_parameters()
         [0.1, 0.2, 0.3]
 
         Setting the trainable parameter indices will result in only the specified
         parameters being modifiable. Note that this only modifies the number of
         parameters that must be passed.
 
-        >>> tape.trainable_params = [0, 2] # set the first and third parameter as trainable
-        >>> tape.set_parameters([-0.1, 0.5])
-        >>> tape.get_parameters(trainable_only=False)
+        >>> qscript.trainable_params = [0, 2] # set the first and third parameter as trainable
+        >>> qscript.set_parameters([-0.1, 0.5])
+        >>> qscript.get_parameters(trainable_only=False)
         [-0.1, 0.2, 0.5]
 
         The ``trainable_only`` argument can be set to ``False`` to instead set
         all parameters:
 
-        >>> tape.set_parameters([4, 1, 6], trainable_only=False)
-        >>> tape.get_parameters(trainable_only=False)
+        >>> qscript.set_parameters([4, 1, 6], trainable_only=False)
+        >>> qscript.get_parameters(trainable_only=False)
         [4, 1, 6]
         """
         if trainable_only:
@@ -833,24 +862,9 @@ class QuantumScript:
 
         **Example:**
 
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", wires=2)
-            a = np.array([0.1, 0.2, 0.3])
-
-            def func(a):
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.RY(a[2], wires=0)
-
-            with qml.tape.QuantumTape() as tape:
-                func(a)
-                qml.state()
-
-        .. code-block:: pycon
-
-            >>> tape.numeric_type
-            complex
+        >>> qscript = QuantumScript(measurements=[qml.state()])
+        >>> qscript.numeric_type
+        complex
         """
         measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
@@ -874,16 +888,16 @@ class QuantumScript:
     # ========================================================
 
     def copy(self, copy_operations=False):
-        """Returns a shallow copy of the quantum tape.
+        """Returns a shallow copy of the quantum script.
 
         Args:
-            copy_operations (bool): If True, the tape operations are also shallow copied.
-                Otherwise, if False, the copied tape operations will simply be references
-                to the original tape operations; changing the parameters of one tape will likewise
+            copy_operations (bool): If True, the operations are also shallow copied.
+                Otherwise, if False, the copied operations will simply be references
+                to the original operations; changing the parameters of one script will likewise
                 change the parameters of all copies.
 
         Returns:
-            .QuantumTape: a shallow copy of the tape
+            QuantumScript : a shallow copy of the quantum script
         """
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement
@@ -934,31 +948,25 @@ class QuantumScript:
 
         Consider the following nested tape:
 
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
-
-                with QuantumTape() as tape2:
-                    qml.Rot(0.543, 0.1, 0.4, wires=0)
-
-                qml.CNOT(wires=[0, 'a'])
-                qml.RY(0.2, wires='a')
-                qml.probs(wires=0), qml.probs(wires='a')
+        >>> prep = [qml.BasisState(np.array([1, 1]), wires=[0, 'a'])]
+        >>> nested_script = QuantumScript([qml.Rot(0.543, 0.1, 0.4, wires=0)])
+        >>> ops = [nested_script, qml.CNOT(wires=[0, 'a']), qml.RY(0.2, wires='a')]
+        >>> measurements = [qml.probs(wires=0), qml.probs(wires='a')]
+        >>> qscript = QuantumScript(ops, measurements, prep)
 
         The nested structure is preserved:
 
-        >>> tape.operations
-        [BasisState(array([1, 1]), wires=[0, 'a']),
-         <QuantumTape: wires=[0], params=3>,
-         CNOT(wires=[0, 'a']),
-         RY(0.2, wires=['a'])]
+        >>> qscript.operations
+        [BasisState(tensor([1, 1], requires_grad=True), wires=[0, 'a']),
+        <QuantumScript: wires=[0], params=3>,
+        CNOT(wires=[0, 'a']),
+        RY(0.2, wires=['a'])]
 
         Calling ``.expand`` will return a tape with all nested tapes
         expanded, resulting in a single tape of quantum operations:
 
-        >>> new_tape = tape.expand(depth=2)
-        >>> new_tape.operations
+        >>> new_qscript = qscript.expand(depth=2)
+        >>> new_qscript.operations
         [PauliX(wires=[0]),
         PauliX(wires=['a']),
         RZ(0.543, wires=[0]),
@@ -967,23 +975,23 @@ class QuantumScript:
         CNOT(wires=[0, 'a']),
         RY(0.2, wires=['a'])]
         """
-        new_tape = qml.tape.tape.expand_tape(
+        new_script = qml.tape.tape.expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
-        new_tape._update()
-        return new_tape
+        new_script._update()
+        return new_script
 
     # NOT MOVING OVER INV
 
     def adjoint(self):
-        """Create a tape that is the adjoint of this one.
+        """Create a quantum script that is the adjoint of this one.
 
-        Adjointed tapes are the conjugated and transposed version of the
-        original tapes. Adjointed ops are equivalent to the inverted operation for unitary
+        Adjointed quantum scripts are the conjugated and transposed version of the
+        original script. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
         Returns:
-            ~.QuantumTape: the adjointed tape
+            ~.QuantumScript: the adjointed script
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
@@ -991,6 +999,32 @@ class QuantumScript:
         if hasattr(self, "do_queue"):
             qml.QueuingManager.append(adj)
         return adj
+
+    def unwrap(self):
+        """A context manager that unwraps a quantum script with tensor-like parameters
+        to NumPy arrays.
+
+        Returns:
+
+            .QuantumScript: the unwrapped quantum tape
+
+        **Example**
+
+        >>> with tf.GradientTape():
+        ...     qscript = QuantumScript([qml.RX(tf.Variable(0.1), 0),
+        ...                             qml.RY(tf.constant(0.2), 0),
+        ...                             qml.RZ(tf.Variable(0.3), 0)])
+        ...     with qscript.unwrap():
+        ...         print("Trainable params:", qscript.trainable_params)
+        ...         print("Unwrapped params:", qscript.get_parameters())
+        Trainable params: [0, 2]
+        Unwrapped params: [0.1, 0.3]
+        >>> print("\n".join(str(p) for p in qscript.get_parameters()))
+        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>
+        tf.Tensor(0.2, shape=(), dtype=float32)
+        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>
+        """
+        return qml.tape.UnwrapTape(self)
 
     # ========================================================
     # Transforms: Tape to Information
@@ -1001,7 +1035,9 @@ class QuantumScript:
         """Returns a directed acyclic graph representation of the recorded
         quantum circuit:
 
-        >>> tape.graph
+        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        >>> qscript.graph
         <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
         Note that the circuit graph is only constructed once, on first call to this property,
@@ -1026,27 +1062,20 @@ class QuantumScript:
 
         **Example**
 
-        .. code-block:: python3
-
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.RZ(0.26, wires=1)
-                qml.CNOT(wires=[1, 0])
-                qml.Rot(1.8, -2.7, 0.2, wires=0)
-                qml.Hadamard(wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
+        ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0,1))]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
 
         Asking for the specs produces a dictionary as shown below:
 
-        >>> tape.specs['gate_sizes']
+        >>> qscript.specs['gate_sizes']
         defaultdict(int, {1: 4, 2: 2})
-        >>> tape.specs['gate_types']
-        defaultdict(int, {'Hadamard': 2, 'RZ': 1, 'CNOT': 2, 'Rot': 1})
+        >>> qscript.specs['gate_types']
+        defaultdict(int, {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1})
 
         As ``defaultdict`` objects, any key not present in the dictionary returns 0.
 
-        >>> tape.specs['gate_types']['RX']
+        >>> qscript.specs['gate_types']['RZ']
         0
 
         """
@@ -1076,7 +1105,7 @@ class QuantumScript:
         max_length=100,
         show_matrices=False,
     ):
-        """Draw the quantum tape as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
+        """Draw the quantum script as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
         Args:
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
@@ -1127,8 +1156,7 @@ class QuantumScript:
         wires = wires or self.wires
 
         # add the QASM headers
-        qasm_str = "OPENQASM 2.0;\n"
-        qasm_str += 'include "qelib1.inc";\n'
+        qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
 
         if self.num_wires == 0:
             # empty circuit

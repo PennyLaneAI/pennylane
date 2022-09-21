@@ -27,8 +27,6 @@ from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.qscript import QuantumScript
 
-from .unwrap import UnwrapTape
-
 
 class TapeError(ValueError):
     """An error raised with a quantum tape."""
@@ -185,7 +183,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_ops.extend(expanded_tape._ops)
             new_measurements.extend(expanded_tape._measurements)
 
-    new_tape = QuantumTape()
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, _update=False)
     new_tape._prep = new_prep
     new_tape._ops = new_ops
     new_tape._measurements = new_measurements
@@ -302,9 +300,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None, do_queue=True):
+    def __init__(
+        self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
+    ):
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, name=name)
+        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
         self.do_queue = do_queue
 
     def __enter__(self):
@@ -484,32 +484,3 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
             self._ops[idx] = qml.adjoint(op, lazy=False)
 
         self._ops = list(reversed(self._ops))
-
-    def unwrap(self):
-        """A context manager that unwraps a tape with tensor-like parameters
-        to NumPy arrays.
-
-        Args:
-            tape (.QuantumTape): the quantum tape to unwrap
-
-        Returns:
-
-            .QuantumTape: the unwrapped quantum tape
-
-        **Example**
-
-        >>> with tf.GradientTape():
-        ...     with qml.tape.QuantumTape() as tape:
-        ...         qml.RX(tf.Variable(0.1), wires=0)
-        ...         qml.RY(tf.constant(0.2), wires=0)
-        ...         qml.RZ(tf.Variable(0.3), wires=0)
-        ...     with tape.unwrap():
-        ...         print("Trainable params:", tape.trainable_params)
-        ...         print("Unwrapped params:", tape.get_parameters())
-        Trainable params: [0, 2]
-        Unwrapped params: [0.1, 0.3]
-        >>> print("Original parameters:", tape.get_parameters())
-        Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
-          <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
-        """
-        return UnwrapTape(self)
