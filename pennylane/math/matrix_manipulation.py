@@ -106,7 +106,7 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     if (wire_order is None) or (wire_order == wires):
         return base_matrix
 
-    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
+    interface = qml.math.get_interface(base_matrix)
 
     def eye_interface(dim):
         return qml.math.cast_like(qml.math.eye(2**dim, like=interface), base_matrix)
