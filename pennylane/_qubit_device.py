@@ -334,7 +334,7 @@ class QubitDevice(Device):
                 results = tuple(results)
 
         # increment counter for number of executions of qubit device
-        # self._num_executions += 1
+        self._num_executions += 1
 
         # if self.tracker.active:
         #     self.tracker.update(executions=1, shots=self._shots)
