@@ -162,50 +162,49 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
         tensor_like: expanded matrix
     """
     base_matrix.eliminate_zeros()
-
     wires = wires.tolist() if isinstance(wires, qml.wires.Wires) else list(copy.copy(wires))
 
-    # `expanded_wires` and `mats` will contain the wires and matrices of:
-    #       1) identities before the matrix in wire order
-    #       2) the matrix
-    #       3) identities after or in the middle of the matrix in wire order
-    # Any identity wires in between matrix wires will be added after the matrix in `expanded_wires`
-    # and permutation will bring them inside
-    expanded_wires = []
-    mats = []
-    base_matrix_encountered = False
-    identity_count = 0
-    for wire in wire_order:
-        if wire not in wires:
-            identity_count += 1
-            expanded_wires.append(wire)
-        elif not base_matrix_encountered:
-            if identity_count > 0:
-                mats.append(eye(2**identity_count, format="coo"))
-            identity_count = 0
-            mats.append(base_matrix)
-            base_matrix_encountered = True
-            expanded_wires.extend(wires)
+    # get a subset of `wire_order` values that contain all wire labels inside `wires` argument
+    # e.g. wire_order = [0, 1, 2, 3, 4]; wires = [3, 0, 2]
+    # --> subset_wire_order = [0, 1, 2, 3]; expanded_wires = [3, 0, 2, 1]
+    wire_indices = [wire_order.index(wire) for wire in wires]
+    subset_wire_order = wire_order[min(wire_indices) : max(wire_indices) + 1]
+    wire_difference = list(set(subset_wire_order) - set(wires))
+    expanded_wires = wires + wire_difference
 
-    if identity_count > 0:
-        mats.append(eye(2**identity_count, format="coo"))
+    # expand matrix if needed
+    if wire_difference:
+        base_matrix = kron(base_matrix, eye(2 ** len(wire_difference), format="coo"), format="csr")
+        base_matrix.eliminate_zeros()
 
-    if len(mats) > 1:
-        expanded_matrix = reduce(lambda i, j: kron(i, j, format="csr"), mats)
-    else:
-        expanded_matrix = copy.copy(base_matrix).asformat("csr")
-
-    expanded_matrix.eliminate_zeros()
-
-    # Permute the expanded_matrix to match its wires with the `wire_order` argument
-
-    U = _permutation_sparse_matrix(expanded_wires, wire_order)
-
+    # permute the matrix to match the `subset_wire_order` values
+    U = _permutation_sparse_matrix(expanded_wires, subset_wire_order)
     if U is not None:
-        expanded_matrix = U.T @ expanded_matrix @ U
-        expanded_matrix.eliminate_zeros()
+        base_matrix = U.T @ base_matrix @ U
+        base_matrix.eliminate_zeros()
 
-    return expanded_matrix.asformat(format)
+    # expand the matrix even further by adding the missing wires
+    if len(wire_order) > len(expanded_wires):
+        identity_count = 0
+        subset_matrix_encountered = False
+        mats = []
+        for wire in wire_order:
+            if wire not in expanded_wires:
+                identity_count += 1
+            elif not subset_matrix_encountered:
+                if identity_count > 0:
+                    mats.append(eye(2**identity_count, format="coo"))
+                    identity_count = 0
+                mats.append(base_matrix)
+                subset_matrix_encountered = True
+
+        if identity_count > 0:
+            mats.append(eye(2**identity_count, format="coo"))
+
+        base_matrix = reduce(lambda i, j: kron(i, j, format="coo"), mats)
+        base_matrix.eliminate_zeros()
+
+    return base_matrix.asformat(format=format)
 
 
 def _sparse_swap_mat(qubit_i, qubit_j, n):
