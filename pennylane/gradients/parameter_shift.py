@@ -633,8 +633,6 @@ def _create_variance_proc_fn(
         if multi_measure:
             num_params = len(tape.trainable_params)
 
-            # TODO: think this over: how to handle num_params == 1 case?
-            # Need more tests?
             if num_params > 1:
                 var_grad = []
                 for m_idx in range(len(tape.measurements)):
@@ -642,12 +640,12 @@ def _create_variance_proc_fn(
                     m = mask[m_idx]
                     if m:
                         for p_idx in range(num_params):
-                            _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 and pdA2[m_idx] != 0 else pdA2
+                            _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
                             r = _get_var_with_second_order(_pdA2, f0[m_idx], pdA[m_idx][p_idx])
                             m_res.append(r)
                         m_res = tuple(m_res)
                     else:
-                        m_res = tuple(qml.math.squeeze(p) for p in pdA[m_idx])
+                        m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
                     var_grad.append(m_res)
                 return tuple(var_grad)
 
@@ -656,10 +654,10 @@ def _create_variance_proc_fn(
             for m_idx in range(len(tape.measurements)):
                 m = mask[m_idx]
                 if m:
-                    _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 and pdA2[m_idx] != 0 else pdA2
+                    _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
                     m_res = _get_var_with_second_order(_pdA2, f0[m_idx], pdA[m_idx][p_idx])
                 else:
-                    m_res = qml.math.squeeze(pdA[m_idx])
+                    m_res = pdA[m_idx[p_idx]]
                 var_grad.append(m_res)
             return tuple(var_grad)
 
