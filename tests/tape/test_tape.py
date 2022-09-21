@@ -1582,28 +1582,9 @@ class TestTapeCopying:
 class TestStopRecording:
     """Test that the stop_recording function works as expected"""
 
-    def test_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-
-        with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-            with tape.stop_recording():
-                pass
-
-    def test_nested_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape1:
-            qml.RX(0.1, wires=0)
-
-            with QuantumTape() as tape2:
-                qml.RX(0.1, wires=0)
-
-                with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-                    with tape1.stop_recording():
-                        pass
+    deprecation_warning = (
+        "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording"
+    )
 
     def test_recording_stopped(self):
         """Test that recording is stopped within a tape context"""
@@ -1612,12 +1593,13 @@ class TestStopRecording:
             op0 = qml.RX(0, wires=0)
             assert qml.queuing.QueuingManager.active_context() is tape
 
-            with tape.stop_recording():
-                op1 = qml.RY(1.0, wires=1)
-                assert qml.queuing.QueuingManager.active_context() is None
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
+                with tape.stop_recording():
+                    op1 = qml.RY(1.0, wires=1)
+                    assert qml.queuing.QueuingManager.active_context() is None
 
-            op2 = qml.RZ(2, wires=1)
-            assert qml.queuing.QueuingManager.active_context() is tape
+                op2 = qml.RZ(2, wires=1)
+                assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
@@ -1634,10 +1616,11 @@ class TestStopRecording:
                 assert qml.queuing.QueuingManager.active_context() is tape2
                 op1 = qml.RY(1.0, wires=1)
 
-                with tape2.stop_recording():
-                    assert qml.queuing.QueuingManager.active_context() is None
-                    op2 = qml.RZ(0.6, wires=2)
-                    op3 = qml.CNOT(wires=[0, 2])
+                with pytest.warns(UserWarning, match=self.deprecation_warning):
+                    with tape2.stop_recording():
+                        assert qml.queuing.QueuingManager.active_context() is None
+                        op2 = qml.RZ(0.6, wires=2)
+                        op3 = qml.CNOT(wires=[0, 2])
 
                 op4 = qml.Hadamard(wires=0)
 
@@ -1660,9 +1643,10 @@ class TestStopRecording:
             op0 = qml.RX(0, wires=0)
             assert qml.queuing.QueuingManager.active_context() is tape
 
-            with tape.stop_recording(), QuantumTape() as temp_tape:
-                assert qml.queuing.QueuingManager.active_context() is temp_tape
-                op1 = qml.RY(1.0, wires=1)
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
+                with tape.stop_recording(), QuantumTape() as temp_tape:
+                    assert qml.queuing.QueuingManager.active_context() is temp_tape
+                    op1 = qml.RY(1.0, wires=1)
 
             op2 = qml.RZ(2, wires=1)
             assert qml.queuing.QueuingManager.active_context() is tape
@@ -1675,20 +1659,29 @@ class TestStopRecording:
         assert temp_tape.operations[0] == op1
 
 
-def test_gate_tape():
+def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
     recording tape, or None if no tape is recording"""
-    assert qml.tape.get_active_tape() is None
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    with pytest.warns(UserWarning, match=message):
+        assert qml.tape.get_active_tape() is None
 
     with QuantumTape() as tape1:
-        assert qml.tape.get_active_tape() is tape1
+        with pytest.warns(UserWarning, match=message):
+            assert qml.tape.get_active_tape() is tape1
 
         with QuantumTape() as tape2:
-            assert qml.tape.get_active_tape() is tape2
+            with pytest.warns(UserWarning, match=message):
+                assert qml.tape.get_active_tape() is tape2
 
-        assert qml.tape.get_active_tape() is tape1
+        with pytest.warns(UserWarning, match=message):
+            assert qml.tape.get_active_tape() is tape1
 
-    assert qml.tape.get_active_tape() is None
+    with pytest.warns(UserWarning, match=message):
+        assert qml.tape.get_active_tape() is None
 
 
 class TestHashing:
