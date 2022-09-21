@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
@@ -98,4 +102,5 @@ Albert Mitjans Coma,
 Utkarsh Azad,
 Soran Jahangiri,
 Christina Lee,
+Mudit Pandey,
 Jay Soni,
