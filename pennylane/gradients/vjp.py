@@ -81,6 +81,9 @@ def compute_vjp(dy, jac, num=None):
     Returns:
         tensor_like: the vector-Jacobian product
     """
+    if qml.active_return():
+        return _compute_vjp_new(dy, jac, num=num)
+
     if jac is None:
         return None
 
@@ -228,11 +231,6 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
-
-        if qml.active_return():
-            jac = fn(results)
-            return _compute_vjp_new(dy, jac, num=num)
-
         jac = fn(results)
         return compute_vjp(dy, jac, num=num)
 

@@ -376,7 +376,6 @@ def __execute_new(
     """
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
-
     return res, jacs
 
 
@@ -450,7 +449,7 @@ def _vjp_new(
             jacs = ans[1]
 
         if jacs:
-            # Jacobians were computed on the forward pass (mode="forward")
+            # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
             vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
