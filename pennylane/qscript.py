@@ -986,7 +986,7 @@ class QuantumScript:
             ~.QuantumTape: the adjointed tape
         """
         with qml.QueuingManager.stop_recording():
-            ops_adj = [qml.adjoint(op, lazy=False) for op in self._ops]
+            ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
         adj = self.__class__(ops=ops_adj, measurements=self._measurements, prep=self._prep)
         if hasattr(self, "do_queue"):
             qml.QueuingManager.append(adj)
