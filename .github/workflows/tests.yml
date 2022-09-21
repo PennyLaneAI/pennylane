@@ -16,6 +16,7 @@ jobs:
   core-and-interface-tests:
     runs-on: ubuntu-latest
 
+    continue-on-error: true
     strategy:
       matrix:
         config:
@@ -296,6 +297,7 @@ jobs:
   device-tests:
     runs-on: ubuntu-latest
 
+    continue-on-error: true
     strategy:
       matrix:
         config:

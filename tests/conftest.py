@@ -29,6 +29,13 @@ TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
+@pytest.fixture(autouse=True)
+def run_before_and_after_tests():
+    qml.enable_return()
+    yield
+    qml.disable_return()
+
+
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
 
