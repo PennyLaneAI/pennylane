@@ -1039,8 +1039,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (A)}
+        assert q.get_info(A) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -1057,8 +1057,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(Herm) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (Herm)}
+        assert q.get_info(Herm) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1083,9 +1083,9 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1113,7 +1113,7 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
 
 @pytest.mark.parametrize("stat_func", [expval, var, sample])

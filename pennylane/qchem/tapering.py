@@ -17,8 +17,9 @@ This module contains the functions needed for tapering qubits using symmetries.
 # pylint: disable=unnecessary-lambda
 
 import functools
-
+import itertools
 import autograd.numpy as anp
+import scipy
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
@@ -332,7 +333,7 @@ def clifford(generators, paulixops):
 
 
 def taper(h, generators, paulixops, paulix_sector):
-    r"""Transform a Hamiltonian with a Clifford operator and taper qubits.
+    r"""Transform a Hamiltonian with a Clifford operator and then taper qubits.
 
     The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
     operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
@@ -471,7 +472,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
 
 def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
-    r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
+    r"""Transform a Hartree-Fock state with a Clifford operator and then taper qubits.
 
     The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
     using the Jordan-Wigner encoding. This operator is then transformed using the Clifford operators :math:`U`
@@ -538,3 +539,142 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
         tapered_hartree_fock.append(0)
 
     return np.array(tapered_hartree_fock).astype(int)
+
+
+# pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
+def taper_operation(operation, generators, paulixops, paulix_sector, wire_order, gen_op=None):
+    r"""Transform a gate operation with a Clifford operator and then taper qubits.
+
+    The qubit operator for the generator of the gate operation is computed either internally or can be provided
+    manually via `gen_op` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
+    the molecular Hamiltonian, then this operator is transformed using the Clifford operators :math:`U` and
+    tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :func:`~.PauliRot`
+    for building the tapered unitary.
+
+    Args:
+        operation (Operation): qubit operation to be tapered
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        paulixops (list[Operation]):  list of single-qubit Pauli-X operators
+        paulix_sector (list[int]): eigenvalues of the Pauli-X operators
+        wire_order (Sequence[Any]): order of the wires in the quantum circuit
+        gen_op (Hamiltonian): optional argument to provide the generator of the operation
+
+    Returns:
+        list(Operation): list of operations of type :func:`~.PauliRot` implementing tapered unitary operation
+
+    Raises:
+        NotImplementedError: generator of the operation cannot be constructed internally
+        ValueError: optional argument `gen_op` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
+
+    **Example**
+
+    >>> symbols, geometry = ['He', 'H'], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qchem.symmetry_generators(H)
+    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
+    >>> paulix_sector = qchem.optimal_sector(H, genera  tors, mol.n_electrons)
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
+                                generators, paulixops, paulix_sector, wire_order=H.wires)
+    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
+
+    This can even be used within a :class:`~.pennylane.QNode`:
+
+    >>> dev = qml.device('default.qubit', wires=[0, 1])
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
+    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    >>> print(drawer(params=[3.14159]))
+        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
+
+    .. details::
+        :title: Theory
+
+        Consider :math:`G` to be the generator of a unitrary :math:`V(\theta)`, i.e.,
+
+        .. math::
+
+            V(\theta) = e^{i G \theta}.
+
+        Then, for :math:`V` to have a non-trivial and compatible tapering with the generators of symmetry
+        :math:`\tau`, we should have :math:`[V, \tau_i] = 0` for all :math:`\theta` and :math:`\tau_i`.
+        This would hold only when its generator itself commutes with each :math:`\tau_i`,
+
+        .. math::
+
+            [V, \tau_i] = 0 \iff [G, \tau_i]\quad \forall \theta, \tau_i.
+
+        By ensuring this, we can taper the generator :math:`G` using the Clifford operators :math:`U`,
+        and exponentiate the transformed generator :math:`G^{\prime}` to obtain a tapered unitary
+        :math:`V^{\prime}`,
+
+        .. math::
+
+            V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
+    """
+
+    if gen_op is None:
+        if operation.num_params < 1:  # Non-parameterized gates
+            gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
+            gen_op = qml.Hamiltonian(
+                *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
+            )
+            qml.simplify(gen_op)
+            if gen_op.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
+                gen_op -= qml.Hamiltonian([gen_op.coeffs[0]], [qml.Identity(wires=wire_order[0])])
+        else:  # Single-parameter gates
+            try:
+                gen_op = qml.generator(operation, "hamiltonian")
+
+            except ValueError as exc:
+                raise NotImplementedError(
+                    f"Generator for {operation} is not implemented, please provide it with 'gen_op' args."
+                ) from exc
+    else:  # check that user-provided generator is correct
+        if not isinstance(gen_op, qml.Hamiltonian):
+            raise ValueError(
+                f"Generator for the operation needs to be a qml.Hamiltonian, but got {type(gen_op)}."
+            )
+        coeffs = 1.0
+        if operation.parameters:
+            coeffs = functools.reduce(lambda i, j: i * j, operation.parameters)
+        mat1 = scipy.linalg.expm(1j * qml.matrix(gen_op, wire_order=wire_order) * coeffs)
+        mat2 = qml.matrix(operation, wire_order=wire_order)
+        phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
+            np.nonzero(np.round(mat1, 10))
+        ]
+        if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
+            raise ValueError(
+                f"Given gen_op: {gen_op} doesn't seem to be the correct generator for the {operation}."
+            )
+
+    if np.all(
+        [
+            [
+                qml.is_commuting(op1, op2)
+                for op1, op2 in itertools.product(generator.ops, gen_op.ops)
+            ]
+            for generator in generators
+        ]
+    ):
+        gen_tapered = qml.taper(gen_op, generators, paulixops, paulix_sector)
+    else:
+        gen_tapered = qml.Hamiltonian([], [])
+    qml.simplify(gen_tapered)
+
+    params = operation.parameters[0] if len(operation.parameters) else 1.0
+    if qml.QueuingManager.recording():
+        qml.QueuingManager.update_info(operation, owner=gen_tapered)
+        for coeff, op in zip(*gen_tapered.terms()):
+            qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+    else:
+        ops_tapered = []
+        for coeff, op in zip(*gen_tapered.terms()):
+            ops_tapered.append(
+                qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+            )
+        return ops_tapered

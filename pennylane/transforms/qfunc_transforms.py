@@ -65,15 +65,12 @@ def make_tape(fn):
     """
 
     def wrapper(*args, **kwargs):
-        active_tape = qml.tape.get_active_tape()
+        active_tape = qml.QueuingManager.active_context()
+        new_tape = qml.tape.QuantumTape() if active_tape is None else active_tape.__class__()
+        with qml.QueuingManager.stop_recording(), new_tape:
+            fn(*args, **kwargs)
 
-        if active_tape is not None:
-            with active_tape.stop_recording(), active_tape.__class__() as tape:
-                fn(*args, **kwargs)
-        else:
-            with qml.tape.QuantumTape() as tape:
-                fn(*args, **kwargs)
-        return tape
+        return new_tape
 
     return wrapper
 
@@ -87,9 +84,9 @@ class NonQueuingTape(qml.queuing.AnnotatedQueue):
         super()._process_queue()  # pylint:disable=no-member
 
         for obj, info in self._queue.items():
-            qml.queuing.QueuingContext.append(obj, **info)
+            qml.queuing.QueuingManager.append(obj, **info)
 
-        qml.queuing.QueuingContext.remove(self)
+        qml.queuing.QueuingManager.remove(self)
 
 
 class single_tape_transform:
