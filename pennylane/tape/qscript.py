@@ -77,7 +77,7 @@ class QuantumScript:
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
         name (str): a name given to the quantum tape
 
-    ..see-also: :class:`pennylane.tape.QuantumTape`
+    .. seealso:: :class:`pennylane.tape.QuantumTape`
 
     **Example:**
 
@@ -814,24 +814,10 @@ class QuantumScript:
 
         **Example:**
 
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", wires=2)
-            a = np.array([0.1, 0.2, 0.3])
-
-            def func(a):
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.RY(a[2], wires=0)
-
-            with qml.tape.QuantumTape() as tape:
-                func(a)
-                qml.state()
-
-        .. code-block:: pycon
-
-            >>> tape.shape(dev)
-            (1, 4)
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> qscript = QuantumScript(measurements=[qml.state()])
+        >>> qscript.shape(dev)
+        (1, 4)
         """
         output_shape = tuple()
 
@@ -1005,8 +991,7 @@ class QuantumScript:
         to NumPy arrays.
 
         Returns:
-
-            .QuantumScript: the unwrapped quantum tape
+            ~.QuantumScript: the unwrapped quantum script
 
         **Example**
 
@@ -1019,10 +1004,10 @@ class QuantumScript:
         ...         print("Unwrapped params:", qscript.get_parameters())
         Trainable params: [0, 2]
         Unwrapped params: [0.1, 0.3]
-        >>> print("\n".join(str(p) for p in qscript.get_parameters()))
-        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>
-        tf.Tensor(0.2, shape=(), dtype=float32)
-        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>
+        >>> qscript.get_parameters()
+        [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
+        <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
+        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
         """
         return qml.tape.UnwrapTape(self)
 
