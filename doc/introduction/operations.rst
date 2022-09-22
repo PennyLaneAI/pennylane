@@ -438,5 +438,7 @@ Qutrit Observables
     :nosignatures:
 
     ~pennylane.THermitian
+    ~pennylane.GellMann
 
 :html:`</div>`
+
