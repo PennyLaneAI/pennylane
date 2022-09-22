@@ -186,13 +186,13 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     mat = base_matrix
     num_pre_identities = min(wire_indices)
     if num_pre_identities > 0:
-        pre_identity = eye(2**num_pre_identities, format='csr')
+        pre_identity = eye(2**num_pre_identities, format="csr")
         mat = kron(pre_identity, mat)
         mat.eliminate_zeros()
 
     num_post_identities = len(wire_order) - max(wire_indices) - 1
     if num_post_identities > 0:
-        post_identity = eye(2**num_post_identities, format='csr')
+        post_identity = eye(2**num_post_identities, format="csr")
         mat = kron(mat, post_identity)
         mat.eliminate_zeros()
         base_matrix.eliminate_zeros()
