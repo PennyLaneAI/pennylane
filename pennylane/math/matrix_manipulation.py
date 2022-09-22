@@ -174,6 +174,7 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
 
     # expand matrix if needed
     if wire_difference:
+        # we use "csr" to speed up the matrix multiplications done during permutation
         base_matrix = kron(base_matrix, eye(2 ** len(wire_difference), format="coo"), format="csr")
         base_matrix.eliminate_zeros()
 
@@ -186,13 +187,15 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     mat = base_matrix
     num_pre_identities = min(wire_indices)
     if num_pre_identities > 0:
-        pre_identity = eye(2**num_pre_identities, format="csr")
+        # We use "coo" format because it is faster to initialize, and `scipy.sparse.kron` casts
+        # the matrix to this format anyway
+        pre_identity = eye(2**num_pre_identities, format="coo")
         mat = kron(pre_identity, mat)
         mat.eliminate_zeros()
 
     num_post_identities = len(wire_order) - max(wire_indices) - 1
     if num_post_identities > 0:
-        post_identity = eye(2**num_post_identities, format="csr")
+        post_identity = eye(2**num_post_identities, format="coo")
         mat = kron(mat, post_identity)
         mat.eliminate_zeros()
         base_matrix.eliminate_zeros()
