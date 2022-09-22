@@ -7,6 +7,10 @@
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+  
+* Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
+Users can specify the control wires as well as the values to control the operation on.
+  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
@@ -51,7 +55,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
    - `QueuingManager` is no longer an abstract base class.
    - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
    - `QueuingManager` is no longer a context manager.
-   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
+   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and 
      `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
    - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
       is now only available through `QueuingManager`.
@@ -64,7 +68,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   indicates whether the user wants to check for unitarity of the input matrix or not. Its default
   value is `false`.
   [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
-
+   
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
