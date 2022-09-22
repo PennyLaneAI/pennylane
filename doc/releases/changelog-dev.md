@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
@@ -64,6 +68,9 @@
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
+
 <h3>Breaking changes</h3>
 
  * `QueuingContext` is renamed `QueuingManager`.
@@ -71,6 +78,9 @@
 
  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
    if the object isn't in the queue.
+
+ * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
 <h3>Deprecations</h3>
 
@@ -95,4 +105,5 @@ Albert Mitjans Coma,
 Utkarsh Azad,
 Soran Jahangiri,
 Christina Lee,
+Mudit Pandey,
 Jay Soni,

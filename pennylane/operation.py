@@ -114,20 +114,6 @@ from pennylane.math import expand_matrix
 from .utils import pauli_eigs
 
 
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
-    if name in warning_names:
-        obj = getattr(qml.measurements, name)
-        warning_string = f"qml.operation.{name} is deprecated. Please import from qml.measurements.{name} instead"
-        warnings.warn(warning_string, UserWarning)
-        return obj
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
-
-
 # =============================================================================
 # Errors
 # =============================================================================
