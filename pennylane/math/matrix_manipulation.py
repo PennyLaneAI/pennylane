@@ -122,6 +122,7 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     # get a subset of `wire_order` values that contain all wire labels inside `wires` argument
     # e.g. wire_order = [0, 1, 2, 3, 4]; wires = [3, 0, 2]
     # --> subset_wire_order = [0, 1, 2, 3]; expanded_wires = [3, 0, 2, 1]
+    wires = list(wires)
     wire_indices = [wire_order.index(wire) for wire in wires]
     subset_wire_order = wire_order[min(wire_indices) : max(wire_indices) + 1]
     wire_difference = list(set(subset_wire_order) - set(wires))
