@@ -114,20 +114,6 @@ from pennylane.math import expand_matrix
 from .utils import pauli_eigs
 
 
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
-    if name in warning_names:
-        obj = getattr(qml.measurements, name)
-        warning_string = f"qml.operation.{name} is deprecated. Please import from qml.measurements.{name} instead"
-        warnings.warn(warning_string, UserWarning)
-        return obj
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
-
-
 # =============================================================================
 # Errors
 # =============================================================================
@@ -1743,7 +1729,7 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -1850,16 +1836,16 @@ class Tensor(Observable):
         if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
             QueuingManager.append(self)
 
-        QueuingManager.safe_update_info(self, owns=tuple(self.obs))
-        QueuingManager.safe_update_info(other, owner=self)
+        QueuingManager.update_info(self, owns=tuple(self.obs))
+        QueuingManager.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            QueuingManager.safe_update_info(self, owns=tuple(self.obs))
-            QueuingManager.safe_update_info(other, owner=self)
+            QueuingManager.update_info(self, owns=tuple(self.obs))
+            QueuingManager.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
@@ -2505,7 +2491,7 @@ def defines_diagonalizing_gates(obj):
     a queuing context, but the resulting gates must not be queued.
     """
 
-    with qml.tape.stop_recording():
+    with qml.QueuingManager.stop_recording():
         try:
             obj.diagonalizing_gates()
         except DiagGatesUndefinedError:

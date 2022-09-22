@@ -89,8 +89,8 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
         pow_op = qml.prod(*pow_ops)
 
     if do_queue:
-        QueuingManager.safe_update_info(base, owner=pow_op)
-        QueuingManager.safe_update_info(pow_op, owns=base)
+        QueuingManager.update_info(base, owner=pow_op)
+        QueuingManager.update_info(pow_op, owns=base)
 
     return pow_op
 
