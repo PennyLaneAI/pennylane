@@ -184,23 +184,23 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
         base_matrix = U.T @ base_matrix @ U
         base_matrix.eliminate_zeros()
 
+    # expand the matrix even further if needed
     mat = base_matrix
     num_pre_identities = min(wire_indices)
     if num_pre_identities > 0:
         # We use "coo" format because it is faster to initialize, and `scipy.sparse.kron` casts
         # the matrix to this format anyway
         pre_identity = eye(2**num_pre_identities, format="coo")
-        mat = kron(pre_identity, mat)
+        mat = kron(pre_identity, mat, format=format)
         mat.eliminate_zeros()
 
     num_post_identities = len(wire_order) - max(wire_indices) - 1
     if num_post_identities > 0:
         post_identity = eye(2**num_post_identities, format="coo")
-        mat = kron(mat, post_identity)
+        mat = kron(mat, post_identity, format=format)
         mat.eliminate_zeros()
-        base_matrix.eliminate_zeros()
 
-    return base_matrix.asformat(format=format)
+    return mat.asformat(format=format)
 
 
 def _sparse_swap_mat(qubit_i, qubit_j, n):
