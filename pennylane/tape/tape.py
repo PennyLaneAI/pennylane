@@ -1181,7 +1181,7 @@ class QuantumTape(AnnotatedQueue):
             (1, 4)
         """
         if qml.active_return():
-            return self.shape_new(device)
+            return self._shape_new(device)
 
         output_shape = tuple()
 
@@ -1197,7 +1197,7 @@ class QuantumTape(AnnotatedQueue):
                 )
         return output_shape
 
-    def shape_new(self, device):
+    def _shape_new(self, device):
         """Produces the output shape of the tape by inspecting its measurements
         and the device used for execution.
 
@@ -1280,7 +1280,7 @@ class QuantumTape(AnnotatedQueue):
             complex
         """
         if qml.active_return():
-            return self.numeric_type_new
+            return self._numeric_type_new
 
         measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
@@ -1300,7 +1300,7 @@ class QuantumTape(AnnotatedQueue):
         return self._measurements[0].numeric_type
 
     @property
-    def numeric_type_new(self):
+    def _numeric_type_new(self):
         """Returns the expected numeric type of the tape result by inspecting
         its measurements.
 

@@ -234,7 +234,7 @@ class MeasurementProcess:
                 unrecognized and cannot deduce the numeric type
         """
         if qml.active_return():
-            return self.shape_new(device=device)
+            return self._shape_new(device=device)
 
         shape = None
 
@@ -292,7 +292,7 @@ class MeasurementProcess:
         )
 
     @functools.lru_cache()
-    def shape_new(self, device=None):
+    def _shape_new(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device when:
@@ -337,7 +337,7 @@ class MeasurementProcess:
 
         # Determine shape if device with shot vector
         if device is not None and device._shot_vector is not None:
-            shape = self._shot_vector_shape_new(device, main_shape=shape)
+            shape = self._shot_vector_shape(device, main_shape=shape)
 
         # If we have a shape, return it here
         if shape is not None:
@@ -353,30 +353,32 @@ class MeasurementProcess:
         if self.return_type == Probability:
             len_wires = len(self.wires)
             dim = self._get_num_basis_states(len_wires, device)
-            return (dim,)
+            shape = (dim,)
 
-        if self.return_type == State:
+        elif self.return_type == State:
 
             # Note: qml.density_matrix has its shape defined, so we're handling
             # the qml.state case; acts on all device wires
             dim = 2 ** len(device.wires)
-            return (dim,)
+            shape = (dim,)
 
-        if self.return_type == Sample:
-            len_wires = len(device.wires)
-
+        elif self.return_type == Sample:
             if self.obs is not None:
                 # qml.sample(some_observable) case
                 if device.shots == 1:
-                    return ()
+                    shape = ()
+                else:
+                    shape = (device.shots,)
+            else:
+                # qml.sample() case
+                len_wires = len(device.wires)
+                if device.shots == 1:
+                    shape = (len_wires,)
+                else:
+                    shape = (device.shots, len_wires)
 
-                return (device.shots,)
-
-            # qml.sample() case
-            if device.shots == 1:
-                return (len_wires,)
-
-            return (device.shots, len_wires)
+        if shape is not None:
+            return shape
 
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
@@ -472,7 +474,7 @@ class MeasurementProcess:
             # Note: qml.density_matrix has its shape defined, so we're handling
             # the qml.state case; acts on all device wires
             dim = 2 ** len(device.wires)
-            shape = tuple((dim,) for _ in range(num_shots_elements))
+            shape = tuple((dim,) for _ in range(num_shot_elements))
 
         return shape
 
