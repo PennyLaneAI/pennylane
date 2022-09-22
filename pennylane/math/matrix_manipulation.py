@@ -183,25 +183,18 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
         base_matrix = U.T @ base_matrix @ U
         base_matrix.eliminate_zeros()
 
-    # expand the matrix even further by adding the missing wires
-    if len(wire_order) > len(expanded_wires):
-        identity_count = 0
-        subset_matrix_encountered = False
-        mats = []
-        for wire in wire_order:
-            if wire not in expanded_wires:
-                identity_count += 1
-            elif not subset_matrix_encountered:
-                if identity_count > 0:
-                    mats.append(eye(2**identity_count, format="coo"))
-                    identity_count = 0
-                mats.append(base_matrix)
-                subset_matrix_encountered = True
+    mat = base_matrix
+    num_pre_identities = min(wire_indices)
+    if num_pre_identities > 0:
+        pre_identity = eye(2**num_pre_identities, format='csr')
+        mat = kron(pre_identity, mat)
+        mat.eliminate_zeros()
 
-        if identity_count > 0:
-            mats.append(eye(2**identity_count, format="coo"))
-
-        base_matrix = reduce(lambda i, j: kron(i, j, format="coo"), mats)
+    num_post_identities = len(wire_order) - max(wire_indices) - 1
+    if num_post_identities > 0:
+        post_identity = eye(2**num_post_identities, format='csr')
+        mat = kron(mat, post_identity)
+        mat.eliminate_zeros()
         base_matrix.eliminate_zeros()
 
     return base_matrix.asformat(format=format)
