@@ -288,8 +288,9 @@ def load(data_type, description, attributes=None, lazy=False, folder_path=None, 
             if attributes == ["full"] or attributes is None:
                 data = Dataset._read_file(f"{directory_path}/{file}")
                 for key, vals in data.items():
+                    print(key)
                     obj.setattr(key, vals)
-                doc_keys, doc_vals = list(data.keys()), list(map(type, data.vals()))
+                doc_keys, doc_vals = list(data.keys()), list(map(type, data.values()))
                 file_idx += 1
             else:
                 key, flag = "_".join(file.split("_")[dtype_key_len:]).split(".")[0], False
