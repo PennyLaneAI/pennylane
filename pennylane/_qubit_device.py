@@ -1901,6 +1901,9 @@ class QubitDevice(Device):
         the new return type system.
         """
         if jac.shape[0] == 1:
-            return jac[0]
+            if jac.shape[1] == 1:
+                return jac[0][0]
 
-        return tuple(jac)
+            return tuple(jac[0])
+
+        return tuple(tuple(j) for j in jac)
