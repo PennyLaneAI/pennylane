@@ -13,6 +13,7 @@ from pennylane.tape import QuantumScript
 class FnType(Enum):
     """Enum datatype to aid organisation of registratrion function types"""
     PREPROCESS = auto()
+    EXECUTE = auto()
     POSTPROCESS = auto()
     GRADIENT = auto()
     VJP = auto()
@@ -30,9 +31,6 @@ class DeviceConfig:
     shots: bool = False
     grad: bool = False
     device_type: DeviceType = DeviceType.UNKNOWN
-    supported_ops = {}
-    supported_obs = {}
-
 
 #########################################################################################
 # Device metaclass and abstract class setup
@@ -61,6 +59,16 @@ class AbstractDevice(metaclass=RegistrationsMetaclass):
             grad_registrations = cls.registrations.setdefault(FnType.GRADIENT, {})
             grad_registrations.update({order: fn})
             cls.registrations[FnType.GRADIENT] = grad_registrations
+        return wrapper
+    
+    @classmethod
+    def register_execute(cls, ):
+        """Decorator to register gradient methods of a device
+        (contain developer-facing details here).
+        """
+        def wrapper(fn):
+            exe_registrations = cls.registrations.setdefault(FnType.EXECUTE, fn)
+            cls.registrations[FnType.EXECUTE] = exe_registrations
         return wrapper
     
     @classmethod
@@ -102,19 +110,8 @@ class AbstractDevice(metaclass=RegistrationsMetaclass):
         # perform post-processing
         return vjp
 
-    @abstractmethod
-    def expval(self, observable):
-        pass
-
-    @abstractmethod
-    def var(self, observable):
-        pass
-
-    @abstractmethod
     def execute(self, qscript: Union[QuantumScript, List[QuantumScript]]):
-        pass
-    
+        if FnType.EXECUTE not in self.registrations:
+            raise ValueError("Device does not have an execute method.")
 
-class MyDevice(AbstractDevice):
-    "Naive derived class with no provided methods."
-    pass
+        return self.registrations[FnType.EXECUTE](self, qscript)
