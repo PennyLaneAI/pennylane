@@ -60,6 +60,84 @@ multi_measurements = [
 ]
 
 
+class TestMeasurementProcess:
+    """Tests for the shape and numeric type of a measurement process"""
+
+    measurements_no_shots = [
+        (qml.expval(qml.PauliZ(0)), ()),
+        (qml.var(qml.PauliZ(0)), ()),
+        (qml.probs(wires=[0, 1]), (4,)),
+        (qml.state(), (8,)),
+        (qml.density_matrix(wires=[0, 1]), (4, 4)),
+    ]
+
+    measurements_finite_shots = [
+        (qml.expval(qml.PauliZ(0)), ()),
+        (qml.var(qml.PauliZ(0)), ()),
+        (qml.probs(wires=[0, 1]), (4,)),
+        (qml.state(), (8,)),
+        (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.sample(qml.PauliZ(0)), (10,)),
+        (qml.sample(), (10, 3)),
+    ]
+
+    measurements_shot_vector = [
+        (qml.expval(qml.PauliZ(0)), ((), (), ())),
+        (qml.var(qml.PauliZ(0)), ((), (), ())),
+        (qml.probs(wires=[0, 1]), ((4,), (4,), (4,))),
+        (qml.state(), ((8,), (8,), (8,))),
+        (qml.density_matrix(wires=[0, 1]), ((4, 4), (4, 4), (4, 4))),
+        (qml.sample(qml.PauliZ(0)), ((10,), (20,), (30,))),
+        (qml.sample(), ((10, 3), (20, 3), (30, 3))),
+    ]
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
+    def test_output_shapes_no_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots=None"""
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=None)
+
+        assert measurement.shape(dev) == expected_shape
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_finite_shots)
+    def test_output_shapes_finite_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots is finite"""
+        num_wires = 3
+        num_shots = 10
+        dev = qml.device("default.qubit", wires=num_wires, shots=num_shots)
+
+        assert measurement.shape(dev) == expected_shape
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_shot_vector)
+    def test_output_shapes_no_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots is a vector"""
+        num_wires = 3
+        shot_vector = [10, 20, 30]
+        dev = qml.device("default.qubit", wires=num_wires, shots=shot_vector)
+
+        assert measurement.shape(dev) == expected_shape
+
+    @pytest.mark.parametrize("measurement", [qml.probs(wires=[0, 1]), qml.state(), qml.sample()])
+    def test_no_device_error(self, measurement):
+        """Test that an error is raised when a measurement that requires a device
+        is called without a device"""
+        msg = "The device argument is required to obtain the shape of the measurement process"
+
+        with pytest.raises(MeasurementShapeError, match=msg):
+            measurement.shape()
+
+    def test_undefined_shape_error(self):
+        """Test that an error is raised for a measurement with an undefined shape"""
+        measurement = qml.counts(wires=[0, 1])
+        msg = "Cannot deduce the shape of the measurement process with unrecognized return_type"
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            measurement.shape()
+
+
 class TestOutputShape:
     """Tests for determining the tape output shape of tapes."""
 
@@ -102,17 +180,10 @@ class TestOutputShape:
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
+        warning = None
         if shots is not None and measurement.return_type is qml.measurements.State:
-            pytest.skip("State and density matrix don't support finite shots and raise a warning.")
-
-        # TODO: revisit when qml.sample without an observable has been updated
-        # with shot vectors
-        if (
-            isinstance(shots, tuple)
-            and measurement.return_type is qml.measurements.Sample
-            and not measurement.obs
-        ):
-            pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
+            # this is allowed by the tape but raises a warning
+            warning = (UserWarning, "Requested state or density matrix with finite shots")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
@@ -124,8 +195,12 @@ class TestOutputShape:
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
-        # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([tape], dev, gradient_fn=None)[0]
+        if warning is not None:
+            with pytest.warns(warning[0], match=warning[1]):
+                res = qml.execute([tape], dev, gradient_fn=None)[0]
+        else:
+            # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
+            res = qml.execute([tape], dev, gradient_fn=None)[0]
 
         if isinstance(shots, tuple):
             res_shape = tuple(r.shape for r in res)
