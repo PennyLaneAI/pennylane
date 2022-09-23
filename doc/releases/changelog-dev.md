@@ -71,6 +71,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
   [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
 
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
+
 <h3>Breaking changes</h3>
 
 * `QueuingContext` is renamed `QueuingManager`.
