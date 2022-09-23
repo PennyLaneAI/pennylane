@@ -33,7 +33,7 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
 from .composite import CompositeOp
 
-MAX_NUM_WIRES_KRON_PRODUCT = 11
+MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
 
@@ -193,7 +193,7 @@ class Prod(CompositeOp):
         to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
         that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
         """
-        if qml.queuing.QueuingContext.recording():
+        if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
@@ -237,7 +237,6 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Prod op in csr representation."""
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 

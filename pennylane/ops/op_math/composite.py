@@ -186,7 +186,7 @@ class CompositeOp(Operator, abc.ABC):
         """
         if self.has_overlapping_wires:
             eigen_vectors = self.eigendecomposition["eigvec"]
-            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires, unitary_check=False)]
         diag_gates = []
         for op in self:
             diag_gates.extend(op.diagonalizing_gates())
@@ -196,12 +196,12 @@ class CompositeOp(Operator, abc.ABC):
         r"""How the composite operator is represented in diagrams and drawings.
 
         Args:
-            decimals=None (Int): If ``None``, no parameters are included. Else,
-                how to round the parameters.
-            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
-                Must be same length as ``operands`` attribute.
-            cache=None (dict): dictionary that carries information between label calls
-                in the same drawing
+            decimals (int): If ``None``, no parameters are included. Else,
+                how to round the parameters. Defaults to ``None``.
+            base_label (Iterable[str]): Overwrite the non-parameter component of the label.
+                Must be same length as ``operands`` attribute. Defaults to ``None``.
+            cache (dict): Dictionary that carries information between label calls
+                in the same drawing. Defaults to ``None``.
 
         Returns:
             str: label to use in drawings
@@ -231,11 +231,11 @@ class CompositeOp(Operator, abc.ABC):
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self:
-            context.safe_update_info(op, owner=self)
+            context.update_info(op, owner=self)
         context.append(self, owns=self.operands)
         return self
 
