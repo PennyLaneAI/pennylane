@@ -4,114 +4,9 @@
 
 <h3>New features since last release</h3>
 
-<h4>QNSPSA optimizer 😤</h4>
-
-* A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
-  perturbation stochastic approximation (QNSPSA) method based on 
-  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
-  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
-
-  `qml.QNSPSAOptimizer` can be viewed as a second-order SPSA algorithm. It requires 10 circuit 
-  executions per optimization step compared to 3 for `qml.SPSAOptimizer`.
-  The additional circuit executions are used to provide a stochastic estimation of a second-order
-  metric tensor, which often helps the optimizer to achieve faster convergence. 
-
-  Use `qml.QNSPSAOptimizer` like you would any other optimizer:
-  
-  ```python
-  max_iterations = 50
-  opt = qml.QNSPSAOptimizer() 
-
-  for _ in range(max_iterations):
-      params, cost = opt.step_and_cost(cost, params)
-  ```  
-
-<h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
-
-* An entirely new framework for quantum computing is now simulatable with the addition of qutrit functionalities.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
-  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  [(#2782)](https://github.com/PennyLaneAI/pennylane/pull/2782)
-  [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
-  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
-  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
-  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
-
-  [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*. 
-  The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
-  
-  To facilitate qutrit circuits requires a new device: `"default.qutrit"`.
-  The `"default.qutrit"` device is a Python-based simulator, akin to `"default.qubit"`, and is defined as per usual:
-
-  ```pycon
-  >>> dev = qml.device("default.qutrit", wires=1)
-  >>> type(dev)
-  <class 'pennylane.devices.default_qutrit.DefaultQutrit'>
-  ```
-
-  The following operations are supported on `"default.qutrit"` devices:
-
-  - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
-  which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
-
-  - The `qml.TAdd` and `qml.TSWAP` operations which are the qutrit analogs of the CNOT and SWAP operations, respectively.
-
-  - Custom unitary operations via `qml.QutritUnitary`.
-
-  - `qml.state` and `qml.probs` measurements.
-
-  - Measuring user-specified Hermitian matrix observables via `qml.THermitian`.
-
-  A comprehensive example of these features is given below:
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
-  dev = qml.device("default.qutrit", wires=2)
-
-  U = np.array([
-          [1, 1, 1], 
-          [1, 1, 1], 
-          [1, 1, 1]
-      ]
-  ) / np.sqrt(3) 
-
-  obs = np.array([
-          [1, 1, 0], 
-          [1, -1, 0], 
-          [0, 0, np.sqrt(2)]
-      ]
-  ) / np.sqrt(2)
-
-  def qutrit_function(U):
-      qml.TShift(0)
-      qml.TClock(0)
-      qml.QutritUnitary(U, wires=0)
-
-  @qml.qnode(dev)
-  def qutrit_state(U, obs)
-      qutrit_function(U, obs)
-      return qml.state()
-
-  @qml.qnode(dev)
-  def qutrit_expval(U, obs)
-      qutrit_function(U, obs)
-      return qml.expval(qml.THermitian(obs, wires=0))
-  ```
-
-  ```pycon
-  >>> qutrit_state(U, obs)
-  tensor([-0.28867513+0.5j, -0.28867513+0.5j, -0.28867513+0.5j], requires_grad=True) 
-  >>> qutrit_expval(U, obs)
-  tensor(0.80473785, requires_grad=True)
-  ```
-
-  We will continue to add more and more support for qutrits in future releases.
-    
 <h4>Classical shadows 👤</h4>
 
-* All-new features for implementing the classical-shadows protocol are now available. 
+* PennyLane now provides built-in support for implementing the classical-shadows measurement protocol. 
   [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
   [(#2821)](https://github.com/PennyLaneAI/pennylane/pull/2821)
   [(#2871)](https://github.com/PennyLaneAI/pennylane/pull/2871)
@@ -119,14 +14,13 @@
   [(#2959)](https://github.com/PennyLaneAI/pennylane/pull/2959)
   [(#2968)](https://github.com/PennyLaneAI/pennylane/pull/2968)
 
-  The classical-shadow measurement protocol is described in detail in the
-  [classical shadows paper](https://arxiv.org/abs/2002.08953).
+  The classical-shadow measurement protocol is described in detail in the paper
+  [Predicting Many Properties of a Quantum System from Very Few Measurements](https://arxiv.org/abs/2002.08953).
   As part of the support for classical shadows in this release, two new finite-shot and fully-differentiable measurements are available: 
 
-  - QNodes returning `qml.classical_shadow` will return two entities: 
-
-    + `bits`: 0 or 1 if the 1 or -1 eigenvalue is sampled, respectively
-    + `recipes`: the randomized Pauli measurements that are performed for each qubit, identified as a unique integer: 0 for Pauli X, 1 for Pauli Y, and 2 for Pauli Z.
+  - QNodes returning the new measurement `qml.classical_shadow()` will return two entities;
+  `bits` (0 or 1 if the 1 or -1 eigenvalue is sampled, respectively) and `recipes`
+  (the randomized Pauli measurements that are performed for each qubit, labelled by integer):
     
     ```python
     dev = qml.device("default.qubit", wires=2, shots=3)
@@ -150,7 +44,7 @@
             [0, 2]], dtype=uint8, requires_grad=True)
     ```
 
-  - QNodes returning `qml.shadow_expval` yield the expectation value estimation using classical shadows:
+  - QNodes returning `qml.shadow_expval()` yield the expectation value estimation using classical shadows:
 
     ```python
     dev = qml.device("default.qubit", wires=range(2), shots=10000)
@@ -170,9 +64,9 @@
     ```
 
     ```pycon
-    >>> circuit(x, H), 
+    >>> circuit(x, H)
     tensor(1.8486, requires_grad=True) 
-    >>> qml.grad(circuit)(x, H))
+    >>> qml.grad(circuit)(x, H)
     -0.4797000000000001
     ```
 
@@ -184,25 +78,98 @@
   and the Renyi entropy order:
 
   ```pycon
-  >>> shadow = ClassicalShadow(bits, recipes)
-  >>> vN_entropy = shadow.entropy(wires=[0, 3], alpha=1)
+  >>> shadow = qml.ClassicalShadow(bits, recipes)
+  >>> vN_entropy = shadow.entropy(wires=[0, 1], alpha=1)
   ``` 
 
-<h4>Simplifying just got... simpler 🫰</h4>
+<h4>Qutrits: quantum circuits for tertiary degrees of freedom ☘️</h4>
 
-* The `qml.simplify` module has several intuitive additions with this release.
+* An entirely new framework for quantum computing is now simulatable with the addition of qutrit functionalities.
+  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
+  [(#2781)](https://github.com/PennyLaneAI/pennylane/pull/2781)
+  [(#2782)](https://github.com/PennyLaneAI/pennylane/pull/2782)
+  [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
+  [(#2784)](https://github.com/PennyLaneAI/pennylane/pull/2784)
+  [(#2841)](https://github.com/PennyLaneAI/pennylane/pull/2841)
+  [(#2843)](https://github.com/PennyLaneAI/pennylane/pull/2843)
+
+  [Qutrits](https://en.wikipedia.org/wiki/Qutrit) are like qubits, but instead live in a *three*-dimensional Hilbert space; they are not binary degrees of freedom, they are *tertiary*. 
+  The advent of qutrits allows for all sorts of interesting theoretical, practical, and algorithmic capabilities that have yet to be discovered.
+  
+  To facilitate qutrit circuits requires a new device: `default.qutrit`.
+  The `default.qutrit` device is a Python-based simulator, akin to `default.qubit`, and is defined as per usual:
+
+  ```pycon
+  >>> dev = qml.device("default.qutrit", wires=1)
+  ```
+
+  The following operations are supported on `default.qutrit` devices:
+
+  - The qutrit shift operator, `qml.TShift`, and the ternary clock operator, `qml.TClock`, as defined in this paper by [Yeh et al. (2022)](https://arxiv.org/abs/2204.00552),
+  which are the qutrit analogs of the Pauli X and Pauli Z operations, respectively.
+  - The `qml.TAdd` and `qml.TSWAP` operations which are the qutrit analogs of the CNOT and SWAP operations, respectively.
+  - Custom unitary operations via `qml.QutritUnitary`.
+  - `qml.state` and `qml.probs` measurements.
+  - Measuring user-specified Hermitian matrix observables via `qml.THermitian`.
+
+  A comprehensive example of these features is given below:
+
+  ```python
+  dev = qml.device("default.qutrit", wires=1)
+
+  U = np.array([
+          [1, 1, 1], 
+          [1, 1, 1], 
+          [1, 1, 1]
+      ]
+  ) / np.sqrt(3) 
+
+  obs = np.array([
+          [1, 1, 0], 
+          [1, -1, 0], 
+          [0, 0, np.sqrt(2)]
+      ]
+  ) / np.sqrt(2)
+
+  @qml.qnode(dev)
+  def qutrit_state(U, obs):
+      qml.TShift(0)
+      qml.TClock(0)
+      qml.QutritUnitary(U, wires=0)
+      return qml.state()
+
+  @qml.qnode(dev)
+  def qutrit_expval(U, obs):
+      qml.TShift(0)
+      qml.TClock(0)
+      qml.QutritUnitary(U, wires=0)
+      return qml.expval(qml.THermitian(obs, wires=0))
+  ```
+
+  ```pycon
+  >>> qutrit_state(U, obs)
+  tensor([-0.28867513+0.5j, -0.28867513+0.5j, -0.28867513+0.5j], requires_grad=True) 
+  >>> qutrit_expval(U, obs)
+  tensor(0.80473785, requires_grad=True)
+  ```
+
+  We will continue to add more and more support for qutrits in future releases.
+
+<h4>Simplifying just got... simpler 😌</h4>
+
+* The `qml.simplify()` function has several intuitive improvements with this release.
   [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
   [(#2982)](https://github.com/PennyLaneAI/pennylane/pull/2982)
   [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
   [(#3012)](https://github.com/PennyLaneAI/pennylane/pull/3012)
 
-  `qml.simplify` can now simplify or do the following:
+  `qml.simplify` can now perform the following:
 
-  - parametrized operations
-  - the adjoint and power of specific operators
-  - grouping of like terms in a sum
-  - resolving products of Pauli operators
-  - combining rotation angles of identical rotation gates
+  - simplify parametrized operations
+  - simplify the adjoint and power of specific operators
+  - group like terms in a sum
+  - resolve products of Pauli operators
+  - combine rotation angles of identical rotation gates
 
   Here is an example of `qml.simplify` in action with parameterized rotation gates. 
   In this case, the angles of rotation are simplified to be modulo :math:`4\pi`.
@@ -230,9 +197,38 @@
   ```pycon
   >>> circuit()
   >>> list(circuit.tape)
-  [RZ(-11.566370614359172, wires=[0]) @ RY(-11.566370614359172, wires=[0]) @ RX(-11.566370614359172, wires=[0]), probs(wires=[0])]
+  [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
+   probs(wires=[0])]
   ```
+
+<h4>QNSPSA optimizer 💪</h4>
+
+* A new optimizer called `qml.QNSPSAOptimizer` is available that implements the quantum natural simultaneous
+  perturbation stochastic approximation (QNSPSA) method based on 
+  [Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information](https://quantum-journal.org/papers/q-2021-10-20-567/). 
+  [(#2818)](https://github.com/PennyLaneAI/pennylane/pull/2818) 
+
+  `qml.QNSPSAOptimizer` is a second-order [SPSA algorithm](https://en.wikipedia.org/wiki/Simultaneous_perturbation_stochastic_approximation), 
+  which combines the convergence power of the quantum-aware Quantum Natural Gradient
+  (QNG) optimization method with the reduced quantum evaluations of SPSA methods.
+
+  While the QNSPSA optimizer requires additional circuit executions (10 executions per
+  step) compared to standard SPSA optimization (3 executions per step), these additional
+  evaluations are used to provide a stochastic estimation of a second-order
+  metric tensor, which often helps the optimizer to achieve faster convergence.
+
+  Use `qml.QNSPSAOptimizer` like you would any other optimizer:
   
+  ```python
+  max_iterations = 50
+  opt = qml.QNSPSAOptimizer() 
+
+  for _ in range(max_iterations):
+      params, cost = opt.step_and_cost(cost, params)
+  ```  
+
+  Check out [our demo](https://pennylane.ai/qml/demos/qnspsa.html) on the QNSPSA optimizer for more information.
+
 <h4>Operator and parameter broadcasting supplements 📈</h4>
 
 * Operator methods for exponentiation and raising to a power have been added.
@@ -247,13 +243,13 @@
     >>> isingxy = qml.exp(t, 0.25j * x)
     >>> isingxy.matrix()
     array([[1.       +0.j        , 0.       +0.j        ,
-        0.       +0.j        , 0.       +0.j        ],
+        1.       +0.j        , 0.       +0.j        ],
        [0.       +0.j        , 0.8156179+0.j        ,
-        0.       +0.57859091j, 0.       +0.j        ],
+        1.       +0.57859091j, 0.       +0.j        ],
        [0.       +0.j        , 0.       +0.57859091j,
         0.8156179+0.j        , 0.       +0.j        ],
        [0.       +0.j        , 0.       +0.j        ,
-        0.       +0.j        , 1.       +0.j        ]]) 
+        1.       +0.j        , 1.       +0.j        ]]) 
     ```
 
   - The `qml.pow` function raises a given operator to a power:
@@ -322,9 +318,6 @@
   wraps individual `Operator`'s instead of a tape.  It provides improved representations and integration.
   [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
 
-* The new `qml.pow` provides a top-level constructor for raising operators to powers.
-  [(#3029)](https://github.com/PennyLaneAI/pennylane/pull/3029)
-
 * `qml.matrix` can now compute the matrix of tapes and QNodes that contain multiple 
   broadcasted operations or non-broadcasted operations after broadcasted ones.
   [(#3025)](https://github.com/PennyLaneAI/pennylane/pull/3025)
@@ -350,9 +343,6 @@
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
-* Added `sparse_matrix()` support for single qubit observables.
-  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
-
 * By default, `qml.counts` only returns the outcomes observed in sampling. Optionally, specifying `qml.counts(all_outcomes=True)`
   will return a dictionary containing all possible outcomes. 
   [(#2889)](https://github.com/PennyLaneAI/pennylane/pull/2889)
@@ -366,7 +356,7 @@
   ...     qml.CNOT(wires=[0, 1])
   ...     return qml.counts(all_outcomes=True)
   >>> result = circuit()
-  >>> print(result)
+  >>> result
   {'00': 495, '01': 0, '10': 0,  '11': 505}
   ```
   
@@ -386,18 +376,21 @@
   >>> sparse_mat = op.sparse_matrix(wire_order=[0,1])
   >>> type(sparse_mat)
   <class 'scipy.sparse.csr.csr_matrix'>
-  >>> print(sparse_mat.toarray())
+  >>> sparse_mat.toarray()
   [[1.+1.j 0.+0.j 0.+0.j 0.+0.j]
   [0.+0.j 1.-1.j 0.+0.j 0.+0.j]
   [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
   [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
   ```
 
-* `qml.Barrier` with `only_visual=True` now simplifies via `op.simplify()` to the identity
-  or a product of identities.
+* Provided `sparse_matrix()` support for single qubit observables.
+  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
+
+* `qml.Barrier` with `only_visual=True` now simplifies via `op.simplify()` to the identity operator
+  or a product of identity operators.
   [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
 
-* More correct and intuitive outputs for printing some operators have been added.
+* More accurate and intuitive outputs for printing some operators have been added.
   [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
 
 * Results for the matrix of the sum or product of operators are stored in a more efficient manner.
@@ -406,42 +399,25 @@
 * The computation of the (sparse) matrix for the sum or product of operators is now more efficient.
   [(#3030)](https://github.com/PennyLaneAI/pennylane/pull/3030)
 
-* When the factors of `Prod` don't share any wires, the matrix and sparse matrix are computed using
+* When the factors of `qml.prod` don't share any wires, the matrix and sparse matrix are computed using
   a kronecker product for improved efficiency.
   [(#3040)](https://github.com/PennyLaneAI/pennylane/pull/3040)
   
 * `qml.grouping.is_pauli_word` now returns `False` for operators that don't inherit from `qml.Observable` instead of raising an error.
   [(#3039)](https://github.com/PennyLaneAI/pennylane/pull/3039)
 
-* Added `len`, `iter` and `getitem` dunder methods to a new `CompositeOp` class to help iterate over `Sum` and `Prod` operands.
+* Added functionality to iterate over operators created from `qml.op_sum` and `qml.prod`.
   [(#3028)](https://github.com/PennyLaneAI/pennylane/pull/3028)
 
-<h3>Breaking changes</h3>
-
-* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
-  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
-  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
-
-* The `ControlledOperation` class has been removed.  This was a developer-only class, so the change should not be evident to
-  any users. It is replaced by `Controlled`.
-  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
-
-* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
-  with an additional keyword argument `circuit`, which represents the quantum tape
-  being executed.
-  Any device that overrides `statistics` should edit the signature of the method to include
-  the new `circuit` keyword argument.
-  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
-
-* The `expand_matrix()` has been moved from `~/operation.py` to
-  `~/math/matrix_manipulation.py`
-  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
-
-* `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
-  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
-
-* `qml.is_commuting` has been moved from `pennylane/transforms/commutation_dag.py` to `pennylane/ops/functions`.
-  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+  ```pycon
+  >>> op = qml.op_sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+  >>> len(op)
+  3
+  >>> op[1]
+  PauliY(wires=[1])
+  >>> [o.name for o in op]
+  ['PauliX', 'PauliY', 'PauliZ']
+  ```
 
 <h3>Deprecations</h3>
 
@@ -477,6 +453,33 @@
 * The `supports_reversible_diff` device capability is unused and has been removed.
   [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
 
+<h3>Breaking changes</h3>
+
+* Measuring an operator that might not be hermitian now raises a warning instead of an
+  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
+  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+
+* The `ControlledOperation` class has been removed. This was a developer-only class, so the change should not be evident to
+  any users. It is replaced by `Controlled`.
+  [(#2990)](https://github.com/PennyLaneAI/pennylane/pull/2990)
+
+* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
+  with an additional keyword argument `circuit`, which represents the quantum tape
+  being executed.
+  Any device that overrides `statistics` should edit the signature of the method to include
+  the new `circuit` keyword argument.
+  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+
+* The `expand_matrix()` has been moved from `pennylane.operation` to
+  `pennylane.math.matrix_manipulation`
+  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+
+* `qml.grouping.utils.is_commuting` has been removed, and its Pauli word logic is now part of `qml.is_commuting`.
+  [(#3033)](https://github.com/PennyLaneAI/pennylane/pull/3033)
+
+* `qml.is_commuting` has been moved from `pennylane.transforms.commutation_dag` to `pennylane.ops.functions`.
+  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
+
 <h3>Documentation</h3>
 
 * Updated the Fourier transform docs to use `circuit_spectrum` instead of `spectrum`, which has been deprecated.
@@ -491,6 +494,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug with `qml.ops.Exp` operators when the coefficient is autograd but the diagonalizing gates
+  don't act on all wires.
+  [(#3057)](https://github.com/PennyLaneAI/pennylane/pull/3057)
+
 * Fixed a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
   for specific combinations of rotations.
   [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
@@ -498,38 +505,22 @@
 * Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
   [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
 
-* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
+* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` now raise an error, with
   certain exceptions, when instantiated with `wires=[]`.
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
 * Fixed a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
   [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3004)
 
+* Added a more descriptive error message when measuring non-commuting observables at the end of a circuit with
+  `probs`, `samples`, `counts` and `allcounts`.
+  [(#3065)](https://github.com/PennyLaneAI/pennylane/pull/3065)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola,
-Utkarsh Azad,
-Tom Bromley,
-Olivia Di Matteo,
-Isaac De Vlugt,
-Yiheng Duan,
-Lillian Marie Austin Frederiksen,
-Josh Izaac,
-Soran Jahangiri,
-Edward Jiang,
-Ankit Khandelwal,
-Korbinian Kottmann,
-Meenu Kumari,
-Christina Lee,
-Albert Mitjans Coma,
-Romain Moyard,
-Rashid N H M,
-Zeyue Niu,
-Mudit Pandey,
-Matthew Silverman,
-Jay Soni,
-Antal Száva,
-Cody Wang,
-David Wierichs.
+Juan Miguel Arrazola, Utkarsh Azad, Tom Bromley, Olivia Di Matteo, Isaac De Vlugt, Yiheng Duan, 
+Lillian Marie Austin Frederiksen, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, 
+Korbinian Kottmann, Meenu Kumari, Christina Lee, Albert Mitjans Coma, Romain Moyard, Rashid N H M,
+Zeyue Niu, Mudit Pandey, Matthew Silverman, Jay Soni, Antal Száva, Cody Wang, David Wierichs.

@@ -81,7 +81,6 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):
-        """Compute the sparse matrix representation"""
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod

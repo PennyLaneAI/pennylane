@@ -171,6 +171,11 @@ class SProd(SymbolicOp):
             final_pauli_sentence[pw] *= self.scalar
         return final_pauli_sentence
 
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -203,6 +208,10 @@ class SProd(SymbolicOp):
 
     def sparse_matrix(self, wire_order=None):
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
+
+    @property
+    def has_matrix(self):
+        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
