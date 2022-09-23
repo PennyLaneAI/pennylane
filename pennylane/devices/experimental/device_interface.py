@@ -91,13 +91,13 @@ class AbstractDevice(metaclass=RegistrationsMetaclass):
         # perform post-processing
         return grad
     
-    def vjp(self, qscript):
+    def vjp(self, qscript: QuantumScript):
         """VJP method. Added through registration"""
 
         if FnType.VJP not in self.registrations:
             raise ValueError("Device does not support VJP")
 
-        vjp= self.registrations[FnType.VJP](self, qscript: QuantumScript)
+        vjp= self.registrations[FnType.VJP](self, qscript)
 
         # perform post-processing
         return vjp
