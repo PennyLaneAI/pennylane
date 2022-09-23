@@ -99,6 +99,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* Fixed the `qml.transforms.transpile` transform to work correctly for all multi-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -111,4 +114,5 @@ Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
 Jay Soni,
+Antal Száva,
 David Wierichs,
