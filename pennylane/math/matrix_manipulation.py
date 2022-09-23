@@ -142,24 +142,24 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
             )
 
     num_wires = len(subset_wire_order)
+    mat = base_matrix
 
-    # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <0000|mat|0000>
-    # with this reshape we can easily swap wires
-    shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
-    mat = qml.math.reshape(base_matrix, shape)
+    if expanded_wires != subset_wire_order:
+        # compute the permutations needed to match wire order
+        perm = [expanded_wires.index(wire) for wire in subset_wire_order]
+        perm += [p + num_wires for p in perm]
+        if batch_dim:
+            perm = [0] + [p + 1 for p in perm]
 
-    # compute the permutations needed to match wire order
-    perm = [expanded_wires.index(wire) for wire in subset_wire_order]
-    perm += [p + num_wires for p in perm]
-    if batch_dim:
-        perm = [0] + [p + 1 for p in perm]
-
-    if perm != list(range(num_wires * 2)):
+        # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <0000|mat|0000>
+        # with this reshape we can easily swap wires
+        shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
+        mat = qml.math.reshape(mat, shape)
+        # transpose matrix
         mat = qml.math.transpose(mat, axes=perm)
-
-    # reshape back
-    shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
-    mat = qml.math.reshape(mat, shape)
+        # reshape back
+        shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
+        mat = qml.math.reshape(mat, shape)
 
     # expand the matrix even further by adding the missing wires
     if len(wire_order) > len(expanded_wires):
