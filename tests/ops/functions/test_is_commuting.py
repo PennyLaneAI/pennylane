@@ -829,6 +829,20 @@ class TestCommutingFunction:
         with pytest.raises(qml.QuantumFunctionError, match="Operation PauliRot not supported."):
             qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
 
+    arithmetic_ops = (
+        (qml.op_sum(qml.PauliX(0), qml.Identity(1)), "Sum"),
+        (qml.prod(qml.PauliX(0), qml.Identity(1)), "Prod"),
+        (qml.s_prod(1.23, qml.PauliX(0)), "SProd"),
+        (qml.exp(qml.PauliX(0), 1.2), "Exp"),
+    )
+
+    @pytest.mark.parametrize("op, name", arithmetic_ops)
+    def test_composite_arithmetic_ops_not_supported(self, op, name):
+        """Test that giving a non supported operation raises an error."""
+
+        with pytest.raises(qml.QuantumFunctionError, match=f"Operation {name} not supported."):
+            qml.is_commuting(qml.PauliX(wires=0), op)
+
     def test_non_commuting(self):
         """Test the function with an operator from the non-commuting list."""
 

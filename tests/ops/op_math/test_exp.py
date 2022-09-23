@@ -78,6 +78,17 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires(5)
 
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value, constructor):
+        """Test that Exp defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = constructor(DummyOp(1), 2.312)
+        assert op.has_diagonalizing_gates is value
+
 
 class TestProperties:
     """Test of the properties of the Exp class."""
@@ -139,13 +150,37 @@ class TestMatrix:
         assert qml.math.allclose(op.matrix(), isingxx.matrix())
 
     @pytest.mark.autograd
-    def test_matrix_autograd_rx(self):
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_matrix_autograd_rx(self, requires_grad):
         """Test the matrix comparing to the rx gate."""
-        phi = np.array(1.234)
+        phi = np.array(1.234, requires_grad=requires_grad)
         exp_rx = Exp(qml.PauliX(0), -0.5j * phi)
         rx = qml.RX(phi, 0)
 
         assert qml.math.allclose(exp_rx.matrix(), rx.matrix())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_matrix_autograd_rz(self, requires_grad):
+        """Test the matrix comparing to the rz gate. This is a gate with an
+        autograd coefficient but empty diagonalizing gates."""
+        phi = np.array(1.234, requires_grad=requires_grad)
+        exp_rz = Exp(qml.PauliZ(0), -0.5j * phi)
+        rz = qml.RZ(phi, 0)
+
+        assert qml.math.allclose(exp_rz.matrix(), rz.matrix())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_tensor_with_pauliz_autograd(self, requires_grad):
+        """Test the matrix for the case when the coefficient is autograd and
+        the diagonalizing gates don't act on every wire for the matrix."""
+        phi = qml.numpy.array(-0.345, requires_grad=requires_grad)
+        base = qml.PauliZ(0) @ qml.PauliY(1)
+        autograd_op = Exp(base, phi)
+        mat = qml.math.expm(phi * qml.matrix(base))
+
+        assert qml.math.allclose(autograd_op.matrix(), mat)
 
     @pytest.mark.autograd
     def test_base_no_diagonalizing_gates_autograd_coeff(self):
