@@ -214,7 +214,9 @@ class TestProperties:
 
         class MyOp(qml.operation.Operation):
             num_wires = 1
-            decomposition = lambda self: [qml.RX(0.2, self.wires)]
+
+            def decomposition(self):
+                return [qml.RX(0.2, self.wires)]
 
         base = MyOp(0)
         op = Adjoint(base)

@@ -163,7 +163,7 @@ class CompositeOp(Operator, abc.ABC):
     @property
     def has_diagonalizing_gates(self):
         if self.has_overlapping_wires:
-            return True
+            return self.has_matrix
 
         return all(op.has_diagonalizing_gates for op in self)
 

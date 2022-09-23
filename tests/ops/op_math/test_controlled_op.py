@@ -231,7 +231,7 @@ class TestProperties:
         """Test that Controlled claims `has_decomposition` to be true if there are
         any negated control values."""
 
-        op = Controlled(qml.RX(0.2, wires=1), cwires, cvalues)
+        op = Controlled(TempOperation(0.2, wires=1), cwires, cvalues)
         assert op.has_decomposition is True
 
     def test_has_decomposition_true_via_base_has_ctrl_single_cwire(self):
