@@ -209,7 +209,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):
-        """Test that controlled defers has_matrix to base operator."""
+        """Test that Controlled defers has_matrix to base operator."""
 
         class DummyOp(Operator):
             num_wires = 1
@@ -226,6 +226,75 @@ class TestProperties:
         op = Controlled(base, 1)
         assert op.has_matrix is False
 
+    @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
+    def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
+        """Test that Controlled claims `has_decomposition` to be true if there are
+        any negated control values."""
+
+        op = Controlled(TempOperation(0.2, wires=1), cwires, cvalues)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_ctrl_single_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        only one control wire is used and the base has a `_controlled` method."""
+
+        op = Controlled(qml.RX(0.2, wires=1), 4)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_pauli_x(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        the base is a `PauliX` operator"""
+
+        op = Controlled(qml.PauliX(3), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_decomp(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        the base has a decomposition and indicates this via `has_decomposition`."""
+
+        op = Controlled(qml.IsingXX(0.6, [1, 3]), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_false_single_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use a single control wire."""
+
+        # all control values are 1, there is only one control wire but TempOperator does
+        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), 0)
+        assert op.has_decomposition is False
+
+    def test_has_decomposition_false_multi_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use multiple control wires."""
+
+        # all control values are 1, there are multiple control wires,
+        # `RX` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(qml.RX(0.5, 1), [0, 5])
+        assert op.has_decomposition is False
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_adjoint(self, value):
+        """Test that Controlled defers has_adjoint to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_adjoint = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_adjoint is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that Controlled defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_diagonalizing_gates is value
+
     @pytest.mark.parametrize("value", ("_ops", "_prep", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
@@ -239,7 +308,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
-        """Test that controlled defers `is_hermitian` to base operator."""
+        """Test that Controlled defers `is_hermitian` to base operator."""
 
         class DummyOp(Operator):
             num_wires = 1
