@@ -122,6 +122,10 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
             res = kron(mat1, mat2, format="coo")
             res.eliminate_zeros()
             return res
+        if interface == "torch":
+            # these lines are to avoid a crash when the matrices are not contiguous in memory
+            mat1 = mat1.contiguous()
+            mat2 = mat2.contiguous()
         return qml.math.kron(mat1, mat2, like=interface)
 
     # get a subset of `wire_order` values that contain all wire labels inside `wires` argument
