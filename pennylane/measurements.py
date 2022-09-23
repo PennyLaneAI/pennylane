@@ -158,7 +158,6 @@ class MeasurementProcess:
 
         # Below, we imitate an identity observable, so that the
         # device undertakes no action upon recieving this observable.
-        self.name = "Identity"
         self.data = []
 
         # Queue the measurement process
@@ -515,7 +514,6 @@ class MeasurementProcess:
 
         if self.obs is None:
             fingerprint = (
-                str(self.name),
                 tuple(self.wires.tolist()),
                 str(self.data),
                 self.return_type,

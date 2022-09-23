@@ -593,10 +593,11 @@ def _process_pdA2_involutory(tape, pdA2, var_idx, non_involutory):
         if i in var_idx:
             obs_involutory = i not in non_involutory
             if obs_involutory:
-                # TODO: fix length/num params
-                length = len(pdA2[i])
-                # if pdA2[i]:
-                item = tuple(np.array(0) for _ in range(len(pdA2[i])))
+                if isinstance(pdA2[i], (tuple, np.ndarray)) and getattr(pdA2[i], "shape", None) != ():
+                    length = len(pdA2[i])
+                    item = tuple(np.array(0) for _ in range(length))
+                else:
+                    item = np.array(0)
             else:
                 item = pdA2[i]
             new_pdA2.append(item)
@@ -617,6 +618,7 @@ def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
 
         if involutory:
             pdA2 = _process_pdA2_involutory(tape, pdA2, var_idx, non_involutory)
+    print(pdA2)
     return pdA2
 
 
@@ -655,10 +657,9 @@ def aux(tape, mask, pdA2, f0, pdA):
         var_grad = []
         for m_idx in range(len(tape.measurements)):
             measurement_is_var = mask[m_idx]
-            print(pdA)
+            print("\n\npdA: ", pdA)
             m_res = pdA[m_idx]
             if measurement_is_var:
-                print("pdA2: ", pdA2)
                 _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
                 _f0 = f0[m_idx]
                 m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
@@ -705,7 +706,11 @@ def _create_variance_proc_fn(
         # Note: len(f0) == len(mask)
         f0 = qml.math.expand_dims(res, -1)
 
-        shot_vector = isinstance(res, tuple) and len(res) > 1
+        multi_measure = len(tape.measurements) > 1
+        if multi_measure:
+            shot_vector = isinstance(res[0], tuple) and len(res[0]) > 1
+        else:
+            shot_vector = isinstance(res, tuple) and len(res) > 1
 
         if shot_vector:
             final_res = []
@@ -717,19 +722,22 @@ def _create_variance_proc_fn(
                 mask_reshaped = qml.math.reshape(mask, qml.math.shape(_f0))
                 mask = qml.math.convert_like(mask_reshaped, _r)
 
-                pdA = pdA_fn(results[1:tape_boundary])
+                pdA = pdA_fn(results[1:tape_boundary][idx_shot_comp])
                 _pdA = pdA[idx_shot_comp]
 
                 pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
                 _pdA2 = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
+                print("mask, _pdA2, _f0, _pdA: ", mask, _pdA2, _f0, _pdA)
                 r = aux(tape, mask, _pdA2, _f0, _pdA)
                 final_res.append(r)
 
             return final_res
 
+        print("Results gathered: ", results[1:tape_boundary])
         mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
+        print("mask, _pdA2, _f0, _pdA: ", mask, pdA2, f0, pdA)
         return aux(tape, mask, pdA2, f0, pdA)
 
     return processing_fn
@@ -772,7 +780,6 @@ def _var_param_shift_tuple(
     # Determine the locations of any variance measurements in the measurement queue.
     var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
     var_idx = np.where(var_mask)[0]
-    print("Var mask: ", var_mask)
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
