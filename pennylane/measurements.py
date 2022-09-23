@@ -365,17 +365,11 @@ class MeasurementProcess:
         elif self.return_type == Sample:
             if self.obs is not None:
                 # qml.sample(some_observable) case
-                if device.shots == 1:
-                    shape = ()
-                else:
-                    shape = (device.shots,)
-            else:
-                # qml.sample() case
-                len_wires = len(device.wires)
-                if device.shots == 1:
-                    shape = (len_wires,)
-                else:
-                    shape = (device.shots, len_wires)
+                return () if device.shots == 1 else (device.shots,)
+
+            # qml.sample() case
+            len_wires = len(device.wires)
+            return (len_wires,) if device.shots == 1 else (device.shots, len_wires)
 
         if shape is not None:
             return shape
