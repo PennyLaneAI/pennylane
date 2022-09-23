@@ -46,6 +46,10 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Improvements</h3>
 
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
+
 * Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
@@ -111,3 +115,4 @@ Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
 Jay Soni,
+David Wierichs,
