@@ -122,7 +122,6 @@ def _execute(
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-
         if any(
             m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
             for m in tapes[i].measurements
@@ -241,7 +240,6 @@ def vjp(
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
                     )
-
                     # This is where the magic happens. Note that we call ``execute``.
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
@@ -256,7 +254,6 @@ def vjp(
                             max_diff=max_diff,
                         )
                     )
-
             else:
                 # Gradient function is not a gradient transform
                 # (e.g., it might be a device method).
@@ -376,6 +373,26 @@ def __execute_new(
     """
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
+
+    for i, r in enumerate(res):
+        # Non-differentiable
+        if any(
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in tapes[i].measurements
+        ):
+            continue
+
+        if isinstance(r, np.ndarray):
+            # For backwards compatibility, we flatten ragged tape outputs
+            # when there is no sampling
+            res[i] = np.tensor(r)
+
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(np.tensor(r) for r in res[i])
+
+        else:
+            res[i] = qml.math.toarray(res[i])
+
     return res, jacs
 
 
@@ -439,15 +456,12 @@ def _vjp_new(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
-
         dy = [qml.math.T(d) for d in dy[0]]
-
         computing_jacobian = _n == max_diff
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
         else:
             jacs = ans[1]
-
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.

@@ -333,7 +333,7 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    # gradient_kwargs = gradient_kwargs or {}
+    gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
         tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
@@ -386,24 +386,27 @@ def _execute_new(
         for i, tape in enumerate(tapes):
             tapes[i] = expand_fn(tape)
 
-    if mode in ("forward", "best"):
-        # replace the forward execution function to return
-        # both results and gradients
-        execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
-        gradient_fn = None
-        _mode = "forward"
+        if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+            tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
-    elif mode == "backward":
-        # disable caching on the forward pass
-        execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+        if mode in ("forward", "best"):
+            # replace the forward execution function to return
+            # both results and gradients
+            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
+            gradient_fn = None
+            _mode = "forward"
 
-        # replace the backward gradient computation
-        gradient_fn = qml.interfaces.cache_execute(
-            set_shots(device, override_shots)(device.gradients),
-            cache,
-            pass_kwargs=True,
-            return_tuple=False,
-        )
+        elif mode == "backward":
+            # disable caching on the forward pass
+            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+
+            # replace the backward gradient computation
+            gradient_fn = qml.interfaces.cache_execute(
+                set_shots(device, override_shots)(device.gradients),
+                cache,
+                pass_kwargs=True,
+                return_tuple=False,
+            )
 
     elif mode == "forward":
         # In "forward" mode, gradients are automatically handled

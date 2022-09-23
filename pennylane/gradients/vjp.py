@@ -39,10 +39,12 @@ def _compute_vjp_new(dy, jac, num=None):
     """
     if jac is None:
         return None
+    dy_row = math.reshape(dy, [-1])
     # Single measurement
     if not isinstance(jac[0], tuple):
         if dy.shape == ():
-            res = dy * jac
+            jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
+            res = qml.math.tensordot(jac, dy_row, [[0], [0]])
         else:
             res = []
             for a in jac:
@@ -61,7 +63,6 @@ def _compute_vjp_new(dy, jac, num=None):
                     res[i] += v[i]
                 else:
                     res[i] += sum(v[i])
-
     return res
 
 
@@ -227,7 +228,9 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     except (AttributeError, TypeError):
         pass
 
+    # qml.disable_return()
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+    # qml.enable_return()
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
@@ -359,7 +362,6 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
         g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs)
-
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)
@@ -376,7 +378,6 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             res_len = reshape_info[t_idx]
             res_t = results[start : start + res_len]
             start += res_len
-
             # postprocess results to compute the VJP
             vjp_ = processing_fns[t_idx](res_t, num=nums[t_idx])
 
