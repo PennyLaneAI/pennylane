@@ -532,8 +532,7 @@ class TestControlledQutritUnitary:
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     def test_no_decomp(self):
-        """Test that ControlledQutritUnitary raises a decomposition undefined
-        error."""
+        """Test that ControlledQutritUnitary raises a DecompositionUndefinedError."""
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.ControlledQutritUnitary(U_thadamard_01, wires=0, control_wires=1).decomposition()
 
