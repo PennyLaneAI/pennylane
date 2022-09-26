@@ -171,6 +171,7 @@ class Hadamard(Observable, Operation):
     def pow(self, z):
         return super().pow(z % 2)
 
+
 class Patata(Observable, Operation):
     r"""Hadamard(wires)
     The Hadamard operator
@@ -308,6 +309,7 @@ class Patata(Observable, Operation):
 
     def pow(self, z):
         return super().pow(z % 2)
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -1296,14 +1298,7 @@ class CY(Operation):
          [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
          [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
         """
-        return np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, -1j],
-                [0, 0, 1j, 0],
-            ]
-        )
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0],])
 
     @staticmethod
     def compute_decomposition(wires):
@@ -2117,12 +2112,7 @@ class MultiControlledX(Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        work_wires=None,
-        do_queue=True,
+        self, control_wires=None, wires=None, control_values=None, work_wires=None, do_queue=True,
     ):
         if wires is None:
             raise ValueError("Must specify the wires where the operation acts on")
@@ -2226,8 +2216,7 @@ class MultiControlledX(Operation):
 
     def adjoint(self):
         return MultiControlledX(
-            wires=self.wires,
-            control_values=self.hyperparameters["control_values"],
+            wires=self.wires, control_values=self.hyperparameters["control_values"],
         )
 
     def pow(self, z):
@@ -2355,22 +2344,10 @@ class MultiControlledX(Operation):
         second_part = control_wires[partition:]
 
         gates = [
-            MultiControlledX(
-                wires=first_part + work_wire,
-                work_wires=second_part + target_wire,
-            ),
-            MultiControlledX(
-                wires=second_part + work_wire + target_wire,
-                work_wires=first_part,
-            ),
-            MultiControlledX(
-                wires=first_part + work_wire,
-                work_wires=second_part + target_wire,
-            ),
-            MultiControlledX(
-                wires=second_part + work_wire + target_wire,
-                work_wires=first_part,
-            ),
+            MultiControlledX(wires=first_part + work_wire, work_wires=second_part + target_wire,),
+            MultiControlledX(wires=second_part + work_wire + target_wire, work_wires=first_part,),
+            MultiControlledX(wires=first_part + work_wire, work_wires=second_part + target_wire,),
+            MultiControlledX(wires=second_part + work_wire + target_wire, work_wires=first_part,),
         ]
 
         return gates

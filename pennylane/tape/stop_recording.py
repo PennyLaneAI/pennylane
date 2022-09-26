@@ -83,8 +83,7 @@ def stop_recording():
 
     """
     warn(
-        "qml.tape.stop_recording has moved to qml.QueuingManager.stop_recording.",
-        UserWarning,
+        "qml.tape.stop_recording has moved to qml.QueuingManager.stop_recording.", UserWarning,
     )
     with QueuingManager.stop_recording():
         yield

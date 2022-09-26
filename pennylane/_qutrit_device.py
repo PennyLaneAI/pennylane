@@ -96,7 +96,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Returns:
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
-        number_of_states = 3**self.num_wires
+        number_of_states = 3 ** self.num_wires
 
         rotated_prob = self.analytic_probability()
 

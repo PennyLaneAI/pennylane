@@ -203,24 +203,14 @@ class CVNeuralNetLayers(Operation):
         for m in range(n_layers):
 
             op_list.append(
-                qml.Interferometer(
-                    theta=theta_1[m],
-                    phi=phi_1[m],
-                    varphi=varphi_1[m],
-                    wires=wires,
-                )
+                qml.Interferometer(theta=theta_1[m], phi=phi_1[m], varphi=varphi_1[m], wires=wires,)
             )
 
             for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
                 op_list.append(qml.Squeezing(r[m, i], phi_r[m, i], wires=wires[i]))
 
             op_list.append(
-                qml.Interferometer(
-                    theta=theta_2[m],
-                    phi=phi_2[m],
-                    varphi=varphi_2[m],
-                    wires=wires,
-                )
+                qml.Interferometer(theta=theta_2[m], phi=phi_2[m], varphi=varphi_2[m], wires=wires,)
             )
 
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate

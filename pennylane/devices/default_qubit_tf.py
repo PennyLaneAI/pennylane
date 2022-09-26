@@ -256,6 +256,6 @@ class DefaultQubitTF(DefaultQubit):
                 "vector of a subsystem of the device when using DefaultQubitTF."
             )
         # The following line is unchanged in the "else"-clause in DefaultQubit's implementation
-        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, output_shape)
         self._state = self._asarray(state, dtype=self.C_DTYPE)

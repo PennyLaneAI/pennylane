@@ -940,7 +940,7 @@ def qcut_processing_fn_mc(
         t_s = f * sigma_s
         c_s = np.prod([evals[s] for s in setting])
         K = len(sample_mid)
-        expvals.append(8**K * c_s * t_s)
+        expvals.append(8 ** K * c_s * t_s)
 
     return qml.math.convert_like(np.mean(expvals), res0)
 
@@ -1341,16 +1341,20 @@ def cut_circuit_mc(
     tapes = tuple(tape for c in configurations for tape in c)
 
     if classical_processing_fn:
-        return tapes, partial(
-            qcut_processing_fn_mc,
-            communication_graph=communication_graph,
-            settings=settings,
-            shots=shots,
-            classical_processing_fn=classical_processing_fn,
+        return (
+            tapes,
+            partial(
+                qcut_processing_fn_mc,
+                communication_graph=communication_graph,
+                settings=settings,
+                shots=shots,
+                classical_processing_fn=classical_processing_fn,
+            ),
         )
 
-    return tapes, partial(
-        qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots
+    return (
+        tapes,
+        partial(qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots),
     )
 
 
@@ -1592,7 +1596,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
         tensor_like: the corresponding fragment tensor
     """
     n = n_prep + n_meas
-    dim_meas = 4**n_meas
+    dim_meas = 4 ** n_meas
 
     # Step 1
     intermediate_shape = (4,) * n_prep + (dim_meas,)
@@ -1668,7 +1672,7 @@ def _to_tensors(
         n_meas = len(m)
         n = n_prep + n_meas
 
-        dim = 4**n
+        dim = 4 ** n
         results_slice = results[ctr : dim + ctr]
 
         tensors.append(_process_tensor(results_slice, n_prep, n_meas))
@@ -2074,12 +2078,15 @@ def cut_circuit(
 
     tapes = tuple(tape for c in configurations for tape in c)
 
-    return tapes, partial(
-        qcut_processing_fn,
-        communication_graph=communication_graph,
-        prepare_nodes=prepare_nodes,
-        measure_nodes=measure_nodes,
-        use_opt_einsum=use_opt_einsum,
+    return (
+        tapes,
+        partial(
+            qcut_processing_fn,
+            communication_graph=communication_graph,
+            prepare_nodes=prepare_nodes,
+            measure_nodes=measure_nodes,
+            use_opt_einsum=use_opt_einsum,
+        ),
     )
 
 
@@ -2094,9 +2101,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
 
 def _qcut_expand_fn(
-    tape: QuantumTape,
-    max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
+    tape: QuantumTape, max_depth: int = 1, auto_cutter: Union[bool, Callable] = False,
 ):
     """Expansion function for circuit cutting.
 
@@ -2304,8 +2309,7 @@ class CutStrategy:
     HIGH_PARTITION_ATTEMPTS: ClassVar[int] = 20
 
     def __post_init__(
-        self,
-        devices,
+        self, devices,
     ):
         """Deriving cutting constraints from given devices and parameters."""
 
@@ -2446,8 +2450,7 @@ class CutStrategy:
 
     @staticmethod
     def _validate_input(
-        max_wires_by_fragment,
-        max_gates_by_fragment,
+        max_wires_by_fragment, max_gates_by_fragment,
     ):
         """Helper parameter checker."""
         if max_wires_by_fragment is not None:
@@ -2478,11 +2481,7 @@ class CutStrategy:
                 )
 
     def _infer_probed_cuts(
-        self,
-        wire_depths,
-        max_wires_by_fragment=None,
-        max_gates_by_fragment=None,
-        exhaustive=True,
+        self, wire_depths, max_wires_by_fragment=None, max_gates_by_fragment=None, exhaustive=True,
     ) -> List[Dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
@@ -2593,9 +2592,7 @@ class CutStrategy:
 
 
 def _graph_to_hmetis(
-    graph: MultiDiGraph,
-    hyperwire_weight: int = 0,
-    edge_weights: Sequence[int] = None,
+    graph: MultiDiGraph, hyperwire_weight: int = 0, edge_weights: Sequence[int] = None,
 ) -> Tuple[List[int], List[int], List[Union[int, float]]]:
     """Converts a ``MultiDiGraph`` into the
     `hMETIS hypergraph input format <http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf>`__
@@ -2739,13 +2736,7 @@ def kahypar_cut(
         edge_weights = edge_weights or [1] * ne
         node_weights = node_weights or [1] * nv
         hypergraph = kahypar.Hypergraph(
-            nv,
-            ne,
-            edge_splits,
-            adjacent_nodes,
-            num_fragments,
-            edge_weights,
-            node_weights,
+            nv, ne, edge_splits, adjacent_nodes, num_fragments, edge_weights, node_weights,
         )
 
     else:
@@ -2766,7 +2757,7 @@ def kahypar_cut(
         context.suppressOutput(True)
 
     # KaHyPar fixes seed to 42 by default, need to manually sample seed to randomize:
-    kahypar_seed = np.random.default_rng(seed).choice(2**15)
+    kahypar_seed = np.random.default_rng(seed).choice(2 ** 15)
     context.setSeed(kahypar_seed)
 
     kahypar.partition(hypergraph, context)
@@ -3075,7 +3066,7 @@ def find_and_place_cuts(
 
         # Need to reseed if a seed is passed:
         seed = kwargs.pop("seed", None)
-        seeds = np.random.default_rng(seed).choice(2**15, cut_strategy.trials_per_probe).tolist()
+        seeds = np.random.default_rng(seed).choice(2 ** 15, cut_strategy.trials_per_probe).tolist()
 
         cut_edges_probed = {
             (cut_kwargs["num_fragments"], trial_id): cut_method(
@@ -3133,12 +3124,7 @@ def find_and_place_cuts(
 
 
 def _is_valid_cut(
-    fragments,
-    num_cuts,
-    max_frag_degree,
-    num_fragments_requested,
-    cut_candidates,
-    max_free_wires,
+    fragments, num_cuts, max_frag_degree, num_fragments_requested, cut_candidates, max_free_wires,
 ):
     """Helper function for determining if a cut is a valid canditate."""
     # pylint: disable=too-many-arguments

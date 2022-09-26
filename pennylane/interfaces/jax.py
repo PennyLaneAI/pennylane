@@ -152,13 +152,7 @@ def _validate_tapes(tapes):
 
 
 def _execute(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
-    _n=1,
+    params, tapes=None, device=None, execute_fn=None, gradient_fn=None, gradient_kwargs=None, _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
@@ -209,11 +203,7 @@ def _execute(
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    new_tapes,
-                    dy,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
+                    new_tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs,
                 )
 
                 partial_res = execute_fn(vjp_tapes)[0]
@@ -304,12 +294,7 @@ def _raise_vector_valued_fwd(tapes):
 
 
 def _execute_with_fwd(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_kwargs=None,
-    _n=1,
+    params, tapes=None, device=None, execute_fn=None, gradient_kwargs=None, _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode or when no gradient function was

@@ -21,12 +21,7 @@ from .utils import square_kernel_matrix
 
 
 def polarity(
-    X,
-    Y,
-    kernel,
-    assume_normalized_kernel=False,
-    rescale_class_labels=True,
-    normalize=False,
+    X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True, normalize=False,
 ):
     r"""Polarity of a given kernel function.
 
@@ -100,11 +95,7 @@ def polarity(
 
 
 def target_alignment(
-    X,
-    Y,
-    kernel,
-    assume_normalized_kernel=False,
-    rescale_class_labels=True,
+    X, Y, kernel, assume_normalized_kernel=False, rescale_class_labels=True,
 ):
     r"""Target alignment of a given kernel function.
 

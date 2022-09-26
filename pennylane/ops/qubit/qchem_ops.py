@@ -991,23 +991,23 @@ class OrbitalRotation(Operation):
 
         if qml.math.ndim(phi) == 0:
             diag = qml.math.diag(
-                [1.0, c, c, c**2, c, 1.0, c**2, c, c, c**2, 1.0, c, c**2, c, c, 1.0]
+                [1.0, c, c, c ** 2, c, 1.0, c ** 2, c, c, c ** 2, 1.0, c, c ** 2, c, c, 1.0]
             )
             if qml.math.get_interface(phi) == "torch":
                 mask_s = qml.math.convert_like(OrbitalRotation.mask_s, phi)
                 mask_cs = qml.math.convert_like(OrbitalRotation.mask_cs, phi)
                 mask_s2 = qml.math.convert_like(OrbitalRotation.mask_s2, phi)
-                return diag + s * mask_s + (c * s) * mask_cs + s**2 * mask_s2
+                return diag + s * mask_s + (c * s) * mask_cs + s ** 2 * mask_s2
             return (
                 diag
                 + s * OrbitalRotation.mask_s
                 + (c * s) * OrbitalRotation.mask_cs
-                + s**2 * OrbitalRotation.mask_s2
+                + s ** 2 * OrbitalRotation.mask_s2
             )
 
         ones = qml.math.ones_like(c)
         diag = qml.math.stack(
-            [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
+            [ones, c, c, c ** 2, c, ones, c ** 2, c, c, c ** 2, ones, c, c ** 2, c, c, ones],
             axis=-1,
         )
 
@@ -1015,7 +1015,7 @@ class OrbitalRotation(Operation):
         off_diag = (
             qml.math.einsum("i,jk->ijk", s, OrbitalRotation.mask_s)
             + qml.math.einsum("i,jk->ijk", c * s, OrbitalRotation.mask_cs)
-            + qml.math.einsum("i,jk->ijk", s**2, OrbitalRotation.mask_s2)
+            + qml.math.einsum("i,jk->ijk", s ** 2, OrbitalRotation.mask_s2)
         )
 
         return diag + off_diag

@@ -648,14 +648,14 @@ class DefaultQubit(QubitDevice):
 
         Note: This function does not support broadcasted inputs yet.
         """
-        state = np.zeros(2**self.num_wires, dtype=np.complex128)
+        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
 
     @property
     def state(self):
-        dim = 2**self.num_wires
+        dim = 2 ** self.num_wires
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
         # Do not flatten the state completely but leave the broadcasting dimension if there is one
         shape = (batch_size, dim) if batch_size is not None else (dim,)
@@ -705,10 +705,10 @@ class DefaultQubit(QubitDevice):
 
         if batch_size is not None:
             state = self._scatter(
-                (slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires]
+                (slice(None), ravelled_indices), state, [batch_size, 2 ** self.num_wires]
             )
         else:
-            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+            state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, output_shape)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
@@ -758,8 +758,8 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         dim = 2 ** len(device_wires)
-        mat_batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
-        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, 2**self.num_wires)
+        mat_batch_size = self._get_batch_size(mat, (dim, dim), dim ** 2)
+        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, 2 ** self.num_wires)
 
         shape = [2] * (len(device_wires) * 2)
         state_axes = device_wires
@@ -816,7 +816,7 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         dim = 2 ** len(device_wires)
-        batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
+        batch_size = self._get_batch_size(mat, (dim, dim), dim ** 2)
 
         # If the matrix is broadcasted, it is reshaped to have leading axis of size mat_batch_size
         shape = [2] * (len(device_wires) * 2)
@@ -892,14 +892,14 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        dim = 2**self.num_wires
+        dim = 2 ** self.num_wires
         batch_size = self._get_batch_size(self._state, [2] * self.num_wires, dim)
         flat_state = self._reshape(
             self._state, (batch_size, dim) if batch_size is not None else (dim,)
         )
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wires)
+        return self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
 
     def classical_shadow(self, obs, circuit):
         """
@@ -956,11 +956,7 @@ class DefaultQubit(QubitDevice):
             recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
 
         obs_list = self._stack(
-            [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
-            ]
+            [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), qml.PauliZ.compute_matrix(),]
         )
         uni_list = self._stack(
             [

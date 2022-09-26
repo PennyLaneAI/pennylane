@@ -264,7 +264,7 @@ class Pow(SymbolicOp):
     def compute_sparse_matrix(*params, base=None, z=0):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-            return base_matrix**z
+            return base_matrix ** z
         raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -324,7 +324,7 @@ class Pow(SymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        return [value ** self.z for value in base_eigvals]
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.

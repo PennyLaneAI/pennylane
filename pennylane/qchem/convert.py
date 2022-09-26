@@ -215,9 +215,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
     if wires is not None:
-        qubit_indexed_wires = _process_wires(
-            wires,
-        )
+        qubit_indexed_wires = _process_wires(wires,)
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:

@@ -151,8 +151,7 @@ def choose_grad_methods(diff_methods, argnum):
 
     if num_params == 0:
         warnings.warn(
-            "No trainable parameters were specified for computing the Jacobian.",
-            UserWarning,
+            "No trainable parameters were specified for computing the Jacobian.", UserWarning,
         )
         return {}
 

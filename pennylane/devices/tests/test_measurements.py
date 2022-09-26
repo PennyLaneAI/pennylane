@@ -145,12 +145,7 @@ class TestHamiltonianSupport:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)],))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -439,8 +434,7 @@ class TestTensorExpval:
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
-        "base_obs, permuted_obs",
-        list(zip(obs_lst, obs_permuted_lst)),
+        "base_obs, permuted_obs", list(zip(obs_lst, obs_permuted_lst)),
     )
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if
@@ -646,7 +640,7 @@ class TestSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
     def test_sample_values_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
@@ -849,7 +843,7 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
@@ -894,7 +888,7 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
@@ -1278,8 +1272,7 @@ class TestTensorVar:
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
-        "base_obs, permuted_obs",
-        list(zip(obs_lst, obs_permuted_lst)),
+        "base_obs, permuted_obs", list(zip(obs_lst, obs_permuted_lst)),
     )
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if
@@ -1439,40 +1432,56 @@ class TestTensorVar:
 
         res = circuit([0, 0])
         expected = (
-            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([0, 1])
         expected = (
-            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([1, 0])
         expected = (
-            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([1, 1])
         expected = (
-            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))

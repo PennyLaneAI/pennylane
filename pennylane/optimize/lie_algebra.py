@@ -101,17 +101,13 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
             for i, t in enumerate(tapes_plus):
                 with t:
                     qml.PauliRot(
-                        np.pi / 2,
-                        lie_algebra_basis_names[i],
-                        wires=list(range(nqubits)),
+                        np.pi / 2, lie_algebra_basis_names[i], wires=list(range(nqubits)),
                     )
                     qml.expval(o)
             for i, t in enumerate(tapes_min):
                 with t:
                     qml.PauliRot(
-                        -np.pi / 2,
-                        lie_algebra_basis_names[i],
-                        wires=list(range(nqubits)),
+                        -np.pi / 2, lie_algebra_basis_names[i], wires=list(range(nqubits)),
                     )
                     qml.expval(o)
             tapes_plus_total.extend(tapes_plus)
@@ -245,10 +241,9 @@ class LieAlgebraOptimizer:
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
-        (
-            self.lie_algebra_basis_ops,
-            self.lie_algebra_basis_names,
-        ) = self.get_su_n_operators(restriction)
+        (self.lie_algebra_basis_ops, self.lie_algebra_basis_names,) = self.get_su_n_operators(
+            restriction
+        )
         self.exact = exact
         self.trottersteps = trottersteps
         self.coeffs, self.observables = self.hamiltonian.terms()
@@ -344,10 +339,7 @@ class LieAlgebraOptimizer:
         obs_groupings, _ = qml.grouping.group_observables(self.observables, self.coeffs)
         # get all circuits we need to calculate the coefficients
         circuits = algebra_commutator(
-            self.circuit.qtape,
-            obs_groupings,
-            self.lie_algebra_basis_names,
-            self.nqubits,
+            self.circuit.qtape, obs_groupings, self.lie_algebra_basis_names, self.nqubits,
         )[0]
         circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(

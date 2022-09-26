@@ -231,12 +231,7 @@ IsingZZ = lambda phi: np.array(
 )
 
 PSWAP = lambda phi: np.array(
-    [
-        [1, 0, 0, 0],
-        [0, 0, exp(1.0j * phi), 0],
-        [0, exp(1.0j * phi), 0, 0],
-        [0, 0, 0, 1],
-    ]
+    [[1, 0, 0, 0], [0, 0, exp(1.0j * phi), 0], [0, exp(1.0j * phi), 0, 0], [0, 0, 0, 1],]
 )
 
 
@@ -389,7 +384,7 @@ class TestGatesQubit:
 
         res = circuit()
 
-        expected = np.zeros([2**n_wires])
+        expected = np.zeros([2 ** n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.shots))
 

@@ -930,16 +930,22 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            return qml.Hamiltonian(
-                qml.numpy.real(h.coeffs, requires_grad=False),
-                h.ops,
-                grouping_type=grouping_type,
-                method=grouping_method,
-            ), 2 * len(active)
+            return (
+                qml.Hamiltonian(
+                    qml.numpy.real(h.coeffs, requires_grad=False),
+                    h.ops,
+                    grouping_type=grouping_type,
+                    method=grouping_method,
+                ),
+                2 * len(active),
+            )
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-        return qml.Hamiltonian(
-            qml.numpy.real(h.coeffs), h.ops, grouping_type=grouping_type, method=grouping_method
-        ), 2 * len(active)
+        return (
+            qml.Hamiltonian(
+                qml.numpy.real(h.coeffs), h.ops, grouping_type=grouping_type, method=grouping_method
+            ),
+            2 * len(active),
+        )
 
     openfermion, _ = _import_of()
 

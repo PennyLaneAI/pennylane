@@ -224,7 +224,7 @@ class ClassicalShadow:
 
         return np.reshape(
             np.einsum(f'{",".join(old_indices)}->{new_indices}', *transposed_snapshots),
-            (T, 2**n, 2**n),
+            (T, 2 ** n, 2 ** n),
         )
 
     def _convert_to_pauli_words(self, observable):
@@ -436,7 +436,7 @@ class ClassicalShadow:
             return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
 
         # General Renyi-alpha entropy
-        return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+        return qml.math.log(qml.math.sum(evs_nonzero ** alpha)) / (1.0 - alpha) / div
 
 
 # Util functions

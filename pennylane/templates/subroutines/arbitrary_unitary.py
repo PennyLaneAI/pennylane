@@ -45,7 +45,7 @@ def _n_k_gray_code(n, k, start=0):
         start (int, optional): Optional start of the Gray code. The generated code
             will be shorter as the code does not wrap. Defaults to 0.
     """
-    for i in range(start, n**k):
+    for i in range(start, n ** k):
         codeword = [0] * k
 
         base_repesentation = []
@@ -141,4 +141,4 @@ class ArbitraryUnitary(Operation):
         Args:
             n_wires (int): number of wires that template acts on
         """
-        return (4**n_wires - 1,)
+        return (4 ** n_wires - 1,)

@@ -228,10 +228,7 @@ class QNode:
         """String representation."""
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
         return detail.format(
-            self.device.num_wires,
-            self.device.short_name,
-            self.interface,
-            self.diff_method,
+            self.device.num_wires, self.device.short_name, self.interface, self.diff_method,
         )
 
     @property

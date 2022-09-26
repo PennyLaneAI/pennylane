@@ -239,7 +239,7 @@ class SPSAOptimizer:
             tuple (array): NumPy array containing the gradient
                 :math:`\hat{g}_k(\hat{\theta}_k)`
         """
-        ck = self.c / self.k**self.gamma
+        ck = self.c / self.k ** self.gamma
 
         delta = []
         thetaplus = list(args)

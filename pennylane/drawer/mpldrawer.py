@@ -441,20 +441,11 @@ class MPLDrawer:
         box_width = self._box_length + extra_width - 2 * self._pad
 
         box = patches.FancyBboxPatch(
-            (x_loc, y_loc),
-            box_width,
-            box_height,
-            boxstyle=self._boxstyle,
-            **box_options,
+            (x_loc, y_loc), box_width, box_height, boxstyle=self._boxstyle, **box_options,
         )
         self._ax.add_patch(box)
 
-        text_obj = self._ax.text(
-            layer,
-            box_center,
-            text,
-            **new_text_options,
-        )
+        text_obj = self._ax.text(layer, box_center, text, **new_text_options,)
 
         if active_wire_notches and (len(wires) != (box_max - box_min + 1)):
             notch_options = box_options.copy()

@@ -23,8 +23,7 @@ from pennylane.transforms.batch_transform import batch_transform
 
 @batch_transform
 def batch_input(
-    tape: Union[QuantumTape, qml.QNode],
-    argnum: Union[Sequence[int], int],
+    tape: Union[QuantumTape, qml.QNode], argnum: Union[Sequence[int], int],
 ) -> Tuple[Sequence[QuantumTape], Callable]:
     """
     Transform a QNode to support an initial batch dimension for gate inputs.

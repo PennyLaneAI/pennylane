@@ -130,9 +130,4 @@ class SymbolicOp(Operator):
 
     @property
     def hash(self):
-        return hash(
-            (
-                str(self.name),
-                self.base.hash,
-            )
-        )
+        return hash((str(self.name), self.base.hash,))

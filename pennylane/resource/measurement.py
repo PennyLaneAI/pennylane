@@ -90,10 +90,10 @@ def estimate_shots(coeffs, variances=None, error=0.0016):
         group, respectively.
     """
     if variances:
-        return int(np.ceil(np.sum(np.sqrt(variances)) ** 2 / error**2))
+        return int(np.ceil(np.sum(np.sqrt(variances)) ** 2 / error ** 2))
 
-    group_sum = [np.sum(coeff**2) for coeff in coeffs]
-    return int(np.ceil(np.sum(np.sqrt(group_sum)) ** 2 / error**2))
+    group_sum = [np.sum(coeff ** 2) for coeff in coeffs]
+    return int(np.ceil(np.sum(np.sqrt(group_sum)) ** 2 / error ** 2))
 
 
 def estimate_error(coeffs, variances=None, shots=1000):
@@ -169,5 +169,5 @@ def estimate_error(coeffs, variances=None, shots=1000):
     if variances:
         return np.sum(np.sqrt(variances)) / np.sqrt(shots)
 
-    group_sum = [np.sum(coeff**2) for coeff in coeffs]
+    group_sum = [np.sum(coeff ** 2) for coeff in coeffs]
     return np.sum(np.sqrt(group_sum)) / np.sqrt(shots)

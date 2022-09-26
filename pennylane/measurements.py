@@ -358,7 +358,7 @@ class MeasurementProcess:
         """
         cutoff = getattr(device, "cutoff", None)
         base = 2 if cutoff is None else cutoff
-        return base**num_wires
+        return base ** num_wires
 
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
@@ -1327,7 +1327,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     wires = qml.wires.Wires(wires)
 
-    seed = np.random.randint(2**30) if seed_recipes else None
+    seed = np.random.randint(2 ** 30) if seed_recipes else None
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
@@ -1388,7 +1388,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     >>> qml.jacobian(qnode)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
-    seed = np.random.randint(2**30) if seed_recipes else None
+    seed = np.random.randint(2 ** 30) if seed_recipes else None
     return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
 
 
@@ -1413,10 +1413,7 @@ class MeasurementValue(Generic[T]):
     __slots__ = ("_depends_on", "_zero_case", "_one_case", "_control_value")
 
     def __init__(
-        self,
-        measurement_id: str,
-        zero_case: float = 0,
-        one_case: float = 1,
+        self, measurement_id: str, zero_case: float = 0, one_case: float = 1,
     ):
         self._depends_on = measurement_id
         self._zero_case = zero_case

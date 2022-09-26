@@ -45,9 +45,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     control_values = "0" * (len(wires) - 1) + "1"
     control_wires = wires[1:] + control_wire
     MultiControlledX(
-        wires=[*control_wires, target_wire],
-        control_values=control_values,
-        work_wires=work_wires,
+        wires=[*control_wires, target_wire], control_values=control_values, work_wires=work_wires,
     )
 
     Hadamard(target_wire)

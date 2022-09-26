@@ -237,7 +237,7 @@ class SProd(SymbolicOp):
         return None
 
     def pow(self, z):
-        return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
+        return [SProd(scalar=self.scalar ** z, base=Pow(base=self.base, z=z))]
 
     def adjoint(self):
         return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))

@@ -212,9 +212,7 @@ ar.register_function(
     "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
 )
 ar.register_function(
-    "tensorflow",
-    "hstack",
-    lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args),
+    "tensorflow", "hstack", lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args),
 )
 
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
@@ -231,7 +229,7 @@ ar.register_function(
 def _round_tf(tensor, decimals=0):
     """Implement a TensorFlow version of np.round"""
     tf = _i("tf")
-    tol = 10**decimals
+    tol = 10 ** decimals
     return tf.round(tensor * tol) / tol
 
 
@@ -465,7 +463,7 @@ ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 def _round_torch(tensor, decimals=0):
     """Implement a Torch version of np.round"""
     torch = _i("torch")
-    tol = 10**decimals
+    tol = 10 ** decimals
     return torch.round(tensor * tol) / tol
 
 
@@ -665,9 +663,7 @@ def _scatter_jax(indices, array, new_dimensions):
 
 ar.register_function("jax", "scatter", _scatter_jax)
 ar.register_function(
-    "jax",
-    "scatter_element_add",
-    lambda x, index, value: x.at[tuple(index)].add(value),
+    "jax", "scatter_element_add", lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda

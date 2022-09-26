@@ -221,10 +221,7 @@ class kUpCCGSD(Operation):
         d_wires = generalized_pair_doubles(list(wires))
 
         shape = qml.math.shape(weights)
-        if shape != (
-            k,
-            len(s_wires) + len(d_wires),
-        ):
+        if shape != (k, len(s_wires) + len(d_wires),):
             raise ValueError(
                 f"Weights tensor must be of shape {(k, len(s_wires) + len(d_wires),)}; got {shape}."
             )

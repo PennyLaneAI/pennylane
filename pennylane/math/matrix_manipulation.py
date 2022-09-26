@@ -190,13 +190,13 @@ def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
     if num_pre_identities > 0:
         # We use "coo" format because it is faster to initialize, and `scipy.sparse.kron` casts
         # the matrix to this format anyway
-        pre_identity = eye(2**num_pre_identities, format="coo")
+        pre_identity = eye(2 ** num_pre_identities, format="coo")
         mat = kron(pre_identity, mat, format=format)
         mat.eliminate_zeros()
 
     num_post_identities = len(wire_order) - max(wire_indices) - 1
     if num_post_identities > 0:
-        post_identity = eye(2**num_post_identities, format="coo")
+        post_identity = eye(2 ** num_post_identities, format="coo")
         mat = kron(mat, post_identity, format=format)
         mat.eliminate_zeros()
 
@@ -215,8 +215,8 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
         s[i], s[j] = sj, si  # swap qubits
         return int(f"0b{''.join(s)}", 2)  # convert to int
 
-    data = [1] * (2**n)
-    index_i = list(range(2**n))  # bras (we don't change anything)
+    data = [1] * (2 ** n)
+    index_i = list(range(2 ** n))  # bras (we don't change anything)
     index_j = [
         swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
     ]  # kets (we swap qubits i and j): |10> --> |01>
@@ -239,7 +239,7 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -
     for i in range(n_total_wires):
         if expanded_wires[i] != wire_order[i]:
             if U is None:
-                U = eye(2**n_total_wires, format="csr")
+                U = eye(2 ** n_total_wires, format="csr")
             j = expanded_wires.index(wire_order[i])  # location of correct wire
             U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
             U.eliminate_zeros()

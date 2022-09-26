@@ -77,7 +77,7 @@ def _singular_quat_to_zyz(qw, qx, qy, qz, y_arg, abstract_jax=False):
     """Compute the ZYZ angles for the singular case of qx = qy = 0"""
     # pylint: disable=too-many-arguments
     z1_arg1 = 2 * (qx * qy + qz * qw)
-    z1_arg2 = 1 - 2 * (qx**2 + qz**2)
+    z1_arg2 = 1 - 2 * (qx ** 2 + qz ** 2)
 
     if abstract_jax:
         from jax.lax import cond
@@ -121,7 +121,7 @@ def _fuse(angles_1, angles_2, abstract_jax=False):
     qw, qx, qy, qz = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
 
     # Convert the product back into the angles fed to Rot
-    y_arg = 1 - 2 * (qx**2 + qy**2)
+    y_arg = 1 - 2 * (qx ** 2 + qy ** 2)
 
     # Require special treatment of the case qx = qy = 0. Note that we have to check
     # for "greater than" as well, because of imprecisions

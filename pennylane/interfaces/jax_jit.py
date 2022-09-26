@@ -125,13 +125,7 @@ def _extract_shape_dtype_structs(tapes, device):
 
 
 def _execute(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
-    _n=1,
+    params, tapes=None, device=None, execute_fn=None, gradient_fn=None, gradient_kwargs=None, _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     total_params = np.sum([len(p) for p in params])
 
@@ -168,11 +162,7 @@ def _execute(
 
                 new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    new_tapes,
-                    dy,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
+                    new_tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs,
                 )
 
                 partial_res = execute_fn(vjp_tapes)[0]
@@ -181,9 +171,7 @@ def _execute(
 
             args = tuple(params) + (g,)
             vjps = host_callback.call(
-                non_diff_wrapper,
-                args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
+                non_diff_wrapper, args, result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
 
             param_idx = 0
@@ -231,12 +219,7 @@ def _execute(
 
 # The execute function in forward mode
 def _execute_with_fwd(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_kwargs=None,
-    _n=1,
+    params, tapes=None, device=None, execute_fn=None, gradient_kwargs=None, _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -268,9 +251,7 @@ def _execute_with_fwd(
             jacobian_shape.append(o)
 
         res, jacs = host_callback.call(
-            wrapper,
-            params,
-            result_shape=tuple([fwd_shape_dtype_struct, jacobian_shape]),
+            wrapper, params, result_shape=tuple([fwd_shape_dtype_struct, jacobian_shape]),
         )
         return res, jacs
 

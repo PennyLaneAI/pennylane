@@ -60,7 +60,7 @@ def init_state():
     """Fixture to create an n-qubit random initial state vector."""
 
     def _init_state(n):
-        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
+        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
@@ -170,10 +170,7 @@ def pytest_addoption(parser):
     # The options are the three arguments every device takes
     addoption("--device", action="store", default=None, help="The device to test.")
     addoption(
-        "--shots",
-        action="store",
-        default=None,
-        help="Number of shots to use in stochastic mode.",
+        "--shots", action="store", default=None, help="Number of shots to use in stochastic mode.",
     )
     addoption(
         "--analytic",

@@ -51,11 +51,7 @@ class Conditional(Operation):
     num_wires = AnyWires
 
     def __init__(
-        self,
-        expr: MeasurementValue[bool],
-        then_op: Type[Operation],
-        do_queue=True,
-        id=None,
+        self, expr: MeasurementValue[bool], then_op: Type[Operation], do_queue=True, id=None,
     ):
         self.meas_val = expr
         self.then_op = then_op

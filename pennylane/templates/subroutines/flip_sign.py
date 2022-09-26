@@ -107,7 +107,7 @@ class FlipSign(Operation):
         Returns:
             (array[int]): integer binary array
         """
-        if n >= 2**n_wires:
+        if n >= 2 ** n_wires:
             raise ValueError(f"cannot encode {n} with {n_wires} wires ")
 
         b_str = f"{n:b}".zfill(n_wires)

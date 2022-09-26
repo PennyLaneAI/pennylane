@@ -142,11 +142,7 @@ class GroverOperator(Operation):
 
         op_list.append(PauliZ(wires[-1]))
         op_list.append(
-            MultiControlledX(
-                control_values=ctrl_str,
-                wires=wires,
-                work_wires=work_wires,
-            )
+            MultiControlledX(control_values=ctrl_str, wires=wires, work_wires=work_wires,)
         )
 
         op_list.append(PauliZ(wires[-1]))
@@ -167,5 +163,5 @@ class GroverOperator(Operation):
         s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
 
         # Grover diffusion operator
-        G = 2 * np.outer(s, s) - np.identity(2**n_wires)
+        G = 2 * np.outer(s, s) - np.identity(2 ** n_wires)
         return G

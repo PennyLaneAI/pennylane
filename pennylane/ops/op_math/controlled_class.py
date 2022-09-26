@@ -210,13 +210,7 @@ class Controlled(SymbolicOp):
             base_params = str(
                 [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
             )
-            base_hash = hash(
-                (
-                    str(self.base.name),
-                    tuple(self.base.wires.tolist()),
-                    base_params,
-                )
-            )
+            base_hash = hash((str(self.base.name), tuple(self.base.wires.tolist()), base_params,))
         else:
             base_hash = self.base.hash
         return hash(
@@ -244,7 +238,7 @@ class Controlled(SymbolicOp):
     @property
     def _control_int(self):
         """Int. Conversion of ``control_values`` to an integer."""
-        return sum(2**i for i, val in enumerate(reversed(self.control_values)) if val)
+        return sum(2 ** i for i, val in enumerate(reversed(self.control_values)) if val)
 
     # Properties on the wires ##########################
 

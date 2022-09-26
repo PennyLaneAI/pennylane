@@ -70,13 +70,7 @@ class DefaultQutrit(QutritDevice):
     }
 
     def __init__(
-        self,
-        wires,
-        *,
-        r_dtype=np.float64,
-        c_dtype=np.complex128,
-        shots=None,
-        analytic=None,
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
@@ -188,7 +182,7 @@ class DefaultQutrit(QutritDevice):
             array[complex]: output state
         """
         partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
-        return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
+        return self._apply_phase(partial_state, axes, 2, OMEGA ** 2, inverse)
 
     def _apply_tadd(self, state, axes, inverse=False):
         """Applies a controlled ternary add gate by slicing along the first axis specified in ``axes`` and
@@ -296,7 +290,7 @@ class DefaultQutrit(QutritDevice):
             array[complex]: complex array of shape ``[3]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(3**self.num_wires, dtype=np.complex128)
+        state = np.zeros(3 ** self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [3] * self.num_wires)
@@ -378,5 +372,5 @@ class DefaultQutrit(QutritDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
+        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
         return prob

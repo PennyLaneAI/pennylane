@@ -252,12 +252,7 @@ class ControlledQubitUnitary(QubitUnitary):
     """Gradient computation method."""
 
     def __init__(
-        self,
-        *params,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        do_queue=True,
+        self, *params, control_wires=None, wires=None, control_values=None, do_queue=True,
     ):
         if control_wires is None:
             raise ValueError("Must specify control wires")
@@ -513,7 +508,7 @@ class DiagonalQubitUnitary(Operation):
                 new_data = [(x + 0.0j) ** z for x in self.data[0]]
             return [DiagonalQubitUnitary(new_data, wires=self.wires)]
         casted_data = qml.math.cast(self.data[0], np.complex128)
-        return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
+        return [DiagonalQubitUnitary(casted_data ** z, wires=self.wires)]
 
     def _controlled(self, control):
         new_op = DiagonalQubitUnitary(

@@ -206,7 +206,7 @@ class DefaultQubitJax(DefaultQubit):
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.
-            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
+            key = jax.random.PRNGKey(np.random.randint(0, 2 ** 31))
         else:
             key = self._prng_key
         if jnp.ndim(state_probability) == 2:

@@ -78,9 +78,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
         """
         _x = x - x0 - shifts
         return qml.math.tensordot(
-            qml.math.sinc(a * _x) / qml.math.sinc(b * _x),
-            evals,
-            axes=[[0], [0]],
+            qml.math.sinc(a * _x) / qml.math.sinc(b * _x), evals, axes=[[0], [0]],
         )
 
     return _reconstruction

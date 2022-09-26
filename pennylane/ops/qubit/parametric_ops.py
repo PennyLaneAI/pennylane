@@ -822,14 +822,8 @@ class Rot(Operation):
         s = s * one
 
         mat = [
-            [
-                qml.math.exp(-0.5j * (phi + omega)) * c,
-                -qml.math.exp(0.5j * (phi - omega)) * s,
-            ],
-            [
-                qml.math.exp(-0.5j * (phi - omega)) * s,
-                qml.math.exp(0.5j * (phi + omega)) * c,
-            ],
+            [qml.math.exp(-0.5j * (phi + omega)) * c, -qml.math.exp(0.5j * (phi - omega)) * s,],
+            [qml.math.exp(-0.5j * (phi - omega)) * s, qml.math.exp(0.5j * (phi + omega)) * c,],
         ]
 
         return qml.math.stack([stack_last(row) for row in mat], axis=-2)
@@ -979,7 +973,7 @@ class MultiRZ(Operation):
 
         diags = qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
         return diags[:, :, np.newaxis] * qml.math.cast_like(
-            qml.math.eye(2**num_wires, like=diags), diags
+            qml.math.eye(2 ** num_wires, like=diags), diags
         )
 
     def generator(self):

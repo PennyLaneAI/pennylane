@@ -290,7 +290,7 @@ class QNSPSAOptimizer:
                 + np.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
             )
             * tensor_finite_diff
-            / (8 * self.finite_diff_step**2)
+            / (8 * self.finite_diff_step ** 2)
         )
         return metric_tensor
 

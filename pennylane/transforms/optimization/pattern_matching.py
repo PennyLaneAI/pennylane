@@ -25,9 +25,7 @@ from pennylane import apply, adjoint
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
-from pennylane.ops.qubit.attributes import (
-    symmetric_over_all_wires,
-)
+from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 
 # pylint: disable=too-many-statements
 @qfunc_transform
@@ -187,7 +185,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
             raise qml.QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity
-        if not np.allclose(qml.matrix(pattern), np.eye(2**pattern.num_wires)):
+        if not np.allclose(qml.matrix(pattern), np.eye(2 ** pattern.num_wires)):
             raise qml.QuantumFunctionError("Pattern is not valid, it does not implement identity.")
 
         # Verify that the pattern has less qubits or same number of qubits
@@ -1459,10 +1457,7 @@ class MaximalMatches:  # pylint: disable=too-few-public-methods
         """Method that extracts and stores maximal matches in decreasing length order."""
 
         self.max_match_list = [
-            Match(
-                sorted(self.pattern_matches[0].match),
-                self.pattern_matches[0].qubit,
-            )
+            Match(sorted(self.pattern_matches[0].match), self.pattern_matches[0].qubit,)
         ]
 
         for matches in self.pattern_matches[1::]:
@@ -1481,12 +1476,7 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
     """
 
     def __init__(
-        self,
-        circuit_config,
-        template_config,
-        pred_block,
-        qubit_config,
-        template_dag,
+        self, circuit_config, template_config, pred_block, qubit_config, template_dag,
     ):
         self.template_dag = template_dag
         self.circuit_config = circuit_config
@@ -1726,11 +1716,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 )
 
                 config = SubstitutionConfig(
-                    circuit_sublist,
-                    template_sublist_inverse,
-                    [],
-                    current_qubit,
-                    self.template_dag,
+                    circuit_sublist, template_sublist_inverse, [], current_qubit, self.template_dag,
                 )
                 self.substitution_list.append(config)
 
