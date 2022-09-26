@@ -459,7 +459,6 @@ class TestControlledQutritUnitary:
         # Pick random starting state for the control and target qutrits
         starting_state = np.random.normal(size=3 ** (len(control_wires + target_wires)))
         starting_state = starting_state / np.linalg.norm(starting_state)
-        print(np.linalg.norm(starting_state))
         dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
         dev.apply(
             [
