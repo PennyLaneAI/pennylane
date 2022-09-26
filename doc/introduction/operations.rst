@@ -148,6 +148,7 @@ Non-parametrized gates
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
+    ~pennylane.IntegerComparator
     ~pennylane.Barrier
     ~pennylane.WireCut
 

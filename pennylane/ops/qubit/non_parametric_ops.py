@@ -24,6 +24,7 @@ import numpy as np
 
 from scipy import sparse
 from scipy.linalg import block_diag
+from traitlets import Int
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
@@ -2241,6 +2242,112 @@ class MultiControlledX(Operation):
     @property
     def is_hermitian(self):
         return True
+
+
+class IntegerComparator(Operation):
+    r"""
+    TODO:
+    <A really nice doc string>
+    """
+    is_self_inverse = True
+    num_wires = AnyWires
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = None
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        value=None,
+        geq=True,
+        control_wires=None,
+        wires=None,
+        do_queue=True,
+    ):
+
+        if value is None:
+            raise ValueError("Must specify the integer value to compare against.")
+        if not isinstance(value, int):
+            raise ValueError("The comparable value must be an integer.")
+        if wires is None:
+            raise ValueError("Must specify the target wire where the operation acts on.")
+        if control_wires is None:
+            if len(wires) > 1:
+                control_wires = Wires(wires[:-1])
+                wires = Wires(wires[-1])
+            else:
+                raise ValueError(
+                    "IntegerComparator: wrong number of wires. "
+                    f"{len(wires)} wire(s) given. Need at least 2."
+                )
+        else:
+            wires = Wires(wires)
+            control_wires = Wires(control_wires)
+
+            if len(wires) != 1:
+                raise ValueError("IntegerComparator accepts a single target wire.")
+
+        total_wires = control_wires + 1
+
+        self.hyperparameters["value"] = value
+        self.hyperparameters["geq"] = geq
+        self.geq = geq
+
+        super().__init__(wires=total_wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "X"
+
+    # pylint: disable=unused-argument
+    @staticmethod
+    def compute_matrix(
+        value, control_wires, geq=True, **kwargs
+    ):  # pylint: disable=arguments-differ
+        r"""TODO
+        <A great doc string>
+        """
+
+        if value is None:
+            raise ValueError("The value to compare to must be specified.")
+
+        if isinstance(value, int):
+            paulix_mat = qml.PauliX.compute_matrix()
+
+            if geq:  # comparison is i >= value
+                if value > 2 ** len(control_wires) - 1:  # if value exceeds Hilbert space size
+                    mat = np.eye(2 ** (len(control_wires) + 1))
+
+                padding_left = value * 2
+                paulix_padding = (2 ** (len(control_wires) + 1) - padding_left) // 2
+                paulix_blocks = [paulix_mat for _ in range(paulix_padding)]
+                mat = block_diag(np.eye(padding_left), *paulix_blocks)
+
+            else:  # comparison is i < value
+
+                if 2 ** (len(control_wires)) < value:  # if value exceeds Hilbert space size
+                    mat = np.eye(2 ** (len(control_wires) + 1))
+
+                padding_right = (2 ** (len(control_wires)) - value) * 2
+                paulix_padding = (2 ** (len(control_wires) + 1) - padding_right) // 2
+                paulix_blocks = [paulix_mat for _ in range(paulix_padding)]
+                mat = block_diag(*paulix_blocks, np.eye(padding_right))
+
+        else:
+            raise ValueError(
+                "The compared value must be type int. Got type {}.".format(type(value))
+            )
+
+        return mat
+
+    @property
+    def control_wires(self):
+        return self.wires[:~0]
+
+    def adjoint(self):  # TODO
+        return IntegerComparator(value=self.value, geq=self.geq, control_wires=None, wires=None)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
 
 class Barrier(Operation):
