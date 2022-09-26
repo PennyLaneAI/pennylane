@@ -124,6 +124,49 @@ def _extract_shape_dtype_structs(tapes, device):
     return shape_dtypes
 
 
+# marked with no coverage until the JAX interface is implemented
+def _nested_tuples_to_shape_dtype_structs(shape, numeric_type):  # pragma: no-cover
+    """Recursively zip the tuples of shapes and numeric types to create a tuple of
+    jax.ShapeDtypeStruct objects with the same nested structure.
+
+    Assumes that shapes and numeric_type are tuples with the same nested structure"""
+
+    if isinstance(numeric_type, type):
+        # base case
+        return jax.ShapeDtypeStruct(shape, _numeric_type_to_dtype(numeric_type))
+
+    # in any other case, shape and numeric_type will be tuples
+    return tuple(_nested_tuples_to_shape_dtype_structs(s, nt) for s, nt in zip(shape, numeric_type))
+
+
+# marked with no coverage until the JAX interface is implemented
+def _extract_shape_dtype_structs_new(tapes, device):  # pragma: no-cover
+    """
+    The new version of the function to conform to the new return type system, and in
+    particular the changes to ``QuantumTape.shape`` and ``QuantumTape.numeric_type``
+
+    Auxiliary function for defining the jax.ShapeDtypeStruct objects given
+    the tapes and the device.
+
+    The host_callback.call function expects jax.ShapeDtypeStruct objects to
+    describe the output of the function call.
+    """
+    shape_dtypes = []
+
+    for t in tapes:
+        shape = t.shape(device)
+        numeric_type = t.numeric_type
+
+        # having a shot vector means there will be an extra leading dimension in the shape
+        if device.shot_vector is not None:
+            numeric_type = tuple(numeric_type for _ in device._raw_shot_sequence)
+
+        shape_and_dtype = _nested_tuples_to_shape_dtype_structs(shape, numeric_type)
+        shape_dtypes.append(shape_and_dtype)
+
+    return shape_dtypes
+
+
 def _execute(
     params,
     tapes=None,
