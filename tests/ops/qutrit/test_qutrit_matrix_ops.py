@@ -516,7 +516,7 @@ class TestControlledQutritUnitary:
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     def test_matrix_representation_broadcasted(self, tol):
-        """Test that the matrix representation is defined correctly"""
+        """Test that the matrix representation is defined correctly when broadcasting"""
         U1 = unitary_group.rvs(3, random_state=10)
         U2 = unitary_group.rvs(3, random_state=10)
         U3 = unitary_group.rvs(3, random_state=10)
