@@ -2288,6 +2288,7 @@ class IntegerComparator(Operation):
 
         total_wires = control_wires + 1
 
+        self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["value"] = value
         self.hyperparameters["geq"] = geq
         self.geq = geq
