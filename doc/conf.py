@@ -172,8 +172,6 @@ html_static_path = ["_static"]
 # to template names.
 # html_sidebars = {
 #     "**": [
-#         "searchbox.html",
-#         "globaltoc.html",
 #     ]
 # }
 
