@@ -583,7 +583,7 @@ class TestControlledQutritUnitary:
             op.pow(0.12)
 
     def test_noninteger_pow_broadcasted(self):
-        """Test that a ControlledQutritUnitary raised to a non-integer power raises an error."""
+        """Test that a ControlledQutritUnitary raised to a non-integer power raises an error when broadcasting."""
         U1 = unitary_group.rvs(3, random_state=10)
         U = np.array([U1, U1, U1])
 
