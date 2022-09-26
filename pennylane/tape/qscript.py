@@ -85,12 +85,14 @@ class QuantumScript:
 
         from pennylane.qscript import QuantumScript
 
+        prep = [qml.BasisState([1,1], wires=(0,1))]
+
         ops = [qml.RX(0.432, 0),
                qml.RY(0.543, 0),
                qml.CNOT((0,"a")),
                qml.RX(0.133, "a")]
 
-        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], prep)
 
     >>> list(qscript)
     [RX(0.432, wires=[0]),
@@ -327,7 +329,23 @@ class QuantumScript:
                 rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
-    ##### SET METHODS ###############
+    ##### Update METHODS ###############
+
+    def _update(self):
+        """Update all internal tape metadata regarding processed operations and observables"""
+        self._graph = None
+        self._specs = None
+        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
+
+        # The following line requires _par_info to be up to date
+        self._update_trainable_params()  # Updates the _trainable_params; O(1)
+
+        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        self._update_batch_size()  # Updates _batch_size; O(ops)
+
+        # The following line requires _batch_size to be up to date
+        self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def _update_circuit_info(self):
         """Update circuit metadata
@@ -446,22 +464,6 @@ class QuantumScript:
                 self._output_dim += 1
         if self.batch_size:
             self._output_dim *= self.batch_size
-
-    def _update(self):
-        """Update all internal tape metadata regarding processed operations and observables"""
-        self._graph = None
-        self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
-        self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
-
-        # The following line requires _par_info to be up to date
-        self._update_trainable_params()  # Updates the _trainable_params; O(1)
-
-        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        self._update_batch_size()  # Updates _batch_size; O(ops)
-
-        # The following line requires _batch_size to be up to date
-        self._update_output_dim()  # Updates _output_dim; O(obs)
 
     # ========================================================
     # Parameter handling
