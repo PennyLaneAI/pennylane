@@ -284,7 +284,8 @@ class TestQutritUnitary:
         assert np.allclose(res_dynamic, expected)
 
     def test_matrix_representation_broadcasted(self):
-        """Test that the matrix representation is defined correctly"""
+        """Test that the matrix representation is defined correctly for
+        broadcasted matrices"""
         U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]]) * 0.5
         U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
 
@@ -298,6 +299,8 @@ class TestQutritUnitary:
         dev = qml.device("default.qutrit", wires=2)
 
         op = qml.QutritUnitary(U_thadamard_01, wires=1)
+
+        # Controlling 1 qutrit operation with 1 control wire at value "2"
         with qml.tape.QuantumTape() as tape:
             qml.TShift(wires=0)
             qml.TShift(wires=0)
@@ -309,6 +312,8 @@ class TestQutritUnitary:
         expected = np.array([0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
         assert np.allclose(res, expected)
 
+        # Controlling 1 qutrit operation with 1 control wire at value "2" when
+        # control wire is not in "2" state
         dev.reset()
         with qml.tape.QuantumTape() as tape:
             op._controlled(wire=0)
@@ -319,6 +324,7 @@ class TestQutritUnitary:
         expected = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0])
         assert np.allclose(res, expected)
 
+        # Controlling 1 qutrit operation with 1 control wire at value "1"
         dev.reset()
         with qml.tape.QuantumTape() as tape:
             qml.TShift(wires=0)
@@ -328,6 +334,31 @@ class TestQutritUnitary:
         res = dev.execute(tape)
 
         expected = np.array([0, 0, 0, 1, 0, 0, 0, 0, 0])
+        assert np.allclose(res, expected)
+
+        # # Controlling 1 qutrit operation with 1 control wire at value "1"
+        # # using `qml.ctrl`
+        # dev.reset()
+        # with qml.tape.QuantumTape() as tape:
+        #     qml.TShift(wires=0)
+        #     qml.ctrl(op, 0, control_values="1")
+        #     qml.state()
+
+        res = dev.execute(tape)
+
+        expected = np.array([0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
+        assert np.allclose(res, expected)
+
+        # # Controlling when the control wire is in a superposition
+        # dev.reset()
+        # with qml.tape.QuantumTape() as tape:
+        #     qml.QutritUnitary(U_thadamard_01, wires=0)
+        #     qml.ctrl(op, 0, control_values="1")
+        #     qml.state()
+
+        res = dev.execute(tape)
+
+        expected = np.array([1 / np.sqrt(2), 0, 0, 0.5, 0.5, 0, 0, 0, 0])
         assert np.allclose(res, expected)
 
 
@@ -474,6 +505,9 @@ class TestControlledQutritUnitary:
 
         dev.reset()
         dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
+
+        # Find which wires are controlled on "1" and "0", and shift the state of the device
+        # accordingly to apply the controls, and then undo them after the controlled operation
         one_locations = [x for x in range(len(control_values)) if control_values[x] == "1"]
         zero_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
 
@@ -593,6 +627,8 @@ class TestControlledQutritUnitary:
             op.pow(0.12)
 
     def test_controlled(self):
+        """Test that adding a control to a `ControlledQutritUnitary` operation using `_controlled` behaves
+        as expected"""
         dev = qml.device("default.qutrit", wires=3)
 
         op = qml.ControlledQutritUnitary(U_thadamard_01, control_wires=1, wires=2)

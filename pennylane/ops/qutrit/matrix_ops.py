@@ -283,7 +283,7 @@ class ControlledQutritUnitary(QutritUnitary):
                 )
 
             # Make sure all values are either 0 or 1 or 2
-            if any(x not in ["0", "1", "2"] for x in control_values):
+            if not set(control_values).issubset({"0", "1", "2"}):
                 raise ValueError("String of control values can contain only '0' or '1' or '2'.")
 
             control_int = int(control_values, 3)
@@ -316,7 +316,8 @@ class ControlledQutritUnitary(QutritUnitary):
         return super().pow(z)
 
     def _controlled(self, wire):
-        ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQutritUnitary(
+        ctrl_wires = self.control_wires + wire
+        new_op = ControlledQutritUnitary(
             *self.parameters, control_wires=ctrl_wires, wires=self.hyperparameters["u_wires"]
         )
+        return new_op.inv() if self.inverse else new_op
