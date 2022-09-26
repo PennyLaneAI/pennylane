@@ -24,7 +24,6 @@ import numpy as np
 
 from scipy import sparse
 from scipy.linalg import block_diag
-from traitlets import Int
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
@@ -2343,7 +2342,7 @@ class IntegerComparator(Operation):
     def control_wires(self):
         return self.wires[:~0]
 
-    def adjoint(self):  # TODO
+    def adjoint(self):
         return IntegerComparator(value=self.value, geq=self.geq, control_wires=None, wires=None)
 
     def pow(self, z):
