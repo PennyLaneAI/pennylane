@@ -1060,44 +1060,50 @@ class TestIntegerComparator:
         "value,geq,control_wires,wires,expected_warning_message",
         [
             (None, True, None, None, "Must specify the integer value to compare against."),
-            (4.20, False, None, [0,1,2], "The comparable value must be an integer."),
+            (4.20, False, None, [0, 1, 2], "The comparable value must be an integer."),
             (2, True, None, None, "Must specify the target wire where the operation acts on."),
-            (2, True, None, [1], r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2." ),
-            ()
+            (
+                2,
+                True,
+                None,
+                [1],
+                r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
+            ),
+            (),
         ],
     )
-
     def test_compute_matrix_geq_True(self):
         """Test compute_matrix for geq=True"""
-        mat1 = qml.IntegerComparator.compute_matrix(2, [0,1], geq=True)
-        mat2 = np.zeros((8,8))
+        mat1 = qml.IntegerComparator.compute_matrix(2, [0, 1], geq=True)
+        mat2 = np.zeros((8, 8))
 
-        mat2[0,0] = 1
-        mat2[1,1] = 1
-        mat2[2,2] = 1
-        mat2[3,3] = 1
-        mat2[4,5] = 1
-        mat2[5,4] = 1
-        mat2[6,7] = 1
-        mat2[7,6] = 1
+        mat2[0, 0] = 1
+        mat2[1, 1] = 1
+        mat2[2, 2] = 1
+        mat2[3, 3] = 1
+        mat2[4, 5] = 1
+        mat2[5, 4] = 1
+        mat2[6, 7] = 1
+        mat2[7, 6] = 1
 
         assert np.allclose(mat1, mat2)
 
     def test_compute_matrix_geq_False(self):
         """Test compute_matrix for geq=False"""
-        mat1 = qml.IntegerComparator.compute_matrix(2, [0,1], geq=False)
-        mat2 = np.zeros((8,8))
+        mat1 = qml.IntegerComparator.compute_matrix(2, [0, 1], geq=False)
+        mat2 = np.zeros((8, 8))
 
-        mat2[0,1] = 1
-        mat2[1,0] = 1
-        mat2[2,3] = 1
-        mat2[3,2] = 1
-        mat2[4,4] = 1
-        mat2[5,5] = 1
-        mat2[6,6] = 1
-        mat2[7,7] = 1
+        mat2[0, 1] = 1
+        mat2[1, 0] = 1
+        mat2[2, 3] = 1
+        mat2[3, 2] = 1
+        mat2[4, 4] = 1
+        mat2[5, 5] = 1
+        mat2[6, 6] = 1
+        mat2[7, 7] = 1
 
         assert np.allclose(mat1, mat2)
+
 
 period_two_ops = (
     qml.PauliX(0),
@@ -1355,8 +1361,8 @@ control_data = [
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
-    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4], Wires([0, 1, 2, 3]))),
-    (qml.IntegerComparator(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3]))
+    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
+    (qml.IntegerComparator(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
 
