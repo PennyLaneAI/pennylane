@@ -1057,7 +1057,7 @@ class TestIntegerComparator:
             )
 
     @pytest.mark.parametrize(
-        "value,geq,control_wires,wires,expected_warning_message",
+        "value,geq,control_wires,wires,expected_error_message",
         [
             (None, True, None, None, "Must specify the integer value to compare against."),
             (4.20, False, None, [0, 1, 2], "The comparable value must be an integer."),
