@@ -336,30 +336,26 @@ class TestQutritUnitary:
         expected = np.array([0, 0, 0, 1, 0, 0, 0, 0, 0])
         assert np.allclose(res, expected)
 
-        # # Controlling 1 qutrit operation with 1 control wire at value "1"
-        # # using `qml.ctrl`
-        # dev.reset()
-        # with qml.tape.QuantumTape() as tape:
-        #     qml.TShift(wires=0)
-        #     qml.ctrl(op, 0, control_values="1")
-        #     qml.state()
+        # Controlling 2-qutrit operation
+        dev = qml.device("default.qutrit", wires=3)
+        op = qml.QutritUnitary(TSWAP, wires=[0, 1])
 
-        res = dev.execute(tape)
+        with qml.tape.QuantumTape() as tape:
+            qml.QutritUnitary(U_thadamard_01, wires=0)
+            qml.TShift(wires=2)
+            qml.TShift(wires=2)
+            op._controlled(wire=2)
+            qml.state()
 
-        expected = np.array([0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
-        assert np.allclose(res, expected)
+            res = dev.execute(tape)
 
-        # # Controlling when the control wire is in a superposition
-        # dev.reset()
-        # with qml.tape.QuantumTape() as tape:
-        #     qml.QutritUnitary(U_thadamard_01, wires=0)
-        #     qml.ctrl(op, 0, control_values="1")
-        #     qml.state()
+            expected = np.zeros(27)
+            expected[2] = 1 / np.sqrt(2)
+            expected[5] = 1 / np.sqrt(2)
 
-        res = dev.execute(tape)
+            assert np.allclose(res, expected)
 
-        expected = np.array([1 / np.sqrt(2), 0, 0, 0.5, 0.5, 0, 0, 0, 0])
-        assert np.allclose(res, expected)
+        # TODO: Add more cases once qml.ctrl works with qutrits
 
 
 class TestControlledQutritUnitary:
@@ -631,6 +627,7 @@ class TestControlledQutritUnitary:
         as expected"""
         dev = qml.device("default.qutrit", wires=3)
 
+        # Testing that a one-qutrit operation controlled on 1 wire with an added control works correctly
         op = qml.ControlledQutritUnitary(U_thadamard_01, control_wires=1, wires=2)
         with qml.tape.QuantumTape() as tape:
             qml.TShift(wires=1)
@@ -647,6 +644,7 @@ class TestControlledQutritUnitary:
         expected[25] = 1 / np.sqrt(2)
         assert np.allclose(res, expected)
 
+        # Test that adding more controls in the |0> state doesn't do anything
         dev.reset()
         with qml.tape.QuantumTape() as tape:
             op._controlled(wire=0)
@@ -658,6 +656,7 @@ class TestControlledQutritUnitary:
         expected[0] = 1
         assert np.allclose(res, expected)
 
+        # Test that adding more controls in the |1> state doesn't do anything
         dev.reset()
         with qml.tape.QuantumTape() as tape:
             qml.TShift(wires=0)
@@ -669,6 +668,29 @@ class TestControlledQutritUnitary:
         expected = np.zeros(27)
         expected[9] = 1
         assert np.allclose(res, expected)
+
+        dev = qml.device("default.qutrit", wires=4)
+
+        op = qml.ControlledQutritUnitary(TSWAP, control_wires=2, wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QutritUnitary(U_thadamard_01, wires=0)
+            qml.TShift(wires=2)
+            qml.TShift(wires=2)
+            qml.TShift(wires=3)
+            qml.TShift(wires=3)
+            op._controlled(wire=3)
+            qml.state()
+
+            res = dev.execute(tape)
+
+            expected = np.zeros(81)
+            expected[8] = 1 / np.sqrt(2)
+            expected[17] = 1 / np.sqrt(2)
+
+            assert np.allclose(res, expected)
+
+        # TODO: Add more cases once qml.ctrl works with qutrits
 
 
 label_data = [
