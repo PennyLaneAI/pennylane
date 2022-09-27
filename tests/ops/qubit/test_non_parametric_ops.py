@@ -1072,6 +1072,19 @@ class TestIntegerComparator:
             (),
         ],
     )
+    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
+    def test_invalid_mixed_polarity_controls(
+        self, value, geq, control_wires, wires, expected_error_message
+    ):
+        """Test if IntegerComparator properly handles invalid mixed-polarity
+        control values."""
+        target_wires = wires
+
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.IntegerComparator(
+                value, geq=geq, control_wires=control_wires, wires=target_wires
+            ).matrix()
+
     def test_compute_matrix_geq_True(self):
         """Test compute_matrix for geq=True"""
         mat1 = qml.IntegerComparator.compute_matrix(2, [0, 1], geq=True)
@@ -1118,7 +1131,7 @@ period_two_ops = (
     qml.ECR(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(wires=(0, 1, 2, 3))
+    qml.MultiControlledX(wires=(0, 1, 2, 3)),
 )
 
 
@@ -1359,7 +1372,7 @@ control_data = [
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
-    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3]))
+    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
 
