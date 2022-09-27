@@ -1376,6 +1376,7 @@ label_data = [
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
+    (qml.IntegerComparator(2, wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
 ]
@@ -1408,6 +1409,7 @@ control_data = [
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
+    (qml.IntegerComparator(2, wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
 
@@ -1432,6 +1434,7 @@ involution_ops = [  # ops who are their own inverses
     qml.CSWAP((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
+    qml.IntegerComparator(2, wires=(0, 1, 2, 3)),
     qml.Barrier(0),
     qml.WireCut(0),
 ]
