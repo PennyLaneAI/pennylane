@@ -1060,8 +1060,8 @@ class TestIntegerComparator:
         "value,geq,control_wires,wires,expected_warning_message",
         [
             (None, True, None, None, "Must specify the integer value to compare against."),
-            (4.20, False, None, [0,1,2] "The comparable value must be an integer."),
-            (2, True, None, None "Must specify the target wire where the operation acts on."),
+            (4.20, False, None, [0,1,2], "The comparable value must be an integer."),
+            (2, True, None, None, "Must specify the target wire where the operation acts on."),
             (2, True, None, [1], r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2." ),
             ()
         ],
