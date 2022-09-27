@@ -2376,20 +2376,21 @@ class IntegerComparator(Operation):
                 if value > 2 ** len(control_wires) - 1:  # if value exceeds Hilbert space size
                     mat = np.eye(2 ** (len(control_wires) + 1))
 
-                padding_left = value * 2
-                paulix_padding = (2 ** (len(control_wires) + 1) - padding_left) // 2
-                paulix_blocks = [paulix_mat for _ in range(paulix_padding)]
-                mat = block_diag(np.eye(padding_left), *paulix_blocks)
+                else:
+                    padding_left = value * 2
+                    paulix_padding = (2 ** (len(control_wires) + 1) - padding_left) // 2
+                    paulix_blocks = [paulix_mat for _ in range(paulix_padding)]
+                    mat = block_diag(np.eye(padding_left), *paulix_blocks)
 
             else:  # comparison is i < value
-
-                if 2 ** (len(control_wires)) < value:  # if value exceeds Hilbert space size
+                if value == 0:  # if value exceeds Hilbert space size
                     mat = np.eye(2 ** (len(control_wires) + 1))
 
-                padding_right = (2 ** (len(control_wires)) - value) * 2
-                paulix_padding = (2 ** (len(control_wires) + 1) - padding_right) // 2
-                paulix_blocks = [paulix_mat for _ in range(paulix_padding)]
-                mat = block_diag(*paulix_blocks, np.eye(padding_right))
+                else:
+                    padding_right = (2 ** (len(control_wires)) - value) * 2
+                    paulix_padding = (2 ** (len(control_wires) + 1) - padding_right) // 2
+                    paulix_blocks = [paulix_mat for _ in range(paulix_padding)]
+                    mat = block_diag(*paulix_blocks, np.eye(padding_right))
 
         else:
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")

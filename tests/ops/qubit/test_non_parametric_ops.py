@@ -1069,6 +1069,7 @@ class TestIntegerComparator:
                 [1],
                 r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
             ),
+            (4, True, [0, 1], [2, 3, "IntegerComparator accepts a single target wire."]),
         ],
     )
     @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
@@ -1113,6 +1114,43 @@ class TestIntegerComparator:
         mat2[5, 5] = 1
         mat2[6, 6] = 1
         mat2[7, 7] = 1
+
+        assert np.allclose(mat1, mat2)
+
+    def test_no_control_wires(self):
+        """Test functionality when no control wires are given."""
+
+        mat1 = qml.IntegerComparator(value=3, geq=False, wires=[0, 1, 2]).matrix()
+        mat2 = qml.IntegerComparator(value=3, geq=False, control_wires=[0, 1], wires=[2]).matrix()
+
+        assert np.allclose(mat1, mat2)
+
+    @pytest.mark.parametrize(
+        "value,control_wires,geq,expected_error_message",
+        [
+            (None, [0, 1], True, "The value to compare to must be specified."),
+            (4.20, [0, 1], False, "The compared value must be an int. Got <class 'float'>."),
+        ],
+    )
+    def test_invalid_args_compute_matrix(self, value, control_wires, geq, expected_error_message):
+        """Test if compute_matrix properly handles invalid arguments."""
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.IntegerComparator.compute_matrix(value, control_wires, geq=geq)
+
+    def test_compute_matrix_large_value(self):
+        """Test if compute_matrix properly handles values exceeding the Hilbert space of the control
+        wires."""
+
+        mat1 = qml.IntegerComparator.compute_matrix(10, [0, 1], geq=True)
+        mat2 = np.eye(8)
+
+        assert np.allclose(mat1, mat2)
+
+    def test_compute_matrix_value_zero(self):
+        """Test if compute_matrix properly handles value=0 when geq=False."""
+
+        mat1 = qml.IntegerComparator.compute_matrix(0, [0, 1], geq=False)
+        mat2 = np.eye(8)
 
         assert np.allclose(mat1, mat2)
 
