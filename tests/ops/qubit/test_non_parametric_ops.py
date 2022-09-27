@@ -1052,9 +1052,7 @@ class TestIntegerComparator:
     ):
         target_wires = wires
         with pytest.warns(UserWarning, match=expected_warning_message):
-            qml.IntegerComparator(
-                value=value, geq=geq, control_wires=control_wires, wires=target_wires
-            )
+            qml.IntegerComparator(value, geq=geq, control_wires=control_wires, wires=target_wires)
 
     @pytest.mark.parametrize(
         "value,geq,control_wires,wires,expected_error_message",
@@ -1120,8 +1118,8 @@ class TestIntegerComparator:
     def test_no_control_wires(self):
         """Test functionality when no control wires are given."""
 
-        mat1 = qml.IntegerComparator(value=3, geq=False, wires=[0, 1, 2]).matrix()
-        mat2 = qml.IntegerComparator(value=3, geq=False, control_wires=[0, 1], wires=[2]).matrix()
+        mat1 = qml.IntegerComparator(3, geq=False, wires=[0, 1, 2]).matrix()
+        mat2 = qml.IntegerComparator(3, geq=False, control_wires=[0, 1], wires=[2]).matrix()
 
         assert np.allclose(mat1, mat2)
 

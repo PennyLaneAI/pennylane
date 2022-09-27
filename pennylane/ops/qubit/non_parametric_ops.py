@@ -2275,7 +2275,7 @@ class IntegerComparator(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        value=None,
+        value,
         geq=True,
         control_wires=None,
         wires=None,
