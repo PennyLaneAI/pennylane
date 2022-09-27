@@ -2392,7 +2392,7 @@ class IntegerComparator(Operation):
                 mat = block_diag(*paulix_blocks, np.eye(padding_right))
 
         else:
-            raise ValueError("The compared value must be an int. Got {}.".format(type(value)))
+            raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
         return mat
 
