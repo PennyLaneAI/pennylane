@@ -40,6 +40,29 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
         1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
 
+* The `IntegerComparator` operation is now available.
+
+  Given a basis state :math:`\vert \sigma \rangle`, where :math:`\sigma \in \mathbb{N}`, and a fixed positive
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`\sigma \geq L`. 
+  Alternatively, the flipping condition can be :math:`\sigma < L`. This is accessed via the `geq` keyword
+  argument.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([0,1]), wires=range(2))
+      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
+      qml.IntegerComparator(value=2, geq=False, wires=[0,1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+  ```
+
 <h3>Improvements</h3>
 
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate

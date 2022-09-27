@@ -2244,9 +2244,27 @@ class MultiControlledX(Operation):
 
 
 class IntegerComparator(Operation):
-    r"""
-    TODO:
-    <A really nice doc string>
+    r"""IntegerComparator(value, geq, control_wires, wires)
+    Apply a Pauli X gate controlled on the following condition:
+
+    Given a basis state :math:`\vert \sigma \rangle`, where :math:`\sigma \in \mathbb{N}`, and a fixed positive
+    integer :math:`L`, flip a target qubit if :math:`\sigma \geq L`. Alternatively, the flipping condition can
+    be :math:`\sigma < L`.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 0
+    * Gradient recipe: None
+
+    Args:
+        value (int): The value :math:`L` that the state's decimal representation is compared against.
+        geq (bool): If set to `True`, the comparison made will be :math:`\sigma \geq L`. If `False`, the comparison
+            made will be :math:`\sigma < L`.
+        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
+            Now users should use "wires" to indicate both the control wires and the target wire.
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
+            the operation acts on.
     """
     is_self_inverse = True
     num_wires = AnyWires
@@ -2286,7 +2304,7 @@ class IntegerComparator(Operation):
             if len(wires) != 1:
                 raise ValueError("IntegerComparator accepts a single target wire.")
 
-        total_wires = control_wires + 1
+        total_wires = control_wires + wires
 
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["value"] = value
@@ -2303,8 +2321,42 @@ class IntegerComparator(Operation):
     def compute_matrix(
         value, control_wires, geq=True, **kwargs
     ):  # pylint: disable=arguments-differ
-        r"""TODO
-        <A great doc string>
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.IntegerComparator.matrix`
+
+        Args:
+            value (int): The value :math:`L` that the state's decimal representation is compared against.
+            control_wires (Union[Wires, Sequence[int], or int]): wires to place controls on
+            geq (bool): If set to `True`, the comparison made will be :math:`\sigma \geq L`. If `False`, the comparison
+                made will be :math:`\sigma < L`.
+
+        Returns:
+           tensor_like: matrix representation
+
+        **Example**
+
+        >>> print(qml.IntegerComparator.compute_matrix(2, [0,1]))
+        [[1. 0. 0. 0. 0. 0. 0. 0.]
+         [0. 1. 0. 0. 0. 0. 0. 0.]
+         [0. 0. 1. 0. 0. 0. 0. 0.]
+         [0. 0. 0. 1. 0. 0. 0. 0.]
+         [0. 0. 0. 0. 0. 1. 0. 0.]
+         [0. 0. 0. 0. 1. 0. 0. 0.]
+         [0. 0. 0. 0. 0. 0. 0. 1.]
+         [0. 0. 0. 0. 0. 0. 1. 0.]]
+        >>> print(qml.IntegerComparator.compute_matrix(2, [0,1], geq=False))
+        [[0. 1. 0. 0. 0. 0. 0. 0.]
+         [1. 0. 0. 0. 0. 0. 0. 0.]
+         [0. 0. 0. 1. 0. 0. 0. 0.]
+         [0. 0. 1. 0. 0. 0. 0. 0.]
+         [0. 0. 0. 0. 1. 0. 0. 0.]
+         [0. 0. 0. 0. 0. 1. 0. 0.]
+         [0. 0. 0. 0. 0. 0. 1. 0.]
+         [0. 0. 0. 0. 0. 0. 0. 1.]]
         """
 
         if value is None:
@@ -2333,9 +2385,7 @@ class IntegerComparator(Operation):
                 mat = block_diag(*paulix_blocks, np.eye(padding_right))
 
         else:
-            raise ValueError(
-                "The compared value must be type int. Got type {}.".format(type(value))
-            )
+            raise ValueError("The compared value must be an int. Got {}.".format(type(value)))
 
         return mat
 
