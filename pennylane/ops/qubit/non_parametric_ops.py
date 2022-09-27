@@ -2317,6 +2317,7 @@ class IntegerComparator(Operation):
         self.hyperparameters["value"] = value
         self.hyperparameters["geq"] = geq
         self.geq = geq
+        self.value = value
 
         super().__init__(wires=total_wires, do_queue=do_queue)
 
@@ -2402,7 +2403,7 @@ class IntegerComparator(Operation):
         return self.wires[:~0]
 
     def adjoint(self):
-        return IntegerComparator(value=self.value, geq=self.geq, control_wires=None, wires=None)
+        return IntegerComparator(self.value, geq=self.geq, control_wires=None, wires=None)
 
     def pow(self, z):
         return super().pow(z % 2)
