@@ -1167,6 +1167,7 @@ period_two_ops = (
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
+    qml.IntegerComparator(4, wires=[0, 1, 2, 3]),
 )
 
 
