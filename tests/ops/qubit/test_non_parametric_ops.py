@@ -1118,8 +1118,7 @@ period_two_ops = (
     qml.ECR(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(wires=(0, 1, 2, 3)),
-    qml.IntegerComparator(wires=(0, 1, 2, 3)),
+    qml.MultiControlledX(wires=(0, 1, 2, 3))
 )
 
 
@@ -1329,7 +1328,6 @@ label_data = [
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
-    (qml.IntegerComparator(wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
 ]
@@ -1361,8 +1359,7 @@ control_data = [
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
-    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
-    (qml.IntegerComparator(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
+    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3]))
 ]
 
 
@@ -1387,7 +1384,6 @@ involution_ops = [  # ops who are their own inverses
     qml.CSWAP((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
-    qml.IntegerComparator(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
     qml.WireCut(0),
 ]
