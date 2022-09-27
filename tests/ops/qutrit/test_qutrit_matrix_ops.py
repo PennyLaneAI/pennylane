@@ -295,67 +295,18 @@ class TestQutritUnitary:
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
 
-    def test_controlled(self):
-        dev = qml.device("default.qutrit", wires=2)
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_controlled(self, inverse):
+        """Test QutritUnitary's controlled method."""
+        U = U_thadamard_01
+        base = qml.QutritUnitary(U, wires=0)
+        base.inverse = inverse
 
-        op = qml.QutritUnitary(U_thadamard_01, wires=1)
+        expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
+        expected.inverse = inverse
 
-        # Controlling 1 qutrit operation with 1 control wire at value "2"
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=0)
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.array([0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
-        assert np.allclose(res, expected)
-
-        # Controlling 1 qutrit operation with 1 control wire at value "2" when
-        # control wire is not in "2" state
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0])
-        assert np.allclose(res, expected)
-
-        # Controlling 1 qutrit operation with 1 control wire at value "1"
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.array([0, 0, 0, 1, 0, 0, 0, 0, 0])
-        assert np.allclose(res, expected)
-
-        # Controlling 2-qutrit operation
-        dev = qml.device("default.qutrit", wires=3)
-        op = qml.QutritUnitary(TSWAP, wires=[0, 1])
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QutritUnitary(U_thadamard_01, wires=0)
-            qml.TShift(wires=2)
-            qml.TShift(wires=2)
-            op._controlled(wire=2)
-            qml.state()
-
-            res = dev.execute(tape)
-
-            expected = np.zeros(27)
-            expected[2] = 1 / np.sqrt(2)
-            expected[5] = 1 / np.sqrt(2)
-
-            assert np.allclose(res, expected)
-
-        # TODO: Add more cases once qml.ctrl works with qutrits
+        out = base._controlled("a")
+        assert qml.equal(out, expected)
 
 
 class TestControlledQutritUnitary:
@@ -623,75 +574,19 @@ class TestControlledQutritUnitary:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
 
-    def test_controlled(self):
-        """Test that adding a control to a `ControlledQutritUnitary` operation using `_controlled` behaves
-        as expected"""
-        dev = qml.device("default.qutrit", wires=3)
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_controlled(self, inverse):
+        """Test the _controlled method for ControlledQutritUnitary."""
 
-        # Testing that a one-qutrit operation controlled on 1 wire with an added control works correctly
-        op = qml.ControlledQutritUnitary(U_thadamard_01, control_wires=1, wires=2)
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=1)
-            qml.TShift(wires=1)
-            qml.TShift(wires=0)
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
+        U = TSWAP
 
-        res = dev.execute(tape)
+        original = qml.ControlledQutritUnitary(U, control_wires=(0, 1), wires=[4, 2])
+        original.inverse = inverse
+        expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
+        expected.inverse = inverse
 
-        expected = np.zeros(27)
-        expected[24] = 1 / np.sqrt(2)
-        expected[25] = 1 / np.sqrt(2)
-        assert np.allclose(res, expected)
-
-        # Test that adding more controls in the |0> state doesn't do anything
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.zeros(27)
-        expected[0] = 1
-        assert np.allclose(res, expected)
-
-        # Test that adding more controls in the |1> state doesn't do anything
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.zeros(27)
-        expected[9] = 1
-        assert np.allclose(res, expected)
-
-        dev = qml.device("default.qutrit", wires=4)
-
-        op = qml.ControlledQutritUnitary(TSWAP, control_wires=2, wires=[0, 1])
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QutritUnitary(U_thadamard_01, wires=0)
-            qml.TShift(wires=2)
-            qml.TShift(wires=2)
-            qml.TShift(wires=3)
-            qml.TShift(wires=3)
-            op._controlled(wire=3)
-            qml.state()
-
-            res = dev.execute(tape)
-
-            expected = np.zeros(81)
-            expected[8] = 1 / np.sqrt(2)
-            expected[17] = 1 / np.sqrt(2)
-
-            assert np.allclose(res, expected)
-
-        # TODO: Add more cases once qml.ctrl works with qutrits
+        out = original._controlled("a")
+        assert qml.equal(out, expected)
 
 
 label_data = [
