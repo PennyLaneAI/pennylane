@@ -2301,6 +2301,13 @@ class IntegerComparator(Operation):
             wires = Wires(wires)
             control_wires = Wires(control_wires)
 
+            warnings.warn(
+                "The control_wires keyword will be removed soon. "
+                "Use wires = (control_wires, target_wire) instead. "
+                "See the documentation for more information.",
+                category=UserWarning,
+            )
+
             if len(wires) != 1:
                 raise ValueError("IntegerComparator accepts a single target wire.")
 
