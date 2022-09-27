@@ -2406,7 +2406,6 @@ class IntegerComparator(Operation):
         return IntegerComparator(
             self.value,
             geq=self.geq,
-            control_wires=self.hyperparameters["control_wires"],
             wires=self.wires,
         )
 
