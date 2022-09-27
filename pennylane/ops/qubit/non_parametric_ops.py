@@ -2403,7 +2403,12 @@ class IntegerComparator(Operation):
         return self.wires[:~0]
 
     def adjoint(self):
-        return IntegerComparator(self.value, geq=self.geq, control_wires=None, wires=None)
+        return IntegerComparator(
+            self.value,
+            geq=self.geq,
+            control_wires=self.hyperparameters["control_values"],
+            wires=self.wires,
+        )
 
     def pow(self, z):
         return super().pow(z % 2)
