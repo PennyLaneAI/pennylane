@@ -98,6 +98,7 @@ ops = {
     "OrbitalRotation",
     "Barrier",
     "WireCut",
+    "Patata",
 }
 
 

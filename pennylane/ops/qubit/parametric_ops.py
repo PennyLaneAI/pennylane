@@ -42,6 +42,22 @@ def _can_replace(x, y):
     """
     return (not qml.math.requires_grad(x)) and qml.math.allclose(x, y)
 
+class Patata(Operation):
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    _queue_category = "_ops"
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "P"
+
+    def __init__(self, measurements, wires, do_queue=True, id=None):
+        super().__init__(measurements, wires=wires, do_queue=do_queue, id=id)
+
 
 class RX(Operation):
     r"""

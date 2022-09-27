@@ -145,6 +145,7 @@ class DefaultQubit(QubitDevice):
         "OrbitalRotation",
         "QFT",
         "ECR",
+        "Patata",
     }
 
     observables = {
@@ -186,6 +187,7 @@ class DefaultQubit(QubitDevice):
             "SWAP": self._apply_swap,
             "CZ": self._apply_cz,
             "Toffoli": self._apply_toffoli,
+            "Patata": self._apply_patata,
         }
 
     @property
@@ -280,7 +282,7 @@ class DefaultQubit(QubitDevice):
         if operation.__class__.__name__ in self._apply_ops:
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
-            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse, data = operation.data)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
@@ -307,6 +309,24 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
+        return self._roll(state, 1, axes[0])
+
+    def _apply_patata(self, state, axes,  **kwargs):
+        """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
+
+        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
+        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
+        the last index loops back to the first, :math:`|1 \rangle` is transformed to
+        :math:`|0\rangle`.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
+        """
+        print("hhahah", kwargs)
         return self._roll(state, 1, axes[0])
 
     def _apply_y(self, state, axes, **kwargs):
