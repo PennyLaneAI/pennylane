@@ -1069,7 +1069,7 @@ class TestIntegerComparator:
                 [1],
                 r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
             ),
-            (4, True, [0, 1], [2, 3, "IntegerComparator accepts a single target wire."]),
+            (4, True, [0, 1], [2, 3], "IntegerComparator accepts a single target wire."),
         ],
     )
     @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
