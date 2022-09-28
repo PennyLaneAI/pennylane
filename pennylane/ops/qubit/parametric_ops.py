@@ -44,7 +44,7 @@ def _can_replace(x, y):
 
 class Patata(Operation):
 
-    num_wires = AnyWires
+    num_wires = 1
     """int: Number of wires that the operator acts on."""
 
     num_params = 1

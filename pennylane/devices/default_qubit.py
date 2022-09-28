@@ -326,8 +326,28 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        print("hhahah", kwargs)
-        return self._roll(state, 1, axes[0])
+
+        meas = kwargs["data"][0]
+
+        final_state = state.copy()
+
+
+        ndim = self._ndim(state)
+
+        def binary(num, lenght):
+            return [int(i) for i in list('{0:0b}'.format(2 ** lenght + num))[1:]]
+
+        for i in range(2**ndim):
+            lista = binary(i, ndim)
+            if lista[axes[0]] == 1-meas:
+                code = f"""final_state{str(lista)}=0"""
+                exec(code)
+
+
+
+        norm = np.sqrt(np.concatenate(abs(final_state)**2).sum())
+        final_state /= norm
+        return final_state
 
     def _apply_y(self, state, axes, **kwargs):
         """Applies a PauliY gate by adding a negative sign to the 1 index along the axis specified
