@@ -2277,7 +2277,6 @@ class IntegerComparator(Operation):
         self,
         value,
         geq=True,
-        control_wires=None,
         wires=None,
         do_queue=True,
     ):
@@ -2288,35 +2287,20 @@ class IntegerComparator(Operation):
             raise ValueError("The comparable value must be an integer.")
         if wires is None:
             raise ValueError("Must specify the target wire where the operation acts on.")
-        if control_wires is None:
-            if len(wires) > 1:
-                control_wires = Wires(wires[:-1])
-                wires = Wires(wires[-1])
-            else:
-                raise ValueError(
-                    "IntegerComparator: wrong number of wires. "
-                    f"{len(wires)} wire(s) given. Need at least 2."
-                )
+        if len(wires) > 1:
+            control_wires = Wires(wires[:-1])
+            wires = Wires(wires[-1])
         else:
-            wires = Wires(wires)
-            control_wires = Wires(control_wires)
-
-            warnings.warn(
-                "The control_wires keyword will be removed soon. "
-                "Use wires = (control_wires, target_wire) instead. "
-                "See the documentation for more information.",
-                category=UserWarning,
+            raise ValueError(
+                "IntegerComparator: wrong number of wires. "
+                f"{len(wires)} wire(s) given. Need at least 2."
             )
-
-            if len(wires) != 1:
-                raise ValueError("IntegerComparator accepts a single target wire.")
 
         total_wires = control_wires + wires
 
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["value"] = value
         self.hyperparameters["geq"] = geq
-        self.geq = geq
         self.value = value
 
         super().__init__(wires=total_wires, do_queue=do_queue)
@@ -2327,7 +2311,7 @@ class IntegerComparator(Operation):
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        value, control_wires, geq=True, **kwargs
+        value=None, control_wires=None, geq=True, **kwargs
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2369,7 +2353,8 @@ class IntegerComparator(Operation):
 
         if value is None:
             raise ValueError("The value to compare to must be specified.")
-
+        if control_wires is None:
+            raise ValueError("Must specify the control wires.")
         if isinstance(value, int):
             paulix_mat = qml.PauliX.compute_matrix()
 
@@ -2403,11 +2388,7 @@ class IntegerComparator(Operation):
         return self.wires[:~0]
 
     def adjoint(self):
-        return IntegerComparator(
-            self.value,
-            geq=self.geq,
-            wires=self.wires,
-        )
+        return copy(self).queue()
 
     def pow(self, z):
         return super().pow(z % 2)

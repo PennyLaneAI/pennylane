@@ -1039,53 +1039,30 @@ class TestMultiControlledX:
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
-    X = np.array([[0, 1], [1, 0]])
-
-    @pytest.mark.parametrize(
-        "value,geq,control_wires,wires,expected_warning_message",
-        [
-            (2, True, [0, 1], [2], "The control_wires keyword will be removed soon."),
-        ],
-    )
-    def test_warning_depractation_controlwires(
-        self, value, geq, control_wires, wires, expected_warning_message
-    ):
-        target_wires = wires
-        with pytest.warns(UserWarning, match=expected_warning_message):
-            qml.IntegerComparator(value, geq=geq, control_wires=control_wires, wires=target_wires)
-
     @pytest.mark.parametrize(
         "value,geq,control_wires,wires,expected_error_message",
         [
-            (None, True, None, None, "Must specify the integer value to compare against."),
-            (4.20, False, None, [0, 1, 2], "The comparable value must be an integer."),
-            (2, True, None, None, "Must specify the target wire where the operation acts on."),
+            (None, True, None, "Must specify the integer value to compare against."),
+            (4.20, False, [0, 1, 2], "The comparable value must be an integer."),
+            (2, True, None, "Must specify the target wire where the operation acts on."),
             (
                 2,
                 True,
-                None,
                 [1],
                 r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
             ),
-            (4, True, [0, 1], [2, 3], "IntegerComparator accepts a single target wire."),
         ],
     )
-    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon.")
-    def test_invalid_mixed_polarity_controls(
-        self, value, geq, control_wires, wires, expected_error_message
-    ):
+    def test_invalid_mixed_polarity_controls(self, value, geq, wires, expected_error_message):
         """Test if IntegerComparator properly handles invalid mixed-polarity
         control values."""
-        target_wires = wires
 
         with pytest.raises(ValueError, match=expected_error_message):
-            qml.IntegerComparator(
-                value, geq=geq, control_wires=control_wires, wires=target_wires
-            ).matrix()
+            qml.IntegerComparator(value, geq=geq, wires=wires).matrix()
 
     def test_compute_matrix_geq_True(self):
         """Test compute_matrix for geq=True"""
-        mat1 = qml.IntegerComparator.compute_matrix(2, [0, 1], geq=True)
+        mat1 = qml.IntegerComparator.compute_matrix(value=2, compute_matrix=[0, 1], geq=True)
         mat2 = np.zeros((8, 8))
 
         mat2[0, 0] = 1
@@ -1101,7 +1078,7 @@ class TestIntegerComparator:
 
     def test_compute_matrix_geq_False(self):
         """Test compute_matrix for geq=False"""
-        mat1 = qml.IntegerComparator.compute_matrix(2, [0, 1], geq=False)
+        mat1 = qml.IntegerComparator.compute_matrix(value=2, control_wires=[0, 1], geq=False)
         mat2 = np.zeros((8, 8))
 
         mat2[0, 1] = 1
@@ -1115,14 +1092,6 @@ class TestIntegerComparator:
 
         assert np.allclose(mat1, mat2)
 
-    def test_no_control_wires(self):
-        """Test functionality when no control wires are given."""
-
-        mat1 = qml.IntegerComparator(3, geq=False, wires=[0, 1, 2]).matrix()
-        mat2 = qml.IntegerComparator(3, geq=False, control_wires=[0, 1], wires=[2]).matrix()
-
-        assert np.allclose(mat1, mat2)
-
     @pytest.mark.parametrize(
         "value,control_wires,geq,expected_error_message",
         [
@@ -1133,13 +1102,13 @@ class TestIntegerComparator:
     def test_invalid_args_compute_matrix(self, value, control_wires, geq, expected_error_message):
         """Test if compute_matrix properly handles invalid arguments."""
         with pytest.raises(ValueError, match=expected_error_message):
-            qml.IntegerComparator.compute_matrix(value, control_wires, geq=geq)
+            qml.IntegerComparator.compute_matrix(value=value, control_wires=control_wires, geq=geq)
 
     def test_compute_matrix_large_value(self):
         """Test if compute_matrix properly handles values exceeding the Hilbert space of the control
         wires."""
 
-        mat1 = qml.IntegerComparator.compute_matrix(10, [0, 1], geq=True)
+        mat1 = qml.IntegerComparator.compute_matrix(value=10, control_wires=[0, 1], geq=True)
         mat2 = np.eye(8)
 
         assert np.allclose(mat1, mat2)
@@ -1147,7 +1116,7 @@ class TestIntegerComparator:
     def test_compute_matrix_value_zero(self):
         """Test if compute_matrix properly handles value=0 when geq=False."""
 
-        mat1 = qml.IntegerComparator.compute_matrix(0, [0, 1], geq=False)
+        mat1 = qml.IntegerComparator.compute_matrix(value=0, control_wires=[0, 1], geq=False)
         mat2 = np.eye(8)
 
         assert np.allclose(mat1, mat2)
