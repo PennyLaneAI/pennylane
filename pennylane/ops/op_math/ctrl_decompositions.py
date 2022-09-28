@@ -27,7 +27,7 @@ def _grey_code(n):
     return code
 
 
-def ctrl_decomposition1(op, control):
+def ctrl1(op, control):
     """Uses section 7 to decompose the controlled operation.
 
     https://arxiv.org/pdf/quant-ph/9503016.pdf
@@ -59,8 +59,34 @@ def ctrl_decomposition1(op, control):
 
         gates += [qml.CNOT(pair) for pair in changed_active_pairs]
 
-        _target = target_op if sum(code) % 2 == 0 else adj_target
+        _target = target_op if sum(code) % 2 == 1 else adj_target
         gates.append(qml.ctrl(_target, target_wire))
         active_pairs = new_active_pairs
 
     return gates
+
+
+def ctrl2(op, control, work_wires=None):
+    """Lemma 7.5."""
+    if work_wires is None:
+        work_wires = []
+    if len(control) < 3:
+        return ctrl1(op, control)
+    sqrt_op = qml.pow(op, 0.5, lazy=False)
+    ops = [
+        qml.ctrl(sqrt_op, control[-1]),
+        qml.MultiControlledX(wires=control, work_wires=work_wires + op.wires),
+        qml.ctrl(qml.adjoint(sqrt_op), control[-1]),
+        qml.MultiControlledX(wires=control, work_wires=work_wires + op.wires),
+    ]
+    ops += ctrl2(sqrt_op, control[:-1], work_wires=work_wires + [control[-1]])
+    return ops
+
+
+def ctrl12(op, control, work_wires=None):
+    """chose between v1 and v2."""
+    if work_wires is None:
+        work_wires = []
+    if len(control) < 10:
+        return ctrl1(op, control)
+    return ctrl2(op, control, work_wires=work_wires)
