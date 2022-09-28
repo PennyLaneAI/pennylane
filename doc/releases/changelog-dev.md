@@ -100,6 +100,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 <h3>Bug fixes</h3>
 
 * Fixes a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
 
 <h3>Contributors</h3>
 
