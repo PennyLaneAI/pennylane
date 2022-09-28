@@ -2322,7 +2322,7 @@ class IntegerComparator(Operation):
         super().__init__(wires=total_wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "X"
+        return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
     # pylint: disable=unused-argument
     @staticmethod
