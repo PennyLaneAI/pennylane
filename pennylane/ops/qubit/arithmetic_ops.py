@@ -388,6 +388,7 @@ class IntegerComparator(Operation):
         self.hyperparameters["target_wires"] = wires
         self.hyperparameters["value"] = value
         self.hyperparameters["geq"] = geq
+        self.geq = geq
         self.value = value
 
         super().__init__(wires=total_wires, do_queue=do_queue)
