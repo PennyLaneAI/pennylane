@@ -14,7 +14,7 @@
 """
 Unit tests for the the arithmetic qubit operations
 """
-from copy import copy
+import copy
 
 import pytest
 import numpy as np

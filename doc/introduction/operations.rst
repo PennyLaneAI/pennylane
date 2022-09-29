@@ -148,7 +148,6 @@ Non-parametrized gates
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
-    ~pennylane.IntegerComparator
     ~pennylane.Barrier
     ~pennylane.WireCut
 
@@ -244,6 +243,8 @@ Gates performing arithmetics
 
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
+    ~pennylane.IntegerComparator
+
 
 :html:`</div>`
 
