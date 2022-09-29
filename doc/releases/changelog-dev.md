@@ -20,25 +20,36 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators, paulixops,
+                        paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    [Exp(1.570795j, 'PauliY', wires=[0])]
+  ```
+
+  This can also be used with the functional form of the operation:
+
+  ```pycon
     >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops, 
                     paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
     [Exp(1.570795j, 'PauliY', wires=[0])]
-    ```
+  ```
 
-  When used within a QNode, this method applies the tapered operation directly:
+  Moreover, when used within a QNode, this method applies the tapered operation directly:
 
   ```pycon
     >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
     ... def circuit(params):
+    ...     qchem.taper_operation(qml.SingleExcitation, generators, paulixops, 
+    ...               paulix_sector, wire_order=H.wires, op_wires=[0, 2])(3.14159)
     ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
     ...                             generators, paulixops, paulix_sector, H.wires)
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─╭ExpXY(0-0.7853975j)─╭ExpYX(0-0.7853975j)─┤ ╭<Z@Z>
-        1: ─╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
+        0: ─ExpY(1.570795j)-╭ExpXY(0-0.7853975j)─╭ExpYX(0-0.7853975j)─┤ ╭<Z@Z>
+        1: ─----------------╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
+
   ```
 
 <h3>Improvements</h3>

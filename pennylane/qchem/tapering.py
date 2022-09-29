@@ -542,15 +542,28 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
 
 def _is_callable_operation(operation, op_wires=None, op_gen=None):
-    """Checks whether the operation and op_gen are callables. If yes, it will return their respective objects
+    r"""Checks whether the operation and op_gen are callables. If yes, it will return their respective objects
     instantiated with dummy argument values required to obtain their generators and a flag value to represent
-    if such an instantiation has been done."""
+    if such an instantiation has been done.
+
+    Args:
+        operation (Operation or Callable): qubit operation to be tapered, or a function that applies that operation
+        op_wires (Sequence[Any]): optional argument to specify wires for the operation in case the provided operation is a callable
+        op_gen (Hamiltonian or Callable): optional argument to give the generator of the operation, or a function that returns it
+
+    Returns:
+        Tuple(Operation, Hamiltonian, bool)
+
+    Raises:
+        ValueError: optional argument `op_wires` is not provided when the provided operation is a callable
+        TypeError: optional argument `op_gen` is a callable but does not have 'wires' as its only keyword argument
+    """
 
     callable_op = False
     if callable(operation):
         if op_wires is None:
             raise ValueError(
-                f"Wires for the operations must be provided with 'op_wires' args, got {op_wires}."
+                f"Wires for the operations must be provided with 'op_wires' args if the operation is a callable, got {op_wires}."
             )
         operation = operation(1.0, wires=op_wires)
         if callable(op_gen):
@@ -578,22 +591,26 @@ def taper_operation(
     for building the tapered unitary.
 
     Args:
-        operation (Operation or Callable): qubit operation to be tapered
+        operation (Operation or Callable): qubit operation to be tapered, or a function that applies that operation
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
-        op_wires (Sequence[Any]): wires for the operation in case the operation provided is a callable
-        op_gen (Hamiltonian or Callable): optional argument to provide the generator of the operation
+        op_wires (Sequence[Any]): optional argument to specify wires for the operation in case the provided operation is a callable
+        op_gen (Hamiltonian or Callable): optional argument to give the generator of the operation, or a function that returns it
 
     Returns:
         list(Operation): list of operations of type :func:`~.PauliRot` implementing tapered unitary operation
 
     Raises:
+        ValueError: optional argument `op_wires` is not provided when the provided operation is a callable
+        TypeError: optional argument `op_gen` is a callable but does not have 'wires' as its only keyword argument
         NotImplementedError: generator of the operation cannot be constructed internally
         ValueError: optional argument `op_gen` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
 
     **Example**
+
+    Given an operation, ``qml.taper_operation`` can taper it using the symmetries of the Hamiltonian:
 
     >>> symbols, geometry = ['He', 'H'], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
     >>> mol = qchem.Molecule(symbols, geometry, charge=1)
@@ -601,23 +618,31 @@ def taper_operation(
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, genera  tors, mol.n_electrons)
-    >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops, 
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators, paulixops,
+                        paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    [Exp(1.570795j, 'PauliY', wires=[0])]
+
+    Alternatively, it can also be used with the functional form of the operation:
+
+    >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
                     paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
     [Exp(1.570795j, 'PauliY', wires=[0])]
 
-    This can even be used within a :class:`~.pennylane.QNode`:
+    Both the cases can be used within a :class:`~.pennylane.QNode`:
 
     >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
     ... def circuit(params):
+    ...     qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+    ...               paulix_sector, wire_order=H.wires, op_wires=[0, 2])(3.14159)
     ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
     ...                             generators, paulixops, paulix_sector, H.wires)
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─╭ExpXY(0-0.7853975j)─╭ExpYX(0-0.7853975j)─┤ ╭<Z@Z>
-        1: ─╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
+        0: ─ExpY(1.570795j)-╭ExpXY(0-0.7853975j)─╭ExpYX(0-0.7853975j)─┤ ╭<Z@Z>
+        1: ─----------------╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
 
     .. details::
         :title: Theory
@@ -644,7 +669,7 @@ def taper_operation(
 
             V^{\prime} \equiv e^{i U^{\dagger} G U \theta} = e^{i G^{\prime} \theta}.
     """
-
+    # get dummy objects in case functional form of operation or op_gen is being used
     operation, op_gen, callable_op = _is_callable_operation(
         operation, op_wires=op_wires, op_gen=op_gen
     )

@@ -889,7 +889,7 @@ def test_consistent_taper_ops(operation, op_gen):
 
 @pytest.mark.parametrize(
     ("operation", "op_wires", "op_gen"),
-    [   
+    [
         (qml.RZ, [3], None),
         (qml.RY, [2], qml.Hamiltonian([-0.5], [qml.PauliY(wires=[2])])),
         (qml.SingleExcitation, [0, 2], None),
@@ -940,4 +940,6 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
             wire_order,
             op_gen=op_gen,
         )
-        assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op_fn(params), taper_op)])
+        assert np.all(
+            [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op_fn(params), taper_op)]
+        )
