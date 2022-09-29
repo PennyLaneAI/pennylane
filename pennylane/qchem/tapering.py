@@ -618,8 +618,8 @@ def taper_operation(
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, genera  tors, mol.n_electrons)
-    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators, paulixops,
-                        paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators,
+                                paulixops, paulix_sector, wire_order=H.wires)
     [Exp(1.570795j, 'PauliY', wires=[0])]
 
     Alternatively, it can also be used with the functional form of the operation:
