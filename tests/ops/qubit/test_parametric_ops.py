@@ -2131,6 +2131,25 @@ class TestGrad:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+class TestGenerator:
+    @pytest.mark.parametrize(
+        "cphase_op,expected",
+        [
+            (qml.CPhaseShift00(1.234, wires=(0, 1)), qml.Projector(np.array([0, 0]), wires=(0, 1))),
+            (qml.CPhaseShift01(1.234, wires=(0, 1)), qml.Projector(np.array([0, 1]), wires=(0, 1))),
+            (qml.CPhaseShift10(1.234, wires=(0, 1)), qml.Projector(np.array([1, 0]), wires=(0, 1))),
+        ],
+    )
+    def test_c_phase_shift_generator(self, cphase_op, expected):
+        """Test that the generator of the CPhaseShift operations
+        is correctly returned."""
+        gen, coeff = qml.generator(cphase_op)
+
+        assert coeff == 1.0
+        assert gen.name == expected.name
+        assert gen.wires == expected.wires
+
+
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
     (
         "XY",
