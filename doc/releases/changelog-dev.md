@@ -40,7 +40,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
         1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
 
-* The `IntegerComparator` operation is now available.
+* The `IntegerComparator` arithmetic operation is now available.
 
   Given a basis state :math:`\vert \sigma \rangle`, where :math:`\sigma \in \mathbb{N}`, and a fixed positive
   integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`\sigma \geq L`. 
