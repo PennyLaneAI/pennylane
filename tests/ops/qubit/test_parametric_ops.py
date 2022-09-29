@@ -58,6 +58,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+    qml.PSWAP(0.123, wires=[0, 1]),
 ]
 
 BROADCASTED_OPERATIONS = [
@@ -487,6 +488,36 @@ class TestDecompositions:
             for op, c, p in zip(ops, classes, params):
                 assert isinstance(op, c)
                 assert np.allclose(op.parameters, p)
+
+    def test_pswap_decomposition(self, tol):
+        """Tests that the decomposition of the PSWAP gate is correct"""
+        param = 0.1234
+        op = qml.PSWAP(param, wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 4
+
+        assert res[0].wires == Wires([0, 1])
+        assert res[1].wires == Wires([0, 1])
+        assert res[2].wires == Wires([1])
+        assert res[3].wires == Wires([0, 1])
+
+        assert res[0].name == "SWAP"
+        assert res[1].name == "CNOT"
+        assert res[2].name == "PhaseShift"
+        assert res[3].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                # PhaseShift gate
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_isingxx_decomposition(self, tol):
         """Tests that the decomposition of the IsingXX gate is correct"""
@@ -928,6 +959,73 @@ class TestMatrix:
             qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
+    def test_pswap(self, tol):
+        """Test that the PSWAP operation is correct"""
+        assert np.allclose(
+            qml.PSWAP.compute_matrix(0), np.diag([1, 1, 1, 1])[[0, 2, 1, 3]], atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.PSWAP(0, wires=[0, 1]).matrix(),
+            np.diag([1, 1, 1, 1])[[0, 2, 1, 3]],
+            atol=tol,
+            rtol=0,
+        )
+
+        def get_expected(theta):
+            return np.diag([1, np.exp(1j * theta), np.exp(1j * theta), 1])[[0, 2, 1, 3]]
+
+        param = np.pi / 2
+        assert np.allclose(qml.PSWAP.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.PSWAP(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+        param = np.pi
+        assert np.allclose(qml.PSWAP.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.PSWAP(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals(self, phi, tol):
+        """Test eigenvalues computation for PSWAP"""
+        evs = qml.PSWAP.compute_eigvals(phi)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals_tf(self, phi, tol):
+        """Test eigenvalues computation for PSWAP using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        evs = qml.PSWAP.compute_eigvals(param_tf)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals_torch(self, phi, tol):
+        """Test eigenvalues computation for PSWAP using Torch interface"""
+        import torch
+
+        param_torch = torch.tensor(phi)
+        evs = qml.PSWAP.compute_eigvals(param_torch)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals_jax(self, phi, tol):
+        """Test eigenvalues computation for PSWAP using JAX interface"""
+        import jax
+
+        param_jax = jax.numpy.array(phi)
+        evs = qml.PSWAP.compute_eigvals(param_jax)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
     def test_isingxy(self, tol):
         """Test that the IsingXY operation is correct"""
         assert np.allclose(qml.IsingXY.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
@@ -953,6 +1051,33 @@ class TestMatrix:
             qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
+    def test_isingxy_broadcasted(self, tol):
+        """Test that the broadcasted IsingXY operation is correct"""
+        z = np.zeros(3)
+        assert np.allclose(qml.IsingXY.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingXY(z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            expected = np.array([np.eye(4) for i in theta], dtype=complex)
+            sin_coeff = 1j * np.sin(theta / 2)
+            expected[:, 1, 1] = np.cos(theta / 2)
+            expected[:, 2, 2] = np.cos(theta / 2)
+            expected[:, 1, 2] = 1j * np.sin(theta / 2)
+            expected[:, 2, 1] = 1j * np.sin(theta / 2)
+            return expected
+
+        param = np.array([np.pi / 2, np.pi])
+        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+        param = np.array([2.152, np.pi / 2, 0.213])
+        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals(self, phi, tol):
         """Test eigenvalues computation for IsingXY"""
@@ -963,6 +1088,15 @@ class TestMatrix:
             1,
             1,
         ]
+        assert qml.math.allclose(evs, evs_expected)
+
+    def test_isingxy_eigvals_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY"""
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(phi)
+        evs_expected = np.array(
+            [[qml.math.exp(1j * _phi / 2), qml.math.exp(-1j * _phi / 2), 1, 1] for _phi in phi]
+        )
         assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.tf
@@ -981,6 +1115,19 @@ class TestMatrix:
         ]
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.tf
+    def test_isingxy_eigvals_tf_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY on TF"""
+        import tensorflow as tf
+
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(tf.Variable(phi))
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
+        ones = np.ones_like(c)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
+        assert qml.math.allclose(evs, expected)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_torch(self, phi, tol):
@@ -997,6 +1144,19 @@ class TestMatrix:
         ]
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.torch
+    def test_isingxy_eigvals_torch_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY with torch"""
+        import torch
+
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(torch.tensor(phi, requires_grad=True))
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
+        ones = np.ones_like(c)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
+        assert qml.math.allclose(evs.detach().numpy(), expected)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_jax(self, phi, tol):
@@ -1012,6 +1172,19 @@ class TestMatrix:
             1,
         ]
         assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.jax
+    def test_isingxy_eigvals_jax_broadcasted(self, tol):
+        """Test broadcasted eigenvalues computation for IsingXY with jax"""
+        import jax
+
+        phi = np.linspace(-np.pi, np.pi, 10)
+        evs = qml.IsingXY.compute_eigvals(jax.numpy.array(phi))
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
+        ones = np.ones_like(c)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
+        assert qml.math.allclose(evs, expected)
 
     def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""
@@ -1189,7 +1362,9 @@ class TestMatrix:
 
         param = np.array([np.pi, 0.1242])
         param_tf = tf.Variable(param)
-        assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ.compute_matrix(param_tf), get_expected(param), atol=tol, rtol=0
+        )
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -1344,6 +1519,43 @@ class TestMatrix:
         expected = [expected_pi_half, expected_pi]
         assert np.allclose(qml.CRZ.compute_matrix(param), expected, atol=tol, rtol=0)
         assert np.allclose(qml.CRZ(param, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_CRZ_tf(self, tol):
+        """Test controlled z rotation is correct when used with Tensorflow,
+        because the code differs in that case."""
+        import tensorflow as tf
+
+        # test identity for theta=0
+        z = tf.Variable(0.0)
+        assert np.allclose(qml.CRZ.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected_pi_half = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, np.exp(-1j * np.pi / 4), 0],
+                [0, 0, 0, np.exp(1j * np.pi / 4)],
+            ]
+        )
+        phi = tf.Variable(np.pi / 2)
+        assert np.allclose(qml.CRZ.compute_matrix(phi), expected_pi_half, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).matrix(), expected_pi_half, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected_pi = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
+        phi = tf.Variable(np.pi)
+        assert np.allclose(qml.CRZ.compute_matrix(phi), expected_pi, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).matrix(), expected_pi, atol=tol, rtol=0)
+
+        # test broadcasting
+        param = np.array([np.pi / 2, np.pi])
+        expected = [expected_pi_half, expected_pi]
+        param_tf = tf.Variable(param)
+        assert np.allclose(qml.CRZ.compute_matrix(param_tf), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(param_tf, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
 
     def test_CRot(self, tol):
         """Test controlled arbitrary rotation is correct"""
@@ -1517,7 +1729,24 @@ class TestMatrix:
         assert np.allclose(res, exp)
 
         res = op.eigvals()
-        assert np.allclose(res, np.diag(exp))
+        assert np.allclose(np.diag(res), exp)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_matrix_and_eigvals(self, phi, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculate the correct
+        matrix and eigenvalues for the Tensorflow interface, because the code differs
+        in that case."""
+        import tensorflow as tf
+
+        op = cphase_op(tf.Variable(phi), wires=[0, 1])
+        res = op.matrix()
+        exp = ControlledPhaseShift(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(np.diag(res), exp)
 
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
     def test_controlled_phase_shift_matrix_and_eigvals_broadcasted(self, cphase_op):
@@ -1525,6 +1754,27 @@ class TestMatrix:
         correct matrix and eigenvalues for broadcasted parameters"""
         phi = np.array([0.2, np.pi / 2, -0.1])
         op = cphase_op(phi, wires=[0, 1])
+        res = op.matrix()
+        expected = np.array([np.eye(4, dtype=complex)] * 3)
+        expected[..., 3, 3] = np.exp(1j * phi)
+        assert np.allclose(res, expected)
+
+        res = op.eigvals()
+        exp_eigvals = np.ones((3, 4), dtype=complex)
+        exp_eigvals[..., 3] = np.exp(1j * phi)
+        assert np.allclose(res, exp_eigvals)
+        
+    @pytest.mark.tf
+    @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
+    def test_controlled_phase_shift_matrix_and_eigvals_broadcasted_tf(self, cphase_op):
+        """Tests that the ControlledPhaseShift and CPhase operation calculate the
+        correct matrix and eigenvalues for broadcasted parameters and Tensorflow,
+        because the code differs for that interface."""
+        import tensorflow as tf
+
+        phi = np.array([0.2, np.pi / 2, -0.1])
+        phi_tf = tf.Variable(phi)
+        op = cphase_op(phi_tf, wires=[0, 1])
         res = op.matrix()
         expected = np.array([np.eye(4, dtype=complex)] * 3)
         expected[..., 3, 3] = np.exp(1j * phi)
@@ -1647,6 +1897,102 @@ class TestMatrix:
         exp_eigvals[..., shift_pos] = np.exp(1j * phi)
         assert np.allclose(res, exp_eigvals)
 
+class TestEigvals:
+    """Test eigvals of parametrized operations."""
+
+    def test_rz_eigvals(self, tol):
+        """Test eigvals of z rotation are correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.RZ.compute_eigvals(0), np.ones(2), atol=tol, rtol=0)
+        assert np.allclose(qml.RZ(0, wires=0).eigvals(), np.ones(2), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected = np.exp([-1j * np.pi / 4, 1j * np.pi / 4])
+        assert np.allclose(qml.RZ.compute_eigvals(np.pi / 2), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.RZ(np.pi / 2, wires=0).eigvals(), expected, atol=tol, rtol=0)
+
+        # test identity for broadcasted theta=pi/2
+        expected = np.tensordot([1, 1], np.exp([-1j * np.pi / 4, 1j * np.pi / 4]), axes=0)
+        pi_half = np.array([np.pi / 2, np.pi / 2])
+        assert np.allclose(qml.RZ.compute_eigvals(pi_half), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.RZ(pi_half, wires=0).eigvals(), expected, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        assert np.allclose(qml.RZ.compute_eigvals(np.pi), np.diag(-1j * Z), atol=tol, rtol=0)
+        assert np.allclose(qml.RZ(np.pi, wires=0).eigvals(), np.diag(-1j * Z), atol=tol, rtol=0)
+
+    def test_phase_shift_eigvals(self, tol):
+        """Test phase shift eigvals are correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.PhaseShift.compute_eigvals(0), np.ones(2), atol=tol, rtol=0)
+        assert np.allclose(qml.PhaseShift(0, wires=0).eigvals(), np.ones(2), atol=tol, rtol=0)
+
+        # test arbitrary phase shift
+        phi = 0.5432
+        expected = np.array([1, np.exp(1j * phi)])
+        assert np.allclose(qml.PhaseShift.compute_eigvals(phi), expected, atol=tol, rtol=0)
+
+        # test arbitrary broadcasted phase shift
+        phi = np.array([0.5, 0.4, 0.3])
+        expected = np.array([[1, np.exp(1j * p)] for p in phi])
+        assert np.allclose(qml.PhaseShift.compute_eigvals(phi), expected, atol=tol, rtol=0)
+
+    def test_crz_eigvals(self, tol):
+        """Test controlled z rotation eigvals are correct"""
+
+        # test identity for theta=0
+        assert np.allclose(qml.CRZ.compute_eigvals(0), np.ones(4), atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(0, wires=[0, 1]).eigvals(), np.ones(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected_pi_half = np.array([1, 1, np.exp(-1j * np.pi / 4), np.exp(1j * np.pi / 4)])
+        assert np.allclose(qml.CRZ.compute_eigvals(np.pi / 2), expected_pi_half, atol=tol, rtol=0)
+        assert np.allclose(
+            qml.CRZ(np.pi / 2, wires=[0, 1]).eigvals(), expected_pi_half, atol=tol, rtol=0
+        )
+
+        # test identity for theta=pi
+        expected_pi = np.array([1, 1, -1j, 1j])
+        assert np.allclose(qml.CRZ.compute_eigvals(np.pi), expected_pi, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(np.pi, wires=[0, 1]).eigvals(), expected_pi, atol=tol, rtol=0)
+
+        # test broadcasting
+        param = np.array([np.pi / 2, np.pi])
+        expected = [expected_pi_half, expected_pi]
+        assert np.allclose(qml.CRZ.compute_eigvals(param), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(param, wires=[0, 1]).eigvals(), expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_crz_eigvals_tf(self, tol):
+        """Test controlled z rotation eigvals are correct with Tensorflow, because the
+        code differs for that interface."""
+        import tensorflow as tf
+
+        # test identity for theta=0
+        z = tf.Variable(0)
+        assert np.allclose(qml.CRZ.compute_eigvals(z), np.ones(4), atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(z, wires=[0, 1]).eigvals(), np.ones(4), atol=tol, rtol=0)
+
+        # test identity for theta=pi/2
+        expected_pi_half = np.array([1, 1, np.exp(-1j * np.pi / 4), np.exp(1j * np.pi / 4)])
+        phi = tf.Variable(np.pi / 2)
+        assert np.allclose(qml.CRZ.compute_eigvals(phi), expected_pi_half, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).eigvals(), expected_pi_half, atol=tol, rtol=0)
+
+        # test identity for theta=pi
+        expected_pi = np.array([1, 1, -1j, 1j])
+        phi = tf.Variable(np.pi)
+        assert np.allclose(qml.CRZ.compute_eigvals(phi), expected_pi, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(phi, wires=[0, 1]).eigvals(), expected_pi, atol=tol, rtol=0)
+
+        # test broadcasting
+        param = np.array([np.pi / 2, np.pi])
+        param_tf = tf.Variable(param)
+        expected = [expected_pi_half, expected_pi]
+        assert np.allclose(qml.CRZ.compute_eigvals(param_tf), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.CRZ(param_tf, wires=[0, 1]).eigvals(), expected, atol=tol, rtol=0)
 
 class TestGrad:
     device_methods = [
@@ -1663,6 +2009,152 @@ class TestGrad:
     for phi in phis:
         for device, method in device_methods:
             configuration.append([device, method, npp.array(phi, requires_grad=True)])
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_autograd_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Autograd for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
+            pytest.skip("PSWAP does not support adjoint")
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = np.linalg.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        res = qml.grad(circuit)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_torch_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Torch for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
+            pytest.skip("PSWAP does not support adjoint")
+
+        import torch
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = torch.tensor(0.1)
+        psi_1 = torch.tensor(0.2)
+        psi_2 = torch.tensor(0.3)
+        psi_3 = torch.tensor(0.4)
+
+        init_state = torch.tensor([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = torch.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        phi = torch.tensor(phi, requires_grad=True)
+
+        expected = 2 * torch.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        result = circuit(phi)
+        result.backward()
+        res = phi.grad
+        assert np.allclose(res, expected.detach(), atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_jax_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with JAX for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
+            pytest.skip("PSWAP does not support adjoint")
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        phi = jnp.array(phi)
+
+        expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_tf_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Tensorflow for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            # PSWAP does not have a generator defined
+            pytest.skip("PSWAP does not support adjoint")
+
+        import tensorflow as tf
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
+        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
+        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
+        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
+
+        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        phi = tf.Variable(phi, dtype=tf.complex128)
+
+        expected = 2 * tf.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        with tf.GradientTape() as tape:
+            result = circuit(phi)
+
+        res = tape.gradient(result, phi)
+        if diff_method == "backprop":
+            # Check #2872 https://github.com/PennyLaneAI/pennylane/issues/2872
+            assert np.allclose(np.real(res), expected, atol=tol, rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
@@ -2103,7 +2595,7 @@ class TestGrad:
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        phi = tf.Variable(phi, dtype=tf.complex128)
+        phi = tf.Variable(phi, dtype=tf.float64)
 
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
@@ -2282,7 +2774,7 @@ class TestPauliRot:
         """Test PauliRot matrix correctly accounts for identities."""
 
         res = qml.PauliRot.compute_matrix(theta, pauli_word)
-        expected = qml.operation.expand_matrix(
+        expected = qml.math.expand_matrix(
             qml.PauliRot.compute_matrix(theta, compressed_pauli_word), compressed_wires, wires
         )
 
@@ -2290,7 +2782,7 @@ class TestPauliRot:
 
         batch = np.ones(3) * theta
         res = qml.PauliRot.compute_matrix(batch, pauli_word)
-        expected = qml.operation.expand_matrix(
+        expected = qml.math.expand_matrix(
             qml.PauliRot.compute_matrix(batch, compressed_pauli_word), compressed_wires, wires
         )
 
@@ -2491,6 +2983,12 @@ class TestPauliRot:
             " Allowed characters are I, X, Y and Z",
         ):
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
+
+    def test_empty_wire_list_error_paulirot(self):
+        """Test that PauliRot operator raises an error when instantiated with wires=[]."""
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.PauliRot(0.5, "X", wires=[])
 
     @pytest.mark.parametrize(
         "pauli_word,wires",
@@ -2762,6 +3260,450 @@ class TestMultiRZ:
         eigvals = op.eigvals()
         assert np.allclose(eigvals, expected)
 
+    def test_empty_wire_list_error_multirz(self):
+        """Test that MultiRZ operator raises an error when instantiated with wires=[]."""
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.MultiRZ(0.5, wires=[])
+
+
+rotations = [
+    qml.RX,
+    qml.RY,
+    qml.RZ,
+    qml.PhaseShift,
+    qml.ControlledPhaseShift,
+    qml.Rot,
+    qml.MultiRZ,
+    qml.CRX,
+    qml.CRY,
+    qml.CRZ,
+    qml.CRot,
+    qml.U1,
+    qml.U2,
+    qml.U3,
+    qml.IsingXX,
+    qml.IsingYY,
+    qml.IsingZZ,
+    qml.IsingXY,
+    qml.PSWAP,
+]
+
+
+class TestSimplify:
+    """Test rotation simplification methods."""
+
+    @staticmethod
+    def get_unsimplified_op(op_class):
+
+        # construct the parameters of the op
+        if op_class.num_params == 1:
+            params = npp.array([[-50.0, 3.0, 50.0]])
+        elif op_class.num_params == 2:
+            params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0]])
+        else:
+            params = npp.array([[-50.0, 3.0, 50.0], [3.0, 50.0, -50.0], [50.0, -50.0, 3.0]])
+
+        # construct the wires
+        if op_class.num_wires == 1:
+            wires = 0
+        else:
+            wires = [0, 1]
+
+        return op_class(*params, wires)
+
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations(self, op):
+        """Test that the matrices and wires are the same after simplification"""
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        simplified_op = qml.simplify(unsimplified_op)
+
+        assert qml.math.allclose(qml.matrix(unsimplified_op), qml.matrix(simplified_op))
+        assert all((p >= 0).all() and (p < 4 * np.pi).all() for p in simplified_op.data)
+        assert unsimplified_op.wires == simplified_op.wires
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_autograd(self, op):
+        """Test the gradient of an op after simplication for the autograd interface"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        for i in range(params[0].shape[0]):
+            parameters = [p[i] for p in params]
+
+            unsimplified_res = circuit(False, wires, *parameters)
+            simplified_res = circuit(True, wires, *parameters)
+
+            unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+                False, wires, *parameters
+            )
+            simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
+                True, wires, *parameters
+            )
+
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_tensorflow(self, op):
+        """Test the gradient of an op after simplication for the tensorflow interface"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        for i in range(params[0].shape[0]):
+            parameters = [tf.Variable(p[i]) for p in params]
+
+            with tf.GradientTape() as unsimplified_tape:
+                unsimplified_res = circuit(False, wires, *parameters)
+
+            unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
+
+            with tf.GradientTape() as simplified_tape:
+                simplified_res = circuit(False, wires, *parameters)
+
+            simplified_grad = simplified_tape.gradient(simplified_res, parameters)
+
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.tf
+    def test_simplify_rotations_grad_tf_function(self):
+        """Test the gradient of an op after simplication for the tensorflow interface with
+        tf.function"""
+        import tensorflow as tf
+
+        op = qml.U2
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @tf.function
+        @qml.qnode(dev, interface="tf")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        for i in range(params[0].shape[0]):
+            parameters = [tf.Variable(p[i]) for p in params]
+
+            with tf.GradientTape() as unsimplified_tape:
+                unsimplified_res = circuit(False, wires, *parameters)
+
+            unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
+
+            with tf.GradientTape() as simplified_tape:
+                simplified_res = circuit(True, wires, *parameters)
+
+            simplified_grad = simplified_tape.gradient(simplified_res, parameters)
+
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_torch(self, op):
+        """Test the gradient of an op after simplication for the torch interface"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        for i in range(params[0].shape[0]):
+            parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
+
+            unsimplified_res = circuit(False, wires, *parameters)
+            unsimplified_res.backward()
+            unsimplified_grad = [p.grad for p in parameters]
+
+            simplified_res = circuit(True, wires, *parameters)
+            simplified_res.backward()
+            simplified_grad = [p.grad for p in parameters]
+
+            assert qml.math.allclose(unsimplified_res, simplified_res)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_rotations_grad_jax(self, op):
+        """Test the gradient of an op after simplication for the JAX interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(simplify, wires, *params):
+            if simplify:
+                qml.simplify(op(*params, wires))
+            else:
+                op(*params, wires)
+
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        params, wires = unsimplified_op.data, unsimplified_op.wires
+
+        for i in range(params[0].shape[0]):
+            parameters = [jnp.array(p[i]) for p in params]
+
+            unsimplified_res = circuit(False, wires, *parameters)
+            simplified_res = circuit(True, wires, *parameters)
+
+            unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                False, wires, *parameters
+            )
+            simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
+                True, wires, *parameters
+            )
+
+            assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+
+    @pytest.mark.jax
+    def test_simplify_rotations_grad_jax_jit(self):
+        """Test the gradient of an op after simplication for the JAX interface with jitting"""
+        import jax
+        import jax.numpy as jnp
+
+        op = qml.U2
+
+        dev = qml.device("default.qubit", wires=2)
+
+        wires = 0 if op.num_wires == 1 else [0, 1]
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def simplified_circuit(*params):
+            qml.simplify(op(*params, wires=wires))
+            return qml.expval(qml.PauliZ(0))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def unsimplified_circuit(*params):
+            op(*params, wires=wires)
+            return qml.expval(qml.PauliZ(0))
+
+        unsimplified_op = self.get_unsimplified_op(op)
+        params = unsimplified_op.data
+
+        for i in range(params[0].shape[0]):
+            parameters = [jnp.array(p[i]) for p in params]
+
+            unsimplified_res = unsimplified_circuit(*parameters)
+            simplified_res = simplified_circuit(*parameters)
+
+            unsimplified_grad = jax.grad(
+                unsimplified_circuit, argnums=list(range(len(parameters)))
+            )(*parameters)
+            simplified_grad = jax.grad(simplified_circuit, argnums=list(range(len(parameters))))(
+                *parameters
+            )
+
+            assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
+            assert qml.math.allclose(unsimplified_grad, simplified_grad, atol=1e-6)
+
+    @pytest.mark.parametrize("op", rotations)
+    def test_simplify_to_identity(self, op):
+        """Test that the operator correctly simplifies to the identity when the rotation is 0"""
+        if op == qml.U2:
+            pytest.skip("U2 gate does not simplify to Identity")
+
+        num_wires = op.num_wires if op.num_wires is not qml.operation.AnyWires else 2
+
+        unsimplified_op = op(*([0] * op.num_params), wires=range(num_wires))
+        simplified_op = qml.simplify(unsimplified_op)
+
+        if op != qml.PSWAP:
+            assert qml.equal(simplified_op, qml.Identity(0))
+        else:
+            # PSWAP reduces to SWAP when the angle is 0
+            assert qml.equal(simplified_op, qml.SWAP(wires=[0, 1]))
+
+    def test_simplify_rot(self):
+        """Simplify rot operations with different parameters."""
+
+        rot_x = qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0)
+        simplify_rot_x = rot_x.simplify()
+
+        assert simplify_rot_x.name == "RX"
+        assert simplify_rot_x.data == [0.1]
+        assert np.allclose(simplify_rot_x.matrix(), rot_x.matrix())
+
+        rot_y = qml.Rot(0, 0.1, 0, wires=0)
+        simplify_rot_y = rot_y.simplify()
+
+        assert simplify_rot_y.name == "RY"
+        assert simplify_rot_y.data == [0.1]
+        assert np.allclose(simplify_rot_y.matrix(), rot_y.matrix())
+
+        rot_z = qml.Rot(0.1, 0, 0.2, wires=0)
+        simplify_rot_z = rot_z.simplify()
+
+        assert simplify_rot_z.name == "RZ"
+        assert np.allclose(simplify_rot_z.data, [0.3])
+        assert np.allclose(simplify_rot_z.matrix(), rot_z.matrix())
+
+        rot_h = qml.Rot(np.pi, np.pi / 2, 0, wires=0)
+        simplify_rot_h = rot_h.simplify()
+
+        assert simplify_rot_h.name == "Hadamard"
+        assert np.allclose(simplify_rot_h.matrix(), 1.0j * rot_h.matrix())
+
+        rot = qml.Rot(0.1, 0.2, 0.3, wires=0)
+        not_simplified_rot = rot.simplify()
+
+        assert not_simplified_rot.name == "Rot"
+        assert np.allclose(not_simplified_rot.matrix(), rot.matrix())
+
+    def test_simplify_crot(self):
+        """Simplify CRot operations with different parameters."""
+
+        crot_x = qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
+        simplify_crot_x = crot_x.simplify()
+
+        assert simplify_crot_x.name == "CRX"
+        assert simplify_crot_x.data == [0.1]
+        assert np.allclose(simplify_crot_x.matrix(), crot_x.matrix())
+
+        crot_y = qml.CRot(0, 0.1, 0, wires=[0, 1])
+        simplify_crot_y = crot_y.simplify()
+
+        assert simplify_crot_y.name == "CRY"
+        assert simplify_crot_y.data == [0.1]
+        assert np.allclose(simplify_crot_y.matrix(), crot_y.matrix())
+
+        crot_z = qml.CRot(0.1, 0, 0.2, wires=[0, 1])
+        simplify_crot_z = crot_z.simplify()
+
+        assert simplify_crot_z.name == "CRZ"
+        assert np.allclose(simplify_crot_z.data, [0.3])
+        assert np.allclose(simplify_crot_z.matrix(), crot_z.matrix())
+
+        crot = qml.CRot(0.1, 0.2, 0.3, wires=[0, 1])
+        not_simplified_crot = crot.simplify()
+
+        assert not_simplified_crot.name == "CRot"
+        assert np.allclose(not_simplified_crot.matrix(), crot.matrix())
+
+    def test_simplify_u2(self):
+        """Simplify u2 operations with different parameters."""
+
+        u2_x = qml.U2(-np.pi / 2, np.pi / 2, wires=0)
+        simplify_u2_x = u2_x.simplify()
+
+        assert simplify_u2_x.name == "RX"
+        assert simplify_u2_x.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_x.matrix(), u2_x.matrix())
+
+        u2_y = qml.U2(-2 * np.pi, 2 * np.pi, wires=0)
+        simplify_u2_y = u2_y.simplify()
+
+        assert simplify_u2_y.name == "RY"
+        assert simplify_u2_y.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_y.matrix(), u2_y.matrix())
+
+        u2 = qml.U2(0.1, 0.2, wires=0)
+        u2_not_simplified = u2.simplify()
+
+        assert u2_not_simplified.name == "U2"
+        assert u2_not_simplified.data == [0.1, 0.2]
+        assert np.allclose(u2_not_simplified.matrix(), u2.matrix())
+
+    def test_simplify_u3(self):
+        """Simplify u3 operations with different parameters."""
+
+        u3_x = qml.U3(0.1, -np.pi / 2, np.pi / 2, wires=0)
+        simplify_u3_x = u3_x.simplify()
+
+        assert simplify_u3_x.name == "RX"
+        assert simplify_u3_x.data == [0.1]
+        assert np.allclose(simplify_u3_x.matrix(), u3_x.matrix())
+
+        u3_y = qml.U3(0.1, 0.0, 0.0, wires=0)
+        simplify_u3_y = u3_y.simplify()
+
+        assert simplify_u3_y.name == "RY"
+        assert simplify_u3_y.data == [0.1]
+        assert np.allclose(simplify_u3_y.matrix(), u3_y.matrix())
+
+        u3_z = qml.U3(0.0, 0.1, 0.0, wires=0)
+        simplify_u3_z = u3_z.simplify()
+
+        assert simplify_u3_z.name == "PhaseShift"
+        assert simplify_u3_z.data == [0.1]
+        assert np.allclose(simplify_u3_z.matrix(), u3_z.matrix())
+
+        u3 = qml.U3(0.1, 0.2, 0.3, wires=0)
+        u3_not_simplified = u3.simplify()
+
+        assert u3_not_simplified.name == "U3"
+        assert u3_not_simplified.data == [0.1, 0.2, 0.3]
+        assert np.allclose(u3_not_simplified.matrix(), u3.matrix())
+
+
+controlled_data = [
+    (qml.RX(1.234, wires=0), qml.CRX(1.234, wires=("a", 0))),
+    (qml.RY(1.234, wires=0), qml.CRY(1.234, wires=("a", 0))),
+    (qml.RZ(1.234, wires=0), qml.CRZ(1.234, wires=("a", 0))),
+    (qml.PhaseShift(1.234, wires=0), qml.ControlledPhaseShift(1.234, wires=("a", 0))),
+    (qml.Rot(1.2, 2.3, 3.4, wires=0), qml.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
+]
+
+
+@pytest.mark.parametrize("inverse", (True, False))
+@pytest.mark.parametrize("base, cbase", controlled_data)
+def test_controlled_method(inverse, base, cbase):
+    """Tests the _controlled method for parametric ops."""
+    base.inverse = inverse
+    cbase.inverse = inverse
+    assert qml.equal(base._controlled("a"), cbase)
+    base.inverse = True
+    cbase.inverse = True
+
 
 label_data = [
     (
@@ -2992,7 +3934,7 @@ pow_parametric_ops = (
     qml.IsingZZ(1.789, wires=("a", "b")),
     # broadcasted ops
     qml.RX(np.array([1.234, 4.129]), wires=0),
-    qml.RY(np.array([2.345, 6, 789]), wires=0),
+    qml.RY(np.array([2.345, 6.789]), wires=0),
     qml.RZ(np.array([3.456]), wires=0),
     qml.PhaseShift(np.array([6.0, 7.0, 8.0]), wires=0),
     qml.ControlledPhaseShift(np.array([0.234]), wires=(0, 1)),
@@ -3049,6 +3991,7 @@ control_data = [
     (qml.IsingXY(1.234, wires=(0, 1)), Wires([])),
     (qml.IsingYY(np.array([-5.1, 0.219]), wires=(0, 1)), Wires([])),
     (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
+    (qml.PSWAP(1.234, wires=(0, 1)), Wires([])),
     ### Controlled Ops
     (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
     (qml.CPhaseShift00(1.234, wires=(0, 1)), Wires(0)),

@@ -18,12 +18,11 @@ arithmetic operations on their input states.
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import numbers
-from copy import copy
 from collections.abc import Iterable
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -203,7 +202,7 @@ class Hamiltonian(Observable):
         if simplify:
             self.simplify()
         if grouping_type is not None:
-            with qml.tape.stop_recording():
+            with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
                     self.ops, grouping_type=grouping_type, method=method
                 )
@@ -338,7 +337,7 @@ class Hamiltonian(Observable):
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
-        with qml.tape.stop_recording():
+        with qml.QueuingManager.stop_recording():
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
@@ -372,12 +371,7 @@ class Hamiltonian(Observable):
             c = self.coeffs[i]
             op = op if isinstance(op, Tensor) else Tensor(op)
 
-            ind = None
-            for j, o in enumerate(new_ops):
-                if op.compare(o):
-                    ind = j
-                    break
-
+            ind = next((j for j, o in enumerate(new_ops) if op.compare(o)), None)
             if ind is not None:
                 new_coeffs[ind] += c
                 if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
@@ -401,12 +395,13 @@ class Hamiltonian(Observable):
         self._grouping_indices = None
 
     def __str__(self):
-        # Lambda function that formats the wires
-        wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
+        def wires_print(ob: Observable):
+            """Function that formats the wires."""
+            return ",".join(map(str, ob.wires.tolist()))
 
         list_of_coeffs = self.data  # list of scalar tensors
         paired_coeff_obs = list(zip(list_of_coeffs, self.ops))
-        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
+        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), qml.math.real(pair[0])))
 
         terms_ls = []
 
@@ -648,9 +643,9 @@ class Hamiltonian(Observable):
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self

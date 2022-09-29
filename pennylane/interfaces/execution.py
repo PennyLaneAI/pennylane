@@ -18,7 +18,11 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
+
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
+# pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
+# pylint: disable=too-many-statements, invalid-unary-operand-type
+
 from functools import wraps
 import warnings
 import inspect
@@ -50,6 +54,27 @@ INTERFACE_MAP = {
 #: list[str]: allowed interface strings
 SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
+
+
+def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
+    """Performs adjoint jacobian specific expansion.  Expands so that every
+    trainable operation has a generator.
+
+    TODO: Let the device specify any gradient-specific expansion logic.  This
+    function will be removed once the device-support pipeline is improved.
+    """
+    if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+        # qml.math.is_trainable doesn't work with jax on the forward pass
+        non_trainable = qml.operation.has_nopar
+    else:
+        non_trainable = ~qml.operation.is_trainable
+
+    stop_at = ~qml.operation.is_measurement & (non_trainable | qml.operation.has_unitary_gen)
+    for i, tape in enumerate(tapes):
+        if any(not stop_at(op) for op in tape.operations):
+            tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
+
+    return tapes
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
@@ -194,6 +219,232 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
     return wrapper
 
 
+def _execute_new(
+    tapes,
+    device,
+    gradient_fn,
+    interface="autograd",
+    mode="best",
+    gradient_kwargs=None,
+    cache=True,
+    cachesize=10000,
+    max_diff=1,
+    override_shots=False,
+    expand_fn="device",
+    max_expansion=10,
+    device_batch_transform=True,
+):
+    """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
+    during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        gradient_fn (None or callable): The gradient transform function to use
+            for backward passes. If "device", the device will be queried directly
+            for the gradient (if supported).
+        interface (str): The interface that will be used for classical autodifferentiation.
+            This affects the types of parameters that can exist on the input tapes.
+            Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``). Only applies
+            if the device is queried for the gradient; gradient transform
+            functions available in ``qml.gradients`` are only supported on the backward
+            pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        cache (bool): Whether to cache evaluations. This can result in
+            a significant reduction in quantum evaluations during gradient computations.
+        cachesize (int): the size of the cache
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+        expand_fn (function): Tape expansion function to be called prior to device execution.
+            Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
+            single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
+            is called.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+        device_batch_transform (bool): Whether to apply any batch transforms defined by the device
+            (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
+            of the device batch transform is to expand out Hamiltonian measurements into
+            constituent terms if not supported on the device.
+
+    Returns:
+        list[tensor_like[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+
+    **Example**
+
+    Consider the following cost function:
+
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        def cost_fn(params, x):
+            with qml.tape.QuantumTape() as tape1:
+                qml.RX(params[0], wires=0)
+                qml.RY(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.QuantumTape() as tape2:
+                qml.RX(params[2], wires=0)
+                qml.RY(x[0], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=0)
+
+            tapes = [tape1, tape2]
+
+            # execute both tapes in a batch on the given device
+            res = qml.execute(tapes, dev, qml.gradients.param_shift, max_diff=2)
+
+            return res[0][0] + res[1][0, 0] - res[1][0, 1]
+
+    In this cost function, two **independent** quantum tapes are being
+    constructed; one returning an expectation value, the other probabilities.
+    We then batch execute the two tapes, and reduce the results to obtain
+    a scalar.
+
+    Let's execute this cost function while tracking the gradient:
+
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> x = np.array([0.5], requires_grad=True)
+    >>> cost_fn(params, x)
+    tensor(1.93050682, requires_grad=True)
+
+    Since the ``execute`` function is differentiable, we can
+    also compute the gradient:
+
+    >>> qml.grad(cost_fn)(params, x)
+    (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
+
+    Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
+    of the gradient (that is, the Hessian):
+
+    >>> x.requires_grad = False
+    >>> qml.jacobian(qml.grad(cost_fn))(params, x)
+    array([[-0.97517033,  0.01983384,  0.        ],
+           [ 0.01983384, -0.97517033,  0.        ],
+           [ 0.        ,  0.        , -0.95533649]])
+    """
+    # gradient_kwargs = gradient_kwargs or {}
+
+    if device_batch_transform:
+        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+    else:
+        batch_fn = lambda res: res  # pragma: no cover
+
+    if isinstance(cache, bool) and cache:
+        # cache=True: create a LRUCache object
+        cache = LRUCache(maxsize=cachesize)
+        setattr(cache, "_persistent_cache", False)
+
+    batch_execute = set_shots(device, override_shots)(device.batch_execute)
+
+    if expand_fn == "device":
+        expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
+
+    if gradient_fn is None:
+        # don't unwrap if it's an interface device
+        if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
+            return batch_fn(
+                qml.interfaces.cache_execute(
+                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                )(tapes)
+            )
+        with qml.tape.Unwrap(*tapes):
+            res = qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
+
+        return batch_fn(res)
+
+    if gradient_fn == "backprop" or interface is None:
+        return batch_fn(
+            qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
+        )
+
+    #
+    # # the default execution function is batch_execute
+    # execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    # _mode = "backward"
+    #
+    # if gradient_fn == "device":
+    #     # gradient function is a device method
+    #
+    #     # Expand all tapes as per the device's expand function here.
+    #     # We must do this now, prior to the interface, to ensure that
+    #     # decompositions with parameter processing is tracked by the
+    #     # autodiff frameworks.
+    #     for i, tape in enumerate(tapes):
+    #         tapes[i] = expand_fn(tape)
+    #
+    #     if mode in ("forward", "best"):
+    #         # replace the forward execution function to return
+    #         # both results and gradients
+    #         execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
+    #         gradient_fn = None
+    #         _mode = "forward"
+    #
+    #     elif mode == "backward":
+    #         # disable caching on the forward pass
+    #         execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+    #
+    #         # replace the backward gradient computation
+    #         gradient_fn = qml.interfaces.cache_execute(
+    #             set_shots(device, override_shots)(device.gradients),
+    #             cache,
+    #             pass_kwargs=True,
+    #             return_tuple=False,
+    #         )
+    #
+    # elif mode == "forward":
+    #     # In "forward" mode, gradients are automatically handled
+    #     # within execute_and_gradients, so providing a gradient_fn
+    #     # in this case would have ambiguous behaviour.
+    #     raise ValueError("Gradient transforms cannot be used with mode='forward'")
+    #
+    # try:
+    #     mapped_interface = INTERFACE_MAP[interface]
+    # except KeyError as e:
+    #     raise ValueError(
+    #         f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
+    #     ) from e
+    # try:
+    #     if mapped_interface == "autograd":
+    #         from .autograd import execute as _execute
+    #     elif mapped_interface == "tf":
+    #         import tensorflow as tf
+    #
+    #         if not tf.executing_eagerly() or "autograph" in interface:
+    #             from .tensorflow_autograph import execute as _execute
+    #         else:
+    #             from .tensorflow import execute as _execute
+    #     elif mapped_interface == "torch":
+    #         from .torch import execute as _execute
+    #     else:  # is jax
+    #         _execute = _get_jax_execute_fn(interface, tapes)
+    # except ImportError as e:
+    #     raise qml.QuantumFunctionError(
+    #         f"{mapped_interface} not found. Please install the latest "
+    #         f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+    #     ) from e
+    #
+    # res = _execute(
+    #     tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
+    # )
+
+    # return batch_fn(res)
+
+
 def execute(
     tapes,
     device,
@@ -307,6 +558,23 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if qml.active_return():
+        return _execute_new(
+            tapes,
+            device,
+            gradient_fn,
+            interface=interface,
+            mode=mode,
+            gradient_kwargs=gradient_kwargs,
+            cache=cache,
+            cachesize=cachesize,
+            max_diff=max_diff,
+            override_shots=override_shots,
+            expand_fn=expand_fn,
+            max_expansion=max_expansion,
+            device_batch_transform=device_batch_transform,
+        )
+
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
@@ -316,6 +584,7 @@ def execute(
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
+
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
         setattr(cache, "_persistent_cache", False)
 
@@ -359,6 +628,9 @@ def execute(
         # autodiff frameworks.
         for i, tape in enumerate(tapes):
             tapes[i] = expand_fn(tape)
+
+        if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+            tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
         if mode in ("forward", "best"):
             # replace the forward execution function to return

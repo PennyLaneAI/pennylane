@@ -13,18 +13,19 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Union, Sequence, Callable, Tuple
+from typing import Callable, Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_transform import batch_transform
 
 
 @batch_transform
 def batch_input(
-    tape: Union[qml.tape.QuantumTape, qml.QNode],
-    argnum: Union[Sequence[int], int] = 0,
-) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    tape: Union[QuantumTape, qml.QNode],
+    argnum: Union[Sequence[int], int],
+) -> Tuple[Sequence[QuantumTape], Callable]:
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
 
@@ -41,10 +42,8 @@ def batch_input(
 
     Args:
         tape (.tape.QuantumTape or .QNode): Input quantum circuit to batch
-        argnum (Sequence[int] or int): One or more index value on all gate parameters
-            indicating the location of the non-trainable batched inputs within the input
-            argument sequence of the circuit. By default first argument is assumed to be
-            the only batched input.
+        argnum (Sequence[int] or int): One or several index values indicating the position of the
+        non-trainable batched parameters in the quantum tape.
 
     Returns:
         Sequence[Sequence[.tape.QuantumTape], Callable]: list of tapes arranged
@@ -56,13 +55,13 @@ def batch_input(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires = 2, shots=None)
+        dev = qml.device("default.qubit", wires=2, shots=None)
 
-        @batch_input(argnum=0)
+        @qml.batch_input(argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
         def circuit(inputs, weights):
-            qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
             qml.RY(weights[0], wires=0)
+            qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
             qml.RY(weights[1], wires=1)
             return qml.expval(qml.PauliZ(1))
 
@@ -73,25 +72,33 @@ def batch_input(
     array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
             0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
-    parameters = tape.get_parameters(trainable_only=False)
-
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
-    non_trainable, trainable = [], []
-    for idx, param in enumerate(parameters):
-        if idx in argnum:
-            non_trainable.append(param)
-        else:
-            trainable.append(param)
+    all_parameters = tape.get_parameters(trainable_only=False)
+    argnum_params = [all_parameters[i] for i in argnum]
 
-    if len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) != 1:
+    if any(num in tape.trainable_params for num in argnum):
+        raise ValueError(
+            "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
+            + "'argnum' are not marked as trainable."
+        )
+
+    batch_dims = np.unique([qml.math.shape(x)[0] for x in argnum_params])
+    if len(batch_dims) != 1:
         raise ValueError(
             "Batch dimension for all gate arguments specified by 'argnum' must be the same."
         )
 
+    batch_size = batch_dims[0]
+
     outputs = []
-    for inputs in zip(*non_trainable):
-        outputs += [list(inputs) + trainable]
+    for i in range(batch_size):
+        batch = []
+        for idx, param in enumerate(all_parameters):
+            if idx in argnum:
+                param = param[i]
+            batch.append(param)
+        outputs.append(batch)
 
     # Construct new output tape with unstacked inputs
     output_tapes = []

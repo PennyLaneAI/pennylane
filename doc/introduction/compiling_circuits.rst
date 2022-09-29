@@ -15,6 +15,83 @@ or replace a large circuit by a number of smaller circuits.
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 
+Simplifying Operators
+----------------------
+
+PennyLane provides the :func:`~.pennylane.simplify` function to simplify single operators, quantum
+functions, QNodes and tapes. This function has several purposes:
+
+* Reducing the arithmetic depth of the given operators to its minimum.
+* Grouping like terms in sums and products.
+* Resolving products of Pauli operators.
+* Combining identical rotation gates by summing its angles.
+
+Here are some simple simplification routines:
+
+>>> qml.simplify(qml.RX(4*np.pi+0.1, 0 ))
+RX(0.09999999999999964, wires=[0])
+>>> qml.simplify(qml.adjoint(qml.RX(1.23, 0)))
+RX(11.336370614359172, wires=[0])
+>>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
+RX(3.0, wires=[0])
+>>> qml.simplify(qml.op_sum(qml.PauliY(3), qml.PauliY(3)))
+2*(PauliY(wires=[3]))
+>>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
+RX(2.0, wires=[0])
+>>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
+-1j*(PauliY(wires=[0]))
+
+Now lets simplify a nested operator:
+
+>>> sum_op = qml.RX(1, 0) + qml.PauliX(0)
+>>> prod1 = qml.PauliX(0) @ sum_op
+>>> nested_op = prod1 @ qml.RX(1, 0)
+>>> qml.simplify(nested_op)
+(PauliX(wires=[0]) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
+
+Several simplifications steps are happening here. First of all, the nested products are removed:
+
+.. code-block:: python
+
+    qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
+
+Then the product of sums is transformed into a sum of products:
+
+.. code-block:: python
+
+    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
+
+And finally like terms in the obtained products are grouped together, removing all identities: 
+
+.. code-block:: python
+
+    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
+
+As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.simplify
+    @qml.qnode(dev)
+    def circuit(x):
+        (
+            qml.RX(x[0], wires=0)
+            @ qml.RY(x[1], wires=1)
+            @ qml.RZ(x[2], wires=2)
+            @ qml.RX(-1, wires=0)
+            @ qml.RY(-2, wires=1)
+            @ qml.RZ(2, wires=2)
+        )
+        return qml.probs([0, 1, 2])
+
+>>> x = [1, 2, 3]
+>>> print(qml.draw(circuit)(x))
+0: ───────────┤ ╭Probs
+1: ───────────┤ ├Probs
+2: ──RZ(5.00)─┤ ╰Probs
+
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
@@ -74,9 +151,9 @@ transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylan
 and then :func:`~.pennylane.transforms.merge_rotations`.
 
 >>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
-0: ──H───RX(0.6)──────────────────┤ ⟨Z⟩
-1: ──H──╭X────────────────────╭C──┤
-2: ──H──╰C────────RX(0.3)──Y──╰Z──┤
+0: ──H──RX(0.60)─────────────────┤  <Z>
+1: ──H─╭X─────────────────────╭●─┤     
+2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
 
 
 The :func:`~.pennylane.compile` transform is flexible and accepts a custom pipeline
@@ -108,9 +185,9 @@ controlled gates and cancel adjacent inverses, we could do:
         return qml.expval(qml.PauliZ(wires=0))
 
 >>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
-0: ──H───RX(0.4)──RX(0.2)────────────────────────────┤ ⟨Z⟩
-1: ──H──╭X───────────────────────────────────────╭C──┤
-2: ──H──╰C────────RZ(0.4)──RZ(-0.4)──RX(0.3)──Y──╰Z──┤
+0: ──H──RX(0.40)──RX(0.20)────────────────────────────┤  <Z>
+1: ──H─╭X──────────────────────────────────────────╭●─┤     
+2: ──H─╰●─────────RZ(0.40)──RZ(-0.40)──RX(0.30)──Y─╰Z─┤     
 
 .. note::
 
@@ -140,9 +217,9 @@ For example, suppose we would like to implement the following QNode:
 
 >>> weights = np.array([[0.4, 0.5, 0.6]])
 >>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
-0: ──RX(0.4)──╭C──────╭X──┤ ⟨Z⟩
-1: ──RX(0.5)──╰X──╭C──│───┤
-2: ──RX(0.6)──────╰X──╰C──┤
+0: ──RX(0.40)─╭●────╭X─┤  <Z>
+1: ──RX(0.50)─╰X─╭●─│──┤     
+2: ──RX(0.60)────╰X─╰●─┤     
 
 Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into ``CZ``
 and ``Hadamard``.
@@ -166,9 +243,9 @@ Now when we draw or run a QNode on this device, the gates will be expanded
 according to our specifications:
 
 >>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
-0: ──RX(0.40)────╭C──H───────╭Z──H─┤  <Z>
-1: ──RX(0.50)──H─╰Z──H─╭C────│─────┤
-2: ──RX(0.60)──H───────╰Z──H─╰C────┤
+0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
+1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤     
+2: ──RX(0.60)──H───────╰Z──H─╰●────┤     
 
 .. note::
     If the custom decomposition is only supposed to be used in a specific code context,
@@ -247,7 +324,7 @@ observables and coefficients:
 
 >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
 [[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0])]]

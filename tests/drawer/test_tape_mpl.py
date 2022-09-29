@@ -352,7 +352,20 @@ class TestSpecialGates:
         layer = 0
 
         assert len(ax.lines) == 2
-        assert len(ax.collections) == 2
+        assert len(ax.texts) == 3
+        assert len(ax.collections) == 1
+
+        plt.close()
+
+    def test_Prod(self):
+        with QuantumTape() as tape:
+            qml.S(0) @ qml.T(0)
+
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
 
         plt.close()
 
@@ -412,8 +425,8 @@ class TestControlledGates:
         assert ax.texts[2].get_text() == "RX\n(1.23)"
         plt.close()
 
-    def test_control_values(self):
-        """Test control values get displayed correctly"""
+    def test_control_values_str(self):
+        """Test control values get displayed correctly when they are provided as a string."""
 
         with QuantumTape() as tape:
             qml.ControlledQubitUnitary(
@@ -423,6 +436,19 @@ class TestControlledGates:
                 control_values="1010",
             )
 
+        self.check_tape_controlled_qubit_unitary(tape)
+
+    def test_control_values_bool(self):
+        """Test control_values get displayed correctly when they are provided as a list of bools."""
+
+        with QuantumTape() as tape:
+            qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
+            qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
+
+        self.check_tape_controlled_qubit_unitary(tape)
+
+    def check_tape_controlled_qubit_unitary(self, tape):
+        """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
         _, ax = tape_mpl(tape)
         layer = 0
 

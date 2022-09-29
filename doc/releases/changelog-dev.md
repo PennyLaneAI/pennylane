@@ -1,230 +1,118 @@
 :orphan:
 
-# Release 0.25.0-dev (development release)
+# Release 0.27.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
-  perturbation stochastic approximation method based on
-  [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
-  [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
-  It is a suitable optimizer for cost functions whose evaluation may involve
-  noise, as optimization with SPSA may significantly decrease the number of
-  quantum executions for the entire optimization.
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=1)
-  >>> def circuit(params):
-  ...     qml.RX(params[0], wires=0)
-  ...     qml.RY(params[1], wires=0)
-  >>> coeffs = [1, 1]
-  >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
-  >>> H = qml.Hamiltonian(coeffs, obs)
-  >>> @qml.qnode(dev)
-  ... def cost(params):
-  ...     circuit(params)
-  ...     return qml.expval(H)
-  >>> params = np.random.normal(0, np.pi, (2), requires_grad=True)
-  >>> print(params)
-  [-5.92774911 -4.26420843]
-  >>> print(cost(params))
-  0.43866366253270167
-  >>> max_iterations = 50
-  >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-  >>> for _ in range(max_iterations):
-  ...     params, energy = opt.step_and_cost(cost, params)
-  >>> print(params)
-  [-6.21193761 -2.99360548]
-  >>> print(energy)
-  -1.1258709813834058
-  ```
-
-* The quantum information module now supports computation of relative entropy.
-  [(#2772)](https://github.com/PennyLaneAI/pennylane/pull/2772)
-
-  It includes a function in `qml.math`:
+* `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
+  symmetries of the Hamiltonian.
+  [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
-  >>> rho = np.array([[0.3, 0], [0, 0.7]])
-  >>> sigma = np.array([[0.5, 0], [0, 0.5]])
-  >>> qml.math.relative_entropy(rho, sigma)
-  tensor(0.08228288, requires_grad=True)
-  ```
+    >>> symbols = ['He', 'H']
+    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qchem.symmetry_generators(H)
+    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
+                                generators, paulixops, paulix_sector, wire_order=H.wires)
+    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
+    ```
 
-  as well as a QNode transform:
+  When used within a QNode, this method applies the tapered operation directly:
 
-  ```python
-  dev = qml.device('default.qubit', wires=2)
-
-  @qml.qnode(dev)
-  def circuit(param):
-      qml.RY(param, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.state()
-  ```
   ```pycon
-  >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
-  >>> x, y = np.array(0.4), np.array(0.6)
-  >>> relative_entropy_circuit((x,), (y,))
-  0.017750012490703237
+    >>> dev = qml.device('default.qubit', wires=[0, 1])
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
+    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    >>> print(drawer(params=[3.14159]))
+        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
-
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
-  [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
   [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
 
-**Operator Arithmetic:**
-
-* Adds a base class `qml.ops.op_math.SymbolicOp` for single-operator symbolic
-  operators such as `Adjoint` and `Pow`.
-  [(#2721)](https://github.com/PennyLaneAI/pennylane/pull/2721)
-
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)  
-
-**Operator Arithmetic:**
-
-* A `Sum` symbolic class is added that allows users to represent the sum of operators.
-  [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
-
-  The `Sum` class provides functionality like any other PennyLane operator. We can
-  get the matrix, eigenvalues, terms, diagonalizing gates and more.
-
-  ```pycon
-  >>> summed_op = qml.op_sum(qml.PauliX(0), qml.PauliZ(0))
-  >>> summed_op
-  PauliX(wires=[0]) + PauliZ(wires=[0])
-  >>> qml.matrix(summed_op)
-  array([[ 1,  1],
-         [ 1, -1]])
-  >>> summed_op.terms()
-  ([1.0, 1.0], (PauliX(wires=[0]), PauliZ(wires=[0])))
-  ```
-
-  The `summed_op` can also be used inside a `qnode` as an observable.
-  If the circuit is parameterized, then we can also differentiate through the
-  sum observable.
-
-  ```python
-  sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev, grad_method="best")
-  def circuit(weights):
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        return qml.expval(sum_op)
-  ```
-
-  ```
-  >>> weights = qnp.array([0.1, 0.2, 0.3], requires_grad=True)
-  >>> qml.grad(circuit)(weights)
-  tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
-  ```
-* New FlipSign operator that flips the sign for a given basic state. [(#2780)](https://github.com/PennyLaneAI/pennylane/pull/2780)
-
-
 <h3>Improvements</h3>
 
-* Samples can be grouped into counts by passing the `counts=True` flag to `qml.sample`.
-  [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
 
-  Note that the change included creating a new `Counts` measurement type in `measurements.py`.
+* Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
+  [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-  `counts=True` can be set when obtaining raw samples in the computational basis:
+   - `QueuingContext` is renamed to `QueuingManager`.
+   - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+   - `QueuingManager` is no longer an abstract base class.
+   - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+   - `QueuingManager` is no longer a context manager.
+   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and 
+     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+      is now only available through `QueuingManager`.
+   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
+      and `_get_info` methods. The public analogues should be used instead.
+   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+      `update_info`.
 
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-  >>>
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...     qml.Hadamard(wires=0)
-  ...     qml.CNOT(wires=[0, 1])
-  ...     # passing the counts flag
-  ...     return qml.sample(counts=True)   
-  >>> result = circuit()
-  >>> print(result)
-  {'00': 495, '11': 505}
-  ```
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
+   
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.
+  [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
-  Counts can also be obtained when sampling the eigenstates of an observable:
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
-  >>>
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...   qml.Hadamard(wires=0)
-  ...   qml.CNOT(wires=[0, 1])
-  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
-  >>> result = circuit()
-  >>> print(result)
-  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
-   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
-  ```
-
-* The `qml.state` and `qml.density_matrix` measurements now support custom wire
-  labels.
-  [(#2779)](https://github.com/PennyLaneAI/pennylane/pull/2779)
-
-* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
-  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
-
-* The `default.mixed` device now supports backpropagation with the `"jax"` interface.
-  [(#2754)](https://github.com/PennyLaneAI/pennylane/pull/2754)
-
-* Quantum channels such as `qml.BitFlip` now support abstract tensors. This allows
-  their usage inside QNodes decorated by `tf.function`, `jax.jit`, or `jax.vmap`:
-
-  ```python
-  dev = qml.device("default.mixed", wires=1)
-
-  @qml.qnode(dev, diff_method="backprop", interface="jax")
-  def circuit(t):
-      qml.PauliX(wires=0)
-      qml.ThermalRelaxationError(0.1, t, 1.4, 0.1, wires=0)
-      return qml.expval(qml.PauliZ(0))
-  ```
-  ```pycon
-  >>> x = jnp.array([0.8, 1.0, 1.2])
-  >>> jax.vmap(circuit)(x)
-  DeviceArray([-0.78849435, -0.8287073 , -0.85608006], dtype=float32)
-  ```
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
 <h3>Breaking changes</h3>
 
-* PennyLane now depends on newer versions (>=2.7) of the `semantic_version` package,
-  which provides an updated API that is incompatible which versions of the package prior to 2.7.
-  If you run into issues relating to this package, please reinstall PennyLane.
-  [(#2744)](https://github.com/PennyLaneAI/pennylane/pull/2744)
-  [(#2767)](https://github.com/PennyLaneAI/pennylane/pull/2767)
+ * `QueuingContext` is renamed `QueuingManager`.
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
+
+ * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
+
+ * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
 <h3>Deprecations</h3>
 
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
 <h3>Documentation</h3>
 
-* Optimization examples of using JAXopt and Optax with the JAX interface have
-  been added.
-  [(#2769)](https://github.com/PennyLaneAI/pennylane/pull/2769)
-
 <h3>Bug fixes</h3>
-
-* `qml.grouping.group_observables` now works when individual wire
-  labels are iterable.
-  [(#2752)](https://github.com/PennyLaneAI/pennylane/pull/2752)
-
-* The adjoint of an adjoint has a correct `expand` result.
-  [(#2766)](https://github.com/PennyLaneAI/pennylane/pull/2766)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-
-David Ittah, Edward Jiang, Ankit Khandelwal, Christina Lee, Sergio Martínez-Losa, Ixchel Meza Chavez, Bogdan Reznychenko, Mudit Pandey,
-Antal Száva, Moritz Willmann
+Guillermo Alonso-Linaje,
+Juan Miguel Arrazola,
+Albert Mitjans Coma,
+Utkarsh Azad,
+Soran Jahangiri,
+Christina Lee,
+Mudit Pandey,
+Jay Soni,
+David Wierichs,
+Moritz Willmann,

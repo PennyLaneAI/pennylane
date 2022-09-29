@@ -19,7 +19,6 @@ These operators can be used in quantum functions, like shown in the following ex
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        qml.T(wires=0).inv()
         qml.AmplitudeDamping(0.1, wires=0)
         return qml.expval(qml.PauliZ(1))
 
@@ -42,40 +41,66 @@ Operator functions
 ------------------
 
 Various functions and transforms are available for manipulating operators,
-and extracting information.
+and extracting information. These can be broken down into two main categories:
+
+Operator to Operator functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
     ~pennylane.adjoint
     ~pennylane.ctrl
     ~pennylane.cond
-    ~pennylane.matrix
-    ~pennylane.eigvals
+    ~pennylane.exp
+    ~pennylane.op_sum
+    ~pennylane.prod
+    ~pennylane.s_prod
     ~pennylane.generator
 
-All operator functions can be used on instantiated operators,
+These operator functions act on operators to produce new operators.
+
+>>> op = qml.prod(qml.PauliX(0), qml.PauliZ(1))
+>>> op = qml.op_sum(qml.Hadamard(0), op)
+>>> op = qml.s_prod(1.2, op)
+>>> op
+1.2*(Hadamard(wires=[0]) + (PauliX(wires=[0]) @ PauliZ(wires=[1])))
+
+Operator to Other functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    ~pennylane.matrix
+    ~pennylane.eigvals
+    ~pennylane.is_commuting
+    ~pennylane.is_hermitian
+    ~pennylane.is_unitary
+    ~pennylane.simplify
+
+These operator functions act on operators and return other data types.
+All operator functions can be used on instantiated operators.
 
 >>> op = qml.RX(0.54, wires=0)
 >>> qml.matrix(op)
 [[0.9637709+0.j         0.       -0.26673144j]
 [0.       -0.26673144j 0.9637709+0.j        ]]
 
-Operator functions can also be used in a functional form:
+Some operator functions can also be used in a functional form:
 
 >>> x = torch.tensor(0.6, requires_grad=True)
 >>> matrix_fn = qml.matrix(qml.RX)
->>> matrix_fn(x)
+>>> matrix_fn(x, wires=0)
 tensor([[0.9553+0.0000j, 0.0000-0.2955j],
-      [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
+        [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<StackBackward0>)
 
 In the functional form, they are usually differentiable with respect to gate arguments:
 
 >>> loss = torch.real(torch.trace(matrix_fn(x, wires=0)))
 >>> loss.backward()
 >>> x.grad
-tensor(-0.5910)
+tensor(-0.2955)
 
-Some operator transform can also act on multiple operators, by passing
+Some operator transforms can also act on multiple operators, by passing
 quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
@@ -162,6 +187,7 @@ Parametrized gates
     ~pennylane.IsingXY
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
+    ~pennylane.PSWAP
 
 :html:`</div>`
 
@@ -365,3 +391,57 @@ CV observables
     ~pennylane.X
 
 :html:`</div>`
+
+.. _intro_ref_ops_qutrit:
+
+Qutrit operators
+----------------
+
+.. _intro_ref_ops_qutrit_nonparam:
+
+Qutrit non-parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TShift
+    ~pennylane.TClock
+    ~pennylane.TAdd
+    ~pennylane.TSWAP
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_matrix:
+
+Qutrit gates constructed from a matrix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_obs:
+
+Qutrit Observables
+^^^^^^^^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.THermitian
+    ~pennylane.GellMann
+
+:html:`</div>`
+

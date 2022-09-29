@@ -78,6 +78,7 @@ class TestHelperFunctions:
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
             (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
+            (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
         ],
     )
     def test_add_op(self, op, out):
@@ -243,6 +244,10 @@ class TestMaxLength:
 
 single_op_tests_data = [
     (qml.MultiControlledX([0, 1, 2], 3, "010"), "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  "),
+    (
+        qml.ops.op_math.Controlled(qml.PauliY(3), (0, 1, 2), [0, 1, 0]),
+        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
+    ),
     (qml.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
     (qml.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
     (qml.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
