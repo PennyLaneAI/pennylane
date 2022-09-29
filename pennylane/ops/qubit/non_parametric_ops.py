@@ -2244,7 +2244,7 @@ class MultiControlledX(Operation):
 
 
 class IntegerComparator(Operation):
-    r"""IntegerComparator(value, geq, control_wires, wires)
+    r"""IntegerComparator(value, geq, wires)
     Apply a Pauli X gate controlled on the following condition:
 
     Given a basis state :math:`\vert \sigma \rangle`, where :math:`\sigma \in \mathbb{N}`, and a fixed positive
@@ -2261,10 +2261,23 @@ class IntegerComparator(Operation):
         value (int): The value :math:`L` that the state's decimal representation is compared against.
         geq (bool): If set to `True`, the comparison made will be :math:`\sigma \geq L`. If `False`, the comparison
             made will be :math:`\sigma < L`.
-        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
-            Now users should use "wires" to indicate both the control wires and the target wire.
         wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
             the operation acts on.
+
+    **Example**
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circuit(state, value, geq):
+        qml.BasisState(np.array(state), wires=range(3))
+        qml.IntegerComparator(value, geq=geq, wires=range(3))
+        return qml.state()
+
+    >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
+    (1+0j)
+    >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
+    (1+0j)
     """
     is_self_inverse = True
     num_wires = AnyWires
