@@ -812,29 +812,6 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, exp)
 
-    @pytest.mark.parametrize(
-        "cphase_op,lam_pos",
-        [
-            (qml.CPhaseShift00, 0),
-            (qml.CPhaseShift01, 1),
-            (qml.CPhaseShift10, 2),
-        ],
-    )
-    def test_c_phase_shift_decomp_broadcasted(self, cphase_op, lam_pos):
-        """Tests that the CPhaseShift operations
-        calculate the correct decomposition"""
-        phi = np.array([-0.2, 4.2, 1.8])
-        op = cphase_op(phi, wires=[0, 2])
-        decomposed_matrix = qml.matrix(op.decomposition, wire_order=op.wires)()
-        lam = np.exp(1j * phi)
-        exp = []
-        for el in lam:
-            exp_el = np.eye(4, dtype=complex)
-            exp_el[..., lam_pos, lam_pos] = el
-            exp.append(exp_el)
-        exp = np.array(exp)
-
-        assert np.allclose(decomposed_matrix, exp)
 
 
 class TestMatrix:
