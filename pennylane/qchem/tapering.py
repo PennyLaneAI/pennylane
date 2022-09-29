@@ -572,7 +572,7 @@ def _is_callable_operation(operation, op_wires=None, op_gen=None):
             except TypeError as exc:
                 raise TypeError(
                     "Generator function provided with 'op_gen' should have 'wires' as its only keyword argument."
-                )
+                ) from exc
         callable_op = True
 
     return operation, op_gen, callable_op
@@ -737,6 +737,6 @@ def taper_operation(
 
     if callable_op:
         return _tapered_op
-    else:
-        params = operation.parameters[0] if len(operation.parameters) else 1.0
-        return _tapered_op(params=params)
+
+    params = operation.parameters[0] if len(operation.parameters) else 1.0
+    return _tapered_op(params=params)
