@@ -1036,92 +1036,6 @@ class TestMultiControlledX:
         assert np.allclose(mat1, mat2)
 
 
-class TestIntegerComparator:
-    """Tests for the IntegerComparator"""
-
-    @pytest.mark.parametrize(
-        "value,geq,control_wires,wires,expected_error_message",
-        [
-            (None, True, None, "Must specify the integer value to compare against."),
-            (4.20, False, [0, 1, 2], "The comparable value must be an integer."),
-            (2, True, None, "Must specify the target wire where the operation acts on."),
-            (
-                2,
-                True,
-                [1],
-                r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
-            ),
-        ],
-    )
-    def test_invalid_mixed_polarity_controls(self, value, geq, wires, expected_error_message):
-        """Test if IntegerComparator properly handles invalid mixed-polarity
-        control values."""
-
-        with pytest.raises(ValueError, match=expected_error_message):
-            qml.IntegerComparator(value, geq=geq, wires=wires).matrix()
-
-    def test_compute_matrix_geq_True(self):
-        """Test compute_matrix for geq=True"""
-        mat1 = qml.IntegerComparator.compute_matrix(value=2, compute_matrix=[0, 1], geq=True)
-        mat2 = np.zeros((8, 8))
-
-        mat2[0, 0] = 1
-        mat2[1, 1] = 1
-        mat2[2, 2] = 1
-        mat2[3, 3] = 1
-        mat2[4, 5] = 1
-        mat2[5, 4] = 1
-        mat2[6, 7] = 1
-        mat2[7, 6] = 1
-
-        assert np.allclose(mat1, mat2)
-
-    def test_compute_matrix_geq_False(self):
-        """Test compute_matrix for geq=False"""
-        mat1 = qml.IntegerComparator.compute_matrix(value=2, control_wires=[0, 1], geq=False)
-        mat2 = np.zeros((8, 8))
-
-        mat2[0, 1] = 1
-        mat2[1, 0] = 1
-        mat2[2, 3] = 1
-        mat2[3, 2] = 1
-        mat2[4, 4] = 1
-        mat2[5, 5] = 1
-        mat2[6, 6] = 1
-        mat2[7, 7] = 1
-
-        assert np.allclose(mat1, mat2)
-
-    @pytest.mark.parametrize(
-        "value,control_wires,geq,expected_error_message",
-        [
-            (None, [0, 1], True, "The value to compare to must be specified."),
-            (4.20, [0, 1], False, "The compared value must be an int. Got <class 'float'>."),
-        ],
-    )
-    def test_invalid_args_compute_matrix(self, value, control_wires, geq, expected_error_message):
-        """Test if compute_matrix properly handles invalid arguments."""
-        with pytest.raises(ValueError, match=expected_error_message):
-            qml.IntegerComparator.compute_matrix(value=value, control_wires=control_wires, geq=geq)
-
-    def test_compute_matrix_large_value(self):
-        """Test if compute_matrix properly handles values exceeding the Hilbert space of the control
-        wires."""
-
-        mat1 = qml.IntegerComparator.compute_matrix(value=10, control_wires=[0, 1], geq=True)
-        mat2 = np.eye(8)
-
-        assert np.allclose(mat1, mat2)
-
-    def test_compute_matrix_value_zero(self):
-        """Test if compute_matrix properly handles value=0 when geq=False."""
-
-        mat1 = qml.IntegerComparator.compute_matrix(value=0, control_wires=[0, 1], geq=False)
-        mat2 = np.eye(8)
-
-        assert np.allclose(mat1, mat2)
-
-
 period_two_ops = (
     qml.PauliX(0),
     qml.PauliY(0),
@@ -1136,7 +1050,6 @@ period_two_ops = (
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
-    qml.IntegerComparator(4, wires=[0, 1, 2, 3]),
 )
 
 
@@ -1346,7 +1259,6 @@ label_data = [
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
-    (qml.IntegerComparator(2, wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
 ]
@@ -1379,7 +1291,6 @@ control_data = [
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
-    (qml.IntegerComparator(2, wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
 
@@ -1404,7 +1315,6 @@ involution_ops = [  # ops who are their own inverses
     qml.CSWAP((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
-    qml.IntegerComparator(2, wires=(0, 1, 2, 3)),
     qml.Barrier(0),
     qml.WireCut(0),
 ]

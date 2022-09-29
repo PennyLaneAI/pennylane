@@ -52,9 +52,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
   @qml.qnode(dev)
   def circuit():
-      qml.BasisState(np.array([0,1]), wires=range(2))
+      qml.BasisState(np.array([0, 1]), wires=range(2))
       qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
-      qml.IntegerComparator(2, geq=False, wires=[0,1])
+      qml.IntegerComparator(2, geq=False, wires=[0, 1])
       return qml.state()
   ```
 

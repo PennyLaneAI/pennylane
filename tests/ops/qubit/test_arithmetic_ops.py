@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-
+from pennylane.wires import Wires
 
 label_data = [
     (qml.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),
@@ -237,3 +237,113 @@ class TestQubitSum:
         )
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+
+class TestIntegerComparator:
+    """Tests for the IntegerComparator"""
+
+    @pytest.mark.parametrize(
+        "value,geq,control_wires,wires,expected_error_message",
+        [
+            (4.20, False, [0, 1, 2], "The comparable value must be an integer."),
+            (2, True, None, "Must specify the target wire where the operation acts on."),
+            (
+                2,
+                True,
+                [1],
+                r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
+            ),
+        ],
+    )
+    def test_invalid_mixed_polarity_controls(self, value, geq, wires, expected_error_message):
+        """Test if IntegerComparator properly handles invalid mixed-polarity
+        control values."""
+
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.IntegerComparator(value, geq=geq, wires=wires).matrix()
+
+    def test_compute_matrix_geq_True(self):
+        """Test compute_matrix for geq=True"""
+        mat1 = qml.IntegerComparator.compute_matrix(value=2, compute_matrix=[0, 1], geq=True)
+        mat2 = np.zeros((8, 8))
+
+        mat2[0, 0] = 1
+        mat2[1, 1] = 1
+        mat2[2, 2] = 1
+        mat2[3, 3] = 1
+        mat2[4, 5] = 1
+        mat2[5, 4] = 1
+        mat2[6, 7] = 1
+        mat2[7, 6] = 1
+
+        assert np.allclose(mat1, mat2)
+
+    def test_compute_matrix_geq_False(self):
+        """Test compute_matrix for geq=False"""
+        mat1 = qml.IntegerComparator.compute_matrix(value=2, control_wires=[0, 1], geq=False)
+        mat2 = np.zeros((8, 8))
+
+        mat2[0, 1] = 1
+        mat2[1, 0] = 1
+        mat2[2, 3] = 1
+        mat2[3, 2] = 1
+        mat2[4, 4] = 1
+        mat2[5, 5] = 1
+        mat2[6, 6] = 1
+        mat2[7, 7] = 1
+
+        assert np.allclose(mat1, mat2)
+
+    @pytest.mark.parametrize(
+        "value,control_wires,geq,expected_error_message",
+        [
+            (None, [0, 1], True, "The value to compare to must be specified."),
+            (4.20, [0, 1], False, "The compared value must be an int. Got <class 'float'>."),
+        ],
+    )
+    def test_invalid_args_compute_matrix(self, value, control_wires, geq, expected_error_message):
+        """Test if compute_matrix properly handles invalid arguments."""
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.IntegerComparator.compute_matrix(value=value, control_wires=control_wires, geq=geq)
+
+    def test_compute_matrix_large_value(self):
+        """Test if compute_matrix properly handles values exceeding the Hilbert space of the control
+        wires."""
+
+        mat1 = qml.IntegerComparator.compute_matrix(value=10, control_wires=[0, 1], geq=True)
+        mat2 = np.eye(8)
+
+        assert np.allclose(mat1, mat2)
+
+    def test_compute_matrix_value_zero(self):
+        """Test if compute_matrix properly handles value=0 when geq=False."""
+
+        mat1 = qml.IntegerComparator.compute_matrix(value=0, control_wires=[0, 1], geq=False)
+        mat2 = np.eye(8)
+
+        assert np.allclose(mat1, mat2)
+
+    def test_adjoint_method(self):
+        """Test ``adjoint()`` method."""
+        op = (qml.IntegerComparator(2, wires=(0, 1, 2, 3)),)
+        adj_op = copy.copy(op)
+        for _ in range(4):
+            adj_op = adj_op.adjoint()
+
+            assert adj_op.name == op.name
+
+    def test_control_wires(self):
+        """Test ``control_wires`` attribute for non-parametrized operations."""
+        op, control_wires = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), Wires([0, 1, 2, 3])
+        assert op.control_wires == control_wires
+
+    def test_label_method(self):
+        """Test label method"""
+
+        op, label1, label2 = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), "X", "X"
+
+        assert op.label() == label1
+        assert op.label(decimals=2) == label1
+
+        op.inv()
+        assert op.label() == label2
