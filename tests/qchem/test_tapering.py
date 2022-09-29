@@ -943,3 +943,50 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
         assert np.all(
             [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op_fn(params), taper_op)]
         )
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_wires", "op_gen", "message_match"),
+    [
+        (
+            qml.SingleExcitation,
+            None,
+            None,
+            "Wires for the operations must be provided with 'op_wires' args if the operation is a callable",
+        ),
+        (
+            qml.OrbitalRotation,
+            [0, 1, 2, 3],
+            lambda: qml.Hamiltonian(
+                (0.25, -0.25, 0.25, -0.25),
+                [
+                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                ],
+            ),
+            "Generator function provided with 'op_gen' should have 'wires' as its only keyword argument",
+        ),
+    ],
+)
+def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
+    r"""Test that an error is raised if a set of inconsistent arguments is input"""
+
+    symbols, geometry, charge = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    with pytest.raises(Exception, match=message_match):
+        taper_operation(
+            operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
+        )
