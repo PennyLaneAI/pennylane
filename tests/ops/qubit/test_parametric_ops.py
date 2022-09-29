@@ -1763,7 +1763,7 @@ class TestMatrix:
         exp_eigvals = np.ones((3, 4), dtype=complex)
         exp_eigvals[..., 3] = np.exp(1j * phi)
         assert np.allclose(res, exp_eigvals)
-        
+
     @pytest.mark.tf
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
     def test_controlled_phase_shift_matrix_and_eigvals_broadcasted_tf(self, cphase_op):
@@ -1897,6 +1897,7 @@ class TestMatrix:
         exp_eigvals[..., shift_pos] = np.exp(1j * phi)
         assert np.allclose(res, exp_eigvals)
 
+
 class TestEigvals:
     """Test eigvals of parametrized operations."""
 
@@ -1993,6 +1994,7 @@ class TestEigvals:
         expected = [expected_pi_half, expected_pi]
         assert np.allclose(qml.CRZ.compute_eigvals(param_tf), expected, atol=tol, rtol=0)
         assert np.allclose(qml.CRZ(param_tf, wires=[0, 1]).eigvals(), expected, atol=tol, rtol=0)
+
 
 class TestGrad:
     device_methods = [
