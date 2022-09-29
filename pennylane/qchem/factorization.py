@@ -172,7 +172,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
     return factors, eigvals_m, eigvecs_m
 
 
-def basis_rotation(one_electron, two_electron, tol_factor):
+def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     r"""Return the grouped coefficients and observables of a molecular Hamiltonian and the basis
     rotation unitaries obtained with the basis rotation grouping method.
 
@@ -184,7 +184,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
 
     Returns:
         tuple(list[array[float]], list[list[Observable]], list[array[float]]): tuple containing
-        grouped coefficients, grouped ob-servables and basis rotation transformation matrices
+        grouped coefficients, grouped observables and basis rotation transformation matrices
 
     **Example**
 
@@ -192,7 +192,7 @@ def basis_rotation(one_electron, two_electron, tol_factor):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> coeffs, ops, eigvecs = basis_rotation(one, two, tol_factor=1.0e-5)
+    >>> coeffs, ops, unitaries = basis_rotation(one, two, tol_factor=1.0e-5)
     >>> print(coeffs)
     [array([-1.29789639,  0.84064639,  0.45725000]),
      array([-0.00019476, -0.01100037,  0.02239026, -0.01119513]),
@@ -273,11 +273,11 @@ def basis_rotation(one_electron, two_electron, tol_factor):
         :math:`T` and :math:`L^{(r)}` matrices. Each column of the transformation matrix is an
         eigenvector of the corresponding :math:`T` or :math:`L^{(r)}` matrix.
     """
+
+    t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
     two_electron = np.swapaxes(two_electron, 1, 3)
 
     _, eigvals_m, eigvecs_m = qml.qchem.factorize(two_electron, tol_factor, 0.0)
-
-    t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
     t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
 
     eigvals = [np.array(t_eigvals)] + [np.outer(x, x).flatten() * 0.5 for x in eigvals_m]

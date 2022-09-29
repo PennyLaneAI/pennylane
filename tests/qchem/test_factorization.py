@@ -192,7 +192,7 @@ def test_empty_error(two_tensor):
             ),
             1.0e-5,
             [  # computed manually
-                np.array([-1.29789639, 0.84064639, 0.45725]),
+                np.array([-1.53914683, 0.96127161, 0.57787522]),
                 np.array([-4.86901636e-05, 0.00279961503, 4.7857589e-05, -0.00279878246]),
                 np.array([-0.04530261, 0.04530261]),
                 np.array([-0.340388555, 0.50623004, -0.3345681, 0.168726619]),
@@ -212,7 +212,10 @@ def test_empty_error(two_tensor):
         ),
     ],
 )
-def test_basis_rotation(one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref):
+def test_basis_rotation_output(
+    one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
+):
+    r"""Test that basis_rotation function returns the correct values."""
     coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
 
     for i, coeff in enumerate(coeffs):
@@ -225,3 +228,92 @@ def test_basis_rotation(one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref,
 
     for i, vec in enumerate(eigvecs):
         assert np.allclose(vec, eigvecs_ref[i])
+
+
+@pytest.mark.parametrize(
+    ("core", "one_electron", "two_electron"),
+    [
+        (
+            np.array([0.71510405]),
+            np.array([[-1.25330961e00, 4.13891144e-13], [4.14002166e-13, -4.75069041e-01]]),
+            np.array(
+                [
+                    [
+                        [[6.74755872e-01, -4.78089790e-13], [-4.77978768e-13, 1.81210478e-01]],
+                        [[-4.77978768e-13, 1.81210478e-01], [6.63711349e-01, -4.41091608e-13]],
+                    ],
+                    [
+                        [[-4.77978768e-13, 6.63711349e-01], [1.81210478e-01, -4.40869563e-13]],
+                        [[1.81210478e-01, -4.40869563e-13], [-4.40980585e-13, 6.97651447e-01]],
+                    ],
+                ]
+            ),
+        )
+    ],
+)
+def test_basis_rotation_utransform(core, one_electron, two_electron):
+    r"""Test that basis_rotation function returns the correct transformation matrices. This test
+    constructs the matrix representation of a factorized Hamiltonian and then applies the
+    transformation matrices to generate a new set of fermionic creation and annihilation operators.
+    A new Hamiltonian is generated from these operators and is compared with the original
+    Hamiltonian.
+    """
+    c_group, o_group, u_transform = qml.qchem.basis_rotation(one_electron, two_electron)
+
+    a_cr = [  # fermionic creation operators
+        np.array(
+            [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]]
+        ),
+        np.array(
+            [[0.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
+        ),
+    ]
+
+    a_an = [  # fermionic annihilation operators
+        np.array(
+            [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
+        ),
+        np.array(
+            [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 0.0, 0.0]]
+        ),
+    ]
+
+    # compute matrix representation of the factorized Hamiltonian. Only the one-body part is
+    # included to keep the test simple.
+
+    t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
+
+    h1 = 0.0
+    for i, ac in enumerate(a_cr):
+        for j, aa in enumerate(a_an):
+            h1 += t_matrix[i, j] * ac @ aa
+
+    h1 += np.identity(len(h1)) * core
+
+    # compute matrix representation of the basis-rotated Hamiltonian. Only the one-body part is
+    # included to keep the test simple.
+
+    u = u_transform[0]
+    ac_rot = []
+    aa_rot = []
+
+    for u_ in u.T:  # construct the rotated creation operators
+        ac_new = 0.0
+        for i, ac in enumerate(a_cr):
+            ac_new += u_[i] * ac
+        ac_rot.append(ac_new)
+
+    for u_ in u.T:  # construct the rotated annihilation operators
+        aa_new = 0.0
+        for i, aa in enumerate(a_an):
+            aa_new += u_[i] * aa
+        aa_rot.append(aa_new)
+
+    val, _ = np.linalg.eigh(t_matrix)
+    h2 = 0.0
+    for i, v in enumerate(val):
+        h2 += v * ac_rot[i] @ aa_rot[i]
+
+    h2 += np.identity(len(h2)) * core
+
+    assert np.allclose(h1, h2)
