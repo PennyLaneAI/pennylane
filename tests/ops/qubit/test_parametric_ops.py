@@ -813,7 +813,6 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, exp)
 
 
-
 class TestMatrix:
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
@@ -3048,3 +3047,15 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
+
+
+control_value_data = [
+    (qml.CPhaseShift00(1.234, wires=(0, 1)), "0"),
+    (qml.CPhaseShift01(1.234, wires=(0, 1)), "0"),
+]
+
+
+@pytest.mark.parametrize("op, control_values", control_value_data)
+def test_control_values(op, control_values):
+    """Test the ``control_values`` attribute for parametrized operations."""
+    assert op.control_values == control_values
