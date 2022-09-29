@@ -828,6 +828,7 @@ class CPhaseShift00(Operation):
 
     @property
     def control_values(self):
+        """str: The control values of the operation"""
         return "0"
 
     @property
@@ -1008,6 +1009,7 @@ class CPhaseShift01(Operation):
 
     @property
     def control_values(self):
+        """str: The control values of the operation"""
         return "0"
 
     @property
