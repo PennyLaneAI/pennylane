@@ -243,7 +243,7 @@ class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
     @pytest.mark.parametrize(
-        "value,geq,control_wires,wires,expected_error_message",
+        "value,geq,wires,expected_error_message",
         [
             (4.20, False, [0, 1, 2], "The comparable value must be an integer."),
             (2, True, None, "Must specify the target wire where the operation acts on."),
