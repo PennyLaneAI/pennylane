@@ -617,7 +617,7 @@ def taper_operation(
     >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
-    >>> paulix_sector = qchem.optimal_sector(H, genera  tors, mol.n_electrons)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
     >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators,
                                 paulixops, paulix_sector, wire_order=H.wires)
     [Exp(1.570795j, 'PauliY', wires=[0])]
@@ -642,7 +642,7 @@ def taper_operation(
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
         0: ─ExpY(1.570795j)-╭ExpXY(0-0.7853975j)─╭ExpYX(0-0.7853975j)─┤ ╭<Z@Z>
-        1: ─----------------╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
+        1: ─────────────────╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
 
     .. details::
         :title: Theory

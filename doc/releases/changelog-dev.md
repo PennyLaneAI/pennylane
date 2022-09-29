@@ -48,7 +48,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
         0: ─ExpY(1.570795j)-╭ExpXY(0-0.7853975j)─╭ExpYX(0-0.7853975j)─┤ ╭<Z@Z>
-        1: ─----------------╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
+        1: ─────────────────╰ExpXY(0-0.7853975j)─╰ExpYX(0-0.7853975j)─┤ ╰<Z@Z>
 
   ```
 
