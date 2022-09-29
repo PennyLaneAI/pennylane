@@ -14,6 +14,8 @@
 """
 Unit tests for the the arithmetic qubit operations
 """
+from copy import copy
+
 import pytest
 import numpy as np
 
@@ -264,7 +266,7 @@ class TestIntegerComparator:
 
     def test_compute_matrix_geq_True(self):
         """Test compute_matrix for geq=True"""
-        mat1 = qml.IntegerComparator.compute_matrix(value=2, compute_matrix=[0, 1], geq=True)
+        mat1 = qml.IntegerComparator.compute_matrix(value=2, control_wires=[0, 1], geq=True)
         mat2 = np.zeros((8, 8))
 
         mat2[0, 0] = 1
@@ -334,13 +336,13 @@ class TestIntegerComparator:
 
     def test_control_wires(self):
         """Test ``control_wires`` attribute for non-parametrized operations."""
-        op, control_wires = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), Wires([0, 1, 2, 3])
+        op, control_wires = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), Wires([0, 1, 2])
         assert op.control_wires == control_wires
 
     def test_label_method(self):
         """Test label method"""
 
-        op, label1, label2 = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), "X", "X"
+        op, label1, label2 = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), ">=2", ">=2"
 
         assert op.label() == label1
         assert op.label(decimals=2) == label1
