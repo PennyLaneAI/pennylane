@@ -2245,7 +2245,7 @@ class MultiControlledX(Operation):
 
 class IntegerComparator(Operation):
     r"""IntegerComparator(value, geq, wires)
-    Apply a Pauli X gate controlled on the following condition:
+    Apply a controlled Pauli X gate using integer comparison as the condition.
 
     Given a basis state :math:`\vert \sigma \rangle`, where :math:`\sigma \in \mathbb{N}`, and a fixed positive
     integer :math:`L`, flip a target qubit if :math:`\sigma \geq L`. Alternatively, the flipping condition can
@@ -2259,9 +2259,9 @@ class IntegerComparator(Operation):
 
     Args:
         value (int): The value :math:`L` that the state's decimal representation is compared against.
-        geq (bool): If set to `True`, the comparison made will be :math:`\sigma \geq L`. If `False`, the comparison
+        geq (bool): If set to ``True``, the comparison made will be :math:`\sigma \geq L`. If ``False``, the comparison
             made will be :math:`\sigma < L`.
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
+        wires (Union[Wires, Sequence[int], or int]): Control wire(s) followed by a single target wire where
             the operation acts on.
 
     **Example**
@@ -2382,7 +2382,7 @@ class IntegerComparator(Operation):
                     mat = block_diag(np.eye(padding_left), *paulix_blocks)
 
             else:  # comparison is i < value
-                if value == 0:  # if value exceeds Hilbert space size
+                if value == 0:
                     mat = np.eye(2 ** (len(control_wires) + 1))
 
                 else:
