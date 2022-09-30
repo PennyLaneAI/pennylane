@@ -382,3 +382,24 @@ class TestIntegerComparator:
                 ]
             ).T
             assert np.allclose(u, np.eye(2 ** (num_wires + num_workers)))
+
+    def test_decomposition_extraneous_value(self):
+        """Test operator's ``compute_decomposition()`` method when ``value`` is such that
+        decomposition is the identity matrix."""
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.IntegerComparator.compute_decomposition(10, wires=[0, 1, 2])
+        assert all(isinstance(op, qml.Identity) for op in tape1.operations)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.IntegerComparator.compute_decomposition(0, wires=[0, 1, 2], geq=False)
+        assert all(isinstance(op, qml.Identity) for op in tape2.operations)
+
+    def test_power(self):
+        """Test ``pow`` method."""
+        op = qml.IntegerComparator(3, wires=[0, 1, 2, 3])
+
+        powers = range(8)
+        for power in powers:
+            op_pow = op.pow(power)
+            assert op_pow == [] if power % 2 == 0 else [op]

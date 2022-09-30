@@ -23,9 +23,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
-
-from .non_parametric_ops import MultiControlledX
 from pennylane.ops import Identity
+from pennylane.ops.qubit.non_parametric_ops import MultiControlledX
 
 
 class QubitCarry(Operation):
@@ -521,7 +520,7 @@ class IntegerComparator(Operation):
 
         if geq:
             if value > 2 ** len(control_wires) - 1:
-                gates = [Identity()]
+                gates = [Identity(0)]
 
             else:
                 control_values_list = [
@@ -540,7 +539,7 @@ class IntegerComparator(Operation):
 
         else:
             if value == 0:
-                gates = [Identity()]
+                gates = [Identity(0)]
 
             else:
                 control_values_list = [format(n, binary) for n in range(value)]
