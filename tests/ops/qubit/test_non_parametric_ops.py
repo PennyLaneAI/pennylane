@@ -1039,7 +1039,7 @@ class TestMultiControlledX:
         """Test ``__repr__`` method that shows ``control_values``"""
         wires = [0, 1, 2]
         control_values = "01"
-        op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__
+        op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f'MultiControlledX(wires={wires}, control_values="{control_values}")'
 
 
