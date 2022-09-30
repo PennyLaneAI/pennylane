@@ -49,6 +49,19 @@ Symbolic Classes
     ~SProd
     ~SymbolicOp
 
+Utility Functions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~commutator
+    ~anti_commutator
+    ~Sigma
+    ~Pi
+
 """
 
 from .adjoint_class import Adjoint
@@ -68,3 +81,5 @@ from .pow import pow, Pow
 from .symbolicop import SymbolicOp
 
 from .composite import CompositeOp
+
+from .utils import Sigma, Pi, commutator, anti_commutator
