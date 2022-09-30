@@ -327,7 +327,7 @@ class TestIntegerComparator:
 
     def test_adjoint_method(self):
         """Test ``adjoint()`` method."""
-        op = (qml.IntegerComparator(2, wires=(0, 1, 2, 3)),)
+        op = qml.IntegerComparator(2, wires=(0, 1, 2, 3))
         adj_op = copy.copy(op)
         for _ in range(4):
             adj_op = adj_op.adjoint()
@@ -349,3 +349,17 @@ class TestIntegerComparator:
 
         op.inv()
         assert op.label() == label2
+
+    def test_decomposition(self):
+        """Test operator's ``compute_decomposition()`` method."""
+        decomp1 = qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=True)
+        assert decomp1 == [
+            qml.MultiControlledX(wires=[0, 1, 2], control_values="10"),
+            qml.MultiControlledX(wires=[0, 1, 2], control_values="11"),
+        ]
+
+        decomp2 = qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=False)
+        assert decomp2 == [
+            qml.MultiControlledX(wires=[0, 1, 2], control_values="00"),
+            qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
+        ]

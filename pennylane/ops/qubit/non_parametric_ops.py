@@ -2024,8 +2024,12 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
+        self.total_wires = total_wires
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires, do_queue=do_queue)
+
+    def __repr__(self):
+        return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"

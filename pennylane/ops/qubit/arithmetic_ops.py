@@ -25,6 +25,7 @@ from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 from .non_parametric_ops import MultiControlledX
+from pennylane.ops import Identity
 
 
 class QubitCarry(Operation):
@@ -476,6 +477,85 @@ class IntegerComparator(Operation):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
         return mat
+
+    @staticmethod
+    def compute_decomposition(value, geq=True, wires=None, **kwargs):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.IntegerComparator.decomposition`.
+
+        Args:
+            value (int): The value :math:`L` that the state's decimal representation is compared against.
+            geq (bool): If set to ``True``, the comparison made will be :math:`\sigma \geq L`. If ``False``, the comparison
+                made will be :math:`\sigma < L`.
+            wires (Union[Wires, Sequence[int], or int]): Control wire(s) followed by a single target wire where
+                the operation acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.IntegerComparator.compute_decomposition(value=2, wires=[0,1,2,3])
+        TODO
+        """
+
+        if not isinstance(value, int):
+            raise ValueError("The comparable value must be an integer.")
+        if wires is None:
+            raise ValueError("Must specify the target wire where the operation acts on.")
+        if len(wires) > 1:
+            control_wires = Wires(wires[:-1])
+            wires = Wires(wires[-1])
+        else:
+            raise ValueError(
+                "IntegerComparator: wrong number of wires. "
+                f"{len(wires)} wire(s) given. Need at least 2."
+            )
+
+        work_wires = Wires("aux") if len(control_wires) > 2 else None
+        binary = "0" + str(len(control_wires)) + "b"
+
+        if geq:
+            if value > 2 ** len(control_wires) - 1:
+                gates = [Identity()]
+
+            else:
+                control_values_list = [
+                    format(n, binary) for n in range(value, 2 ** (len(control_wires)))
+                ]
+                gates = []
+                for control_values in control_values_list:
+                    gates.append(
+                        MultiControlledX(
+                            control_wires=control_wires,
+                            wires=wires,
+                            control_values=control_values,
+                            work_wires=work_wires,
+                        )
+                    )
+
+        else:
+            if value == 0:
+                gates = [Identity()]
+
+            else:
+                control_values_list = [format(n, binary) for n in range(value)]
+                gates = []
+                for control_values in control_values_list:
+                    gates.append(
+                        MultiControlledX(
+                            control_wires=control_wires,
+                            wires=wires,
+                            control_values=control_values,
+                            work_wires=work_wires,
+                        )
+                    )
+
+        return gates
 
     @property
     def control_wires(self):
