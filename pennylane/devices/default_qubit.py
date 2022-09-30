@@ -340,8 +340,7 @@ class DefaultQubit(QubitDevice):
         for i in range(2**ndim):
             lista = binary(i, ndim)
             if lista[axes[0]] == 1-meas:
-                code = f"""final_state{str(lista)}=0"""
-                exec(code)
+                final_state[lista] = 0
 
 
 
