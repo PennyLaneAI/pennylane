@@ -15,6 +15,7 @@
 This file defines how to decompose arbitrary controlled operations.
 """
 import pennylane as qml
+from pennylane import math
 
 
 def _grey_code(n):
@@ -25,6 +26,32 @@ def _grey_code(n):
     code = [[0] + old for old in previous]
     code += [[1] + old for old in reversed(previous)]
     return code
+
+
+def _zyz_angles(U):
+    det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
+
+    exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
+    U = U * math.exp(exp_angle)
+
+    if not math.is_abstract(U) and math.allclose(U[0, 1], 0.0):
+        return 2 * math.angle(U[1, 1]), 0, 0
+
+    # Derive theta from the off-diagonal element. Clip to ensure valid arcsin input
+    element = math.clip(math.abs(U[0, 1]), 0, 1)
+    theta = 2 * math.arcsin(element)
+
+    # Compute phi and omega from the angles of the top row; use atan2 to keep
+    # the angle within -np.pi and np.pi, and add very small values to avoid the
+    # undefined case of 0/0. We add a smaller value to the imaginary part than
+    # the real part because it is imag / real in the definition of atan2.
+    angle_U00 = math.arctan2(math.imag(U[0, 0]) + 1e-128, math.real(U[0, 0]) + 1e-64)
+    angle_U10 = math.arctan2(math.imag(U[1, 0]) + 1e-128, math.real(U[1, 0]) + 1e-64)
+
+    phi = -angle_U10 - angle_U00
+    omega = angle_U10 - angle_U00
+
+    return phi, theta, omega
 
 
 def ctrl1(op, control):
@@ -90,3 +117,73 @@ def ctrl12(op, control, work_wires=None):
     if len(control) < 10:
         return ctrl1(op, control)
     return ctrl2(op, control, work_wires=work_wires)
+
+
+def _using_zyz(op, control, work_wires=None):
+    """Using the zyz decomposition"""
+    with qml.QueuingManager.stop_recording():
+        try:
+            beta, theta, alpha = op.single_qubit_rot_angles()
+        except NotImplementedError:
+            mat = op.matrix()
+            beta, theta, alpha = _zyz_angles(mat)
+
+    wire = op.wires[0]
+
+    ops = []
+    if abs(beta - alpha) > 1e-6:
+        ops.append(qml.RZ((beta - alpha) / 2, wire))
+
+    ops.append(qml.MultiControlledX(wires=control + op.wires, work_wires=work_wires))
+
+    if abs(alpha + beta) > 1e-6:
+        ops.append(qml.RZ(-(alpha + beta) / 2.0, wire))
+
+    if abs(theta) > 1e-6:
+        ops.append(qml.RY(-theta / 2, wire))
+
+    ops.append(qml.MultiControlledX(wires=control + op.wires, work_wires=work_wires))
+
+    if abs(theta) > 1e-6:
+        ops.append(qml.RY(theta / 2, wire))
+
+    if abs(alpha) > 1e-6:
+        ops.append(qml.RZ(alpha, wire))
+
+    return ops
+
+
+def _using_zyz2(op, control, work_wires=None):
+    """Using the zyz decomposition but moving one control wires to the
+    rotation gates."""
+    with qml.QueuingManager.stop_recording():
+        try:
+            beta, theta, alpha = op.single_qubit_rot_angles()
+        except NotImplementedError:
+            mat = op.matrix()
+            beta, theta, alpha = _zyz_angles(mat)
+
+    separated_wire = control[-1]
+    work_wires = work_wires + [separated_wire]
+
+    wire = op.wires[0]
+
+    ops = []
+    if abs(beta - alpha) > 1e-6:
+        ops.append(qml.CRZ((beta - alpha) / 2, (separated_wire, wire)))
+
+    ops.append(qml.MultiControlledX(wires=control[:-1] + op.wires, work_wires=work_wires))
+
+    if abs(alpha + beta) > 1e-6:
+        ops.append(qml.CRZ(-(alpha + beta) / 2.0, (separated_wire, wire)))
+
+    if abs(theta) > 1e-6:
+        ops.append(qml.CRY(-theta / 2, (separated_wire, wire)))
+
+    ops.append(qml.MultiControlledX(wires=control[:-1] + op.wires, work_wires=work_wires))
+
+    if abs(theta) > 1e-6:
+        ops.append(qml.CRY(theta / 2, (separated_wire, wire)))
+
+    if abs(alpha) > 1e-6:
+        ops.append(qml.CRZ(alpha, (separated_wire, wire)))
