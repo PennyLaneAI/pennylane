@@ -248,8 +248,8 @@ class TestIntegerComparator:
     @pytest.mark.parametrize(
         "value,geq,wires,expected_error_message",
         [
-            (4.20, False, [0, 1, 2], "The comparable value must be an integer."),
-            (2, True, None, "Must specify the control wires."),
+            (4.20, False, [0, 1, 2], "The compared value must be an int. Got <class 'float'>."),
+            (2, True, None, "Must specify wires that the operation acts on."),
             (
                 2,
                 True,
@@ -261,7 +261,6 @@ class TestIntegerComparator:
     def test_invalid_mixed_polarity_controls(self, value, geq, wires, expected_error_message):
         """Test if IntegerComparator properly handles invalid mixed-polarity
         control values."""
-
         with pytest.raises(ValueError, match=expected_error_message):
             qml.IntegerComparator(value, geq=geq, wires=wires).matrix()
 
@@ -352,7 +351,7 @@ class TestIntegerComparator:
         assert op.label() == label2
 
     @pytest.mark.parametrize(
-        "value,control_wires,geq,expected_error_message",
+        "value,wires,geq,expected_error_message",
         [
             (4.20, [0, 1, 2], False, "The compared value must be an int. Got <class 'float'>."),
             (2, None, True, "Must specify the wires that the operation acts on."),
@@ -360,18 +359,17 @@ class TestIntegerComparator:
                 2,
                 [0],
                 False,
-                "IntegerComparator: wrong number of wires. 1 wire(s) given. Need at least 2.",
+                r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
             ),
         ],
     )
     def test_invalid_args_compute_decomposition(self, value, wires, geq, expected_error_message):
         """Test if compute_matrix properly handles invalid arguments."""
         with pytest.raises(ValueError, match=expected_error_message):
-            qml.IntegerComparator.compute_matrix(value=value, control_wires=control_wires, geq=geq)
+            qml.IntegerComparator.compute_decomposition(value, wires=wires, geq=geq)
 
     def test_decomposition(self):
         """Test operator's ``compute_decomposition()`` method."""
-
         with qml.tape.QuantumTape() as tape1:
             qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2])
         assert all(isinstance(op, qml.MultiControlledX) for op in tape1.operations)

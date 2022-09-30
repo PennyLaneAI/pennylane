@@ -341,14 +341,12 @@ class IntegerComparator(Operation):
 
     **Example**
 
-    dev = qml.device("default.qubit", wires=3)
-
-    @qml.qnode(dev)
-    def circuit(state, value, geq):
-        qml.BasisState(np.array(state), wires=range(3))
-        qml.IntegerComparator(value, geq=geq, wires=range(3))
-        return qml.state()
-
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> @qml.qnode(dev)
+    ... def circuit(state, value, geq):
+    ...     qml.BasisState(np.array(state), wires=range(3))
+    ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
+    ...     return qml.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
     (1+0j)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
@@ -370,9 +368,9 @@ class IntegerComparator(Operation):
     ):
 
         if not isinstance(value, int):
-            raise ValueError("The comparable value must be an integer.")
+            raise ValueError(f"The compared value must be an int. Got {type(value)}.")
         if wires is None:
-            raise ValueError("Must specify the target wire where the operation acts on.")
+            raise ValueError("Must specify wires that the operation acts on.")
         if len(wires) > 1:
             control_wires = Wires(wires[:-1])
             wires = Wires(wires[-1])
@@ -497,12 +495,15 @@ class IntegerComparator(Operation):
 
         **Example:**
 
-        >>> print(qml.IntegerComparator.compute_decomposition(value=2, wires=[0,1,2,3])
-        TODO
+        >>> print(qml.IntegerComparator.compute_decomposition(4, wires=[0, 1, 2, 3]))
+        [MultiControlledX(wires=[0, 1, 2, 3], control_values="100"),
+         MultiControlledX(wires=[0, 1, 2, 3], control_values="101"),
+         MultiControlledX(wires=[0, 1, 2, 3], control_values="110"),
+         MultiControlledX(wires=[0, 1, 2, 3], control_values="111")]
         """
 
         if not isinstance(value, int):
-            raise ValueError("The comparable value must be an integer.")
+            raise ValueError(f"The compared value must be an int. Got {type(value)}.")
         if wires is None:
             raise ValueError("Must specify the wires that the operation acts on.")
         if len(wires) > 1:
@@ -510,8 +511,7 @@ class IntegerComparator(Operation):
             wires = Wires(wires[-1])
         else:
             raise ValueError(
-                "IntegerComparator: wrong number of wires. "
-                f"{len(wires)} wire(s) given. Need at least 2."
+                f"IntegerComparator: wrong number of wires. {len(wires)} wire(s) given. Need at least 2."
             )
 
         work_wires = Wires("aux") if len(control_wires) > 2 else None
