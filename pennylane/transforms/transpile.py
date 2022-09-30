@@ -96,6 +96,11 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
 
+    if any(len(op.wires) > 2 for op in tape.operations):
+        raise NotImplementedError(
+            "The transpile transform only supports gates acting on 1 or 2 qubits."
+        )
+
     gates = []
 
     # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of templates

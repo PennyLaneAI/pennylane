@@ -151,6 +151,40 @@ class TestTranspile:
         params = np.array([0.5, 0.1, 0.2], requires_grad=True)
         qml.gradients.param_shift(transpiled_qnode)(params)
 
+    def test_more_than_2_qubits_raises_anywires(self):
+        """test that transpile raises an error for an operation with AnyWires that acts on more than 2 qubits"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        param = 0.3
+
+        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        with pytest.raises(
+            NotImplementedError,
+            match="transpile transform only supports gates acting on 1 or 2 qubits",
+        ):
+            transpiled_expectation = transpiled_qnode(param)
+
+    def test_more_than_2_qubits_raises_3_qubit_gate(self):
+        """test that transpile raises an error for an operation that acts on more than 2 qubits"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit():
+            qml.Toffoli(wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        with pytest.raises(
+            NotImplementedError,
+            match="transpile transform only supports gates acting on 1 or 2 qubits",
+        ):
+            transpiled_expectation = transpiled_qnode()
+
     def test_transpile_ops_anywires(self):
         """test that transpile does not alter output for expectation value of an observable if the qfunc contains
         operations that act on any number of wires"""
