@@ -249,7 +249,7 @@ class TestIntegerComparator:
         "value,geq,wires,expected_error_message",
         [
             (4.20, False, [0, 1, 2], "The comparable value must be an integer."),
-            (2, True, None, "Must specify the target wire where the operation acts on."),
+            (2, True, None, "Must specify the control wires."),
             (
                 2,
                 True,
@@ -350,6 +350,24 @@ class TestIntegerComparator:
 
         op.inv()
         assert op.label() == label2
+
+    @pytest.mark.parametrize(
+        "value,control_wires,geq,expected_error_message",
+        [
+            (4.20, [0, 1, 2], False, "The compared value must be an int. Got <class 'float'>."),
+            (2, None, True, "Must specify the wires that the operation acts on."),
+            (
+                2,
+                [0],
+                False,
+                "IntegerComparator: wrong number of wires. 1 wire(s) given. Need at least 2.",
+            ),
+        ],
+    )
+    def test_invalid_args_compute_decomposition(self, value, wires, geq, expected_error_message):
+        """Test if compute_matrix properly handles invalid arguments."""
+        with pytest.raises(ValueError, match=expected_error_message):
+            qml.IntegerComparator.compute_matrix(value=value, control_wires=control_wires, geq=geq)
 
     def test_decomposition(self):
         """Test operator's ``compute_decomposition()`` method."""

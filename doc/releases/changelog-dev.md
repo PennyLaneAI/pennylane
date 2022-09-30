@@ -42,8 +42,8 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * The `IntegerComparator` arithmetic operation is now available.
 
-  Given a basis state :math:`\vert \sigma \rangle`, where :math:`\sigma \in \mathbb{N}`, and a fixed positive
-  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`\sigma \geq L`. 
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
   Alternatively, the flipping condition can be :math:`\sigma < L`. This is accessed via the `geq` keyword
   argument.
 

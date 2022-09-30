@@ -483,7 +483,6 @@ class IntegerComparator(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
         .. seealso:: :meth:`~.IntegerComparator.decomposition`.
 
         Args:
@@ -505,7 +504,7 @@ class IntegerComparator(Operation):
         if not isinstance(value, int):
             raise ValueError("The comparable value must be an integer.")
         if wires is None:
-            raise ValueError("Must specify the target wire where the operation acts on.")
+            raise ValueError("Must specify the wires that the operation acts on.")
         if len(wires) > 1:
             control_wires = Wires(wires[:-1])
             wires = Wires(wires[-1])

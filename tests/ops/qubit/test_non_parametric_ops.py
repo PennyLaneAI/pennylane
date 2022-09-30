@@ -1035,6 +1035,13 @@ class TestMultiControlledX:
         mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
         assert np.allclose(mat1, mat2)
 
+    def test_repr(self):
+        """Test ``__repr__`` method that shows ``control_values``"""
+        wires = [0, 1, 2]
+        control_values = "01"
+        op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__
+        assert op_repr == f'MultiControlledX(wires={wires}, control_values="{control_values}")'
+
 
 period_two_ops = (
     qml.PauliX(0),
