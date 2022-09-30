@@ -15,6 +15,7 @@
 Unit tests for the the arithmetic qubit operations
 """
 import copy
+import itertools
 
 import pytest
 import numpy as np
@@ -352,14 +353,32 @@ class TestIntegerComparator:
 
     def test_decomposition(self):
         """Test operator's ``compute_decomposition()`` method."""
-        decomp1 = qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=True)
-        assert decomp1 == [
-            qml.MultiControlledX(wires=[0, 1, 2], control_values="10"),
-            qml.MultiControlledX(wires=[0, 1, 2], control_values="11"),
-        ]
 
-        decomp2 = qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=False)
-        assert decomp2 == [
-            qml.MultiControlledX(wires=[0, 1, 2], control_values="00"),
-            qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
-        ]
+        with qml.tape.QuantumTape() as tape1:
+            qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2])
+        assert all(isinstance(op, qml.MultiControlledX) for op in tape1.operations)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=False)
+        assert all(isinstance(op, qml.MultiControlledX) for op in tape2.operations)
+
+        num_wires = 3
+        num_workers = 1
+        dev = qml.device("default.qubit", wires=num_wires + num_workers)
+
+        @qml.qnode(dev)
+        def f(bitstring, tape, geq):
+            qml.BasisState(bitstring, wires=range(num_wires + num_workers))
+            qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq).inv()
+            for op in tape.operations:
+                op.queue()
+            return qml.probs(wires=range(num_wires + num_workers))
+
+        for tape, geq in zip([tape1, tape2], [True, False]):
+            u = np.array(
+                [
+                    f(np.array(b), tape, geq)
+                    for b in itertools.product(range(2), repeat=num_wires + num_workers)
+                ]
+            ).T
+            assert np.allclose(u, np.eye(2 ** (num_wires + num_workers)))
