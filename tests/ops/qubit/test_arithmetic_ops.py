@@ -301,6 +301,7 @@ class TestIntegerComparator:
         [
             (None, [0, 1], True, "The value to compare to must be specified."),
             (4.20, [0, 1], False, "The compared value must be an int. Got <class 'float'>."),
+            (4, None, True, "Must specify the control wires."),
         ],
     )
     def test_invalid_args_compute_matrix(self, value, control_wires, geq, expected_error_message):
