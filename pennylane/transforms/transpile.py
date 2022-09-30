@@ -120,7 +120,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             op = list_op_copy[0]
 
             # gates which act only on one wire
-            if op.num_wires == 1:
+            if len(op.wires) == 1:
                 gates.append(op)
                 list_op_copy.pop(0)
                 continue
