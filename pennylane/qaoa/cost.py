@@ -17,7 +17,7 @@ different optimization problems.
 """
 from typing import Iterable, Union
 import networkx as nx
-import retworkx as rx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
@@ -102,7 +102,7 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
     + (0.25) [Z0 Z1]
     + (0.25) [Z1 Z2]
 
-    >>> import retworkx as rx
+    >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
@@ -283,7 +283,7 @@ def maxcut(graph: Union[nx.Graph, rx.PyGraph]):
     + (1) [X1]
     + (1) [X2]
 
-    >>> import retworkx as rx
+    >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
