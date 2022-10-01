@@ -3,7 +3,7 @@ scipy
 cvxpy
 cvxopt
 networkx
-retworkx
+rustworkx
 tensornetwork==0.3
 autograd
 toml
