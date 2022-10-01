@@ -20,7 +20,7 @@ import numpy as np
 
 import networkx as nx
 from networkx import Graph
-import retworkx as rx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
