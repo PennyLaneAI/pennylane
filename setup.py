@@ -21,7 +21,7 @@ requirements = [
     "numpy",
     "scipy",
     "networkx",
-    "retworkx",
+    "rustworkx",
     "autograd",
     "toml",
     "appdirs",
