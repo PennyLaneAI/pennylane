@@ -18,7 +18,7 @@ representation of a quantum circuit from an Operator queue.
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
 from collections import namedtuple
 
-import retworkx as rx
+import rustworkx as rx
 import numpy as np
 
 import pennylane as qml
@@ -284,7 +284,7 @@ class CircuitGraph:
         and directed edges pointing from nodes to their immediate dependents/successors.
 
         Returns:
-            retworkx.PyDiGraph: the directed acyclic graph representing the quantum circuit
+            rustworkx.PyDiGraph: the directed acyclic graph representing the quantum circuit
         """
         return self._graph
 
