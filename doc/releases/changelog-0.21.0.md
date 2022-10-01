@@ -336,11 +336,11 @@
   example, the time to construct the Hamiltonian is reduced roughly by a factor
   of 20.
 
-* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
+* The QAOA module now accepts both NetworkX and RustworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
 * The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
-  uses RetworkX for its internal representation. This results in significant speedup
+  uses RustworkX for its internal representation. This results in significant speedup
   for algorithms that rely on a directed acyclic graph representation.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
