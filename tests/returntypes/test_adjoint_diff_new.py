@@ -237,8 +237,12 @@ class TestAdjointJacobian:
 
         assert isinstance(grad_D, tuple)
         assert len(grad_D) == 2
-        assert all(isinstance(g, tuple) and len(g) == op.num_params for g in grad_D)
-        assert all(all(isinstance(_g, np.ndarray) for _g in g) for g in grad_D)
+
+        if op.num_params == 1:
+            assert all(isinstance(g, np.ndarray) and g.shape == () for g in grad_D)
+        else:
+            assert all(isinstance(g, tuple) and len(g) == op.num_params for g in grad_D)
+            assert all(all(isinstance(_g, np.ndarray) for _g in g) for g in grad_D)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
