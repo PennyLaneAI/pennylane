@@ -441,37 +441,23 @@ class IntegerComparator(Operation):
             raise ValueError("The value to compare to must be specified.")
         if control_wires is None:
             raise ValueError("Must specify the control wires.")
-        if isinstance(value, int):
-            binary = "0" + str(len(control_wires)) + "b"
+        if not isinstance(value, int):
+            raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
-            if geq:
-                if value > 2 ** len(control_wires) - 1:
-                    mat = np.eye(2 ** (len(control_wires) + 1))
-
-                else:
-                    control_values_list = [
-                        format(n, binary) for n in range(value, 2 ** (len(control_wires)))
-                    ]
-                    mat = np.eye(2 ** (len(control_wires) + 1))
-                    for control_values in control_values_list:
-                        mat = mat @ MultiControlledX.compute_matrix(
-                            control_wires, control_values=control_values
-                        )
-
-            else:
-                if value == 0:
-                    mat = np.eye(2 ** (len(control_wires) + 1))
-
-                else:
-                    control_values_list = [format(n, binary) for n in range(value)]
-                    mat = np.eye(2 ** (len(control_wires) + 1))
-                    for control_values in control_values_list:
-                        mat = mat @ MultiControlledX.compute_matrix(
-                            control_wires, control_values=control_values
-                        )
+        small_val = not geq and value == 0
+        large_val = geq and value > 2 ** len(control_wires) - 1
+        if small_val or large_val:
+            mat = np.eye(2 ** (len(control_wires) + 1))
 
         else:
-            raise ValueError(f"The compared value must be an int. Got {type(value)}.")
+            values = range(value, 2 ** (len(control_wires))) if geq else range(value)
+            binary = "0" + str(len(control_wires)) + "b"
+            control_values_list = [format(n, binary) for n in values]
+            mat = np.eye(2 ** (len(control_wires) + 1))
+            for control_values in control_values_list:
+                mat = mat @ MultiControlledX.compute_matrix(
+                    control_wires, control_values=control_values
+                )
 
         return mat
 
@@ -514,44 +500,28 @@ class IntegerComparator(Operation):
                 f"IntegerComparator: wrong number of wires. {len(wires)} wire(s) given. Need at least 2."
             )
 
-        work_wires = Wires("aux") if len(control_wires) > 2 else None
-        binary = "0" + str(len(control_wires)) + "b"
-
-        if geq:
-            if value > 2 ** len(control_wires) - 1:
-                gates = [Identity(0)]
-
-            else:
-                control_values_list = [
-                    format(n, binary) for n in range(value, 2 ** (len(control_wires)))
-                ]
-                gates = []
-                for control_values in control_values_list:
-                    gates.append(
-                        MultiControlledX(
-                            control_wires=control_wires,
-                            wires=wires,
-                            control_values=control_values,
-                            work_wires=work_wires,
-                        )
-                    )
+        small_val = not geq and value == 0
+        large_val = geq and value > 2 ** len(control_wires) - 1
+        if small_val or large_val:
+            gates = [Identity(0)]
 
         else:
-            if value == 0:
-                gates = [Identity(0)]
-
-            else:
-                control_values_list = [format(n, binary) for n in range(value)]
-                gates = []
-                for control_values in control_values_list:
-                    gates.append(
-                        MultiControlledX(
-                            control_wires=control_wires,
-                            wires=wires,
-                            control_values=control_values,
-                            work_wires=work_wires,
-                        )
+            work_wires = Wires("aux") if len(control_wires) > 2 else None
+            binary = "0" + str(len(control_wires)) + "b"
+            values = range(value, 2 ** (len(control_wires))) if geq else range(value)
+            binary = "0" + str(len(control_wires)) + "b"
+            control_values_list = [format(n, binary) for n in values]
+            mat = np.eye(2 ** (len(control_wires) + 1))
+            gates = []
+            for control_values in control_values_list:
+                gates.append(
+                    MultiControlledX(
+                        control_wires=control_wires,
+                        wires=wires,
+                        control_values=control_values,
+                        work_wires=work_wires,
                     )
+                )
 
         return gates
 
