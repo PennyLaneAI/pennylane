@@ -298,14 +298,18 @@ def _finite_diff_new(
                 else:
                     g = []
                     for i in output_dims:
-                        g.append(qml.math.zeros(i))
+                        zero = qml.math.squeeze(qml.math.zeros(i))
+                        g.append(zero)
+
                 grads.append(g)
                 continue
 
             res = results[start : start + s]
             start = start + s
+
             # compute the linear combination of results
             # and coefficients
+
             pre_grads = []
 
             if len(tape.measurements) == 1:
@@ -357,7 +361,10 @@ def _finite_diff_new(
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
-        grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
+        if len(tape.trainable_params) == 1:
+            grads_tuple = tuple(elem[0] for elem in grads_reorder)
+        else:
+            grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
 
         return grads_tuple
 
