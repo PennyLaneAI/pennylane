@@ -511,7 +511,6 @@ class IntegerComparator(Operation):
             values = range(value, 2 ** (len(control_wires))) if geq else range(value)
             binary = "0" + str(len(control_wires)) + "b"
             control_values_list = [format(n, binary) for n in values]
-            mat = np.eye(2 ** (len(control_wires) + 1))
             gates = []
             for control_values in control_values_list:
                 gates.append(
