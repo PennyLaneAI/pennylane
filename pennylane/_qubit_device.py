@@ -1904,8 +1904,9 @@ class QubitDevice(Device):
 
         if jac.ndim == 0:
             return np.array(jac)
-        elif jac.ndim == 1:
+
+        if jac.ndim == 1:
             return tuple(np.array(j) for j in jac)
-        else:
-            # must be 2-dimensional
-            return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
+        # must be 2-dimensional
+        return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
