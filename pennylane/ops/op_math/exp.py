@@ -234,7 +234,7 @@ class Exp(SymbolicOp):
         return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Exp"
+        return base_label or f"Exp({self.coeff} {self.base.label(decimals=decimals, cache=cache)})"
 
     def pow(self, z):
         return Exp(self.base, self.coeff * z)

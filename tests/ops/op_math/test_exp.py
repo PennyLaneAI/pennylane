@@ -320,7 +320,7 @@ class TestMiscMethods:
     def test_label(self):
         """Test that the label is always EXP"""
         op = Exp(qml.PauliZ(0), 2 + 3j)
-        assert op.label(decimals=4) == "Exp"
+        assert op.label(decimals=4) == "Exp((2+3j) Z)"
 
     def test_simplify_sprod(self):
         """Test that simplify merges SProd into the coefficent."""
