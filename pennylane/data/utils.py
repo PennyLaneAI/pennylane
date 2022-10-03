@@ -26,8 +26,9 @@ import dill
 import requests
 
 from pennylane.data.dataset import Dataset
-#from pennylane.qdata.qchem_dataset import ChemDataset
-#from pennylane.qdata.qspin_dataset import SpinDataset
+
+# from pennylane.qdata.qchem_dataset import ChemDataset
+# from pennylane.qdata.qspin_dataset import SpinDataset
 
 DATA_STRUCT = {
     "qchem": {
@@ -83,8 +84,8 @@ DATA_STRUCT = {
             "Variational circuit for obtaining ground-state",
             "Variational parameters for which ansatz evolve to ground state",
             "Variational energy given by the vqe_circuit for provided vqe_params",
-            "Contains all the attributes related to the quantum chemistry datatset"
-        ]
+            "Contains all the attributes related to the quantum chemistry datatset",
+        ],
     },
     "qspin": {
         "docstr": "Quantum many-body spin system dataset.",
@@ -99,7 +100,7 @@ DATA_STRUCT = {
             "classical_shadows",
             "full",
         ],
-        "docstrings" : [
+        "docstrings": [
             "Parameters describing the spin system",
             "Hamiltonians for the spin systems with different parameter values",
             "Ground states for the spin systems with different parameter values",
@@ -108,24 +109,14 @@ DATA_STRUCT = {
             "Order parameters required to determine the phase labels",
             "Classical shadow description of the ground state of the spin systems",
             "Contains all the attributes related to the quantum spin datatset",
-        ]
+        ],
     },
 }
 
 URL = "https://pl-qd-flask-app.herokuapp.com"
 S3_URL = "https://xanadu-quantum-data.s3.amazonaws.com"
 
-_s3_filemap = {
-    'qchem': {
-        'H2': {
-            'STO-3G': {'0.4','0.5','0.6','0.7','0.8','0.9'},
-            '6-31G': {'0.4','0.5','0.6','0.7','0.8','0.9'},
-        },
-        'H3': {
-            'STO-3G': {'0.14', '0.157'},
-        },
-    },
-}
+_s3_filemap = {}
 
 
 def _convert_size(size_bytes):
@@ -223,31 +214,48 @@ def _s3_download(data_type, folders, attributes, dest_folder):
         if not os.path.exists(local_folder):
             os.makedirs(local_folder)
 
-        file_prefix = folder.replace('/', '_')
+        file_prefix = folder.replace("/", "_")
         # TODO: if len(attributes) > 1, merge contents to single file like _partial.dat
         for attr in attributes:
             fname = f"{file_prefix}_{attr}.dat"
             response = requests.get(f"{s3_folder}/{fname}")
             if not response.ok:
                 response.raise_for_status()
-            with open(f"{local_folder}/{fname}", 'wb') as f:
+            with open(f"{local_folder}/{fname}", "wb") as f:
                 f.write(response.content)
 
 
-def _generate_folders(node, folders):
-    """Recursively generate and return a tree of all folder names matching a pattern.
-
-    Args:
-        node (dict): The map of all files that actually exist, initially invoked with a root node
-        folders: (list[list[str]]): The ordered list of folder names requested.
-            The value ``["full"]`` will expand to all possible folders at that depth
-    """
-
+def _generate_folder_list(node, folders):
+    """Recursive helper method for _generate_folders"""
     next_folders = folders[1:]
     folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
     if not next_folders:
         return folders
-    return [os.path.join(folder, child) for folder in folders for child in _generate_folders(node[folder], next_folders)]
+    return [
+        os.path.join(folder, child)
+        for folder in folders
+        for child in _generate_folder_list(node[folder], next_folders)
+    ]
+
+
+def _generate_folders(data_type, folders):
+    """Recursively generate and return a tree of all folder names matching a pattern.
+
+    If the __s3_filemap is stale, this method will refresh it.
+
+    Args:
+        data_type (str): The data type for which folders are generated
+        folders: (list[list[str]]): The ordered list of folder names requested.
+            The value ``["full"]`` will expand to all possible folders at that depth
+
+    Returns:
+        list[str]: The paths of files that should be fetched from S3
+    """
+
+    global _s3_filemap
+    if data_type not in _s3_filemap:
+        _s3_filemap = list_datasets()
+    return _generate_folder_list(_s3_filemap[data_type], folders)
 
 
 def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True, **params):
@@ -267,9 +275,7 @@ def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True,
 
     _validate_params(data_type, params, attributes)
 
-    description = {
-        key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()
-    }
+    description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
     data = DATA_STRUCT[data_type]
     directory_path = os.path.join(folder_path, "datasets", data_type)
 
@@ -277,12 +283,12 @@ def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True,
         force = _check_data_exist(data_type, description, directory_path)
 
     folders = [description[param] for param in data["params"]]
-    all_folders = _generate_folders(_s3_filemap[data_type], folders)
+    all_folders = _generate_folders(data_type, folders)
     _s3_download(data_type, all_folders, attributes, directory_path)
 
     data_files = []
     for folder in all_folders:
-        file_prefix = os.path.join(directory_path, data_type, folder, folder.replace('/', '_'))
+        file_prefix = os.path.join(directory_path, data_type, folder, folder.replace("/", "_"))
         # TODO: replace attributes[0] with actual name after _s3_download() is updated
         fname = f"{file_prefix}_{attributes[0]}.dat"
         obj = Dataset(dfile=fname, dtype=data_type)
@@ -346,7 +352,7 @@ def list_datasets(folder_path=None):
         }
     """
 
-    wdata = json.loads(requests.get(URL + "/download/about").content)
+    wdata = requests.get(URL + "/download/about").json()
     if folder_path is None:
         return wdata
     else:

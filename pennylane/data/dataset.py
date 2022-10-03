@@ -75,14 +75,14 @@ class Dataset(ABC):
         self._write_file(filepath=filepath, data=dataset, protocol=protocol)
 
     def setattr(self, name, value, update_file=False, protocol=4):
-        """ Set value of an attribute and its file """
+        """Set value of an attribute and its file"""
         setattr(self, name, value)
         if update_file and os.path.exists(self.dfile):
             self._write_file(f"{self.dfile}_{name}.dat", value, protocol)
 
     @staticmethod
     def from_dataset(dataset, copy_dfile=False):
-        """ Build a dataset from another dataset """
+        """Build a dataset from another dataset"""
         dataset = Dataset(dtype=dataset.dtype, dfile=dataset.dtype if copy_dfile else None)
         for (key, val) in dataset.__dict__.items():
             if key not in ["dtype", "dfile"]:
@@ -90,7 +90,7 @@ class Dataset(ABC):
         return dataset
 
     def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
-        """ Build the docstring for the Dataset class """
+        """Build the docstring for the Dataset class"""
         docstring = f"""{docstr}\n\n"""
         if args and argsdocs and argtypes:
             docstring += """Args:\n"""
