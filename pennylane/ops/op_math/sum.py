@@ -177,7 +177,6 @@ class Sum(CompositeOp):
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Sum op in csr representation."""
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
         reduced_mat, sum_wires = math.reduce_matrices(
@@ -197,6 +196,11 @@ class Sum(CompositeOp):
         Returns: None
         """
         return None
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
