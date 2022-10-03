@@ -17,12 +17,8 @@ Contains the Dataset utility functions.
 import os
 import sys
 import math
-import json
 import glob
 import itertools
-import zipfile
-import pickle
-import dill
 import requests
 
 from pennylane.data.dataset import Dataset
@@ -182,7 +178,7 @@ def _validate_params(data_type, description, attributes):
         raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes)}.")
 
     all_attributes = data["keys"]
-    if set(attributes) - set(all_attributes):
+    if not set(attributes).issubset(set(all_attributes)):
         raise ValueError(
             f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
         )
@@ -207,7 +203,6 @@ def _check_data_exist(data_type, description, directory_path):
 
 def _s3_download(data_type, folders, attributes, dest_folder):
     """Download a file for each attribute from each folder to the specified destination."""
-    prefix = os.path.join(S3_URL, data_type)
     for folder in folders:
         s3_folder = os.path.join(S3_URL, data_type, folder)
         local_folder = os.path.join(dest_folder, data_type, folder)
@@ -218,7 +213,7 @@ def _s3_download(data_type, folders, attributes, dest_folder):
         # TODO: if len(attributes) > 1, merge contents to single file like _partial.dat
         for attr in attributes:
             fname = f"{file_prefix}_{attr}.dat"
-            response = requests.get(f"{s3_folder}/{fname}")
+            response = requests.get(f"{s3_folder}/{fname}", timeout=5.0)
             if not response.ok:
                 response.raise_for_status()
             with open(f"{local_folder}/{fname}", "wb") as f:
@@ -258,7 +253,7 @@ def _generate_folders(data_type, folders):
     return _generate_folder_list(_s3_filemap[data_type], folders)
 
 
-def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True, **params):
+def load(data_type, attributes=None, lazy=False, folder_path="", force=True, **params):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
 
     Args:
@@ -273,6 +268,9 @@ def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True,
 
     """
 
+    _ = lazy
+    if not attributes:
+        attributes = ["full"]
     _validate_params(data_type, params, attributes)
 
     description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
@@ -315,7 +313,7 @@ def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True,
 
 def _direc_to_dict(path):
     r"""Helper function to create dictionary structure from directory path"""
-    for root, dirs, files in os.walk(path):
+    for root, dirs, _ in os.walk(path):
         if dirs:
             tree = {x: _direc_to_dict(os.path.join(root, x)) for x in dirs}
             vals = [x is None for x in tree.values()]
@@ -352,16 +350,15 @@ def list_datasets(folder_path=None):
         }
     """
 
-    wdata = requests.get(URL + "/download/about").json()
+    wdata = requests.get(URL + "/download/about", timeout=5.0).json()
     if folder_path is None:
         return wdata
-    else:
-        fdata = _direc_to_dict(folder_path)
-        return wdata, fdata
+    return wdata, _direc_to_dict(folder_path)
 
 
-def _data_dfs(t, path=[]):
+def _data_dfs(t, path=None):
     r"""Perform Depth-First search on the nested directory structure"""
+    path = path or []
     if isinstance(t, dict):
         for key, val in t.items():
             yield from _data_dfs(val, [*path, key])
@@ -390,9 +387,9 @@ def get_description(data, data_type, **kwargs):
     """
 
     params = DATA_STRUCT[data_type]["params"]
-    if not set(kwargs.keys()).issubset(params):
+    if not set(kwargs).issubset(params):
         raise ValueError(
-            f"Expected kwargs for the module {module} are {params}, but got {list(kwargs.items())}"
+            f"Expected kwargs for the module {data_type} are {params}, but got {list(kwargs.items())}"
         )
 
     description = [["full"] for params in params]
@@ -404,22 +401,20 @@ def get_description(data, data_type, **kwargs):
     traverse_data = list(
         filter(
             lambda x: all(
-                [
-                    x[0][m] in description[m]
-                    if m < len(params) - 1
-                    else set(description[m]).issubset(x[1])
-                    for m in mtch_params
-                ]
+                x[0][m] in description[m]
+                if m < len(params) - 1
+                else set(description[m]).issubset(x[1])
+                for m in mtch_params
             ),
             _data_dfs(data[data_type], []),
         )
     )
 
     description = []
-    for data in traverse_data:
+    for tdata in traverse_data:
         dparams = {param: ["full"] for param in params}
         for idx in mtch_params:
-            dparams[params[idx]] = [data[0][idx]] if idx < len(params) - 1 else data[1]
+            dparams[params[idx]] = [tdata[0][idx]] if idx < len(params) - 1 else tdata[1]
         if dparams not in description:
             description.append(dparams)
 
@@ -437,7 +432,7 @@ def get_attributes(data_type, description):
         list[str]: List of strings representing all the filter keys available for the requested dataset
     """
 
-    _validate_params(data_type, description)
+    _validate_params(data_type, description, [])
 
     description = {
         key: (val if isinstance(val, list) else [val]) for (key, val) in description.items()
@@ -447,8 +442,7 @@ def get_attributes(data_type, description):
         "dparams": description,
     }
 
-    response = requests.post(f"{URL}/download/about/{data_type}/keys", json=request_data)
-    if response.status_code == 200:
-        return json.loads(response.content)
-    else:
+    response = requests.post(f"{URL}/download/about/{data_type}/keys", json=request_data, timeout=5.0)
+    if response.status_code != 200:
         response.raise_for_status()
+    return response.json()
