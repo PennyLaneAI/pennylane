@@ -1902,8 +1902,8 @@ class QubitDevice(Device):
         """
         if jac.shape[0] == 1:
             if jac.shape[1] == 1:
-                return jac[0][0]
+                return np.array(jac[0][0])
 
-            return tuple(jac[0])
+            return tuple(np.array(j) for j in jac[0])
 
-        return tuple(tuple(j) for j in jac)
+        return tuple(tuple(np.array(j_) for j_ in j) for j in jac)

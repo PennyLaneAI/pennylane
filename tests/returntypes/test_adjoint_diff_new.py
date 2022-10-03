@@ -114,7 +114,7 @@ class TestAdjointJacobian:
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(qml.execute(tapes, dev, None))
 
-        assert isinstance(calculated_val, np.floating)
+        assert isinstance(calculated_val, np.ndarray)
         assert calculated_val.shape == ()
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
@@ -140,7 +140,7 @@ class TestAdjointJacobian:
 
         assert isinstance(calculated_val, tuple)
         assert len(calculated_val) == 3
-        assert all(isinstance(val, np.floating) and val.shape == () for val in calculated_val)
+        assert all(isinstance(val, np.ndarray) and val.shape == () for val in calculated_val)
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
     def test_ry_gradient(self, tol, dev):
@@ -161,7 +161,7 @@ class TestAdjointJacobian:
         grad_A = dev.adjoint_jacobian(tape)
 
         # different methods must agree
-        assert isinstance(grad_A, np.floating) and grad_A.shape == ()
+        assert isinstance(grad_A, np.ndarray) and grad_A.shape == ()
         assert np.allclose(grad_F, exact, atol=tol, rtol=0)
         assert np.allclose(grad_A, exact, atol=tol, rtol=0)
 
@@ -177,7 +177,7 @@ class TestAdjointJacobian:
         dev_jacobian = dev.adjoint_jacobian(tape)
         expected_jacobian = -np.sin(a)
 
-        assert isinstance(dev_jacobian, np.floating)
+        assert isinstance(dev_jacobian, np.ndarray)
         assert dev_jacobian.shape == ()
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
@@ -199,7 +199,7 @@ class TestAdjointJacobian:
         assert isinstance(dev_jacobian, tuple)
         assert len(dev_jacobian) == 3
         assert all(isinstance(jac, tuple) and len(jac) == 3 for jac in dev_jacobian)
-        assert all(all(isinstance(j, np.floating) for j in jac) for jac in dev_jacobian)
+        assert all(all(isinstance(j, np.ndarray) for j in jac) for jac in dev_jacobian)
 
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
@@ -238,7 +238,7 @@ class TestAdjointJacobian:
         assert isinstance(grad_D, tuple)
         assert len(grad_D) == 2
         assert all(isinstance(g, tuple) and len(g) == op.num_params for g in grad_D)
-        assert all(all(isinstance(_g, np.floating) for _g in g) for g in grad_D)
+        assert all(all(isinstance(_g, np.ndarray) for _g in g) for g in grad_D)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
@@ -261,7 +261,7 @@ class TestAdjointJacobian:
         # gradient has the correct shape and every element is nonzero
         assert isinstance(grad_D, tuple)
         assert len(grad_D) == 3
-        assert all(isinstance(g, np.floating) for g in grad_D)
+        assert all(isinstance(g, np.ndarray) for g in grad_D)
 
         assert np.count_nonzero(grad_D) == 3
         # the different methods agree
@@ -375,7 +375,7 @@ class TestAdjointJacobian:
         assert len(grad_D) == len(observables)
         assert all(isinstance(g, tuple) for g in grad_D)
         assert all(len(g) == 3 for g in grad_D)
-        assert all(all(isinstance(_g, np.floating) for _g in g) for g in grad_D)
+        assert all(all(isinstance(_g, np.ndarray) for _g in g) for g in grad_D)
 
         # check the results against individually executed tapes
         for i, ob in enumerate(observables):
@@ -391,6 +391,6 @@ class TestAdjointJacobian:
 
             assert isinstance(expected, tuple)
             assert len(expected) == 3
-            assert all(isinstance(g, np.floating) for g in expected)
+            assert all(isinstance(g, np.ndarray) for g in expected)
 
             assert np.allclose(grad_D[i], expected)
