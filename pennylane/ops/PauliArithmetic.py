@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""The Pauli arithmetic reduced representation classes !"""
+from copy import copy
 from enum import Enum
-from functools import reduce
 
-# import pennylane as qml
-# import pennylane.ops
 from pennylane import math
 import numpy as np
 from scipy import sparse
@@ -117,22 +116,21 @@ class PauliWord(dict):
         return hash(frozenset(self.items()))
 
     def __mul__(self, other):
-        d = dict(self)
+        result, iterator = (dict(self), other) if len(self) > len(other) else (dict(other), self)
         coeff = 1
 
-        for wire, term in other.items():
-
-            if wire in d:
-                factor, new_op = mul_map[d[wire]][term]
+        for wire, term in iterator.items():
+            if wire in result:
+                factor, new_op = mul_map[result[wire]][term]
                 if new_op == I:
-                    del d[wire]
+                    del result[wire]
                 else:
                     coeff *= factor
-                    d[wire] = new_op
+                    result[wire] = new_op
             elif term != I:
-                d[wire] = term
+                result[wire] = term
 
-        return PauliWord(d), coeff
+        return PauliWord(result), coeff
 
 
 class PauliSentence(dict):
@@ -153,7 +151,8 @@ class PauliSentence(dict):
     def __add__(self, other):
         """Add two Pauli sentence together by iterating over the smaller
         one and adding its terms to the larger one."""
-        smaller_ps, larger_ps = (self, other) if len(self) < len(other) else (other, self)
+        c_self, c_other = (self, other)
+        smaller_ps, larger_ps = (c_self, c_other) if len(self) < len(other) else (c_other, c_self)
         for key in smaller_ps:
             larger_ps[key] += smaller_ps[key]
 
@@ -184,14 +183,14 @@ class PauliSentence(dict):
 
         return rep_str
 
-    def _to_mat(self, wire_order, is_sparse=False):
+    def _to_mat(self, wire_order, format="dense"):
         """Get the matrix by iterating over each term and getting its matrix
         representation for each wire listed in the wire order."""
-        matrix_map = sparse_mat_map if is_sparse else mat_map
-        final_mat = sparse.eye(2, format="csr") if is_sparse else np.eye(2)
+        matrix_map = sparse_mat_map if format != "dense" else mat_map
+        final_mat = sparse.eye(2, format=format) if format != "dense" else np.eye(2)
 
         for i, (pw, coeff) in enumerate(self.items()):
-            mat = sparse.eye(2, format="csr") if is_sparse else np.eye(2)
+            mat = sparse.eye(2, format=format) if format != "dense" else np.eye(2)
             for j, wire in enumerate(wire_order):
                 mat = (
                     math.dot(mat, matrix_map[pw[wire]])
@@ -207,28 +206,10 @@ class PauliSentence(dict):
     def to_mat(self, wire_order):
         return self._to_mat(wire_order=wire_order)
 
-    def to_sparse_mat(self, wire_order):
-        return self._to_mat(wire_order=wire_order, is_sparse=True)
+    def to_sparse_mat(self, wire_order, format="csr"):
+        return self._to_mat(wire_order=wire_order, format=format)
 
     def simplify(self, tol=1e-8):
         for pw in self:
             if abs(self[pw]) <= tol:
                 del self[pw]
-
-    # def to_op(self):
-    #     """Generate a native PL operator from the reduced representation"""
-    #     pl_op = qml.op_sum(
-    #         *(qml.s_prod(coeff, qml.prod(
-    #             *(op_map[op](w) for w, op in pw.items())
-    #         )) for pw, coeff in self.items())
-    #     )
-    #     return pl_op
-    #
-    # def to_hamiltonian(self):
-    #     """Generate a native PL hamiltonian from the reduced representation"""
-    #     coeffs, terms = ([], [])
-    #
-    #     for pw, coeff in self.items():
-    #         coeffs.append(coeff)
-    #         terms.append(qml.Tensor(*(op_map[op](w) for w, op in pw.items)))
-    #     return qml.Hamiltonian(coeffs, terms)
