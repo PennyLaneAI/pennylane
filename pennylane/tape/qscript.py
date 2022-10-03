@@ -75,7 +75,7 @@ class QuantumScript:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
-        name (str): a name given to the quantum tape
+        name (str): a name given to the quantum script
 
     .. seealso:: :class:`pennylane.tape.QuantumTape`
 
@@ -150,7 +150,7 @@ class QuantumScript:
 
         self._par_info = {}
         """dict[int, dict[str, Operator or int]]: Parameter information. Keys are
-        parameter indices (in the order they appear on the tape), and values are a
+        parameter indices (in the order they appear on the quantum script), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
         self._trainable_params = []
@@ -179,7 +179,7 @@ class QuantumScript:
 
     @property
     def hash(self):
-        """int: returns an integer hash uniquely representing the quantum tape"""
+        """int: returns an integer hash uniquely representing the quantum script"""
         fingerprint = []
         fingerprint.extend(op.hash for op in self.operations)
         fingerprint.extend(m.hash for m in self.measurements)
@@ -202,17 +202,17 @@ class QuantumScript:
         return len(self.circuit)
 
     # ========================================================
-    # QSRCIPT properties
+    # QSCRIPT properties
     # ========================================================
 
     @property
     def interface(self):
-        """str, None: automatic differentiation interface used by the quantum tape (if any)"""
+        """str, None: automatic differentiation interface used by the quantum script (if any)"""
         return None
 
     @property
     def circuit(self):
-        """Returns the quantum circuit recorded by the tape.
+        """Returns the underlying quantum circuit object.
 
         The circuit is created with the assumptions that:
 
@@ -226,17 +226,16 @@ class QuantumScript:
         Returns:
 
             list[.Operator, .MeasurementProcess]: the quantum circuit
-            containing quantum operations and measurements as recorded by the
-            tape.
+            containing quantum operations and measurements
         """
         return self.operations + self.measurements
 
     @property
     def operations(self) -> List[Operator]:
-        """Returns the state preparations and operations on the quantum tape.
+        """Returns the state preparations and operations on the quantum script.
 
         Returns:
-            list[.Operator]: recorded quantum operations
+            list[.Operator]: quantum operations
 
         >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
@@ -248,10 +247,10 @@ class QuantumScript:
     # Let's try and deprecate this property
     @property
     def observables(self):
-        """Returns the observables on the quantum tape.
+        """Returns the observables on the quantum script.
 
         Returns:
-            list[.Operator]]: list of recorded quantum operations
+            list[.Operator]]: list of observables
 
         **Example**
 
@@ -276,10 +275,10 @@ class QuantumScript:
 
     @property
     def measurements(self):
-        """Returns the measurements on the quantum tape.
+        """Returns the measurements on the quantum script.
 
         Returns:
-            list[.MeasurementProcess]: list of recorded measurement processess
+            list[.MeasurementProcess]: list of measurement processes
 
         **Example**
 
@@ -292,7 +291,7 @@ class QuantumScript:
 
     @property
     def num_params(self):
-        """Returns the number of trainable parameters on the quantum tape."""
+        """Returns the number of trainable parameters on the quantum script."""
         return len(self.trainable_params)
 
     @property
@@ -332,7 +331,7 @@ class QuantumScript:
     ##### Update METHODS ###############
 
     def _update(self):
-        """Update all internal tape metadata regarding processed operations and observables"""
+        """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
         self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
@@ -387,7 +386,7 @@ class QuantumScript:
         """Set the trainable parameters
 
         Sets:
-            _trainable_params (list[int]): Tape parameter indices of trainable parameters
+            _trainable_params (list[int]): Script parameter indices of trainable parameters
 
         self._par_info.keys() is assumed to be sorted and up to date when calling
         this method. This assumes that self._par_info was created in a sorted manner,
@@ -421,11 +420,11 @@ class QuantumScript:
                     self._obs_sharing_wires_id.append(i)
 
     def _update_batch_size(self):
-        """Infer the batch_size of the tape from the batch sizes of its operations
+        """Infer the batch_size of the quantum script from the batch sizes of its operations
         and check the latter for consistency.
 
         Sets:
-            _batch_size (int): The common batch size of the tape operations, if any has one
+            _batch_size (int): The common batch size of the quantum script operations, if any has one
         """
         candidate = None
         for op in self.operations:
@@ -435,7 +434,7 @@ class QuantumScript:
             if candidate:
                 if op_batch_size != candidate:
                     raise ValueError(
-                        "The batch sizes of the tape operations do not match, they include "
+                        "The batch sizes of the quantum script operations do not match, they include "
                         f"{candidate} and {op_batch_size}."
                     )
             else:
@@ -444,10 +443,10 @@ class QuantumScript:
         self._batch_size = candidate
 
     def _update_output_dim(self):
-        """Update the dimension of the output of the tape.
+        """Update the dimension of the output of the quantum script.
 
         Sets:
-            self._output_dim (int): Size of the tape output (when flattened)
+            self._output_dim (int): Size of the quantum script output (when flattened)
 
         This method makes use of `self.batch_size`, so that `self._batch_size`
         needs to be up to date when calling it.
@@ -524,7 +523,7 @@ class QuantumScript:
 
         num_params = len(self._par_info)
         if any(i > num_params for i in param_indices):
-            raise ValueError(f"Tape only has {num_params} parameters.")
+            raise ValueError(f"Quantum Script only has {num_params} parameters.")
 
         self._trainable_params = sorted(set(param_indices))
 
@@ -540,7 +539,7 @@ class QuantumScript:
             operation, and an integer representing the argument index,
             for the provided trainable parameter.
         """
-        # get the index of the parameter in the tape
+        # get the index of the parameter in the script
         t_idx = self.trainable_params[idx]
 
         # get the info for the parameter
@@ -560,7 +559,7 @@ class QuantumScript:
         """Return the parameters incident on the quantum script operations.
 
         The returned parameters are provided in order of appearance
-        on the tape.
+        on the quantum script.
 
         Args:
             trainable_only (bool): if True, returns only trainable parameters
@@ -604,12 +603,12 @@ class QuantumScript:
         return params
 
     def set_parameters(self, params, trainable_only=True):
-        """Set the parameters incident on the tape operations.
+        """Set the parameters incident on the quantum script operations.
 
         Args:
             params (list[float]): A list of real numbers representing the
                 parameters of the quantum operations. The parameters should be
-                provided in order of appearance in the quantum tape.
+                provided in order of appearance in the quantum script.
             trainable_only (bool): if True, set only trainable parameters
 
         **Example**
@@ -666,7 +665,7 @@ class QuantumScript:
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
         """Auxiliary function of shape that determines the output
-        shape of a tape with a single measurement.
+        shape of a quantum script with a single measurement.
 
         Args:
             measurement_process (MeasurementProcess): the measurement process
@@ -681,13 +680,13 @@ class QuantumScript:
     @staticmethod
     def _multi_homogenous_measurement_shape(mps, device):
         """Auxiliary function of shape that determines the output
-        shape of a tape with multiple homogenous measurements.
+        shape of a quantum script with multiple homogenous measurements.
 
         .. note::
 
             Assuming multiple probability measurements where not all
             probability measurements have the same number of wires specified,
-            the output shape of the tape is a sum of the output shapes produced
+            the output shape of the quantum script is a sum of the output shapes produced
             by each probability measurement.
 
             Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
@@ -707,7 +706,7 @@ class QuantumScript:
         ret_type = mps[0].return_type
         if ret_type == qml.measurements.State:
             raise ValueError(
-                "Getting the output shape of a tape with multiple state measurements is not supported."
+                "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
         shot_vector = device._shot_vector
@@ -746,10 +745,10 @@ class QuantumScript:
 
     @staticmethod
     def _shape_shot_vector_multi_homogenous(mps, device):
-        """Auxiliary function for determining the output shape of the tape for
+        """Auxiliary function for determining the output shape of the quantum script for
         multiple homogenous measurements for a device with a shot vector.
 
-        Note: it is assumed that getting the output shape of a tape with
+        Note: it is assumed that getting the output shape of a script with
         multiple state measurements is not supported.
         """
         shape = tuple()
@@ -780,7 +779,7 @@ class QuantumScript:
                 # measurement processes act on
                 # TODO: revisit when issues with this case are resolved
                 raise ValueError(
-                    "Getting the output shape of a tape with multiple probability measurements "
+                    "Getting the output shape of a quantum script with multiple probability measurements "
                     "along with a device that defines a shot vector is not supported."
                 )
 
@@ -795,7 +794,7 @@ class QuantumScript:
         return shape
 
     def shape(self, device):
-        """Produces the output shape of the tape by inspecting its measurements
+        """Produces the output shape of the script by inspecting its measurements
         and the device used for execution.
 
         .. note::
@@ -804,15 +803,15 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the tape execution
+            device (.Device): the device that will be used for the script execution
 
         Raises:
-            TapeError: raised for unsupported cases for
-                example when the tape contains heterogeneous measurements
+            ValueError: raised for unsupported cases for
+                example when the script contains heterogeneous measurements
 
         Returns:
             Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
-            tape result
+            script result
 
         **Example:**
 
@@ -831,22 +830,22 @@ class QuantumScript:
                 output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
                 raise ValueError(
-                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
+                    "Getting the output shape of a quantum script that contains multiple types of measurements is unsupported."
                 )
         return output_shape
 
     @property
     def numeric_type(self):
-        """Returns the expected numeric type of the tape result by inspecting
+        """Returns the expected numeric type of the script result by inspecting
         its measurements.
 
         Raises:
-            TapeError: raised for unsupported cases for
-                example when the tape contains heterogeneous measurements
+            ValueError: raised for unsupported cases for
+                example when the script contains heterogeneous measurements
 
         Returns:
             type: the numeric type corresponding to the result type of the
-            tape
+            script
 
         **Example:**
 
@@ -857,7 +856,7 @@ class QuantumScript:
         measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
             raise ValueError(
-                "Getting the numeric type of a tape that contains multiple types of measurements is unsupported."
+                "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
             )
 
         if list(measurement_types)[0] == qml.measurements.Sample:
@@ -922,10 +921,10 @@ class QuantumScript:
         return self.copy(copy_operations=True)
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
-        """Expand all operations in the processed queue to a specific depth.
+        """Expand all operations to a specific depth.
 
         Args:
-            depth (int): the depth the tape should be expanded
+            depth (int): the depth the script should be expanded
             stop_at (Callable): A function which accepts a queue object,
                 and returns ``True`` if this object should *not* be expanded.
                 If not provided, all objects that support expansion will be expanded.
@@ -934,7 +933,7 @@ class QuantumScript:
 
         **Example**
 
-        Consider the following nested tape:
+        Consider the following nested quantum script:
 
         >>> prep = [qml.BasisState(np.array([1, 1]), wires=[0, 'a'])]
         >>> nested_script = QuantumScript([qml.Rot(0.543, 0.1, 0.4, wires=0)])
@@ -950,8 +949,8 @@ class QuantumScript:
         CNOT(wires=[0, 'a']),
         RY(0.2, wires=['a'])]
 
-        Calling ``.expand`` will return a tape with all nested tapes
-        expanded, resulting in a single tape of quantum operations:
+        Calling ``.expand`` will return a script with all nested scripts
+        expanded, resulting in a single script of quantum operations:
 
         >>> new_qscript = qscript.expand(depth=2)
         >>> new_qscript.operations
@@ -1045,7 +1044,7 @@ class QuantumScript:
         """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, Union[defaultdict,int]]: dictionaries that contain tape specifications
+            dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
 
         **Example**
 
@@ -1104,7 +1103,7 @@ class QuantumScript:
             show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
 
         Returns:
-            str: the circuit representation of the tape
+            str: the circuit representation of the quantum script
         """
         return qml.drawer.tape_text(
             self,
@@ -1120,8 +1119,8 @@ class QuantumScript:
 
         Measurements are assumed to be performed on all qubits in the computational basis. An
         optional ``rotations`` argument can be provided so that output of the OpenQASM circuit is
-        diagonal in the eigenbasis of the tape's observables. The measurement outputs can be
-        restricted to only those specified in the tape by setting ``measure_all=False``.
+        diagonal in the eigenbasis of the quantum script's observables. The measurement outputs can be
+        restricted to only those specified in the script by setting ``measure_all=False``.
 
         .. note::
 
@@ -1134,7 +1133,7 @@ class QuantumScript:
                 operations, also include the gates that diagonalize the
                 measured wires such that they are in the eigenbasis of the circuit observables.
             measure_all (bool): whether to perform a computational basis measurement on all qubits
-                or just those specified in the tape
+                or just those specified in the script
             precision (int): decimal digits to display for parameters
 
         Returns:
