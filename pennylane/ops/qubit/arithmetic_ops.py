@@ -334,8 +334,8 @@ class IntegerComparator(Operation):
 
     Args:
         value (int): The value :math:`L` that the state's decimal representation is compared against.
-        geq (bool): If set to ``True``, the comparison made will be :math:`\sigma \geq L`. If ``False``, the comparison
-            made will be :math:`\sigma < L`.
+        geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If ``False``, the comparison
+            made will be :math:`n < L`.
         wires (Union[Wires, Sequence[int], or int]): Control wire(s) followed by a single target wire where
             the operation acts on.
 
@@ -417,7 +417,7 @@ class IntegerComparator(Operation):
 
         **Example**
 
-        >>> print(qml.IntegerComparator.compute_matrix(2, [0,1]))
+        >>> print(qml.IntegerComparator.compute_matrix(2, [0, 1]))
         [[1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 1. 0. 0. 0. 0. 0. 0.]
          [0. 0. 1. 0. 0. 0. 0. 0.]
@@ -426,7 +426,7 @@ class IntegerComparator(Operation):
          [0. 0. 0. 0. 1. 0. 0. 0.]
          [0. 0. 0. 0. 0. 0. 0. 1.]
          [0. 0. 0. 0. 0. 0. 1. 0.]]
-        >>> print(qml.IntegerComparator.compute_matrix(2, [0,1], geq=False))
+        >>> print(qml.IntegerComparator.compute_matrix(2, [0, 1], geq=False))
         [[0. 1. 0. 0. 0. 0. 0. 0.]
          [1. 0. 0. 0. 0. 0. 0. 0.]
          [0. 0. 0. 1. 0. 0. 0. 0.]
@@ -485,8 +485,8 @@ class IntegerComparator(Operation):
 
         Args:
             value (int): The value :math:`L` that the state's decimal representation is compared against.
-            geq (bool): If set to ``True``, the comparison made will be :math:`\sigma \geq L`. If ``False``, the comparison
-                made will be :math:`\sigma < L`.
+            geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If ``False``, the comparison
+                made will be :math:`n < L`.
             wires (Union[Wires, Sequence[int], or int]): Control wire(s) followed by a single target wire where
                 the operation acts on.
 

@@ -41,6 +41,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   ```
 
 * The `IntegerComparator` arithmetic operation is now available.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
   Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
   integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
@@ -66,6 +67,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 <h3>Improvements</h3>
 
 * Printing `MultiControlledX` now also shows the `control_values`.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
