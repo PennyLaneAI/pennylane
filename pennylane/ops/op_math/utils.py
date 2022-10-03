@@ -15,6 +15,7 @@
 This file contains the implementation of some utility functions to extend
 the capabilities of operator arithmetic to more complicated operators.
 """
+from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.identity import Identity
 from pennylane.ops.qubit import PauliX, PauliY, PauliZ
@@ -67,6 +68,10 @@ def Pi(i: int, n: int, of: callable) -> Operator:
     return Prod(*(of(index) for index in range(i, n+1)))
 
 
+def _no_overlap(wires1: Wires, wires2: Wires) -> bool:
+    return wires1.toset().intersection(wires2.toset()) == set()
+
+
 def commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
     r"""Computes the commutator of the given operators.
         This is given by the expression: $[A, B] = AB - BA$
@@ -75,7 +80,7 @@ def commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
         types = (type(op1), type(op2))
         wires = (op1.wires, op2.wires)
 
-        if (Identity in types) or (wires[0] != wires[1]):
+        if (Identity in types) or _no_overlap(wires[0], wires[1]):
             op = Prod(*(Identity(i) for i in wires[0].tolist() + wires[1].tolist()))
             return SProd(0, op)
 
@@ -94,7 +99,7 @@ def anti_commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
         types = (type(op1), type(op2))
         wires = (op1.wires, op2.wires)
 
-        if (Identity in types) or (wires[0] != wires[1]):
+        if (Identity in types) or _no_overlap(wires[0], wires[1]):
             return SProd(2, Prod(op1, op2))
 
         if all(type_op in PAULI_OPS for type_op in types):
