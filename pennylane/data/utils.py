@@ -113,6 +113,19 @@ DATA_STRUCT = {
 }
 
 URL = "https://pl-qd-flask-app.herokuapp.com"
+S3_URL = "https://xanadu-quantum-data.s3.amazonaws.com"
+
+_s3_filemap = {
+    'qchem': {
+        'H2': {
+            'STO-3G': {'0.4','0.5','0.6','0.7','0.8','0.9'},
+            '6-31G': {'0.4','0.5','0.6','0.7','0.8','0.9'},
+        },
+        'H3': {
+            'STO-3G': {'0.14', '0.157'},
+        },
+    },
+}
 
 
 def _convert_size(size_bytes):
@@ -159,31 +172,29 @@ def _write_prog_bar(progress, completed, barsize, barlength, total_length):
     sys.stdout.flush()
 
 
-def _validate_params(data_type, description, attributes=None):
+def _validate_params(data_type, description, attributes):
     r"""Validate parameters for loading the data"""
 
-    if data_type not in list(DATA_STRUCT.keys()):
+    data = DATA_STRUCT.get(data_type)
+    if not data:
         raise ValueError(
-            f"Currently we have data hosted from types: qchem and qspin, but got {data_type}."
+            f"Currently we have data hosted from types: {DATA_STRUCT.keys()}, but got {data_type}."
         )
 
-    if not isinstance(description, dict):
-        raise TypeError(f"Args 'description' should be a dict, but got {type(description)}.")
-
-    if sorted(list(description.keys())) != sorted(DATA_STRUCT[data_type]["params"]):
+    params_needed = data["params"]
+    if set(description) != set(params_needed):
         raise ValueError(
-            f"Supported parameter values for {data_type} are {DATA_STRUCT[data_type]['params']}, but got {list(description.keys())}."
+            f"Supported parameter values for {data_type} are {params_needed}, but got {list(description)}."
         )
 
-    if attributes is not None and not set(attributes).issubset(
-        DATA_STRUCT[data_type]["keys"]
-    ):
-        raise ValueError(
-            f"Supported key values for {data_type} are {DATA_STRUCT[data_type]['keys']}, but got {attributes}."
-        )
+    if not isinstance(attributes, list):
+        raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes)}.")
 
-    if attributes is not None and not isinstance(attributes, list):
-        raise TypeError(f"Args 'attributes' should be a list, but got {type(attributes)}.")
+    all_attributes = data["keys"]
+    if set(attributes) - set(all_attributes):
+        raise ValueError(
+            f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
+        )
 
 
 def _check_data_exist(data_type, description, directory_path):
@@ -203,116 +214,96 @@ def _check_data_exist(data_type, description, directory_path):
     return exist
 
 
-def load(data_type, description, attributes=None, lazy=False, folder_path=None, force=True):
+def _s3_download(data_type, folders, attributes, dest_folder):
+    """Download a file for each attribute from each folder to the specified destination."""
+    prefix = os.path.join(S3_URL, data_type)
+    for folder in folders:
+        s3_folder = os.path.join(S3_URL, data_type, folder)
+        local_folder = os.path.join(dest_folder, data_type, folder)
+        if not os.path.exists(local_folder):
+            os.makedirs(local_folder)
+
+        file_prefix = folder.replace('/', '_')
+        # TODO: if len(attributes) > 1, merge contents to single file like _partial.dat
+        for attr in attributes:
+            fname = f"{file_prefix}_{attr}.dat"
+            response = requests.get(f"{s3_folder}/{fname}")
+            if not response.ok:
+                response.raise_for_status()
+            with open(f"{local_folder}/{fname}", 'wb') as f:
+                f.write(response.content)
+
+
+def _generate_folders(node, folders):
+    """Recursively generate and return a tree of all folder names matching a pattern.
+
+    Args:
+        node (dict): The map of all files that actually exist, initially invoked with a root node
+        folders: (list[list[str]]): The ordered list of folder names requested.
+            The value ``["full"]`` will expand to all possible folders at that depth
+    """
+
+    next_folders = folders[1:]
+    folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
+    if not next_folders:
+        return folders
+    return [os.path.join(folder, child) for folder in folders for child in _generate_folders(node[folder], next_folders)]
+
+
+def load(data_type, attributes=["full"], lazy=False, folder_path="", force=True, **params):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
 
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
-        description (dict): A dictionary with parameters for the required type of data
         attributes (list): An optional list to specify individual data element that are required
         folder_path (str): Path to the root folder where download takes place. By default dataset folder will be created in the working directory.
         force (Bool): Bool representing whether data has to be downloaded even if it is still present
+        params (kwargs): Keyword arguments exactly matching the parameters required for the data type. Note that these are not optional
 
     Returns:
         list[DatasetFile]
 
     """
 
-    _validate_params(data_type, description, attributes)
+    _validate_params(data_type, params, attributes)
 
     description = {
-        key: (val if isinstance(val, list) else [val]) for (key, val) in description.items()
+        key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()
     }
-
-    directory_path = f"datasets/{data_type}"
-    if folder_path is not None:
-        if folder_path[-1] == "/":
-            folder_path = folder_path[:-1]
-        directory_path = f"/{folder_path}/{directory_path}"
+    data = DATA_STRUCT[data_type]
+    directory_path = os.path.join(folder_path, "datasets", data_type)
 
     if not force:
         force = _check_data_exist(data_type, description, directory_path)
 
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
-
-    with open(f"{directory_path}/data.zip", "wb") as file:
-        request_data = {
-            "dparams": description,
-            "filters": attributes if attributes is not None else ["full"],
-        }
-        try:
-            response = requests.post(f"{URL}/download/{data_type}", json=request_data, stream=True)
-            response.raise_for_status()
-
-            print(f"Downloading data to {directory_path}")
-            total_length = response.headers.get("Content-Length")
-            if total_length is None:
-                file.write(response.content)
-            else:
-                total_length, barsize, progress = int(total_length), 60, 0
-                for idx, chunk in enumerate(response.iter_content(chunk_size=4096)):
-                    if chunk:
-                        file.write(chunk)
-                        progress += len(chunk)
-                        completed = min(round(progress / total_length, 3) * 100, 100)
-                        barlength = int(progress / total_length * barsize)
-                        if not idx % 1000:
-                            _write_prog_bar(progress, completed, barsize, barlength, total_length)
-                _write_prog_bar(progress, completed, barsize, barlength, total_length)
-        except requests.exceptions.HTTPError as err:
-            os.remove(f"{directory_path}/data.zip")
-            raise Exception(f"HTTP Error: {err}") from err
-        except requests.exceptions.ConnectionError as err:
-            os.remove(f"{directory_path}/data.zip")
-            raise Exception(f"Connection Error: {err}") from err
-        except requests.exceptions.Timeout as err:
-            os.remove(f"{directory_path}/data.zip")
-            raise Exception(f"Timeout Error: {err}") from err
-        except requests.exceptions.TooManyRedirects as err:
-            os.remove(f"{directory_path}/data.zip")
-            raise Exception(f"Redirection Error: {err}") from err
-        except requests.exceptions.RequestException as err:
-            os.remove(f"{directory_path}/data.zip")
-            raise Exception(f"Fatal Error: {err}") from err
+    folders = [description[param] for param in data["params"]]
+    all_folders = _generate_folders(_s3_filemap[data_type], folders)
+    _s3_download(data_type, all_folders, attributes, directory_path)
 
     data_files = []
-    with zipfile.ZipFile(f"{directory_path}/data.zip", "r") as zpf:
-        zpf.extractall(f"{directory_path}")
-        file_list, file_idx = sorted([x for x in zpf.namelist() if x[-3:] == "dat"]), 0
-        dtype_key_len = len(DATA_STRUCT[data_type]["params"])
-        while file_idx < len(file_list):
-            file = file_list[file_idx]
-            cur_name = "_".join(file.split("_")[:dtype_key_len])    
-            obj = Dataset(dfile=f"{directory_path}/{file}", dtype=data_type)
-            if attributes == ["full"] or attributes is None:
-                data = Dataset._read_file(f"{directory_path}/{file}")
-                for key, vals in data.items():
-                    print(key)
-                    obj.setattr(key, vals)
-                doc_keys, doc_vals = list(data.keys()), list(map(type, data.values()))
-                file_idx += 1
-            else:
-                key, flag = "_".join(file.split("_")[dtype_key_len:]).split(".")[0], False
-                data = Dataset._read_file(f"{directory_path}/{file}")
-                doc_keys, doc_vals = [key], [type(data)]
-                obj.setattr(key, data)
-                for key_idx in range(file_idx+1, len(file_list)):
-                    nfile, flag = file_list[key_idx], True
-                    nxt_name = "_".join(nfile.split("_")[:dtype_key_len])
-                    if cur_name == nxt_name:
-                        key = "_".join(nfile.split("_")[dtype_key_len:]).split(".")[0]
-                        data = Dataset._read_file(f"{directory_path}/{nfile}")
-                        doc_keys.append(key); doc_vals.append(type(data))  
-                        obj.setattr(key, data)
-                    else:
-                        break
-                file_idx = key_idx if flag else file_idx+1
-            args_idx = [DATA_STRUCT[data_type]["keys"].index(x) for x in doc_keys]
-            argsdocs = [DATA_STRUCT[data_type]["docstrings"][x] for x in args_idx]
-            obj.setdocstr(DATA_STRUCT[data_type]["docstr"], doc_keys, doc_vals, argsdocs)
-            data_files.append(obj)
-    os.remove(f"{directory_path}/data.zip")
+    for folder in all_folders:
+        file_prefix = os.path.join(directory_path, data_type, folder, folder.replace('/', '_'))
+        # TODO: replace attributes[0] with actual name after _s3_download() is updated
+        fname = f"{file_prefix}_{attributes[0]}.dat"
+        obj = Dataset(dfile=fname, dtype=data_type)
+        if attributes == ["full"]:
+            qdata = Dataset._read_file(fname)
+            for key, vals in qdata.items():
+                obj.setattr(key, vals)
+            doc_keys, doc_vals = list(qdata.keys()), list(map(type, qdata.values()))
+        else:
+            doc_keys, doc_vals = [], []
+            for attr in attributes:
+                fname = f"{file_prefix}_{attr}.dat"
+                qdata = Dataset._read_file(fname)
+                doc_keys.append(attr)
+                doc_vals.append(type(qdata))
+                obj.setattr(attr, qdata)
+        args_idx = [data["keys"].index(x) for x in doc_keys]
+        argsdocs = [data["docstrings"][x] for x in args_idx]
+        obj.setdocstr(data["docstr"], doc_keys, doc_vals, argsdocs)
+        data_files.append(obj)
+
     return data_files
 
 
