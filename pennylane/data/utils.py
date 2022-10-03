@@ -20,6 +20,7 @@ import math
 import glob
 import itertools
 import requests
+import xml.etree.ElementTree as ET
 
 from pennylane.data.dataset import Dataset
 
@@ -233,6 +234,20 @@ def _generate_folder_list(node, folders):
     ]
 
 
+def _s3_filemap_for_prefix(prefix):
+    """Build the filemap rooted at the prefix from S3's RESTful API."""
+    response = requests.get(f"{S3_URL}/?delimiter=/&prefix={prefix}")
+    if not response.ok:
+        response.raise_for_status()
+    root = ET.fromstring(response.content)
+    ns = "{" + root.tag[1:].split("}")[0] + "}"
+    children = [node.find(ns + "Prefix").text for node in root.findall(ns + "CommonPrefixes")]
+    data_type = prefix.split("/")[0]
+    if prefix.count("/") == len(DATA_STRUCT[data_type]["params"]):
+        return {child.split("/")[-2] for child in children}
+    return {child.split("/")[-2]: _s3_filemap_for_prefix(child) for child in children}
+
+
 def _generate_folders(data_type, folders):
     """Recursively generate and return a tree of all folder names matching a pattern.
 
@@ -249,7 +264,7 @@ def _generate_folders(data_type, folders):
 
     global _s3_filemap
     if data_type not in _s3_filemap:
-        _s3_filemap = list_datasets()
+        _s3_filemap[data_type] = _s3_filemap_for_prefix(data_type + "/")
     return _generate_folder_list(_s3_filemap[data_type], folders)
 
 
@@ -442,7 +457,9 @@ def get_attributes(data_type, description):
         "dparams": description,
     }
 
-    response = requests.post(f"{URL}/download/about/{data_type}/keys", json=request_data, timeout=5.0)
+    response = requests.post(
+        f"{URL}/download/about/{data_type}/keys", json=request_data, timeout=5.0
+    )
     if response.status_code != 200:
         response.raise_for_status()
     return response.json()
