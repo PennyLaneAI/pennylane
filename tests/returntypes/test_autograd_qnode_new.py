@@ -126,8 +126,6 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
-        circuit(a)
-
         assert circuit.interface == "autograd"
 
         # the tape is able to deduce trainable parameters
@@ -1480,3 +1478,85 @@ class TestSample:
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("int")
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestReturn:
+    def test_execution_single_measurement_param(self, dev_name, diff_method, mode):
+        """Jac is an Array"""
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = np.array(0.1, requires_grad=True)
+
+        res = circuit(a)
+        print(res)
+        grad = qml.grad(circuit)(a)
+        print(grad)
+
+    def test_execution_single_measurement_multiple_param(self, dev_name, diff_method, mode):
+        """Jac is tuple of array."""
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        res = circuit(a, b)
+        grad = qml.grad(circuit)(a, b)
+
+    def test_execution_multiple_measurement_single_param(self, dev_name, diff_method, mode):
+        """Jac is tuple of array"""
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = np.array(0.1, requires_grad=True)
+
+        res = circuit(a)
+        import autograd.numpy as anp
+
+        def cost(x):
+            return anp.hstack(circuit(a))
+
+        grad = qml.grad(cost)(a)
+
+    def test_execution_multiple_measurement_multiple_param(self, dev_name, diff_method, mode):
+        """Test execution works with the interface"""
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        res = circuit(a, b)
+
+        import autograd.numpy as anp
+
+        def cost(x, y):
+            return anp.hstack(circuit(a, b))
+
+        grad = qml.grad(cost)(a, b)
