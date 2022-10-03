@@ -673,10 +673,8 @@ class TestParameterShiftRule:
 
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
-        assert isinstance(autograd_val, tuple)
 
         num_params = len(tape.trainable_params)
-        assert len(autograd_val) == num_params
 
         assert spy.call_args[1]["shifts"] == (shift,)
 

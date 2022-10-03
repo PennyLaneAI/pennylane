@@ -177,7 +177,6 @@ def _evaluate_gradient_new(tape, res, data, r0):
         # Multiple measurements case, so we can extract the first result
         num_measurements = len(res[0])
         for meas_idx in range(num_measurements):
-
             # Gather the measurement results
             single_result = [param_result[meas_idx] for param_result in res]
             coeffs = qml.math.convert_like(coeffs, single_result)
@@ -375,7 +374,6 @@ def _expval_param_shift_tuple(
             start = start + num_tapes
 
             g = _evaluate_gradient_new(tape, res, data, r0)
-
             grads.append(g)
 
         if not multi_measure:
@@ -400,10 +398,14 @@ def _expval_param_shift_tuple(
                 measurement_grad = []
                 for g in grads:
                     measurement_grad.append(g[i])
-
-                new_grad.append(tuple(measurement_grad))
+                if len(tape.trainable_params) > 1:
+                    new_grad.append(tuple(measurement_grad))
+                else:
+                    new_grad.append(measurement_grad[0])
 
             grads = new_grad
+        if len(tape.trainable_params) == 1 and not multi_measure:
+            return grads[0]
 
         return tuple(grads)
 
