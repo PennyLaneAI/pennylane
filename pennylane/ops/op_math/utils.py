@@ -30,11 +30,9 @@ commutation_relations = {
     (PauliX, PauliX): (0, Identity),
     (PauliY, PauliY): (0, Identity),
     (PauliZ, PauliZ): (0, Identity),
-
     (PauliX, PauliY): (2j, PauliZ),
     (PauliY, PauliZ): (2j, PauliX),
     (PauliZ, PauliX): (2j, PauliY),
-
     (PauliY, PauliX): (-2j, PauliZ),
     (PauliZ, PauliY): (-2j, PauliX),
     (PauliX, PauliZ): (-2j, PauliY),
@@ -44,11 +42,9 @@ anti_commutation_relations = {
     (PauliX, PauliX): (2, Identity),
     (PauliY, PauliY): (2, Identity),
     (PauliZ, PauliZ): (2, Identity),
-
     (PauliX, PauliY): (0, Identity),
     (PauliY, PauliZ): (0, Identity),
     (PauliZ, PauliX): (0, Identity),
-
     (PauliY, PauliX): (0, Identity),
     (PauliZ, PauliY): (0, Identity),
     (PauliX, PauliZ): (0, Identity),
@@ -59,13 +55,13 @@ def Sigma(i: int, n: int, of: callable) -> Operator:
     """Simple utility function to generate the sum operator for
     summing over a given index for some function which depends on the index.
     """
-    return Sum(*(of(index) for index in range(i, n+1)))
+    return Sum(*(of(index) for index in range(i, n + 1)))
 
 
 def Pi(i: int, n: int, of: callable) -> Operator:
     """Simple utility function to generate the product operator for
-    multiplying over a given index for some function which depends on the index. """
-    return Prod(*(of(index) for index in range(i, n+1)))
+    multiplying over a given index for some function which depends on the index."""
+    return Prod(*(of(index) for index in range(i, n + 1)))
 
 
 def _no_overlap(wires1: Wires, wires2: Wires) -> bool:
@@ -74,7 +70,7 @@ def _no_overlap(wires1: Wires, wires2: Wires) -> bool:
 
 def commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
     r"""Computes the commutator of the given operators.
-        This is given by the expression: $[A, B] = AB - BA$
+    This is given by the expression: $[A, B] = AB - BA$
     """
     if not lazy:
         types = (type(op1), type(op2))
@@ -93,7 +89,7 @@ def commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
 
 def anti_commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
     r"""Computes the anti-commutator of the given operators.
-        This is given by the expression: ${A, B} = AB + BA$
+    This is given by the expression: ${A, B} = AB + BA$
     """
     if not lazy:
         types = (type(op1), type(op2))
@@ -103,7 +99,9 @@ def anti_commutator(op1: Operator, op2: Operator, lazy=False) -> Operator:
             return SProd(2, Prod(op1, op2))
 
         if all(type_op in PAULI_OPS for type_op in types):
-            scalar, op = anti_commutation_relations[(types[0], types[1])]  # get the op after anti-commutation
+            scalar, op = anti_commutation_relations[
+                (types[0], types[1])
+            ]  # get the op after anti-commutation
             return SProd(scalar, op(wires[0]))
 
     return Sum(Prod(op1, op2), Prod(op2, op1))  # return arithmetic anti-commutator
