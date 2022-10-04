@@ -41,7 +41,6 @@ class CompositeOp(Operator, abc.ABC):
     """
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
-    _math_op: Callable
 
     def __init__(
         self, *operands: Operator, do_queue=True, id=None
@@ -313,3 +312,8 @@ class CompositeOp(Operator, abc.ABC):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
+
+    @property
+    @abc.abstractmethod
+    def _math_op(self) -> Callable:
+        """The function used when combining the operands of the composite operator"""

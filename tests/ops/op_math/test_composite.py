@@ -42,6 +42,7 @@ ops_rep = (
 
 class ValidOp(CompositeOp):
     _op_symbol = "#"
+    _math_op = None
 
     @property
     def is_hermitian(self):
