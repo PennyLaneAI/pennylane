@@ -825,8 +825,6 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    # TODO: remove xfail when finite diff works
-    @pytest.mark.xfail
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -852,12 +850,12 @@ class TestParameterShiftRule:
         grad_A = grad_fn(tape, dev)
 
         # gradients computed with different methods must agree
-        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
-        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+        for idx1 in range(len(grad_A)):
+            for idx2, g in enumerate(grad_A[idx1]):
+                assert np.allclose(g, grad_F1[idx1][idx2], atol=tol, rtol=0)
+                assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
 
-    # TODO: remove xfail when finite diff works
     @pytest.mark.autograd
-    @pytest.mark.xfail
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
@@ -888,15 +886,162 @@ class TestParameterShiftRule:
             return fn(dev.batch_execute(tapes))
 
         res = cost_fn(params)
-        assert res.shape == (2, 2)
+
+        assert isinstance(res, tuple)
+
+        assert len(res) == 2
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+        assert isinstance(res[0][0], np.ndarray)
+        assert res[0][0].shape == ()
+        assert isinstance(res[0][1], np.ndarray)
+        assert res[0][1].shape == ()
+
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        # double check the derivative
-        jac = qml.jacobian(cost_fn)(params)
-        assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
-        assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
+        # TODO: support Hessian with the new return types
+        # check the second derivative
+        # hessian = qml.jacobian(lambda params: np.stack(cost_fn(params)).T)(params)
+        # hessian = qml.jacobian(cost_fn(params))(params)
+
+        # assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
+        # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_fallback_single_meas(self, mocker, tol):
+        """Test that fallback gradient functions are correctly used for a single measurement."""
+        spy = mocker.spy(qml.gradients, "finite_diff")
+        dev = qml.device("default.qubit.autograd", wires=2)
+        x = 0.543
+        y = -0.654
+
+        class RX(qml.RX):
+            grad_method = "F"
+
+        params = np.array([x, y], requires_grad=True)
+
+        def cost_fn(params):
+
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(params[0], wires=[0])
+                RX(params[1], wires=[0])
+                qml.expval(qml.PauliZ(0))
+
+            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+            assert len(tapes) == 4
+
+            # check that the fallback method was called for the specified argnums
+            spy.assert_called()
+            assert spy.call_args[1]["argnum"] == {1}
+
+            return fn(dev.batch_execute(tapes))
+
+        res = cost_fn(params)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        for r in res:
+            assert isinstance(r, np.ndarray)
+            assert r.shape == ()
+
+        expval_expected = [-np.sin(x + y), -np.sin(x + y)]
+        assert np.allclose(res[0], expval_expected[0])
+        assert np.allclose(res[1], expval_expected[1])
+
+    class RY(qml.RY):
+        grad_method = "F"
+
+    class RX(qml.RX):
+        grad_method = "F"
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("RX, RY, argnum", [(RX, qml.RY, 0), (qml.RX, RY, 1)])
+    def test_fallback_probs(self, RX, RY, argnum, mocker, tol):
+        """Test that fallback gradient functions are correctly used with probs"""
+        spy = mocker.spy(qml.gradients, "finite_diff")
+        dev = qml.device("default.qubit.autograd", wires=2)
+        x = 0.543
+        y = -0.654
+
+        params = np.array([x, y], requires_grad=True)
+
+        def cost_fn(params):
+
+            with qml.tape.QuantumTape() as tape:
+                RX(params[0], wires=[0])
+                RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[0, 1])
+
+            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
+            assert len(tapes) == 4
+
+            # check that the fallback method was called for the specified argnums
+            spy.assert_called()
+            assert spy.call_args[1]["argnum"] == {argnum}
+
+            return fn(dev.batch_execute(tapes))
+
+        res = cost_fn(params)
+
+        assert isinstance(res, tuple)
+
+        assert len(res) == 2
+
+        expval_res = res[0]
+        assert isinstance(expval_res, tuple)
+        assert len(expval_res) == 2
+
+        for param_r in expval_res:
+            assert isinstance(param_r, np.ndarray)
+            assert param_r.shape == ()
+
+        probs_res = res[1]
+        assert isinstance(probs_res, tuple)
+        assert len(probs_res) == 2
+        for param_r in probs_res:
+            assert isinstance(param_r, np.ndarray)
+            assert param_r.shape == (4,)
+
+        expval_expected = [-2 * np.sin(x) / 2, 0]
+        probs_expected = (
+            np.array(
+                [
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
+        )
+
+        # Expvals
+        assert np.allclose(res[0][0], expval_expected[0])
+        assert np.allclose(res[0][1], expval_expected[1])
+
+        # Probs
+        assert np.allclose(res[1][0], probs_expected[:, 0])
+        assert np.allclose(res[1][1], probs_expected[:, 1])
 
     @pytest.mark.autograd
     def test_all_fallback(self, mocker, tol):
@@ -923,7 +1068,6 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        # TODO: finite diff update
         tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
         assert len(tapes) == 1 + 2
 
@@ -1091,6 +1235,8 @@ class TestParameterShiftRule:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
         assert len(tapes) == 1 + 2 * 1
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1120,6 +1266,8 @@ class TestParameterShiftRule:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
         assert len(tapes) == 1 + 4 * 1
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1129,6 +1277,47 @@ class TestParameterShiftRule:
         expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+
+    def test_involutory_and_noninvolutory_variance_single_param(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory alongside
+        an involutory observable when there's a single trainable parameter."""
+        dev = qml.device("default.qubit", wires=2)
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        a = 0.54
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RX(a, wires=1)
+            qml.var(qml.PauliZ(0))
+            qml.var(qml.Hermitian(A, 1))
+
+        # Note: only the first param is trainable
+        tape.trainable_params = {0}
+
+        res = dev.execute(tape)
+        expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 1 + 4
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 1 + 1
+
+        expected = [2 * np.sin(a) * np.cos(a), 0]
+
+        for param_res in gradA:
+            assert isinstance(param_res, np.ndarray)
+            assert param_res.shape == ()
+
+        assert gradA[0] == pytest.approx(expected[0], abs=tol)
+        assert gradA[1] == pytest.approx(expected[1], abs=tol)
+
+        assert gradF[0] == pytest.approx(expected[0], abs=tol)
+        assert gradF[1] == pytest.approx(expected[1], abs=tol)
 
     def test_involutory_and_noninvolutory_variance(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
@@ -1152,6 +1341,14 @@ class TestParameterShiftRule:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
+
+        assert isinstance(gradA, tuple)
+        assert len(gradA) == 2
+        for meas_res in gradA:
+            for param_res in meas_res:
+                assert isinstance(param_res, np.ndarray)
+                assert param_res.shape == ()
+
         assert len(tapes) == 1 + 2 * 4
 
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -1213,7 +1410,10 @@ class TestParameterShiftRule:
         ).T
         assert isinstance(gradA, tuple)
         for a, e in zip(gradA, expected):
-            assert np.allclose(np.squeeze(np.stack(a)), e, atol=tol, rtol=0)
+            for a_comp, e_comp in zip(a, e):
+                assert isinstance(a_comp, np.ndarray)
+                assert a_comp.shape == ()
+                assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
         assert gradF == pytest.approx(expected, abs=tol)
 
     def test_projector_variance(self, tol):
@@ -1585,14 +1785,13 @@ class TestParameterShiftRuleBroadcast:
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
         )
-        grad_A = grad_fn(tape, dev)
+        grad_A = grad_fn(tape, dev, broadcast=True)
 
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
-    # TODO: update when finite diff available
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="Broadcasting with multiple measurements is not supported yet")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -1611,16 +1810,17 @@ class TestParameterShiftRuleBroadcast:
         tape.trainable_params = {0, 2, 3}
         dev = qml.device("default.qubit", wires=2)
 
-        # TODO: finite diff update
         grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
         )
-        grad_A = grad_fn(tape, dev)
+        grad_A = grad_fn(tape, dev, broadcast=True)
 
         # gradients computed with different methods must agree
-        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
-        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+        for idx1 in range(len(grad_A)):
+            for idx2, g in enumerate(grad_A[idx1]):
+                assert np.allclose(g, grad_F1[idx1][idx2], atol=tol, rtol=0)
+                assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_fallback(self, mocker, tol):
@@ -1857,6 +2057,9 @@ class TestParameterShiftRuleBroadcast:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
+
         assert len(tapes) == 2
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == 2
@@ -1889,6 +2092,9 @@ class TestParameterShiftRuleBroadcast:
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, np.ndarray)
+        assert gradA.shape == ()
+
         assert len(tapes) == 1 + 2 * 1
         assert tapes[0].batch_size is None
         assert tapes[1].batch_size == tapes[2].batch_size == 2

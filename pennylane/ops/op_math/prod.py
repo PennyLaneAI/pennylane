@@ -181,6 +181,11 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return True
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -262,6 +267,11 @@ class Prod(CompositeOp):
         Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self) else None
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
