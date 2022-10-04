@@ -26,16 +26,16 @@ from pennylane.wires import Wires
 
 def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     # pylint: disable=too-many-branches
-    """Re-express a base matrix acting on a subspace defined by a set of wire labels
+    """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
     Args:
-        base_matrix (tensor_like): base matrix to expand
-        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+        mat (tensor_like): matrix to expand
+        wires (Iterable): wires determining the subspace that `mat` acts on; a matrix of
             dimension :math:`2^n` acts on a subspace of :math:`n` wires
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
-        sparse_format (str): if the base matrix is a scipy sparse matrix then this is the string representing the
+        sparse_format (str): if `mat` is a scipy sparse matrix then this is the string representing the
             preferred scipy sparse matrix format to cast the expanded matrix too
 
     Returns:
@@ -45,24 +45,24 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
-    >>> base_matrix = np.array([[1, 2, 3, 4],
+    >>> matrix = np.array([[1, 2, 3, 4],
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
+    >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
      [13 14 15 16]]
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
+    >>> print(expand_matrix(matrix, wires=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
      [13 14 15 16]]
 
-    If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
+    If the wire order is a permutation of ``wires``, the entries of the matrix get permuted:
 
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0]))
+    >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[2, 0]))
     [[ 1  3  2  4]
      [ 9 11 10 12]
      [ 5  7  6  8]
@@ -70,7 +70,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
 
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2]))
+    >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[0, 1, 2]))
     [[ 1  2  0  0  3  4  0  0]
      [ 5  6  0  0  7  8  0  0]
      [ 0  0  1  2  0  0  3  4]
@@ -82,9 +82,9 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     The method works with tensors from all autodifferentiation frameworks, for example:
 
-    >>> base_matrix_torch = torch.tensor([[1., 2.],
+    >>> matrix_torch = torch.tensor([[1., 2.],
     ...                                   [3., 4.]], requires_grad=True)
-    >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
+    >>> res = expand_matrix(matrix_torch, wires=["b"], wire_order=["a", "b"])
     >>> type(res)
     torch.Tensor
     >>> res.requires_grad
