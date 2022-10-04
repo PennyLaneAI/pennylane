@@ -1370,17 +1370,22 @@ class TestParameterShiftRule:
             qml.var(qml.PauliZ(0))
 
         tape.trainable_params = {0, 1}
-        var_indices = [1, 2]
-        non_involutory_indices = [1]
+        involutory_indices = [2]
 
         pdA2 = (
             (np.array(-0.09983342), np.array(-4.44643859e-16)),
             (np.array(-1.24098015e-15), np.array(6.17263875)),
             (np.array(-1.10652721e-18), np.array(4.44328375e-16)),
         )
-        res = _put_zeros_in_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices)
+        res = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices)
         assert len(res) == len(pdA2)
-        # part of the pdA2 related to the involutory obs (PauliZ) is 0
+
+        # Expval and non-involutory obs parts are the same as in pdA2
+        assert res[0] == pdA2[0]
+        assert res[1] == pdA2[1]
+
+        # Involutory obs (PauliZ) part is 0
+        assert res[2] == (np.array(0), np.array(0))
 
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
