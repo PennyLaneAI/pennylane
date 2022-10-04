@@ -680,7 +680,8 @@ def _create_variance_proc_fn(
         var_grad = []
 
         for p_idx in range(num_params):
-            r = _get_var_with_second_order(pdA2[p_idx], f0, pdA[p_idx])
+            _pdA2 = pdA2[p_idx] if pdA2 != 0 else pdA2
+            r = _get_var_with_second_order(_pdA2, f0, pdA[p_idx])
             var_grad.append(r)
 
         return tuple(var_grad)

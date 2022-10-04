@@ -1217,14 +1217,16 @@ class TestParameterShiftRule:
         assert np.allclose(res[1][0], probs_expected[:, 0])
         assert np.allclose(res[1][1], probs_expected[:, 1])
 
-    def test_involutory_variance(self, tol):
-        """Tests qubit observables that are involutory"""
+    def test_involutory_variance_single_param(self, tol):
+        """Tests qubit observables that are involutory with a single trainable param"""
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(a, wires=0)
             qml.var(qml.PauliZ(0))
+
+        tape.trainable_params = {0}
 
         res = dev.execute(tape)
         expected = 1 - np.cos(a) ** 2
@@ -1245,8 +1247,49 @@ class TestParameterShiftRule:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    def test_non_involutory_variance(self, tol):
-        """Tests a qubit Hermitian observable that is not involutory"""
+    def test_involutory_variance_multi_param(self, tol):
+        """Tests qubit observables that are involutory with multiple trainable params"""
+        dev = qml.device("default.qubit", wires=1)
+        a = 0.34
+        b = 0.20
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.var(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 1}
+
+        res = dev.execute(tape)
+        expected = 1 - np.cos(a + b) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, tuple)
+
+        assert isinstance(gradA[0], np.ndarray)
+        assert gradA[0].shape == ()
+
+        assert isinstance(gradA[1], np.ndarray)
+        assert gradA[1].shape == ()
+
+        assert len(tapes) == 1 + 2 * 2
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 3
+
+        expected = 2 * np.sin(a + b) * np.cos(a + b)
+        assert gradF[0] == pytest.approx(expected, abs=tol)
+        assert gradA[0] == pytest.approx(expected, abs=tol)
+
+        assert gradF[1] == pytest.approx(expected, abs=tol)
+        assert gradA[1] == pytest.approx(expected, abs=tol)
+
+    def test_non_involutory_variance_single_param(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory with a single trainable parameter"""
         dev = qml.device("default.qubit", wires=1)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
@@ -1275,6 +1318,47 @@ class TestParameterShiftRule:
         expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+
+    def test_non_involutory_variance_multi_param(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
+        dev = qml.device("default.qubit", wires=1)
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        a = 0.34
+        b = 0.20
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.var(qml.Hermitian(A, 0))
+
+        tape.trainable_params = {0, 1}
+
+        res = dev.execute(tape)
+        expected = (39 / 2) - 6 * np.sin(2 * (a + b)) + (35 / 2) * np.cos(2 * (a + b))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, tuple)
+
+        assert isinstance(gradA[0], np.ndarray)
+        assert gradA[0].shape == ()
+
+        assert isinstance(gradA[1], np.ndarray)
+        assert gradA[1].shape == ()
+        assert len(tapes) == 1 + 4 * 2
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 3
+
+        expected = -35 * np.sin(2 * (a + b)) - 12 * np.cos(2 * (a + b))
+        assert gradA[0] == pytest.approx(expected, abs=tol)
+        assert gradF[0] == pytest.approx(expected, abs=tol)
+
+        assert gradA[1] == pytest.approx(expected, abs=tol)
+        assert gradF[1] == pytest.approx(expected, abs=tol)
 
     def test_involutory_and_noninvolutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
