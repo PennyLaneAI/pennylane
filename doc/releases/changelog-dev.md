@@ -103,6 +103,12 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Bug fixes</h3>
 
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -115,4 +121,5 @@ Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
 Jay Soni,
+Antal Száva,
 David Wierichs,
