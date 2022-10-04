@@ -30,6 +30,7 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.wires import Wires
 
 from .composite import CompositeOp
 
@@ -181,6 +182,29 @@ class Prod(CompositeOp):
             if qml.wires.Wires.shared_wires([o1.wires, o2.wires]):
                 return False
         return all(op.is_hermitian for op in self)
+
+    @property
+    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+        if self._overlapping_ops is None:
+            overlapping_ops = []  # [(wires, [ops])]
+            for op in self:
+                op_idx = False
+                ops = [op]
+                wires = op.wires
+                for idx, (old_wires, old_ops) in reversed(list(enumerate(overlapping_ops))):
+                    if any(wire in old_wires for wire in wires):
+                        ops = old_ops + ops
+                        wires = old_wires + wires
+                        op_idx = idx
+                        old_wires, old_ops = overlapping_ops.pop(idx)
+                if op_idx is not False:
+                    overlapping_ops.insert(op_idx, (wires, ops))
+                else:
+                    overlapping_ops += [(wires, ops)]
+
+            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+
+        return self._overlapping_ops
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

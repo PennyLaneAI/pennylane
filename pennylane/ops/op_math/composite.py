@@ -16,13 +16,14 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
 
 
 class CompositeOp(Operator, abc.ABC):
@@ -165,7 +166,7 @@ class CompositeOp(Operator, abc.ABC):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[List[Operator]]:
+    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
         """Groups all operands of the composite operator that act on overlapping wires taking
         into account operator commutivity.
 
@@ -176,19 +177,16 @@ class CompositeOp(Operator, abc.ABC):
         if self._overlapping_ops is None:
             overlapping_ops = []  # [(wires, [ops])]
             for op in self:
-                op_idx = False
                 ops = [op]
                 wires = op.wires
-                for idx, (wire_keys, _) in reversed(list(enumerate(overlapping_ops))):
-                    if any(wire in wire_keys for wire in wires):
-                        old_wires, old_ops = overlapping_ops.pop(idx)
-                        ops = old_ops + ops
-                        wires = old_wires + wires
-                        op_idx = idx
-                if op_idx is not False:
-                    overlapping_ops.insert(op_idx, (wires, ops))
-                else:
-                    overlapping_ops += [(wires, ops)]
+                op_added = False
+                for idx, (old_wires, old_ops) in enumerate(overlapping_ops):
+                    if any(wire in old_wires for wire in wires):
+                        overlapping_ops[idx] = (old_wires + wires, old_ops + ops)
+                        op_added = True
+                        break
+                if not op_added:
+                    overlapping_ops.append((op.wires, [op]))
 
             self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
 
