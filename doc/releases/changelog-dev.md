@@ -68,6 +68,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [array([0.77750694])]
   ```
 
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
 
 * Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
@@ -122,6 +125,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -134,3 +143,5 @@ Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
 Jay Soni,
+Antal Száva,
+David Wierichs,
