@@ -289,3 +289,10 @@ class TestProperties:
                 assert op1.wires == op2.wires
                 assert op1.data == op2.data
                 assert op1.arithmetic_depth == op2.arithmetic_depth
+
+    def test_overlapping_ops_private_attribute(self):
+        """Test that the private `_overlapping_ops` attribute gets updated after a call to
+        the `overlapping_ops` property."""
+        op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        overlapping_ops = op.overlapping_ops
+        assert op._overlapping_ops == overlapping_ops
