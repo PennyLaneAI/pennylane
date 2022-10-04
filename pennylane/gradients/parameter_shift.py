@@ -550,14 +550,14 @@ def _get_var_with_second_order(pdA2, f0, pdA):
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
     """
-    return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
+    return qml.math.array(pdA2 - 2 * f0 * pdA)
 
 
-def _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices):
-    """Auxiliary function for post-processing the partial derivative of <A^2>
-    if there are involutory observables.
+def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
+    """Auxiliary function for replacing parts of the partial derivative of <A^2>
+    with the zero gradient of involutory observables.
 
-    If involutory observables are present, ensure they have zero gradient.
+    Involutory observables in the partial derivative of <A^2> have zero gradients.
     For the pdA2_tapes, we have replaced non-involutory observables with their
     square (A -> A^2). However, involutory observables have been left as-is
     (A), and have not been replaced by their square (A^2 = I). As a result,
@@ -568,12 +568,11 @@ def _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices):
     new_pdA2 = []
     for i in range(len(tape.measurements)):
 
-        if i in var_indices and i not in non_involutory_indices:
+        if i in involutory_indices:
             num_params = len(tape.trainable_params)
             if num_params > 1:
                 item = tuple(np.array(0) for _ in range(num_params))
             else:
-                # TODO: what if num_params == 0
                 item = np.array(0)
         else:
             item = pdA2[i]
@@ -594,7 +593,7 @@ def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory_indices, var
         involutory = set(var_indices) - set(non_involutory_indices)
 
         if involutory:
-            pdA2 = _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices)
+            pdA2 = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory)
 
     return pdA2
 
@@ -621,8 +620,7 @@ def _create_variance_proc_fn(
     def processing_fn(results):
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
-        res = results[0]
-        f0 = qml.math.expand_dims(res, -1)
+        f0 = results[0]
 
         # analytic derivative of <A>
         pdA = pdA_fn(results[1:tape_boundary])
@@ -633,49 +631,59 @@ def _create_variance_proc_fn(
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
 
-        # Note: if isinstance(pdA2, int) and pdA2 != 0, then len(pdA2) <= len(pdA)
+        # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
 
         multi_measure = len(tape.measurements) > 1
+        num_params = len(tape.trainable_params)
         if multi_measure:
-            num_params = len(tape.trainable_params)
 
-            if num_params > 1:
+            if num_params == 1:
+
+                p_idx = 0
                 var_grad = []
+
                 for m_idx in range(len(tape.measurements)):
-                    m_res = []
+                    m_res = pdA[m_idx]
                     if var_mask[m_idx]:
-                        for p_idx in range(num_params):
-                            _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
-                            _f0 = f0[m_idx]
-                            _pdA = pdA[m_idx][p_idx]
-                            r = _get_var_with_second_order(_pdA2, _f0, _pdA)
-                            m_res.append(r)
-                        m_res = tuple(m_res)
-                    else:
-                        m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
+                        _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
+                        _f0 = f0[m_idx]
+                        m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
+
                     var_grad.append(m_res)
+
+                if len(var_grad) == 1:
+                    return var_grad
+
                 return tuple(var_grad)
 
-            p_idx = 0
             var_grad = []
-
             for m_idx in range(len(tape.measurements)):
-                m_res = pdA[m_idx]
+                m_res = []
                 if var_mask[m_idx]:
-                    _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
-                    _f0 = f0[m_idx]
-                    m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
-
+                    for p_idx in range(num_params):
+                        _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
+                        _f0 = f0[m_idx]
+                        _pdA = pdA[m_idx][p_idx]
+                        r = _get_var_with_second_order(_pdA2, _f0, _pdA)
+                        m_res.append(r)
+                    m_res = tuple(m_res)
+                else:
+                    m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
                 var_grad.append(m_res)
-
-            if len(var_grad) == 1:
-                return var_grad
-
             return tuple(var_grad)
 
-        # Scalar
-        var_grad = _get_var_with_second_order(pdA2, f0, pdA) if var_mask else pdA
-        return var_grad
+        if num_params == 1:
+
+            # Single variance measurement
+            return _get_var_with_second_order(pdA2, f0, pdA)
+
+        var_grad = []
+
+        for p_idx in range(num_params):
+            r = _get_var_with_second_order(pdA2[p_idx], f0, pdA[p_idx])
+            var_grad.append(r)
+
+        return tuple(var_grad)
 
     return processing_fn
 

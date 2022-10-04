@@ -17,7 +17,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import _get_operation_recipe, _process_pdA2_involutory
+from pennylane.gradients.parameter_shift import _get_operation_recipe, _put_zeros_in_pdA2_involutory
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
@@ -1357,7 +1357,7 @@ class TestParameterShiftRule:
         assert np.diag(gradA) == pytest.approx(expected, abs=tol)
         assert np.diag(gradF) == pytest.approx(expected, abs=tol)
 
-    def test_process_pdA2_involutory(self, tol):
+    def test_put_zeros_in_pdA2_involutory(self, tol):
         """Tests the _process_pdA2_involutory auxiliary function."""
         params = np.array([0.1, -1.6, np.pi / 5])
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
@@ -1378,7 +1378,7 @@ class TestParameterShiftRule:
             (np.array(-1.24098015e-15), np.array(6.17263875)),
             (np.array(-1.10652721e-18), np.array(4.44328375e-16)),
         )
-        res = _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices)
+        res = _put_zeros_in_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices)
         assert len(res) == len(pdA2)
         # part of the pdA2 related to the involutory obs (PauliZ) is 0
 
