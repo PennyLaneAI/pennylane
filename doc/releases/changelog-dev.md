@@ -75,7 +75,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
-* Add `overlapping_ops` property to the `Composite` class, and use this property to improve the
+* Added `overlapping_ops` property to the `Composite` class to improve the
   performance of the `eigvals`, `diagonalizing_gates` and `Prod.matrix` methods.
   [(#3084)](https://github.com/PennyLaneAI/pennylane/pull/3084)
 
