@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
@@ -38,6 +42,10 @@
 
 <h3>Improvements</h3>
 
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
+
 * Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
@@ -53,9 +61,19 @@
       is now only available through `QueuingManager`.
   * `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
+  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+     `update_info`.
 
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
+   
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
+
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
 * Add `overlapping_ops` property to the `Composite` class, and use this property to improve the
   performance of the `eigvals`, `diagonalizing_gates` and `Prod.matrix` methods.
@@ -66,11 +84,30 @@
 * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
+ * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
+
+ * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
+
 <h3>Deprecations</h3>
+
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
 
 <h3>Contributors</h3>
 
@@ -78,7 +115,11 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
+Albert Mitjans Coma,
 Utkarsh Azad,
 Soran Jahangiri,
 Christina Lee,
+Mudit Pandey,
 Jay Soni,
+Antal Száva,
+David Wierichs,

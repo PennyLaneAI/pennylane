@@ -132,7 +132,7 @@ class CompositeOp(Operator, abc.ABC):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return all(op.has_matrix for op in self)
+        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self)
 
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
@@ -216,6 +216,13 @@ class CompositeOp(Operator, abc.ABC):
 
         return self._eigs[self.hash]
 
+    @property
+    def has_diagonalizing_gates(self):
+        if self.has_overlapping_wires:
+            return self.has_matrix
+
+        return all(op.has_diagonalizing_gates for op in self)
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -286,7 +293,7 @@ class CompositeOp(Operator, abc.ABC):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self:
-            context.safe_update_info(op, owner=self)
+            context.update_info(op, owner=self)
         context.append(self, owns=self.operands)
         return self
 

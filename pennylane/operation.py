@@ -114,20 +114,6 @@ from pennylane.math import expand_matrix
 from .utils import pauli_eigs
 
 
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
-    if name in warning_names:
-        obj = getattr(qml.measurements, name)
-        warning_string = f"qml.operation.{name} is deprecated. Please import from qml.measurements.{name} instead"
-        warnings.warn(warning_string, UserWarning)
-        return obj
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
-
-
 # =============================================================================
 # Errors
 # =============================================================================
@@ -590,13 +576,11 @@ class Operator(abc.ABC):
 
         try:
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
-        except EigvalsUndefinedError:
-            # By default, compute the eigenvalues from the matrix representation.
-            # This will raise a NotImplementedError if the matrix is undefined.
-            try:
+        except EigvalsUndefinedError as e:
+            # By default, compute the eigenvalues from the matrix representation if one is defined.
+            if self.has_matrix:  # pylint: disable=using-constant-test
                 return qml.math.linalg.eigvals(self.matrix())
-            except MatrixUndefinedError as e:
-                raise EigvalsUndefinedError from e
+            raise EigvalsUndefinedError from e
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
@@ -923,6 +907,20 @@ class Operator(abc.ABC):
         """This property determines if an operator is hermitian."""
         return False
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_decomposition(cls):
+        r"""Bool: Whether or not the Operator returns a defined decomposition.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        )
+
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
 
@@ -961,6 +959,20 @@ class Operator(abc.ABC):
             list[Operator]: decomposition of the operator
         """
         raise DecompositionUndefinedError
+
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_diagonalizing_gates(cls):
+        r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            or cls.diagonalizing_gates != Operator.diagonalizing_gates
+        )
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -1070,6 +1082,15 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_adjoint(cls):
+        r"""Bool: Whether or not the Operator can compute its own adjoint.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.adjoint != Operator.adjoint
+
     def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
@@ -1088,6 +1109,9 @@ class Operator(abc.ABC):
         Returns:
             .QuantumTape: quantum tape
         """
+        if not self.has_decomposition:
+            raise DecompositionUndefinedError
+
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
@@ -1743,7 +1767,7 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -1850,16 +1874,16 @@ class Tensor(Observable):
         if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
             QueuingManager.append(self)
 
-        QueuingManager.safe_update_info(self, owns=tuple(self.obs))
-        QueuingManager.safe_update_info(other, owner=self)
+        QueuingManager.update_info(self, owns=tuple(self.obs))
+        QueuingManager.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            QueuingManager.safe_update_info(self, owns=tuple(self.obs))
-            QueuingManager.safe_update_info(other, owner=self)
+            QueuingManager.update_info(self, owns=tuple(self.obs))
+            QueuingManager.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
@@ -1900,6 +1924,12 @@ class Tensor(Observable):
                         self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        r"""Bool: Whether or not the Tensor returns defined diagonalizing gates."""
+        return all(o.has_diagonalizing_gates for o in self.obs)
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -2504,13 +2534,7 @@ def defines_diagonalizing_gates(obj):
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.
     """
-
-    with qml.tape.stop_recording():
-        try:
-            obj.diagonalizing_gates()
-        except DiagGatesUndefinedError:
-            return False
-        return True
+    return obj.has_diagonalizing_gates
 
 
 @qml.BooleanFn

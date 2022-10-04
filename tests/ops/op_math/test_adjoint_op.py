@@ -191,14 +191,89 @@ class TestProperties:
         base = qml.PauliX(0)
         op = Adjoint(base)
 
-        assert op.has_matrix
+        assert op.has_matrix is True
 
     def test_has_matrix_false(self):
         """Test has_matrix property carries over when base op does not define a matrix."""
         base = qml.QubitStateVector([1, 0], wires=0)
         op = Adjoint(base)
 
-        assert not op.has_matrix
+        assert op.has_matrix is False
+
+    def test_has_decomposition_true_via_base_adjoint(self):
+        """Test `has_decomposition` property is activated because the base operation defines an
+        `adjoint` method."""
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_decomposition(self):
+        """Test `has_decomposition` property is activated because the base operation defines a
+        `decomposition` method."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def decomposition(self):
+                return [qml.RX(0.2, self.wires)]
+
+        base = MyOp(0)
+        op = Adjoint(base)
+
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_false(self):
+        """Test `has_decomposition` property is not activated if the base neither
+        `has_adjoint` nor `has_decomposition`."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+        base = MyOp(0)
+        op = Adjoint(base)
+
+        assert op.has_decomposition is False
+
+    def test_has_adjoint_true_always(self):
+        """Test `has_adjoint` property to always be true, irrespective of the base."""
+
+        class MyOp(qml.operation.Operation):
+            """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
+
+            num_wires = 1
+
+        base = MyOp(0)
+        op = Adjoint(base)
+
+        assert op.has_adjoint is True
+        assert op.base.has_adjoint is False
+
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.has_adjoint is True
+        assert op.base.has_adjoint is True
+
+    def test_has_diagonalizing_gates_true_via_base_diagonalizing_gates(self):
+        """Test `has_diagonalizing_gates` property is activated because the
+        base operation defines a `diagonalizing_gates` method."""
+
+        op = Adjoint(qml.PauliX(0))
+
+        assert op.has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false(self):
+        """Test `has_diagonalizing_gates` property is not activated if the base neither
+        `has_adjoint` nor `has_diagonalizing_gates`."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+            has_diagonalizing_gates = False
+
+        op = Adjoint(MyOp(0))
+
+        assert op.has_diagonalizing_gates is False
 
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""
