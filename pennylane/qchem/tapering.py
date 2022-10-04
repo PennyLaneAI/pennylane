@@ -689,7 +689,7 @@ def taper_operation(
         ...        [0.25, -0.25],
         ...        [qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[1]),
         ...         qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[1])])
-        >>> qchem.taper_operation(SingleExcitation, generators, paulixops, paulix_sector, 
+        >>> qchem.taper_operation(SingleExcitation, generators, paulixops, paulix_sector,
         ...         wire_order=H.wires, op_wires=[0, 2], op_gen=op_gen)(3.14159)
         [Exp(1.570795j, 'PauliY', wires=[0])]
 
