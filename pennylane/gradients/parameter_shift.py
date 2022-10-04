@@ -641,14 +641,11 @@ def _create_variance_proc_fn(
 
             if num_params > 1:
                 var_grad = []
-                v_idx = 0
                 for m_idx in range(len(tape.measurements)):
                     m_res = []
-                    measurement_is_var = var_mask[m_idx]
-                    if np.any(measurement_is_var):
+                    if var_mask[m_idx]:
                         for p_idx in range(num_params):
-                            _pdA2 = pdA2[v_idx][p_idx] if pdA2 != 0 else pdA2
-                            v_idx += 1
+                            _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
                             _f0 = f0[m_idx]
                             _pdA = pdA[m_idx][p_idx]
                             r = _get_var_with_second_order(_pdA2, _f0, _pdA)
@@ -663,9 +660,8 @@ def _create_variance_proc_fn(
             var_grad = []
 
             for m_idx in range(len(tape.measurements)):
-                measurement_is_var = var_mask[m_idx]
                 m_res = pdA[m_idx]
-                if np.any(measurement_is_var):
+                if var_mask[m_idx]:
                     _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
                     _f0 = f0[m_idx]
                     m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
