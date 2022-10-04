@@ -564,7 +564,11 @@ def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
             obs_involutory = i not in non_involutory
             if obs_involutory:
                 num_params = len(tape.trainable_params)
-                item = tuple(np.array(0) for _ in range(num_params))
+                if num_params > 1:
+                    item = tuple(np.array(0) for _ in range(num_params))
+                else:
+                    # TODO: what if num_params == 0
+                    item = np.array(0)
             else:
                 item = pdA2[i]
             new_pdA2.append(item)
@@ -585,6 +589,7 @@ def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
 
         if involutory:
             pdA2 = _process_pda2_involutory(tape, pdA2, var_idx, non_involutory)
+    print(pdA2)
     return pdA2
 
 
@@ -639,9 +644,10 @@ def _create_variance_proc_fn(
                 var_grad = []
                 for m_idx in range(len(tape.measurements)):
                     m_res = []
-                    measurement_is_var = mask[m_idx]
-                    if measurement_is_var:
+                    measurement_is_var = mask[m_idx][0]
+                    if np.any(measurement_is_var):
                         for p_idx in range(num_params):
+                            print(pdA2, m_idx)
                             _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
                             _f0 = f0[m_idx]
                             _pdA = pdA[m_idx][p_idx]
@@ -655,15 +661,24 @@ def _create_variance_proc_fn(
 
             p_idx = 0
             var_grad = []
+
+
             for m_idx in range(len(tape.measurements)):
-                measurement_is_var = mask[m_idx]
-                m_res = pdA[m_idx][p_idx]
-                if measurement_is_var:
-                    _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
+                print(mask)
+                measurement_is_var = mask[m_idx][0]
+                print(measurement_is_var)
+                m_res = pdA[m_idx]
+                if np.any(measurement_is_var):
+                    print(pdA2, m_idx)
+                    _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
                     _f0 = f0[m_idx]
                     m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
 
                 var_grad.append(m_res)
+
+            if len(var_grad) == 1:
+                return var_grad
+
             return tuple(var_grad)
 
         # Scalar
