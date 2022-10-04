@@ -35,7 +35,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
             dimension :math:`2^n` acts on a subspace of :math:`n` wires
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
-        sparse_format (str): if `mat` is a scipy sparse matrix then this is the string representing the
+        sparse_format (str): if ``mat`` is a SciPy sparse matrix then this is the string representing the
             preferred scipy sparse matrix format to cast the expanded matrix too
 
     Returns:
