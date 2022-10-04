@@ -1496,9 +1496,8 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
 
         res = circuit(a)
-        print(res)
         grad = qml.grad(circuit)(a)
-        print(grad)
+        print(res, grad)
 
     def test_execution_single_measurement_multiple_param(self, dev_name, diff_method, mode):
         """Jac is tuple of array."""
@@ -1516,6 +1515,24 @@ class TestReturn:
 
         res = circuit(a, b)
         grad = qml.grad(circuit)(a, b)
+        print(res, grad)
+
+    def test_execution_single_measurement_multiple_param_array(self, dev_name, diff_method, mode):
+        """Jac is tuple of array."""
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = np.array([0.1, 0.2], requires_grad=True)
+
+        res = circuit(a)
+        grad = qml.grad(circuit)(a)
+        print(res, grad)
 
     def test_execution_multiple_measurement_single_param(self, dev_name, diff_method, mode):
         """Jac is tuple of array"""
@@ -1534,9 +1551,12 @@ class TestReturn:
         import autograd.numpy as anp
 
         def cost(x):
-            return anp.hstack(circuit(a))
+            return anp.hstack(circuit(x))
 
-        grad = qml.grad(cost)(a)
+        grad = qml.jacobian(cost)(a)
+
+        print(res)
+        print(grad)
 
     def test_execution_multiple_measurement_multiple_param(self, dev_name, diff_method, mode):
         """Test execution works with the interface"""
@@ -1557,6 +1577,71 @@ class TestReturn:
         import autograd.numpy as anp
 
         def cost(x, y):
-            return anp.hstack(circuit(a, b))
+            return anp.hstack(circuit(x, y))
 
-        grad = qml.grad(cost)(a, b)
+        grad = qml.jacobian(cost)(a, b)
+
+        print(res)
+        print(grad)
+
+    def test_execution_multiple_measurement_multiple_param_array(self, dev_name, diff_method, mode):
+        """Test execution works with the interface"""
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = np.array([0.1, 0.2], requires_grad=True)
+
+        res = circuit(a)
+
+        import autograd.numpy as anp
+
+        def cost(x):
+            return anp.hstack(circuit(x))
+
+        grad = qml.jacobian(cost)(a)
+
+        print(res)
+        print(grad)
+
+    def test_multiple_derivative_expval(self, dev_name, diff_method, mode):
+        dev = qml.device(dev_name, wires=2)
+
+        params = qml.numpy.arange(1, 2 + 1) / 10
+        N = len(params)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method, max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        hess = qml.jacobian(qml.grad(circuit))(params)
+        print(hess)
+
+    def test_multiple_derivative_expval_multiple_params(self, dev_name, diff_method, mode):
+        dev = qml.device(dev_name, wires=2)
+
+        par_0 = qml.numpy.array(0.1, requires_grad=True)
+        par_1 = qml.numpy.array(0.2, requires_grad=True)
+
+        @qnode(dev, interface="autograd", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        import autograd.numpy as anp
+
+        def cost(x, y):
+            return anp.hstack(qml.grad(circuit)(x, y))
+
+        hess = qml.jacobian(cost)(par_0, par_1)
+        print(hess)

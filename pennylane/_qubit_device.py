@@ -1900,10 +1900,13 @@ class QubitDevice(Device):
         Post-process the Jacobian matrix returned by ``adjoint_jacobian`` for
         the new return type system.
         """
-        if jac.shape[0] == 1:
-            if jac.shape[1] == 1:
-                return jac[0][0]
+        jac = np.squeeze(jac)
 
-            return tuple(jac[0])
+        if jac.ndim == 0:
+            return np.array(jac)
 
-        return tuple(tuple(j) for j in jac)
+        if jac.ndim == 1:
+            return tuple(np.array(j) for j in jac)
+
+        # must be 2-dimensional
+        return tuple(tuple(np.array(j_) for j_ in j) for j in jac)

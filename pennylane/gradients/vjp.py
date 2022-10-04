@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import math
 
 
-def _compute_vjp_new(dy, jac, num=None):
+def _compute_vjp_new(dy, jac):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian.
 
@@ -30,9 +30,6 @@ def _compute_vjp_new(dy, jac, num=None):
         jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
             vector, the first n-dimensions of ``jac`` should match
             the shape of ``dy``.
-        num (int): The length of the flattened ``dy`` argument. This is an
-            optional argument, but can be useful to provide if ``dy`` potentially
-            has no shape (for example, due to tracing or just-in-time compilation).
 
     Returns:
         tensor_like: the vector-Jacobian product
@@ -41,24 +38,23 @@ def _compute_vjp_new(dy, jac, num=None):
         return None
     dy_row = math.reshape(dy, [-1])
     # Single measurement
-    if not isinstance(jac[0], tuple):
-        if dy.shape == ():
+    if dy.shape == ():
+        # Single measurement single params
+        if not isinstance(jac, tuple):
+            res = jac * dy_row
+        # Single measurement multiple params
+        else:
             jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
-        else:
-            res = []
-            for a in jac:
-                res.append(sum(dy * a))
-
     # Multiple measurements
     else:
-        vjp = []
+        vjp_l = []
         for a, b in zip(dy, jac):
-            vjp.append(tuple(np.array(a * c) for c in b))
+            vjp_l.append(tuple(np.array(a * c) for c in b))
 
-        res = [0] * len(vjp[0])
-        for i in range(0, len(vjp[0])):
-            for v in vjp:
+        res = [0] * len(vjp_l[0])
+        for i in range(0, len(vjp_l[0])):
+            for v in vjp_l:
                 if v[i].shape == ():
                     res[i] += v[i]
                 else:
@@ -83,7 +79,7 @@ def compute_vjp(dy, jac, num=None):
         tensor_like: the vector-Jacobian product
     """
     if qml.active_return():
-        return _compute_vjp_new(dy, jac, num=num)
+        return _compute_vjp_new(dy, jac)
 
     if jac is None:
         return None
@@ -230,6 +226,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
     # qml.disable_return()
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+
     # qml.enable_return()
 
     def processing_fn(results, num=None):
