@@ -167,8 +167,7 @@ class CompositeOp(Operator, abc.ABC):
 
     @property
     def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
-        """Groups all operands of the composite operator that act on overlapping wires taking
-        into account operator commutivity.
+        """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
             List[List[Operator]]: List of lists of operators that act on overlapping wires. All the

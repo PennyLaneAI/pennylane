@@ -185,6 +185,13 @@ class Prod(CompositeOp):
 
     @property
     def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+        """Groups all operands of the composite operator that act on overlapping wires taking
+        into account operator commutivity.
+
+        Returns:
+            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            inner lists commute with each other.
+        """
         if self._overlapping_ops is None:
             overlapping_ops = []  # [(wires, [ops])]
             for op in self:
