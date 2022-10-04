@@ -36,7 +36,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─Exp(1.570795j PauliY)-┤ ╭<Z@Z>
+        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
 
   ```

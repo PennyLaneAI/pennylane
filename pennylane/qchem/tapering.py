@@ -18,7 +18,6 @@ This module contains the functions needed for tapering qubits using symmetries.
 
 import functools
 import itertools
-from typing import Union
 import autograd.numpy as anp
 import scipy
 import numpy
@@ -643,12 +642,12 @@ def taper_operation(
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─Exp(1.570795j PauliY)-┤ ╭<Z@Z>
+        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
 
     .. details::
 
-        :title: Usage Details
+        **Usage Details**
 
         ``qml.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify `op_wires` args:
 
@@ -666,19 +665,21 @@ def taper_operation(
         ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
         >>> drawer = qml.draw(circuit, show_all_wires=True)
         >>> print(drawer(params=[3.14159]))
-            0: -╭Exp(0-0.7853975j PauliX(0)@PauliY(1))─╭Exp(0-0.7853975j PauliY(0)@PauliX(1))─┤ ╭<Z@Z>
-            1: ─╰Exp(0-0.7853975j PauliX(0)@PauliY(1))─╰Exp(0-0.7853975j PauliY(0)@PauliX(1))─┤ ╰<Z@Z>
+            0: -╭Exp(0-0.7854j PauliX(0)@PauliY(1))─╭Exp(0-0.7854j PauliY(0)@PauliX(1))─┤ ╭<Z@Z>
+            1: ─╰Exp(0-0.7854j PauliX(0)@PauliY(1))─╰Exp(0-0.7854j PauliY(0)@PauliX(1))─┤ ╰<Z@Z>
 
         For more involved gates operations such as the ones constructed from matrices, users would need to provide their generators manually
         via `op_gen` argument. The generator can be passed as a :class:`~.pennylane.Hamiltonian`:
 
-        >>> op_fun = qml.QubitUnitary(np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
-                                                [0.+0.j, 0.+0.j, 0.-1.j, 0.+0.j],
-                                                [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
-                                                [0.-1.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[0, 2])
-        >>> op_gen = qml.Hamiltonian([-0.5 * np.pi], [qml.PauliX(wires=[0]) @ qml.PauliX(wires=[2])])
-        >>> qchem.taper_operation(op_fun, generators, paulixops, paulix_sector, wire_order=H.wires,
-                                  op_gen=op_gen)
+        >>> op_fun = qml.QubitUnitary(
+        ...            np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
+        ...                      [0.+0.j, 0.+0.j, 0.-1.j, 0.+0.j],
+        ...                      [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
+        ...                      [0.-1.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[0, 2])
+        >>> op_gen = qml.Hamiltonian([-0.5 * np.pi],
+        ...                      [qml.PauliX(wires=[0]) @ qml.PauliX(wires=[2])])
+        >>> qchem.taper_operation(op_fun, generators, paulixops, paulix_sector,
+        ...                       wire_order=H.wires, op_gen=op_gen)
         [Exp(1.570796j, 'PauliX', wires=[0])]
 
         Alternatively, generator can also be specified as a function which returns :class:`~.pennylane.Hamiltonian` and uses `wires` as
@@ -688,11 +689,11 @@ def taper_operation(
         ...        [0.25, -0.25],
         ...        [qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[1]),
         ...         qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[1])])
-        >>> qchem.taper_operation(SingleExcitation, generators, paulixops, paulix_sector, wire_order=H.wires,
-                                  op_wires=[0, 2], op_gen=op_gen)(3.14159)
+        >>> qchem.taper_operation(SingleExcitation, generators, paulixops, paulix_sector, 
+        ...         wire_order=H.wires, op_wires=[0, 2], op_gen=op_gen)(3.14159)
         [Exp(1.570795j, 'PauliY', wires=[0])]
 
-        :title: Theory
+        **Theory**
 
         Consider :math:`G` to be the generator of a unitrary :math:`V(\theta)`, i.e.,
 
@@ -745,7 +746,7 @@ def taper_operation(
             )
         coeffs = 1.0
 
-        if operation.parameters and isinstance(operation.parameters[0], Union[float, complex]):
+        if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
             coeffs = functools.reduce(
                 lambda i, j: i * j, operation.parameters
             )  # coeffs from operation
@@ -791,7 +792,7 @@ def taper_operation(
         return _tapered_op
 
     params = 1.0
-    if operation.parameters and isinstance(operation.parameters[0], Union[float, complex]):
+    if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
         params = functools.reduce(lambda i, j: i * j, operation.parameters)
 
     return _tapered_op(params=params)

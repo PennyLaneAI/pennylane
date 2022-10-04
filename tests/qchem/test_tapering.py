@@ -969,7 +969,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
     ],
 )
 def test_taper_matrix_ops(operation, op_wires, op_gen):
-    """Test that operation callables can be used to obtain their consistent taperings"""
+    """Test that taper_operation can be used with gate operation built using matrices"""
 
     symbols, geometry, charge = (
         ["He", "H"],
