@@ -539,14 +539,21 @@ def expval_param_shift(
 
 def _get_var_with_second_order(pdA2, f0, pdA):
     """Auxiliary function to compute d(var(A))/dp = d<A^2>/dp -2 * <A> *
-    d<A>/dp for the variances
+    d<A>/dp for the variances.
 
     Squeezing is performed on the result to get scalar arrays.
+
+    Args:
+        pdA (tensor_like[float]): The analytic derivative of <A>.
+        pdA2 (tensor_like[float]): The analytic derivatives of the <A^2> observables.
+        f0 (tensor_like[float]): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
     """
     return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
 
 
-def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
+def _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices):
     """Auxiliary function for post-processing the partial derivative of <A^2>
     if there are involutory observables.
 
@@ -560,55 +567,54 @@ def _process_pda2_involutory(tape, pdA2, var_idx, non_involutory):
     """
     new_pdA2 = []
     for i in range(len(tape.measurements)):
-        if i in var_idx:
-            obs_involutory = i not in non_involutory
-            if obs_involutory:
-                num_params = len(tape.trainable_params)
-                if num_params > 1:
-                    item = tuple(np.array(0) for _ in range(num_params))
-                else:
-                    # TODO: what if num_params == 0
-                    item = np.array(0)
+
+        if i in var_indices and i not in non_involutory_indices:
+            num_params = len(tape.trainable_params)
+            if num_params > 1:
+                item = tuple(np.array(0) for _ in range(num_params))
             else:
-                item = pdA2[i]
-            new_pdA2.append(item)
+                # TODO: what if num_params == 0
+                item = np.array(0)
+        else:
+            item = pdA2[i]
+        new_pdA2.append(item)
 
     return new_pdA2
 
 
-def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
+def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory_indices, var_indices):
     """Auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
-    if non_involutory:
+    if non_involutory_indices:
         # compute the second derivative of non-involutory observables
         pdA2 = pdA2_fn(results[tape_boundary:])
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
-        involutory = set(var_idx) - set(non_involutory)
+        involutory = set(var_indices) - set(non_involutory_indices)
 
         if involutory:
-            pdA2 = _process_pda2_involutory(tape, pdA2, var_idx, non_involutory)
-    print(pdA2)
+            pdA2 = _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices)
+
     return pdA2
 
 
 def _create_variance_proc_fn(
-    tape, var_mask, var_idx, pdA_fn, pdA2_fn, tape_boundary, non_involutory
+    tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices
 ):
     """Auxiliary function to define the processing function for computing the
     derivative of variances using the parameter-shift rule.
 
     Args:
         var_mask (list): The mask of variance measurements in the measurement queue.
-        var_idx (list): The indices of variance measurements in the measurement queue.
+        var_indices (list): The indices of variance measurements in the measurement queue.
         pdA_fn (callable): The function required to evaluate the analytic derivative of <A>.
         pdA2_fn (callable): If not None, non-involutory observables are
             present; the partial derivative of <A^2> may be non-zero. Here, we
             calculate the analytic derivatives of the <A^2> observables.
         tape_boundary (callable): the number of first derivative tapes used to
             determine the number of results to post-process later
-        non_involutory (list): the indices in the measurement queue of all non-involutory
+        non_involutory_indices (list): the indices in the measurement queue of all non-involutory
             observables
     """
 
@@ -616,25 +622,18 @@ def _create_variance_proc_fn(
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
         res = results[0]
-
-        mask = []
-        for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
-            array_func = np.ones if m else np.zeros
-            shape = qml.math.shape(r)
-            mask.append(array_func(shape, dtype=bool))
-
-        # Note: len(f0) == len(mask)
         f0 = qml.math.expand_dims(res, -1)
-        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
+        # analytic derivative of <A>
         pdA = pdA_fn(results[1:tape_boundary])
 
-        pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
+        # analytic derivative of <A^2>
+        pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory_indices, var_indices)
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
 
-        # Note: if isinstance(pdA2, int) and pdA2 != 0, then len(pdA2) == len(pdA)
+        # Note: if isinstance(pdA2, int) and pdA2 != 0, then len(pdA2) <= len(pdA)
 
         multi_measure = len(tape.measurements) > 1
         if multi_measure:
@@ -642,13 +641,14 @@ def _create_variance_proc_fn(
 
             if num_params > 1:
                 var_grad = []
+                v_idx = 0
                 for m_idx in range(len(tape.measurements)):
                     m_res = []
-                    measurement_is_var = mask[m_idx][0]
+                    measurement_is_var = var_mask[m_idx]
                     if np.any(measurement_is_var):
                         for p_idx in range(num_params):
-                            print(pdA2, m_idx)
-                            _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
+                            _pdA2 = pdA2[v_idx][p_idx] if pdA2 != 0 else pdA2
+                            v_idx += 1
                             _f0 = f0[m_idx]
                             _pdA = pdA[m_idx][p_idx]
                             r = _get_var_with_second_order(_pdA2, _f0, _pdA)
@@ -662,14 +662,10 @@ def _create_variance_proc_fn(
             p_idx = 0
             var_grad = []
 
-
             for m_idx in range(len(tape.measurements)):
-                print(mask)
-                measurement_is_var = mask[m_idx][0]
-                print(measurement_is_var)
+                measurement_is_var = var_mask[m_idx]
                 m_res = pdA[m_idx]
                 if np.any(measurement_is_var):
-                    print(pdA2, m_idx)
                     _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
                     _f0 = f0[m_idx]
                     m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
@@ -682,7 +678,7 @@ def _create_variance_proc_fn(
             return tuple(var_grad)
 
         # Scalar
-        var_grad = _get_var_with_second_order(pdA2, f0, pdA) if mask else pdA
+        var_grad = _get_var_with_second_order(pdA2, f0, pdA) if var_mask else pdA
         return var_grad
 
     return processing_fn
@@ -724,7 +720,7 @@ def _var_param_shift_tuple(
 
     # Determine the locations of any variance measurements in the measurement queue.
     var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
-    var_idx = np.where(var_mask)[0]
+    var_indices = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
@@ -732,7 +728,7 @@ def _var_param_shift_tuple(
     gradient_tapes = [expval_tape]
 
     # Convert all variance measurements on the tape into expectation values
-    for i in var_idx:
+    for i in var_indices:
         obs = expval_tape._measurements[i].obs
         expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
             qml.measurements.Expectation, obs=obs
@@ -751,28 +747,28 @@ def _var_param_shift_tuple(
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
     # observables.
-    non_involutory = []
+    non_involutory_indices = []
 
-    for i in var_idx:
+    for i in var_indices:
         obs_name = tape.observables[i].name
 
         if isinstance(obs_name, list):
             # Observable is a tensor product, we must investigate all constituent observables.
             if any(name in NONINVOLUTORY_OBS for name in obs_name):
-                non_involutory.append(i)
+                non_involutory_indices.append(i)
 
         elif obs_name in NONINVOLUTORY_OBS:
-            non_involutory.append(i)
+            non_involutory_indices.append(i)
 
     pdA2_fn = None
-    if non_involutory:
-        expval_sq_tape = tape.copy(copy_operations=True)
+    if non_involutory_indices:
+        tape_with_obs_squared_expval = tape.copy(copy_operations=True)
 
-        for i in non_involutory:
+        for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_observable(expval_sq_tape._measurements[i].obs)
-            expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
+            obs = _square_observable(tape_with_obs_squared_expval._measurements[i].obs)
+            tape_with_obs_squared_expval._measurements[i] = qml.measurements.MeasurementProcess(
                 qml.measurements.Expectation, obs=obs
             )
 
@@ -780,7 +776,7 @@ def _var_param_shift_tuple(
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
         pdA2_tapes, pdA2_fn = expval_param_shift(
-            expval_sq_tape, argnum, shifts, gradient_recipes, f0, broadcast
+            tape_with_obs_squared_expval, argnum, shifts, gradient_recipes, f0, broadcast
         )
         gradient_tapes.extend(pdA2_tapes)
 
@@ -788,7 +784,7 @@ def _var_param_shift_tuple(
     # the number of results to post-process later.
     tape_boundary = len(pdA_tapes) + 1
     processing_fn = _create_variance_proc_fn(
-        tape, var_mask, var_idx, pdA_fn, pdA2_fn, tape_boundary, non_involutory
+        tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices
     )
     return gradient_tapes, processing_fn
 

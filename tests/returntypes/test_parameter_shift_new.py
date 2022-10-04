@@ -17,7 +17,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import _get_operation_recipe
+from pennylane.gradients.parameter_shift import _get_operation_recipe, _process_pdA2_involutory
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
@@ -1356,6 +1356,31 @@ class TestParameterShiftRule:
         expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
         assert np.diag(gradA) == pytest.approx(expected, abs=tol)
         assert np.diag(gradF) == pytest.approx(expected, abs=tol)
+
+    def test_process_pdA2_involutory(self, tol):
+        """Tests the _process_pdA2_involutory auxiliary function."""
+        params = np.array([0.1, -1.6, np.pi / 5])
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.Hermitian(A, 1))
+            qml.var(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 1}
+        var_indices = [1, 2]
+        non_involutory_indices = [1]
+
+        pdA2 = (
+            (np.array(-0.09983342), np.array(-4.44643859e-16)),
+            (np.array(-1.24098015e-15), np.array(6.17263875)),
+            (np.array(-1.10652721e-18), np.array(4.44328375e-16)),
+        )
+        res = _process_pdA2_involutory(tape, pdA2, var_indices, non_involutory_indices)
+        assert len(res) == len(pdA2)
+        # part of the pdA2 related to the involutory obs (PauliZ) is 0
 
     def test_expval_and_variance(self, tol):
         """Test that the qnode works for a combination of expectation
