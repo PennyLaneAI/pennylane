@@ -317,12 +317,15 @@ class TestMiscMethods:
         assert pow_op.base is base
         assert pow_op.coeff == coeff * z
 
-    @pytest.mark.parametrize("op,decimals,expected", [
-        (Exp(qml.PauliZ(0), 2 + 3j), None, "Exp((2+3j) Z)"),
-        (Exp(qml.PauliZ(0), 2 + 3j), 2, "Exp(2.00+3.00j Z)"),
-        (Exp(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(5.678 RZ)"),
-        (Exp(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(5.68 RZ\n(1.23))"),
-    ])
+    @pytest.mark.parametrize(
+        "op,decimals,expected",
+        [
+            (Exp(qml.PauliZ(0), 2 + 3j), None, "Exp((2+3j) Z)"),
+            (Exp(qml.PauliZ(0), 2 + 3j), 2, "Exp(2.00+3.00j Z)"),
+            (Exp(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(5.678 RZ)"),
+            (Exp(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(5.68 RZ\n(1.23))"),
+        ],
+    )
     def test_label(self, op, decimals, expected):
         """Test that the label is informative and uses decimals."""
         assert op.label(decimals=decimals) == expected
