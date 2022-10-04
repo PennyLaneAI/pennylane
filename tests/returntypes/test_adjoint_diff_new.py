@@ -141,7 +141,6 @@ class TestAdjointJacobian:
         assert isinstance(calculated_val, tuple)
         assert len(calculated_val) == 3
         assert all(isinstance(val, np.ndarray) and val.shape == () for val in calculated_val)
-
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
     def test_ry_gradient(self, tol, dev):
