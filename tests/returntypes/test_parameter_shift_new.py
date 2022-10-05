@@ -1402,9 +1402,9 @@ class TestParameterShiftRule:
         assert gradF[1] == pytest.approx(expected[1], abs=tol)
 
     @pytest.mark.parametrize("ind", [0, 1])
-    def test_vars_probs_single_param(self, ind, tol):
-        """Tests a qubit Hermitian observable that is not involutory alongside
-        an involutory observable."""
+    def test_var_and_probs_single_param(self, ind, tol):
+        """Tests a qubit Hermitian observable that is not involutory alongside an involutory observable and probs when
+        there's one trainable parameter."""
         dev = qml.device("default.qubit", wires=4)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
@@ -1452,9 +1452,9 @@ class TestParameterShiftRule:
         assert isinstance(gradA[2], np.ndarray)
         assert np.allclose(gradA[2], 0)
 
-    def test_vars_probs_multi_params(self, tol):
-        """Tests a qubit Hermitian observable that is not involutory alongside
-        an involutory observable."""
+    def test_var_and_probs_multi_params(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory alongside an involutory observable and probs when
+        there are more trainable parameters."""
         dev = qml.device("default.qubit", wires=4)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
@@ -1576,8 +1576,8 @@ class TestParameterShiftRule:
         assert res[2] == (np.array(0), np.array(0))
 
     def test_expval_and_variance_single_param(self, tol):
-        """Test that the qnode works for a combination of expectation
-        values and variances for a tape with a single trainable parameter"""
+        """Test an expectation value and the variance of involutory and non-involutory observables work well with a
+        single trainable parameter"""
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54
@@ -1624,8 +1624,8 @@ class TestParameterShiftRule:
         assert gradF == pytest.approx(expected, abs=tol)
 
     def test_expval_and_variance_multi_param(self, tol):
-        """Test that the qnode works for a combination of expectation
-        values and variances"""
+        """Test an expectation value and the variance of involutory and non-involutory observables work well with
+        multiple trainable parameters"""
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54
