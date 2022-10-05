@@ -260,7 +260,7 @@ class TestParamShift:
 
         assert g_tapes == []
         assert isinstance(res, np.ndarray)
-        assert res.shape == (1, 0)
+        assert res.shape == (0,)
 
     # TODO: uncomment when QNode decorator uses new qml.execute pipeline
     # @pytest.mark.parametrize("broadcast", [True, False])

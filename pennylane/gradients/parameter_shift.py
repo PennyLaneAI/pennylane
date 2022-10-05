@@ -1203,7 +1203,9 @@ def param_shift(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: np.zeros((tape.output_dim, 0))
+        if len(tape.measurements) == 1:
+            return [], lambda _: qml.math.zeros([0])
+        return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
     gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
