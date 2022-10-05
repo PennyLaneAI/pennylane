@@ -632,9 +632,8 @@ class QNode:
             res = res[0]
 
             # Special case of single Measurement in a list
-            if isinstance(self._qfunc_output, list):
-                if len(self._qfunc_output) == 1:
-                    return [res]
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
 
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
@@ -650,11 +649,11 @@ class QNode:
                 not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
                 and not backprop
             ):
-                if not self.device._shot_vector:
-                    res = type(self.tape._qfunc_output)(res)
-                else:
+                if self.device._shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
+                else:
+                    res = type(self.tape._qfunc_output)(res)
 
             return res
 
