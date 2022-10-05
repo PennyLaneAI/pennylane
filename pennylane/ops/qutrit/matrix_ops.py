@@ -318,7 +318,12 @@ class ControlledQutritUnitary(QutritUnitary):
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
+        old_control_values = self.hyperparameters["control_values"]
+        values = None if old_control_values is None else f"{old_control_values}2"
         new_op = ControlledQutritUnitary(
-            *self.parameters, control_wires=ctrl_wires, wires=self.hyperparameters["u_wires"]
+            *self.parameters,
+            control_wires=ctrl_wires,
+            wires=self.hyperparameters["u_wires"],
+            control_values=values,
         )
         return new_op.inv() if self.inverse else new_op

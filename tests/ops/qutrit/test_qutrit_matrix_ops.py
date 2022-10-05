@@ -588,6 +588,18 @@ class TestControlledQutritUnitary:
         out = original._controlled("a")
         assert qml.equal(out, expected)
 
+        original = qml.ControlledQutritUnitary(
+            U, control_wires=(0, 1), wires=[4, 2], control_values="01"
+        )
+        original.inverse = inverse
+        expected = qml.ControlledQutritUnitary(
+            U, control_wires=(0, 1, "a"), wires=[4, 2], control_values="012"
+        )
+        expected.inverse = inverse
+
+        out = original._controlled("a")
+        assert qml.equal(out, expected)
+
 
 label_data = [
     (U_thadamard_01, qml.QutritUnitary(U_thadamard_01, wires=0)),
