@@ -160,7 +160,7 @@ class QNode:
         self,
         func,
         device,
-        interface=None,
+        interface="autograd",
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,
@@ -170,14 +170,6 @@ class QNode:
         max_diff=1,
         **gradient_kwargs,
     ):
-        if interface is None:
-            interface = "autograd"
-        else:
-            warnings.warn(
-                "Detected 'interface' as an argument to the given quantum function. "
-                "The 'interface' argument is deprecated and will be removed soon. "
-                "The interface is now detected automatically."
-            )
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
@@ -229,7 +221,8 @@ class QNode:
         self.gradient_kwargs = None
         self._tape_cached = False
 
-        self._update_gradient_fn()
+        if self.interface != "auto":
+            self._update_gradient_fn()
         functools.update_wrapper(self, func)
 
     def __repr__(self):
@@ -536,8 +529,6 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        # self.interface = self._detect_interface(data=list(args) + list(kwargs.values()))
-
         self._tape = qml.tape.QuantumTape()
 
         with self.tape:
@@ -609,6 +600,9 @@ class QNode:
 
     def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
         override_shots = False
+
+        if self.interface == "auto":
+            self.interface = self._detect_interface(data=list(args) + list(kwargs.values()))
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,

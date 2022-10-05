@@ -21,21 +21,22 @@ devices with autodifferentiation support.
 
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
-# pylint: disable=too-many-statements, invalid-unary-operand-type
+# pylint: disable=too-many-statements, invalid-unary-operand-type, unsupported-binary-operation
 
-from functools import wraps
-import warnings
 import inspect
+import warnings
 from contextlib import _GeneratorContextManager
+from functools import wraps
+
 from cachetools import LRUCache
 
 import pennylane as qml
 
 from .set_shots import set_shots
 
-
 INTERFACE_MAP = {
     None: "Numpy",
+    "auto": "auto",
     "autograd": "autograd",
     "numpy": "autograd",
     "jax": "jax",
