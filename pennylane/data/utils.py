@@ -20,7 +20,6 @@ import math
 import glob
 import itertools
 import requests
-import xml.etree.ElementTree as ET
 
 from pennylane.data.dataset import Dataset
 
@@ -112,6 +111,7 @@ DATA_STRUCT = {
 
 URL = "https://pl-qd-flask-app.herokuapp.com"
 S3_URL = "https://xanadu-quantum-data.s3.amazonaws.com"
+FILEMAP_URL = os.path.join(S3_URL, "filemap.json")
 
 _s3_filemap = {}
 
@@ -234,24 +234,10 @@ def _generate_folder_list(node, folders):
     ]
 
 
-def _s3_filemap_for_prefix(prefix):
-    """Build the filemap rooted at the prefix from S3's RESTful API."""
-    response = requests.get(f"{S3_URL}/?delimiter=/&prefix={prefix}")
-    if not response.ok:
-        response.raise_for_status()
-    root = ET.fromstring(response.content)
-    ns = "{" + root.tag[1:].split("}")[0] + "}"
-    children = [node.find(ns + "Prefix").text for node in root.findall(ns + "CommonPrefixes")]
-    data_type = prefix.split("/")[0]
-    if prefix.count("/") == len(DATA_STRUCT[data_type]["params"]):
-        return {child.split("/")[-2] for child in children}
-    return {child.split("/")[-2]: _s3_filemap_for_prefix(child) for child in children}
-
-
 def _generate_folders(data_type, folders):
     """Recursively generate and return a tree of all folder names matching a pattern.
 
-    If the __s3_filemap is stale, this method will refresh it.
+    If the _s3_filemap is stale, this method will refresh it.
 
     Args:
         data_type (str): The data type for which folders are generated
@@ -264,7 +250,10 @@ def _generate_folders(data_type, folders):
 
     global _s3_filemap
     if data_type not in _s3_filemap:
-        _s3_filemap[data_type] = _s3_filemap_for_prefix(data_type + "/")
+        response = requests.get(FILEMAP_URL, timeout=5.0)
+        if not response.ok:
+            response.raise_for_status()
+        _s3_filemap = response.json()
     return _generate_folder_list(_s3_filemap[data_type], folders)
 
 
