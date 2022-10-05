@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-from collections import defaultdict
-import pytest
 import warnings
+from collections import defaultdict
+
 import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import QNode
 from pennylane import numpy as pnp
-from pennylane import qnode, QNode
+from pennylane import qnode
 from pennylane.tape import QuantumTape
 
 
@@ -1569,11 +1571,10 @@ class TestTapeExpansion:
             qml.RY(y, wires=1)
             return [qml.expval(o) for o in obs]
 
-        spy_expand = mocker.spy(circuit.device, "expand_fn")
         params = [0.1, 0.2]
         res = circuit(*params)
 
-        tape = spy_expand.spy_return
+        tape = circuit.tape
         rotations, observables = qml.grouping.diagonalize_qwc_pauli_words(obs)
 
         assert tape.observables[0].name == observables[0].name

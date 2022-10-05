@@ -160,7 +160,7 @@ class QNode:
         self,
         func,
         device,
-        interface="autograd",
+        interface=None,
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,
@@ -170,6 +170,14 @@ class QNode:
         max_diff=1,
         **gradient_kwargs,
     ):
+        if interface is None:
+            interface = "autograd"
+        else:
+            warnings.warn(
+                "Detected 'interface' as an argument to the given quantum function. "
+                "The 'interface' argument is deprecated and will be removed soon. "
+                "The interface is now detected automatically."
+            )
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
@@ -485,15 +493,14 @@ class QNode:
     @staticmethod
     def _validate_device_method(device):
         # determine if the device provides its own jacobian method
-        provides_jacobian = device.capabilities().get("provides_jacobian", False)
 
-        if not provides_jacobian:
-            raise qml.QuantumFunctionError(
-                f"The {device.short_name} device does not provide a native "
-                "method for computing the jacobian."
-            )
+        if device.capabilities().get("provides_jacobian", False):
+            return "device", {}, device
 
-        return "device", {}, device
+        raise qml.QuantumFunctionError(
+            f"The {device.short_name} device does not provide a native "
+            "method for computing the jacobian."
+        )
 
     @staticmethod
     def _validate_parameter_shift(device):
@@ -517,8 +524,19 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
+    def _detect_interface(self, data: list):
+        if data:
+            interface = qml.math.get_interface(data[0])
+            for value in data[1:]:
+                if qml.math.get_interface(value) != interface:
+                    raise ValueError("Input values have different interfaces.")
+            return interface
+        return "autograd"
+
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+
+        # self.interface = self._detect_interface(data=list(args) + list(kwargs.values()))
 
         self._tape = qml.tape.QuantumTape()
 
@@ -547,17 +565,19 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
         ]
-        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
+        if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
 
         for obj in self.tape.operations + self.tape.observables:
 
-            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+            if (
+                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
+                and len(obj.wires) != self.device.num_wires
+            ):
                 # check here only if enough wires
-                if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
+                raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
