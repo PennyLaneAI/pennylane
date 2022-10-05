@@ -149,7 +149,7 @@ class ControlledQutritUnitary(QutritUnitary):
     * ``control_wires``: wires that act as control for the operation
     * ``U``: unitary applied to the target wires
     * ``control_values``: a string of trits representing the state of the control
-                qutrits to control on (default is the all 2s state)    
+                qutrits to control on (default is the all 2s state)
 
     **Details:**
 
