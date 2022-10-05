@@ -14,6 +14,7 @@
   [(#2042)](https://github.com/PennyLaneAI/pennylane/pull/2042)
 
   With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
+
   ```python
   # molecular geometry
   symbols = ["He", "H"]
@@ -51,6 +52,7 @@
       generators, paulix_ops, opt_sector, n_elec, n_qubits
   )
   ```
+
   ```pycon
   >>> hf_tapered
   tensor([1, 1], requires_grad=True)
@@ -84,6 +86,7 @@
   ```
 
   The resulting circuit is:
+
   ```pycon
   >>> print(qml.draw(circuit, expansion_strategy="device")(template_weights))
   0: ──╭C──RY(0.1)───────────────────────────────┤
@@ -94,6 +97,7 @@
 
 * Added a template for tree tensor networks, `qml.TTN`.
   [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
+
   ```python
   def block(weights, wires):
       qml.CNOT(wires=[wires[0], wires[1]])
@@ -113,7 +117,9 @@
       qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
       return qml.expval(qml.PauliZ(wires=n_wires - 1))
   ```
+
   The resulting circuit is:
+
   ```pycon
   >>> print(qml.draw(circuit, expansion_strategy="device")(template_weights))
   0: ──╭C──RY(0.1)─────────────────┤
@@ -138,6 +144,7 @@
   single-qubit rotations.
 
   Consider the QNode
+
   ```python
   dev = qml.device("default.qubit", wires=2)
 
@@ -154,6 +161,7 @@
   ```
 
   Its frequency spectra can be easily obtained via `qml.fourier.qnode_spectrum`:
+
   ```pycon
   >>> spectra = qml.fourier.qnode_spectrum(qnode)(x, Y)
   >>> spectra
@@ -164,6 +172,7 @@
   We may then initialize the `RotosolveOptimizer` and minimize the QNode cost function
   by providing this information about the frequency spectra. We also compare the cost at
   each step to the initial cost.
+
   ```pycon
   >>> cost_init = qnode(x, Y)
   >>> opt = qml.RotosolveOptimizer()
@@ -176,6 +185,7 @@
 
   The optimization with `RotosolveOptimizer` is performed in substeps. The minimal cost
   of these substeps can be retrieved by setting `full_output=True`.
+
   ```pycon
   >>> x = np.array(0.8, requires_grad=True)
   >>> Y = np.array([-0.2, 1.5], requires_grad=True)
@@ -186,6 +196,7 @@
   New cost: 0.0 reached via substeps [-0.  0.  0.]
   New cost: -1.0 reached via substeps [-1. -1. -1.]
   ```
+
   However, note that these intermediate minimal values are evaluations of the
   *reconstructions* that Rotosolve creates and uses internally for the optimization,
   and not of the original objective function. For noisy cost functions, these intermediate
@@ -203,6 +214,7 @@
   * multiple `qml.expval` / `qml.var` measurements.
 
   Consider a QNode that returns basis-state probabilities:
+
   ```python
   dev = qml.device('default.qubit', wires=2)
   x = jnp.array(0.543)
@@ -215,7 +227,9 @@
       qml.CNOT(wires=[0, 1])
       return qml.probs(wires=[1])
   ```
+
   The QNode can be evaluated and its jacobian can be computed:
+
   ```pycon
   >>> circuit(x, y)
   DeviceArray([0.8397495 , 0.16025047], dtype=float32)
@@ -223,6 +237,7 @@
   (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
    DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
   ```
+
   Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
 <h4>Speedier quantum natural gradient ⚡</h4>
@@ -315,6 +330,7 @@
 
   hessian = qml.gradients.param_shift_hessian(circuit)(x)
   ```
+
   ```pycon
   >>> hessian
   tensor([[-0.97517033,  0.01983384],
@@ -372,10 +388,10 @@
 
   `qml.math.safe_squeeze` wraps `qml.math.squeeze`, with slight modifications:
 
-  - When provided the `axis` keyword argument, axes that do not have size `1` will be
+  * When provided the `axis` keyword argument, axes that do not have size `1` will be
     ignored, instead of raising an error.
 
-  - The keyword argument `exclude_axis` allows to explicitly exclude axes from the
+  * The keyword argument `exclude_axis` allows to explicitly exclude axes from the
     squeezing.
 
 * The `adjoint` transform now raises and error whenever the object it is applied to
@@ -443,7 +459,7 @@
 
   ```pycon
   >>> def some_function(tensor1, tensor2, option):
-  ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+  ...     interface = qml.math.get_interface([tensor1, tensor2])
   ...     ...
   ```
 
@@ -554,6 +570,7 @@
 
   Going forward, the preferred way is to use the caching abilities of the
   QNode:
+
   ```python
   dev = qml.device("default.qubit", wires=2)
 
@@ -564,6 +581,7 @@
       qml.RY(0.345, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```pycon
   >>> for _ in range(10):
   ...    circuit()

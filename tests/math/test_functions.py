@@ -13,15 +13,16 @@
 # limitations under the License.
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
-from functools import partial
 import itertools
+from functools import partial
+
 import numpy as onp
 import pytest
+from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math as fn
-from autograd.numpy.numpy_boxes import ArrayBox
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -43,7 +44,7 @@ class TestGetMultiTensorbox:
         z = torch.tensor([0.6])
 
         with pytest.raises(ValueError, match="Tensors contain mixed types"):
-            fn._multi_dispatch([x, y, z])
+            fn.get_interface(x, y, z)
 
     def test_warning_tensorflow_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
@@ -52,7 +53,7 @@ class TestGetMultiTensorbox:
         y = np.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
-            fn._multi_dispatch([x, y])
+            fn.get_interface(x, y)
 
     def test_warning_torch_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
@@ -61,7 +62,7 @@ class TestGetMultiTensorbox:
         y = np.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
-            fn._multi_dispatch([x, y])
+            fn.get_interface(x, y)
 
     @pytest.mark.filterwarnings("error:Contains tensors of types {.+}; dispatch will prioritize")
     def test_no_warning_scipy_and_autograd(self):
@@ -70,14 +71,14 @@ class TestGetMultiTensorbox:
         x = sci.sparse.eye(3)
         y = np.array([0.5, 0.1])
 
-        fn._multi_dispatch([x, y])
+        fn.get_interface(x, y)
 
     def test_return_tensorflow_box(self):
         """Test that TensorFlow is correctly identified as the dispatching library."""
         x = tf.Variable([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "tensorflow"
 
     def test_return_torch_box(self):
@@ -85,7 +86,7 @@ class TestGetMultiTensorbox:
         x = torch.tensor([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "torch"
 
     def test_return_autograd_box(self):
@@ -93,7 +94,7 @@ class TestGetMultiTensorbox:
         x = np.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "autograd"
 
     def test_return_numpy_box(self):
@@ -101,7 +102,7 @@ class TestGetMultiTensorbox:
         x = onp.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "numpy"
 
 
