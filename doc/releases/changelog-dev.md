@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
+  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
+  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
+  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
+  integrals tensor are diagonal.
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
+
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
@@ -101,7 +108,16 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Documentation</h3>
 
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
 <h3>Bug fixes</h3>
+
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
 
 <h3>Contributors</h3>
 
@@ -111,8 +127,10 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Diego Guala,
 Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
 Jay Soni,
+Antal Száva,
 David Wierichs,

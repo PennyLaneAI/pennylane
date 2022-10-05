@@ -154,6 +154,39 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
+def _no_trainable_grad_new(tape):
+    warnings.warn(
+        "Attempted to compute the gradient of a tape with no trainable parameters. "
+        "If this is unintended, please mark trainable parameters in accordance with the "
+        "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+    )
+    if len(tape.measurements) == 1:
+        return [], lambda _: qml.math.zeros([0])
+    return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+
+
+def _all_zero_grad_new(tape):
+    """Auxiliary function to return zeros for the all-zero gradient case."""
+    list_zeros = []
+
+    for m in tape.measurements:
+        # TODO: Update shape for CV variables
+        if m.return_type is qml.measurements.Probability:
+            dim = 2 ** len(m.wires)
+        else:
+            dim = 1
+
+        sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
+        sub_list_zeros = tuple(sub_list_zeros)
+
+        list_zeros.append(sub_list_zeros)
+
+    if len(tape.measurements) == 1:
+        return [], lambda _: list_zeros[0]
+
+    return [], lambda _: tuple(list_zeros)
+
+
 @gradient_transform
 def _finite_diff_new(
     tape,
@@ -208,14 +241,7 @@ def _finite_diff_new(
     #TODO: Add example for new return type.
     """
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the gradient of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        if len(tape.measurements) == 1:
-            return [], lambda _: qml.math.zeros([0])
-        return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+        return _no_trainable_grad_new(tape)
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
@@ -225,24 +251,7 @@ def _finite_diff_new(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        list_zeros = []
-
-        for i, m in enumerate(tape.measurements):
-            # TODO: Update shape for CV variables
-            if m.return_type is qml.measurements.Probability:
-                dim = 2 ** len(m.wires)
-            else:
-                dim = 1
-
-            sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
-            sub_list_zeros = tuple(sub_list_zeros)
-
-            list_zeros.append(sub_list_zeros)
-
-        if len(tape.measurements) == 1:
-            return [], lambda _: list_zeros[0]
-
-        return [], lambda _: tuple(list_zeros)
+        return _all_zero_grad_new(tape)
 
     gradient_tapes = []
     shapes = []
@@ -306,8 +315,10 @@ def _finite_diff_new(
 
             res = results[start : start + s]
             start = start + s
+
             # compute the linear combination of results
             # and coefficients
+
             pre_grads = []
 
             if len(tape.measurements) == 1:
