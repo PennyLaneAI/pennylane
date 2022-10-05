@@ -15,6 +15,8 @@
 This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
+from functools import lru_cache
+
 import numpy as np
 from scipy import sparse
 
@@ -72,6 +74,7 @@ class Identity(CVObservable, Operation):
         """
         return np.array([1, 1])
 
+    @lru_cache()
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -92,8 +95,9 @@ class Identity(CVObservable, Operation):
         """
         return np.eye(2)
 
+    @lru_cache()
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, 1]])
 
     @staticmethod

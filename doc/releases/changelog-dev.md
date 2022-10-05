@@ -75,6 +75,8 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+
 <h3>Breaking changes</h3>
 
  * `QueuingContext` is renamed `QueuingManager`.
