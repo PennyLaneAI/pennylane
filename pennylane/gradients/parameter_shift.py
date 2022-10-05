@@ -571,9 +571,9 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
         if i in involutory_indices:
             num_params = len(tape.trainable_params)
             if num_params > 1:
-                item = tuple(np.array(0) for _ in range(num_params))
+                item = tuple(qml.math.array(0) for _ in range(num_params))
             else:
-                item = np.array(0)
+                item = qml.math.array(0)
         else:
             item = pdA2[i]
         new_pdA2.append(item)
