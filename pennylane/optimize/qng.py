@@ -75,7 +75,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-        The QNG optimizer supports single QNodes objects as objective functions. Alternatively,
+        The QNG optimizer supports using a single :class:`~.QNode` as the objective function. Alternatively,
         the metric tensor can directly be provided to the :func:`step` method of the optimizer,
         using the ``metric_tensor_fn`` keyword argument.
 
@@ -112,7 +112,8 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> theta_new
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
-    An alternative way to calculate the metric tensor can be provided to :meth:`~.step`
+    An alternative function to calculate the metric tensor of the QNode
+    can be provided to :meth:`~.step`
     via the ``metric_tensor_fn`` keyword argument.  For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
