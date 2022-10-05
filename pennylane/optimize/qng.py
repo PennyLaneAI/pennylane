@@ -82,13 +82,13 @@ class QNGOptimizer(GradientDescentOptimizer):
         For the following cases, providing ``metric_tensor_fn`` may be useful:
 
         * For hybrid classical-quantum models, the "mixed geometry" of the model
-            makes it unclear which metric should be used for which parameter.
-            For example, parameters of quantum nodes are better suited to
-            one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
-            are likely better suited to another metric.
+          makes it unclear which metric should be used for which parameter.
+          For example, parameters of quantum nodes are better suited to
+          one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
+          are likely better suited to another metric.
 
         * For multi-QNode models, we don't know what geometry is appropriate
-            if a parameter is shared amongst several QNodes.
+          if a parameter is shared amongst several QNodes.
 
     **Examples:**
 
