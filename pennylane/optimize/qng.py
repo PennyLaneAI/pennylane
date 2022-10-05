@@ -112,7 +112,8 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> theta_new
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
-    An alternative way to calculate the metric tensor can be provided to :meth:`~.step`
+    An alternative function to calculate the metric tensor of the QNode
+    can be provided to :meth:`~.step`
     via the ``metric_tensor_fn`` keyword argument.  For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
