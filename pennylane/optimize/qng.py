@@ -75,20 +75,20 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. note::
 
-         The QNG optimizer supports single QNodes objects as objective functions. Alternatively,
-         the metric tensor can directly be provided to the :func:`step` method of the optimizer,
-         using the ``metric_tensor_fn`` keyword argument.
+        The QNG optimizer supports single QNodes objects as objective functions. Alternatively,
+        the metric tensor can directly be provided to the :func:`step` method of the optimizer,
+        using the ``metric_tensor_fn`` keyword argument.
 
-         For the following cases, providing ``metric_tensor_fn`` may be useful:
+        For the following cases, providing ``metric_tensor_fn`` may be useful:
 
-         * For hybrid classical-quantum models, the "mixed geometry" of the model
-           makes it unclear which metric should be used for which parameter.
-           For example, parameters of quantum nodes are better suited to
-           one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
-           are likely better suited to another metric.
+        * For hybrid classical-quantum models, the "mixed geometry" of the model
+            makes it unclear which metric should be used for which parameter.
+            For example, parameters of quantum nodes are better suited to
+            one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
+            are likely better suited to another metric.
 
-         * For multi-QNode models, we don't know what geometry is appropriate
-           if a parameter is shared amongst several QNodes.
+        * For multi-QNode models, we don't know what geometry is appropriate
+            if a parameter is shared amongst several QNodes.
 
     **Examples:**
 
