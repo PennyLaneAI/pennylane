@@ -30,7 +30,7 @@ DATA_STRUCT = {
     "qchem": {
         "docstr": "Quantum chemistry dataset.",
         "params": ["molname", "basis", "bondlength"],
-        "keys": [
+        "attributes": [
             "molecule",
             "hamiltonian",
             "sparse_hamiltonian",
@@ -86,7 +86,7 @@ DATA_STRUCT = {
     "qspin": {
         "docstr": "Quantum many-body spin system dataset.",
         "params": ["sysname", "periodicity", "lattice", "layout"],
-        "keys": [
+        "attributes": [
             "parameters",
             "hamiltonians",
             "ground_states",
@@ -178,7 +178,7 @@ def _validate_params(data_type, description, attributes):
     if not isinstance(attributes, list):
         raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes)}.")
 
-    all_attributes = data["keys"]
+    all_attributes = data["attributes"]
     if not set(attributes).issubset(set(all_attributes)):
         raise ValueError(
             f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
@@ -257,7 +257,7 @@ def _generate_folders(data_type, folders):
     return _generate_folder_list(_s3_filemap[data_type], folders)
 
 
-def load(data_type, attributes=None, lazy=False, folder_path="", force=True, **params):
+def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **params):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
 
     Args:
@@ -298,18 +298,18 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=True, **p
             qdata = Dataset._read_file(fname)
             for key, vals in qdata.items():
                 obj.setattr(key, vals)
-            doc_keys, doc_vals = list(qdata.keys()), list(map(type, qdata.values()))
+            doc_attrs, doc_vals = list(qdata.keys()), list(map(type, qdata.values()))
         else:
-            doc_keys, doc_vals = [], []
+            doc_attrs, doc_vals = [], []
             for attr in attributes:
                 fname = f"{file_prefix}_{attr}.dat"
                 qdata = Dataset._read_file(fname)
-                doc_keys.append(attr)
+                doc_attrs.append(attr)
                 doc_vals.append(type(qdata))
                 obj.setattr(attr, qdata)
-        args_idx = [data["keys"].index(x) for x in doc_keys]
+        args_idx = [data["attributes"].index(x) for x in doc_attrs]
         argsdocs = [data["docstrings"][x] for x in args_idx]
-        obj.setdocstr(data["docstr"], doc_keys, doc_vals, argsdocs)
+        obj.setdocstr(data["docstr"], doc_attrs, doc_vals, argsdocs)
         data_files.append(obj)
 
     return data_files
