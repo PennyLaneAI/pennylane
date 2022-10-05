@@ -285,6 +285,93 @@ class TestParamShift:
             assert isinstance(r, np.ndarray)
             assert r.shape == (0,)
 
+    def test_all_zero_diff_methods_tape(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4)
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Rot(*params, wires=0)
+            qml.probs([2, 3])
+
+        g_tapes, post_processing = qml.gradients.param_shift(tape)
+        assert g_tapes == []
+
+        result = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 3
+
+        assert isinstance(result[0], np.ndarray)
+        assert result[0].shape == (4,)
+        assert np.allclose(result[0], 0)
+
+        assert isinstance(result[1], np.ndarray)
+        assert result[1].shape == (4,)
+        assert np.allclose(result[1], 0)
+
+        assert isinstance(result[2], np.ndarray)
+        assert result[2].shape == (4,)
+        assert np.allclose(result[2], 0)
+
+    def test_all_zero_diff_methods_multiple_returns_tape(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Rot(*params, wires=0)
+            qml.expval(qml.PauliZ(wires=2))
+            qml.probs([2, 3])
+
+        g_tapes, post_processing = qml.gradients.param_shift(tape)
+        assert g_tapes == []
+
+        result = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 2
+
+        # First elem
+        assert len(result[0]) == 3
+
+        assert isinstance(result[0][0], np.ndarray)
+        assert result[0][0].shape == (1,)
+        assert np.allclose(result[0][0], 0)
+
+        assert isinstance(result[0][1], np.ndarray)
+        assert result[0][1].shape == (1,)
+        assert np.allclose(result[0][1], 0)
+
+        assert isinstance(result[0][2], np.ndarray)
+        assert result[0][2].shape == (1,)
+        assert np.allclose(result[0][2], 0)
+
+        # Second elem
+        assert len(result[0]) == 3
+
+        assert isinstance(result[1][0], np.ndarray)
+        assert result[1][0].shape == (4,)
+        assert np.allclose(result[1][0], 0)
+
+        assert isinstance(result[1][1], np.ndarray)
+        assert result[1][1].shape == (4,)
+        assert np.allclose(result[1][1], 0)
+
+        assert isinstance(result[1][2], np.ndarray)
+        assert result[1][2].shape == (4,)
+        assert np.allclose(result[1][2], 0)
+
+        tapes, _ = qml.gradients.param_shift(tape)
+        assert tapes == []
+
     # TODO: uncomment when QNode decorator uses new qml.execute pipeline
     # @pytest.mark.parametrize("broadcast", [True, False])
     # def test_all_zero_diff_methods(self, broadcast):
