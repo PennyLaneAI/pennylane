@@ -74,8 +74,8 @@ class Identity(CVObservable, Operation):
         """
         return np.array([1, 1])
 
-    @lru_cache()
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -95,8 +95,8 @@ class Identity(CVObservable, Operation):
         """
         return np.eye(2)
 
-    @lru_cache()
     @staticmethod
+    @lru_cache()
     def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, 1]])
 
