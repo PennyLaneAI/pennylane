@@ -26,94 +26,13 @@ from pennylane.data.dataset import Dataset
 # from pennylane.qdata.qchem_dataset import ChemDataset
 # from pennylane.qdata.qspin_dataset import SpinDataset
 
-DATA_STRUCT = {
-    "qchem": {
-        "docstr": "Quantum chemistry dataset.",
-        "params": ["molname", "basis", "bondlength"],
-        "attributes": [
-            "molecule",
-            "hamiltonian",
-            "sparse_hamiltonian",
-            "hf_state",
-            "meas_groupings",
-            "fci_energy",
-            "dipole_op",
-            "num_op",
-            "spin2_op",
-            "spinz_op",
-            "symmetries",
-            "paulix_ops",
-            "optimal_sector",
-            "ham_wire_map",
-            "tapered_hamiltonian",
-            "tapered_dipole_op",
-            "tapered_num_op",
-            "tapered_spin2_op",
-            "tapered_spinz_op",
-            "tapered_hf_state",
-            "vqe_circuit",
-            "vqe_params",
-            "vqe_energy",
-            "full",
-        ],
-        "docstrings": [
-            "Molecule object describing the chemical system",
-            "Hamiltonian of the system using Jordan-Wigner mapping",
-            "Sparse Hamiltonian of the system",
-            "Hartree-Fock state for the system",
-            "Qubit-wise commuting measurement groupings",
-            "FCI ground state energy",
-            "Dipole moment operator of the system",
-            "Number operator of the system",
-            "Total spin operator of the system",
-            "Spin projection operator of the system",
-            "Symmetries of the hamiltonian used to taper qubits",
-            "Pauli-X operators used in buiding Clifford unitary for tapering",
-            "Eigensector containing ground state of the tapered Hamiltonian",
-            "Hamiltonian wire map post tapering",
-            "Tapered hamiltonian operator",
-            "Tapered dipole moment operator",
-            "Tapered number operator",
-            "Tapered total spin operator",
-            "Tapered spin projection operator",
-            "Tapered Hartree-Fock state",
-            "Variational circuit for obtaining ground-state",
-            "Variational parameters for which ansatz evolve to ground state",
-            "Variational energy given by the vqe_circuit for provided vqe_params",
-            "Contains all the attributes related to the quantum chemistry datatset",
-        ],
-    },
-    "qspin": {
-        "docstr": "Quantum many-body spin system dataset.",
-        "params": ["sysname", "periodicity", "lattice", "layout"],
-        "attributes": [
-            "parameters",
-            "hamiltonians",
-            "ground_states",
-            "ground_energies",
-            "phase_labels",
-            "order_parameters",
-            "classical_shadows",
-            "full",
-        ],
-        "docstrings": [
-            "Parameters describing the spin system",
-            "Hamiltonians for the spin systems with different parameter values",
-            "Ground states for the spin systems with different parameter values",
-            "Ground state energies for the spin systems with different parameter values",
-            "Phase labels for the spin systems with different parameter values",
-            "Order parameters required to determine the phase labels",
-            "Classical shadow description of the ground state of the spin systems",
-            "Contains all the attributes related to the quantum spin datatset",
-        ],
-    },
-}
-
 URL = "https://pl-qd-flask-app.herokuapp.com"
 S3_URL = "https://xanadu-quantum-data.s3.amazonaws.com"
-FILEMAP_URL = os.path.join(S3_URL, "filemap.json")
+FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
+DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
 
-_s3_filemap = {}
+_foldermap = {}
+_data_struct = {}
 
 
 def _convert_size(size_bytes):
@@ -163,10 +82,10 @@ def _write_prog_bar(progress, completed, barsize, barlength, total_length):
 def _validate_params(data_type, description, attributes):
     r"""Validate parameters for loading the data"""
 
-    data = DATA_STRUCT.get(data_type)
+    data = _data_struct.get(data_type)
     if not data:
         raise ValueError(
-            f"Currently we have data hosted from types: {DATA_STRUCT.keys()}, but got {data_type}."
+            f"Currently we have data hosted from types: {_data_struct.keys()}, but got {data_type}."
         )
 
     params_needed = data["params"]
@@ -191,7 +110,7 @@ def _check_data_exist(data_type, description, directory_path):
     if "full" in description.values():
         exist = True
     else:
-        subdirec_path = [description[param] for param in DATA_STRUCT[data_type]["params"]]
+        subdirec_path = [description[param] for param in _data_struct[data_type]["params"]]
         for subdirec in itertools.product(*subdirec_path):
             path = os.path.join(directory_path, *subdirec)
             if not os.path.exists(path) or not glob.glob(
@@ -200,6 +119,26 @@ def _check_data_exist(data_type, description, directory_path):
                 exist = True
                 break
     return exist
+
+
+def _refresh_foldermap():
+    """Refresh the foldermap from S3."""
+    response = requests.get(FOLDERMAP_URL, timeout=5.0)
+    if not response.ok:
+        response.raise_for_status()
+
+    global _foldermap
+    _foldermap = response.json()
+
+
+def _refresh_data_struct():
+    """Refresh the data struct from S3."""
+    response = requests.get(DATA_STRUCT_URL, timeout=5.0)
+    if not response.ok:
+        response.raise_for_status()
+
+    global _data_struct
+    _data_struct = response.json()
 
 
 def _s3_download(data_type, folders, attributes, dest_folder):
@@ -221,26 +160,11 @@ def _s3_download(data_type, folders, attributes, dest_folder):
                 f.write(response.content)
 
 
-def _generate_folder_list(node, folders):
-    """Recursive helper method for _generate_folders"""
-    next_folders = folders[1:]
-    folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
-    if not next_folders:
-        return folders
-    return [
-        os.path.join(folder, child)
-        for folder in folders
-        for child in _generate_folder_list(node[folder], next_folders)
-    ]
-
-
-def _generate_folders(data_type, folders):
-    """Recursively generate and return a tree of all folder names matching a pattern.
-
-    If the _s3_filemap is stale, this method will refresh it.
+def _generate_folders(node, folders):
+    """Recursively generate and return a tree of all folder names below a node.
 
     Args:
-        data_type (str): The data type for which folders are generated
+        node (dict): A sub-dict of the foldermap for which we will generate a list of sub-folders.
         folders: (list[list[str]]): The ordered list of folder names requested.
             The value ``["full"]`` will expand to all possible folders at that depth
 
@@ -248,13 +172,15 @@ def _generate_folders(data_type, folders):
         list[str]: The paths of files that should be fetched from S3
     """
 
-    global _s3_filemap
-    if data_type not in _s3_filemap:
-        response = requests.get(FILEMAP_URL, timeout=5.0)
-        if not response.ok:
-            response.raise_for_status()
-        _s3_filemap = response.json()
-    return _generate_folder_list(_s3_filemap[data_type], folders)
+    next_folders = folders[1:]
+    folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
+    if not next_folders:
+        return folders
+    return [
+        os.path.join(folder, child)
+        for folder in folders
+        for child in _generate_folders(node[folder], next_folders)
+    ]
 
 
 def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **params):
@@ -273,19 +199,24 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
     """
 
     _ = lazy
+    if not _data_struct:
+        _refresh_data_struct()
     if not attributes:
         attributes = ["full"]
     _validate_params(data_type, params, attributes)
 
     description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
-    data = DATA_STRUCT[data_type]
+    data = _data_struct[data_type]
     directory_path = os.path.join(folder_path, "datasets", data_type)
 
     if not force:
         force = _check_data_exist(data_type, description, directory_path)
 
+    if data_type not in _foldermap:
+        _refresh_foldermap()
+
     folders = [description[param] for param in data["params"]]
-    all_folders = _generate_folders(data_type, folders)
+    all_folders = _generate_folders(_foldermap[data_type], folders)
     _s3_download(data_type, all_folders, attributes, directory_path)
 
     data_files = []
@@ -354,10 +285,11 @@ def list_datasets(folder_path=None):
         }
     """
 
-    wdata = requests.get(URL + "/download/about", timeout=5.0).json()
+    if not _foldermap:
+        _refresh_foldermap()
     if folder_path is None:
-        return wdata
-    return wdata, _direc_to_dict(folder_path)
+        return _foldermap
+    return _foldermap, _direc_to_dict(folder_path)
 
 
 def _data_dfs(t, path=None):
@@ -390,7 +322,7 @@ def get_description(data, data_type, **kwargs):
 
     """
 
-    params = DATA_STRUCT[data_type]["params"]
+    params = _data_struct[data_type]["params"]
     if not set(kwargs).issubset(params):
         raise ValueError(
             f"Expected kwargs for the module {data_type} are {params}, but got {list(kwargs.items())}"
