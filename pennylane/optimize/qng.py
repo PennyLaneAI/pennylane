@@ -73,6 +73,23 @@ class QNGOptimizer(GradientDescentOptimizer):
         "Quantum Natural Gradient."
         `Quantum 4, 269 <https://doi.org/10.22331/q-2020-05-25-269>`_, 2020.
 
+    .. note::
+
+         The QNG optimizer supports single QNodes objects as objective functions. Alternatively,
+         the metric tensor can directly be provided to the :func:`step` method of the optimizer,
+         using the ``metric_tensor_fn`` keyword argument.
+
+         For the following cases, providing ``metric_tensor_fn`` may be useful:
+
+         * For hybrid classical-quantum models, the "mixed geometry" of the model
+           makes it unclear which metric should be used for which parameter.
+           For example, parameters of quantum nodes are better suited to
+           one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
+           are likely better suited to another metric.
+
+         * For multi-QNode models, we don't know what geometry is appropriate
+           if a parameter is shared amongst several QNodes.
+
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
@@ -96,7 +113,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
     An alternative way to calculate the metric tensor can be provided to :meth:`~.step`
-    via the `metric_tensor_fn` keyword argument.  For example, we can provide a function
+    via the ``metric_tensor_fn`` keyword argument.  For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
     >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit, circuit.device)
