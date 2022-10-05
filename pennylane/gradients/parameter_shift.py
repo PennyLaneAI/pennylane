@@ -541,7 +541,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
     """Auxiliary function to compute d(var(A))/dp = d<A^2>/dp -2 * <A> *
     d<A>/dp for the variances.
 
-    Squeezing is performed on the result to get scalar arrays.
+    The result is converted to an array-like object as some terms (specifically f0) may not be array-like in every case.
 
     Args:
         pdA (tensor_like[float]): The analytic derivative of <A>.
@@ -570,10 +570,10 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
 
         if i in involutory_indices:
             num_params = len(tape.trainable_params)
-            if num_params > 1:
-                item = tuple(qml.math.array(0) for _ in range(num_params))
-            else:
+            if num_params == 1:
                 item = qml.math.array(0)
+            else:
+                item = tuple(qml.math.array(0) for _ in range(num_params))
         else:
             item = pdA2[i]
         new_pdA2.append(item)
@@ -581,13 +581,13 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     return new_pdA2
 
 
-def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory_indices, var_indices):
-    """Auxiliary function to get the partial derivative of <A^2>."""
+def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
+    """The main auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
     if non_involutory_indices:
         # compute the second derivative of non-involutory observables
-        pdA2 = pdA2_fn(results[tape_boundary:])
+        pdA2 = pdA2_fn(results)
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
         involutory = set(var_indices) - set(non_involutory_indices)
@@ -626,20 +626,20 @@ def _create_variance_proc_fn(
         pdA = pdA_fn(results[1:tape_boundary])
 
         # analytic derivative of <A^2>
-        pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory_indices, var_indices)
+        pdA2 = _get_pdA2(
+            results[tape_boundary:], tape, pdA2_fn, non_involutory_indices, var_indices
+        )
 
-        # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
-        # d<A>/dp for plain expectations (mask==False)
-
+        # The logic follows:
+        # variances (var_mask==True): return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp
+        # plain expectations (var_mask==False): return d<A>/dp
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
-
         multi_measure = len(tape.measurements) > 1
         num_params = len(tape.trainable_params)
         if multi_measure:
 
             if num_params == 1:
 
-                p_idx = 0
                 var_grad = []
 
                 for m_idx in range(len(tape.measurements)):
@@ -650,10 +650,6 @@ def _create_variance_proc_fn(
                         m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
 
                     var_grad.append(m_res)
-
-                if len(var_grad) == 1:
-                    return var_grad
-
                 return tuple(var_grad)
 
             var_grad = []
@@ -672,9 +668,8 @@ def _create_variance_proc_fn(
                 var_grad.append(m_res)
             return tuple(var_grad)
 
+        # Single measurement case, meas has to be variance
         if num_params == 1:
-
-            # Single variance measurement
             return _get_var_with_second_order(pdA2, f0, pdA)
 
         var_grad = []
