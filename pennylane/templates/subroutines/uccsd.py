@@ -149,7 +149,22 @@ class UCCSD(Operation):
             for n in range(20):
                 params, energy = optimizer.step_and_cost(circuit, params,
                 wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
-                print("step = {:},  E = {:.8f} H".format(n, energy))
+                if n % 2 == 0:
+                    print("step = {:},  E = {:.8f} Ha".format(n, energy))
+
+        .. code-block:: none
+
+            step = 0,  E = -1.24654994 Ha
+            step = 2,  E = -1.27016844 Ha
+            step = 4,  E = -1.27379541 Ha
+            step = 6,  E = -1.27434106 Ha
+            step = 8,  E = -1.27442311 Ha
+            step = 10,  E = -1.27443547 Ha
+            step = 12,  E = -1.27443733 Ha
+            step = 14,  E = -1.27443761 Ha
+            step = 16,  E = -1.27443765 Ha
+            step = 18,  E = -1.27443766 Ha
+            step = 20,  E = -1.27443766 Ha
 
     """
 
