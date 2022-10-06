@@ -548,8 +548,8 @@ def _build_callables(operation, op_wires=None, op_gen=None):
 
     Args:
         operation (Operation or Callable): qubit operation to be tapered, or a function that applies that operation
-        op_wires (Sequence[Any]): optional argument to specify wires for the operation in case the provided operation is a callable
-        op_gen (Hamiltonian or Callable): optional argument to give the generator of the operation, or a function that returns it
+        op_wires (Sequence[Any]): wires for the operation in case any of the provided `operation` or `op_gen` are callables
+        op_gen (Hamiltonian or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
 
     Returns:
         Tuple(Operation, Hamiltonian)
@@ -567,7 +567,6 @@ def _build_callables(operation, op_wires=None, op_gen=None):
     >>> _build_callables(qml.SingleExcitation, op_wires=[0, 2], op_gen=gen_fn)
     (SingleExcitation(1.0, wires=[0, 2]),
     <Hamiltonian: terms=2, wires=[0, 2]>)
-
     """
 
     if callable(operation) or callable(op_gen):
@@ -590,6 +589,71 @@ def _build_callables(operation, op_wires=None, op_gen=None):
     return operation, op_gen
 
 
+def _build_generator(operation, wire_order, op_gen=None):
+    r"""Computes the generator `G` for the general unitary operation :math:`U(\theta)=e^{iG\theta}`, where :math:`\theta` could either be a variational parameter,
+    or a constant with some arbitrary fixed value.
+
+    Args:
+        operation (Operation): qubit operation to be tapered
+        wire_order (Sequence[Any]): order of the wires in the quantum circuit
+        op_gen (Hamiltonian): generator of the operation in case it cannot be computed internally.
+
+    Returns:
+        Hamiltonian
+
+    Raises:
+        NotImplementedError: generator of the operation cannot be constructed internally
+        ValueError: optional argument `op_gen` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
+
+    **Example**
+
+    >>> _build_generator(qml.SingleExcitation, [0, 1], op_wires=[0, 2])
+      (-0.25) [Y0 X1]
+    + (0.25) [X0 Y1]
+    """
+
+    if op_gen is None:
+        if operation.num_params < 1:  # Non-parameterized gates
+            gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
+            op_gen = qml.Hamiltonian(
+                *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
+            )
+            qml.simplify(op_gen)
+            if op_gen.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
+                op_gen -= qml.Hamiltonian([op_gen.coeffs[0]], [qml.Identity(wires=wire_order[0])])
+        else:  # Single-parameter gates
+            try:
+                op_gen = qml.generator(operation, "hamiltonian")
+
+            except ValueError as exc:
+                raise NotImplementedError(
+                    f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
+                ) from exc
+    else:  # check that user-provided generator is correct
+        if not isinstance(op_gen, qml.Hamiltonian):
+            raise ValueError(
+                f"Generator for the operation needs to be a qml.Hamiltonian, but got {type(op_gen)}."
+            )
+        coeffs = 1.0
+
+        if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
+            coeffs = functools.reduce(
+                lambda i, j: i * j, operation.parameters
+            )  # coeffs from operation
+
+        mat1 = scipy.linalg.expm(1j * qml.matrix(op_gen, wire_order=wire_order) * coeffs)
+        mat2 = qml.matrix(operation, wire_order=wire_order)
+        phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
+            np.nonzero(np.round(mat1, 10))
+        ]
+        if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
+            raise ValueError(
+                f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
+            )
+
+    return op_gen
+
+
 # pylint: disable=too-many-branches, too-many-arguments, inconsistent-return-statements, no-member
 def taper_operation(
     operation, generators, paulixops, paulix_sector, wire_order, op_wires=None, op_gen=None
@@ -599,7 +663,7 @@ def taper_operation(
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
     manually via `op_gen` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
     the molecular Hamiltonian, then this operator is transformed using the Clifford operators :math:`U` and
-    tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :func:`~.PauliRot`
+    tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :class:`~.pennylane.Exp`
     for building the tapered unitary.
 
     Args:
@@ -608,11 +672,11 @@ def taper_operation(
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
-        op_wires (Sequence[Any]): optional argument to specify wires for the operation in case the provided operation is a callable
-        op_gen (Hamiltonian or Callable): optional argument to give the generator of the operation, or a function that returns it
+        op_wires (Sequence[Any]): wires for the operation in case any of the provided `operation` or `op_gen` are callables
+        op_gen (Hamiltonian or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
 
     Returns:
-        list(Operation): list of operations of type :func:`~.PauliRot` implementing tapered unitary operation
+        list(Operation): list of operations of type :class:`~.pennylane.Exp` implementing tapered unitary operation
 
     Raises:
         ValueError: optional argument `op_wires` is not provided when the provided operation is a callable
@@ -722,45 +786,9 @@ def taper_operation(
     # get dummy objects in case functional form of operation or op_gen is being used
     operation, op_gen = _build_callables(operation, op_wires=op_wires, op_gen=op_gen)
 
-    if op_gen is None:
-        if operation.num_params < 1:  # Non-parameterized gates
-            gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
-            op_gen = qml.Hamiltonian(
-                *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
-            )
-            qml.simplify(op_gen)
-            if op_gen.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
-                op_gen -= qml.Hamiltonian([op_gen.coeffs[0]], [qml.Identity(wires=wire_order[0])])
-        else:  # Single-parameter gates
-            try:
-                op_gen = qml.generator(operation, "hamiltonian")
-
-            except ValueError as exc:
-                raise NotImplementedError(
-                    f"Generator for {operation} is not implemented, please provide it with 'op_gen' args."
-                ) from exc
-    else:  # check that user-provided generator is correct
-        if not isinstance(op_gen, qml.Hamiltonian):
-            raise ValueError(
-                f"Generator for the operation needs to be a qml.Hamiltonian, but got {type(op_gen)}."
-            )
-        coeffs = 1.0
-
-        if operation.parameters and isinstance(operation.parameters[0], (float, complex)):
-            coeffs = functools.reduce(
-                lambda i, j: i * j, operation.parameters
-            )  # coeffs from operation
-
-        mat1 = scipy.linalg.expm(1j * qml.matrix(op_gen, wire_order=wire_order) * coeffs)
-        mat2 = qml.matrix(operation, wire_order=wire_order)
-        phase = np.divide(mat1, mat2, out=np.zeros_like(mat1, dtype=complex), where=mat1 != 0)[
-            np.nonzero(np.round(mat1, 10))
-        ]
-        if not np.allclose(phase / phase[0], np.ones(len(phase))):  # check if the phase is global
-            raise ValueError(
-                f"Given op_gen: {op_gen} doesn't seem to be the correct generator for the {operation}."
-            )
-
+    # build generator for the operation either internally or using the provided op_gen
+    op_gen = _build_generator(operation, wire_order, op_gen=op_gen)
+    # check compatibility between the generator and the symmeteries
     if np.all(
         [
             [
@@ -788,6 +816,7 @@ def taper_operation(
                 ops_tapered.append(qml.exp(op, 1j * params * coeff))
             return ops_tapered
 
+    # if operation was a callable, return the functional form that accepts new parameters
     if callable_op:
         return _tapered_op
 
