@@ -139,5 +139,5 @@ class SymbolicOp(Operator):
 
     def map_wires(self, wire_map: dict):
         new_op = super().map_wires(wire_map=wire_map)
-        new_op.base = self.base.map_wires(wire_map=wire_map)
+        new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
         return new_op

@@ -1141,16 +1141,12 @@ class Operator(abc.ABC):
         Returns:
             .Operator: new operator
         """
-        if any(wire not in wire_map for wire in self.wires):
-            raise ValueError("All operator wires are not present in the given wire map.")
-
         new_wires = wire_map.values()
-
         if len(set(new_wires)) < len(new_wires):
             raise ValueError("Two different wires have been mapped to the same wire.")
 
         new_op = copy.copy(self)
-        new_op._wires = Wires([wire_map[wire] for wire in self.wires])
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_op
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
