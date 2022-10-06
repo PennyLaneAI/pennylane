@@ -306,8 +306,10 @@ def _finite_diff_new(
 
             res = results[start : start + s]
             start = start + s
+
             # compute the linear combination of results
             # and coefficients
+
             pre_grads = []
 
             if len(tape.measurements) == 1:
