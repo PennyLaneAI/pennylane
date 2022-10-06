@@ -456,6 +456,10 @@ def _vjp_new(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
+
+        # multi measurement
+        multi = len(tapes[0].measurements) > 1
+
         dy = [qml.math.T(d) for d in dy[0]]
         computing_jacobian = _n == max_diff
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
@@ -465,7 +469,10 @@ def _vjp_new(
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
+            if multi:
+                vjps = [qml.gradients.compute_vjp_multi(d, jac) for d, jac in zip(dy, jacs)]
+            else:
+                vjps = [qml.gradients.compute_vjp_single(d, jac) for d, jac in zip(dy, jacs)]
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -518,7 +525,10 @@ def _vjp_new(
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
-                vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
+                if multi:
+                    vjps = [qml.gradients.compute_vjp_multi(d, jac) for d, jac in zip(dy, jacs)]
+                else:
+                    vjps = [qml.gradients.compute_vjp_single(d, jac) for d, jac in zip(dy, jacs)]
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
