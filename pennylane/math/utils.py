@@ -200,6 +200,9 @@ def get_interface(*values):
     if "resource_variable" in getattr(values, "__module__", tuple()):
         values = np.asarray(values)
 
+    if len(values) == 1:
+        return _get_interface(values[0])
+
     interfaces = {_get_interface(v) for v in values}
 
     if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
