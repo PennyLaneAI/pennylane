@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions"""
+import warnings
+
+import autoray as ar
+import numpy as _np
+
 # pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
-import autoray as ar
 from autoray import numpy as np
-import numpy as _np
 
 from . import single_dispatch  # pylint:disable=unused-import
 
@@ -169,7 +172,66 @@ def convert_like(tensor1, tensor2):
     return np.asarray(tensor1, like=interface)
 
 
-def get_interface(tensor):
+def get_interface(*values):
+    """Determines the correct framework to dispatch to given a tensor or a
+    sequence of tensor-like objects.
+
+    Args:
+        values (tensor_like, Sequence[tensor_like]): a sequence of tensor like objects
+
+    Returns:
+        str: the name of the interface
+
+    To determine the framework to dispatch to, the following rules
+    are applied:
+
+    * Tensors that are incompatible (such as Torch and TensorFlow tensors)
+      cannot both be present.
+
+    * Autograd tensors *may* be present alongside Torch and TensorFlow tensors,
+      but Torch and TensorFlow take precendence; the autograd arrays will
+      be treated as non-differentiable NumPy arrays. A warning will be raised
+      suggesting that vanilla NumPy be used instead.
+
+    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
+      they will always be treated as non-differentiable constants.
+    """
+
+    if len(values) == 1:
+        return _get_interface(values[0])
+
+    interfaces = {_get_interface(v) for v in values}
+
+    if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
+        # contains multiple non-autograd interfaces
+        raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
+
+    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
+
+    if len(non_numpy_scipy_interfaces) > 1:
+        # contains autograd and another interface
+        warnings.warn(
+            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
+            "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
+            UserWarning,
+        )
+
+    if "tensorflow" in interfaces:
+        return "tensorflow"
+
+    if "torch" in interfaces:
+        return "torch"
+
+    if "autograd" in interfaces:
+        return "autograd"
+
+    if "jax" in interfaces:
+        return "jax"
+
+    return "numpy"
+
+
+def _get_interface(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
     :doc:`interfaces </introduction/interfaces>`.
@@ -376,9 +438,7 @@ def requires_grad(tensor, interface=None):
         try:
             from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import (
-                should_record as should_record_backprop,
-            )
+            from tensorflow.python.eager.tape import should_record as should_record_backprop
 
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
@@ -391,7 +451,7 @@ def requires_grad(tensor, interface=None):
     if interface == "torch":
         return getattr(tensor, "requires_grad", False)
 
-    if interface == "numpy":
+    if interface in {"numpy", "scipy"}:
         return False
 
     if interface == "jax":
@@ -431,9 +491,7 @@ def in_backprop(tensor, interface=None):
         try:
             from tensorflow.python.eager.tape import should_record_backprop
         except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import (
-                should_record as should_record_backprop,
-            )
+            from tensorflow.python.eager.tape import should_record as should_record_backprop
 
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
@@ -445,7 +503,7 @@ def in_backprop(tensor, interface=None):
 
         return isinstance(tensor, jax.core.Tracer)
 
-    if interface == "numpy":
+    if interface in {"numpy", "scipy"}:
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
