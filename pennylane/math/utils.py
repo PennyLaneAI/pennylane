@@ -197,9 +197,6 @@ def get_interface(*values):
       they will always be treated as non-differentiable constants.
     """
 
-    if "resource_variable" in getattr(values, "__module__", tuple()):
-        values = np.asarray(values)
-
     if len(values) == 1:
         return _get_interface(values[0])
 
