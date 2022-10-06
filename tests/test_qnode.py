@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-import warnings
 from collections import defaultdict
-
-import numpy as np
 import pytest
+import warnings
+import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import QNode
 from pennylane import numpy as pnp
-from pennylane import qnode
+from pennylane import qnode, QNode
 from pennylane.tape import QuantumTape
 
 
