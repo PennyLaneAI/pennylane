@@ -19,6 +19,9 @@ import sys
 import math
 import glob
 import itertools
+
+import asyncio
+import aiohttp
 import requests
 
 from pennylane.data.dataset import Dataset
@@ -112,7 +115,7 @@ def _check_data_exist(data_type, description, directory_path):
     else:
         subdirec_path = [description[param] for param in _data_struct[data_type]["params"]]
         for subdirec in itertools.product(*subdirec_path):
-            path = os.path.join(directory_path, *subdirec)
+            path = os.path.join(directory_path, data_type, *subdirec)
             if not os.path.exists(path) or not glob.glob(
                 os.path.join(path, "**", "*.dat"), recursive=True
             ):
@@ -139,6 +142,29 @@ def _refresh_data_struct():
 
     global _data_struct
     _data_struct = response.json()
+
+
+async def _s3_get_file(filename, dest_folder, session):
+    """Download and save a single file in its own coroutine."""
+    async with session.get(url=os.path.join(S3_URL, filename)) as response:
+        resp = await response.read()
+        with open(os.path.join(dest_folder, filename), "wb") as f:
+            f.write(resp)
+
+
+async def _s3_download_parallel(data_type, folders, attributes, dest_folder):
+    """Download a file for each attribute from each folder to the specified destination."""
+    files = []
+    for folder in folders:
+        local_folder = os.path.join(dest_folder, data_type, folder)
+        if not os.path.exists(local_folder):
+            os.makedirs(local_folder)
+
+        prefix = os.path.join(data_type, folder, f"{folder.replace('/', '_')}_")
+        files.extend([f"{prefix}{attr}.dat" for attr in attributes])
+
+    async with aiohttp.ClientSession() as session:
+        await asyncio.gather(*[_s3_get_file(f, dest_folder, session) for f in files])
 
 
 def _s3_download(data_type, folders, attributes, dest_folder):
@@ -207,7 +233,7 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
 
     description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
     data = _data_struct[data_type]
-    directory_path = os.path.join(folder_path, "datasets", data_type)
+    directory_path = os.path.join(folder_path, "datasets")
 
     if not force:
         force = _check_data_exist(data_type, description, directory_path)
@@ -217,7 +243,7 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
 
     folders = [description[param] for param in data["params"]]
     all_folders = _generate_folders(_foldermap[data_type], folders)
-    _s3_download(data_type, all_folders, attributes, directory_path)
+    asyncio.run(_s3_download_parallel(data_type, all_folders, attributes, directory_path))
 
     data_files = []
     for folder in all_folders:
