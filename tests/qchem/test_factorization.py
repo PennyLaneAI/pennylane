@@ -191,11 +191,11 @@ def test_empty_error(two_tensor):
                 ]
             ),
             1.0e-5,
-            [  # computed manually
-                np.array([-1.53914683, 0.96127161, 0.57787522]),
-                np.array([-4.86901636e-05, 0.00279961503, 4.7857589e-05, -0.00279878246]),
-                np.array([-0.04530261, 0.04530261]),
-                np.array([-0.340388555, 0.50623004, -0.3345681, 0.168726619]),
+            [  # computed manually, multiplied by 2 to account for spin
+                np.array([-3.07829375, 1.92254344, 1.15575031]),
+                np.array([-9.73801723e-05, 5.59923133e-03, 9.57150297e-05, -5.59756619e-03]),
+                np.array([-0.09060523, 0.09060523]),
+                np.array([-0.68077716, 1.01246018, -0.66913628, 0.33745327]),
             ],
             [  # computed manually
                 [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1)],
@@ -219,7 +219,7 @@ def test_basis_rotation_output(
     coeffs, ops, eigvecs = qml.qchem.basis_rotation(one_matrix, two_tensor, tol_factor)
 
     for i, coeff in enumerate(coeffs):
-        assert np.allclose(coeff, coeffs_ref[i])
+        assert np.allclose(np.sort(coeff), np.sort(coeffs_ref[i]))
 
     for j, op in enumerate(ops):
         ops_ref_str = [qml.grouping.pauli_word_to_string(t) for t in ops_ref[i]]

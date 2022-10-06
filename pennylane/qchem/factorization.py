@@ -194,10 +194,10 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> coeffs, ops, unitaries = basis_rotation(one, two, tol_factor=1.0e-5)
     >>> print(coeffs)
-    [array([-1.29789639,  0.84064639,  0.45725000]),
-     array([-0.00019476, -0.01100037,  0.02239026, -0.01119513]),
-     array([ 0.36242096, -0.18121048, -0.18121048]),
-     array([-1.36155423,  2.03646071, -1.34981296,  0.67490648])]
+    [array([-3.07829375,  1.92254344,  1.15575031]),
+     array([-9.73801723e-05,  5.59923133e-03,  9.57150297e-05, -5.59756619e-03]),
+     array([-0.09060523,  0.09060523]),
+     array([-0.68077716,  1.01246018, -0.66913628,  0.33745327])]
 
     .. details::
         :title: Theory
@@ -310,7 +310,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
 
     ops = [ops_t.tolist()] + ops_l
 
-    c_group = [op.coeffs for op in ops]
+    c_group = [op.coeffs * 2 for op in ops]  # coeffs are multiplied by 2 to account for spin
     o_group = [op.ops for op in ops]
     u_transform = [eigvec.T for eigvec in eigvecs]
 
