@@ -185,11 +185,11 @@ def get_interface(*values):
     To determine the framework to dispatch to, the following rules
     are applied:
 
-    * Tensors that are incompatible (such as Torch and TensorFlow tensors)
+    * Tensors that are incompatible (such as Torch, TensorFlow and Jax tensors)
       cannot both be present.
 
-    * Autograd tensors *may* be present alongside Torch and TensorFlow tensors,
-      but Torch and TensorFlow take precendence; the autograd arrays will
+    * Autograd tensors *may* be present alongside Torch, TensorFlow and Jax tensors,
+      but Torch, TensorFlow and Jax take precendence; the autograd arrays will
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
