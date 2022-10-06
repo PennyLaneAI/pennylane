@@ -20,23 +20,23 @@ import numpy as np
 from scipy import sparse
 
 
-class Pauli(Enum):
-    I = 0
-    X = 1
-    Y = 2
-    Z = 3
+# class Pauli(Enum):
+#     I = 0
+#     X = 1
+#     Y = 2
+#     Z = 3
+#
+#     def __lt__(self, other):
+#         return self.value < other.value
+#
+#     def __repr__(self):
+#         return self.name
 
-    def __lt__(self, other):
-        return self.value < other.value
 
-    def __repr__(self):
-        return self.name
-
-
-I = Pauli.I
-X = Pauli.X
-Y = Pauli.Y
-Z = Pauli.Z
+I = "I"
+X = "X"
+Y = "Y"
+Z = "Z"
 
 matX = np.array([[0, 1], [1, 0]])
 matY = np.array([[0, -1j], [1j, 0]])
