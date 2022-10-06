@@ -212,7 +212,7 @@ def get_interface(*values):
         # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
-            "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
+            "TensorFlow, PyTorch, and  Jax over autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
 
