@@ -136,3 +136,8 @@ class SymbolicOp(Operator):
                 self.base.hash,
             )
         )
+
+    def change_wires(self, wire_map: dict):
+        new_op = super().change_wires(wire_map=wire_map)
+        new_op.base = self.base.change_wires(wire_map=wire_map)
+        return new_op

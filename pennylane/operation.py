@@ -107,12 +107,11 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-from pennylane.math import expand_matrix
 
 from .utils import pauli_eigs
-
 
 # =============================================================================
 # Errors
@@ -1131,6 +1130,28 @@ class Operator(abc.ABC):
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
+
+    def change_wires(self, wire_map: dict):
+        """Returns a copy of the current operator with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator: new operator
+        """
+        if any(wire not in wire_map for wire in self.wires):
+            raise ValueError("All operator wires are not present in the given wire map.")
+
+        new_wires = wire_map.values()
+
+        if len(set(new_wires)) < len(new_wires):
+            raise ValueError("Two different wires have been mapped to the same wire.")
+
+        new_op = copy.copy(self)
+        new_op._wires = Wires([wire_map[wire] for wire in self.wires])
+        return new_op
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
         """Reduce the depth of nested operators to the minimum.

@@ -255,3 +255,8 @@ class CompositeOp(Operator, abc.ABC):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
+
+    def change_wires(self, wire_map: dict):
+        new_op = super().change_wires(wire_map=wire_map)
+        new_op.operands = tuple(op.change_wires(wire_map=wire_map) for op in self)
+        return new_op
