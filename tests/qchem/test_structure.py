@@ -193,7 +193,7 @@ def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match)
             np.array([3.90575761, -1.89772083, -1.36689032]),
             [[0, 2], [1, 3]],
             [[0, 1, 2, 3]],
-            [-0.14619406, -0.06502792, 0.14619406, 0.06502792],
+            [0.14619406, 0.06502792, -0.14619406, -0.06502792],  # computed with AllSinglesDoubles
         )
     ],
 )
