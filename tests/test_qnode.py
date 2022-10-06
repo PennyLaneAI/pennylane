@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-from collections import defaultdict
-import pytest
 import warnings
+from collections import defaultdict
+
 import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import QNode
 from pennylane import numpy as pnp
-from pennylane import qnode, QNode
+from pennylane import qnode
 from pennylane.tape import QuantumTape
 
 
@@ -133,8 +135,8 @@ class TestValidation:
     @pytest.mark.parametrize("accepted_name, official_name", qml.interfaces.INTERFACE_MAP.items())
     def test_validate_backprop_method_all_interface_names(self, accepted_name, official_name):
         """Test that backprop devices are mapped for all possible interface names."""
-        if accepted_name is None:
-            pytest.skip("None is not a backprop interface.")
+        if accepted_name in {None, "auto"}:
+            pytest.skip(f"None is not a backprop interface.")
 
         dev = qml.device("default.qubit", wires=1)
 
