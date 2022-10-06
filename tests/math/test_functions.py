@@ -19,7 +19,6 @@ from functools import partial
 import numpy as onp
 import pytest
 from autograd.numpy.numpy_boxes import ArrayBox
-from jax import numpy as jnp
 
 import pennylane as qml
 from pennylane import math as fn
