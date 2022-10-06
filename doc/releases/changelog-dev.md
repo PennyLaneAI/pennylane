@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
+  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
+  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
+  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
+  integrals tensor are diagonal.
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
+
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
