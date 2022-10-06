@@ -1141,8 +1141,8 @@ class Operator(abc.ABC):
         Returns:
             .Operator: new operator
         """
-        new_wires = wire_map.values()
-        if len(set(new_wires)) < len(new_wires):
+        mapped_wires = wire_map.values()
+        if len(set(mapped_wires)) < len(mapped_wires):
             raise ValueError("Two different wires have been mapped to the same wire.")
 
         new_op = copy.copy(self)
