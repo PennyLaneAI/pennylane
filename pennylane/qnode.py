@@ -516,15 +516,6 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
-    def _detect_interface(self, data: list):
-        if data:
-            interface = qml.math.get_interface(data[0])
-            for value in data[1:]:
-                if qml.math.get_interface(value) != interface:
-                    raise ValueError("Input values have different interfaces.")
-            return interface
-        return "autograd"
-
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
@@ -599,9 +590,9 @@ class QNode:
 
     def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
         override_shots = False
-
-        if self.interface == "auto":
-            self.interface = self._detect_interface(data=list(args) + list(kwargs.values()))
+        old_interface = self.interface
+        if old_interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
@@ -729,6 +720,9 @@ class QNode:
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
             return qml.math.squeeze(res, axis=0)
+
+        if old_interface == "auto":
+            self.interface = "auto"
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)
