@@ -47,6 +47,28 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
         1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
 
+* The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
+  of the given input.
+  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev, interface="auto")
+      def circuit(weight):
+          qml.RX(weight[0], wires=0)
+          qml.RY(weight[1], wires=1)
+          return qml.expval(qml.PauliZ(0))
+  >>> interface_tensors = [np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1]), [0, 1]]
+  >>> for tensor in interface_tensors:
+        res = circuit(weight=tensor)
+        print(res, type(res))
+  1.0 <class 'pennylane.numpy.tensor.tensor'>
+  tensor(1.0000, dtype=torch.float64) <class 'torch.Tensor'>
+  tf.Tensor(0.9999999896704281, shape=(), dtype=float64) <class 'tensorflow.python.framework.ops.EagerTensor'>
+  1.0 <class 'jaxlib.xla_extension.DeviceArray'>
+  1.0 <class 'pennylane.numpy.tensor.tensor'>
+  ```
+
 <h3>Improvements</h3>
 
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
