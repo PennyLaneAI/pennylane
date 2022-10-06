@@ -454,7 +454,7 @@ def requires_grad(tensor, interface=None):
     if interface == "torch":
         return getattr(tensor, "requires_grad", False)
 
-    if interface == "numpy":
+    if interface in {"numpy", "scipy"}:
         return False
 
     if interface == "jax":
@@ -506,7 +506,7 @@ def in_backprop(tensor, interface=None):
 
         return isinstance(tensor, jax.core.Tracer)
 
-    if interface == "numpy":
+    if interface in {"numpy", "scipy"}:
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
