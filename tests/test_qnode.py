@@ -762,7 +762,8 @@ class TestIntegration:
         assert dev.num_executions == 5
 
     @pytest.mark.tf
-    def test_correct_number_of_executions_tf(self):
+    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    def test_correct_number_of_executions_tf(self, interface):
         """Test that number of executions are tracked in the tf interface."""
         import tensorflow as tf
 
@@ -772,13 +773,13 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="tf")
+        qn = QNode(func, dev, interface=interface)
         for i in range(2):
             qn()
 
         assert dev.num_executions == 2
 
-        qn2 = QNode(func, dev, interface="tf")
+        qn2 = QNode(func, dev, interface=interface)
         for i in range(3):
             qn2()
 
@@ -791,7 +792,8 @@ class TestIntegration:
         assert dev.num_executions == 6
 
     @pytest.mark.torch
-    def test_correct_number_of_executions_torch(self):
+    @pytest.mark.parametrize("interface", ["torch", "auto"])
+    def test_correct_number_of_executions_torch(self, interface):
         """Test that number of executions are tracked in the torch interface."""
 
         def func():
@@ -800,14 +802,14 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
-        qn = QNode(func, dev, interface="torch")
-        for i in range(2):
+        qn = QNode(func, dev, interface=interface)
+        for _ in range(2):
             qn()
 
         assert dev.num_executions == 2
 
-        qn2 = QNode(func, dev, interface="torch")
-        for i in range(3):
+        qn2 = QNode(func, dev, interface=interface)
+        for _ in range(3):
             qn2()
 
         assert dev.num_executions == 5
@@ -965,13 +967,14 @@ class TestIntegration:
         assert np.allclose(r1, r2)
 
     @pytest.mark.tf
-    def test_conditional_ops_tensorflow(self):
+    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    def test_conditional_ops_tensorflow(self, interface):
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
             qml.Hadamard(1)
@@ -979,7 +982,7 @@ class TestIntegration:
             qml.CRY(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         @qml.defer_measurements
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
@@ -1007,13 +1010,14 @@ class TestIntegration:
         assert np.allclose(grad1, grad2)
 
     @pytest.mark.torch
-    def test_conditional_ops_torch(self):
+    @pytest.mark.parametrize("interface", ["torch", "auto"])
+    def test_conditional_ops_torch(self, interface):
         """Test conditional operations with Torch."""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
             qml.Hadamard(1)
@@ -1021,7 +1025,7 @@ class TestIntegration:
             qml.CRY(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
@@ -1044,7 +1048,7 @@ class TestIntegration:
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit", "auto"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax
