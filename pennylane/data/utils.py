@@ -15,11 +15,6 @@
 Contains the Dataset utility functions.
 """
 import os
-import sys
-import math
-import glob
-import itertools
-
 import asyncio
 import aiohttp
 import requests
@@ -36,50 +31,6 @@ DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
 
 _foldermap = {}
 _data_struct = {}
-
-
-def _convert_size(size_bytes):
-    r"""Convert file size for the dataset into appropriate units from bytes
-
-    Args:
-        size_bytes(float): size of a file in bytes
-
-    Returns:
-        str: size of a file in the closes approximated units
-
-    **Example:**
-
-    .. code-block :: pycon
-
-        >>> _convert_size(1024)
-        1 KB
-
-    """
-
-    if not size_bytes:
-        return "0 B"
-    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    indx = int(math.floor(math.log(size_bytes, 1024)))
-    size = round(size_bytes / math.pow(1024, indx), 2)
-    return f"{size} {size_name[indx]}"
-
-
-def _write_prog_bar(progress, completed, barsize, barlength, total_length):
-    r"""Helper function for printing progress bar for downloads
-
-    Args:
-        progress (float): File size in bytes of the file currently being downloaded
-        completed (float): Bar size representing the file currently being downloaded
-        barsize (float): Bar size representing the download bar
-        barlength (float): Length of the bar printed for showing downloading progress
-        total_length (float): Total size in bytes of the file currently being downloaded
-
-    Returns:
-        Prints the progressbar to the console
-    """
-    f = f"[{chr(9608)*barlength} {round(completed, 3)} %{'.'*(barsize-barlength)}] {_convert_size(progress)}/{_convert_size(total_length)}"
-    sys.stdout.write("\r" + f)
-    sys.stdout.flush()
 
 
 def _validate_params(data_type, description, attributes):
@@ -105,23 +56,6 @@ def _validate_params(data_type, description, attributes):
         raise ValueError(
             f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
         )
-
-
-def _check_data_exist(data_type, description, directory_path):
-    r"""Check if the data has to be redownloaded or not"""
-    exist = False
-    if "full" in description.values():
-        exist = True
-    else:
-        subdirec_path = [description[param] for param in _data_struct[data_type]["params"]]
-        for subdirec in itertools.product(*subdirec_path):
-            path = os.path.join(directory_path, data_type, *subdirec)
-            if not os.path.exists(path) or not glob.glob(
-                os.path.join(path, "**", "*.dat"), recursive=True
-            ):
-                exist = True
-                break
-    return exist
 
 
 def _refresh_foldermap():
@@ -152,7 +86,7 @@ async def _s3_get_file(filename, dest_folder, session):
             f.write(resp)
 
 
-async def _s3_download_parallel(data_type, folders, attributes, dest_folder):
+async def _s3_download(data_type, folders, attributes, dest_folder, force):
     """Download a file for each attribute from each folder to the specified destination."""
     files = []
     for folder in folders:
@@ -161,29 +95,20 @@ async def _s3_download_parallel(data_type, folders, attributes, dest_folder):
             os.makedirs(local_folder)
 
         prefix = os.path.join(data_type, folder, f"{folder.replace('/', '_')}_")
+        # TODO: consider combining files within a folder (switch to append)
         files.extend([f"{prefix}{attr}.dat" for attr in attributes])
+
+    if not force:
+        start = len(dest_folder.rstrip("/")) + 1
+        existing_files = {
+            os.path.join(path, name)[start:]
+            for path, _, files in os.walk(dest_folder)
+            for name in files
+        }
+        files = list(set(files) - existing_files)
 
     async with aiohttp.ClientSession() as session:
         await asyncio.gather(*[_s3_get_file(f, dest_folder, session) for f in files])
-
-
-def _s3_download(data_type, folders, attributes, dest_folder):
-    """Download a file for each attribute from each folder to the specified destination."""
-    for folder in folders:
-        s3_folder = os.path.join(S3_URL, data_type, folder)
-        local_folder = os.path.join(dest_folder, data_type, folder)
-        if not os.path.exists(local_folder):
-            os.makedirs(local_folder)
-
-        file_prefix = folder.replace("/", "_")
-        # TODO: if len(attributes) > 1, merge contents to single file like _partial.dat
-        for attr in attributes:
-            fname = f"{file_prefix}_{attr}.dat"
-            response = requests.get(f"{s3_folder}/{fname}", timeout=5.0)
-            if not response.ok:
-                response.raise_for_status()
-            with open(f"{local_folder}/{fname}", "wb") as f:
-                f.write(response.content)
 
 
 def _generate_folders(node, folders):
@@ -230,25 +155,23 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
     if not attributes:
         attributes = ["full"]
     _validate_params(data_type, params, attributes)
+    if len(attributes) > 1 and "full" in attributes:
+        attributes = ["full"]
 
     description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
     data = _data_struct[data_type]
     directory_path = os.path.join(folder_path, "datasets")
-
-    if not force:
-        force = _check_data_exist(data_type, description, directory_path)
 
     if data_type not in _foldermap:
         _refresh_foldermap()
 
     folders = [description[param] for param in data["params"]]
     all_folders = _generate_folders(_foldermap[data_type], folders)
-    asyncio.run(_s3_download_parallel(data_type, all_folders, attributes, directory_path))
+    asyncio.run(_s3_download(data_type, all_folders, attributes, directory_path, force))
 
     data_files = []
     for folder in all_folders:
         file_prefix = os.path.join(directory_path, data_type, folder, folder.replace("/", "_"))
-        # TODO: replace attributes[0] with actual name after _s3_download() is updated
         fname = f"{file_prefix}_{attributes[0]}.dat"
         obj = Dataset(dfile=fname, dtype=data_type)
         if attributes == ["full"]:
@@ -348,6 +271,8 @@ def get_description(data, data_type, **kwargs):
 
     """
 
+    if not _data_struct:
+        _refresh_data_struct()
     params = _data_struct[data_type]["params"]
     if not set(kwargs).issubset(params):
         raise ValueError(
