@@ -1131,7 +1131,7 @@ class Operator(abc.ABC):
         """Arithmetic depth of the operator."""
         return 0
 
-    def change_wires(self, wire_map: dict):
+    def map_wires(self, wire_map: dict):
         """Returns a copy of the current operator with its wires changed according to the given
         wire map.
 
