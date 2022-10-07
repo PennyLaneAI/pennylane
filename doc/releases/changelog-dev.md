@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
+  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
+  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
+  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
+  integrals tensor are diagonal.
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
+
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
@@ -38,6 +49,10 @@
 
 <h3>Improvements</h3>
 
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
+
 * Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
@@ -64,6 +79,9 @@
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
+
 <h3>Breaking changes</h3>
 
  * `QueuingContext` is renamed `QueuingManager`.
@@ -71,6 +89,9 @@
 
  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
    if the object isn't in the queue.
+
+ * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
 <h3>Deprecations</h3>
 
@@ -83,7 +104,16 @@
 
 <h3>Documentation</h3>
 
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
 <h3>Bug fixes</h3>
+
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
 
 <h3>Contributors</h3>
 
@@ -93,6 +123,10 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Diego Guala,
 Soran Jahangiri,
 Christina Lee,
+Mudit Pandey,
 Jay Soni,
+Antal Száva,
+David Wierichs,
