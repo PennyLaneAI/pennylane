@@ -198,9 +198,9 @@ def get_interface(*values):
     """
 
     if len(values) == 1:
-        return _get_interface(values[0])
+        return _get_interface_of_single_tensor(values[0])
 
-    interfaces = {_get_interface(v) for v in values}
+    interfaces = {_get_interface_of_single_tensor(v) for v in values}
 
     if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
@@ -231,7 +231,7 @@ def get_interface(*values):
     return "numpy"
 
 
-def _get_interface(tensor):
+def _get_interface_of_single_tensor(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
     :doc:`interfaces </introduction/interfaces>`.
