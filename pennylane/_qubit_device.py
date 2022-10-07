@@ -334,7 +334,7 @@ class QubitDevice(Device):
                 results = tuple(results)
 
         # increment counter for number of executions of qubit device
-        # self._num_executions += 1
+        self._num_executions += 1
 
         # if self.tracker.active:
         #     self.tracker.update(executions=1, shots=self._shots)
@@ -1888,4 +1888,25 @@ class QubitDevice(Device):
             for kk in range(n_obs):
                 bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
+        if qml.active_return():
+            # postprocess the jacobian for the new return_type system
+            return self._adjoint_jacobian_processing(jac)
+
         return jac
+
+    @staticmethod
+    def _adjoint_jacobian_processing(jac):
+        """
+        Post-process the Jacobian matrix returned by ``adjoint_jacobian`` for
+        the new return type system.
+        """
+        jac = np.squeeze(jac)
+
+        if jac.ndim == 0:
+            return np.array(jac)
+
+        if jac.ndim == 1:
+            return tuple(np.array(j) for j in jac)
+
+        # must be 2-dimensional
+        return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
