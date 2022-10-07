@@ -204,9 +204,9 @@ class UCCSD(Operation):
         """
         op_list = []
 
-        # init_state_flipped = np.flip(init_state)
+        init_state_flipped = np.flip(init_state)
 
-        op_list.append(BasisState(init_state, wires=wires))
+        op_list.append(BasisState(init_state_flipped, wires=wires))
 
         for i, (w1, w2) in enumerate(d_wires):
             op_list.append(
