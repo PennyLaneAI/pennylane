@@ -103,16 +103,16 @@ from enum import IntEnum
 from typing import List
 
 import numpy as np
+from autoray import infer_backend
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-from pennylane.math import expand_matrix
 
 from .utils import pauli_eigs
-
 
 # =============================================================================
 # Errors
@@ -1142,7 +1142,10 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, numbers.Number):
+        backend = infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or qml.math.shape(
+            other
+        ) == ():
             if other == 0:
                 return self
             id_op = (
@@ -1159,7 +1162,10 @@ class Operator(abc.ABC):
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
-        if isinstance(other, numbers.Number):
+        backend = infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or qml.math.shape(
+            other
+        ) == ():
             return qml.s_prod(scalar=other, operator=self)
         raise ValueError(f"Cannot multiply Operator and {type(other)}.")
 
