@@ -309,8 +309,8 @@ class QNSPSAOptimizer:
 
         # params_vec and grad_vec group multiple inputs into the same vector to solve the
         # linear equation
-        params_vec = np.concatenate(params).reshape(-1)
-        grad_vec = np.concatenate(gradient).reshape(-1)
+        params_vec = np.concatenate([param.reshape(-1) for param in params])
+        grad_vec = np.concatenate([grad.reshape(-1) for grad in gradient])
 
         new_params_vec = np.linalg.solve(
             self.metric_tensor,
@@ -433,7 +433,10 @@ class QNSPSAOptimizer:
         tape_loss_next = cost.tape.copy(copy_operations=True)
 
         loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
-        loss_curr, loss_next = qml.math.squeeze(loss_curr), qml.math.squeeze(loss_next)
+
+        if not qml.active_return():
+            loss_curr, loss_next = qml.math.squeeze(loss_curr), qml.math.squeeze(loss_next)
+
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size
         self.last_n_steps[ind] = loss_curr
