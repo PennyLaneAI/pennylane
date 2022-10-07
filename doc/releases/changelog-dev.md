@@ -136,6 +136,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Documentation</h3>
 
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
 <h3>Bug fixes</h3>
 
 * Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
@@ -152,6 +155,7 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Diego Guala,
 Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,

@@ -173,11 +173,11 @@ def convert_like(tensor1, tensor2):
 
 
 def get_interface(*values):
-    """Determines the correct framework to dispatch to given a tensor or a
+    """Determines the correct framework to dispatch to given a tensor-like object or a
     sequence of tensor-like objects.
 
     Args:
-        values (tensor_like, Sequence[tensor_like]): a sequence of tensor like objects
+        values (tensor_like, Sequence[tensor_like]): a single tensor-like object or a sequence of tensor-like objects
 
     Returns:
         str: the name of the interface
@@ -212,7 +212,7 @@ def get_interface(*values):
         # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
-            "TensorFlow, PyTorch, and  Jax over autograd. Consider replacing Autograd with vanilla NumPy.",
+            "TensorFlow, PyTorch, and  Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
 
