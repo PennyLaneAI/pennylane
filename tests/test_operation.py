@@ -20,7 +20,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X, TADD, TSWAP
+from gate_data import CNOT, II, SWAP, TADD, TSWAP, I, Toffoli, X
 from numpy.linalg import multi_dot
 
 import pennylane as qml
@@ -897,6 +897,11 @@ class TestOperatorIntegration:
             assert s1.data == s2.data
         assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
 
+    def test_sum_scalar_tensor(self):
+        """Test the __sum__ dunder method with a scalar tensor."""
+        sum_op = qml.RX(1.23, 0) + pnp.array(5)
+        assert type(sum_op[1].scalar) == pnp.tensor
+
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qml.CNOT(wires=[0, 1])
@@ -935,6 +940,11 @@ class TestOperatorIntegration:
         assert sprod_op.data == final_op.data
         assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
         assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_mul_with_scalar_tensor(self):
+        """Test the __mul__ dunder method with a scalar tensor."""
+        sum_op = qml.RX(1.23, 0) * pnp.array(5)
+        assert type(sum_op.scalar) == pnp.tensor
 
     def test_mul_with_operator(self):
         """Test the __matmul__ dunder method with an operator."""
