@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
+from pennylane.wires import Wires
 
 
 def build_op():
@@ -122,10 +123,12 @@ class TestMapWiresTapes:
 
         m_tape = qml.map_wires(tape, wire_map=wire_map)
         m_op = m_tape.operations[0]
+        m_obs = m_tape.observables[0]
         assert isinstance(m_op, qml.ops.Prod)
         assert m_op.data == mapped_op.data
         assert m_op.wires == mapped_op.wires
         assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert m_obs.wires == Wires(wire_map[1])
         assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape))
 
 
@@ -183,6 +186,7 @@ class TestMapWiresCallables:
         assert m_op.data == mapped_op.data
         assert m_op.wires == mapped_op.wires
         assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert m_qnode.tape.observables[0].wires == Wires(wire_map[0])
 
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):

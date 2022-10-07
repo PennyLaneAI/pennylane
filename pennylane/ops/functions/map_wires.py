@@ -55,17 +55,17 @@ def map_wires(
 
     Moreover, ``qml.map_wires`` can be used to change the wires of QNodes or quantum functions:
 
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.map_wires
-        @qml.qnode(dev)
+    >>> dev = qml.device("default.qubit", wires=4)
+    >>> @qml.qnode(dev)
         def circuit():
-            qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
+            qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
             return qml.probs(wires=0)
-    >>> circuit()
-    tensor([0.64596329, 0.35403671], requires_grad=True)
-    >>> list(circuit.tape)
-    [(RX(0.54, wires=[3]) + PauliX(wires=[2])) + (PauliZ(wires=[1]) @ RY(1.23, wires=[0])),
-     probs(wires=[0])]
+    >>> mapped_circuit = qml.map_wires(circuit, wire_map)
+    >>> mapped_circuit()
+    tensor([0.92885434, 0.07114566], requires_grad=True)
+    >>> list(mapped_circuit.tape)
+    [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]),
+    probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():
