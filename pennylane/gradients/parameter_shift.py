@@ -939,6 +939,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
+# TODO: docstrings
 @gradient_transform
 def _param_shift_new(
     tape,
@@ -951,6 +952,8 @@ def _param_shift_new(
 ):
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
+
+    This function uses the new return types system.
 
     Args:
         qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
