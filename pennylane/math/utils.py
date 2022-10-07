@@ -173,7 +173,7 @@ def convert_like(tensor1, tensor2):
 
 
 def get_interface(*values):
-    """Determines the correct framework to dispatch to given a tensor or a
+    """Determines the correct framework to dispatch to given a tensor-like object or a
     sequence of tensor-like objects.
 
     Args:
