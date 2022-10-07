@@ -102,8 +102,8 @@ import warnings
 from enum import IntEnum
 from typing import List
 
+import autoray
 import numpy as np
-from autoray import infer_backend
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
@@ -1142,7 +1142,7 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        backend = infer_backend(other)
+        backend = autoray.infer_backend(other)
         if (backend == "builtins" and isinstance(other, numbers.Number)) or qml.math.shape(
             other
         ) == ():
@@ -1162,7 +1162,7 @@ class Operator(abc.ABC):
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
-        backend = infer_backend(other)
+        backend = autoray.infer_backend(other)
         if (backend == "builtins" and isinstance(other, numbers.Number)) or qml.math.shape(
             other
         ) == ():
