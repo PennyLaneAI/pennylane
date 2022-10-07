@@ -55,7 +55,7 @@ class TestTranspile:
         transpiled_qfunc = transpile(coupling_map=[(0, 1)])(original_qfunc)
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         err_msg = (
-            "Not all wires present in coupling map! wires: \[0, 2, 1\], coupling map: \[0, 1\]"
+            r"Not all wires present in coupling map! wires: \[0, 2, 1\], coupling map: \[0, 1\]"
         )
         with pytest.raises(ValueError, match=err_msg):
             transpiled_qnode(0.1, 0.2, 0.3)
@@ -134,6 +134,7 @@ class TestTranspile:
             for po, pt in zip(original_probs, transpiled_probs)
         )
 
+    @pytest.mark.autograd
     def test_transpile_differentiable(self):
         """test that circuit remains differentiable after transpilation"""
         dev = qml.device("default.qubit", wires=3)
@@ -149,3 +150,123 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_circ, dev, interface="autograd")
         params = np.array([0.5, 0.1, 0.2], requires_grad=True)
         qml.gradients.param_shift(transpiled_qnode)(params)
+
+    def test_more_than_2_qubits_raises_anywires(self):
+        """test that transpile raises an error for an operation with AnyWires that acts on more than 2 qubits"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        param = 0.3
+
+        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        with pytest.raises(
+            NotImplementedError,
+            match="transpile transform only supports gates acting on 1 or 2 qubits",
+        ):
+            transpiled_expectation = transpiled_qnode(param)
+
+    def test_more_than_2_qubits_raises_3_qubit_gate(self):
+        """test that transpile raises an error for an operation that acts on more than 2 qubits"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit():
+            qml.Toffoli(wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        with pytest.raises(
+            NotImplementedError,
+            match="transpile transform only supports gates acting on 1 or 2 qubits",
+        ):
+            transpiled_expectation = transpiled_qnode()
+
+    def test_transpile_ops_anywires(self):
+        """test that transpile does not alter output for expectation value of an observable if the qfunc contains
+        operations that act on any number of wires"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0, 1])
+            qml.PhaseShift(param, wires=2)
+            qml.MultiRZ(param, wires=[0, 2])
+            return qml.probs(wires=[0, 1])
+
+        param = 0.3
+
+        # build circuit without transpile
+        original_qfunc = circuit
+        original_qnode = qml.QNode(original_qfunc, dev)
+        original_expectation = original_qnode(param)
+
+        # build circuit with transpile
+        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(original_qfunc)
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        transpiled_expectation = transpiled_qnode(param)
+
+        original_ops = list(transpiled_qnode.qtape)
+        transpiled_ops = list(transpiled_qnode.qtape)
+        assert qml.equal(transpiled_ops[0], original_ops[0])
+        assert qml.equal(transpiled_ops[1], original_ops[1])
+
+        # SWAP to ensure connectivity
+        assert isinstance(transpiled_ops[2], qml.SWAP)
+        assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
+
+        assert isinstance(transpiled_ops[3], qml.MultiRZ)
+        assert transpiled_ops[3].data == [param]
+        assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
+
+        assert isinstance(transpiled_ops[4], qml.measurements.MeasurementProcess)
+        assert transpiled_ops[4].wires == qml.wires.Wires([0, 2])
+
+        assert qml.math.allclose(
+            original_expectation, transpiled_expectation, atol=np.finfo(float).eps
+        )
+
+    def test_transpile_ops_anywires_1_qubit(self):
+        """test that transpile does not alter output for expectation value of an observable if the qfunc contains
+        1-qubit operations with AnyWires defined for the operation"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0])
+            qml.PhaseShift(param, wires=2)
+            qml.MultiRZ(param, wires=[0, 2])
+            return qml.probs(wires=[0, 1])
+
+        param = 0.3
+
+        # build circuit without transpile
+        original_qfunc = circuit
+        original_qnode = qml.QNode(original_qfunc, dev)
+        original_expectation = original_qnode(param)
+
+        # build circuit with transpile
+        transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2)])(original_qfunc)
+        transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+        transpiled_expectation = transpiled_qnode(param)
+
+        original_ops = list(transpiled_qnode.qtape)
+        transpiled_ops = list(transpiled_qnode.qtape)
+        assert qml.equal(transpiled_ops[0], original_ops[0])
+        assert qml.equal(transpiled_ops[1], original_ops[1])
+
+        # SWAP to ensure connectivity
+        assert isinstance(transpiled_ops[2], qml.SWAP)
+        assert transpiled_ops[2].wires == qml.wires.Wires([1, 2])
+
+        assert isinstance(transpiled_ops[3], qml.MultiRZ)
+        assert transpiled_ops[3].data == [param]
+        assert transpiled_ops[3].wires == qml.wires.Wires([0, 1])
+
+        assert isinstance(transpiled_ops[4], qml.measurements.MeasurementProcess)
+        assert transpiled_ops[4].wires == qml.wires.Wires([0, 2])
+
+        assert qml.math.allclose(
+            original_expectation, transpiled_expectation, atol=np.finfo(float).eps
+        )

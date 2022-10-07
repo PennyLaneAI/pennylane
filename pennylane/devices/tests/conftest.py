@@ -89,7 +89,8 @@ def skip_if():
 def device(device_kwargs):
     """Fixture to create a device."""
 
-    __tracebackhide__ = True
+    # internally used by pytest
+    __tracebackhide__ = True  # pylint:disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires
@@ -146,7 +147,7 @@ class StoreDictKeyPair(argparse.Action):
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
-        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+        super().__init__(option_strings, dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         my_dict = {}
@@ -215,9 +216,9 @@ def pytest_generate_tests(metafunc):
     else:
         devices_to_test = [opt.device]
 
-    for device in devices_to_test:
+    for dev in devices_to_test:
 
-        device_kwargs = {"name": device}
+        device_kwargs = {"name": dev}
 
         # if shots specified in command line,
         # add to the device kwargs

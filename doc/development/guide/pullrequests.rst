@@ -45,6 +45,41 @@ merged.
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
   characteristics. 
 
+To make sure that the formatting and the quality of the new piece of code is up
+to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ dedicated tools
+(``black`` and ``pylint``) should be run locally.
+
+The PennyLane repository provides top-level files (``.pre-commit-config.yaml``
+and a ``pyproject.toml``) for configuring `pre-commit
+<https://pre-commit.com/>`_ to run ``black`` and ``pylint`` as a ``git``
+pre-commit hook. Once configured, issuing ``git commit`` will run the tools
+automatically. If any of the checks fail, committing fails too. A failed
+``black`` check will reformat the required files. Running the pre-commit hook
+mechanisms can be disabled for a commit by passing the ``-n/--no-verify``
+option.
+
+The ``pre-commit`` package can be installed e.g., via ``pip``:
+
+.. code-block:: bash
+
+    pip install pre-commit
+
+Then, it can be installed for a specific repository by running
+
+.. code-block:: bash
+
+    pre-commit install
+
+in the folder where the ``.pre-commit-config.yaml`` file exists (the top-level
+folder for PennyLane).
+
+.. note::
+
+    The ``.pre-commit-config.yaml`` file pins ``black`` to a specific version.
+    As new versions of ``black`` are released, developers will have to run
+    ``pre-commit autoupdate`` to update the package versions used by
+    ``pre-commit``.
+
 * **Tests**: Github Actions runs the core tests and device tests for a series of different Python
   versions and interface installations.
 
@@ -66,6 +101,10 @@ merged.
 Using the "Search" toolbar on the top left of the generated website can help with navigating to new
 or updated pages. New functions or classes that are available for users should appear as
 search results.
+
+Note that including ``skip ci`` (or a similar string) will mark a ``git commit``
+such that `CI checks are being skipped
+<https://docs.github.com/en/actions/managing-workflow-runs/skipping-workflow-runs>`_.
 
 Ready for review?
 -----------------

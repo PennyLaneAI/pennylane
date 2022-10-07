@@ -3,13 +3,13 @@
 
 .. _intro_ref_ops:
 
-Quantum operations
-==================
+Quantum operators
+=================
 
 .. currentmodule:: pennylane.ops
 
-PennyLane supports a wide variety of quantum operations---such as gates, noisy channels, state preparations and measurements.
-These operations can be used exclusively in quantum functions, like shown in the following example:
+PennyLane supports a wide variety of quantum operators---such as gates, noisy channels, state preparations and measurements.
+These operators can be used in quantum functions, like shown in the following example:
 
 .. code-block:: python
 
@@ -19,58 +19,89 @@ These operations can be used exclusively in quantum functions, like shown in the
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0,1])
         qml.RY(y, wires=1)
-        qml.T(wires=0).inv()
         qml.AmplitudeDamping(0.1, wires=0)
         return qml.expval(qml.PauliZ(1))
 
 This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :class:`CNOT <pennylane.CNOT>`,
-:class:`RY <pennylane.RY>` :ref:`gates <intro_ref_ops_qgates>`, the
+:class:`RY <pennylane.RY>` gates, the
 :class:`AmplitudeDamping <pennylane.AmplitudeDamping>`
-:ref:`noisy channel <intro_ref_ops_channels>` as well as the
-:class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
+noisy channel as well as the
+:class:`PauliZ <pennylane.PauliZ>` observable.
 
-Below is a list of all quantum operations and operation functions supported by PennyLane.
+Functions applied to operators extract information (such as the matrix representation) or
+transform operators (like turning a gate into a controlled gate).
+
+PennyLane supports the following operators and operator functions:
+
+
+.. _intro_ref_ops_funcs:
 
 Operator functions
 ------------------
 
 Various functions and transforms are available for manipulating operators,
-and extracting information.
+and extracting information. These can be broken down into two main categories:
+
+Operator to Operator functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
 
     ~pennylane.adjoint
     ~pennylane.ctrl
     ~pennylane.cond
-    ~pennylane.matrix
-    ~pennylane.eigvals
+    ~pennylane.exp
+    ~pennylane.op_sum
+    ~pennylane.prod
+    ~pennylane.s_prod
     ~pennylane.generator
 
-All operator functions can be used on instantiated operators,
+These operator functions act on operators to produce new operators.
+
+>>> op = qml.prod(qml.PauliX(0), qml.PauliZ(1))
+>>> op = qml.op_sum(qml.Hadamard(0), op)
+>>> op = qml.s_prod(1.2, op)
+>>> op
+1.2*(Hadamard(wires=[0]) + (PauliX(wires=[0]) @ PauliZ(wires=[1])))
+
+Operator to Other functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    ~pennylane.matrix
+    ~pennylane.eigvals
+    ~pennylane.is_commuting
+    ~pennylane.is_hermitian
+    ~pennylane.is_unitary
+    ~pennylane.simplify
+
+These operator functions act on operators and return other data types.
+All operator functions can be used on instantiated operators.
 
 >>> op = qml.RX(0.54, wires=0)
 >>> qml.matrix(op)
 [[0.9637709+0.j         0.       -0.26673144j]
 [0.       -0.26673144j 0.9637709+0.j        ]]
 
-Operator functions can also be used in a functional form:
+Some operator functions can also be used in a functional form:
 
 >>> x = torch.tensor(0.6, requires_grad=True)
 >>> matrix_fn = qml.matrix(qml.RX)
->>> matrix_fn(x)
+>>> matrix_fn(x, wires=0)
 tensor([[0.9553+0.0000j, 0.0000-0.2955j],
-      [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
+        [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<StackBackward0>)
 
-In its functional form, most are fully differentiable with respect to gate arguments:
+In the functional form, they are usually differentiable with respect to gate arguments:
 
 >>> loss = torch.real(torch.trace(matrix_fn(x, wires=0)))
 >>> loss.backward()
 >>> x.grad
-tensor(-0.5910)
+tensor(-0.2955)
 
-Some operator transform can also act on multiple operations, by passing
-quantum functions, qnodes or tapes:
+Some operator transforms can also act on multiple operators, by passing
+quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
 ...     qml.RX(theta, wires=1)
@@ -84,13 +115,13 @@ array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 
 .. _intro_ref_ops_qubit:
 
-Qubit operations
-----------------
+Qubit operators
+---------------
 
-.. _intro_ref_ops_qgates:
+.. _intro_ref_ops_nonparam:
 
-Non-parametric Ops
-^^^^^^^^^^^^^^^^^^
+Non-parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -111,6 +142,7 @@ Non-parametric Ops
     ~pennylane.CY
     ~pennylane.SWAP
     ~pennylane.ISWAP
+    ~pennylane.ECR
     ~pennylane.SISWAP
     ~pennylane.SQISW
     ~pennylane.CSWAP
@@ -121,9 +153,10 @@ Non-parametric Ops
 
 :html:`</div>`
 
+.. _intro_ref_ops_qparam:
 
-Parametric Ops
-^^^^^^^^^^^^^^
+Parametrized gates
+^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -148,14 +181,17 @@ Parametric Ops
     ~pennylane.U2
     ~pennylane.U3
     ~pennylane.IsingXX
+    ~pennylane.IsingXY
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
+    ~pennylane.PSWAP
 
 :html:`</div>`
 
+.. _intro_ref_ops_qchem:
 
-Quantum Chemistry Ops
-^^^^^^^^^^^^^^^^^^^^^
+Quantum chemistry gates
+^^^^^^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -173,9 +209,14 @@ Quantum Chemistry Ops
 
 :html:`</div>`
 
+Electronic Hamiltonians built independently using
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools can be readily converted to a
+PennyLane observable using the :func:`~.pennylane.import_operator` function.
 
-Matrix Ops
-^^^^^^^^^^
+.. _intro_ref_ops_matrix:
+
+Gates constructed from a matrix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -189,9 +230,10 @@ Matrix Ops
 
 :html:`</div>`
 
+.. _intro_ref_ops_arithm:
 
-Arithmetic Ops
-^^^^^^^^^^^^^^
+Gates performing arithmetics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -204,9 +246,10 @@ Arithmetic Ops
 
 :html:`</div>`
 
+.. _intro_ref_ops_qstateprep:
 
-Qubit state preparation
-^^^^^^^^^^^^^^^^^^^^^^^
+State preparation
+^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
@@ -248,8 +291,8 @@ Noisy channels
 
 .. _intro_ref_ops_qobs:
 
-Qubit observables
-^^^^^^^^^^^^^^^^^
+Observables
+^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
@@ -268,33 +311,9 @@ Qubit observables
 
 :html:`</div>`
 
-Grouping Pauli words
-^^^^^^^^^^^^^^^^^^^^
-
-Grouping Pauli words can be used for the optimizing the measurement of qubit
-Hamiltonians. Along with groups of observables, post-measurement rotations can
-also be obtained using :func:`~.optimize_measurements`:
-
-.. code-block:: python
-
-    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coeffs = [1.43, 4.21, 0.97]
-    >>> post_rotations, diagonalized_groupings, grouped_coeffs = optimize_measurements(obs, coeffs)
-    >>> post_rotations
-    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
-     [RX(1.5707963267948966, wires=[0])]]
-
-The post-measurement rotations can be used to diagonalize the partitions of
-observables found.
-
-For further details on measurement optimization, grouping observables through
-solving the minimum clique cover problem, and auxiliary functions, refer to the
-:doc:`/code/qml_grouping` subpackage.
-
-
 .. _intro_ref_ops_cv:
 
-Continuous-Variable (CV) operations
+Continuous-Variable (CV) operators
 -----------------------------------
 
 If you would like to learn more about the CV model of quantum computing, check out the
@@ -303,7 +322,7 @@ page of the `Strawberry Fields <https://strawberryfields.ai/>`__ documentation.
 
 .. _intro_ref_ops_cvgates:
 
-CV Gates
+CV gates
 ^^^^^^^^
 
 :html:`<div class="summary-table">`
@@ -327,6 +346,7 @@ CV Gates
 
 :html:`</div>`
 
+.. _intro_ref_ops_cvstateprep:
 
 CV state preparation
 ^^^^^^^^^^^^^^^^^^^^
@@ -368,3 +388,57 @@ CV observables
     ~pennylane.X
 
 :html:`</div>`
+
+.. _intro_ref_ops_qutrit:
+
+Qutrit operators
+----------------
+
+.. _intro_ref_ops_qutrit_nonparam:
+
+Qutrit non-parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TShift
+    ~pennylane.TClock
+    ~pennylane.TAdd
+    ~pennylane.TSWAP
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_matrix:
+
+Qutrit gates constructed from a matrix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritUnitary
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_obs:
+
+Qutrit Observables
+^^^^^^^^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.THermitian
+    ~pennylane.GellMann
+
+:html:`</div>`
+

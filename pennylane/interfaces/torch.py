@@ -15,7 +15,7 @@
 This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=too-many-arguments,protected-access,abstract-method
 import numpy as np
 import torch
 
@@ -96,6 +96,12 @@ class ExecuteTapes(torch.autograd.Function):
             if isinstance(r, np.ndarray) and r.dtype is np.dtype("object"):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
+
+            if any(
+                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+                for m in ctx.tapes[i].measurements
+            ):
+                continue
 
             if isinstance(r, (list, tuple)):
                 res[i] = [torch.as_tensor(t) for t in r]

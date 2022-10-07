@@ -38,6 +38,7 @@ def test_empty_tape():
     assert isinstance(ax, mpl.axes._axes.Axes)
 
     assert fig.axes == [ax]
+    plt.close()
 
 
 with QuantumTape() as tape1:
@@ -52,6 +53,7 @@ def test_fontsize():
     _, ax = tape_mpl(tape1, fontsize=20)
     for t in ax.texts:
         assert t.get_fontsize() == 20
+    plt.close()
 
 
 label_data = [
@@ -350,7 +352,20 @@ class TestSpecialGates:
         layer = 0
 
         assert len(ax.lines) == 2
-        assert len(ax.collections) == 2
+        assert len(ax.texts) == 3
+        assert len(ax.collections) == 1
+
+        plt.close()
+
+    def test_Prod(self):
+        with QuantumTape() as tape:
+            qml.S(0) @ qml.T(0)
+
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
 
         plt.close()
 
@@ -408,6 +423,53 @@ class TestControlledGates:
 
         # two wire labels, so CRX is third text object
         assert ax.texts[2].get_text() == "RX\n(1.23)"
+        plt.close()
+
+    def test_control_values_str(self):
+        """Test control values get displayed correctly when they are provided as a string."""
+
+        with QuantumTape() as tape:
+            qml.ControlledQubitUnitary(
+                qml.matrix(qml.RX)(0, 0),
+                control_wires=[0, 1, 2, 3],
+                wires=[4],
+                control_values="1010",
+            )
+
+        self.check_tape_controlled_qubit_unitary(tape)
+
+    def test_control_values_bool(self):
+        """Test control_values get displayed correctly when they are provided as a list of bools."""
+
+        with QuantumTape() as tape:
+            qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
+            qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
+
+        self.check_tape_controlled_qubit_unitary(tape)
+
+    def check_tape_controlled_qubit_unitary(self, tape):
+        """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        # 5 wires -> 4 control, 1 target
+        assert len(ax.patches) == 5
+        # Circle for control values are positioned correctly
+        # Circle color matched according to the control value
+        assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[0].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[1].center == (layer, 1)
+        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["axes.facecolor"])
+        assert ax.patches[2].center == (layer, 2)
+        assert ax.patches[2].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[3].center == (layer, 3)
+        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["axes.facecolor"])
+
+        # five wires, one control line
+        assert len(ax.lines) == 6
+        control_line = ax.lines[5]
+        assert control_line.get_data() == ((layer, layer), (0, 4))
+
         plt.close()
 
 
@@ -492,6 +554,7 @@ class TestGeneralOperations:
         )
 
         assert len(ax.patches) == 1
+        plt.close()
 
 
 measure_data = [
@@ -544,6 +607,7 @@ class TestMeasurements:
         for layer, box in enumerate(ax.patches[::3]):
             assert box.get_x() == 1 - self.width / 2.0
             assert box.get_y() == layer - self.width / 2.0
+        plt.close()
 
 
 class TestLayering:
@@ -573,6 +637,7 @@ class TestLayering:
 
         for t in ax.texts[3:]:
             assert t.get_text() == "X"
+        plt.close()
 
     def test_three_layers_one_wire(self):
         """Tests the positions when multiple gates are all on the same wire."""
@@ -590,6 +655,7 @@ class TestLayering:
 
         for t in ax.texts[1:]:
             assert t.get_text() == "X"
+        plt.close()
 
     def test_blocking_IsingXX(self):
         """Tests the position of layers when a multiwire gate is blocking another gate on its empty wire."""
@@ -616,3 +682,4 @@ class TestLayering:
         assert ax.texts[3].get_text() == "X"
         assert ax.texts[4].get_text() == "IsingXX"
         assert ax.texts[5].get_text() == "X"
+        plt.close()

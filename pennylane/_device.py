@@ -14,12 +14,12 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args, use-maxsplit-arg
+# pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
 import types
 import warnings
-from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
+from collections.abc import Iterable, Sequence
 from functools import lru_cache
 
 import numpy as np
@@ -30,7 +30,15 @@ from pennylane.operation import (
     Observable,
     Tensor,
 )
-from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
+from pennylane.measurements import (
+    Sample,
+    State,
+    Variance,
+    Expectation,
+    Probability,
+    MidMeasure,
+    ShadowExpval,
+)
 from pennylane.wires import Wires, WireError
 
 
@@ -107,8 +115,8 @@ class Device(abc.ABC):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods
-    _capabilities = {"model": None}
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
+    _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
@@ -705,11 +713,6 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
-
-        # If the observable contains a Hamiltonian and the device does not
-        # support Hamiltonians, or if the simulation uses finite shots, or
-        # if the Hamiltonian explicitly specifies an observable grouping,
-        # split tape into multiple tapes of diagonalizable known observables.
         supports_hamiltonian = self.supports_observable("Hamiltonian")
         finite_shots = self.shots is not None
         grouping_known = all(
@@ -720,17 +723,67 @@ class Device(abc.ABC):
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
-        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
+        return_types = [m.return_type for m in circuit.observables]
+
+        is_shadow = ShadowExpval in return_types
+
+        if hamiltonian_in_obs and (
+            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
+        ):
+            # If the observable contains a Hamiltonian and the device does not
+            # support Hamiltonians, or if the simulation uses finite shots, or
+            # if the Hamiltonian explicitly specifies an observable grouping,
+            # split tape into multiple tapes of diagonalizable known observables.
             try:
-                return qml.transforms.hamiltonian_expand(circuit, group=False)
+                circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
 
             except ValueError as e:
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
+        elif (
+            len(circuit._obs_sharing_wires) > 0
+            and not hamiltonian_in_obs
+            and all(
+                t not in return_types
+                for t in [
+                    qml.measurements.Sample,
+                    qml.measurements.Probability,
+                    qml.measurements.Counts,
+                    qml.measurements.AllCounts,
+                ]
+            )
+        ):
+            # Check for case of non-commuting terms and that there are no Hamiltonians
+            # TODO: allow for Hamiltonians in list of observables as well.
+            circuits, hamiltonian_fn = qml.transforms.split_non_commuting(circuit)
 
-        # otherwise, return an identity transform
-        return [circuit], lambda res: res[0]
+        else:
+            # otherwise, return the output of an identity transform
+            circuits = [circuit]
+
+            def hamiltonian_fn(res):
+                return res[0]
+
+        # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
+        # ones will be as well) and whether broadcasting is supported
+        if circuit.batch_size is None or self.capabilities().get("supports_broadcasting"):
+            # If the circuit wasn't broadcasted or broadcasting is supported, no action required
+            return circuits, hamiltonian_fn
+
+        # Expand each of the broadcasted Hamiltonian-expanded circuits
+        expanded_tapes, expanded_fn = qml.transforms.map_batch_transform(
+            qml.transforms.broadcast_expand, circuits
+        )
+
+        # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
+        # expansion. Note that the application order is reversed compared to the expansion order,
+        # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
+        # results from the broadcast expansion first.
+        def total_processing(results):
+            return hamiltonian_fn(expanded_fn(results))
+
+        return expanded_tapes, total_processing
 
     @property
     def op_queue(self):
@@ -909,7 +962,7 @@ class Device(abc.ABC):
                     "simulate the application of mid-circuit measurements on this device."
                 )
 
-            if o.inverse:
+            if getattr(o, "inverse", False):
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
                     "supports_inverse_operations", False
@@ -920,7 +973,7 @@ class Device(abc.ABC):
                     )
                 operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
+            if not self.stopping_condition(o):
                 raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )

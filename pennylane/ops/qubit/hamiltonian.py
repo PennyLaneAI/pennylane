@@ -15,16 +15,15 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
-from copy import copy
+import numbers
 from collections.abc import Iterable
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.operation import Observable, Tensor
-from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -203,7 +202,7 @@ class Hamiltonian(Observable):
         if simplify:
             self.simplify()
         if grouping_type is not None:
-            with qml.tape.stop_recording():
+            with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
                     self.ops, grouping_type=grouping_type, method=method
                 )
@@ -338,7 +337,7 @@ class Hamiltonian(Observable):
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
-        with qml.tape.stop_recording():
+        with qml.QueuingManager.stop_recording():
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
@@ -372,12 +371,7 @@ class Hamiltonian(Observable):
             c = self.coeffs[i]
             op = op if isinstance(op, Tensor) else Tensor(op)
 
-            ind = None
-            for j, o in enumerate(new_ops):
-                if op.compare(o):
-                    ind = j
-                    break
-
+            ind = next((j for j, o in enumerate(new_ops) if op.compare(o)), None)
             if ind is not None:
                 new_coeffs[ind] += c
                 if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
@@ -396,16 +390,18 @@ class Hamiltonian(Observable):
 
         self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
         self._ops = new_ops
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
 
     def __str__(self):
-        # Lambda function that formats the wires
-        wires_print = lambda ob: ",".join(map(str, ob.wires.tolist()))
+        def wires_print(ob: Observable):
+            """Function that formats the wires."""
+            return ",".join(map(str, ob.wires.tolist()))
 
         list_of_coeffs = self.data  # list of scalar tensors
         paired_coeff_obs = list(zip(list_of_coeffs, self.ops))
-        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
+        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), qml.math.real(pair[0])))
 
         terms_ls = []
 
@@ -426,6 +422,15 @@ class Hamiltonian(Observable):
     def __repr__(self):
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
+
+    def _ipython_display_(self):  # pragma: no-cover
+        """Displays __str__ in ipython instead of __repr__
+        See https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        if len(self.ops) < 15:
+            print(str(self))
+        else:  # pragma: no-cover
+            print(repr(self))
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
@@ -544,10 +549,30 @@ class Hamiltonian(Observable):
 
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
+    def __rmatmul__(self, H):
+        r"""The tensor product operation (from the right) between a Hamiltonian and
+        a Hamiltonian/Tensor/Observable (ie. Hamiltonian.__rmul__(H) = H @ Hamiltonian).
+        """
+        if isinstance(H, Hamiltonian):  # can't be accessed by '@'
+            return H.__matmul__(self)
+
+        coeffs1 = copy(self.coeffs)
+        ops1 = self.ops.copy()
+
+        if isinstance(H, (Tensor, Observable)):
+            terms = [H @ op for op in ops1]
+
+            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+
+        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
+
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
 
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
@@ -562,6 +587,8 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -582,6 +609,9 @@ class Hamiltonian(Observable):
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
+
         if isinstance(H, Hamiltonian):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
@@ -613,16 +643,9 @@ class Hamiltonian(Observable):
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            try:
-                context.update_info(o, owner=self)
-            except QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
-
+            context.update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self

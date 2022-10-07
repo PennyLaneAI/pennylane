@@ -32,6 +32,8 @@ from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
 
+pytestmark = pytest.mark.qcut
+
 I, X, Y, Z = (
     np.eye(2),
     qml.PauliX.compute_matrix(),
@@ -2730,6 +2732,7 @@ class TestContractTensors:
     )
     expected_grad = np.array([expected_grad_0, expected_grad_1])
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_autograd(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the autograd interface"""
@@ -2748,7 +2751,7 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_torch(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the torch interface"""
@@ -2768,7 +2771,7 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.tf
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_tf(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the tf interface"""
@@ -2788,7 +2791,7 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    @pytest.mark.usefixtures("skip_if_no_jax_support")
+    @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_jax(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the jax interface"""
@@ -4026,24 +4029,23 @@ class TestCutStrategy:
     def test_infer_wire_imbalance(self, k, imbalance_tolerance):
         """Test that the imbalance is correctly derived under simple circumstances."""
 
-        num_wires = 10
-        num_gates = 10
+        wire_depths = dict(enumerate(range(10)))
+        num_gates = int(sum(wire_depths.values()))
         free_wires = 3
 
         imbalance = qcut.CutStrategy._infer_imbalance(
             k=k,
-            num_wires=num_wires,
-            num_gates=num_gates,
+            wire_depths=wire_depths,
             free_wires=free_wires,
             free_gates=1000,
             imbalance_tolerance=imbalance_tolerance,
         )
 
-        avg_size = int(num_gates / k + 1 - 1e-7)
+        depth_imbalance = max(wire_depths.values()) * len(wire_depths) / num_gates - 1
         if imbalance_tolerance is not None:
             assert imbalance <= imbalance_tolerance
         else:
-            assert imbalance == (num_gates - (k - 1)) / avg_size - 1
+            assert imbalance == depth_imbalance
 
     @pytest.mark.parametrize("num_wires", [50, 10])
     def test_infer_wire_imbalance_raises(
@@ -4053,13 +4055,12 @@ class TestCutStrategy:
         """Test that the imbalance correctly raises."""
 
         k = 2
-        num_gates = 50
+        wire_depths = {k: 1 if num_wires > 40 else 5 for k in range(num_wires)}
 
         with pytest.raises(ValueError, match=f"`free_{'wires' if num_wires > 40 else 'gates'}`"):
             qcut.CutStrategy._infer_imbalance(
                 k=k,
-                num_wires=num_wires,
-                num_gates=num_gates,
+                wire_depths=wire_depths,
                 free_wires=20,
                 free_gates=20,
             )
@@ -4672,3 +4673,69 @@ class TestAutoCutCircuit:
 
         assert cut_res_bs.shape == target.shape
         assert type(cut_res_bs) == type(target)
+
+    @pytest.mark.parametrize("measure_all_wires", [False, True])
+    def test_cut_mps(self, measure_all_wires):
+        """Test auto cut this circuit:
+        0: ─╭C──RY───────────────────────────────────────────┤ ╭<Z@Z@Z@Z@Z@Z@Z@Z>
+        1: ─╰X──RY─╭C──RY────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        2: ────────╰X──RY─╭C──RY─────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        3: ───────────────╰X──RY─╭C──RY──────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        4: ──────────────────────╰X──RY─╭C──RY───────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        5: ─────────────────────────────╰X──RY─╭C──RY────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        6: ────────────────────────────────────╰X──RY─╭C──RY─┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        7: ───────────────────────────────────────────╰X──RY─┤ ╰<Z@Z@Z@Z@Z@Z@Z@Z>
+
+        into this:
+
+        0: ─╭C──RY───────────────────────────────────────────────────────────────────┤ ╭<Z@Z@Z@Z@Z@Z@Z@Z>
+        1: ─╰X──RY──//─╭C──RY────────────────────────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        2: ────────────╰X──RY──//─╭C──RY─────────────────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        3: ───────────────────────╰X──RY──//─╭C──RY──────────────────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        4: ──────────────────────────────────╰X──RY──//─╭C──RY───────────────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        5: ─────────────────────────────────────────────╰X──RY──//─╭C──RY────────────┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        6: ────────────────────────────────────────────────────────╰X──RY──//─╭C──RY─┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
+        7: ───────────────────────────────────────────────────────────────────╰X──RY─┤ ╰<Z@Z@Z@Z@Z@Z@Z@Z>
+        """
+
+        pytest.importorskip("kahypar")
+
+        def block(weights, wires):
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(weights[0], wires=wires[0])
+            qml.RY(weights[1], wires=wires[1])
+
+        n_wires = 8
+        n_block_wires = 2
+        n_params_block = 2
+        n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+        template_weights = [[0.1, -0.3]] * n_blocks
+
+        device_size = 2
+        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
+
+        with qml.tape.QuantumTape() as tape0:
+            qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+            if measure_all_wires:
+                qml.expval(qml.grouping.string_to_pauli_word("Z" * n_wires))
+            else:
+                qml.expval(qml.PauliZ(wires=n_wires - 1))
+
+        tape = tape0.expand()
+        graph = qcut.tape_to_graph(tape)
+        cut_graph = qcut.find_and_place_cuts(
+            graph=graph,
+            cut_strategy=cut_strategy,
+            replace_wire_cuts=True,
+        )
+        frags, _ = qcut.fragment_graph(cut_graph)
+        assert len(frags) == 7
+
+        if measure_all_wires:
+            lower, upper = 5, 6
+        else:
+            lower, upper = 4, 5
+        assert all(lower <= f.order() <= upper for f in frags)
+
+        # each frag should have the device size constraint satisfied.
+        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)

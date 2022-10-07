@@ -126,6 +126,7 @@ class TestInterfaces:
     """Test that inputs are correctly identified and spectra computed in
     all interfaces."""
 
+    @pytest.mark.autograd
     def test_integration_autograd(self):
         """Test that the spectra of a circuit is calculated correctly
         in the autograd interface."""
@@ -141,11 +142,13 @@ class TestInterfaces:
             assert k1 == k2
             assert v1 == v2
 
+    @pytest.mark.torch
     def test_integration_torch(self):
         """Test that the spectra of a circuit is calculated correctly
         in the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
+
         x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], requires_grad=False)
 
@@ -158,10 +161,11 @@ class TestInterfaces:
             assert k1 == k2
             assert v1 == v2
 
+    @pytest.mark.tf
     def test_integration_tf(self):
         """Test that the spectra of a circuit is calculated correctly
         in the tf interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="tf")
@@ -175,11 +179,10 @@ class TestInterfaces:
             assert k1 == k2
             assert v1 == v2
 
+    @pytest.mark.jax
     def test_integration_jax(self):
         """Test that the spectra of a circuit is calculated correctly
         in the jax interface."""
-
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         x = jnp.array([1.0, 2.0, 3.0])

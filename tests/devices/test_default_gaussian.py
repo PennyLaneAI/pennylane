@@ -712,7 +712,9 @@ class TestSample:
         with pytest.raises(ValueError, match="Only one mode can be measured in homodyne"):
             sample = gaussian_device_2_wires.sample("P", [0, 1], [])
 
-    @pytest.mark.parametrize("observable", set(qml.ops.cv.obs) - set(["P", "X", "QuadOperator"]))
+    @pytest.mark.parametrize(
+        "observable", sorted(set(qml.ops.cv.obs) - set(["P", "X", "QuadOperator"]))
+    )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
 
@@ -734,8 +736,8 @@ class TestDefaultGaussianIntegration:
             "supports_finite_shots": True,
             "returns_probs": False,
             "returns_state": False,
-            "supports_reversible_diff": False,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
         }
         assert cap == capabilities
 

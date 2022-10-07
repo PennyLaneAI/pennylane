@@ -70,25 +70,20 @@ The basic components of operators are the following:
      >>> op.terms()
      ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.get_eigvals`)
+   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
      and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
      >>> op = qml.PauliX(0)
      >>> op.diagonalizing_gates()
      [Hadamard(wires=[0])]
-     >>> op.get_eigvals()
+     >>> op.eigvals()
      [ 1 -1]
 
-    .. note::
-
-        The :meth:`.Operator.get_eigvals` method is temporary and will be renamed to :meth:`.Operator.eigvals` in an
-        upcoming release. It is recommended to use the higher-level :func:`~.eigvals` function where possible.
-
-   * Representation as a **matrix** (:meth:`.Operator.get_matrix`), as specified by a global wire order that tells us where the
+   * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
      >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-     >>> op.get_matrix(wire_order=["a", "b"])
+     >>> op.matrix(wire_order=["a", "b"])
      [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
       [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
@@ -96,7 +91,7 @@ The basic components of operators are the following:
 
     .. note::
 
-        The :meth:`.Operator.get_matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
+        The :meth:`.Operator.matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
         upcoming release. It is recommended to use the higher-level :func:`~.matrix` function where possible.
 
    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
@@ -218,16 +213,23 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-The new gate can be used with PennyLane devices. PennyLane checks with the device
-whether it supports operations using the operation name.
+The new gate can be used with PennyLane devices. Device support for an operation can be checked via
+``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.
+
+``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
+If the Operator doesn't have a matrix, the device then checks if the name of the Operator is explicitly specified in 
+:attr:`~DefaultQubit.operations` or :attr:`~DefaultQubit.observables`.
+
+Other devices that do not inherit from ``DefaultQubit`` only check if the name is explicitly specified in the ``operations``
+property.
 
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device
   might have a hardcoded implementation, *or* it may refer to one of the
-  numerical representations of the operator (such as :meth:`.Operator.get_matrix`).
+  numerical representations of the operator (such as :meth:`.Operator.matrix`).
   
-- If the device does not register support for an operation with the same
-  name, PennyLane will automatically decompose the gate using :meth:`.Operator.decomposition`.
+- If the device does not support an operation, PennyLane will automatically
+  decompose the gate using :meth:`.Operator.decomposition`.
 
 .. code-block:: python
 
@@ -326,12 +328,12 @@ Make sure that all hyperparameters and errors are tested, and that the parameter
 tensors from all supported autodifferentiation frameworks.
 
 Don't forget to also add the new operator to the documentation in the ``docs/introduction/operations.rst`` file, or to
-the template gallery if it is an ansatz. The latter is done by adding a ``customgalleryitem``
+the template gallery if it is an ansatz. The latter is done by adding a ``gallery-item``
 to the correct section in ``doc/introduction/templates.rst``:
 
 .. code-block::
 
-  .. customgalleryitem::
+  .. gallery-item::
     :link: ../code/api/pennylane.templates.<templ_type>.MyNewTemplate.html
     :description: MyNewTemplate
     :figure: ../_static/templates/<templ_type>/my_new_template.png

@@ -8,12 +8,6 @@ PennyLane Documentation
 .. raw:: html
 
     <style>
-        #right-column.card {
-            box-shadow: none!important;
-        }
-        #right-column.card:hover {
-            box-shadow: none!important;
-        }
         .breadcrumb {
             display: none;
         }
@@ -21,60 +15,39 @@ PennyLane Documentation
             text-align: center;
             margin-bottom: 15px;
         }
+        p.lead.grey-text {
+            margin-bottom: 30px;
+        }
         .footer-relations {
             border-top: 0px;
         }
     </style>
+
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-            PennyLane is a cross-platform Python library for differentiable programming of quantum computers.
-            Train a quantum computer the same way as a neural network.
+            PennyLane is a cross-platform Python library for differentiable
+            programming of quantum computers. Train a quantum computer the same
+            way as a neural network.
         </p>
         <div class="row mt-3">
-            <div class="col-lg-4 mb-2 adlign-items-stretch">
-                <a href="introduction/pennylane.html">
-                    <div class="card rounded-lg" style="height:100%;">
-                        <div class="d-flex">
-                            <div>
-                                <h3 class="card-title pl-3 mt-4">
-                                Using PennyLane
-                                </h3>
-                                <p class="mb-3 grey-text px-3">
-                                    A guided tour of the core features of PennyLane <i class="fas fa-angle-double-right"></i>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="development/guide.html">
-                <div class="card rounded-lg" style="height:100%;">
-                    <div class="d-flex">
-                        <div>
-                            <h3 class="card-title pl-3 mt-4">
-                            Developing
-                            </h3>
-                            <p class="mb-3 grey-text px-3">How you can contribute to the development of PennyLane <i class="fas fa-angle-double-right"></i></p>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/qml.html">
-                <div class="card rounded-lg" style="height:100%;">
-                    <div class="d-flex">
-                        <div>
-                            <h3 class="card-title pl-3 mt-4">
-                            API
-                            </h3>
-                            <p class="mb-3 grey-text px-3">Explore the PennyLane API <i class="fas fa-angle-double-right"></i></p>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            </div>
+
+.. index-card::
+    :name: Using PennyLane
+    :link: introduction/pennylane.html
+    :description: A guided tour of the core features of PennyLane
+
+.. index-card::
+    :name: Developing
+    :link: development/guide.html
+    :description: How you can contribute to the development of PennyLane
+
+.. index-card::
+    :name: API
+    :link: code/qml.html
+    :description: Explore the PennyLane API
+
+.. raw:: html
+
         </div>
     </div>
 
@@ -103,7 +76,7 @@ Features
 
 ..
 
-- *Device independent*.
+- *Device-independent*.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to access even more
   devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
@@ -127,7 +100,7 @@ with our collection of
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
 more details on the :doc:`quantum operations <introduction/operations>`, and to explore
-the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane.
+the available :doc:`optimization tools <introduction/interfaces>` provided by PennyLane.
 We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
@@ -143,11 +116,9 @@ If you are doing research using PennyLane, please cite
 
 .. rst-class:: admonition warning
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-    Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-    Zeyue Niu, Antal Száva, and Nathan Killoran.
-    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
-    `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+    Ville Bergholm et al. *PennyLane: Automatic differentiation of hybrid
+    quantum-classical computations.* 2018. `arXiv:1811.04968
+    <https://arxiv.org/abs/1811.04968>`_
 
 Support and contribution
 ------------------------
@@ -182,9 +153,9 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/operations
    introduction/measurements
    introduction/templates
-   introduction/optimizers
+   introduction/inspecting_circuits
+   introduction/compiling_circuits
    introduction/chemistry
-   introduction/configuration
 
 .. toctree::
    :maxdepth: 1
@@ -210,14 +181,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_grouping
    code/qml_kernels
    code/qml_math
+   code/qml_ops_op_math
+   code/qml_qinfo
    code/qml_numpy
    code/qml_qaoa
-   code/qml_hf
    code/qml_qchem
    code/qml_qnn
+   code/qml_resource
+   code/qml_shadows
    code/qml_tape
    code/qml_transforms
    code/qml_drawer
    code/qml_utils
    code/qml_wires
-   code/qml_beta

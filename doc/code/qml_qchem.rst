@@ -14,6 +14,7 @@ number observables.
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
+    :skip: taper, symmetry_generators, paulix_ops, import_operator
 
 Differentiable Hartree-Fock
 ---------------------------

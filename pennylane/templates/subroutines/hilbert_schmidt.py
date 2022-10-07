@@ -61,7 +61,8 @@ class HilbertSchmidt(Operation):
 
     .. seealso:: :class:`~.LocalHilbertSchmidt`
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider that we want to evaluate the Hilbert-Schmidt Test cost between the unitary ``U`` and an approximate
         unitary ``V``. We need to define some functions where it is possible to use the :class:`~.HilbertSchmidt`
@@ -161,7 +162,7 @@ class HilbertSchmidt(Operation):
 
         # Unitary V conjugate
         for op_v in v_tape.operations:
-            decomp_ops.append(op_v.adjoint())
+            decomp_ops.append(qml.adjoint(op_v, lazy=False))
 
         # CNOT second layer
         for i, j in zip(reversed(first_range), reversed(second_range)):
@@ -171,16 +172,6 @@ class HilbertSchmidt(Operation):
         for i in first_range:
             decomp_ops.append(qml.Hadamard(wires[i]))
         return decomp_ops
-
-    def adjoint(self):  # pylint: disable=arguments-differ
-        adjoint_op = HilbertSchmidt(
-            *self.parameters,
-            u_tape=self.hyperparameters["u_tape"],
-            v_function=self.hyperparameters["v_function"],
-            v_wires=self.hyperparameters["v_wires"],
-        )
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
@@ -216,7 +207,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
     .. seealso:: :class:`~.HilbertSchmidt`
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider that we want to evaluate the Local Hilbert-Schmidt Test cost between the unitary ``U`` and an
         approximate unitary ``V``. We need to define some functions where it is possible to use the
@@ -278,7 +270,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         # Unitary V conjugate
         for op_v in v_tape.operations:
-            decomp_ops.append(op_v.adjoint())
+            decomp_ops.append(qml.adjoint(qml.apply, lazy=False)(op_v))
 
         # Only one CNOT
         decomp_ops.append(qml.CNOT(wires=[wires[0], wires[int(n_wires / 2)]]))
@@ -287,13 +279,3 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         decomp_ops.append(qml.Hadamard(wires[0]))
 
         return decomp_ops
-
-    def adjoint(self):  # pylint: disable=arguments-differ
-        adjoint_op = LocalHilbertSchmidt(
-            *self.parameters,
-            u_tape=self.hyperparameters["u_tape"],
-            v_function=self.hyperparameters["v_function"],
-            v_wires=self.hyperparameters["v_wires"],
-        )
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op

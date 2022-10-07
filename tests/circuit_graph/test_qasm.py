@@ -400,8 +400,9 @@ class TestQNodeQasmIntegrationTests:
             return qml.expval(qml.PauliZ(0))
 
         # execute the QNode with parameters, and serialize
-        params = np.array([0.5, [0.2, 0.1]])
-        qnode(*params)
+        x = np.array(0.5)
+        y = np.array([0.2, 0.1])
+        qnode(x, y)
 
         expected = dedent(
             """\
@@ -426,8 +427,9 @@ class TestQNodeQasmIntegrationTests:
         assert res == expected
 
         # execute the QNode with new parameters, and serialize again
-        params = np.array([0.1, [0.3, 0.2]])
-        qnode(*params)
+        x2 = np.array(0.1)
+        y2 = np.array([0.3, 0.2])
+        qnode(x2, y2)
 
         expected = dedent(
             """\
@@ -807,11 +809,12 @@ class TestQASMConformanceTests:
 
         gates = [g for g, _, _ in qc.data]
 
+        qreg = qc.qregs[0]
         for idx, g in enumerate(gates):
             # attach a wires attribute to each gate, containing
             # a list of wire integers it acts on, so we can assert
             # correctness below.
-            g.wires = [q.index for q in qc.data[idx][1]]
+            g.wires = [qreg.index(q) for q in qc.data[idx][1]]
 
         # operations
         assert gates[0].name == "h"

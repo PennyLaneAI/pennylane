@@ -37,6 +37,16 @@ def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wi
 def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
+    The metric tensor convention we employ here has the following form:
+
+    .. math::
+
+        \text{metric_tensor}_{i, j} = \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
+        - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
+
+    with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
+    It is closely related to the quantum fisher information matrix, see :func:`~.pennylane.qinfo.transforms.quantum_fisher` and eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
+
     .. note::
 
         Only gates that have a single parameter and define a ``generator`` are supported.
@@ -169,7 +179,8 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     >>> grad_fn(weights)
     array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -616,7 +627,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         idx = 0
         for prob, obs in zip(diag_res, obs_list):
             for o in obs:
-                l = qml.math.cast(o.get_eigvals(), dtype=np.float64)
+                l = qml.math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
                 expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
@@ -658,6 +669,7 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     if aux_wire is not None:
         if device_wires is None or aux_wire in device_wires:
             return aux_wire
+        raise qml.wires.WireError("The requested aux_wire does not exist on the used device.")
 
     if device_wires is not None:
         unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))

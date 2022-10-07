@@ -18,11 +18,20 @@ from collections import defaultdict
 
 import numpy as np
 import pytest
+from this import d
 
 import pennylane as qml
 from pennylane import CircuitGraph
+from pennylane.measurements import (
+    MeasurementProcess,
+    MeasurementShapeError,
+    counts,
+    expval,
+    sample,
+    var,
+    probs,
+)
 from pennylane.tape import QuantumTape, TapeError
-from pennylane.measurements import MeasurementProcess, expval, sample, var, MeasurementShapeError
 
 
 def TestOperationMonkeypatching():
@@ -77,10 +86,12 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.batch_size is None
         assert tape.interface is None
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
+        assert tape._batch_size is None
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""
@@ -193,6 +204,7 @@ class TestConstruction:
         assert tape.measurements == [D]
         assert tape.observables == [C]
         assert tape.output_dim == 1
+        assert tape.batch_size is None
 
     def test_multiple_contexts(self):
         """Test multiple contexts with a single tape."""
@@ -215,6 +227,7 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.batch_size is None
 
         assert a not in tape.operations
         assert b not in tape.operations
@@ -308,6 +321,66 @@ class TestConstruction:
         assert tape.circuit[3].then_op.wires == target_wire
 
         assert tape.circuit[4] is terminal_measurement
+
+    @pytest.mark.parametrize(
+        "x, rot, exp_batch_size",
+        [
+            (0.2, [0.1, -0.9, 2.1], None),
+            ([0.2], [0.1, -0.9, 2.1], 1),
+            ([0.2], [[0.1], [-0.9], 2.1], 1),
+            ([0.2] * 3, [0.1, [-0.9] * 3, 2.1], 3),
+        ],
+    )
+    def test_update_batch_size(self, x, rot, exp_batch_size):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size, when creating and when using `set_parameters`."""
+
+        # Test with tape construction
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.Rot(*rot, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+            qml.apply(qml.expval(qml.PauliX(1)))
+
+        assert tape.batch_size == exp_batch_size
+
+        # Test with set_parameters
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+            qml.apply(qml.expval(qml.PauliX(1)))
+
+        assert tape.batch_size is None
+
+        tape.set_parameters([x] + rot)
+        assert tape.batch_size == exp_batch_size
+
+    @pytest.mark.parametrize(
+        "x, rot, y",
+        [
+            (0.2, [[0.1], -0.9, 2.1], [0.1, 0.9]),
+            ([0.2], [0.1, [-0.9] * 2, 2.1], 0.1),
+        ],
+    )
+    def test_error_inconsistent_batch_sizes(self, x, rot, y):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size, when creating and when using `set_parameters`."""
+
+        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(x, wires=0)
+                qml.Rot(*rot, wires=1)
+                qml.RX(y, wires=1)
+                qml.apply(qml.expval(qml.PauliZ(0)))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
+            qml.RX(0.2, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+            tape.set_parameters([x] + rot + [y])
 
 
 class TestIteration:
@@ -606,12 +679,40 @@ class TestParameters:
 
         return tape, params
 
+    @pytest.fixture
+    def make_tape_with_hermitian(self):
+        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        hermitian = qml.numpy.eye(2, requires_grad=False)
+
+        with QuantumTape() as tape:
+            qml.RX(params[0], wires=0)
+            qml.Rot(*params[1:4], wires=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(params[4], wires=4)
+            qml.expval(qml.Hermitian(hermitian, wires="a"))
+
+        return tape, params, hermitian
+
     def test_parameter_processing(self, make_tape):
         """Test that parameters are correctly counted and processed"""
         tape, params = make_tape
         assert tape.num_params == len(params)
         assert tape.trainable_params == list(range(len(params)))
         assert tape.get_parameters() == params
+
+    @pytest.mark.parametrize("operations_only", [False, True])
+    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
+        """Test the operations_only flag for getting the parameters on a tape with
+        qml.Hermitian is measured"""
+        tape, circuit_params, hermitian = make_tape_with_hermitian
+        num_all_params = len(circuit_params) + 1  # + 1 for hermitian
+        assert tape.num_params == num_all_params
+        assert tape.trainable_params == list(range(num_all_params))
+        assert (
+            tape.get_parameters(operations_only=operations_only) == circuit_params
+            if operations_only
+            else circuit_params + [hermitian]
+        )
 
     def test_set_trainable_params(self, make_tape):
         """Test that setting trainable parameters works as expected"""
@@ -657,7 +758,7 @@ class TestParameters:
         with pytest.raises(ValueError, match="must be non-negative integers"):
             tape.trainable_params = (0.5,)
 
-        with pytest.raises(ValueError, match="has at most 5 parameters"):
+        with pytest.raises(ValueError, match="only has 5 parameters"):
             tape.trainable_params = {0, 7}
 
     def test_setting_parameters(self, make_tape):
@@ -787,7 +888,7 @@ class TestParameters:
         assert np.all(obs.data[0] == H2)
 
 
-class TestInverse:
+class TestInverseAdjoint:
     """Tests for tape inversion"""
 
     def test_inverse(self):
@@ -811,6 +912,35 @@ class TestInverse:
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
+
+    def test_adjoint(self):
+        """Test that tape.adjoint is a copy of in-place inversion."""
+
+        init_state = np.array([1, 1])
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with QuantumTape() as tape:
+            prep = qml.BasisState(init_state, wires=[0, "a"])
+            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            m1 = qml.probs(wires=0)
+            m2 = qml.probs(wires="a")
+
+        with QuantumTape() as tape2:
+            adjoint_tape = tape.adjoint()
+
+        assert tape2[0] is adjoint_tape
+
+        assert id(adjoint_tape) != id(tape)
+        assert isinstance(adjoint_tape, QuantumTape)
+
+        tape.inv()
+
+        for op1, op2 in zip(adjoint_tape.circuit, tape.circuit):
+            assert op1.__class__ is op2.__class__
+            if hasattr(op1, "inverse"):
+                assert op1.inverse == op2.inverse
+            if hasattr(op1, "data"):
+                assert qml.math.allclose(op1.data, op2.data)
 
     def test_parameter_transforms(self):
         """Test that inversion correctly changes trainable parameters"""
@@ -1006,7 +1136,7 @@ class TestExpand:
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same
@@ -1031,7 +1161,7 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2.graph.hash
 
-    @pytest.mark.parametrize("ret", [expval, var, sample])
+    @pytest.mark.parametrize("ret", [expval, var])
     def test_expand_tape_multiple_wires_non_commuting(self, ret):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables are on the same wire"""
@@ -1039,9 +1169,30 @@ class TestExpand:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             qml.expval(qml.PauliX(0))
-            ret(qml.PauliZ(0))
+            ret(op=qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.expand(expand_measurements=True)
+
+    @pytest.mark.parametrize("ret", [sample, counts, probs])
+    def test_expand_tape_multiple_wires_non_commuting_for_sample_type_measurements(self, ret):
+        """Test if a more verbose QuantumFunctionError is raised during tape expansion of non-commuting
+        observables on the same wire with sample type measurements present"""
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            ret(op=qml.PauliZ(0))
+
+        expected_error_msg = (
+            "Only observables that are qubit-wise commuting "
+            "Pauli words can be returned on the same wire.\n"
+            "Try removing all probability, sample and counts measurements "
+            "this will allow for splitting of execution and separate measurements "
+            "for each non-commuting observable."
+        )
+
+        with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
             tape.expand(expand_measurements=True)
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
@@ -1086,6 +1237,7 @@ class TestExecution:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         assert tape.output_dim == 1
+        assert tape.batch_size is None
 
         # test execution with no parameters
         res1 = dev.execute(tape)
@@ -1176,6 +1328,7 @@ class TestExecution:
         expected = [np.cos(x), np.cos(y) ** 2]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and var outputs"""
@@ -1429,42 +1582,24 @@ class TestTapeCopying:
 class TestStopRecording:
     """Test that the stop_recording function works as expected"""
 
-    def test_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-
-        with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-            with tape.stop_recording():
-                pass
-
-    def test_nested_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape1:
-            qml.RX(0.1, wires=0)
-
-            with QuantumTape() as tape2:
-                qml.RX(0.1, wires=0)
-
-                with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-                    with tape1.stop_recording():
-                        pass
+    deprecation_warning = (
+        "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording"
+    )
 
     def test_recording_stopped(self):
         """Test that recording is stopped within a tape context"""
 
         with QuantumTape() as tape:
             op0 = qml.RX(0, wires=0)
-            assert tape.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
-            with tape.stop_recording():
-                op1 = qml.RY(1.0, wires=1)
-                assert tape.active_context() is None
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
+                with tape.stop_recording():
+                    op1 = qml.RY(1.0, wires=1)
+                    assert qml.queuing.QueuingManager.active_context() is None
 
-            op2 = qml.RZ(2, wires=1)
-            assert tape.active_context() is tape
+                op2 = qml.RZ(2, wires=1)
+                assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
@@ -1475,21 +1610,22 @@ class TestStopRecording:
 
         with QuantumTape() as tape1:
             op0 = qml.RX(0, wires=0)
-            assert tape1.active_context() is tape1
+            assert qml.queuing.QueuingManager.active_context() is tape1
 
             with QuantumTape() as tape2:
-                assert tape1.active_context() is tape2
+                assert qml.queuing.QueuingManager.active_context() is tape2
                 op1 = qml.RY(1.0, wires=1)
 
-                with tape2.stop_recording():
-                    assert tape1.active_context() is None
-                    op2 = qml.RZ(0.6, wires=2)
-                    op3 = qml.CNOT(wires=[0, 2])
+                with pytest.warns(UserWarning, match=self.deprecation_warning):
+                    with tape2.stop_recording():
+                        assert qml.queuing.QueuingManager.active_context() is None
+                        op2 = qml.RZ(0.6, wires=2)
+                        op3 = qml.CNOT(wires=[0, 2])
 
                 op4 = qml.Hadamard(wires=0)
 
             op5 = qml.RZ(2, wires=1)
-            assert tape1.active_context() is tape1
+            assert qml.queuing.QueuingManager.active_context() is tape1
 
         assert len(tape1.operations) == 3
         assert tape1.operations[0] == op0
@@ -1505,14 +1641,15 @@ class TestStopRecording:
         space is properly created and accessible"""
         with QuantumTape() as tape:
             op0 = qml.RX(0, wires=0)
-            assert tape.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
-            with tape.stop_recording(), QuantumTape() as temp_tape:
-                assert tape.active_context() is temp_tape
-                op1 = qml.RY(1.0, wires=1)
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
+                with tape.stop_recording(), QuantumTape() as temp_tape:
+                    assert qml.queuing.QueuingManager.active_context() is temp_tape
+                    op1 = qml.RY(1.0, wires=1)
 
             op2 = qml.RZ(2, wires=1)
-            assert tape.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
@@ -1522,20 +1659,29 @@ class TestStopRecording:
         assert temp_tape.operations[0] == op1
 
 
-def test_gate_tape():
+def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
     recording tape, or None if no tape is recording"""
-    assert qml.tape.get_active_tape() is None
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    with pytest.warns(UserWarning, match=message):
+        assert qml.tape.get_active_tape() is None
 
     with QuantumTape() as tape1:
-        assert qml.tape.get_active_tape() is tape1
+        with pytest.warns(UserWarning, match=message):
+            assert qml.tape.get_active_tape() is tape1
 
         with QuantumTape() as tape2:
-            assert qml.tape.get_active_tape() is tape2
+            with pytest.warns(UserWarning, match=message):
+                assert qml.tape.get_active_tape() is tape2
 
-        assert qml.tape.get_active_tape() is tape1
+        with pytest.warns(UserWarning, match=message):
+            assert qml.tape.get_active_tape() is tape1
 
-    assert qml.tape.get_active_tape() is None
+    with pytest.warns(UserWarning, match=message):
+        assert qml.tape.get_active_tape() is None
 
 
 class TestHashing:
@@ -1834,6 +1980,9 @@ class TestOutputShape:
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
+        if shots is not None and measurement.return_type is qml.measurements.State:
+            pytest.skip("State and density matrix don't support finite shots and raise a warning.")
+
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors
         if (
@@ -1916,6 +2065,7 @@ class TestOutputShape:
         res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
         assert tape.shape(dev) == res_shape.shape
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_multi_measure(self, measurements, expected, shots):
@@ -1943,6 +2093,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     def test_multi_measure_shot_vector(self, measurements, expected):
         """Test that the expected output shape is obtained when using multiple
@@ -1980,6 +2131,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [1, 10])
     def test_multi_measure_sample(self, shots):
         """Test that the expected output shape is obtained when using multiple
@@ -2005,6 +2157,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     def test_multi_measure_sample_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with a shot vector."""
@@ -2207,6 +2360,7 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, float)
         assert circuit.qtape.numeric_type is float
 
+    @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real

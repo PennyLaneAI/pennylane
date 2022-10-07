@@ -57,9 +57,9 @@ class op_transform:
         @qml.op_transform
         def trace(op):
             try:
-                return qml.math.real(qml.math.sum(op.get_eigvals()))
+                return qml.math.real(qml.math.sum(op.eigvals()))
             except qml.operation.EigvalsUndefinedError:
-                return qml.math.real(qml.math.trace(op.get_matrix()))
+                return qml.math.real(qml.math.trace(op.matrix()))
 
     We can use this function as written:
 
@@ -430,8 +430,8 @@ class op_transform:
                 # HOTFIX: some operator transforms return a tape containing
                 # a single transformed operator. As a result, for now we need
                 # to treat a tape with a single operation as a single operation.
-                if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
-                    tape = tape.operations[0]
+                # if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
+                #    tape = tape.operations[0]
 
                 if wire_order is not None or (
                     "wire_order" in self._sig and isinstance(obj, qml.QNode)
@@ -488,7 +488,7 @@ class op_transform:
             wires = tape.wires
 
         elif inspect.isclass(obj) and issubclass(obj, qml.operation.Operator):
-            with qml.tape.stop_recording():
+            with qml.QueuingManager.stop_recording():
                 tape = obj(*args, **kwargs)
 
             wires = tape.wires

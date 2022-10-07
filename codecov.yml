@@ -3,7 +3,7 @@ ignore:
 
 codecov:
   notify:
-    after_n_builds: 9
+    after_n_builds: 1
 
 comment:
   after_n_builds: 9
@@ -12,4 +12,5 @@ coverage:
   status:
     project:
       default:
-        threshold: 0.05%
+        threshold: 0.02%
+  after_n_builds: 1

@@ -24,40 +24,33 @@ Embeddings encode input features into the quantum state of the circuit.
 Hence, they usually take a data sample such as a feature vector as an argument. Embeddings can also depend on
 trainable parameters, and they may be constructed from repeated layers.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.AmplitudeEmbedding.html
-    :description: AmplitudeEmbedding
-    :figure: ../_static/templates/embeddings/amplitude.png
+.. gallery-item::
+    :description: :doc:`AmplitudeEmbedding <../code/api/pennylane.AmplitudeEmbedding>`
+    :figure: _static/templates/embeddings/amplitude.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.AngleEmbedding.html
-    :description: AngleEmbedding
-    :figure: ../_static/templates/embeddings/angle.png
+.. gallery-item::
+    :description: :doc:`AngleEmbedding <../code/api/pennylane.AngleEmbedding>`
+    :figure: _static/templates/embeddings/angle.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.BasisEmbedding.html
-    :description: BasisEmbedding
-    :figure: ../_static/templates/embeddings/basis.png
+.. gallery-item::
+    :description: :doc:`BasisEmbedding <../code/api/pennylane.BasisEmbedding>`
+    :figure: _static/templates/embeddings/basis.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.DisplacementEmbedding.html
-    :description: DisplacementEmbedding
-    :figure: ../_static/templates/embeddings/displacement.png
+.. gallery-item::
+    :description: :doc:`DisplacementEmbedding <../code/api/pennylane.DisplacementEmbedding>`
+    :figure: _static/templates/embeddings/displacement.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.IQPEmbedding.html
-    :description: IQPEmbedding
-    :figure: ../_static/templates/embeddings/iqp.png
+.. gallery-item::
+    :description: :doc:`IQPEmbedding <../code/api/pennylane.IQPEmbedding>`
+    :figure: _static/templates/embeddings/iqp.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.QAOAEmbedding.html
-    :description: QAOAEmbedding
-    :figure: ../_static/templates/embeddings/qaoa.png
+.. gallery-item::
+    :description: :doc:`QAOAEmbedding <../code/api/pennylane.QAOAEmbedding>`
+    :figure: _static/templates/embeddings/qaoa.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.SqueezingEmbedding.html
-    :description: SqueezingEmbedding
-    :figure: ../_static/templates/embeddings/squeezing.png
+.. gallery-item::
+    :description: :doc:`SqueezingEmbedding <../code/api/pennylane.SqueezingEmbedding>`
+    :figure: _static/templates/embeddings/squeezing.png
 
 .. raw:: html
 
@@ -72,30 +65,25 @@ Layer architectures define sequences of trainable gates that are repeated like t
 neural network. Note that arbitrary templates or operations can also be repeated using the
 :func:`~pennylane.layer` function.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.CVNeuralNetLayers.html
-    :description: CVNeuralNetLayers
-    :figure: ../_static/templates/layers/cvqnn.png
+.. gallery-item::
+    :description: :doc:`CVNeuralNetLayers <../code/api/pennylane.CVNeuralNetLayers>`
+    :figure: _static/templates/layers/cvqnn.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.RandomLayers.html
-    :description: RandomLayers
-    :figure: ../_static/templates/layers/random.png
+.. gallery-item::
+    :description: :doc:`RandomLayers <../code/api/pennylane.RandomLayers>`
+    :figure: _static/templates/layers/random.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.StronglyEntanglingLayers.html
-    :description: StronglyEntanglingLayers
-    :figure: ../_static/templates/layers/strongly_entangling.png
+.. gallery-item::
+    :description: :doc:`StronglyEntanglingLayers <../code/api/pennylane.StronglyEntanglingLayers>`
+    :figure: _static/templates/layers/strongly_entangling.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.SimplifiedTwoDesign.html
-    :description: SimplifiedTwoDesign
-    :figure: ../_static/templates/layers/simplified_two_design.png
+.. gallery-item::
+    :description: :doc:`SimplifiedTwoDesign <../code/api/pennylane.SimplifiedTwoDesign>`
+    :figure: _static/templates/layers/simplified_two_design.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.BasicEntanglerLayers.html
-    :description: BasicEntanglerLayers
-    :figure: ../_static/templates/layers/basic_entangler.png
+.. gallery-item::
+    :description: :doc:`BasicEntanglerLayers <../code/api/pennylane.BasicEntanglerLayers>`
+    :figure: _static/templates/layers/basic_entangler.png
 
 .. raw:: html
 
@@ -110,20 +98,17 @@ State preparation templates transform the zero state :math:`|0\dots 0 \rangle` t
 state. In contrast to embeddings that can in principle be used anywhere in a circuit,
 state preparation is typically used as the first operation.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.BasisStatePreparation.html
-    :description: BasisStatePreparation
-    :figure: ../_static/templates/state_preparations/basis.png
+.. gallery-item::
+    :description: :doc:`BasisStatePreparation <../code/api/pennylane.BasisStatePreparation>`
+    :figure: _static/templates/state_preparations/basis.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.MottonenStatePreparation.html
-    :description: MottonnenStatePrep
-    :figure: ../_static/templates/state_preparations/mottonen.png
+.. gallery-item::
+    :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
+    :figure: _static/templates/state_preparations/mottonen.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.ArbitraryStatePreparation.html
-    :description: ArbitraryStatePreparation
-    :figure: ../_static/templates/subroutines/arbitrarystateprep.png
+.. gallery-item::
+    :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
+    :figure: _static/templates/subroutines/arbitrarystateprep.png
 
 .. raw:: html
 
@@ -137,35 +122,29 @@ Quantum Chemistry templates
 Quantum chemistry templates define various quantum circuits used in variational algorithms
 like VQE to perform quantum chemistry simulations.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.AllSinglesDoubles.html
-    :description: AllSinglesDoubles
-    :figure: ../_static/templates/subroutines/all_singles_doubles.png
+.. gallery-item::
+    :description: :doc:`AllSinglesDoubles <../code/api/pennylane.AllSinglesDoubles>`
+    :figure: _static/templates/subroutines/all_singles_doubles.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.GateFabric.html
-    :description: GateFabric
-    :figure: ../_static/templates/layers/gate_fabric_layer.png
+.. gallery-item::
+    :description: :doc:`GateFabric <../code/api/pennylane.GateFabric>`
+    :figure: _static/templates/layers/gate_fabric_layer.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.UCCSD.html
-    :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png
+.. gallery-item::
+    :description: :doc:`UCCSD <../code/api/pennylane.UCCSD>`
+    :figure: _static/templates/subroutines/uccsd.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.kUpCCGSD.html
-    :description: k-UpCCGSD
-    :figure: ../_static/templates/subroutines/kupccgsd.png
+.. gallery-item::
+    :description: :doc:`k-UpCCGSD <../code/api/pennylane.kUpCCGSD>`
+    :figure: _static/templates/subroutines/kupccgsd.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.ParticleConservingU1.html
-    :description: ParticleConservingU1
-    :figure: ../_static/templates/layers/particle_conserving_u1_thumbnail.png
+.. gallery-item::
+    :description: :doc:`ParticleConservingU1 <../code/api/pennylane.ParticleConservingU1>`
+    :figure: _static/templates/layers/particle_conserving_u1_thumbnail.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.ParticleConservingU2.html
-    :description: ParticleConservingU2
-    :figure: ../_static/templates/layers/particle_conserving_u2.png
+.. gallery-item::
+    :description: :doc:`ParticleConservingU2 <../code/api/pennylane.ParticleConservingU2>`
+    :figure: _static/templates/layers/particle_conserving_u2.png
 
 .. raw:: html
 
@@ -174,25 +153,22 @@ like VQE to perform quantum chemistry simulations.
 .. _intro_ref_temp_tn:
 
 Tensor networks
--------------------------
+---------------
 
 Tensor-network templates create quantum circuit architectures where circuit blocks
 can be broadcast with the shape and connectivity of tensor networks.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.MPS.html
-    :description: Matrix Product State
-    :figure: ../_static/templates/tensornetworks/MPS_template.png
+.. gallery-item::
+    :description: :doc:`Matrix Product State <../code/api/pennylane.MPS>`
+    :figure: _static/templates/tensornetworks/MPS_template.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.TTN.html
-    :description: Tree Tensor Network
-    :figure: ../_static/templates/tensornetworks/TTN_template.png
+.. gallery-item::
+    :description: :doc:`Tree Tensor Network <../code/api/pennylane.TTN>`
+    :figure: _static/templates/tensornetworks/TTN_template.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.MERA.html
-    :description: Multi-scale Entanglement Renormalization Ansatz 
-    :figure: ../_static/templates/tensornetworks/MERA_template.png
+.. gallery-item::
+    :description: :doc:`Multi-scale Entanglement Renormalization Ansatz <../code/api/pennylane.MERA>`
+    :figure: _static/templates/tensornetworks/MERA_template.png
 
 .. raw:: html
 
@@ -205,70 +181,61 @@ Other subroutines
 
 Other useful templates which do not belong to the previous categories can be found here.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.GroverOperator.html
-    :description: Grover Diffusion Operator
-    :figure: ../_static/templates/subroutines/grover.svg
+.. gallery-item::
+    :description: :doc:`Grover Diffusion Operator <../code/api/pennylane.GroverOperator>`
+    :figure: _static/templates/subroutines/grover.svg
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.Interferometer.html
-    :description: Interferometer
-    :figure: ../_static/templates/subroutines/interferometer.png
+.. gallery-item::
+    :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
+    :figure: _static/templates/subroutines/interferometer.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.FermionicSingleExcitation.html
-    :description: FermionicSingleExcitation
-    :figure: ../_static/templates/subroutines/single_excitation_unitary.png
+.. gallery-item::
+    :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`
+    :figure: _static/templates/subroutines/single_excitation_unitary.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.FermionicDoubleExcitation.html
-    :description: FermionicDoubleExcitation
-    :figure: ../_static/templates/subroutines/double_excitation_unitary.png
+.. gallery-item::
+    :description: :doc:`FermionicDoubleExcitation <../code/api/pennylane.FermionicDoubleExcitation>`
+    :figure: _static/templates/subroutines/double_excitation_unitary.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.ArbitraryUnitary.html
-    :description: ArbitraryUnitary
-    :figure: ../_static/templates/subroutines/arbitraryunitary.png
+.. gallery-item::
+    :description: :doc:`ArbitraryUnitary <../code/api/pennylane.ArbitraryUnitary>`
+    :figure: _static/templates/subroutines/arbitraryunitary.png
 
-.. customgalleryitem::
-  :link: ../code/api/pennylane.ApproxTimeEvolution.html
-  :description: ApproxTimeEvolution
-  :figure: ../_static/templates/subroutines/approx_time_evolution.png
+.. gallery-item::
+  :description: :doc:`ApproxTimeEvolution <../code/api/pennylane.ApproxTimeEvolution>`
+  :figure: _static/templates/subroutines/approx_time_evolution.png
 
-.. customgalleryitem::
-  :link: ../code/api/pennylane.Permute.html
-  :description: Permute
-  :figure: ../_static/templates/subroutines/permute.png
+.. gallery-item::
+  :description: :doc:`Permute <../code/api/pennylane.Permute>`
+  :figure: _static/templates/subroutines/permute.png
 
-.. customgalleryitem::
-  :link: ../code/api/pennylane.QuantumPhaseEstimation.html
-  :description: QuantumPhaseEstimation
-  :figure: ../_static/templates/subroutines/qpe.svg
+.. gallery-item::
+  :description: :doc:`QuantumPhaseEstimation <../code/api/pennylane.QuantumPhaseEstimation>`
+  :figure: _static/templates/subroutines/qpe.svg
 
-.. customgalleryitem::
-  :link: ../code/api/pennylane.QuantumMonteCarlo.html
-  :description: QuantumMonteCarlo
-  :figure: ../_static/templates/subroutines/qmc.svg
+.. gallery-item::
+  :description: :doc:`QuantumMonteCarlo <../code/api/pennylane.QuantumMonteCarlo>`
+  :figure: _static/templates/subroutines/qmc.svg
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.QFT.html
-    :description: QuantumFourierTransform
-    :figure: ../_static/templates/subroutines/qft.svg
+.. gallery-item::
+    :description: :doc:`QuantumFourierTransform <../code/api/pennylane.QFT>`
+    :figure: _static/templates/subroutines/qft.svg
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.CommutingEvolution.html
-    :description: CommutingEvolution
-    :figure: ../_static/templates/subroutines/commuting_evolution.png
+.. gallery-item::
+    :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
+    :figure: _static/templates/subroutines/commuting_evolution.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.HilbertSchmidt.html
-    :description: HilbertSchmidt
-    :figure: ../_static/templates/subroutines/hst.png
+.. gallery-item::
+    :description: :doc:`HilbertSchmidt <../code/api/pennylane.HilbertSchmidt>`
+    :figure: _static/templates/subroutines/hst.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.LocalHilbertSchmidt.html
-    :description: LocalHilbertSchmidt
-    :figure: ../_static/templates/subroutines/lhst.png
+.. gallery-item::
+    :description: :doc:`LocalHilbertSchmidt <../code/api/pennylane.LocalHilbertSchmidt>`
+    :figure: _static/templates/subroutines/lhst.png
+
+.. gallery-item::
+    :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
+    :figure: _static/templates/subroutines/flip_sign.png
 
 .. raw:: html
 
@@ -287,45 +254,37 @@ takes either quantum gates or templates and applies them to wires in a specific 
     While the broadcasting function can make template construction very convenient, it
     adds an overhead and is therefore not recommended when speed is a major concern.
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (single)
-    :figure: ../_static/templates/broadcast_single.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Single) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_single.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (double)
-    :figure: ../_static/templates/broadcast_double.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Double) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_double.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (double_odd)
-    :figure: ../_static/templates/broadcast_double_odd.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Double Odd) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_double_odd.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (chain)
-    :figure: ../_static/templates/broadcast_chain.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Chain) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_chain.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (ring)
-    :figure: ../_static/templates/broadcast_ring.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Ring) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_ring.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (pyramid)
-    :figure: ../_static/templates/broadcast_pyramid.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Pyramid) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_pyramid.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (all-to-all)
-    :figure: ../_static/templates/broadcast_alltoall.png
+.. gallery-item::
+    :description: :doc:`Broadcast (All-to-All) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_alltoall.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.broadcast.html
-    :description: broadcast (custom)
-    :figure: ../_static/templates/broadcast_custom.png
+.. gallery-item::
+    :description: :doc:`Broadcast (Custom) <../code/api/pennylane.broadcast>`
+    :figure: _static/templates/broadcast_custom.png
 
 .. raw:: html
 

@@ -450,7 +450,7 @@ class TestExpansion:
 
         @qml.op_transform
         def matrix(op):
-            return op.get_matrix()
+            return op.matrix()
 
         weights = np.ones([2, 3, 3])
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 2, "a"])
@@ -458,7 +458,7 @@ class TestExpansion:
         # strongly entangling layers does not define a matrix representation
 
         with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.get_matrix()
+            op.matrix()
 
         # attempting to call our operator transform will fail
 
@@ -475,7 +475,7 @@ class TestExpansion:
             unitary_matrix = np.eye(2**n_wires)
 
             for op in tape.operations:
-                mat = qml.operation.expand_matrix(matrix(op), op.wires, tape.wires)
+                mat = qml.math.expand_matrix(matrix(op), op.wires, tape.wires)
                 unitary_matrix = mat @ unitary_matrix
 
             return unitary_matrix
@@ -485,7 +485,7 @@ class TestExpansion:
         assert res.shape == (2**3, 2**3)
 
 
-matrix = qml.op_transform(lambda op, wire_order=None: op.get_matrix(wire_order=wire_order))
+matrix = qml.op_transform(lambda op, wire_order=None: op.matrix(wire_order=wire_order))
 
 
 @matrix.tape_transform

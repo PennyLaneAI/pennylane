@@ -144,6 +144,7 @@ observables_list = [
         PauliX("b") @ PauliZ("a"),
         PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
     ],
+    [PauliX([(0, 0)]), PauliZ([(0, 0)])],
 ]
 
 qwc_sols = [
@@ -167,6 +168,7 @@ qwc_sols = [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
+    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 commuting_sols = [
@@ -190,6 +192,7 @@ commuting_sols = [
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
+    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 anticommuting_sols = [
@@ -215,6 +218,7 @@ anticommuting_sols = [
         ],
         [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
+    [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
 
@@ -223,7 +227,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = [(obs, qwc_sols[i]) for i, obs in enumerate(observables_list)]
+    qwc_tuples = [(obs, sol) for obs, sol in zip(observables_list, qwc_sols)]
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
@@ -242,7 +246,7 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
 
-    com_tuples = [(obs, commuting_sols[i]) for i, obs in enumerate(observables_list)]
+    com_tuples = [(obs, sol) for obs, sol in zip(observables_list, commuting_sols)]
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
@@ -261,7 +265,7 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
 
-    anticom_tuples = [(obs, anticommuting_sols[i]) for i, obs in enumerate(observables_list)]
+    anticom_tuples = [(obs, sols) for obs, sols in zip(observables_list, anticommuting_sols)]
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
@@ -331,10 +335,12 @@ class TestDifferentiable:
         )
         assert pnp.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
 
+    @pytest.mark.jax
     def test_differentiation_jax(self, tol):
         """Test that grouping is differentiable with jax tensors as coefficient"""
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
+
         coeffs = jnp.array([1.0, 2.0, 3.0])
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
@@ -348,9 +354,11 @@ class TestDifferentiable:
         )
         assert np.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
 
+    @pytest.mark.torch
     def test_differentiation_torch(self, tol):
         """Test that grouping is differentiable with torch tensors as coefficient"""
-        torch = pytest.importorskip("torch")
+        import torch
+
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select_group=None, select_index=None):
@@ -373,9 +381,11 @@ class TestDifferentiable:
         res.backward()
         assert np.allclose(coeffs.grad, [0.0, 0.0, 1.0], atol=tol)
 
+    @pytest.mark.tf
     def test_differentiation_tf(self, tol):
         """Test that grouping is differentiable with tf tensors as coefficient"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):

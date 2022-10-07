@@ -198,48 +198,42 @@ class TestCapabilities:
             with pytest.raises(qml.QuantumFunctionError):
                 circuit()
 
-    @pytest.mark.xfail
-    def test_reversible_diff(self, device_kwargs):
-        """Tests that the device reports correctly whether it supports reversible differentiation."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-
-        if "supports_reversible_diff" not in cap:
-            pytest.skip("No supports_reversible_diff capability specified by device.")
-
-        if cap["supports_reversible_diff"]:
-            qfunc = qfunc_with_scalar_input(model=cap["model"])
-            qnode = qml.QNode(qfunc, dev, diff_method="reversible")
-            g = qml.grad(qnode)
-            g(0.1)
-        # no need to check else statement, since the reversible qnode creation fails in that case by default
-
     def test_returns_state(self, device_kwargs):
         """Tests that the device reports correctly whether it supports returning the state."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
 
-        if "returns_state" not in cap:
-            pytest.skip("No returns_state capability specified by device.")
-
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(wires=0)
             return qml.state()
 
-        circuit()
+        if not cap.get("returns_state"):
 
-        if cap["returns_state"]:
-            assert dev.state is not None
-        else:
+            # If the device is not defined to return state then the
+            # access_state method should raise
+            with pytest.raises(qml.QuantumFunctionError):
+                dev.access_state()
+
             try:
                 state = dev.state
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 state = None
 
             assert state is None
+        else:
+
+            if dev.shots is not None:
+                with pytest.warns(
+                    UserWarning,
+                    match="Requested state or density matrix with finite shots; the returned",
+                ):
+                    circuit()
+            else:
+                circuit()
+
+            assert dev.state is not None
 
     def test_returns_probs(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""
@@ -263,3 +257,42 @@ class TestCapabilities:
         else:
             with pytest.raises(NotImplementedError):
                 circuit()
+
+    def test_supports_broadcasting(self, device_kwargs, mocker):
+        """Tests that the device reports correctly whether it supports parameter broadcasting
+        and that it can execute broadcasted tapes in any case."""
+
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+
+        assert "supports_broadcasting" in cap
+
+        @qml.qnode(dev)
+        def circuit(x):
+            if cap["model"] == "qubit":
+                qml.RX(x, wires=0)
+            else:
+                qml.Rotation(x, wires=0)
+            return qml.probs(wires=0)
+
+        spy = mocker.spy(qml.transforms, "broadcast_expand")
+        circuit(0.5)
+        if cap.get("returns_state"):
+            orig_shape = pnp.array(dev.access_state()).shape
+        spy.assert_not_called()
+        x = pnp.array([0.5, 2.1, -0.6], requires_grad=True)
+
+        if cap["supports_broadcasting"]:
+            res = circuit(x)
+            spy.assert_not_called()
+            if cap.get("returns_state"):
+                assert pnp.array(dev.access_state()).shape != orig_shape
+        else:
+            res = circuit(x)
+            spy.assert_called()
+            if cap.get("returns_state"):
+                assert pnp.array(dev.access_state()).shape == orig_shape
+
+        assert pnp.ndim(res) == 2
+        assert res.shape[0] == 3

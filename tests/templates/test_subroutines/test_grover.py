@@ -100,7 +100,7 @@ def test_grover_diffusion_matrix(n_wires):
     # uniform superposition state
     s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
     # Grover matrix
-    G_matrix = qml.GroverOperator(wires=wires).get_matrix()
+    G_matrix = qml.GroverOperator(wires=wires).matrix()
 
     amplitudes = G_matrix @ oracle @ s
     probs = amplitudes**2
@@ -114,7 +114,7 @@ def test_grover_diffusion_matrix(n_wires):
         control_values=ctrl_str,
         wires=wires,
         work_wires=None,
-    ).get_matrix()
+    ).matrix()
 
     M = functools.reduce(np.kron, oplist)
     G = M @ CX @ M
@@ -151,7 +151,7 @@ def test_grover_diffusion_matrix_results():
     probs_example = GroverSearch(num_iterations=1)
 
     # Grover diffusion matrix
-    G_matrix = qml.GroverOperator(wires=wires).get_matrix()
+    G_matrix = qml.GroverOperator(wires=wires).matrix()
 
     oracle_matrix = np.identity(2**n_wires)
     oracle_matrix[-1, -1] = -1
@@ -211,8 +211,8 @@ def test_matrix(tol):
     """Test that the matrix representation is correct."""
 
     res_static = qml.GroverOperator.compute_matrix(2, work_wires=None)
-    res_dynamic = qml.GroverOperator(wires=[0, 1]).get_matrix()
-    res_reordered = qml.GroverOperator(wires=[0, 1]).get_matrix([1, 0])
+    res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
+    res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
 
     expected = np.array(
         [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]

@@ -90,6 +90,7 @@ class TestRotGateFusion:
         obtained_quat = _quaternion_product(angles_1, angles_2)
         assert qml.math.allclose(obtained_quat, expected_quat)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         ("angles_1", "angles_2"),
         [
@@ -103,9 +104,16 @@ class TestRotGateFusion:
             ([0.05, -1.34, 0.0], [-0.8, 0.2, 0.12]),
             ([0.05, 0.0, 0.1], [-0.2, 0.0, 0.12]),
             ([0.05, 0.0, 0.0], [0.0, 0.0, 0.12]),
+            ([0.05, 0.0, 0.0], [0.0, 0.0, -0.05]),
+            ([0.05, 0.0, 0.0], [-0.05, 0.0, 0.0]),
+            ([0.0, 0.0, 0.05], [-0.05, 0.0, 0.0]),
+            ([0.0, 0.0, 0.05], [0.0, 0.0, -0.05]),
             ([0.05, 0.2, 0.0], [0.0, -0.6, 0.12]),
             ([0.05, -1.34, 4.12], [0.0, 0.2, 0.12]),
             ([0.05, -1.34, 4.12], [0.3, 0.0, 0.12]),
+            ([np.pi, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
+            ([0.9, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
+            ([0.9, np.pi / 2, np.pi / 2], [-np.pi / 2, -np.pi / 2, 0.0]),
         ],
     )
     def test_full_rot_fusion_autograd(self, angles_1, angles_2):
@@ -119,6 +127,6 @@ class TestRotGateFusion:
         matrix_expected = qml.matrix(original_ops, [0])()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
-        matrix_obtained = qml.Rot(*fused_angles, wires=0).get_matrix()
+        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)

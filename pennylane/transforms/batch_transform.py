@@ -154,7 +154,8 @@ class batch_transform:
     >>> print(gradient)
     2.5800122591960153
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Expansion functions**
 
@@ -402,7 +403,9 @@ class batch_transform:
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
         if processing_fn is None:
-            processing_fn = lambda x: x
+
+            def processing_fn(x):
+                return x
 
         return tapes, processing_fn
 

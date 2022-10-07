@@ -19,24 +19,26 @@ from importlib import reload
 import types
 import pkg_resources
 
+
 import numpy as _np
-from semantic_version import Spec, Version
+from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.queuing import apply, QueuingContext
+from pennylane.queuing import QueuingManager, apply
 
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
+import pennylane.resource
 import pennylane.templates
-import pennylane.hf
 import pennylane.qchem
-from pennylane.qchem import taper, symmetry_generators, paulix_ops
+from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
+from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
@@ -44,8 +46,22 @@ from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
+from pennylane.measurements import (
+    counts,
+    density_matrix,
+    measure,
+    expval,
+    probs,
+    sample,
+    state,
+    var,
+    vn_entropy,
+    mutual_info,
+    classical_shadow,
+    shadow_expval,
+)
 from pennylane.ops import *
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -54,17 +70,16 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
+from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
-    adjoint,
     adjoint_metric_tensor,
     batch_params,
     batch_input,
     batch_transform,
+    batch_partial,
     cut_circuit,
     cut_circuit_mc,
-    ControlledOperation,
     compile,
-    ctrl,
     cond,
     defer_measurements,
     measurement_grouping,
@@ -76,21 +91,22 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
     commutation_dag,
-    is_commuting,
     pattern_matching,
     pattern_matching_optimization,
-    simplify,
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
+from pennylane.shadows import ClassicalShadow
 
-# QueuingContext and collections needs to be imported after all other pennylane imports
+# collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
+import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -296,7 +312,7 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
+        if Version(version()) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."

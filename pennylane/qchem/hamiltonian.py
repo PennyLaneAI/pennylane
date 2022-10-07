@@ -142,7 +142,7 @@ def electron_integrals(mol, core=None, active=None):
 
 
 def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the fermionic hamiltonian.
+    r"""Return a function that computes the fermionic Hamiltonian.
 
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
@@ -179,7 +179,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
 
 
 def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the qubit hamiltonian.
+    r"""Return a function that computes the qubit Hamiltonian.
 
     Args:
         mol (~qchem.molecule.Molecule): the molecule object

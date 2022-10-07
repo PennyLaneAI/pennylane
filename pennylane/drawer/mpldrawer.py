@@ -20,7 +20,7 @@ has_mpl = True
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
-except (ModuleNotFoundError, ImportError) as e:
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
 
@@ -100,7 +100,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
     **Matplotlib Integration**
 
@@ -246,7 +247,7 @@ class MPLDrawer:
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
-        if not has_mpl:
+        if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
                 "You can install matplotlib via \n\n   pip install matplotlib"
@@ -372,7 +373,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
         This method can accept two different sets of design keywords. ``box_options`` takes
         `Rectangle keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Rectangle.html>`_

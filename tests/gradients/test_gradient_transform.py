@@ -567,6 +567,7 @@ class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable
     using each interface"""
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test that a gradient transform remains differentiable
         with autograd"""
@@ -589,10 +590,12 @@ class TestInterfaceIntegration:
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Test that a gradient transform remains differentiable
         with TF"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
@@ -615,10 +618,12 @@ class TestInterfaceIntegration:
         expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test that a gradient transform remains differentiable
         with PyTorch"""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
@@ -639,10 +644,12 @@ class TestInterfaceIntegration:
         expected = -2 * np.cos(2 * x_)
         assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Test that a gradient transform remains differentiable
         with JAX"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
         dev = qml.device("default.qubit", wires=2)
 

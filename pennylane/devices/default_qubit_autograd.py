@@ -79,14 +79,11 @@ class DefaultQubitAutograd(DefaultQubit):
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
 
-    C_DTYPE = np.complex128
-    R_DTYPE = np.float64
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
@@ -96,6 +93,8 @@ class DefaultQubitAutograd(DefaultQubit):
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
+    _size = staticmethod(np.size)
+    _ndim = staticmethod(np.ndim)
 
     @staticmethod
     def _asarray(array, dtype=None):
@@ -106,8 +105,14 @@ class DefaultQubitAutograd(DefaultQubit):
 
         return res
 
+    @staticmethod
+    def _const_mul(constant, array):
+        return constant * array
+
     def __init__(self, wires, *, shots=None, analytic=None):
-        super().__init__(wires, shots=shots, analytic=analytic)
+        r_dtype = np.float64
+        c_dtype = np.complex128
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation
@@ -118,10 +123,7 @@ class DefaultQubitAutograd(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            passthru_interface="autograd",
-            supports_reversible_diff=False,
-        )
+        capabilities.update(passthru_interface="autograd")
         return capabilities
 
     @staticmethod

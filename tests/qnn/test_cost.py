@@ -21,9 +21,6 @@ import pytest
 from pennylane.qnn.cost import SquaredErrorLoss
 
 
-ALLOWED_INTERFACES = ["tf", "jax", "autograd", "torch"]
-
-
 def rx_ansatz(phis, **kwargs):
     for w, phi in enumerate(phis):
         qml.RX(phi, wires=w)
@@ -34,58 +31,195 @@ def layer_ansatz(weights, x=None, **kwargs):
     qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
 
 
-@pytest.fixture
-def skip_if_no_torch_support():
-    """Overrides the skip_if_no_torch_support in the main conftest to also skip if torch is
-    present but is version 1.3 or earlier"""
-    pytest.importorskip("torch", minversion="1.4")
-
-
-@pytest.mark.parametrize("interface", ALLOWED_INTERFACES)
-@pytest.mark.usefixtures(
-    "skip_if_no_torch_support", "skip_if_no_tf_support", "skip_if_no_jax_support"
-)
-class TestSquaredErrorLoss:
-    def test_no_target(self, interface):
+@pytest.mark.autograd
+class TestSquaredErrorLossAutograd:
+    def test_no_target(self):
         with pytest.raises(ValueError, match="The target cannot be None"):
             num_qubits = 1
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="autograd")
 
             phis = np.ones(num_qubits)
             loss(phis)
 
-    def test_invalid_target(self, interface):
+    def test_invalid_target(self):
         with pytest.raises(ValueError, match="Input target of incorrect length 2 instead of 1"):
             num_qubits = 1
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="autograd")
 
             phis = np.ones(num_qubits)
             loss(phis, target=np.array([1.0, 2.0]))
 
-    def test_layer_circuit(self, interface):
+    def test_layer_circuit(self):
         num_qubits = 3
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface=interface)
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="autograd")
 
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
 
         assert np.allclose(res, np.array([0.88, 0.83, 0.05]), atol=0.01, rtol=0.01)
 
-    def test_rx_circuit(self, interface):
+    def test_rx_circuit(self):
         num_qubits = 3
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface=interface)
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="autograd")
+
+        phis = np.ones(num_qubits)
+        res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
+
+        assert np.allclose(res, np.array([0.21, 0.25, 0.03]), atol=0.01, rtol=0.01)
+
+
+@pytest.mark.torch
+class TestSquaredErrorLossTorch:
+    def test_no_target(self):
+        with pytest.raises(ValueError, match="The target cannot be None"):
+            num_qubits = 1
+
+            dev = qml.device("default.qubit", wires=num_qubits)
+            observables = [qml.PauliZ(0)]
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
+
+            phis = np.ones(num_qubits)
+            loss(phis)
+
+    def test_invalid_target(self):
+        with pytest.raises(ValueError, match="Input target of incorrect length 2 instead of 1"):
+            num_qubits = 1
+
+            dev = qml.device("default.qubit", wires=num_qubits)
+            observables = [qml.PauliZ(0)]
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
+
+            phis = np.ones(num_qubits)
+            loss(phis, target=np.array([1.0, 2.0]))
+
+    def test_layer_circuit(self):
+        num_qubits = 3
+
+        dev = qml.device("default.qubit", wires=num_qubits)
+        observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="torch")
+
+        weights = np.ones((num_qubits, 3, 3))
+        res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
+
+        assert np.allclose(res, np.array([0.88, 0.83, 0.05]), atol=0.01, rtol=0.01)
+
+    def test_rx_circuit(self):
+        num_qubits = 3
+
+        dev = qml.device("default.qubit", wires=num_qubits)
+        observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
+
+        phis = np.ones(num_qubits)
+        res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
+
+        assert np.allclose(res, np.array([0.21, 0.25, 0.03]), atol=0.01, rtol=0.01)
+
+
+@pytest.mark.tf
+class TestSquaredErrorLossTf:
+    def test_no_target(self):
+        with pytest.raises(ValueError, match="The target cannot be None"):
+            num_qubits = 1
+
+            dev = qml.device("default.qubit", wires=num_qubits)
+            observables = [qml.PauliZ(0)]
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tf")
+
+            phis = np.ones(num_qubits)
+            loss(phis)
+
+    def test_invalid_target(self):
+        with pytest.raises(ValueError, match="Input target of incorrect length 2 instead of 1"):
+            num_qubits = 1
+
+            dev = qml.device("default.qubit", wires=num_qubits)
+            observables = [qml.PauliZ(0)]
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tf")
+
+            phis = np.ones(num_qubits)
+            loss(phis, target=np.array([1.0, 2.0]))
+
+    def test_layer_circuit(self):
+        num_qubits = 3
+
+        dev = qml.device("default.qubit", wires=num_qubits)
+        observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="tf")
+
+        weights = np.ones((num_qubits, 3, 3))
+        res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
+
+        assert np.allclose(res, np.array([0.88, 0.83, 0.05]), atol=0.01, rtol=0.01)
+
+    def test_rx_circuit(self):
+        num_qubits = 3
+
+        dev = qml.device("default.qubit", wires=num_qubits)
+        observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tf")
+
+        phis = np.ones(num_qubits)
+        res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
+
+        assert np.allclose(res, np.array([0.21, 0.25, 0.03]), atol=0.01, rtol=0.01)
+
+
+@pytest.mark.jax
+class TestSquaredErrorLossJax:
+    def test_no_target(self):
+        with pytest.raises(ValueError, match="The target cannot be None"):
+            num_qubits = 1
+
+            dev = qml.device("default.qubit", wires=num_qubits)
+            observables = [qml.PauliZ(0)]
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="jax")
+
+            phis = np.ones(num_qubits)
+            loss(phis)
+
+    def test_invalid_target(self):
+        with pytest.raises(ValueError, match="Input target of incorrect length 2 instead of 1"):
+            num_qubits = 1
+
+            dev = qml.device("default.qubit", wires=num_qubits)
+            observables = [qml.PauliZ(0)]
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="jax")
+
+            phis = np.ones(num_qubits)
+            loss(phis, target=np.array([1.0, 2.0]))
+
+    def test_layer_circuit(self):
+        num_qubits = 3
+
+        dev = qml.device("default.qubit", wires=num_qubits)
+        observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="jax")
+
+        weights = np.ones((num_qubits, 3, 3))
+        res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
+
+        assert np.allclose(res, np.array([0.88, 0.83, 0.05]), atol=0.01, rtol=0.01)
+
+    def test_rx_circuit(self):
+        num_qubits = 3
+
+        dev = qml.device("default.qubit", wires=num_qubits)
+        observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="jax")
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))

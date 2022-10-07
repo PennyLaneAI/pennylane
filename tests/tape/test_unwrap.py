@@ -19,10 +19,12 @@ import pytest
 import pennylane as qml
 
 
+@pytest.mark.tf
 def test_unwrap_tensorflow():
     """Test that unwrapping a tape with TensorFlow parameters
     works as expected"""
-    tf = pytest.importorskip("tensorflow")
+    import tensorflow as tf
+
     p = [tf.Variable(0.1), tf.constant(0.2), np.array(0.5), tf.Variable(0.3)]
 
     with tf.GradientTape():
@@ -48,10 +50,11 @@ def test_unwrap_tensorflow():
     assert tape.get_parameters(trainable_only=False) == p
 
 
+@pytest.mark.torch
 def test_unwrap_torch():
     """Test that unwrapping a tape with Torch parameters
     works as expected"""
-    torch = pytest.importorskip("torch")
+    import torch
 
     p = [
         torch.tensor(0.1, requires_grad=True),
@@ -81,6 +84,7 @@ def test_unwrap_torch():
     assert tape.get_parameters(trainable_only=False) == p
 
 
+@pytest.mark.autograd
 def test_unwrap_autograd():
     """Test that unwrapping a tape with Autograd parameters
     works as expected"""
@@ -149,10 +153,11 @@ def test_unwrap_autograd_backward():
     qml.jacobian(qml.grad(cost))(*p)
 
 
+@pytest.mark.jax
 def test_unwrap_jax():
     """Test that unwrapping a tape with JAX parameters
     works as expected"""
-    jax = pytest.importorskip("jax")
+    import jax
     from jax import numpy as jnp
 
     p = [
@@ -186,10 +191,11 @@ def test_unwrap_jax():
     assert tape.get_parameters(trainable_only=False) == p
 
 
+@pytest.mark.jax
 def test_unwrap_jax_backward():
     """Test that unwrapping a tape with JAX parameters
     works as expected during a backwards pass"""
-    jax = pytest.importorskip("jax")
+    import jax
     from jax import numpy as jnp
     from jaxlib.xla_extension import DeviceArray
     from jax.interpreters.ad import JVPTracer
@@ -227,9 +233,10 @@ def test_unwrap_jax_backward():
     jax.jacobian(jax.grad(cost, argnums=0), argnums=0)(*p)
 
 
+@pytest.mark.torch
 def test_multiple_unwrap():
     """Test that unwrapping multiple tapes at once works correctly"""
-    torch = pytest.importorskip("torch")
+    import torch
 
     p = [
         torch.tensor(0.1, requires_grad=True),

@@ -25,7 +25,7 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qml
-from pennylane import PauliX, PauliY, PauliZ, Identity
+from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
 
@@ -60,9 +60,6 @@ def is_pauli_word(observable):
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
 
-    Raises:
-        TypeError: if input observable is not an Observable instance.
-
     **Example**
 
     >>> is_pauli_word(qml.Identity(0))
@@ -74,7 +71,7 @@ def is_pauli_word(observable):
     """
 
     if not isinstance(observable, Observable):
-        raise TypeError(f"Expected {Observable} instance, instead got {type(observable)} instance.")
+        return False
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
@@ -289,7 +286,7 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     An arbitrary labelling can be assigned by using ``wire_map``:
 
-    >>> wire_map = {Wires('a'): 0, Wires('b'): 1, Wires('c'): 2}
+    >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
     >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
     Tensor(PauliY(wires=['b']), PauliX(wires=['c']))
 
@@ -313,27 +310,27 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     n_qubits = len(binary_vector) // 2
 
-    if wire_map is not None:
+    if wire_map is None:
+        label_map = {i: i for i in range(n_qubits)}
+    else:
         if set(wire_map.values()) != set(range(n_qubits)):
             raise ValueError(
                 f"The values of wire_map must be integers 0 to N, for 2N-dimensional binary vector."
                 f" Instead got wire_map values: {wire_map.values()}"
             )
         label_map = {explicit_index: wire_label for wire_label, explicit_index in wire_map.items()}
-    else:
-        label_map = {i: Wires(i) for i in range(n_qubits)}
 
     pauli_word = None
     for i in range(n_qubits):
         operation = None
         if binary_vector[i] == 1 and binary_vector[n_qubits + i] == 0:
-            operation = PauliX(wires=label_map[i])
+            operation = PauliX(wires=Wires([label_map[i]]))
 
         elif binary_vector[i] == 1 and binary_vector[n_qubits + i] == 1:
-            operation = PauliY(wires=label_map[i])
+            operation = PauliY(wires=Wires([label_map[i]]))
 
         elif binary_vector[i] == 0 and binary_vector[n_qubits + i] == 1:
-            operation = PauliZ(wires=label_map[i])
+            operation = PauliZ(wires=Wires([label_map[i]]))
 
         if operation is not None:
             if pauli_word is None:
@@ -509,7 +506,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # If there is only a single qubit, we can return the matrix directly
     if n_qubits == 1:
-        return pauli_word.get_matrix()
+        return pauli_word.matrix()
 
     # There may be more than one qubit in the Pauli but still only
     # one of them with anything acting on it, so take that into account
@@ -530,56 +527,6 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
             pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).compute_matrix()
 
     return reduce(np.kron, pauli_mats)
-
-
-def is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
-    r"""Checks if two Pauli words commute.
-
-    To determine if two Pauli words commute, we can check the value of the
-    symplectic inner product of their binary vector representations.
-    For two binary vectors representing Pauli words, :math:`p_1 = [x_1, z_1]`
-    and :math:`p_2 = [x_2, z_2],` the symplectic inner product is defined as
-    :math:`\langle p_1, p_2 \rangle_{symp} = z_1 x_2^T + z_2 x_1^T`. If the symplectic
-    product is :math:`0` they commute, while if it is :math:`1`, they don't commute.
-
-    Args:
-        pauli_word_1 (Observable): first Pauli word in commutator
-        pauli_word_2 (Observable): second Pauli word in commutator
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
-            the Pauli word as keys, and unique integer labels as their values
-
-    Returns:
-        bool: returns True if the input Pauli commute, False otherwise
-
-    Raises:
-        TypeError: if either of the Pauli words is not valid.
-
-    **Example**
-
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-    >>> pauli_word_1 = qml.PauliX('a') @ qml.PauliY('b')
-    >>> pauli_word_2 = qml.PauliZ('a') @ qml.PauliZ('c')
-    >>> is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
-    False
-    """
-
-    if not (is_pauli_word(pauli_word_1) and is_pauli_word(pauli_word_2)):
-        raise TypeError(
-            f"Expected Pauli word observables, instead got {pauli_word_1} and {pauli_word_2}"
-        )
-
-    if wire_map is None:
-        wire_map = _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2)
-
-    n_qubits = len(wire_map)
-
-    pauli_vec_1 = pauli_to_binary(pauli_word_1, n_qubits=n_qubits, wire_map=wire_map)
-    pauli_vec_2 = pauli_to_binary(pauli_word_2, n_qubits=n_qubits, wire_map=wire_map)
-
-    x1, z1 = pauli_vec_1[:n_qubits], pauli_vec_1[n_qubits:]
-    x2, z2 = pauli_vec_2[:n_qubits], pauli_vec_2[n_qubits:]
-
-    return (np.dot(z1, x2) + np.dot(z2, x1)) % 2 == 0
 
 
 def is_qwc(pauli_vec_1, pauli_vec_2):
@@ -656,6 +603,39 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
             return False
 
     return True
+
+
+def are_pauli_words_qwc(lst_pauli_words):
+    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
+    qubit-wise commuting.
+
+    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the
+    number of distinct wire labels used to represent the Pauli words.
+
+    Args:
+        lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
+
+    Returns:
+        (bool): True if they are all qubit-wise commuting, false otherwise.
+    """
+    latest_op_name_per_wire = {}
+
+    for op in lst_pauli_words:  # iterate over the list of observables
+        op_names = [op.name] if not isinstance(op.name, list) else op.name
+        op_wires = op.wires.tolist()
+
+        for op_name, wire in zip(op_names, op_wires):  # iterate over wires of the observable,
+            try:
+                if latest_op_name_per_wire[wire] != op_name and (
+                    op_name != "Identity" and latest_op_name_per_wire[wire] != "Identity"
+                ):
+                    return False
+                if latest_op_name_per_wire[wire] == "Identity":
+                    latest_op_name_per_wire[wire] = op_name  # update name
+            except KeyError:
+                latest_op_name_per_wire[wire] = op_name  # add wire and name for the first time
+
+    return True  # if we get through all ops, then they are qwc!
 
 
 def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):

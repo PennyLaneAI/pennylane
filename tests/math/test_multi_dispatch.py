@@ -20,6 +20,7 @@ from autoray import numpy as anp
 from pennylane import numpy as np
 from pennylane import math as fn
 
+pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
@@ -34,6 +35,21 @@ test_multi_dispatch_stack_data = [
     jax.numpy.array([[1.0, 0.0], [2.0, 3.0]]),
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("dev", ["cpu", "cuda"])
+@pytest.mark.parametrize("func", [fn.array, fn.eye])
+def test_array_cuda(func, dev):
+    """Test that a new Torch tensor created with math.array/math.eye preserves
+    the Torch device"""
+    if not torch.cuda.is_available() and dev == "cuda":
+        pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
+
+    original = torch.tensor(3, device=dev)
+    new = func(2, like=original)
+    assert isinstance(new, torch.Tensor)
+    assert new.device == original.device
 
 
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)

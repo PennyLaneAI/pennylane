@@ -54,7 +54,8 @@ def layer(template, depth, *args, **kwargs):
 
     See usage details for more information.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Layering Gates**
 
@@ -88,7 +89,7 @@ def layer(template, depth, *args, **kwargs):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: ──H─╭C──H─╭C──H─╭C────┤  <Z>
+        0: ──H─╭●──H─╭●──H─╭●────┤  <Z>
         1: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
         **Static Arguments**
@@ -118,7 +119,7 @@ def layer(template, depth, *args, **kwargs):
         which yields the following circuit:
 
         >>> print(qml.draw(circuit)())
-        1: ──H─╭C──H─╭C──H─╭C────┤  <Z>
+        1: ──H─╭●──H─╭●──H─╭●────┤  <Z>
         2: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
         **Dynamic Arguments**

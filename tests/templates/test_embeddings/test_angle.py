@@ -35,6 +35,21 @@ class TestDecomposition:
             assert gate.name == "RX"
             assert gate.parameters[0] == 1
 
+    def test_expansion_broadcasted(self):
+        """Checks the queue for the default settings."""
+
+        features = np.ones((5, 3))
+
+        op = qml.AngleEmbedding(features=features, wires=range(4))
+        assert op.batch_size == 5
+        tape = op.expand()
+
+        assert len(tape.operations) == 3
+        for gate in tape.operations:
+            assert gate.name == "RX"
+            assert gate.batch_size == 5
+            assert qml.math.allclose(gate.parameters[0], np.ones(5))
+
     @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
     def test_rotations(self, rotation):
         """Checks the queue for the specified rotation settings."""
@@ -180,6 +195,7 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -202,10 +218,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         features = jnp.array([1.0, 1.0, 1.0])
@@ -227,10 +244,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         features = tf.Variable([1.0, 1.0, 1.0])
 
@@ -253,10 +271,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 

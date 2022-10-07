@@ -91,6 +91,7 @@ def indices_up_to_dm(n_max):
     return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
 class TestKerasLayer:
@@ -340,7 +341,7 @@ class TestKerasLayer:
         layer_out = layer(x)
         weights = [w.numpy() for w in layer.qnode_weights.values()]
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
@@ -370,7 +371,7 @@ class TestKerasLayer:
         weights = [w.numpy() for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
@@ -400,7 +401,7 @@ class TestKerasLayer:
         weights = [w.numpy() for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
@@ -498,11 +499,11 @@ class TestKerasLayer:
         assert output_shape.as_list() == [None, 1]
 
 
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")
-@pytest.mark.usefixtures("skip_if_no_torch_support")
-def test_interface_conversion(get_circuit, output_dim, skip_if_no_torch_support):
+def test_interface_conversion(get_circuit, output_dim):
     """Test if input QNodes with all types of interface are converted internally to the TensorFlow
     interface"""
     c, w = get_circuit
@@ -510,6 +511,7 @@ def test_interface_conversion(get_circuit, output_dim, skip_if_no_torch_support)
     assert layer.qnode.interface == "tf"
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
@@ -547,12 +549,12 @@ class TestKerasLayerIntegration:
     def test_model_save_weights(self, model, n_qubits, tmpdir):
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
-        prediction = model.predict(np.ones(n_qubits))
+        prediction = model.predict(np.ones((1, n_qubits)))
         weights = model.get_weights()
         file = str(tmpdir) + "/model"
         model.save_weights(file)
         model.load_weights(file)
-        prediction_loaded = model.predict(np.ones(n_qubits))
+        prediction_loaded = model.predict(np.ones((1, n_qubits)))
         weights_loaded = model.get_weights()
 
         assert np.allclose(prediction, prediction_loaded)
@@ -560,6 +562,7 @@ class TestKerasLayerIntegration:
             assert np.allclose(w, weights_loaded[i])
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit_dm", "model_dm")
 class TestKerasLayerIntegrationDM:
@@ -598,12 +601,12 @@ class TestKerasLayerIntegrationDM:
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
 
-        prediction = model_dm.predict(np.ones(n_qubits))
+        prediction = model_dm.predict(np.ones((1, n_qubits)))
         weights = model_dm.get_weights()
         file = str(tmpdir) + "/model"
         model_dm.save_weights(file)
         model_dm.load_weights(file)
-        prediction_loaded = model_dm.predict(np.ones(n_qubits))
+        prediction_loaded = model_dm.predict(np.ones((1, n_qubits)))
         weights_loaded = model_dm.get_weights()
 
         assert np.allclose(prediction, prediction_loaded)
@@ -611,12 +614,14 @@ class TestKerasLayerIntegrationDM:
             assert np.allclose(w, weights_loaded[i])
 
 
+@pytest.mark.tf
 def test_no_attribute():
     """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
     with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
         qml.qnn.random
 
 
+@pytest.mark.tf
 def test_batch_input():
     """Test input batching in keras"""
     dev = qml.device("default.qubit.tf", wires=4)

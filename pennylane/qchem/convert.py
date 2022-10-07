@@ -169,7 +169,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         ]
     )
 
-    return np.real(np.array(coeffs)), list(ops)
+    return np.real(np.array(coeffs, requires_grad=False)), list(ops)
 
 
 def _pennylane_to_openfermion(coeffs, ops, wires=None):
@@ -285,7 +285,7 @@ def _openfermion_pennylane_equivalent(
 
 
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08):
-    r"""Convert an external operator to a Pennylane operator.
+    r"""Convert an external operator to a PennyLane operator.
 
     The external format currently supported is openfermion.
 
@@ -316,7 +316,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
     """
-    if format not in ("openfermion"):
+    if format not in "openfermion":
         raise TypeError(f"Converter does not exist for {format} format.")
 
     if any(

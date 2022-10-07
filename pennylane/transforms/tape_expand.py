@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation
 import contextlib
 
 import pennylane as qml
@@ -99,7 +99,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     def expand_fn(tape, depth=depth, **kwargs):
 
-        with qml.tape.stop_recording():
+        with qml.QueuingManager.stop_recording():
 
             if stop_at is None:
                 tape = tape.expand(depth=depth)
@@ -345,14 +345,14 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
             return qml.expval(qml.PauliZ(wires=0))
 
     >>> print(qml.draw(circuit)())
-    0: ─╭C─┤  <Z>
+    0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
     Now let's set up a context where the custom decomposition will be applied:
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
     ...     print(qml.draw(circuit)())
-    0: ────╭C────┤  <Z>
+    0: ────╭●────┤  <Z>
     1: ──H─╰Z──H─┤
 
     """

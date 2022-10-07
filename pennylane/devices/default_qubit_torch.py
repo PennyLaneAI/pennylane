@@ -133,9 +133,6 @@ class DefaultQubitTorch(DefaultQubit):
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
 
-    C_DTYPE = torch.complex128
-    R_DTYPE = torch.float64
-
     _abs = staticmethod(torch.abs)
     _einsum = staticmethod(torch.einsum)
     _flatten = staticmethod(torch.flatten)
@@ -149,11 +146,13 @@ class DefaultQubitTorch(DefaultQubit):
     )
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
-    _conj = staticmethod(torch.conj)
     _real = staticmethod(torch.real)
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
+    _const_mul = staticmethod(torch.mul)
+    _size = staticmethod(torch.numel)
+    _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
@@ -162,7 +161,10 @@ class DefaultQubitTorch(DefaultQubit):
         self._torch_device_specified = torch_device is not None
         self._torch_device = torch_device
 
-        super().__init__(wires, shots=shots, analytic=analytic)
+        r_dtype = torch.float64
+        c_dtype = torch.complex128
+
+        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state.requires_grad = True
@@ -238,9 +240,12 @@ class DefaultQubitTorch(DefaultQubit):
             if not isinstance(a[0], torch.Tensor):
                 res = np.asarray(a)
                 res = torch.from_numpy(res)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
+            elif len(a) == 1 and len(a[0].shape) > 1:
+                res = a[0]
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
-            res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
 
@@ -283,7 +288,7 @@ class DefaultQubitTorch(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(passthru_interface="torch", supports_reversible_diff=False)
+        capabilities.update(passthru_interface="torch")
         return capabilities
 
     def _get_unitary_matrix(self, unitary):
@@ -298,8 +303,8 @@ class DefaultQubitTorch(DefaultQubit):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return self._asarray(unitary.get_eigvals(), dtype=self.C_DTYPE)
-        return self._asarray(unitary.get_matrix(), dtype=self.C_DTYPE)
+            return self._asarray(unitary.eigvals(), dtype=self.C_DTYPE)
+        return self._asarray(unitary.matrix(), dtype=self.C_DTYPE)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state

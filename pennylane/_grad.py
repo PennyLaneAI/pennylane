@@ -63,7 +63,9 @@ class grad:
 
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
-            # the gradient function at once during initialization
+            # the gradient function at once during initialization.
+            # Known pylint issue with function signatures and decorators:
+            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(fun, argnum=argnum)
 
     def _get_grad_fn(self, args):
@@ -92,6 +94,8 @@ class grad:
         if len(argnum) == 1:
             argnum = argnum[0]
 
+        # Known pylint issue with function signatures and decorators:
+        # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
         return self._grad_with_forward(self._fun, argnum=argnum), argnum
 
     def __call__(self, *args, **kwargs):

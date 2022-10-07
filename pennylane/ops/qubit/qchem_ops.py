@@ -16,11 +16,94 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
+import functools
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
+
+I4 = np.eye(4)
+I16 = np.eye(16)
+
+stack_last = functools.partial(qml.math.stack, axis=-1)
+
+
+def _single_excitations_matrix(phi, phase_prefactor):
+    """This helper function unifies the `compute_matrix` methods
+    of `SingleExcitation`, `SingleExcitationPlus` and `SingleExcitationMinus`.
+    `phase_prefactor` determines which operation is produced:
+        `phase_prefactor=0.` : `SingleExcitation`
+        `phase_prefactor=0.5j` : `SingleExcitationPlus`
+        `phase_prefactor=-0.5j` : `SingleExcitationMinus`
+    """
+    interface = qml.math.get_interface(phi)
+    if interface == "tensorflow":
+        if isinstance(phase_prefactor, complex):
+            phi = qml.math.cast_like(phi, 1j)
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        e = qml.math.exp(phase_prefactor * phi)
+        zeros = qml.math.zeros_like(phi)
+        rows = [
+            [e, zeros, zeros, zeros],
+            [zeros, c, -s, zeros],
+            [zeros, s, c, zeros],
+            [zeros, zeros, zeros, e],
+        ]
+        return qml.math.stack([stack_last(row) for row in rows], axis=-2)
+
+    c = qml.math.cos(phi / 2)
+    s = qml.math.sin(phi / 2)
+    e = qml.math.exp(phase_prefactor * phi)
+
+    mask_e = np.diag([1, 0, 0, 1])
+    mask_c = np.diag([0, 1, 1, 0])
+    mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+
+    if qml.math.ndim(phi) == 0:
+        if interface == "torch":
+            mask_e = qml.math.convert_like(mask_e, phi)
+            mask_c = qml.math.convert_like(mask_c, phi)
+            mask_s = qml.math.convert_like(mask_s, phi)
+        return e * mask_e + c * mask_c + s * mask_s
+
+    return (
+        qml.math.einsum("i,jk->ijk", e, mask_e)
+        + qml.math.einsum("i,jk->ijk", c, mask_c)
+        + qml.math.einsum("i,jk->ijk", s, mask_s)
+    )
+
+
+def _double_excitations_matrix(phi, phase_prefactor):
+    """This helper function unifies the `compute_matrix` methods
+    of `DoubleExcitation`, `DoubleExcitationPlus` and `DoubleExcitationMinus`.
+    `phase_prefactor` determines which operation is produced:
+        `phase_prefactor=0.` : `DoubleExcitation`
+        `phase_prefactor=0.5j` : `DoubleExcitationPlus`
+        `phase_prefactor=-0.5j` : `DoubleExcitationMinus`
+    """
+    interface = qml.math.get_interface(phi)
+
+    if interface == "tensorflow" and isinstance(phase_prefactor, complex):
+        phi = qml.math.cast_like(phi, 1j)
+
+    c = qml.math.cos(phi / 2)
+    s = qml.math.sin(phi / 2)
+    e = qml.math.exp(phase_prefactor * phi)
+
+    if qml.math.ndim(phi) == 0:
+        diag = qml.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
+        if interface == "torch":
+            return diag + s * qml.math.convert_like(DoubleExcitation.mask_s, phi)
+        return diag + s * DoubleExcitation.mask_s
+
+    if isinstance(phase_prefactor, complex):
+        c = (1 + 0j) * c
+    diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
+    diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+    off_diag = qml.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
+    return diag + off_diag
 
 
 class SingleExcitation(Operation):
@@ -43,6 +126,7 @@ class SingleExcitation(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -76,6 +160,9 @@ class SingleExcitation(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -114,12 +201,7 @@ class SingleExcitation(Operation):
                 [ 0.0000,  0.2474,  0.9689,  0.0000],
                 [ 0.0000,  0.0000,  0.0000,  1.0000]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        mat = qml.math.diag([1, c, c, 1])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
-        return mat + s * qml.math.cast_like(off_diag, s)
+        return _single_excitations_matrix(phi, 0.0)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -154,6 +236,9 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
+    def pow(self, z):
+        return [SingleExcitation(self.data[0] * z, wires=self.wires)]
+
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
@@ -173,6 +258,7 @@ class SingleExcitationMinus(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
 
@@ -189,6 +275,9 @@ class SingleExcitationMinus(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -232,20 +321,7 @@ class SingleExcitationMinus(Operation):
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        interface = qml.math.get_interface(phi)
-
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(-1j * phi / 2)
-        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
-        return mat + s * qml.math.cast_like(off_diag, s)
+        return _single_excitations_matrix(phi, -0.5j)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -313,6 +389,7 @@ class SingleExcitationPlus(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
 
@@ -329,6 +406,9 @@ class SingleExcitationPlus(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     """Gradient computation method."""
@@ -372,20 +452,7 @@ class SingleExcitationPlus(Operation):
                 [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689+0.2474j]])
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        interface = qml.math.get_interface(phi)
-
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(1j * phi / 2)
-        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
-        return mat + s * qml.math.cast_like(off_diag, s)
+        return _single_excitations_matrix(phi, 0.5j)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -460,6 +527,7 @@ class DoubleExcitation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -494,6 +562,9 @@ class DoubleExcitation(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = "A"
     """Gradient computation method."""
 
@@ -515,8 +586,15 @@ class DoubleExcitation(Operation):
         ]
         return qml.Hamiltonian(coeffs, obs)
 
+    def pow(self, z):
+        return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
+
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    mask_s = np.zeros((16, 16))
+    mask_s[3, 12] = -1
+    mask_s[12, 3] = 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -534,13 +612,7 @@ class DoubleExcitation(Operation):
         Returns:
           tensor_like: canonical matrix
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        mat = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
-        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
-        mat = qml.math.scatter_element_add(mat, (12, 3), s)
-        return mat
+        return _double_excitations_matrix(phi, 0.0)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -656,6 +728,7 @@ class DoubleExcitationPlus(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
 
@@ -672,6 +745,9 @@ class DoubleExcitationPlus(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = "A"
     """Gradient computation method."""
 
@@ -683,7 +759,7 @@ class DoubleExcitationPlus(Operation):
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-        H = coo_matrix(-0.5 * G)
+        H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
@@ -705,24 +781,7 @@ class DoubleExcitationPlus(Operation):
           tensor_like: canonical matrix
 
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        interface = qml.math.get_interface(phi)
-
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(1j * phi / 2)
-
-        mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
-        mat = qml.math.scatter_element_add(mat, (3, 3), c)
-        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
-        mat = qml.math.scatter_element_add(mat, (12, 3), s)
-        mat = qml.math.scatter_element_add(mat, (12, 12), c)
-        return mat
+        return _double_excitations_matrix(phi, 0.5j)
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -752,6 +811,7 @@ class DoubleExcitationMinus(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
 
@@ -768,6 +828,9 @@ class DoubleExcitationMinus(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = "A"
     """Gradient computation method."""
 
@@ -776,11 +839,10 @@ class DoubleExcitationMinus(Operation):
 
     def generator(self):
         G = np.eye(16, dtype=np.complex64)
-        G[3, 3] = 0
-        G[12, 12] = 0
+        G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-        H = coo_matrix(-0.5 * G)
+        H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
@@ -800,23 +862,7 @@ class DoubleExcitationMinus(Operation):
           tensor_like: canonical matrix
 
         """
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-
-        interface = qml.math.get_interface(phi)
-
-        if interface == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(-1j * phi / 2)
-        mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
-        mat = qml.math.scatter_element_add(mat, (3, 3), c)
-        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
-        mat = qml.math.scatter_element_add(mat, (12, 3), s)
-        mat = qml.math.scatter_element_add(mat, (12, 12), c)
-        return mat
+        return _double_excitations_matrix(phi, -0.5j)
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -851,6 +897,7 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
       :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
       (see `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__).
@@ -886,6 +933,9 @@ class OrbitalRotation(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = "A"
     """Gradient computation method."""
 
@@ -903,6 +953,18 @@ class OrbitalRotation(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    mask_s = np.zeros((16, 16))
+    mask_s[1, 4] = mask_s[2, 8] = mask_s[7, 13] = mask_s[11, 14] = -1
+    mask_s[4, 1] = mask_s[8, 2] = mask_s[13, 7] = mask_s[14, 11] = 1
+
+    mask_cs = np.zeros((16, 16))
+    mask_cs[3, 6] = mask_cs[3, 9] = mask_cs[6, 12] = mask_cs[9, 12] = -1
+    mask_cs[6, 3] = mask_cs[9, 3] = mask_cs[12, 6] = mask_cs[12, 9] = 1
+
+    mask_s2 = np.zeros((16, 16))
+    mask_s2[3, 12] = mask_s2[12, 3] = 1
+    mask_s2[6, 9] = mask_s2[9, 6] = -1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -927,39 +989,36 @@ class OrbitalRotation(Operation):
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
-        interface = qml.math.get_interface(phi)
+        if qml.math.ndim(phi) == 0:
+            diag = qml.math.diag(
+                [1.0, c, c, c**2, c, 1.0, c**2, c, c, c**2, 1.0, c, c**2, c, c, 1.0]
+            )
+            if qml.math.get_interface(phi) == "torch":
+                mask_s = qml.math.convert_like(OrbitalRotation.mask_s, phi)
+                mask_cs = qml.math.convert_like(OrbitalRotation.mask_cs, phi)
+                mask_s2 = qml.math.convert_like(OrbitalRotation.mask_s2, phi)
+                return diag + s * mask_s + (c * s) * mask_cs + s**2 * mask_s2
+            return (
+                diag
+                + s * OrbitalRotation.mask_s
+                + (c * s) * OrbitalRotation.mask_cs
+                + s**2 * OrbitalRotation.mask_s2
+            )
 
-        if interface == "torch":
-            # Use convert_like to ensure that the tensor is put on the correct
-            # Torch device
-            z = qml.math.convert_like(qml.math.zeros([16]), phi)
-        else:
-            z = qml.math.zeros([16], like=interface)
-
-        diag = qml.math.diag([1, c, c, c**2, c, 1, c**2, c, c, c**2, 1, c, c**2, c, c, 1])
-
-        U = diag + qml.math.stack(
-            [
-                z,
-                qml.math.stack([0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s * s, 0, 0, 0]),
-                qml.math.stack([0, s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                z,
-                qml.math.stack([0, 0, 0, c * s, 0, 0, 0, 0, 0, -s * s, 0, 0, -c * s, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0]),
-                qml.math.stack([0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, c * s, 0, 0, -s * s, 0, 0, 0, 0, 0, -c * s, 0, 0, 0]),
-                z,
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0]),
-                qml.math.stack([0, 0, 0, s * s, 0, 0, c * s, 0, 0, c * s, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0]),
-                z,
-            ]
+        ones = qml.math.ones_like(c)
+        diag = qml.math.stack(
+            [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
+            axis=-1,
         )
 
-        return U
+        diag = qml.math.einsum("ij,jk->ijk", diag, I16)
+        off_diag = (
+            qml.math.einsum("i,jk->ijk", s, OrbitalRotation.mask_s)
+            + qml.math.einsum("i,jk->ijk", c * s, OrbitalRotation.mask_cs)
+            + qml.math.einsum("i,jk->ijk", s**2, OrbitalRotation.mask_s2)
+        )
+
+        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):

@@ -69,18 +69,21 @@ def test_standard_use():
 
 
 @pytest.mark.parametrize(
-    "strategy, initial_strategy, n_patches", [("gradient", "device", 4), ("device", "gradient", 9)]
+    "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]
 )
-def test_expansion_strategy(strategy, initial_strategy, n_patches):
-    @qml.qnode(qml.device("default.qubit", wires=range(2)), expansion_strategy=initial_strategy)
+def test_expansion_strategy(strategy, initial_strategy, n_lines):
+    """Test that the expansion strategy keyword controls what operations are drawn."""
+
+    @qml.qnode(qml.device("default.qubit", wires=3), expansion_strategy=initial_strategy)
     def circuit():
-        qml.GroverOperator(wires=range(2))
+        qml.Permute([2, 0, 1], wires=(0, 1, 2))
         return qml.expval(qml.PauliZ(0))
 
     fig, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
 
-    assert len(ax.patches) == n_patches
+    assert len(ax.lines) == n_lines
     assert circuit.expansion_strategy == initial_strategy
+    plt.close()
 
 
 class TestKwargs:
@@ -92,6 +95,7 @@ class TestKwargs:
         _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
         for t in ax.texts:
             assert t.get_fontsize() == 20
+        plt.close()
 
     def test_decimals(self):
         """Test decimals changes operation labelling"""
@@ -133,6 +137,7 @@ class TestKwargs:
         _, ax = qml.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
 
         assert len(ax.patches) == n_patches
+        plt.close()
 
 
 class TestWireBehaviour:
@@ -187,6 +192,7 @@ class TestWireBehaviour:
         assert ax.texts[0].get_text() == "2"
         assert ax.texts[1].get_text() == "a"
         assert ax.texts[2].get_text() == "0"
+        plt.close()
 
     def test_wire_options(self):
         """Test wire options modifies wire styling"""

@@ -46,7 +46,7 @@ class TestSingleOperation:
         when provided as an instantiated operation"""
         op = op_class(wires=0)
         res = qml.eigvals(op)
-        expected = op.get_eigvals()
+        expected = op.eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
@@ -54,7 +54,7 @@ class TestSingleOperation:
         """Verify that the eigenvalues of non-parametric one qubit gates is correct
         when provided as a qfunc"""
         res = qml.eigvals(op_class)(wires=0)
-        expected = op_class(wires=0).get_eigvals()
+        expected = op_class(wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
@@ -64,7 +64,7 @@ class TestSingleOperation:
         dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(lambda: op_class(wires=0) and qml.probs(wires=0), dev)
         res = qml.eigvals(qnode)()
-        expected = op_class(wires=0).get_eigvals()
+        expected = op_class(wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -73,7 +73,7 @@ class TestSingleOperation:
         when provided as an instantiated operation"""
         op = op_class(0.54, wires=0)
         res = qml.eigvals(op)
-        expected = op.get_eigvals()
+        expected = op.eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -81,7 +81,7 @@ class TestSingleOperation:
         """Verify that the eigenvalues of non-parametric one qubit gates is correct
         when provided as a qfunc"""
         res = qml.eigvals(op_class)(0.54, wires=0)
-        expected = op_class(0.54, wires=0).get_eigvals()
+        expected = op_class(0.54, wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -91,21 +91,22 @@ class TestSingleOperation:
         dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(lambda x: op_class(x, wires=0) and qml.probs(wires=0), dev)
         res = qml.eigvals(qnode)(0.54)
-        expected = op_class(0.54, wires=0).get_eigvals()
+        expected = op_class(0.54, wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
+        rounding_precision = 6
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
-        expected = op_class(-0.54, wires=0).get_eigvals()
-        assert np.allclose(res, expected)
+        expected = op_class(-0.54, wires=0).eigvals()
+        assert set(np.around(res, rounding_precision)) == set(np.around(res, rounding_precision))
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
         res = qml.eigvals(qml.ctrl(qml.PauliX, 0))(wires=1)
         expected = np.linalg.eigvals(qml.matrix(qml.CNOT(wires=[0, 1])))
-        assert np.allclose(res, expected)
+        assert np.allclose(np.sort(res), np.sort(expected))
 
     def test_tensor_product(self):
         """Test a tensor product"""
@@ -203,7 +204,7 @@ class TestSingleOperation:
     def test_sparse_hamiltonian(self, row, col, dat, val_ref):
         """Test that the eigenvalues of a sparse Hamiltonian are correctly returned"""
         # N x N matrix with N = 20
-        h_sparse = scipy.sparse.coo_matrix((dat, (row, col)), shape=(len(row), len(col)))
+        h_sparse = scipy.sparse.csr_matrix((dat, (row, col)), shape=(len(row), len(col)))
         h_sparse = qml.SparseHamiltonian(h_sparse, wires=all)
 
         # k = 1  (< N-1) scipy.sparse.linalg is used:
@@ -392,11 +393,12 @@ class TestTemplates:
 class TestDifferentiation:
     """Differentiation tests"""
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
         """Test that differentiation works correctly when using JAX"""
 
-        jax = pytest.importorskip("jax")
+        import jax
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -417,11 +419,12 @@ class TestDifferentiation:
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
         """Test that differentiation works correctly when using Torch"""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -444,11 +447,11 @@ class TestDifferentiation:
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
         """Test that differentiation works correctly when using TF"""
-
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -469,6 +472,7 @@ class TestDifferentiation:
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
+    @pytest.mark.autograd
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_autograd(self, v):

@@ -117,8 +117,8 @@ class Rotation(CVOperation):
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
-    def adjoint(self, do_queue=True):
-        return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return Rotation(-self.parameters[0], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "R", cache=cache)
@@ -173,10 +173,10 @@ class Squeezing(CVOperation):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+        return Squeezing(r, new_phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
@@ -232,10 +232,10 @@ class Displacement(CVOperation):
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self):
         a, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
+        return Displacement(a, new_phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "D", cache=cache)
@@ -296,9 +296,9 @@ class Beamsplitter(CVOperation):
         U[3:5, 1:3] = s * R
         return U
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self):
         theta, phi = self.parameters
-        return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
+        return Beamsplitter(-theta, phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "BS", cache=cache)
@@ -365,10 +365,10 @@ class TwoModeSqueezing(CVOperation):
         U[3:5, 1:3] = S @ R.T
         return U
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+        return TwoModeSqueezing(r, new_phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
@@ -479,8 +479,8 @@ class ControlledAddition(CVOperation):
         U[3, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=True):
-        return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return ControlledAddition(-self.parameters[0], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "X", cache=cache)
@@ -538,8 +538,8 @@ class ControlledPhase(CVOperation):
         U[4, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=True):
-        return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return ControlledPhase(-self.parameters[0], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Z", cache=cache)
@@ -572,8 +572,8 @@ class Kerr(CVOperation):
     def __init__(self, kappa, wires, do_queue=True, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
-    def adjoint(self, do_queue=True):
-        return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return Kerr(-self.parameters[0], wires=self.wires)
 
 
 class CrossKerr(CVOperation):
@@ -603,8 +603,8 @@ class CrossKerr(CVOperation):
     def __init__(self, kappa, wires, do_queue=True, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
-    def adjoint(self, do_queue=True):
-        return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CrossKerr(-self.parameters[0], wires=self.wires)
 
 
 class CubicPhase(CVOperation):
@@ -634,8 +634,8 @@ class CubicPhase(CVOperation):
     def __init__(self, gamma, wires, do_queue=True, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
-    def adjoint(self, do_queue=True):
-        return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return CubicPhase(-self.parameters[0], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "V", cache=cache)
@@ -699,11 +699,9 @@ class InterferometerUnitary(CVOperation):
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
         return M
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self):
         U = self.parameters[0]
-        return InterferometerUnitary(
-            qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue
-        )
+        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -931,7 +929,8 @@ class FockStateVector(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         For a single mode with cutoff dimension :math:`N`, the input is a
         1-dimensional vector of length :math:`N`.
@@ -1133,7 +1132,8 @@ class TensorN(CVObservable):
     Args:
         wires (Sequence[Any] or Any): the wire the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example for multiple modes:
 

@@ -84,14 +84,15 @@ class UCCSD(Operation):
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Notice that:
 
         #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
 
-        #. The single and double excitations can be generated be generated with the function
+        #. The single and double excitations can be generated with the function
            :func:`~.excitations`. See example below.
 
         #. The vector of parameters ``weights`` is a one-dimensional array of size
@@ -103,38 +104,67 @@ class UCCSD(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import qchem
-            import numpy as np
-            from functools import partial
+            from pennylane import numpy as np
+
+            # Define the molecule
+            symbols  = ['H', 'H', 'H']
+            geometry = np.array([[0.01076341,  0.04449877,  0.0],
+                                 [0.98729513,  1.63059094,  0.0],
+                                 [1.87262415, -0.00815842,  0.0]], requires_grad = False)
+            electrons = 2
+            charge = 1
 
             # Build the electronic Hamiltonian
-            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
-
-            # Number of electrons
-            electrons = 2
+            H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=charge)
 
             # Define the HF state
-            ref_state = qchem.hf_state(electrons, qubits)
+            hf_state = qml.qchem.hf_state(electrons, qubits)
 
             # Generate single and double excitations
-            singles, doubles = qchem.excitations(electrons, qubits)
+            singles, doubles = qml.qchem.excitations(electrons, qubits)
 
             # Map excitations to the wires the UCCSD circuit will act on
-            s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
+            s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qml.device("default.qubit", wires=qubits)
 
-            # Define the UCCSD ansatz
-            ansatz = partial(qml.UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
+            # Define the qnode
+            @qml.qnode(dev)
+            def circuit(params, wires, s_wires, d_wires, hf_state):
 
-            # Define the cost function
-            cost_fn = qml.ExpvalCost(ansatz, h, dev)
+                # Flip the HF state
+                hf_state = np.flip(hf_state)
 
-            # Compute the expectation value of 'h' for given set of parameters 'params'
-            params = np.random.normal(0, np.pi, len(singles) + len(doubles))
-            print(cost_fn(params))
+                qml.UCCSD(params, wires, s_wires, d_wires, hf_state)
+                return qml.expval(H)
+
+            # Define the initial values of the circuit parameters
+            params = np.zeros(len(singles) + len(doubles))
+
+            # Define the optimizer
+            optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
+
+            # Optimize the circuit parameters and compute the energy
+            for n in range(20):
+                params, energy = optimizer.step_and_cost(circuit, params,
+                wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
+                if n % 2 == 0:
+                    print("step = {:},  E = {:.8f} Ha".format(n, energy))
+
+        .. code-block:: none
+
+            step = 0,  E = -1.24654994 Ha
+            step = 2,  E = -1.27016844 Ha
+            step = 4,  E = -1.27379541 Ha
+            step = 6,  E = -1.27434106 Ha
+            step = 8,  E = -1.27442311 Ha
+            step = 10,  E = -1.27443547 Ha
+            step = 12,  E = -1.27443733 Ha
+            step = 14,  E = -1.27443761 Ha
+            step = 16,  E = -1.27443765 Ha
+            step = 18,  E = -1.27443766 Ha
+            step = 20,  E = -1.27443766 Ha
 
     """
 

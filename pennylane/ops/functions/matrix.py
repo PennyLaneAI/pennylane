@@ -60,7 +60,8 @@ def matrix(op, *, wire_order=None):
     This operator transform can also be applied to QNodes, tapes, and quantum functions
     that contain multiple operations; see Usage Details below for more details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         ``qml.matrix`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations.
@@ -89,7 +90,7 @@ def matrix(op, *, wire_order=None):
         obtain the matrix for :math:`R_X(\theta)\otimes Z`, specify ``wire_order=[0, 1]`` in the
         function call:
 
-        >>> get_matrix = qml.matrix(circuit, wire_order=[0, 1])
+        >>> matrix = qml.matrix(circuit, wire_order=[0, 1])
 
         You can also get the unitary matrix for operations on a subspace of a larger Hilbert space. For
         example, with the same function ``circuit`` and ``wire_order=["a", 0, "b", 1]`` you obtain the
@@ -123,7 +124,7 @@ def matrix(op, *, wire_order=None):
     if isinstance(op, qml.Hamiltonian):
         return qml.utils.sparse_hamiltonian(op, wires=wire_order).toarray()
 
-    return op.get_matrix(wire_order=wire_order)
+    return op.matrix(wire_order=wire_order)
 
 
 @matrix.tape_transform
@@ -133,13 +134,14 @@ def _matrix(tape, wire_order=None):
     interface = qml.math._multi_dispatch(params)
 
     wire_order = wire_order or tape.wires
-    n_wires = len(wire_order)
 
     # initialize the unitary matrix
-    unitary_matrix = qml.math.eye(2**n_wires, like=interface)
+    result = qml.math.eye(2 ** len(wire_order), like=interface)
 
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        unitary_matrix = qml.math.dot(U, unitary_matrix)
+        # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
+        # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
+        result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
 
-    return unitary_matrix
+    return result

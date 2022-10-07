@@ -76,7 +76,20 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize("x", [[0], [0, 1, 1]])
+    @pytest.mark.parametrize(
+        ("feat", "wires", "expected"),
+        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
+    )
+    def test_features_as_int_conversion(self, feat, wires, expected):
+        """checks conversion from features as int to a list of binary digits
+        with length = len(wires)"""
+
+        assert (
+            qml.BasisEmbedding(features=feat, wires=wires).hyperparameters["basis_state"]
+            == expected
+        )
+
+    @pytest.mark.parametrize("x", [[0], [0, 1, 1], 4])
     def test_wrong_input_bits_exception(self, x):
         """Checks exception if number of features is not same as number of qubits."""
 
@@ -158,6 +171,7 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -173,10 +187,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
@@ -191,10 +206,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         features = tf.Variable([0, 1, 0])
 
@@ -208,10 +224,11 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         features = torch.tensor([0, 1, 0])
 

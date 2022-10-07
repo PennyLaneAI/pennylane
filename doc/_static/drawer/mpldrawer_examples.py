@@ -115,12 +115,13 @@ def measure(savefile="measure.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=1)
     drawer.measure(layer=0, wires=0)
 
-    measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
-    measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
+    measure_box = {"facecolor": "white", "edgecolor": "indigo"}
+    measure_lines = {"edgecolor": "indigo", "facecolor": "plum", "linewidth": 2}
     drawer.measure(layer=0, wires=1, box_options=measure_box, lines_options=measure_lines)
 
     plt.savefig(folder / savefile)
     plt.close()
+
 
 def integration(style="default", savefile="example_basic.png"):
     use_style(style)
@@ -133,7 +134,7 @@ def integration(style="default", savefile="example_basic.png"):
 
     drawer.box_gate(1, 4, "Z")
 
-    drawer.SWAP(2, (3,4))
+    drawer.SWAP(2, (3, 4))
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
@@ -152,15 +153,15 @@ def integration(style="default", savefile="example_basic.png"):
 
 
 def integration_rcParams(savefile="example_rcParams.png"):
-    plt.rcParams['patch.facecolor'] = 'mistyrose'
-    plt.rcParams['patch.edgecolor'] = 'maroon'
-    plt.rcParams['text.color'] = 'maroon'
-    plt.rcParams['font.weight'] = 'bold'
-    plt.rcParams['patch.linewidth'] = 4
-    plt.rcParams['patch.force_edgecolor'] = True
-    plt.rcParams['lines.color'] = 'indigo'
-    plt.rcParams['lines.linewidth'] = 5
-    plt.rcParams['figure.facecolor'] = 'ghostwhite'
+    plt.rcParams["patch.facecolor"] = "mistyrose"
+    plt.rcParams["patch.edgecolor"] = "maroon"
+    plt.rcParams["text.color"] = "maroon"
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["patch.linewidth"] = 4
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "indigo"
+    plt.rcParams["lines.linewidth"] = 5
+    plt.rcParams["figure.facecolor"] = "ghostwhite"
 
     drawer = MPLDrawer(n_wires=5, n_layers=5)
 
@@ -173,7 +174,7 @@ def integration_rcParams(savefile="example_rcParams.png"):
 
     drawer.box_gate(1, 4, "Z")
 
-    drawer.SWAP(2, (3,4))
+    drawer.SWAP(2, (3, 4))
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
