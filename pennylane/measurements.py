@@ -21,8 +21,8 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
-from collections.abc import Iterable
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -552,6 +552,21 @@ class MeasurementProcess:
             return self
 
         return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current measurement process with its wires changed according to
+        the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .MeasurementProcess: new measurement process
+        """
+        if self.obs is None:
+            return self
+
+        return MeasurementProcess(return_type=self.return_type, obs=self.obs.map_wires(wire_map))
 
 
 class ShadowMeasurementProcess(MeasurementProcess):

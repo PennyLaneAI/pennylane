@@ -81,7 +81,7 @@ def map_wires(
     if isinstance(input, QuantumTape):
         with QuantumTape() as new_tape:
             for op in list(input):
-                _ = qml.map_wires(op, wire_map=wire_map, queue=queue, replace=replace)
+                _ = qml.map_wires(op, wire_map=wire_map, queue=True)
 
         return new_tape
 
@@ -95,14 +95,8 @@ def map_wires(
             with QueuingManager.stop_recording(), tape:
                 func(*args, **kwargs)
 
-            _ = [
-                qml.map_wires(op, wire_map=wire_map, queue=queue, replace=replace)
-                for op in tape.operations
-            ]
-            m = tuple(
-                qml.map_wires(m, wire_map=wire_map, queue=queue, replace=replace)
-                for m in tape.measurements
-            )
+            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in tape.operations]
+            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in tape.measurements)
             return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):
