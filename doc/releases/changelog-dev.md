@@ -57,40 +57,51 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-   - `QueuingContext` is renamed to `QueuingManager`.
-   - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
-   - `QueuingManager` is no longer an abstract base class.
-   - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
-   - `QueuingManager` is no longer a context manager.
-   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and 
+  * `QueuingContext` is renamed to `QueuingManager`.
+  * `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+  * `QueuingManager` is no longer an abstract base class.
+  * `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+  * `QueuingManager` is no longer a context manager.
+  * Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
      `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
-   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+  * `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
       is now only available through `QueuingManager`.
-   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
+  * `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
       and `_get_info` methods. The public analogues should be used instead.
-   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
       `update_info`.
 
 * Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
   indicates whether the user wants to check for unitarity of the input matrix or not. Its default
   value is `false`.
   [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
-   
+
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
+  its wires changed according to the given wire map.
+  [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
+
+  ```pycon
+  >>> op = qml.Toffoli([0, 1, 2])
+  >>> wire_map = {0: 2, 2: 0}
+  >>> op.map_wires(wire_map=wire_map)
+  Toffoli(wires=[2, 1, 0])
+  ```
+
 <h3>Breaking changes</h3>
 
- * `QueuingContext` is renamed `QueuingManager`.
+* `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
- * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
    if the object isn't in the queue.
 
- * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+* Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
    [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
 <h3>Deprecations</h3>
