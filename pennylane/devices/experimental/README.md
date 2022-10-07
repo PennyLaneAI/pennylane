@@ -25,4 +25,5 @@ We have identified the following list of features that new and existing devices 
     * Computing marginal probabilities.
     * Generating and retuning samples from the quantum state.
     * Return probabilities from given a `QuantumScript`.
-* 
+* NOTE: Additional features to follow following updates with recent merges modernizations
+
