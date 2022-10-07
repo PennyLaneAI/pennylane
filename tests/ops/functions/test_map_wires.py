@@ -179,7 +179,7 @@ class TestMapWiresCallables:
 
         # TODO: Use qml.equal when supported
 
-        assert (m_qnode() == qnode()).all()
+        assert qml.math.allequal(m_qnode(), qnode())
         assert len(m_qnode.tape) == 2
         m_op = m_qnode.tape.operations[0]
         assert isinstance(m_op, qml.ops.Prod)
