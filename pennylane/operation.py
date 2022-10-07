@@ -1141,12 +1141,6 @@ class Operator(abc.ABC):
         Returns:
             .Operator: new operator
         """
-        target_wires = [
-            new_wire for old_wire, new_wire in wire_map.items() if old_wire in self.wires
-        ]
-        if len(set(target_wires)) < len(target_wires):
-            raise ValueError("Two different wires have been mapped to the same wire.")
-
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_op
