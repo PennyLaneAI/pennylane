@@ -177,7 +177,7 @@ def get_interface(*values):
     sequence of tensor-like objects.
 
     Args:
-        values (tensor_like, Sequence[tensor_like]): a sequence of tensor like objects
+        values (tensor_like, Sequence[tensor_like]): a single tensor-like object or a sequence of tensor-like objects
 
     Returns:
         str: the name of the interface
