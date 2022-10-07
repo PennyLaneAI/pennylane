@@ -37,6 +37,16 @@ def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wi
 def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
+    The metric tensor convention we employ here has the following form:
+
+    .. math::
+
+        \text{metric_tensor}_{i, j} = \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
+        - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
+
+    with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
+    It is closely related to the quantum fisher information matrix, see :func:`~.pennylane.qinfo.transforms.quantum_fisher` and eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
+
     .. note::
 
         Only gates that have a single parameter and define a ``generator`` are supported.

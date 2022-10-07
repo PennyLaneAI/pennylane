@@ -48,32 +48,6 @@ class TestHilbertSchmidt:
             assert i.data == j.data
             assert i.wires == j.wires
 
-    def test_hs_adjoint_method(self):
-        """Test the adjoint method of the HS operation for a 1 qubit unitary."""
-
-        with qml.tape.QuantumTape(do_queue=False) as U:
-            qml.RX(0.3, wires=0)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
-
-        adj = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U).adjoint()
-        operations = adj.expand().operations
-
-        expected_operations = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(0.1, wires=[1]),
-            qml.RX(-0.3, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for i, j in zip(operations, expected_operations):
-            assert i.name == j.name
-            assert i.data == j.data
-            assert i.wires == j.wires
-
     def test_hs_decomposition_2_qubits(self):
         """Test if the HS operation is correctly decomposed for 2 qubits."""
         with qml.tape.QuantumTape(do_queue=False) as U:
@@ -136,38 +110,6 @@ class TestHilbertSchmidt:
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):
-            assert i.name == j.name
-            assert i.data == j.data
-            assert i.wires == j.wires
-
-    def test_hs_adjoint_method_2_qubits(self):
-        """Test the adjoint method of the HS operations for 2 qubits."""
-
-        with qml.tape.QuantumTape(do_queue=False) as U:
-            qml.SWAP(wires=[0, 1])
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=2)
-            qml.CNOT(wires=[2, 3])
-
-        adj = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u_tape=U).adjoint()
-        operations = adj.expand().operations
-
-        expected_operations = [
-            qml.Hadamard(wires=[1]),
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 2]),
-            qml.CNOT(wires=[1, 3]),
-            qml.CNOT(wires=[2, 3]),
-            qml.RZ(0.1, wires=[2]),
-            qml.SWAP(wires=[0, 1]),
-            qml.CNOT(wires=[1, 3]),
-            qml.CNOT(wires=[0, 2]),
-            qml.Hadamard(wires=[1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for i, j in zip(operations, expected_operations):
             assert i.name == j.name
             assert i.data == j.data
             assert i.wires == j.wires
@@ -301,32 +243,6 @@ class TestLocalHilbertSchmidt:
             assert i.data == j.data
             assert i.wires == j.wires
 
-    def test_lhs_adjoint_method_1_qubit(self):
-        """Test the adjoint method of the LHS operation for 1 qubit."""
-
-        with qml.tape.QuantumTape(do_queue=False) as U:
-            qml.RX(0.3, wires=0)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
-
-        adj = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U).adjoint()
-        operations = adj.expand().operations
-
-        expected_operations = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(0.1, wires=[1]),
-            qml.RX(-0.3, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for i, j in zip(operations, expected_operations):
-            assert i.name == j.name
-            assert i.data == j.data
-            assert i.wires == j.wires
-
     def test_lhs_decomposition_2_qubits(self):
         """Test if the LHS operation is correctly decomposed for 2 qubits."""
         with qml.tape.QuantumTape(do_queue=False) as U:
@@ -354,38 +270,6 @@ class TestLocalHilbertSchmidt:
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):
-            assert i.name == j.name
-            assert i.data == j.data
-            assert i.wires == j.wires
-
-    def test_lhs_adjoint_method_2_qubits(self):
-        """Test the adjoint method of the LHS operation for 2 qubits."""
-
-        with qml.tape.QuantumTape(do_queue=False) as U:
-            qml.SWAP(wires=[0, 1])
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=2)
-            qml.CNOT(wires=[2, 3])
-
-        adj = qml.LocalHilbertSchmidt(
-            [0.1], v_function=v_circuit, v_wires=[2, 3], u_tape=U
-        ).adjoint()
-        operations = adj.expand().operations
-
-        expected_operations = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 2]),
-            qml.CNOT(wires=[2, 3]),
-            qml.RZ(0.1, wires=[2]),
-            qml.SWAP(wires=[0, 1]),
-            qml.CNOT(wires=[1, 3]),
-            qml.CNOT(wires=[0, 2]),
-            qml.Hadamard(wires=[1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for i, j in zip(operations, expected_operations):
             assert i.name == j.name
             assert i.data == j.data
             assert i.wires == j.wires

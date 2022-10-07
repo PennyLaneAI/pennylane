@@ -428,9 +428,10 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> tape = qml.transforms.qcut.graph_to_tape(graph)
     >>> print(tape.draw())
-     0: ──RX(0.4)──────╭C───────────────╭X──┤ ⟨Z⟩
-     1: ──RY(0.5)──────╰X──MeasureNode──│───┤
-     2: ──PrepareNode───────────────────╰C──┤
+    0: ──RX──────────╭●──────────────╭X─┤  <Z>
+    1: ──RY──────────╰X──MeasureNode─│──┤
+    2: ──PrepareNode─────────────────╰●─┤
+
     """
 
     wires = Wires.all_wires([n.wires for n in graph.nodes])
@@ -656,7 +657,7 @@ def expand_fragment_tape(
                     elif not isinstance(op, MeasureNode):
                         apply(op)
 
-                with qml.tape.stop_recording():
+                with qml.QueuingManager.stop_recording():
                     measurements = _get_measurements(group, tape.measurements)
                 for meas in measurements:
                     apply(meas)
@@ -773,25 +774,26 @@ def expand_fragment_tapes_mc(
         ...
 
         config 0:
-        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
-        1: ────╰X─┤  Sample[I]
+        0: ──H─╭●─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[Z]
 
-        1: ──X─╭C─┤  Sample[|1⟩⟨1|]
+        1: ──I─╭●─┤  Sample[|1⟩⟨1|]
         2: ────╰X─┤  Sample[|1⟩⟨1|]
 
         config 1:
-        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
-        1: ────╰X─┤  Sample[Z]
+        0: ──H─╭●─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[Y]
 
-        1: ──I─╭C─┤  Sample[|1⟩⟨1|]
-        2: ────╰X─┤  Sample[|1⟩⟨1|]
+        1: ──H──S─╭●─┤  Sample[|1⟩⟨1|]
+        2: ───────╰X─┤  Sample[|1⟩⟨1|]
 
         config 2:
-        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
-        1: ────╰X─┤  Sample[X]
+        0: ──H─╭●─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[Y]
 
-        1: ──H─╭C─┤  Sample[|1⟩⟨1|]
-        2: ────╰X─┤  Sample[|1⟩⟨1|]
+        1: ──X──H──S─╭●─┤  Sample[|1⟩⟨1|]
+        2: ──────────╰X─┤  Sample[|1⟩⟨1|]
+
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
@@ -1105,9 +1107,9 @@ def cut_circuit_mc(
                 qml.sample(wires=[0, 1, 2])
 
         >>> print(tape.draw())
-            0: ──H─╭C───────────┤ ╭Sample
-            1: ────╰X──X──//─╭C─┤ ├Sample
-            2: ──────────────╰X─┤ ╰Sample
+        0: ──H─╭●───────────┤ ╭Sample
+        1: ────╰X──X──//─╭●─┤ ├Sample
+        2: ──────────────╰X─┤ ╰Sample
 
         To cut the circuit, we first convert it to its graph representation:
 
@@ -1133,8 +1135,8 @@ def cut_circuit_mc(
         ...     cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
         ... )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-         0: ──H─╭C───────────┤  Sample[|1⟩⟨1|]
-         1: ────╰X──//──X─╭C─┤  Sample[|1⟩⟨1|]
+         0: ──H─╭●───────────┤  Sample[|1⟩⟨1|]
+         1: ────╰X──//──X─╭●─┤  Sample[|1⟩⟨1|]
          2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
 
         Our next step, using the original manual cut placement, is to remove the :class:`~.WireCut`
@@ -1158,11 +1160,11 @@ def cut_circuit_mc(
         The circuit fragments can now be visualized:
 
         >>> print(fragment_tapes[0].draw())
-        0: ──H─╭C─────────────────┤  Sample[|1⟩⟨1|]
+        0: ──H─╭●─────────────────┤  Sample[|1⟩⟨1|]
         1: ────╰X──X──MeasureNode─┤
 
         >>> print(fragment_tapes[1].draw())
-        1: ──PrepareNode─╭C─┤  Sample[|1⟩⟨1|]
+        1: ──PrepareNode─╭●─┤  Sample[|1⟩⟨1|]
         2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
 
         Additionally, we must remap the tape wires to match those available on our device.
@@ -1199,27 +1201,27 @@ def cut_circuit_mc(
         Each configuration is drawn below:
 
         >>> for t in tapes:
-        ...     print(t.draw())
+        ...     print(qml.drawer.tape_text(t))
         ...     print("")
 
         .. code-block::
 
-            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            0: ──H─╭●────┤  Sample[|1⟩⟨1|]
             1: ────╰X──X─┤  Sample[Z]
 
-            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            0: ──H─╭●────┤  Sample[|1⟩⟨1|]
             1: ────╰X──X─┤  Sample[X]
 
-            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            0: ──H─╭●────┤  Sample[|1⟩⟨1|]
             1: ────╰X──X─┤  Sample[Y]
 
-            0: ──I─╭C─┤  Sample[|1⟩⟨1|]
+            0: ──I─╭●─┤  Sample[|1⟩⟨1|]
             1: ────╰X─┤  Sample[|1⟩⟨1|]
 
-            0: ──X──S─╭C─┤  Sample[|1⟩⟨1|]
+            0: ──X──S─╭●─┤  Sample[|1⟩⟨1|]
             1: ───────╰X─┤  Sample[|1⟩⟨1|]
 
-            0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+            0: ──H─╭●─┤  Sample[|1⟩⟨1|]
             1: ────╰X─┤  Sample[|1⟩⟨1|]
 
         The last step is to execute the tapes and postprocess the results using
@@ -1882,10 +1884,10 @@ def cut_circuit(
 
                 qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
 
-        >>> print(tape.draw())
-         0: ──RX(0.531)──╭C──RY(-0.4)──────╭┤ ⟨Z ⊗ Z ⊗ Z⟩
-         1: ──RY(0.9)────╰Z──//────────╭C──├┤ ⟨Z ⊗ Z ⊗ Z⟩
-         2: ──RX(0.3)──────────────────╰Z──╰┤ ⟨Z ⊗ Z ⊗ Z⟩
+        >>> print(qml.drawer.tape_text(tape))
+        0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
+        1: ──RY─╰Z──//─╭●─┤ ├<Z@Z@Z>
+        2: ──RX────────╰Z─┤ ╰<Z@Z@Z>
 
         To cut the circuit, we first convert it to its graph representation:
 
@@ -1921,8 +1923,8 @@ def cut_circuit(
                 cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-        0: ──RX─╭C──RY────┤ ╭<Z@Z@Z>
-        1: ──RY─╰Z──//─╭C─┤ ├<Z@Z@Z>
+        0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
+        1: ──RY─╰Z──//─╭●─┤ ├<Z@Z@Z>
         2: ──RX────────╰Z─┤ ╰<Z@Z@Z>
 
         Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace with
@@ -1946,12 +1948,12 @@ def cut_circuit(
         The circuit fragments can now be visualized:
 
         >>> print(fragment_tapes[0].draw())
-         0: ──RX(0.531)──╭C──RY(-0.4)─────┤ ⟨Z⟩
+         0: ──RX(0.531)──╭●──RY(-0.4)─────┤ ⟨Z⟩
          1: ──RY(0.9)────╰Z──MeasureNode──┤
 
         >>> print(fragment_tapes[1].draw())
          2: ──RX(0.3)──────╭Z──╭┤ ⟨Z ⊗ Z⟩
-         1: ──PrepareNode──╰C──╰┤ ⟨Z ⊗ Z⟩
+         1: ──PrepareNode──╰●──╰┤ ⟨Z ⊗ Z⟩
 
         Additionally, we must remap the tape wires to match those available on our device.
 
@@ -1980,30 +1982,30 @@ def cut_circuit(
         Each configuration is drawn below:
 
         >>> for t in tapes:
-        ...     print(t.draw())
+        ...     print(qml.drawer.tape_text(t))
 
         .. code-block::
 
-             0: ──RX(0.531)──╭C──RY(-0.4)──╭┤ ⟨Z ⊗ I⟩ ╭┤ ⟨Z ⊗ Z⟩
+             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ I⟩ ╭┤ ⟨Z ⊗ Z⟩
              1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ I⟩ ╰┤ ⟨Z ⊗ Z⟩
 
-             0: ──RX(0.531)──╭C──RY(-0.4)──╭┤ ⟨Z ⊗ X⟩
+             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ X⟩
              1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ X⟩
 
-             0: ──RX(0.531)──╭C──RY(-0.4)──╭┤ ⟨Z ⊗ Y⟩
+             0: ──RX(0.531)──╭●──RY(-0.4)──╭┤ ⟨Z ⊗ Y⟩
              1: ──RY(0.9)────╰Z────────────╰┤ ⟨Z ⊗ Y⟩
 
              0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──I────────╰C──╰┤ ⟨Z ⊗ Z⟩
+             1: ──I────────╰●──╰┤ ⟨Z ⊗ Z⟩
 
              0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──X────────╰C──╰┤ ⟨Z ⊗ Z⟩
+             1: ──X────────╰●──╰┤ ⟨Z ⊗ Z⟩
 
              0: ──RX(0.3)──╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────╰C──╰┤ ⟨Z ⊗ Z⟩
+             1: ──H────────╰●──╰┤ ⟨Z ⊗ Z⟩
 
              0: ──RX(0.3)─────╭Z──╭┤ ⟨Z ⊗ Z⟩
-             1: ──H────────S──╰C──╰┤ ⟨Z ⊗ Z⟩
+             1: ──H────────S──╰●──╰┤ ⟨Z ⊗ Z⟩
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn`, which processes the results to the original full circuit
@@ -2188,8 +2190,8 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
 
     >>> new_wires = [0, 1]
     >>> new_tape = qml.transforms.qcut.remap_tape_wires(tape, new_wires)
-    >>> print(new_tape.draw())
-     0: ──RX(0.5)──╭C──╭┤ ⟨Z ⊗ Z⟩
+    >>> print(qml.drawer.tape_text(new_tape))
+     0: ──RX(0.5)──╭●──╭┤ ⟨Z ⊗ Z⟩
      1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
     """
     if len(tape.wires) > len(wires):
@@ -2390,14 +2392,15 @@ class CutStrategy:
         ... ]
 
         """
-        tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
-        num_tape_wires = len(tape_wires)
-        num_tape_gates = sum(not isinstance(n, WireCut) for n in tape_dag.nodes)
+        wire_depths = {}
+        for g in tape_dag.nodes:
+            if not isinstance(g, WireCut):
+                for w in g.wires:
+                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
-            num_tape_wires=num_tape_wires,
-            num_tape_gates=num_tape_gates,
+            wire_depths=wire_depths,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
             exhaustive=exhaustive,
@@ -2406,10 +2409,11 @@ class CutStrategy:
         return probed_cuts
 
     @staticmethod
-    def _infer_imbalance(
-        k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None
-    ) -> float:
+    def _infer_imbalance(k, wire_depths, free_wires, free_gates, imbalance_tolerance=None) -> float:
         """Helper function for determining best imbalance limit."""
+        num_wires = len(wire_depths)
+        num_gates = sum(wire_depths.values())
+
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
         if free_wires < avg_fragment_wires:
@@ -2432,8 +2436,9 @@ class CutStrategy:
             balancing_adjustment = 2 if avg_fragment_gates > 5 else 0
             free_gates = free_gates - (k - 1 + balancing_adjustment)
 
-        gate_imbalance = free_gates / avg_fragment_gates - 1
-        imbalance = max(gate_imbalance, 0.1 / avg_fragment_gates)  # numerical stability
+        depth_imbalance = max(wire_depths.values()) * num_wires / num_gates - 1
+        max_imbalance = free_gates / avg_fragment_gates - 1
+        imbalance = min(depth_imbalance, max_imbalance)
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -2474,8 +2479,7 @@ class CutStrategy:
 
     def _infer_probed_cuts(
         self,
-        num_tape_wires,
-        num_tape_gates,
+        wire_depths,
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
         exhaustive=True,
@@ -2503,6 +2507,9 @@ class CutStrategy:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
                 partitioner method.
         """
+
+        num_tape_wires = len(wire_depths)
+        num_tape_gates = int(sum(wire_depths.values()))
 
         # Assumes unlimited width/depth if not supplied.
         max_free_wires = self.max_free_wires or num_tape_wires
@@ -2566,8 +2573,7 @@ class CutStrategy:
         for k in ks:
             imbalance = self._infer_imbalance(
                 k,
-                num_tape_wires,
-                num_tape_gates,
+                wire_depths,
                 max_free_wires if max_wires_by_fragment is None else max(max_wires_by_fragment),
                 max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
                 imbalance_tolerance,
@@ -2803,8 +2809,8 @@ def place_wire_cuts(
             qml.CNOT(wires=[0, "a"])
             qml.expval(qml.PauliZ(wires=[0]))
 
-    >>> print(tape.draw())
-     0: ──RX(0.432)──╭C──┤ ⟨Z⟩
+    >>> print(qml.drawer.tape_text(tape))
+     0: ──RX(0.432)──╭●──┤ ⟨Z⟩
      a: ──RY(0.543)──╰X──┤
 
     If we know we want to place a :class:`~.WireCut` node between nodes ``RY(0.543, wires=["a"])`` and
@@ -2825,7 +2831,7 @@ def place_wire_cuts(
     And visualize the cut by converting back to a tape:
 
     >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-     0: ──RX(0.432)──────╭C──┤ ⟨Z⟩
+     0: ──RX(0.432)──────╭●──┤ ⟨Z⟩
      a: ──RY(0.543)──//──╰X──┤
     """
     cut_graph = graph.copy()
@@ -2934,10 +2940,10 @@ def find_and_place_cuts(
             qml.RY(0.6, wires="b")
             qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
-    >>> print(tape.draw())
-     0: ──RX(0.1)──╭C──────────╭C───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
-     1: ──RY(0.2)──╰X──//──╭C──╰X───────────│┤
-     a: ──RX(0.3)──╭C──────╰X──╭C──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
+    >>> print(qml.drawer.tape.text(tape))
+     0: ──RX(0.1)──╭●──────────╭●───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
+     1: ──RY(0.2)──╰X──//──╭●──╰X───────────│┤
+     a: ──RX(0.3)──╭●──────╰X──╭●──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
      b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
 
     Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
@@ -2953,9 +2959,9 @@ def find_and_place_cuts(
     Visualizing the newly-placed cut:
 
     >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-     0: ──RX(0.1)──╭C───────────────╭C────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
-     1: ──RY(0.2)──╰X──//──╭C───//──╰X────────│┤
-     a: ──RX(0.3)──╭C──────╰X──╭C────RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
+     0: ──RX(0.1)──╭●───────────────╭●────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
+     1: ──RY(0.2)──╰X──//──╭●───//──╰X────────│┤
+     a: ──RX(0.3)──╭●──────╰X──╭●────RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
      b: ──RY(0.4)──╰X──────────╰X────RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
 
     We can then proceed with the usual process of replacing :class:`~.WireCut` nodes with
@@ -2975,13 +2981,13 @@ def find_and_place_cuts(
 
     .. code-block::
 
-         0: ──RX(0.1)──────╭C───────────────╭C──┤ ⟨X⟩
+         0: ──RX(0.1)──────╭●───────────────╭●──┤ ⟨X⟩
          1: ──RY(0.2)──────╰X──MeasureNode──│───┤
          2: ──PrepareNode───────────────────╰X──┤
 
-         a: ──RX(0.3)──────╭C──╭X──╭C────────────RX(0.5)──╭┤ ⟨Y ⊗ Z⟩
+         a: ──RX(0.3)──────╭●──╭X──╭●────────────RX(0.5)──╭┤ ⟨Y ⊗ Z⟩
          b: ──RY(0.4)──────╰X──│───╰X────────────RY(0.6)──╰┤ ⟨Y ⊗ Z⟩
-         1: ──PrepareNode──────╰C───MeasureNode────────────┤
+         1: ──PrepareNode──────╰●───MeasureNode────────────┤
 
     Alternatively, if all we want to do is to find the optimal way to fit a circuit onto a smaller
     device, a :class:`~.CutStrategy` can be used to populate the necessary explorations of cutting
@@ -3014,9 +3020,9 @@ def find_and_place_cuts(
             cut_strategy=cut_strategy,
         )
     >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-     0: ──RX──//─╭C──//────────╭C──//─────────┤ ╭<X@Y@Z>
-     1: ──RY──//─╰X──//─╭C──//─╰X─────────────┤ │
-     a: ──RX──//─╭C──//─╰X──//─╭C──//──RX──//─┤ ├<X@Y@Z>
+     0: ──RX──//─╭●──//────────╭●──//─────────┤ ╭<X@Y@Z>
+     1: ──RY──//─╰X──//─╭●──//─╰X─────────────┤ │
+     a: ──RX──//─╭●──//─╰X──//─╭●──//──RX──//─┤ ├<X@Y@Z>
      b: ──RY──//─╰X──//────────╰X──//──RY─────┤ ╰<X@Y@Z>
 
     As one can tell, quite a few cuts have to be made in order to execute the circuit on solely
@@ -3037,20 +3043,20 @@ def find_and_place_cuts(
 
          b: ──RY──MeasureNode─┤
 
-         0: ──PrepareNode─╭C──MeasureNode─┤
+         0: ──PrepareNode─╭●──MeasureNode─┤
          1: ──PrepareNode─╰X──MeasureNode─┤
 
-         a: ──PrepareNode─╭C──MeasureNode─┤
+         a: ──PrepareNode─╭●──MeasureNode─┤
          b: ──PrepareNode─╰X──MeasureNode─┤
 
-         1: ──PrepareNode─╭C──MeasureNode─┤
+         1: ──PrepareNode─╭●──MeasureNode─┤
          a: ──PrepareNode─╰X──MeasureNode─┤
 
-         0: ──PrepareNode─╭C──MeasureNode─┤
+         0: ──PrepareNode─╭●──MeasureNode─┤
          1: ──PrepareNode─╰X──────────────┤
 
          b: ──PrepareNode─╭X──MeasureNode─┤
-         a: ──PrepareNode─╰C──MeasureNode─┤
+         a: ──PrepareNode─╰●──MeasureNode─┤
 
          a: ──PrepareNode──RX──MeasureNode─┤
 

@@ -114,11 +114,25 @@ def init_state(scope="session"):
 
     def _init_state(n):
         """random initial state"""
+        np.random.seed(4214152)
         state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
     return _init_state
+
+
+@pytest.fixture
+def broadcasted_init_state(scope="session"):
+    """Generates a random initial state"""
+
+    def _broadcasted_init_state(n, batch_size):
+        """random initial state"""
+        np.random.seed(4214152)
+        state = np.random.random([batch_size, 2**n]) + np.random.random([batch_size, 2**n]) * 1j
+        return state / np.linalg.norm(state, axis=1)[:, np.newaxis]
+
+    return _broadcasted_init_state
 
 
 #####################################################
@@ -154,13 +168,40 @@ class TestTFMatrix:
         [
             (qml.PhaseShift, [0.1], 0),
             (qml.ControlledPhaseShift, [0.1], [0, 1]),
+            (qml.CRX, [0.1], [0, 1]),
+            (qml.CRY, [0.1], [0, 1]),
             (qml.CRZ, [0.1], [0, 1]),
+            (qml.CRot, [0.1, 0.2, 0.3], [0, 1]),
             (qml.U1, [0.1], 0),
             (qml.U2, [0.1, 0.2], 0),
             (qml.U3, [0.1, 0.2, 0.3], 0),
+            (qml.Rot, [0.1, 0.2, 0.3], 0),
         ],
     )
-    def test_one_qubit_tf_matrix(self, op, params, wires):
+    def test_tf_matrix(self, op, params, wires):
+        tf_params = [tf.Variable(x) for x in params]
+        expected_mat = op(*params, wires=wires).matrix()
+        obtained_mat = op(*tf_params, wires=wires).matrix()
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
+
+    @pytest.mark.parametrize(
+        "op,params,wires",
+        [
+            (qml.PhaseShift, ([0.1, 0.2, 0.5],), 0),
+            (qml.ControlledPhaseShift, ([0.1],), [0, 1]),
+            (qml.CRX, ([0.1, -0.6, 0.2],), [0, 1]),
+            (qml.CRY, ([0.1, -0.4, 6.3],), [0, 1]),
+            (qml.CRZ, ([0.1, -0.6, 0.2],), [0, 1]),
+            (qml.CRot, ([0.1, 0.2, 0.3], 0.6, [0.2, 1.2, 4.3]), [0, 1]),
+            (qml.U1, ([0.1, 0.2, 0.5],), 0),
+            (qml.U2, ([0.1, 0.2, 0.5], [0.6, 9.3, 2.1]), 0),
+            (qml.U3, ([0.1, 0.2, 0.3], 0.6, [0.2, 1.2, 4.3]), 0),
+            (qml.Rot, ([0.1, 0.2, 0.3], 0.6, [0.2, 1.2, 4.3]), 0),
+        ],
+    )
+    def test_broadcasted_tf_matrix(self, op, params, wires):
+        params = [np.array(p) for p in params]
         tf_params = [tf.Variable(x) for x in params]
         expected_mat = op(*params, wires=wires).matrix()
         obtained_mat = op(*tf_params, wires=wires).matrix()
@@ -174,9 +215,15 @@ class TestTFMatrix:
             (0.2, "IX", ["a", "b"]),
             (-0.3, "III", [0, 1, 2]),
             (0.5, "ZXI", [0, 1, 2]),
+            # Broadcasted rotations
+            ([0.1, 0.6], "I", "a"),
+            ([0.2], "IX", ["a", "b"]),
+            ([-0.3, 0.0, 0.2], "III", [0, 1, 2]),
+            ([0.5, 0.2], "ZXI", [0, 1, 2]),
         ],
     )
     def test_pauli_rot_tf_(self, param, pauli, wires):
+        param = np.array(param)
         op = qml.PauliRot(param, pauli, wires=wires)
         expected_mat = op.matrix()
         expected_eigvals = op.eigvals()
@@ -198,6 +245,11 @@ class TestTFMatrix:
             (qml.ControlledPhaseShift, 0.1, [1, 2]),
             (qml.CRZ, 0.1, [1, 2]),
             (qml.U1, 0.1, [1]),
+            # broadcasted operation matrices
+            (qml.PhaseShift, np.array([0.1, 0.6]), [1]),
+            (qml.ControlledPhaseShift, np.array([0.1]), [1, 2]),
+            (qml.CRZ, np.array([0.1, 0.7, 8.3]), [1, 2]),
+            (qml.U1, np.array([0.1, 0.7, 8.3]), [1]),
         ],
     )
     def test_expand_tf_matrix(self, op, param, wires):
@@ -209,7 +261,7 @@ class TestTFMatrix:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
 
         tf_mat = op(tf.Variable(param), wires=wires).matrix()
-        obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
+        obtained_mat = qml.math.expand_matrix(tf_mat, wires, list(range(4)))
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
@@ -301,7 +353,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=2)
         state = np.array([0, 1])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
     def test_invalid_qubit_state_vector_norm(self):
@@ -391,7 +443,6 @@ class TestApply:
 
     def test_inverse_operation(self, init_state, tol):
         """Test that the inverse of an operation is correctly applied"""
-        """Test three axis rotation gate"""
         dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
@@ -540,22 +591,413 @@ class TestApply:
         assert spy.call_count == 1
 
 
+@pytest.mark.tf
+class TestApplyBroadcasted:
+    """Test application of broadcasted PennyLane operations."""
+
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_basis_state_broadcasted(self, tol):
+        """Test basis state initialization"""
+        dev = DefaultQubitTF(wires=4)
+        state = np.array([0, 0, 1, 0])
+
+        dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
+
+        res = dev.state
+        expected = np.zeros([2**4])
+        expected[np.ravel_multi_index(state, [2] * 4)] = 1
+
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_invalid_basis_state_length_broadcasted(self, tol):
+        """Test that an exception is raised if the basis state is the wrong size"""
+        dev = DefaultQubitTF(wires=4)
+        state = np.array([0, 0, 1, 0])
+
+        with pytest.raises(
+            ValueError, match=r"BasisState parameter and wires must be of equal length"
+        ):
+            dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
+
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_invalid_basis_state_broadcasted(self, tol):
+        """Test that an exception is raised if the basis state is invalid"""
+        dev = DefaultQubitTF(wires=4)
+        state = np.array([0, 0, 1, 2])
+
+        with pytest.raises(
+            ValueError, match=r"BasisState parameter must consist of 0 or 1 integers"
+        ):
+            dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
+
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_qubit_state_vector_broadcasted(self, broadcasted_init_state, tol, batch_size):
+        """Test broadcasted qubit state vector application"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, batch_size=batch_size)
+
+        dev.apply([qml.QubitStateVector(state, wires=[0])])
+
+        res = dev.state
+        expected = state
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_full_subsystem_statevector_broadcasted(self, mocker):
+        """Test applying a broadcasted state vector to the full subsystem"""
+        dev = DefaultQubitTF(wires=["a", "b", "c"])
+        state = (
+            tf.constant(
+                [[1, 0, 0, 0, 1, 0, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 0, 1, 0, 1]],
+                dtype=tf.complex128,
+            )
+            / 2
+        )
+        state_wires = qml.wires.Wires(["a", "b", "c"])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(tf.reshape(dev._state, [3, 8]) == state)
+        spy.assert_not_called()
+
+    def test_error_partial_subsystem_statevector_broadcasted(self, mocker):
+        """Test applying a broadcasted state vector to a subset of wires of the full subsystem"""
+        dev = DefaultQubitTF(wires=["a", "b", "c"])
+        state = tf.constant(
+            [[1, 0, 1, 0], [1, 1, 0, 0], [0, 1, 1, 0]], dtype=tf.complex128
+        ) / np.sqrt(2.0)
+        state_wires = qml.wires.Wires(["a", "c"])
+
+        with pytest.raises(NotImplementedError, match="Parameter broadcasting is not supported"):
+            dev._apply_state_vector(state=state, device_wires=state_wires)
+
+    def test_invalid_qubit_state_vector_size_broadcasted(self):
+        """Test that an exception is raised if the broadcasted state
+        vector is the wrong size"""
+        dev = DefaultQubitTF(wires=2)
+        state = np.array([[0, 1], [1, 0], [1, 1], [0, 0]])
+
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
+            dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
+
+    def test_invalid_qubit_state_vector_norm_broadcasted(self):
+        """Test that an exception is raised if the broadcasted state
+        vector is not normalized"""
+        dev = DefaultQubitTF(wires=2)
+        state = np.array([[1, 0], [0, 12], [1.3, 1]])
+
+        with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
+            dev.apply([qml.QubitStateVector(state, wires=[0])])
+
+    @pytest.mark.parametrize("op,mat", single_qubit)
+    def test_single_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
+        """Test non-parametrized single qubit operations"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,kj->ki", mat, state)
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_broadcasted_state(
+        self, broadcasted_init_state, op, func, theta, tol
+    ):
+        """Test parametrized single qubit operations with broadcasted initial state"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,kj->ki", func(theta), state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [[np.pi / 3], [0.5432, -0.232, 0.1]])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_broadcasted_par(self, init_state, op, func, theta, tol):
+        """Test parametrized single qubit operations with broadcasted parameters"""
+        theta = np.array(theta)
+        dev = DefaultQubitTF(wires=1)
+        state = init_state(1)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([func(t) for t in theta])
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [[np.pi / 3], [0.5432, -0.232, 0.1]])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_broadcasted_both(
+        self, broadcasted_init_state, op, func, theta, tol
+    ):
+        """Test parametrized single qubit operations with broadcasted init state and parameters"""
+        theta = np.array(theta)
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, batch_size=len(theta))
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([func(t) for t in theta])
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation_broadcasted_state(self, broadcasted_init_state, tol):
+        """Test three axis rotation gate with broadcasted state"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        a = 0.542
+        b = 1.3432
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", Rot3(a, b, c), state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation_broadcasted_par(self, init_state, tol):
+        """Test three axis rotation gate with broadcasted parameters"""
+        dev = DefaultQubitTF(wires=1)
+        state = init_state(1)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = -0.654
+        c = np.array([1.3432, 0.6324, 6.32])
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([Rot3(_a, b, _c) for _a, _c in zip(a, c)])
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation_broadcasted_both(self, broadcasted_init_state, tol):
+        """Test three axis rotation gate with broadcasted state and parameters"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = np.array([1.3432, 0.6324, 6.32])
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([Rot3(_a, _b, c) for _a, _b in zip(a, b)])
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_broadcasted_state(self, broadcasted_init_state, tol):
+        """Test controlled three axis rotation gate with broadcasted state"""
+        dev = DefaultQubitTF(wires=2)
+        state = broadcasted_init_state(2, 3)
+
+        a = 0.542
+        b = 1.3432
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [qml.CRot(a, b, c, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", CRot3(a, b, c), state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_broadcasted_par(self, init_state, tol):
+        """Test controlled three axis rotation gate with broadcasted parameters"""
+        dev = DefaultQubitTF(wires=2)
+        state = init_state(2)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = -0.654
+        c = np.array([1.3432, 0.6324, 6.32])
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [qml.CRot(a, b, c, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([CRot3(_a, b, _c) for _a, _c in zip(a, c)])
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_broadcasted_both(self, broadcasted_init_state, tol):
+        """Test controlled three axis rotation gate with broadcasted state and parameters"""
+        dev = DefaultQubitTF(wires=2)
+        state = broadcasted_init_state(2, 3)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = np.array([1.3432, 0.6324, 6.32])
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [qml.CRot(a, b, c, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([CRot3(_a, _b, c) for _a, _b in zip(a, b)])
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op,mat", two_qubit)
+    def test_two_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
+        """Test non-parametrized two qubit operations"""
+        dev = DefaultQubitTF(wires=2)
+        state = broadcasted_init_state(2, 3)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [op(wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary_broadcasted_state(self, broadcasted_init_state, mat, tol):
+        """Test application of arbitrary qubit unitaries for broadcasted state"""
+        N = int(np.log2(len(mat)))
+        dev = DefaultQubitTF(wires=N)
+        state = broadcasted_init_state(N, 3)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary_broadcasted_par(self, init_state, mat, tol):
+        """Test application of broadcasted arbitrary qubit unitaries"""
+        mat = np.array([mat, mat, mat])
+        N = int(np.log2(mat.shape[-1]))
+        dev = DefaultQubitTF(wires=N)
+        state = init_state(N)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary_broadcasted_both(self, broadcasted_init_state, mat, tol):
+        """Test application of arbitrary qubit unitaries for broadcasted state and parameters"""
+        mat = np.array([mat, mat, mat])
+        N = int(np.log2(mat.shape[-1]))
+        dev = DefaultQubitTF(wires=N)
+        state = broadcasted_init_state(N, 3)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op, mat", three_qubit)
+    def test_three_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
+        """Test broadcasted non-parametrized three qubit operations"""
+        dev = DefaultQubitTF(wires=3)
+        state = broadcasted_init_state(3, 2)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue += [op(wires=[0, 1, 2])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_direct_eval_hamiltonian_broadcasted_error_tf(self, mocker):
+        """Tests that an error is raised when attempting to evaluate a Hamiltonian with
+        broadcasting and shots=None directly via its sparse representation with TF."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        with pytest.raises(NotImplementedError, match="Hamiltonians for interface!=None"):
+            circuit()
+
+
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
+scalar_angles = list(zip(THETA, PHI, VARPHI))
+broadcasted_angles = [(THETA, PHI, VARPHI), (THETA[0], PHI, VARPHI)]
+all_angles = scalar_angles + broadcasted_angles
+
 
 @pytest.mark.tf
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", all_angles)
 class TestExpval:
     """Test expectation values"""
 
     # test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
     single_wire_expval_test_data = [
-        (qml.RX, qml.Identity, lambda t, p: np.array([1, 1])),
-        (qml.RX, qml.PauliZ, lambda t, p: np.array([np.cos(t), np.cos(t) * np.cos(p)])),
-        (qml.RY, qml.PauliX, lambda t, p: np.array([np.sin(t) * np.sin(p), np.sin(p)])),
-        (qml.RX, qml.PauliY, lambda t, p: np.array([0, -np.cos(t) * np.sin(p)])),
+        (
+            qml.RX,
+            qml.Identity,
+            lambda t, p: np.array(
+                [np.ones_like(t) * np.ones_like(p), np.ones_like(t) * np.ones_like(p)]
+            ),
+        ),
+        (
+            qml.RX,
+            qml.PauliZ,
+            lambda t, p: np.array([np.cos(t) * np.ones_like(p), np.cos(t) * np.cos(p)]),
+        ),
+        (
+            qml.RY,
+            qml.PauliX,
+            lambda t, p: np.array([np.sin(t) * np.sin(p), np.sin(p) * np.ones_like(t)]),
+        ),
+        (
+            qml.RX,
+            qml.PauliY,
+            lambda t, p: np.array([np.zeros_like(t) * np.zeros_like(p), -np.cos(t) * np.sin(p)]),
+        ),
         (
             qml.RY,
             qml.Hadamard,
@@ -836,7 +1278,7 @@ class TestExpval:
 
 
 @pytest.mark.tf
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", all_angles)
 class TestVar:
     """Tests for the variance"""
 
@@ -1015,9 +1457,9 @@ class TestQNodeIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": True,
             "passthru_interface": "tf",
             "passthru_devices": {
                 "torch": "default.qubit.torch",
@@ -1053,6 +1495,23 @@ class TestQNodeIntegration:
         assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
+    def test_qubit_circuit_broadcasted(self, tol):
+        """Test that the tensor network plugin provides correct
+        result for a simple circuit with broadcasting using the old QNode."""
+        p = tf.Variable([0.543, 0.21, 2.41])
+
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        expected = -tf.math.sin(p)
+
+        assert circuit.gradient_fn == "backprop"
+        assert np.allclose(circuit(p), expected, atol=tol, rtol=0)
+
     def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
@@ -1075,6 +1534,35 @@ class TestQNodeIntegration:
         amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
 
         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+    def test_correct_state_broadcasted(self, tol):
+        """Test that the device state is correct after applying a
+        broadcasted quantum function on the device"""
+
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        state = dev.state
+        expected = np.array([1, 0, 0, 0])
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.RZ(tf.constant([np.pi / 4, np.pi / 2]), wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit()
+        state = dev.state
+
+        phase = np.exp(-1j * np.pi / 8)
+
+        expected = np.array(
+            [
+                [phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0],
+                [phase**2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
+            ]
+        )
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -1211,6 +1699,52 @@ class TestPassthruIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_jacobian_variable_multiply_broadcasted(self, tol):
+        """Test that jacobian of a QNode with an attached default.qubit.tf device
+        gives the correct result in the case of broadcasted parameters multiplied by scalars"""
+        x = tf.Variable([0.43316321, 92.1, -0.5129])
+        y = tf.Variable([0.2162158, 0.241, -0.51])
+        z = tf.Variable([0.75110998, 0.12512, 9.12])
+
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(p):
+            qml.RX(3 * p[0], wires=0)
+            qml.RY(p[1], wires=0)
+            qml.RX(p[2] / 2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape() as tape:
+            res = circuit([x, y, z])
+
+        expected = tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2) - tf.math.sin(
+            3 * x
+        ) * tf.math.sin(z / 2)
+        assert qml.math.shape(res) == (3,)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [x, y, z])
+        res = qml.math.stack([qml.math.diag(j.numpy()) for j in jac])
+
+        expected = np.array(
+            [
+                -3
+                * (
+                    tf.math.sin(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2)
+                    + tf.math.cos(3 * x) * tf.math.sin(z / 2)
+                ),
+                -tf.math.cos(3 * x) * tf.math.sin(y) * tf.math.cos(z / 2),
+                -0.5
+                * (
+                    tf.math.sin(3 * x) * tf.math.cos(z / 2)
+                    + tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.sin(z / 2)
+                ),
+            ]
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_jacobian_repeated(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
         gives the correct result in the case of repeated parameters"""
@@ -1238,6 +1772,34 @@ class TestPassthruIntegration:
             [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_jacobian_repeated_broadcasted(self, tol):
+        """Test that jacobian of a QNode with an attached default.qubit.tf device
+        gives the correct result in the case of repeated broadcasted parameters"""
+        x = tf.Variable([0.433, 92.1, -0.512])
+        y = tf.Variable([0.218, 0.241, -0.51])
+        z = tf.Variable([0.71, 0.152, 9.12])
+        p = tf.Variable([x, y, z])
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape() as tape:
+            res = circuit(p)
+
+        expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, p)
+
+        expected = np.array(
+            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0 * x]
+        )
+        assert all(np.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
@@ -1267,8 +1829,28 @@ class TestPassthruIntegration:
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("wires", [[0], ["abc"]])
+    def test_state_differentiability(self, wires, tol):
         """Test that the device state can be differentiated"""
+        dev = qml.device("default.qubit.tf", wires=wires)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a):
+            qml.RY(a, wires=wires[0])
+            return qml.state()
+
+        a = tf.Variable(0.54)
+
+        with tf.GradientTape() as tape:
+            res = tf.abs(circuit(a)) ** 2
+            res = res[1] - res[0]
+
+        grad = tape.gradient(res, a)
+        expected = tf.sin(a)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_state_differentiability_broadcasted(self, tol):
+        """Test that the broadcasted device state can be differentiated"""
         dev = qml.device("default.qubit.tf", wires=1)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
@@ -1276,16 +1858,16 @@ class TestPassthruIntegration:
             qml.RY(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = tf.Variable(0.54)
+        a = tf.Variable([0.54, 0.32, 1.2])
 
         with tf.GradientTape() as tape:
             circuit(a)
             res = tf.abs(dev.state) ** 2
-            res = res[1] - res[0]
+            res = res[:, 1] - res[:, 0]
 
-        grad = tape.gradient(res, a)
+        jac = tape.jacobian(res, a)
         expected = tf.sin(a)
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert np.allclose(qml.math.diag(jac.numpy()), expected, atol=tol, rtol=0)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
@@ -1313,6 +1895,34 @@ class TestPassthruIntegration:
         grad = tape.gradient(res, [a, b])
         expected = [tf.sin(a) * tf.cos(b), tf.cos(a) * tf.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_prob_differentiability_broadcasted(self, tol):
+        """Test that the broadcasted device probability can be differentiated"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        a = tf.Variable([0.54, 0.32, 1.2])
+        b = tf.Variable(0.12)
+
+        with tf.GradientTape() as tape:
+            # get the probability of wire 1
+            prob_wire_1 = circuit(a, b)
+            # compute Prob(|1>_1) - Prob(|0>_1)
+            res = prob_wire_1[:, 1] - prob_wire_1[:, 0]
+
+        expected = -tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [a, b])
+        expected = [tf.sin(a) * tf.cos(b), tf.cos(a) * tf.sin(b)]
+        assert np.allclose(qml.math.diag(jac[0].numpy()), expected[0])
+        assert np.allclose(jac[1], expected[1])
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1346,6 +1956,40 @@ class TestPassthruIntegration:
 
         res = tape.gradient(res, [a_tf, b_tf])
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
+
+    def test_backprop_gradient_broadcasted(self, tol):
+        """Tests that the gradient of the broadcasted qnode is correct"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.CRX(b, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        a = np.array(0.12)
+        b = np.array([0.54, 0.32, 1.2])
+
+        a_tf = tf.Variable(a, dtype=tf.float64)
+        b_tf = tf.Variable(b, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch([a_tf, b_tf])
+            res = circuit(a_tf, b_tf)
+
+        # the analytic result of evaluating circuit(a, b)
+        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
+
+        # the analytic result of evaluating grad(circuit(a, b))
+        expected_jac = np.array(
+            [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
+        )
+
+        assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [a_tf, b_tf])
+        assert np.allclose(jac[0], expected_jac[0], atol=tol, rtol=0)
+        assert np.allclose(qml.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, x, shift):
@@ -1467,6 +2111,22 @@ class TestPassthruIntegration:
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
+    def test_hermitian_backprop(self, tol):
+        """Test that backprop with qml.Hermitian works correctly"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        K = tf.linalg.diag([1, 2, 3, 4])
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(op):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            return qml.expval(op)
+
+        res = circuit(qml.Hermitian(K, wires=range(2)))
+        assert isinstance(res, tf.Tensor)
+        assert res == 4.0
+
 
 @pytest.mark.tf
 class TestSamples:
@@ -1506,7 +2166,7 @@ class TestSamples:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_estimating_full_probability(self, tol):
-        """Test that the probability of a subset of wires is accurately estimated."""
+        """Test that the probability of all wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
@@ -1547,9 +2207,93 @@ class TestSamples:
 
 
 @pytest.mark.tf
+class TestSamplesBroadcasted:
+    """Tests for broadcasted sampling outputs"""
+
+    def test_sample_observables_broadcasted(self):
+        """Test that the device allows for broadcasted sampling from observables."""
+        shots = 100
+        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
+
+        @qml.qnode(dev, diff_method="best", interface="tf")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        a = tf.Variable([0.54, -0.32, 0.19], dtype=tf.float64)
+        res = circuit(a)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (3, shots)
+        assert set(res.numpy().flat) == {-1, 1}
+
+    @pytest.mark.parametrize("batch_size", [2, 3])
+    def test_estimating_marginal_probability_broadcasted(self, batch_size, tol):
+        """Test that the broadcasted probability of a subset of wires is accurately estimated."""
+        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+
+        @qml.qnode(dev, diff_method=None, interface="tf")
+        def circuit():
+            qml.RX(tf.zeros(batch_size), 0)
+            qml.PauliX(0)
+            return qml.probs(wires=[0])
+
+        res = circuit()
+
+        assert isinstance(res, tf.Tensor)
+        assert qml.math.shape(res) == (batch_size, 2)
+
+        expected = np.array([[0, 1]] * batch_size)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("batch_size", [2, 3])
+    def test_estimating_full_probability_broadcasted(self, batch_size, tol):
+        """Test that the broadcasted probability of all wires is accurately estimated."""
+        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+
+        @qml.qnode(dev, diff_method=None, interface="tf")
+        def circuit():
+            qml.RX(tf.zeros(batch_size), 0)
+            qml.PauliX(0)
+            qml.PauliX(1)
+            return qml.probs(wires=[0, 1])
+
+        res = circuit()
+
+        assert isinstance(res, tf.Tensor)
+        assert qml.math.shape(res) == (batch_size, 4)
+
+        expected = np.array([[0, 0, 0, 1]] * batch_size)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.skip("Parameter broadcasting is not supported for multiple return values yet")
+    @pytest.mark.parametrize("a", [[0.54, -0.32, 0.19], [0.52]])
+    def test_estimating_expectation_values_broadcasted(self, a, tol):
+        """Test that estimating broadcasted expectation values using a finite number
+        of shots produces a numeric tensor"""
+        batch_size = len(a)
+        dev = qml.device("default.qubit.tf", wires=3, shots=None)
+
+        @qml.qnode(dev, diff_method=None, interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=[0])
+            qml.RX(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        a = tf.Variable(a, dtype=tf.float64)
+        b = tf.Variable(0.43, dtype=tf.float64)
+
+        res = circuit(a, b)
+        assert isinstance(res, tf.Tensor)
+        assert qml.math.shape(res) == (batch_size, 2)
+
+
+@pytest.mark.tf
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
+    @pytest.mark.slow
     def test_qnode_collection_integration(self):
         """Test that a PassthruQNode default.qubit.tf works with QNodeCollections."""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -1568,12 +2312,44 @@ class TestHighLevelIntegration:
             return tf.reduce_sum(qnodes(weights))
 
         with tf.GradientTape() as tape:
-            res = qnodes(weights)
+            res = cost(weights)
 
         grad = tape.gradient(res, weights)
 
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
+
+    @pytest.mark.slow
+    def test_qnode_collection_integration_broadcasted(self):
+        """Test that a broadcasted PassthruQNode default.qubit.tf
+        works with QNodeCollections."""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        def ansatz(weights, **kwargs):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(ansatz, obs_list, dev, interface="tf")
+
+        assert qnodes.interface == "tf"
+
+        weights = tf.Variable([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]])
+
+        @tf.function
+        def cost(weights):
+            return tf.reduce_sum(qnodes(weights), axis=-1)
+
+        with tf.GradientTape() as tape:
+            res = cost(weights)
+
+        assert qml.math.shape(res) == (3,)
+
+        jac = tape.jacobian(res, weights)
+
+        assert isinstance(jac, tf.Tensor)
+        assert jac.shape == (3, 2, 3)
 
 
 @pytest.mark.tf
@@ -1592,3 +2368,45 @@ def test_asarray_ragged_dtype_conversion(monkeypatch):
     monkeypatch.setattr(tf, "convert_to_tensor", mock_func)
     res = dev._asarray(np.array([1]), tf.float32)
     assert res.dtype == tf.float32
+
+
+@pytest.mark.tf
+class TestGetBatchSize:
+    """Tests for the updated helper method ``_get_batch_size`` of ``DefaultQubitTF``."""
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    def test_batch_size_None(self, shape):
+        """Test that a ``batch_size=None`` is reported correctly."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        tensor0 = np.ones(shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_batch_size_int(self, shape, batch_size):
+        """Test that an integral ``batch_size`` is reported correctly."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        full_shape = (batch_size,) + shape
+        tensor0 = np.ones(full_shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
+
+    def test_invalid_tensor(self):
+        """Test that an error is raised if a tensor is provided that does not
+        have a proper shape/ndim."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        with pytest.raises(ValueError, match="Can't convert non-rectangular Python"):
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
+
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_no_error_abstract_tensor(self, jit_compile):
+        """Test that no error is raised if an abstract tensor is provided"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
+
+        @tf.function(jit_compile=jit_compile, input_signature=signature)
+        def get_batch_size(tensor):
+            return dev._get_batch_size(tensor, (2,), 2)
+
+        assert get_batch_size(tf.Variable(0.2)) is None

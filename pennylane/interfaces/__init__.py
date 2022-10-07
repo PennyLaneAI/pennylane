@@ -41,7 +41,7 @@ Supported interfaces
     ~interfaces.torch
 
 """
-from .execution import cache_execute, execute, INTERFACE_NAMES, SUPPORTED_INTERFACES
+from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES
 from .set_shots import set_shots
 
 

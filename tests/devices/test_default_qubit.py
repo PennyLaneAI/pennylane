@@ -86,10 +86,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def include_inverses_with_test_data(test_data):
-    return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
-
-
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -110,6 +106,23 @@ def test_dtype_errors():
         DeviceError, match="Complex datatype must be a complex floating point type."
     ):
         qml.device("default.qubit", wires=1, c_dtype=np.float64)
+
+
+def test_custom_op_with_matrix():
+    """Test that a dummy op with a matrix is supported."""
+
+    class DummyOp(qml.operation.Operation):
+        num_wires = 1
+
+        def compute_matrix(self):
+            return np.eye(2)
+
+    with qml.tape.QuantumTape() as tape:
+        DummyOp(0)
+        qml.state()
+
+    dev = qml.device("default.qubit", wires=1)
+    assert qml.math.allclose(dev.execute(tape), np.array([1, 0]))
 
 
 class TestApply:
@@ -346,7 +359,6 @@ class TestApply:
         assert np.allclose(
             qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
-        print(qubit_device_3_wires.C_DTYPE)
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
@@ -785,7 +797,7 @@ class TestApply:
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             qubit_device_2_wires.apply([qml.QubitStateVector(np.array([1, -1]), wires=[0])])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires."):
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
 
@@ -1152,9 +1164,9 @@ class TestDefaultQubitIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": True,
             "passthru_devices": {
                 "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
@@ -2296,43 +2308,28 @@ class TestInverseDecomposition:
         expected = np.array([1.0, -1.0j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
-    def test_inverse_S_decomposition(self, tol, mocker, monkeypatch):
-        """Test that applying the inverse of the S gate
-        works when the inverse S gate is decomposed"""
+    def test_inverse_decomposition(self, tol, mocker):
+        """Test that the expansion is inverted when inverse gate is applied and the gate isn't supported."""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute")
 
-        patched_operations = dev.operations.copy()
-        patched_operations.remove("S")
-        monkeypatch.setattr(dev, "operations", patched_operations)
+        class DummyOp(qml.operation.Operation):
+            """A Dummy Op with a decomposition defined."""
 
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def test_s():
-            qml.Hadamard(wires=0)
-            qml.S(wires=0)
+            num_wires = 1
+
+            def decomposition(self):
+                return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
+
+        @qml.qnode(dev, diff_method=None)
+        def test_dummy_inv():
+            DummyOp(0).inv()
             return qml.probs(wires=0)
 
-        test_s()
+        test_dummy_inv()
         operations = spy.call_args[0][0].operations
-        assert "S" not in [i.name for i in operations]
-        assert "PhaseShift" in [i.name for i in operations]
-
-        expected = np.array([1.0, 1.0j]) / np.sqrt(2)
-        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def test_s_inverse():
-            qml.Hadamard(wires=0)
-            qml.S(wires=0).inv()
-            return qml.probs(wires=0)
-
-        test_s_inverse()
-        operations = spy.call_args[0][0].operations
-        assert "S.inv" not in [i.name for i in operations]
-        assert "PhaseShift" in [i.name for i in operations]
-
-        expected = np.array([1.0, -1.0j]) / np.sqrt(2)
-        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+        assert qml.equal(operations[0], qml.PauliY(0))
+        assert qml.equal(operations[1], qml.PauliX(0))
 
 
 class TestApplyOperationUnit:
@@ -2467,6 +2464,27 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
+    def test_apply_unitary_tensordot_double_broadcasting_error(self):
+        """Tests that an error is raised if attempting to use _apply_unitary
+        with a broadcasted matrix and a broadcasted state simultaneously."""
+        dev = qml.device("default.qubit", wires=3)
+
+        class BroadcastedToffoli(qml.operation.Operation):
+            num_wires = 3
+            batch_size = 3
+            num_params = 0
+
+            @staticmethod
+            def compute_matrix(*params, **hyperparams):
+                return np.array([U_toffoli] * 3)
+
+        state = np.eye(8)[:3]
+        wires = qml.wires.Wires([0, 1, 2])
+
+        mat = BroadcastedToffoli(wires=wires).matrix()
+        with pytest.raises(NotImplementedError, match="broadcasted unitary to an already"):
+            dev._apply_unitary(state, mat, wires=wires)
+
     def test_identity_skipped(self, mocker):
         """Test that applying the identity operation does not perform any additional computations."""
         dev = qml.device("default.qubit", wires=1)
@@ -2527,3 +2545,35 @@ class TestHamiltonianSupport:
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
+
+
+class TestGetBatchSize:
+    """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    def test_batch_size_None(self, shape):
+        """Test that a ``batch_size=None`` is reported correctly."""
+        dev = qml.device("default.qubit", wires=1)
+        tensor0 = np.ones(shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
+        tensor1 = np.arange(np.prod(shape)).reshape(shape)
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) is None
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_batch_size_int(self, shape, batch_size):
+        """Test that an integral ``batch_size`` is reported correctly."""
+        dev = qml.device("default.qubit", wires=1)
+        full_shape = (batch_size,) + shape
+        tensor0 = np.ones(full_shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
+        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
+
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
+    def test_invalid_tensor(self):
+        """Test that an error is raised if a tensor is provided that does not
+        have a proper shape/ndim."""
+        dev = qml.device("default.qubit", wires=1)
+        with pytest.raises(ValueError, match="could not broadcast"):
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)

@@ -20,22 +20,6 @@ import numpy as np
 import pennylane as qml
 
 
-@pytest.mark.parametrize(
-    "op_builder",
-    [
-        lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
-    ],
-)
-def test_adjoint_with_decomposition(op_builder):
-    """Tests the ``QubitCarry`` op under adjoint and decomposition."""
-    op = op_builder()
-    decomposed_ops = op.decomposition()
-    with qml.tape.QuantumTape() as adjoint_tape:
-        qml.adjoint(op_builder)()
-    for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
-        np.testing.assert_allclose(a.matrix(), np.conj(b.matrix()).T)
-
-
 label_data = [
     (qml.QubitCarry(wires=(0, 1, 2, 3)), "QubitCarry"),
     (qml.QubitSum(wires=(0, 1, 2)), "Σ"),

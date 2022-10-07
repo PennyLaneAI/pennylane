@@ -16,6 +16,7 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 import numpy as np
+from scipy import sparse
 
 from pennylane.operation import CVObservable, Operation
 
@@ -38,6 +39,8 @@ class Identity(CVObservable, Operation):
 
     grad_method = None
     """Gradient computation method."""
+
+    _queue_category = "_ops"
 
     ev_order = 1
 
@@ -90,6 +93,10 @@ class Identity(CVObservable, Operation):
         return np.eye(2)
 
     @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        return sparse.csr_matrix([[1, 0], [0, 1]])
+
+    @staticmethod
     def _heisenberg_rep(p):
         return np.array([1, 0, 0])
 
@@ -99,7 +106,7 @@ class Identity(CVObservable, Operation):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -146,5 +153,8 @@ class Identity(CVObservable, Operation):
         """Alias for matrix representation of the identity operator."""
         return Identity.compute_matrix(*params)
 
-    def adjoint(self):  # pylint:disable=arguments-differ
+    def adjoint(self):
         return Identity(wires=self.wires)
+
+    def pow(self, _):
+        return [Identity(wires=self.wires)]

@@ -574,6 +574,7 @@ class TestFiniteDiffIntegration:
 
         tapes, fn = finite_diff(tape, approx_order=approx_order, strategy=strategy)
         res = fn(dev.batch_execute(tapes))
+
         assert res.shape == (5, 2)
 
         expected = (

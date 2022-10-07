@@ -73,11 +73,12 @@ class TestHelperFunctions:
         "op, out",
         [
             (qml.PauliX(0), ["─X", "─", "─", "─"]),
-            (qml.CNOT(wires=(0, 2)), ["╭C", "│", "╰X", "─"]),
-            (qml.Toffoli(wires=(0, 1, 3)), ["╭C", "├C", "│", "╰X"]),
+            (qml.CNOT(wires=(0, 2)), ["╭●", "│", "╰X", "─"]),
+            (qml.Toffoli(wires=(0, 1, 3)), ["╭●", "├●", "│", "╰X"]),
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
             (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
+            (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
         ],
     )
     def test_add_op(self, op, out):
@@ -88,8 +89,8 @@ class TestHelperFunctions:
         "op, out",
         [
             (qml.PauliY(1), ["─X", "─Y", "─", "─"]),
-            (qml.CNOT(wires=(1, 2)), ["─X", "╭C", "╰X", "─"]),
-            (qml.CRX(1.23, wires=(2, 3)), ["─X", "─", "╭C", "╰RX"]),
+            (qml.CNOT(wires=(1, 2)), ["─X", "╭●", "╰X", "─"]),
+            (qml.CRX(1.23, wires=(2, 3)), ["─X", "─", "╭●", "╰RX"]),
         ],
     )
     def test_add_second_op(self, op, out):
@@ -242,10 +243,15 @@ class TestMaxLength:
 
 
 single_op_tests_data = [
-    (qml.CNOT(wires=(0, 1)), "0: ─╭C─┤  \n1: ─╰X─┤  "),
-    (qml.Toffoli(wires=(0, 1, 2)), "0: ─╭C─┤  \n1: ─├C─┤  \n2: ─╰X─┤  "),
+    (qml.MultiControlledX([0, 1, 2], 3, "010"), "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  "),
+    (
+        qml.ops.op_math.Controlled(qml.PauliY(3), (0, 1, 2), [0, 1, 0]),
+        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
+    ),
+    (qml.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
+    (qml.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
     (qml.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
-    (qml.CSWAP(wires=(0, 1, 2)), "0: ─╭C────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
+    (qml.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
     (
         qml.DoubleExcitationPlus(1.23, wires=(0, 1, 2, 3)),
         "0: ─╭G²₊(1.23)─┤  \n1: ─├G²₊(1.23)─┤  \n2: ─├G²₊(1.23)─┤  \n3: ─╰G²₊(1.23)─┤  ",

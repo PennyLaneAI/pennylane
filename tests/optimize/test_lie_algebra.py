@@ -104,7 +104,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
-        op = qml.utils.expand(op.matrix(), op.wires, wires)
+        op = qml.math.expand_matrix(op.matrix(), op.wires, wires)
         omegas_np.append(1j * np.trace(lie_algebra_np @ op))
     omegas = opt.get_omegas()
     assert np.allclose(omegas, omegas_np)
@@ -151,7 +151,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
-        op = qml.utils.expand(op.matrix(), op.wires, wires)
+        op = qml.math.expand_matrix(op.matrix(), op.wires, wires)
         omegas_np.append(1j * np.trace(lie_algebra_np @ op))
     omegas = opt.get_omegas()
 

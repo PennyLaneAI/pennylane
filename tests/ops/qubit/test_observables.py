@@ -141,6 +141,9 @@ class TestSimpleObservables:
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
 
+# run all tests in this class in the same thread.
+# Prevents multiple threads from updating Hermitian._eigs at the same time
+@pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestHermitian:
     """Test the Hermitian observable"""
@@ -251,7 +254,6 @@ class TestHermitian:
         expected = eigvecs.conj().T
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates_two_different_observables(self, obs1, obs2, tol):
@@ -356,6 +358,13 @@ class TestHermitian:
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix()
+
+    def test_hermitian_empty_wire_list_error(self):
+        """Tests that the hermitian operator raises an error when instantiated with wires=[]."""
+        herm_mat = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.Hermitian(herm_mat, wires=[])
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
@@ -471,6 +480,22 @@ class TestProjector:
         res_static = qml.Projector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
+
+    def test_pow_zero(self):
+        """Assert that the projector raised to zero is an empty list."""
+
+        basis_state = np.array([0, 1])
+        op = qml.Projector(basis_state, wires=(0, 1))
+        assert len(op.pow(0)) == 0
+
+    @pytest.mark.parametrize("n", (1, 3))
+    def test_pow_non_zero_positive_int(self, n):
+        """Test that the projector raised to a positive integer is just a copy."""
+        basis_state = np.array([0, 1])
+        op = qml.Projector(basis_state, wires=(0, 1))
+        pow_op = op.pow(n)[0]
+        assert pow_op.__class__ is qml.Projector
+        assert qml.math.allclose(pow_op.data[0], op.data[0])
 
 
 label_data = [

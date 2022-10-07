@@ -33,20 +33,6 @@ class TestQFT:
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("num_inversions", [1, 2, 3])
-    def test_QFT_adjoint_method(self, num_inversions):
-        """Test the adjoint method of the QFT class"""
-        op = qml.QFT(wires=range(3))
-
-        for _ in range(num_inversions):
-            op = op.adjoint()
-
-        res = op.matrix()
-        inverse = num_inversions % 2 == 1
-        exp = QFT.conj().T if inverse else QFT
-        assert np.allclose(res, exp)
-        assert op.inverse is inverse
-
     @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
@@ -84,26 +70,6 @@ class TestQFT:
 
         for i in range(1, n_qubits):
             assert np.allclose(0, circ(n_qubits)[i], tol)
-
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
-    def test_QFT_adjoint_decomposition(self, n_qubits):  # tol
-        """Test if using the qml.adjoint transform results in the right
-        decomposition."""
-
-        # QFT adjoint has right decompositions
-        qft = qml.QFT(wires=range(n_qubits))
-        qft_dec = qft.expand().operations
-
-        expected_op = [x.adjoint() for x in qft_dec]
-        expected_op.reverse()
-
-        adj = qml.QFT(wires=range(n_qubits)).adjoint()
-        op = adj.expand().operations
-
-        for j in range(0, len(op)):
-            assert op[j].name == expected_op[j].name
-            assert op[j].wires == expected_op[j].wires
-            assert op[j].parameters == expected_op[j].parameters
 
     def test_matrix(self, tol):
         """Test that the matrix representation is correct."""

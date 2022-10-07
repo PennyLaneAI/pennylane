@@ -167,15 +167,6 @@ class QuantumPhaseEstimation(Operation):
                 ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
             )
 
-        op_list.append(qml.templates.QFT(wires=estimation_wires).inv())
+        op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
 
         return op_list
-
-    def adjoint(self):  # pylint: disable=arguments-differ
-        adjoint_op = QuantumPhaseEstimation(
-            self.parameters[0],
-            target_wires=self.hyperparameters["target_wires"],
-            estimation_wires=self.hyperparameters["estimation_wires"],
-        )
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op

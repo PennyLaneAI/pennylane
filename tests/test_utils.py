@@ -271,7 +271,7 @@ class TestSparse:
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
     def test_sparse_format(self):
-        """Tests that sparse_hamiltonian returns a scipy.sparse.coo_matrix object"""
+        """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
 
         coeffs = [-0.25, 0.75]
         obs = [
@@ -282,7 +282,7 @@ class TestSparse:
 
         sparse_matrix = qml.utils.sparse_hamiltonian(H)
 
-        assert isinstance(sparse_matrix, scipy.sparse.coo_matrix)
+        assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
 
     def test_sparse_typeerror(self):
         """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
@@ -440,138 +440,8 @@ class TestArgumentHelpers:
             pu._inv_dict(test_data)
 
 
-class TestExpand:
-    """Tests multi-qubit operator expansion"""
-
-    def test_expand_one(self, tol):
-        """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        # test applied to wire 0
-        res = pu.expand(U, [0], 3)
-        expected = np.kron(np.kron(U, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1
-        res = pu.expand(U, [1], 3)
-        expected = np.kron(np.kron(I, U), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 2
-        res = pu.expand(U, [2], 3)
-        expected = np.kron(np.kron(I, I), U)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_one_wires_list(self, tol):
-        """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        # test applied to wire 0
-        res = pu.expand(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 4
-        res = pu.expand(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I, U), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 9
-        res = pu.expand(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I, I), U)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_consecutive_wires(self, tol):
-        """Test that a 2 qubit gate on consecutive wires correctly
-        expands to 4 qubits."""
-
-        # test applied to wire 0+1
-        res = pu.expand(U2, [0, 1], 4)
-        expected = np.kron(np.kron(U2, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1+2
-        res = pu.expand(U2, [1, 2], 4)
-        expected = np.kron(np.kron(I, U2), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 2+3
-        res = pu.expand(U2, [2, 3], 4)
-        expected = np.kron(np.kron(I, I), U2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_reversed_wires(self, tol):
-        """Test that a 2 qubit gate on reversed consecutive wires correctly
-        expands to 4 qubits."""
-
-        # CNOT with target on wire 1
-        res = pu.expand(CNOT, [1, 0], 4)
-        rows = np.array([0, 2, 1, 3])
-        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_invalid_wires(self):
-        """test exception raised if unphysical subsystems provided."""
-        with pytest.raises(
-            ValueError,
-            match="Invalid target subsystems provided in 'original_wires' argument",
-        ):
-            pu.expand(U2, [-1, 5], 4)
-
-    def test_expand_invalid_matrix(self):
-        """test exception raised if incorrect sized matrix provided/"""
-        with pytest.raises(ValueError, match="Matrix parameter must be of size"):
-            pu.expand(U, [0, 1], 4)
-
-    def test_expand_three_consecutive_wires(self, tol):
-        """Test that a 3 qubit gate on consecutive
-        wires correctly expands to 4 qubits."""
-
-        # test applied to wire 0,1,2
-        res = pu.expand(U_toffoli, [0, 1, 2], 4)
-        expected = np.kron(U_toffoli, I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1,2,3
-        res = pu.expand(U_toffoli, [1, 2, 3], 4)
-        expected = np.kron(I, U_toffoli)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
-        """Test that a 3 qubit gate on non-consecutive but ascending
-        wires correctly expands to 4 qubits."""
-
-        # test applied to wire 0,2,3
-        res = pu.expand(U_toffoli, [0, 2, 3], 4)
-        expected = (
-            np.kron(SWAP, np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(SWAP, np.kron(I, I))
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 0,1,3
-        res = pu.expand(U_toffoli, [0, 1, 3], 4)
-        expected = (
-            np.kron(np.kron(I, I), SWAP) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), SWAP)
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
-        """Test that a 3 qubit gate on non-consecutive non-ascending
-        wires correctly expands to 4 qubits"""
-
-        # test applied to wire 3, 1, 2
-        res = pu.expand(U_toffoli, [3, 1, 2], 4)
-        # change the control qubit on the Toffoli gate
-        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = np.kron(I, U_toffoli[:, rows][rows])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 3, 0, 2
-        res = pu.expand(U_toffoli, [3, 0, 2], 4)
-        # change the control qubit on the Toffoli gate
-        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = (
-            np.kron(SWAP, np.kron(I, I))
-            @ np.kron(I, U_toffoli[:, rows][rows])
-            @ np.kron(SWAP, np.kron(I, I))
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+class TestExpandVector:
+    """Tests vector expansion to more wires"""
 
     VECTOR1 = np.array([1, -1])
     ONES = np.array([1, 1])
@@ -593,7 +463,7 @@ class TestExpand:
     def test_expand_vector_single_wire(self, original_wires, expanded_wires, expected, tol):
         """Test that expand_vector works with a single-wire vector."""
 
-        res = pu.expand_vector(TestExpand.VECTOR1, original_wires, expanded_wires)
+        res = pu.expand_vector(TestExpandVector.VECTOR1, original_wires, expanded_wires)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -616,7 +486,7 @@ class TestExpand:
     def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):
         """Test that expand_vector works with a single-wire vector."""
 
-        res = pu.expand_vector(TestExpand.VECTOR2, original_wires, expanded_wires)
+        res = pu.expand_vector(TestExpandVector.VECTOR2, original_wires, expanded_wires)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -626,9 +496,9 @@ class TestExpand:
             ValueError,
             match="Invalid target subsystems provided in 'original_wires' argument",
         ):
-            pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
+            pu.expand_vector(TestExpandVector.VECTOR2, [-1, 5], 4)
 
     def test_expand_vector_invalid_vector(self):
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
-            pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
+            pu.expand_vector(TestExpandVector.VECTOR1, [0, 1], 4)

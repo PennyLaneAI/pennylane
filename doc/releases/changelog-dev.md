@@ -1,141 +1,132 @@
 :orphan:
 
-# Release 0.24.0-dev (development release)
+# Release 0.27.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* Boolean mask indexing of the parameter-shift Hessian
-  [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
+* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
+  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
+  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
+  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
+  integrals tensor are diagonal.
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
 
-  The `argnum` keyword argument for `param_shift_hessian` 
-  is now allowed to be a twodimensional Boolean `array_like`.
-  Only the indicated entries of the Hessian will then be computed.
-  A particularly useful example is the computation of the diagonal
-  of the Hessian:
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
-  ```python
-  dev = qml.device("default.qubit", wires=1)
-  with qml.tape.QuantumTape() as tape:
-      qml.RX(0.2, wires=0)
-      qml.RY(-0.9, wires=0)
-      qml.RX(1.1, wires=0)
-      qml.expval(qml.PauliZ(0))
+* `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
+  symmetries of the Hamiltonian.
+  [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
-  argnum = qml.math.eye(3, dtype=bool)
-  ```
   ```pycon
-  >>> tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=argnum)
-  >>> fn(qml.execute(tapes, dev, None))
-  array([[[-0.09928388,  0.        ,  0.        ],
-        [ 0.        , -0.27633945,  0.        ],
-        [ 0.        ,  0.        , -0.09928388]]])
+    >>> symbols = ['He', 'H']
+    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qchem.symmetry_generators(H)
+    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
+                                generators, paulixops, paulix_sector, wire_order=H.wires)
+    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
+    ```
+
+  When used within a QNode, this method applies the tapered operation directly:
+
+  ```pycon
+    >>> dev = qml.device('default.qubit', wires=[0, 1])
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
+    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    >>> print(drawer(params=[3.14159]))
+        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
-
-* Speed up measuring of commuting Pauli operators
-  [(#2425)](https://github.com/PennyLaneAI/pennylane/pull/2425)
-
-  The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
-  when many commuting paulis of the same type are measured.
 
 <h3>Improvements</h3>
 
-* Test classes are created in qchem test modules to group the integrals and matrices unittests.
-  [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
 
-* Introduced an `operations_only` argument to the `tape.get_parameters` method.
-  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
+* Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
+  [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-* The `gradients` module now uses faster subroutines and uniform
-  formats of gradient rules.
-  [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)
+   - `QueuingContext` is renamed to `QueuingManager`.
+   - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+   - `QueuingManager` is no longer an abstract base class.
+   - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+   - `QueuingManager` is no longer a context manager.
+   -  Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and 
+     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+      is now only available through `QueuingManager`.
+   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
+      and `_get_info` methods. The public analogues should be used instead.
+   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+      `update_info`.
 
-* Wires can be passed as the final argument to an `Operator`, instead of requiring
-  the wires to be explicitly specified with keyword `wires`. This functionality already
-  existed for `Observable`'s, but now extends to all `Operator`'s.
-  [(#2432)](https://github.com/PennyLaneAI/pennylane/pull/2432)
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
+   
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.
+  [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
-  ```pycon
-  >>> qml.S(0)
-  S(wires=[0])
-  >>> qml.CNOT((0,1))
-  CNOT(wires=[0, 1])
-  ```
-
-* Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
-  This is a temporary fix that will disappear in the future.
-  [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
-
-* The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
-  particle number, and spin operators using the symmetries obtained from the Hamiltonian.
-  [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
-
-* The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
-  method for a provided device and interface, in human-readable format.
-  [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
 <h3>Breaking changes</h3>
 
-* The module `qml.gradients.param_shift_hessian` has been renamed to
-  `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
-  function. Note that the `param_shift_hessian` function is unaffected by this change and can be
-  invoked in the same manner as before via the `qml.gradients` module.
-  [(#2528)](https://github.com/PennyLaneAI/pennylane/pull/2528)
-* The properties `eigval` and `matrix` from the `Operator` class were replaced with the
-  methods `eigval()` and `matrix(wire_order=None)`.
-  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+ * `QueuingContext` is renamed `QueuingManager`.
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-* `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
-  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+ * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
 
-* Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
-  [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
-  
-* The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
-  enables a derived class (device) in a plugin to choose correct data-types.
-  [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=4, r_dtype=np.float32, c_dtype=np.complex64)
-  >>> dev.R_DTYPE
-  <class 'numpy.float32'>
-  >>> dev.C_DTYPE
-  <class 'numpy.complex64'>
-  ```
-
-<h3>Bug fixes</h3>
-
-* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
-  computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
-  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
-
-* Fixed a bug where `QNGOptimizer` did not work with operators
-  whose generator was a Hamiltonian.
-  [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
-
-* Fixes a bug with the decomposition of `qml.CommutingEvolution`.
-  [(#2542)](https://github.com/PennyLaneAI/pennylane/pull/2542)
-
-* Fixed a bug enabling PennyLane to work with the latest version of Autoray.
-  [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
-
-* Fixed a bug which caused different behaviour for `Hamiltonian @ Observable` and `Observable @ Hamiltonian`.
-  [(#2570)](https://github.com/PennyLaneAI/pennylane/pull/2570)
-
-* Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
-  instead of the controlled version of the diagonal unitary.
-  [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
+ * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
 <h3>Deprecations</h3>
 
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
 <h3>Documentation</h3>
 
-* The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
-  is now used to style the Sphinx documentation.
-  [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
+<h3>Bug fixes</h3>
+
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
+Guillermo Alonso-Linaje,
+Juan Miguel Arrazola,
+Albert Mitjans Coma,
+Utkarsh Azad,
+Diego Guala,
+Soran Jahangiri,
+Christina Lee,
+Mudit Pandey,
+Jay Soni,
+Antal Száva,
+David Wierichs,

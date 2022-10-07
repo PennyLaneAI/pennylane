@@ -38,14 +38,18 @@ from .general_shift_rules import (
 def _process_argnum(argnum, tape):
     """Process the argnum keyword argument to ``param_shift_hessian`` from any of ``None``,
     ``int``, ``Sequence[int]``, ``array_like[bool]`` to an ``array_like[bool]``."""
+    _trainability_note = (
+        "This may be caused by attempting to differentiate with respect to parameters "
+        "that are not marked as trainable."
+    )
     if argnum is None:
         # All trainable tape parameters are considered
-        argnum = tape.trainable_params
+        argnum = list(range(tape.num_params))
     elif isinstance(argnum, int):
         if argnum >= tape.num_params:
             raise ValueError(
-                f"The index {argnum} exceeds the number of "
-                f"trainable tape parameters ({tape.num_params})."
+                f"The index {argnum} exceeds the number of trainable tape parameters "
+                f"({tape.num_params}). " + _trainability_note
             )
         # Make single marked parameter an iterable
         argnum = [argnum]
@@ -57,7 +61,7 @@ def _process_argnum(argnum, tape):
             if qml.math.max(argnum) >= tape.num_params:
                 raise ValueError(
                     f"The index {qml.math.max(argnum)} exceeds the number of "
-                    f"trainable tape parameters ({tape.num_params})."
+                    f"trainable tape parameters ({tape.num_params})." + _trainability_note
                 )
             # ...and translate it to Boolean 1D iterable
             argnum = [i in argnum for i in range(tape.num_params)]
@@ -66,6 +70,7 @@ def _process_argnum(argnum, tape):
             raise ValueError(
                 "One-dimensional Boolean array argnum is expected to have as many entries as the "
                 f"tape has trainable parameters ({tape.num_params}), but got {len(argnum)}."
+                + _trainability_note
             )
         # Finally mark all combinations using the outer product
         argnum = qml.math.tensordot(argnum, argnum, axes=0)
@@ -78,7 +83,7 @@ def _process_argnum(argnum, tape):
         # If the iterable is 2D, make sure it is Boolean, symmetric and of the correct size
         raise ValueError(
             f"Expected a symmetric 2D Boolean array with shape {(tape.num_params,) * 2} "
-            f"for argnum, but received {argnum}."
+            f"for argnum, but received {argnum}." + _trainability_note
         )
     return argnum
 
@@ -388,15 +393,15 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         gate arguments generated from parameter-shift rules (we only draw the first four out of
         all 13 tapes here):
 
-        >>> for h_tape in hessian_tapes:
+        >>> for h_tape in hessian_tapes[0:4]:
         ...     print(qml.drawer.tape_text(h_tape, decimals=1))
-        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(-2.6)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(-2.6)─╭●───────┤ ╭<Z@Z>
         1: ───────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(2.1)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(2.1)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(1.8)─┤ ╰<Z@Z>
-        0: ──RX(2.1)─╭C────────┤ ╭<Z@Z>
+        0: ──RX(2.1)─╭●────────┤ ╭<Z@Z>
         1: ──────────╰RY(-1.4)─┤ ╰<Z@Z>
 
         To enable more detailed control over the parameter shifts, shift values can be provided
@@ -409,15 +414,15 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(
         ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
         ... )
-        >>> for h_tape in hessian_tapes:
+        >>> for h_tape in hessian_tapes[0:4]:
         ...     print(qml.drawer.tape_text(h_tape, decimals=1))
-        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(0.0)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(0.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(1.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(1.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.4)─┤ ╰<Z@Z>
 
         .. note::
@@ -486,7 +491,10 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
     method = "analytic" if argnum is None else "best"
     diff_methods = grad_method_validation(method, tape)
 
-    if all(g == "0" for g in diff_methods):
+    for i, g in enumerate(diff_methods):
+        if g == "0":
+            bool_argnum[i] = bool_argnum[:, i] = False
+    if qml.math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
         par_dim = len(tape.trainable_params)
         return [], lambda _: qml.math.zeros([tape.output_dim, par_dim, par_dim])
 

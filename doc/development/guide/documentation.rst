@@ -441,8 +441,8 @@ introductory quickstarts:
 * **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
   located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
-* **Optimizers**: new optimizers should be added to the :doc:`/introduction/optimizers` quickstart,
-  located at ``doc/introduction/optimizers.rst``.
+* **Optimizers**: new optimizers should be added to the relevant quickstart section
+  in :doc:`/introduction/interfaces`, located at ``doc/introduction/interfaces.rst``.
 
 * **Measurement**: new measurement functions should be added to the :doc:`/introduction/measurements` quickstart,
   located at ``doc/introduction/measurements.rst``.
@@ -531,3 +531,14 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
     To build the interfaces documentation, PyTorch and TensorFlow will need to
     be installed, see :ref:`install_interfaces`.
+
+.. note::
+
+  If you are running Python3.8 on an M1 Mac you need to set the following environment variables
+  before installing the requirements to be able to install the grpcio package required by TensorFlow
+  (`see thread <https://github.com/grpc/grpc/issues/25082#issuecomment-778392661>`):
+
+  .. code-block:: bash
+
+    export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
+    export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1

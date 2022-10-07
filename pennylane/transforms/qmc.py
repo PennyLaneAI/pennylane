@@ -15,9 +15,8 @@
 Contains the quantum_monte_carlo transform.
 """
 from functools import wraps
-from pennylane import PauliX, Hadamard, MultiControlledX, CZ
+from pennylane import PauliX, Hadamard, MultiControlledX, CZ, adjoint
 from pennylane.wires import Wires
-from pennylane.transforms import adjoint
 from pennylane.templates import QFT
 
 
@@ -353,6 +352,6 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             for _ in range(n_reps):
                 q(*args, **kwargs)
 
-        QFT(wires=estimation_wires).inv()
+        adjoint(QFT(wires=estimation_wires))
 
     return wrapper

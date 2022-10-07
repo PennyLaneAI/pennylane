@@ -15,7 +15,7 @@
 # pylint: disable=no-self-use,pointless-statement, no-member
 import pytest
 from flaky import flaky
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -34,7 +34,7 @@ obs = {
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "Projector": qml.Projector(np.array([1]), wires=[0]),
-    "SparseHamiltonian": qml.SparseHamiltonian(coo_matrix(np.eye(8)), wires=[0, 1, 2]),
+    "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
     "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
 }
 
@@ -608,7 +608,7 @@ class TestTensorExpval:
         h_data = np.array(
             [-1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1], dtype=np.complex128
         )
-        h = coo_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
+        h = csr_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def result():

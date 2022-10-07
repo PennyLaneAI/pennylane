@@ -14,6 +14,8 @@
 """
 Tests for the Hamiltonian class.
 """
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
@@ -76,6 +78,8 @@ valid_hamiltonians = [
     ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
     (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
+    ((0.5 + 1.2j, 1.2 + 0.5j), (qml.PauliX(0), qml.PauliY(1))),
+    ((0.7 + 0j, 0 + 1.3j), (qml.PauliX(0), qml.PauliY(1))),
 ]
 
 valid_hamiltonians_str = [
@@ -90,6 +94,8 @@ valid_hamiltonians_str = [
     "  (1.5) [Z0]\n+ (2.0) [Y2]",
     "  (0.5) [Y0]\n+ (-0.1) [Hermitian0,1]",
     "  (0.5) [X0]\n+ (1.2) [X0 X1]",
+    "  ((0.5+1.2j)) [X0]\n+ ((1.2+0.5j)) [Y1]",
+    "  (1.3j) [Y1]\n+ ((0.7+0j)) [X0]",
 ]
 
 valid_hamiltonians_repr = [
@@ -102,6 +108,8 @@ valid_hamiltonians_repr = [
     "<Hamiltonian: terms=3, wires=[0, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 1, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
 ]
@@ -264,6 +272,40 @@ add_hamiltonians = [
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
+    # Case where the 1st hamiltonian doesn't contain all wires
+    (
+        qml.Hamiltonian([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
+        qml.Hamiltonian([6.78], [qml.PauliZ(2)]),
+        qml.Hamiltonian([1.23, -3.45, 6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+    ),
+]
+
+add_zero_hamiltonians = [
+    qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    qml.Hamiltonian(
+        [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+    ),
+]
+
+iadd_zero_hamiltonians = [
+    # identical hamiltonians
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    ),
+    (
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+    ),
 ]
 
 sub_hamiltonians = [
@@ -330,6 +372,12 @@ sub_hamiltonians = [
             (0.5, 1.2, -1.5, -0.3),
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
+    ),
+    # Case where the 1st hamiltonian doesn't contain all wires
+    (
+        qml.Hamiltonian([1.23, -3.45], [qml.PauliX(0), qml.PauliY(1)]),
+        qml.Hamiltonian([6.78], [qml.PauliZ(2)]),
+        qml.Hamiltonian([1.23, -3.45, -6.78], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
     ),
 ]
 
@@ -642,6 +690,20 @@ class TestHamiltonian:
         H = qml.Hamiltonian(*terms)
         assert H.__str__() == string
 
+    @patch("builtins.print")
+    def test_small_hamiltonian_ipython_display(self, mock_print):
+        """Test that the ipython_dipslay method prints __str__."""
+        H = 1.0 * qml.PauliX(0)
+        H._ipython_display_()
+        mock_print.assert_called_with(str(H))
+
+    @patch("builtins.print")
+    def test_big_hamiltonian_ipython_display(self, mock_print):
+        """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
+        H = qml.Hamiltonian([1] * 16, [qml.PauliX(i) for i in range(16)])
+        H._ipython_display_()
+        mock_print.assert_called_with(repr(H))
+
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_repr))
     def test_hamiltonian_repr(self, terms, string):
         """Tests that the __repr__ function for printing is correct"""
@@ -714,6 +776,16 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added correctly"""
         assert H.compare(H1 + H2)
 
+    @pytest.mark.parametrize("H", add_zero_hamiltonians)
+    def test_hamiltonian_add_zero(self, H):
+        """Tests that Hamiltonians can be added to zero"""
+        assert H.compare(H + 0)
+        assert H.compare(0 + H)
+        assert H.compare(H + 0.0)
+        assert H.compare(0.0 + H)
+        assert H.compare(H + 0e1)
+        assert H.compare(0e1 + H)
+
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
         """Tests that scalars and Hamiltonians are multiplied correctly"""
@@ -754,6 +826,17 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added inline correctly"""
         H1 += H2
         assert H.compare(H1)
+        assert H.wires == H1.wires
+
+    @pytest.mark.parametrize(("H1", "H2"), iadd_zero_hamiltonians)
+    def test_hamiltonian_iadd_zero(self, H1, H2):
+        """Tests in-place addition between Hamiltonians and zero"""
+        H1 += 0
+        assert H1.compare(H2)
+        H1 += 0.0
+        assert H1.compare(H2)
+        H1 += 0e1
+        assert H1.compare(H2)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_imul(self, coeff, H, res):
@@ -766,6 +849,7 @@ class TestHamiltonian:
         """Tests that Hamiltonians are subtracted inline correctly"""
         H1 -= H2
         assert H.compare(H1)
+        assert H.wires == H1.wires
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""
@@ -788,19 +872,12 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="Cannot subtract"):
             H -= A
 
-    def test_hamiltonian_queue(self):
-        """Tests that Hamiltonian are queued correctly"""
-
-        # Outside of tape
+    def test_hamiltonian_queue_outside(self):
+        """Tests that Hamiltonian are queued correctly when components are defined outside the recording context."""
 
         queue = [
             qml.Hadamard(wires=1),
             qml.PauliX(wires=0),
-            qml.PauliZ(0),
-            qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(1),
-            qml.PauliZ(1),
             qml.Hamiltonian(
                 [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
             ),
@@ -813,9 +890,14 @@ class TestHamiltonian:
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert len(tape.queue) == 3
+        assert isinstance(tape.queue[0], qml.Hadamard)
+        assert isinstance(tape.queue[1], qml.PauliX)
+        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(tape.queue[2].obs)
 
-        # Inside of tape
+    def test_hamiltonian_queue_inside(self):
+        """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
 
         queue = [
             qml.Hadamard(wires=1),
@@ -852,6 +934,11 @@ class TestHamiltonian:
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
         assert all(isinstance(item, qml.operation.Operator) for item in o)
+
+    def test_hamiltonian_no_empty_wire_list_error(self):
+        """Test that empty Hamiltonian does not raise an empty wire error."""
+        hamiltonian = qml.Hamiltonian([], [])
+        assert isinstance(hamiltonian, qml.Hamiltonian)
 
 
 class TestHamiltonianCoefficients:
@@ -1278,7 +1365,7 @@ class TestGrouping:
         with qml.tape.QuantumTape() as tape:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        assert tape.queue == [a, b, c, H]
+        assert tape.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.

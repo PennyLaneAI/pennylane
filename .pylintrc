@@ -30,7 +30,7 @@ ignored-classes=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.l
 # it should appear only once).
 # Cyclical import checks are disabled for now as they are frequently used in
 # the code base, but this can be removed in the future once cycles are resolved.
-disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code,cyclic-import
+disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code,cyclic-import,import-error,bad-option-value
 
 [MISCELLANEOUS]
 

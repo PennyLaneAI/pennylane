@@ -16,7 +16,7 @@ from collections import defaultdict
 import pytest
 import warnings
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -128,6 +128,20 @@ class TestValidation:
 
         assert method == "backprop"
         assert device is dev
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("accepted_name, official_name", qml.interfaces.INTERFACE_MAP.items())
+    def test_validate_backprop_method_all_interface_names(self, accepted_name, official_name):
+        """Test that backprop devices are mapped for all possible interface names."""
+        if accepted_name is None:
+            pytest.skip("None is not a backprop interface.")
+
+        dev = qml.device("default.qubit", wires=1)
+
+        diff_method, _, new_dev = QNode._validate_backprop_method(dev, accepted_name)
+
+        assert diff_method == "backprop"
+        assert new_dev.capabilities().get("passthru_interface") == official_name
 
     def test_validate_backprop_child_method(self, monkeypatch):
         """Test that the method for validating the backprop diff method
@@ -429,7 +443,7 @@ class TestValidation:
         @qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
+            return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
             qml.QuantumFunctionError,

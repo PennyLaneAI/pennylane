@@ -28,7 +28,8 @@ from .qng import QNGOptimizer
 from .rotosolve import RotosolveOptimizer
 from .rotoselect import RotoselectOptimizer
 from .shot_adaptive import ShotAdaptiveOptimizer
-
+from .spsa import SPSAOptimizer
+from .qnspsa import QNSPSAOptimizer
 
 # Optimizers to display in the docs
 __all__ = [
@@ -43,4 +44,6 @@ __all__ = [
     "RotosolveOptimizer",
     "RotoselectOptimizer",
     "ShotAdaptiveOptimizer",
+    "SPSAOptimizer",
+    "QNSPSAOptimizer",
 ]
