@@ -41,9 +41,9 @@ def compute_vjp_single(dy, jac):
     if not isinstance(jac, tuple):
         # Single measurement with no dimension e.g. expval
         if dy.shape == ():
-            jac = math.reshape(jac, 1)
+            jac = math.reshape(jac, (1, 1))
             dy_row = math.reshape(dy_row, 1)
-            res = [math.tensordot(jac, dy_row, 1)]
+            res = math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
         else:
@@ -61,7 +61,7 @@ def compute_vjp_single(dy, jac):
         else:
             jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, dy_row, [[1], [0]])
-
+    print("inside", res)
     return res
 
 
@@ -111,7 +111,6 @@ def compute_vjp(dy, jac, num=None):
     Returns:
         tensor_like: the vector-Jacobian product
     """
-
     if jac is None:
         return None
 
