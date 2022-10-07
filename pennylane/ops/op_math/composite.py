@@ -24,7 +24,7 @@ from pennylane import math
 from pennylane.operation import Operator
 
 
-class CompositeOp(Operator, abc.ABC):
+class CompositeOp(Operator):
     """A base class for operators that are composed of other operators.
 
     Args:
