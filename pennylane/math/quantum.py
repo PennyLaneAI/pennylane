@@ -938,3 +938,45 @@ def _check_state_vector(state_vector):
     if not is_abstract(norm):
         if not allclose(norm, 1.0, atol=1e-10):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+
+def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
+    r"""
+    Compute the min-entropy of a state.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Min-Entropy of the input state.
+
+    """
+
+    # Cast as a c_dtype array
+    state = cast(state, dtype=c_dtype)
+    len_state= state.shape[0]
+
+    if check_state:
+        if state.shape == (len_state):
+            _check_state_vector(state)
+        else:
+            _check_density_matrix(state)
+
+    if state.shape == (len_state,):
+        state = qml.math.outer(state, np.conj(state))
+
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    # eigenvalues of the input state
+    evs_state, u_state = qml.math.linalg.eigh(state)
+
+    # cast all eigenvalues to real
+    evs_state = np.real(evs_state)
+
+    min_ent = -np.log(evs_state.max()) / div_base
