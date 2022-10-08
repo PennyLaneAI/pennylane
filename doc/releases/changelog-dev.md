@@ -93,6 +93,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
  * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
    [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
+* Added `min_entropy` function in `pennylane/math/quantum.py` that takes either a state vector or a density matrix and logarithm base as input, and outputs it's minimum entropy.
+  [(#3153)](https://github.com/PennyLaneAI/pennylane/pull/3153)
+
 <h3>Deprecations</h3>
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
