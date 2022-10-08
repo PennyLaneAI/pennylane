@@ -980,3 +980,5 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
     evs_state = np.real(evs_state)
 
     min_ent = -np.log(evs_state.max()) / div_base
+
+    return min_ent
