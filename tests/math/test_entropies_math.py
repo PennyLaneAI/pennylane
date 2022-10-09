@@ -236,10 +236,10 @@ class TestMinEntropy:
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([1, 0], 1),
-            ([0, 1], 1),
-            ([1, 1] / np.sqrt(2), 1),
-            ([1, -1] / np.sqrt(2), 1),
+            ([1, 0], -np.log(1)),
+            ([0, 1], -np.log(1)),
+            ([1, 1] / np.sqrt(2), -np.log(1)),
+            ([1, -1] / np.sqrt(2), -np.log(1)),
         ],
     )
     @pytest.mark.parametrize("base", base)
@@ -255,8 +255,8 @@ class TestMinEntropy:
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([[1, 0], [0, 0]], 1),
-            ([[0, 0], [0, 1]], 1),
+            ([[1, 0], [0, 0]], -np.log(1)),
+            ([[0, 0], [0, 1]], -np.log(1)),
         ],
     )
     @pytest.mark.parametrize("base", base)
