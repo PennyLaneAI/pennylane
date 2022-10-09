@@ -224,3 +224,79 @@ class TestRelativeEntropy:
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.math.relative_entropy(state0, state1)
+
+
+class TestMinEntropy:
+    """Tests for the min entropy qml.math function"""
+
+    base = [None, 2]
+    check_states = [True, False]
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [([1, 0], np.inf), ([1, 1] / np.sqrt(2), np.inf), ([0, 1], 0)],
+    )  # fill correct value of min_entropies for given test states here
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_states)
+    def test_state(self, interface, state, expected, base, check_state):
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.min_entropy(state, base=base, check_state=check_state)
+
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([[1, 0], [0, 0]], np.inf),
+            ([[0, 0], [0, 1]], 0),
+        ],
+    )  # fill correct value of min_entropies for given test states here
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_states)
+    def test_density_matrix(self, interface, state, expected, base, check_state):
+        """Test that mutual information works for density matrices"""
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.min_entropy(state, base=base, check_state=check_state)
+
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
+
+
+# class TestMinEntropyQNode:
+
+#     parameters = np.linspace(0, 2 * np.pi, 10)
+
+#     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
+
+#     single_wires_list = [
+#         [0],
+#     ]
+
+#     base = [2, np.exp(1), 10]
+
+#     check_state = [True, False]
+
+#     devices = ["default.qubit", "default.mixed"]
+#     diff_methods = ["backprop", "finite-diff"]
+
+#     @pytest.mark.parametrize("wires", single_wires_list)
+#     @pytest.mark.parametrize("param", parameters)
+#     @pytest.mark.parametrize("device", devices)
+#     @pytest.mark.parametrize("base", base)
+#     def test_IsingXX_qnode_entropy(self, param, wires, device, base):
+#         """Test entropy for a QNode numpy."""
+
+#         dev = qml.device(device, wires=1)
+
+#         @qml.qnode(dev)
+#         def circuit_entropy(x):
+#             qml.IsingXX(x, wires=[0])
+#             return qml.vn_entropy(wires=wires, log_base=base)
+
+#         entropy = circuit_entropy(param)
+
+#         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
+#         assert qml.math.allclose(entropy, expected_entropy)

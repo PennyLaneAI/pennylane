@@ -957,7 +957,7 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
 
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
-    len_state= state.shape[0]
+    len_state = state.shape[0]
 
     if check_state:
         if state.shape == (len_state):
@@ -974,7 +974,7 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
         div_base = 1
 
     # eigenvalues of the input state
-    evs_state, u_state = qml.math.linalg.eigh(state)
+    evs_state = qml.math.linalg.eigh(state)
 
     # cast all eigenvalues to real
     evs_state = np.real(evs_state)
