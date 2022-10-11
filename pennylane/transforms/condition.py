@@ -112,6 +112,18 @@ def cond(condition, true_fn, false_fn=None):
         in ``qml.cond(m_0, qml.RY)``), then ``m_0 == 1`` is considered
         internally.
 
+    .. warning::
+
+        The following are not supported as the ``condition`` argument:
+
+        * Expressions that contain multiple measurement values;
+        * Expressions with boolean logic flow using operators like ``and``,
+          ``or`` and ``not``.
+
+        While such statements may not result in errors, they may result in
+        incorrect behaviour.
+
+
     .. details::
         :title: Usage Details
 

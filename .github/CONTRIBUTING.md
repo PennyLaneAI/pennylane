@@ -64,7 +64,7 @@ Want to help with the repository itself?  There are several different avenues fo
   ["good first issue" label](https://github.com/PennyLaneAI/pennylane/contribute).  Issues with
   this label are meant for newcomers and *should* contain fewer challenging bits.  If the issue
   ends up trickier than we assumed, you can start a conversation on the issue page or open up a
-  "Work in Progress" PR to ask for help. Developers new to PennyLane can use the [requirements-dev.txt](https://github.com/PennyLaneAI/pennylane/requirements-dev.txt) file to install dependencies required for PennyLane code development. Simply run `pip install -r requirements-dev.txt` from the root of the repository.
+  "Work in Progress" PR to ask for help. Developers new to PennyLane can use the [requirements-dev.txt](https://github.com/PennyLaneAI/pennylane/blob/master/requirements-dev.txt) file to install dependencies required for PennyLane code development. Simply run `pip install -r requirements-dev.txt` from the root of the repository.
 
 * **Documentation**- If you would like to add to our documentation or suggest
   improvements/changes, let us know or submit a pull request directly. Changes that fix rendering

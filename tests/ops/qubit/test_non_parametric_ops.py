@@ -15,13 +15,14 @@
 Unit tests for the available non-parametric qubit operations
 """
 import itertools
-import re
 import pytest
 import copy
 import numpy as np
+from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane import math
 from pennylane.wires import Wires
 
 from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
@@ -41,6 +42,14 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.Toffoli, Toffoli),
     (qml.ECR, ECR),
 ]
+
+SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
+    (qml.Identity(wires=0), I),
+    (qml.Hadamard(wires=0), H),
+    (qml.PauliZ(wires=0), Z),
+    (qml.PauliX(wires=0), X),
+    (qml.PauliY(wires=0), Y),
+)
 
 
 class TestOperations:
@@ -470,7 +479,7 @@ class TestEigenval:
 
 
 class TestBarrier:
-    """Tests that the Barrier gate is correct"""
+    """Tests that the Barrier gate is correct."""
 
     def test_use_barrier(self):
         r"""Test that the barrier influences compilation."""
@@ -590,6 +599,30 @@ class TestBarrier:
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"
 
+    def test_barrier_empty_wire_list_no_error(self):
+        """Test that barrier does not raise an error when instantiated with wires=[]."""
+        barrier = qml.Barrier(wires=[])
+        assert isinstance(barrier, qml.Barrier)
+
+    def test_simplify_only_visual_one_wire(self):
+        """Test that if `only_visual=True`, the operation simplifies to the identity."""
+        op = qml.Barrier(wires="a", only_visual=True)
+        simplified = op.simplify()
+        assert qml.equal(simplified, qml.Identity("a"))
+
+    def test_simplify_only_visual_multiple_wires(self):
+        """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
+        op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
+        simplified = op.simplify()
+        assert isinstance(simplified, qml.ops.op_math.Prod)
+        for i, op in enumerate(simplified.operands):
+            assert qml.equal(op, qml.Identity(i))
+
+    def test_simplify_only_visual_False(self):
+        """Test that no simplification occurs if only_visual is False."""
+        op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
+        assert op.simplify() is op
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""
@@ -612,6 +645,13 @@ class TestWireCut:
             return qml.state()
 
         assert np.allclose(with_wirecut(), without_wirecut())
+
+    def test_wires_empty_list_raises_error(self):
+        """Test that the WireCut operator raises an error when instantiated with an empty list."""
+        with pytest.raises(
+            ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
+        ):
+            qml.WireCut(wires=[])
 
 
 class TestMultiControlledX:
@@ -1151,6 +1191,52 @@ class TestPowMethod:
         """Assert that the pow-independent ops WireCut and Barrier can be raised
         to any power and just return a copy."""
         assert op.pow(n)[0].__class__ is op.__class__
+
+
+class TestControlledMethod:
+    """Tests for the _controlled method of non-parametric operations."""
+
+    def test_PauliX(self):
+        """Test the PauliX _controlled method."""
+        out = qml.PauliX(0)._controlled("a")
+        assert qml.equal(out, qml.CNOT(("a", 0)))
+
+    def test_PauliY(self):
+        """Test the PauliY _controlled method."""
+        out = qml.PauliY(0)._controlled("a")
+        assert qml.equal(out, qml.CY(("a", 0)))
+
+    def test_PauliZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.PauliZ(0)._controlled("a")
+        assert qml.equal(out, qml.CZ(("a", 0)))
+
+    def test_CNOT(self):
+        """Test the CNOT _controlled method"""
+        out = qml.CNOT((0, 1))._controlled("a")
+        assert qml.equal(out, qml.Toffoli(("a", 0, 1)))
+
+    def test_SWAP(self):
+        """Test the SWAP _controlled method."""
+        out = qml.SWAP((0, 1))._controlled("a")
+        assert qml.equal(out, qml.CSWAP(("a", 0, 1)))
+
+    def test_Barrier(self):
+        """Tests the _controlled behavior of Barrier."""
+        original = qml.Barrier((0, 1, 2), only_visual=True)
+        out = original._controlled("a")
+        assert qml.equal(original, out)
+
+
+class TestSparseMatrix:
+    @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
+    def test_sparse_matrix(self, op, mat):
+        expected_sparse_mat = csr_matrix(mat)
+        sparse_mat = op.sparse_matrix()
+
+        assert type(sparse_mat) == type(expected_sparse_mat)
+        assert all(sparse_mat.data == expected_sparse_mat.data)
+        assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
 
 label_data = [

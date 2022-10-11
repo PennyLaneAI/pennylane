@@ -237,6 +237,7 @@ Qubit tapering
     ~pennylane.symmetry_generators
     ~pennylane.taper
     ~pennylane.qchem.taper_hf
+    ~pennylane.qchem.taper_operation
 
 :html:`</div>`
 
@@ -251,6 +252,7 @@ Utility functions
     ~pennylane.qchem.active_space
     ~pennylane.qchem.excitations
     ~pennylane.qchem.excitations_to_wires
+    ~pennylane.qchem.factorize
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
     ~pennylane.qchem.read_structure

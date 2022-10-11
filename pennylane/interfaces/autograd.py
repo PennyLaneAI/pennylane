@@ -111,15 +111,15 @@ def _execute(
 
     for i, r in enumerate(res):
 
+        if any(
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in tapes[i].measurements
+        ):
+            continue
+
         if isinstance(r, np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
-            try:
-                if isinstance(r[0][0], dict):
-                    # This happens when measurement type is Counts and shot vector is passed
-                    continue
-            except (IndexError, KeyError):
-                pass
             r = np.hstack(r) if r.dtype == np.dtype("object") else r
             res[i] = np.tensor(r)
 
@@ -171,13 +171,35 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
+    cached_jac = {}
+
+    def _get_jac_with_caching():
+
+        if "jacobian" in cached_jac:
+            return cached_jac["jacobian"]
+
+        jacs = []
+        for t in tapes:
+            g_tapes, fn = gradient_fn(t, **gradient_kwargs)
+
+            with qml.tape.Unwrap(*g_tapes):
+                res, _ = execute_fn(g_tapes, **gradient_kwargs)
+                jacs.append(fn(res))
+
+        cached_jac["jacobian"] = jacs
+        return jacs
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
         dy = [qml.math.T(d) for d in dy[0]]
-        jacs = ans[1]
+
+        computing_jacobian = _n == max_diff
+        if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
+            jacs = _get_jac_with_caching()
+        else:
+            jacs = ans[1]
 
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward")

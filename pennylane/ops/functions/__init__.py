@@ -13,8 +13,27 @@
 # limitations under the License.
 """
 This module contains functions that act on operators and tapes.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~eigvals
+    ~equal
+    ~generator
+    ~is_commuting
+    ~is_hermitian
+    ~is_unitary
+    ~matrix
+    ~simplify
+
 """
 from .eigvals import eigvals
-from .generator import generator
-from .matrix import matrix
 from .equal import equal
+from .generator import generator
+from .is_commuting import is_commuting
+from .is_hermitian import is_hermitian
+from .is_unitary import is_unitary
+from .matrix import matrix
+from .simplify import simplify

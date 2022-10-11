@@ -36,11 +36,13 @@ import autoray as ar
 from .multi_dispatch import (
     _multi_dispatch,
     multi_dispatch,
+    array,
     block_diag,
     concatenate,
     diag,
     dot,
     einsum,
+    eye,
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
@@ -51,16 +53,19 @@ from .multi_dispatch import (
     unwrap,
     where,
     add,
+    iscomplex,
+    expm,
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity
+from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity, relative_entropy
 
 from .utils import (
     allclose,
     allequal,
     cast,
     cast_like,
+    in_backprop,
     is_abstract,
     convert_like,
     get_interface,
@@ -69,9 +74,12 @@ from .utils import (
 
 from .is_independent import is_independent
 
+from .matrix_manipulation import expand_matrix, reduce_matrices
+
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
+
 
 # small constant for numerical stability that the user can modify
 eps = 1e-14
@@ -86,6 +94,7 @@ __all__ = [
     "multi_dispatch",
     "allclose",
     "allequal",
+    "array",
     "block_diag",
     "cast",
     "cast_like",
@@ -95,16 +104,19 @@ __all__ = [
     "diag",
     "dot",
     "einsum",
+    "eye",
     "fidelity",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
+    "in_backprop",
     "is_abstract",
     "is_independent",
     "marginal_prob",
     "mutual_info",
     "ones_like",
     "reduced_dm",
+    "relative_entropy",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",
@@ -114,4 +126,6 @@ __all__ = [
     "vn_entropy",
     "where",
     "add",
+    "iscomplex",
+    "expand_matrix",
 ]

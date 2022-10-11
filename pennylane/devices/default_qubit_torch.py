@@ -151,6 +151,8 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
     _const_mul = staticmethod(torch.mul)
+    _size = staticmethod(torch.numel)
+    _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
@@ -286,7 +288,7 @@ class DefaultQubitTorch(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(passthru_interface="torch", supports_reversible_diff=False)
+        capabilities.update(passthru_interface="torch")
         return capabilities
 
     def _get_unitary_matrix(self, unitary):

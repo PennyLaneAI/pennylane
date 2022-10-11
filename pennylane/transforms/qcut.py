@@ -657,7 +657,7 @@ def expand_fragment_tape(
                     elif not isinstance(op, MeasureNode):
                         apply(op)
 
-                with qml.tape.stop_recording():
+                with qml.QueuingManager.stop_recording():
                     measurements = _get_measurements(group, tape.measurements)
                 for meas in measurements:
                     apply(meas)
@@ -2392,14 +2392,15 @@ class CutStrategy:
         ... ]
 
         """
-        tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
-        num_tape_wires = len(tape_wires)
-        num_tape_gates = sum(not isinstance(n, WireCut) for n in tape_dag.nodes)
+        wire_depths = {}
+        for g in tape_dag.nodes:
+            if not isinstance(g, WireCut):
+                for w in g.wires:
+                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
-            num_tape_wires=num_tape_wires,
-            num_tape_gates=num_tape_gates,
+            wire_depths=wire_depths,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
             exhaustive=exhaustive,
@@ -2408,10 +2409,11 @@ class CutStrategy:
         return probed_cuts
 
     @staticmethod
-    def _infer_imbalance(
-        k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None
-    ) -> float:
+    def _infer_imbalance(k, wire_depths, free_wires, free_gates, imbalance_tolerance=None) -> float:
         """Helper function for determining best imbalance limit."""
+        num_wires = len(wire_depths)
+        num_gates = sum(wire_depths.values())
+
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
         if free_wires < avg_fragment_wires:
@@ -2434,8 +2436,9 @@ class CutStrategy:
             balancing_adjustment = 2 if avg_fragment_gates > 5 else 0
             free_gates = free_gates - (k - 1 + balancing_adjustment)
 
-        gate_imbalance = free_gates / avg_fragment_gates - 1
-        imbalance = max(gate_imbalance, 0.1 / avg_fragment_gates)  # numerical stability
+        depth_imbalance = max(wire_depths.values()) * num_wires / num_gates - 1
+        max_imbalance = free_gates / avg_fragment_gates - 1
+        imbalance = min(depth_imbalance, max_imbalance)
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -2476,8 +2479,7 @@ class CutStrategy:
 
     def _infer_probed_cuts(
         self,
-        num_tape_wires,
-        num_tape_gates,
+        wire_depths,
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
         exhaustive=True,
@@ -2505,6 +2507,9 @@ class CutStrategy:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
                 partitioner method.
         """
+
+        num_tape_wires = len(wire_depths)
+        num_tape_gates = int(sum(wire_depths.values()))
 
         # Assumes unlimited width/depth if not supplied.
         max_free_wires = self.max_free_wires or num_tape_wires
@@ -2568,8 +2573,7 @@ class CutStrategy:
         for k in ks:
             imbalance = self._infer_imbalance(
                 k,
-                num_tape_wires,
-                num_tape_gates,
+                wire_depths,
                 max_free_wires if max_wires_by_fragment is None else max(max_wires_by_fragment),
                 max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
                 imbalance_tolerance,
