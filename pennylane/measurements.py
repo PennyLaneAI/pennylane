@@ -1311,3 +1311,6 @@ class MeasurementValueV2:
                 "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(*branch))
             )
         return "\n".join(lines)
+
+    def __add__(self, other):
+        return self.merge(other).apply(lambda v: sum(v))
