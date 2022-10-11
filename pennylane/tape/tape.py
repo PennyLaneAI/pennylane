@@ -16,15 +16,15 @@ This module contains the base quantum tape.
 """
 import contextlib
 import copy
-from warnings import warn
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 from collections import Counter, defaultdict
 from threading import RLock
 from typing import List
+from warnings import warn
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
+from pennylane.measurements import AllCounts, Counts, Probability, Sample, Shadow, ShadowExpval
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 
@@ -341,8 +341,9 @@ class QuantumTape(AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, name=None, do_queue=True):
+    def __init__(self, shots: int = None, name=None, do_queue=True):
         super().__init__()
+        self.shots = shots
         self.name = name
         self.do_queue = do_queue
         self._prep = []
