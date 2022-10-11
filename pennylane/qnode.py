@@ -26,8 +26,6 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.tape import QuantumTape
-from pennylane.devices import NullQubit
-
 
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
