@@ -1414,7 +1414,7 @@ class MeasurementValue(Generic[T]):
         self.measurement_ids = measurement_ids
         self.fn = fn
 
-    def branches(self):
+    def items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         for i in range(2**len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
@@ -1428,20 +1428,17 @@ class MeasurementValue(Generic[T]):
     def __eq__(self, other):
         if isinstance(other, MeasurementValue):
             return self.merge(other).apply(lambda v: v[0] == v[1])
-        else:
-            return self.apply(lambda v: v == other)
+        return self.apply(lambda v: v == other)
 
     def __add__(self, other):
         if isinstance(other, MeasurementValue):
             return self.merge(other).apply(sum)
-        else:
-            return self.apply(lambda v: v + other)
+        return self.apply(lambda v: v + other)
 
     def __lt__(self, other):
         if isinstance(other, MeasurementValue):
             return self.merge(other).apply(lambda v: v[0] < v[1])
-        else:
-            return self.apply(lambda v: v < other)
+        return self.apply(lambda v: v < other)
 
     def apply(self, fn):
         return MeasurementValue(
