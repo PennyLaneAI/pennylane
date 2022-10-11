@@ -267,7 +267,6 @@ def vjp(
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
                 vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
-
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
@@ -275,6 +274,7 @@ def vjp(
             # TODO: remove this exceptional case once the source of this issue
             # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
             return (return_vjps,)  # pragma: no cover
+
         return return_vjps
 
     return grad_fn
@@ -327,7 +327,6 @@ def _execute_new(
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
-
     return __execute_new(
         parameters,
         tapes=tapes,
@@ -392,7 +391,6 @@ def __execute_new(
 
         else:
             res[i] = qml.math.toarray(res[i])
-
     return res, jacs
 
 
@@ -456,16 +454,17 @@ def _vjp_new(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
-
         # multi measurement
         multi = len(tapes[0].measurements) > 1
+        dy = [dy[0]]
 
-        dy = [qml.math.T(d) for d in dy[0]]
         computing_jacobian = _n == max_diff
+
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
         else:
             jacs = ans[1]
+
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
@@ -476,7 +475,6 @@ def _vjp_new(
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
-
             if isinstance(gradient_fn, qml.gradients.gradient_transform):
                 # Gradient function is a gradient transform.
 
@@ -529,7 +527,6 @@ def _vjp_new(
                     vjps = [qml.gradients.compute_vjp_multi(d, jac) for d, jac in zip(dy, jacs)]
                 else:
                     vjps = [qml.gradients.compute_vjp_single(d, jac) for d, jac in zip(dy, jacs)]
-
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]

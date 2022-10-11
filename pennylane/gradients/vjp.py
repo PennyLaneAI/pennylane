@@ -41,14 +41,12 @@ def compute_vjp_single(dy, jac):
     if not isinstance(jac, tuple):
         # Single measurement with no dimension e.g. expval
         if dy.shape == ():
-            jac = math.reshape(jac, (1, 1))
-            dy_row = math.reshape(dy_row, 1)
+            jac = math.reshape(qml.math.squeeze(jac), (1, 1))
             res = math.tensordot(jac, dy_row, [[0], [0]])
-
         # Single measurement with dimension e.g. probs
         else:
             jac = math.reshape(jac, (len(jac), 1))
-            dy_row = math.reshape(dy_row, (len(dy_row), 1))
+            dy_row = math.reshape(dy, (len(dy), 1))
             res = math.tensordot(jac, dy_row, [[0], [0]])
     # Single measurement with multiple params
     else:
@@ -61,7 +59,6 @@ def compute_vjp_single(dy, jac):
         else:
             jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, dy_row, [[1], [0]])
-    print("inside", res)
     return res
 
 
@@ -82,16 +79,17 @@ def compute_vjp_multi(dy, jac):
     if not isinstance(jac[0], tuple):
         res = []
         for i, elem in enumerate(dy):
-            res.append(compute_vjp_single(jac[i], elem))
+            res.append(compute_vjp_single(elem, jac[i]))
+        res = [math.sum(res)]
     # Multiple parameters
     else:
         res = []
         for i, elem in enumerate(dy):
             sub_res = []
             for j in jac[i]:
-                sub_res.append(qml.math.squeeze(compute_vjp_single(j, elem)))
+                sub_res.append(qml.math.squeeze(compute_vjp_single(elem, j)))
             res.append(sub_res)
-        res = [qml.math.sum(x) for x in zip(*res)]
+        res = qml.math.stack([qml.math.sum(x) for x in zip(*res)])
     return res
 
 
@@ -248,6 +246,10 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
             def func(_, num=None):  # pylint: disable=unused-argument
                 res = math.convert_like(np.zeros([num_params]), dy)
+                multi = len(tape.measurements) > 1
+                if multi:
+                    multi_dy = dy[0]
+                    return math.cast(res, multi_dy.dtype)
                 return math.cast(res, dy.dtype)
 
             return [], func
@@ -412,7 +414,6 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             start += res_len
             # postprocess results to compute the VJP
             vjp_ = processing_fns[t_idx](res_t, num=nums[t_idx])
-
             if vjp_ is None:
                 if reduction == "append":
                     vjps.append(None)
