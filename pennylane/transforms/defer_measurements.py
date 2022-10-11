@@ -107,7 +107,7 @@ def defer_measurements(tape):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            control = [measured_wires[m_id] for m_id in op.meas_val.measurements]
+            control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
             flipped = [False] * len(control)
             for branch, value in op.meas_val.branches():
                 if value:

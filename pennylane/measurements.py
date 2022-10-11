@@ -1401,14 +1401,19 @@ class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
 class MeasurementValue(Generic[T]):
+    """A class representing unknown measurement outcomes in the qubit model.	
+
+
+    Measurements on a single qubit in the computational basis are assumed.
+    
+    Args:
+        measurement_ids (str): The id of the measurement that this object depends on.
+        fn (Callable): a transformation applied to the measurements.
+    """
 
     def __init__(self, *measurement_ids, fn=lambda x: x):
         self.measurement_ids = measurement_ids
         self.fn = fn
-
-    @property
-    def measurements(self):
-        return self.measurement_ids
 
     def branches(self):
         for i in range(2**len(self.measurement_ids)):
