@@ -1401,7 +1401,7 @@ class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
 class MeasurementValue(Generic[T]):
-    """A class representing unknown measurement outcomes in the qubit model.	
+    """A class representing unknown measurement outcomes in the qubit model.
 
 
     Measurements on a single qubit in the computational basis are assumed.
@@ -1416,6 +1416,7 @@ class MeasurementValue(Generic[T]):
         self.fn = fn
 
     def branches(self):
+        """A generator representing all the possible outcomes of the MeasurementValue."""
         for i in range(2**len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             yield branch, self.fn(*branch)
