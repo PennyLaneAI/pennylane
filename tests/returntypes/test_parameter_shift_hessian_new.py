@@ -631,7 +631,7 @@ class TestParameterShiftHessian:
             tapes, fn = qml.gradients.param_shift_hessian(tape)
 
     @pytest.mark.parametrize("num_measurements", [1, 2])
-    def test_no_trainable_params_tape(self, num_measurements):
+    def test_no_trainable_params(self, num_measurements):
         """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
@@ -658,6 +658,47 @@ class TestParameterShiftHessian:
         assert isinstance(res, tuple)
         assert len(res) == num_measurements
         assert all(isinstance(r, np.ndarray) and r.shape == (0,) for r in res)
+
+    def test_all_zero_grads(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.CRZ):
+            grad_method = "0"
+
+        x = np.array(0.1, requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            DummyOp(x, wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        tapes, fn = qml.gradients.param_shift_hessian(tape)
+        res = fn(qml.execute(tapes, dev, None))
+
+        assert tapes == []
+        assert isinstance(res, np.ndarray)
+        assert np.allclose(res, np.array([0, 0, 0, 0]))
+
+    def test_error_unsupported_op(self):
+        """Test that the correct error is thrown for unsupported operations"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.CRZ):
+            grad_method = "F"
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            DummyOp(x[2], wires=[0, 1])
+            qml.probs(wires=1)
+
+        msg = "The parameter-shift Hessian currently does not support the operations"
+        with pytest.raises(ValueError, match=msg):
+            qml.gradients.param_shift_hessian(tape, argnum=[0, 1, 2])(x)
 
     @pytest.mark.parametrize("argnum", [None, (0,)])
     def test_error_wrong_diagonal_shifts(self, argnum):
@@ -1239,31 +1280,6 @@ class TestParameterShiftHessianQNode:
             match=r"The analytic gradient method cannot be used with the parameter\(s\)",
         ):
             qml.gradients.param_shift_hessian(circuit)(x)
-
-    def test_error_unsupported_operation_with_argnum(self):
-        """Test that the correct error is thrown for unsupported operations when
-        argnum is given."""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        class DummyOp(qml.CRZ):
-
-            grad_method = "F"
-
-        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            DummyOp(x[2], wires=[0, 1])
-            return qml.probs(wires=1)
-
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
-
-        with pytest.raises(
-            ValueError,
-            match="The parameter-shift Hessian currently does not support",
-        ):
-            qml.gradients.param_shift_hessian(circuit, argnum=[0, 2])(x)
 
     def test_error_unsupported_variance_measurement(self):
         """Test that the correct error is thrown for variance measurements"""

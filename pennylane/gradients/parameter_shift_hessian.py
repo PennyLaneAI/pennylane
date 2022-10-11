@@ -181,6 +181,37 @@ def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     return add_unshifted, unshifted_coeff
 
 
+def _no_trainable_grad_new(tape):
+    if len(tape.measurements) == 1:
+        return [], lambda _: qml.math.zeros((0,))
+
+    return [], lambda _: tuple(qml.math.zeros((0,)) for _ in tape.measurements)
+
+
+def _all_zero_grad_new(tape):
+    num_params = len(tape.trainable_params)
+
+    zeros_list = []
+    for m in tape.measurements:
+        if m.return_type is qml.measurements.Probability:
+            shape = 2 ** len(m.wires)
+        else:
+            shape = ()
+
+        zeros = tuple(
+            tuple(qml.math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
+        )
+        if num_params == 1:
+            zeros = zeros[0][0]
+
+        zeros_list.append(zeros)
+
+    if len(tape.measurements) == 1:
+        return [], lambda _: zeros_list[0]
+
+    return [], lambda _: tuple(zeros_list)
+
+
 def expval_hessian_param_shift(
     tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0
 ):
@@ -822,10 +853,7 @@ def _param_shift_hessian_tuple(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        if len(tape.measurements) == 1:
-            return [], lambda _: qml.math.zeros((0,))
-
-        return [], lambda _: tuple(qml.math.zeros((0,)) for _ in tape.measurements)
+        return _no_trainable_grad_new(tape)
 
     bool_argnum = _process_argnum(argnum, tape)
 
@@ -857,8 +885,7 @@ def _param_shift_hessian_tuple(
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
     if qml.math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
-        par_dim = len(tape.trainable_params)
-        return [], lambda _: qml.math.zeros([tape.output_dim, par_dim, par_dim])
+        return _all_zero_grad_new(tape)
 
     # Find all argument indices that appear in at least one derivative that was requested
     choose_argnum = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]
