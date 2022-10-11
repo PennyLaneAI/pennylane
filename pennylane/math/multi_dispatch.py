@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Multiple dispatch functions"""
+import functools
+
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
 from collections.abc import Sequence
-import functools
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -79,7 +80,7 @@ def _multi_dispatch(values):
       they will always be treated as non-differentiable constants.
     """
     if "resource_variable" in getattr(values, "__module__", tuple()):
-        values = np.asarray(values)
+        assert True
 
     interfaces = {get_interface(v) for v in values}
 
