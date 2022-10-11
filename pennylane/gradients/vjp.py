@@ -15,7 +15,9 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
+# pylint: disable=no-member
 import numpy as np
+import autograd
 
 import pennylane as qml
 from pennylane import math
@@ -38,7 +40,11 @@ def compute_vjp_single(dy, jac):
         return None
     dy_row = math.reshape(dy, [-1])
     # Single measurement with a single param
-    if not isinstance(jac, tuple):
+    if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
+        # No trainable parameters
+        if jac.shape == (0,):
+            res = qml.math.zeros((1, 0))
+            return res
         # Single measurement with no dimension e.g. expval
         if dy.shape == ():
             jac = math.reshape(qml.math.squeeze(jac), (1, 1))
@@ -50,6 +56,13 @@ def compute_vjp_single(dy, jac):
             res = math.tensordot(jac, dy_row, [[0], [0]])
     # Single measurement with multiple params
     else:
+        # No trainable parameters
+        if len(jac) == 0:
+            if dy.shape == ():
+                res = qml.math.zeros((1, 0))
+            else:
+                res = qml.math.zeros((len(dy), 0))
+            return res
         # Single measurement with no dimension e.g. expval
         if dy.shape == ():
             jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
@@ -76,7 +89,7 @@ def compute_vjp_multi(dy, jac):
         tensor_like: the vector-Jacobian product
     """
     # Single parameter
-    if not isinstance(jac[0], tuple):
+    if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
         for i, elem in enumerate(dy):
             res.append(compute_vjp_single(elem, jac[i]))
@@ -132,7 +145,6 @@ def compute_vjp(dy, jac, num=None):
             return math.cast(res, dy.dtype)
     except (AttributeError, TypeError):
         pass
-
     return math.tensordot(jac, dy_row, [[0], [0]])
 
 
@@ -257,10 +269,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     except (AttributeError, TypeError):
         pass
 
-    # qml.disable_return()
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
-
-    # qml.enable_return()
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian

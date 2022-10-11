@@ -391,6 +391,7 @@ def __execute_new(
 
         else:
             res[i] = qml.math.toarray(res[i])
+
     return res, jacs
 
 
@@ -456,7 +457,7 @@ def _vjp_new(
         parameter values and output gradient dy"""
         # multi measurement
         multi = len(tapes[0].measurements) > 1
-        dy = [dy[0]]
+        dy = dy[0]
 
         computing_jacobian = _n == max_diff
 
