@@ -33,7 +33,6 @@ import pennylane as qml
 
 from .set_shots import set_shots
 
-
 INTERFACE_MAP = {
     None: "Numpy",
     "autograd": "autograd",
@@ -424,16 +423,16 @@ def _execute_new(
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
         elif mapped_interface == "tf":
-            import tensorflow as tf
+            import tensorflow as tf  # pragma: no cover
 
             if not tf.executing_eagerly() or "autograph" in interface:
-                from .tensorflow_autograph import execute as _execute
+                from .tensorflow_autograph import execute as _execute  # pragma: no cover
             else:
-                from .tensorflow import execute as _execute
+                from .tensorflow import execute as _execute  # pragma: no cover
         elif mapped_interface == "torch":
-            from .torch import execute as _execute
+            from .torch import execute as _execute  # pragma: no cover
         else:  # is jax
-            _execute = _get_jax_execute_fn(interface, tapes)
+            _execute = _get_jax_execute_fn(interface, tapes)  # pragma: no cover
     except ImportError as e:
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "
