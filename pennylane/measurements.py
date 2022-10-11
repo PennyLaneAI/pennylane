@@ -1431,6 +1431,18 @@ class MeasurementValue(Generic[T]):
         else:
             return self.apply(lambda v: v == other)
 
+    def __add__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self.merge(other).apply(sum)
+        else:
+            return self.apply(lambda v: v + other)
+
+    def __lt__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self.merge(other).apply(lambda v: v[0] < v[1])
+        else:
+            return self.apply(lambda v: v < other)
+
     def apply(self, fn):
         return MeasurementValue(
             *self.measurement_ids,
@@ -1457,8 +1469,8 @@ class MeasurementValue(Generic[T]):
 
     def __getitem__(self, i):
         # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
-        branch = tuple(int(b) for b in np.binary_repr(i))
-        return self.fn(branch)
+        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        return self.fn(*branch)
 
     def __str__(self):
         lines = []

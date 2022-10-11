@@ -796,46 +796,46 @@ class TestDrawing:
 class TestMeasurementValueManipulation:
     def test_apply_function_to_measurement(self):
 
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
 
         sin_of_m = m.apply(np.sin)
-        assert sin_of_m.branches[(0,)] == 0.0
-        assert sin_of_m.branches[(1,)] == np.sin(1)
+        assert sin_of_m[0] == 0.0
+        assert sin_of_m[1] == np.sin(1)
 
     def test_add_to_measurements(self):
-        m0 = MeasurementValue("m0")
-        m1 = MeasurementValue("m1")
+        m0 = MeasurementValue("m0", fn=lambda v: v)
+        m1 = MeasurementValue("m1", fn=lambda v: v)
         sum_of_measurements = m0 + m1
-        assert sum_of_measurements.branches[(0, 0)] == 0
-        assert sum_of_measurements.branches[(0, 1)] == 1
-        assert sum_of_measurements.branches[(1, 0)] == 1
-        assert sum_of_measurements.branches[(1, 1)] == 2
+        assert sum_of_measurements[0] == 0
+        assert sum_of_measurements[1] == 1
+        assert sum_of_measurements[2] == 1
+        assert sum_of_measurements[3] == 2
 
     def test_equality_with_scalar(self):
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
         m_eq = m == 0
         assert (
-            m_eq.branches[(0,)] == True
+            m_eq[0] == True
         )  # confirming value is actually eq to True, not just truthy
-        assert m_eq.branches[(1,)] == False
+        assert m_eq[1] == False
 
     def test_inversion(self):
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
         m_inversion = ~m
-        assert m_inversion.branches[(0,)] == True
-        assert m_inversion.branches[(1,)] == False
+        assert m_inversion[0] == True
+        assert m_inversion[1] == False
 
     def test_lt(self):
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
         m_inversion = m < 0.5
-        assert m_inversion.branches[(0,)] == True
-        assert m_inversion.branches[(1,)] == False
+        assert m_inversion[0] == True
+        assert m_inversion[1] == False
 
     def test_lt(self):
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
         m_inversion = m > 0.5
-        assert m_inversion.branches[(0,)] == False
-        assert m_inversion.branches[(1,)] == True
+        assert m_inversion[0] == False
+        assert m_inversion[1] == True
 
     def merge_measurements_values_dependant_on_same_measurement(self):
         m0 = MeasurementValue("m")
