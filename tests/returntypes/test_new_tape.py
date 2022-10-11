@@ -180,11 +180,6 @@ class TestOutputShape:
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
-        warning = None
-        if shots is not None and measurement.return_type is qml.measurements.State:
-            # this is allowed by the tape but raises a warning
-            warning = (UserWarning, "Requested state or density matrix with finite shots")
-
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         a = np.array(0.1)
@@ -195,8 +190,11 @@ class TestOutputShape:
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
-        if warning is not None:
-            with pytest.warns(warning[0], match=warning[1]):
+        if shots is not None and measurement.return_type is qml.measurements.State:
+            # this is allowed by the tape but raises a warning
+            with pytest.warns(
+                UserWarning, match="Requested state or density matrix with finite shots"
+            ):
                 res = qml.execute([tape], dev, gradient_fn=None)[0]
         else:
             # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
@@ -356,7 +354,7 @@ class TestOutputShape:
         assert res_shape == expected
 
     @pytest.mark.autograd
-    def test_multi_measure_sample_shot_vector(self):
+    def test_multi_measure_sample_obs_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with an observable with a shot vector."""
         shots = (1, 1, 3, 3, 5, 1)
@@ -383,7 +381,7 @@ class TestOutputShape:
         assert res == expected_shape
 
     @pytest.mark.autograd
-    def test_multi_measure_sample_shot_vector(self):
+    def test_multi_measure_sample_wires_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with wires with a shot vector."""
         shots = (1, 1, 3, 3, 5, 1)

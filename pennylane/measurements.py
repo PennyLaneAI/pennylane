@@ -306,11 +306,6 @@ class MeasurementProcess:
         model define ``shape=(2**num_wires)`` where ``num_wires`` is the
         number of wires the measurement acts on.
 
-        Note that the shapes for vector-valued return types such as
-        ``Probability`` and ``State`` are adjusted to the output of
-        ``qml.execute`` and may have an extra first element that is squeezed
-        when using QNodes.
-
         Args:
             device (.Device): a PennyLane device to use for determining the
                 shape
@@ -353,16 +348,15 @@ class MeasurementProcess:
         if self.return_type == Probability:
             len_wires = len(self.wires)
             dim = self._get_num_basis_states(len_wires, device)
-            shape = (dim,)
+            return (dim,)
 
-        elif self.return_type == State:
-
+        if self.return_type == State:
             # Note: qml.density_matrix has its shape defined, so we're handling
             # the qml.state case; acts on all device wires
             dim = 2 ** len(device.wires)
-            shape = (dim,)
+            return (dim,)
 
-        elif self.return_type == Sample:
+        if self.return_type == Sample:
             if self.obs is not None:
                 # qml.sample(some_observable) case
                 return () if device.shots == 1 else (device.shots,)
@@ -370,9 +364,6 @@ class MeasurementProcess:
             # qml.sample() case
             len_wires = len(device.wires)
             return (len_wires,) if device.shots == 1 else (device.shots, len_wires)
-
-        if shape is not None:
-            return shape
 
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "

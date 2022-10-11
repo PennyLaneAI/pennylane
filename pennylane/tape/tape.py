@@ -1232,7 +1232,7 @@ class QuantumTape(AnnotatedQueue):
         .. code-block:: pycon
 
             >>> tape.shape(dev)
-            (1, 4)
+            (4,)
         """
         shapes = tuple(observable.shape(device) for observable in self._measurements)
 
