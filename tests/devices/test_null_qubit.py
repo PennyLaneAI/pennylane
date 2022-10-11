@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.null_qubit import NullQubit
+from pennylane import Tracker
 
 from collections import defaultdict
 
@@ -1165,3 +1166,94 @@ class TestState:
     def test_state_measurement(self, measurement):
         """Test that the NullQubit plugin provides correct state results for a simple circuit"""
         assert measurement == [0.0]
+
+
+class TestTrackerIntegration:
+    """Tests tracker integration behavior with 'null.qubit'."""
+
+    def test_single_execution(self, nullqubit_device, mocker):
+        """Test correct behavior with single circuit execution"""
+        dev = nullqubit_device(wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        class callback_wrapper:
+            @staticmethod
+            def callback(totals=dict(), history=dict(), latest=dict()):
+                pass
+
+        wrapper = callback_wrapper()
+        spy = mocker.spy(wrapper, "callback")
+
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
+            circuit()
+            circuit()
+
+        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2}
+        assert tracker.history == {
+            "executions": [1, 1],
+            "shots": [None, None],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+        }
+        assert tracker.latest == {"batches": 1, "batch_len": 1}
+
+        _, kwargs_called = spy.call_args_list[-1]
+
+        assert kwargs_called["totals"] == {"executions": 2, "batches": 2, "batch_len": 2}
+        assert kwargs_called["history"] == {
+            "executions": [1, 1],
+            "shots": [None, None],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+        }
+        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
+
+    def test_shots_execution(self, nullqubit_device, mocker):
+        """Test that correct tracks shots."""
+        dev = nullqubit_device(wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        class callback_wrapper:
+            @staticmethod
+            def callback(totals=dict(), history=dict(), latest=dict()):
+                pass
+
+        wrapper = callback_wrapper()
+        spy = mocker.spy(wrapper, "callback")
+
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
+            circuit(shots=10)
+            circuit(shots=20)
+
+        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2, "shots": 30}
+        assert tracker.history == {
+            "executions": [1, 1],
+            "shots": [10, 20],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+        }
+        assert tracker.latest == {"batches": 1, "batch_len": 1}
+
+        assert spy.call_count == 4
+
+        _, kwargs_called = spy.call_args_list[-1]
+
+        assert kwargs_called["totals"] == {
+            "executions": 2,
+            "batches": 2,
+            "batch_len": 2,
+            "shots": 30,
+        }
+        assert kwargs_called["history"] == {
+            "executions": [1, 1],
+            "shots": [10, 20],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+        }
+        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
