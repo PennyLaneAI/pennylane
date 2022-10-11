@@ -944,6 +944,11 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
     r"""
     Compute the min-entropy of a state.
 
+    .. math::
+        `\Min Entropy` = \RE{\infty}{X} = - \log_2 \max_{x \in \mathcal{X}} p(x)
+
+    The min entropy of a state is the negative log of the largest eigenvalue of the corresponding density matrix.
+
     Args:
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
@@ -953,6 +958,29 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
     Returns:
         float: Min-Entropy of the input state.
 
+    **Examples**
+
+    Each state can be given as a state vector in the computational basis or as a density matrix.
+
+    >>> x = np.array([1, 0])
+    >>> qml.math.min_entropy(x)
+    0.0
+
+    >>> y = np.array([1/np.sqrt(3), np.sqrt(2/3)])
+    >>> qml.math.min_entropy(y)
+    4.262249472335989e-06
+
+    The quantum states can be provided as density matrices as show in the example below:
+
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> qml.math.min_entropy(rho)
+    0.35667494393873245
+
+    It is also possible to change the log base:
+
+    >>> qml.math.relative_entropy(rho, base=2)
+    0.5145731728297583
+    
     """
 
     # Cast as a c_dtype array
