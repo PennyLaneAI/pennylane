@@ -659,7 +659,8 @@ class TestParameterShiftHessian:
         assert len(res) == num_measurements
         assert all(isinstance(r, np.ndarray) and r.shape == (0,) for r in res)
 
-    def test_all_zero_grads(self):
+    @pytest.mark.parametrize("num_measurements", [1, 2])
+    def test_all_zero_grads(self, num_measurements):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=2)
@@ -671,14 +672,21 @@ class TestParameterShiftHessian:
 
         with qml.tape.QuantumTape() as tape:
             DummyOp(x, wires=[0, 1])
-            qml.probs(wires=[0, 1])
+            for _ in range(num_measurements):
+                qml.probs(wires=[0, 1])
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
         res = fn(qml.execute(tapes, dev, None))
 
+        if num_measurements == 1:
+            res = (res,)
+
         assert tapes == []
-        assert isinstance(res, np.ndarray)
-        assert np.allclose(res, np.array([0, 0, 0, 0]))
+        assert isinstance(res, tuple)
+        assert len(res) == num_measurements
+        assert all(
+            isinstance(r, np.ndarray) and np.allclose(r, np.array([0, 0, 0, 0])) for r in res
+        )
 
     def test_error_unsupported_op(self):
         """Test that the correct error is thrown for unsupported operations"""

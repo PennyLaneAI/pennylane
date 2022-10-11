@@ -193,10 +193,7 @@ def _all_zero_grad_new(tape):
 
     zeros_list = []
     for m in tape.measurements:
-        if m.return_type is qml.measurements.Probability:
-            shape = 2 ** len(m.wires)
-        else:
-            shape = ()
+        shape = 2 ** len(m.wires) if m.return_type is qml.measurements.Probability else ()
 
         zeros = tuple(
             tuple(qml.math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
