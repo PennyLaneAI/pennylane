@@ -974,7 +974,7 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
         div_base = 1
 
     # eigenvalues of the input state
-    evs_state = qml.math.linalg.eigh(state)
+    evs_state = qml.math.linalg.eigh(state)[0]
 
     # cast all eigenvalues to real
     evs_state = np.real(evs_state)
