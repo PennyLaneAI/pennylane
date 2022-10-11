@@ -1400,11 +1400,20 @@ T = TypeVar("T")
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
-class MeasurementValue:
+class MeasurementValue(Generic[T]):
 
     def __init__(self, *measurement_ids, fn=lambda x: x):
         self.measurement_ids = measurement_ids
         self.fn = fn
+
+    @property
+    def measurements(self):
+        return self.measurement_ids
+
+    def branches(self):
+        for i in range(2**len(self.measurement_ids)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            yield branch, self.fn(*branch)
 
     def apply(self, fn):
         return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
