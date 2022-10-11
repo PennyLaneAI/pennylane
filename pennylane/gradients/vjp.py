@@ -15,12 +15,27 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
-# pylint: disable=no-member
+# pylint: disable=no-member, too-many-branches
 import numpy as np
 import autograd
 
 import pennylane as qml
 from pennylane import math
+
+
+def _convert(jac, dy_row):
+    """Utility to convert and cast the jacobian as dy row."""
+    if isinstance(jac, tuple):
+        jac_new = []
+        for j in jac:
+            j_ = math.convert_like(j, dy_row)
+            j_ = math.cast(j_, dy_row.dtype)
+            jac_new.append(j_)
+        jac = tuple(jac_new)
+    else:
+        jac = math.convert_like(jac, dy_row)
+        jac = math.cast(jac, dy_row.dtype)
+    return jac
 
 
 def compute_vjp_single(dy, jac):
@@ -38,7 +53,25 @@ def compute_vjp_single(dy, jac):
     """
     if jac is None:
         return None
+
     dy_row = math.reshape(dy, [-1])
+
+    if not isinstance(dy_row, np.ndarray):
+        jac = _convert(jac, dy_row)
+
+    try:
+        if math.allclose(dy, 0):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero.
+            if isinstance(jac, tuple):
+                num_params = len(jac)
+            else:
+                num_params = 1
+            res = math.convert_like(np.zeros([num_params]), dy)
+            return math.cast(res, dy.dtype)
+    except (AttributeError, TypeError):
+        pass
+
     # Single measurement with a single param
     if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
         # No trainable parameters
@@ -52,7 +85,6 @@ def compute_vjp_single(dy, jac):
         # Single measurement with dimension e.g. probs
         else:
             jac = math.reshape(jac, (len(jac), 1))
-            dy_row = math.reshape(dy, (len(dy), 1))
             res = math.tensordot(jac, dy_row, [[0], [0]])
     # Single measurement with multiple params
     else:
@@ -72,6 +104,7 @@ def compute_vjp_single(dy, jac):
         else:
             jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, dy_row, [[1], [0]])
+            print(res)
     return res
 
 
@@ -88,12 +121,15 @@ def compute_vjp_multi(dy, jac):
     Returns:
         tensor_like: the vector-Jacobian product
     """
+    if jac is None:
+        return None
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
         for i, elem in enumerate(dy):
             res.append(compute_vjp_single(elem, jac[i]))
-        res = [math.sum(res)]
+        res = qml.math.stack(res)
+        res = qml.math.stack([math.sum(res)])
     # Multiple parameters
     else:
         res = []

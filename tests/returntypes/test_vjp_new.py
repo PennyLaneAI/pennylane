@@ -25,7 +25,72 @@ import numpy as vanilla_numpy
 class TestComputeVJP:
     """Tests for the numeric computation of VJPs"""
 
-    def test_computation(self):
+    def test_compute_single_measurement_single_params(self):
+        """Test that the correct VJP is returned"""
+        dy = np.array(1.0)
+        jac = np.array(0.2)
+
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
+
+        assert isinstance(vjp, np.ndarray)
+        assert np.allclose(vjp, 0.2)
+
+    def test_compute_single_measurement_multi_dim_single_params(self):
+        """Test that the correct VJP is returned"""
+        dy = np.array([1, 2])
+        jac = np.array([0.3, 0.3])
+
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
+
+        assert isinstance(vjp, np.ndarray)
+        assert np.allclose(vjp, 0.9)
+
+    def test_compute_single_measurement_multiple_params(self):
+        """Test that the correct VJP is returned"""
+        dy = np.array(1.0)
+        jac = tuple([np.array(0.1), np.array(0.2)])
+
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
+
+        assert isinstance(vjp, np.ndarray)
+        assert np.allclose(vjp, [0.1, 0.2])
+
+    def test_compute_single_measurement_multi_dim_multiple_params(self):
+        """Test that the correct VJP is returned"""
+        dy = np.array([1.0, 0.5])
+        jac = tuple([np.array([0.1, 0.3]), np.array([0.2, 0.4])])
+
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
+
+        assert isinstance(vjp, np.ndarray)
+        assert np.allclose(vjp, [0.25, 0.4])
+
+    def test_compute_multiple_measurement_single_params(self):
+        """Test that the correct VJP is returned"""
+        dy = tuple([np.array([1.0]), np.array([1.0, 0.5])])
+        jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
+
+        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+
+        assert isinstance(vjp, np.ndarray)
+        assert np.allclose(vjp, [0.75])
+
+    def test_compute_multiple_measurement_multi_dim_single_params(self):
+        """Test that the correct VJP is returned"""
+        dy = tuple([np.array([1.0]), np.array([1.0, 0.5])])
+        jac = tuple(
+            [
+                tuple([np.array([0.3]), np.array([0.4])]),
+                tuple([np.array([0.2, 0.5]), np.array([0.3, 0.8])]),
+            ]
+        )
+
+        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+
+        assert isinstance(vjp, np.ndarray)
+        assert np.allclose(vjp, [0.75, 1.1])
+
+    def test_compute_multiple_measurement_multi_dim_multiple_params(self):
         """Test that the correct VJP is returned"""
         dy = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
@@ -35,21 +100,51 @@ class TestComputeVJP:
         assert vjp.shape == (3,)
         assert np.all(vjp == np.tensordot(dy, jac, axes=[[0, 1], [0, 1]]))
 
-    def test_jacobian_is_none(self):
+    def test_jacobian_is_none_single(self):
         """A None Jacobian returns a None VJP"""
 
         dy = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
-        vjp = qml.gradients.compute_vjp(dy, jac)
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
         assert vjp is None
 
-    def test_zero_dy(self):
-        """A zero dy vector will return a zero matrix"""
-        dy = np.zeros([2, 2])
-        jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
+    def test_jacobian_is_none_multi(self):
+        """A None Jacobian returns a None VJP"""
 
-        vjp = qml.gradients.compute_vjp(dy, jac)
+        dy = np.array([[1.0, 2.0], [3.0, 4.0]])
+        jac = None
+
+        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+        assert vjp is None
+
+    def test_zero_dy_single_measurement_single_params(self):
+        """A zero dy vector will return a zero matrix"""
+        dy = np.zeros([1])
+        jac = np.array(0.1)
+
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        assert np.all(vjp == np.zeros([1]))
+
+    def test_zero_dy_single_measurement_multi_params(self):
+        """A zero dy vector will return a zero matrix"""
+        dy = np.zeros([2])
+        jac = tuple([np.array(0.1), np.array(0.2)])
+
+        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        assert np.all(vjp == np.zeros([2]))
+
+    def test_zero_dy_multi(self):
+        """A zero dy vector will return a zero matrix"""
+        dy = tuple([np.array(0.0), np.array([0.0, 0.0])])
+        jac = tuple(
+            [
+                tuple([np.array(0.1), np.array(0.1), np.array(0.1)]),
+                tuple([np.array([0.1, 0.2]), np.array([0.1, 0.2]), np.array([0.1, 0.2])]),
+            ]
+        )
+
+        vjp = qml.gradients.compute_vjp_multi(dy, jac)
         assert np.all(vjp == np.zeros([3]))
 
     @pytest.mark.torch
@@ -61,11 +156,13 @@ class TestComputeVJP:
 
         dtype1 = getattr(torch, dtype1)
         dtype2 = getattr(torch, dtype2)
+        a = torch.ones((1), dtype=dtype1)
+        b = torch.ones((2), dtype=dtype1)
 
-        dy = torch.ones(4, dtype=dtype1)
-        jac = torch.ones((4, 4), dtype=dtype2)
+        dy = tuple([a, b])
+        jac = tuple([torch.ones((1), dtype=dtype2), torch.ones((2), dtype=dtype2)])
 
-        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype1
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -74,13 +171,17 @@ class TestComputeVJP:
         determined by the dtype of the dy."""
         import tensorflow as tf
 
+        dtype = dtype1
         dtype1 = getattr(tf, dtype1)
         dtype2 = getattr(tf, dtype2)
 
-        dy = tf.ones(4, dtype=dtype1)
-        jac = tf.ones((4, 4), dtype=dtype2)
+        a = tf.ones((1), dtype=dtype1)
+        b = tf.ones((2), dtype=dtype1)
 
-        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+        dy = tuple([a, b])
+        jac = tuple([tf.ones((1), dtype=dtype2), tf.ones((2), dtype=dtype2)])
+
+        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -92,13 +193,13 @@ class TestComputeVJP:
 
         config.update("jax_enable_x64", True)
 
+        dtype = dtype1
         dtype1 = getattr(jax.numpy, dtype1)
         dtype2 = getattr(jax.numpy, dtype2)
 
-        dy = jax.numpy.array([0, 1], dtype=dtype1)
-        jac = jax.numpy.array([[0, 1], [2, 3]], dtype=dtype2)
-
-        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+        dy = tuple([jax.numpy.array(1, dtype=dtype1), jax.numpy.array([1, 1], dtype=dtype1)])
+        jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
+        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
 
 
 class TestVJP:
@@ -149,7 +250,7 @@ class TestVJP:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape.trainable_params = {0, 1}
-        dy = np.array([1.0])
+        dy = np.array(1.0)
 
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         assert len(tapes) == 4
@@ -201,7 +302,7 @@ class TestVJP:
             qml.probs(wires=[0, 1])
 
         tape.trainable_params = {0, 1}
-        dy = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+        dy = tuple([np.array(1.0), np.array([2.0, 3.0, 4.0, 5.0])])
 
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         assert len(tapes) == 4
@@ -233,7 +334,7 @@ class TestVJP:
             )
             / 2
         )
-
+        dy = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
         assert np.allclose(res, dy @ expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("dtype", [np.float32, np.float64])
@@ -316,7 +417,7 @@ class TestVJPGradients:
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
-
+        print(vjp)
         assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
 
         cost = vjp[0]
@@ -351,40 +452,41 @@ class TestVJPGradients:
         res = t.jacobian(vjp, params)
         assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    def test_tf_custom_loss(self):
-        """Tests that the gradient pipeline using the TensorFlow interface with
-        a custom TF loss and lightning.qubit with a custom dtype does not raise
-        any errors."""
-        import tensorflow as tf
+    # TODO: to be added when lighting and TF compatible with return types
+    # @pytest.mark.tf
+    # def test_tf_custom_loss(self):
+    #     """Tests that the gradient pipeline using the TensorFlow interface with
+    #     a custom TF loss and lightning.qubit with a custom dtype does not raise
+    #     any errors."""
+    #     import tensorflow as tf
 
-        nwires = 5
-        dev = qml.device("lightning.qubit", wires=nwires)
-        dev.C_DTYPE = vanilla_numpy.complex64
-        dev.R_DTYPE = vanilla_numpy.float32
+    #     nwires = 5
+    #     dev = qml.device("lightning.qubit", wires=nwires)
+    #     dev.C_DTYPE = vanilla_numpy.complex64
+    #     dev.R_DTYPE = vanilla_numpy.float32
 
-        @qml.qnode(dev, interface="tf", diff_method="adjoint")
-        def circuit(weights, features):
-            for i in range(nwires):
-                qml.RX(features[i], wires=i)
-                qml.RX(weights[i], wires=i)
-            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+    #     @qml.qnode(dev, interface="tf", diff_method="adjoint")
+    #     def circuit(weights, features):
+    #         for i in range(nwires):
+    #            qml.RX(features[i], wires=i)
+    #             qml.RX(weights[i], wires=i)
+    #         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-        vanilla_numpy.random.seed(42)
+    #     vanilla_numpy.random.seed(42)
 
-        ndata = 100
-        data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
-        label = [vanilla_numpy.random.choice([1, 0]).astype("int") for _ in range(ndata)]
+    #     ndata = 100
+    #     data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
+    #     label = [vanilla_numpy.random.choice([1, 0]).astype("int") for _ in range(ndata)]
 
-        loss = tf.losses.SparseCategoricalCrossentropy()
+    #     loss = tf.losses.SparseCategoricalCrossentropy()
 
-        params = tf.Variable(vanilla_numpy.random.randn(nwires).astype("float32"), trainable=True)
-        with tf.GradientTape() as tape:
-            probs = [circuit(params, d) for d in data]
-            loss_value = loss(label, probs)
+    #     params = tf.Variable(vanilla_numpy.random.randn(nwires).astype("float32"), trainable=True)
+    #     with tf.GradientTape() as tape:
+    #         probs = [circuit(params, d) for d in data]
+    #         loss_value = loss(label, probs)
 
-        grads = tape.gradient(loss_value, [params])
-        assert len(grads) == 1
+    #    grads = tape.gradient(loss_value, [params])
+    #    assert len(grads) == 1
 
     @pytest.mark.jax
     @pytest.mark.slow
@@ -399,20 +501,19 @@ class TestVJPGradients:
         params = jnp.array(params_np)
 
         @partial(jax.jit, static_argnums=1)
-        def cost_fn(x, dy):
+        def cost_fn(x):
             with qml.tape.QuantumTape() as tape:
                 ansatz(x[0], x[1])
-
+            dy = jax.numpy.array([-1.0, 0.0, 0.0, 1.0])
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
             vjp = fn(dev.batch_execute(tapes))
             return vjp
 
-        dy = (-1.0, 0.0, 0.0, 1.0)
-        res = cost_fn(params, dy)
+        res = cost_fn(params)
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
 
-        res = jax.jacobian(cost_fn, argnums=0)(params, dy)
+        res = jax.jacobian(cost_fn, argnums=0)(params)
         exp = qml.jacobian(expected)(params_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
@@ -439,7 +540,7 @@ class TestBatchVJP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        dys = [np.array([1.0]), np.array([1.0])]
+        dys = [np.array(1.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift)
         assert len(v_tapes) == 4
@@ -469,7 +570,7 @@ class TestBatchVJP:
         tape2.trainable_params = set()
 
         tapes = [tape1, tape2]
-        dys = [np.array([1.0]), np.array([1.0])]
+        dys = [np.array(1.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift)
 
@@ -495,7 +596,7 @@ class TestBatchVJP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        dys = [np.array([0.0]), np.array([1.0])]
+        dys = [np.array(0.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift)
         res = fn(dev.batch_execute(v_tapes))
@@ -524,7 +625,7 @@ class TestBatchVJP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        dys = [np.array([1.0]), np.array([1.0])]
+        dys = [np.array(1.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift, reduction="append")
         res = fn(dev.batch_execute(v_tapes))
@@ -553,7 +654,7 @@ class TestBatchVJP:
         tape2.trainable_params = {0, 1}
 
         tapes = [tape1, tape2]
-        dys = [np.array([1.0]), np.array([1.0])]
+        dys = [np.array(1.0), np.array(1.0)]
 
         v_tapes, fn = qml.gradients.batch_vjp(tapes, dys, param_shift, reduction="extend")
         res = fn(dev.batch_execute(v_tapes))
