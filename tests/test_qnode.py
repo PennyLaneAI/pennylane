@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-from collections import defaultdict
-import pytest
 import warnings
+from collections import defaultdict
+
 import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import QNode
 from pennylane import numpy as pnp
-from pennylane import qnode, QNode
+from pennylane import qnode
 from pennylane.tape import QuantumTape
 
 
@@ -104,7 +106,7 @@ class TestValidation:
         dev = qml.device("default.gaussian", wires=1)
 
         with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
-            QNode._validate_backprop_method(dev, None)
+            QNode._validate_backprop_method(dev, None, shots=dev.shots)
 
     def test_validate_backprop_method_invalid_interface(self, monkeypatch):
         """Test that the method for validating the backprop diff method
@@ -115,7 +117,7 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
         with pytest.raises(qml.QuantumFunctionError, match=f"when using the {test_interface}"):
-            QNode._validate_backprop_method(dev, None)
+            QNode._validate_backprop_method(dev, None, shots=dev.shots)
 
     def test_validate_backprop_method(self, monkeypatch):
         """Test that the method for validating the backprop diff method
@@ -124,7 +126,9 @@ class TestValidation:
         test_interface = "something"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
-        method, diff_options, device = QNode._validate_backprop_method(dev, "something")
+        method, diff_options, device = QNode._validate_backprop_method(
+            dev, "something", shots=dev.shots
+        )
 
         assert method == "backprop"
         assert device is dev
@@ -138,7 +142,9 @@ class TestValidation:
 
         dev = qml.device("default.qubit", wires=1)
 
-        diff_method, _, new_dev = QNode._validate_backprop_method(dev, accepted_name)
+        diff_method, _, new_dev = QNode._validate_backprop_method(
+            dev, accepted_name, shots=dev.shots
+        )
 
         assert diff_method == "backprop"
         assert new_dev.capabilities().get("passthru_interface") == official_name
@@ -153,7 +159,9 @@ class TestValidation:
         orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
         monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
 
-        method, diff_options, device = QNode._validate_backprop_method(dev, test_interface)
+        method, diff_options, device = QNode._validate_backprop_method(
+            dev, test_interface, shots=dev.shots
+        )
 
         assert method == "backprop"
         assert isinstance(device, qml.devices.DefaultGaussian)
@@ -171,7 +179,7 @@ class TestValidation:
         with pytest.raises(
             qml.QuantumFunctionError, match=r"when using the \['something'\] interface"
         ):
-            QNode._validate_backprop_method(dev, "another_interface")
+            QNode._validate_backprop_method(dev, "another_interface", shots=dev.shots)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
@@ -180,7 +188,7 @@ class TestValidation:
         dev = qml.device(device_string, wires=1, shots=100)
 
         with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
-            QNode._validate_backprop_method(dev, "autograd")
+            QNode._validate_backprop_method(dev, "autograd", shots=dev.shots)
 
     @pytest.mark.autograd
     def test_parameter_shift_qubit_device(self):
@@ -407,7 +415,7 @@ class TestValidation:
         dev = qml.device("default.gaussian", wires=1)
 
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
-            QNode._validate_adjoint_method(dev)
+            QNode._validate_adjoint_method(dev, shots=dev.shots)
 
     def test_validate_adjoint_finite_shots(self):
         """Test that a UserWarning is raised when device has finite shots"""
@@ -417,7 +425,7 @@ class TestValidation:
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
-            QNode._validate_adjoint_method(dev)
+            QNode._validate_adjoint_method(dev, shots=dev.shots)
 
     def test_adjoint_finite_shots(self):
         """Tests that UserWarning is raised with the adjoint differentiation method
