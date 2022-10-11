@@ -1450,6 +1450,12 @@ class MeasurementValue(Generic[T]):
             )
         return "\n".join(lines)
 
+    def __eq__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self.merge(other).apply(lambda v: v[0] == v[1])
+        else:
+            return self.apply(lambda v: v == other)
+
 
 def measure(wires):
     """Perform a mid-circuit measurement in the computational basis on the
