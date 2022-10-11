@@ -55,7 +55,6 @@ from pennylane.measurements import (
     sample,
     state,
     var,
-    apply_to_measurement,
     vn_entropy,
     mutual_info,
     classical_shadow,

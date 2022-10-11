@@ -1400,6 +1400,48 @@ T = TypeVar("T")
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
+class MeasurementValue:
+
+    def __init__(self, *measurement_ids, fn=lambda x: x):
+        self.measurement_ids = measurement_ids
+        self.fn = fn
+
+    def apply(self, fn):
+        return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
+
+    def merge(self, other: 'MeasurementValue'):
+
+        # create a new merged list with no duplicates and in lexical ordering
+        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
+        merged_measurement_ids.sort()
+
+        # create a new function that selects the correct indices for each sub function
+        def merged_fn(*x):
+            out_1 = self.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]))
+            out_2 = other.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]))
+
+            return out_1, out_2
+
+        return MeasurementValue(
+            *merged_measurement_ids,
+            fn=merged_fn
+        )
+
+    def __getitem__(self, i):
+        # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
+        branch = tuple(int(b) for b in np.binary_repr(i))
+        return self.fn(branch)
+
+    def __str__(self):
+        lines = []
+        for i in range(2**(len(self.measurement_ids))):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            lines.append(
+                "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(*branch))
+            )
+        return "\n".join(lines)
+
+
 def measure(wires):
     """Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
@@ -1447,49 +1489,4 @@ def measure(wires):
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
-
-
-class MeasurementValue:
-
-    def __init__(self, *measurement_ids, fn=lambda x: x):
-        self.measurement_ids = measurement_ids
-        self.fn = fn
-
-    def apply(self, fn):
-        return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
-
-    def merge(self, other: 'MeasurementValue'):
-
-        # create a new merged list with no duplicates and in lexical ordering
-        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
-        merged_measurement_ids.sort()
-
-        # create a new function that selects the correct indices for each sub function
-        def merged_fn(*x):
-            out_1 = self.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]))
-            out_2 = other.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]))
-
-            return out_1, out_2
-
-        return MeasurementValue(
-            *merged_measurement_ids,
-            fn=merged_fn
-        )
-
-    def __getitem__(self, i):
-        # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
-        branch = tuple(int(b) for b in np.binary_repr(i))
-        return self.fn(branch)
-
-    def __str__(self):
-        lines = []
-        for i in range(2**(len(self.measurement_ids))):
-            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
-            lines.append(
-                "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(*branch))
-            )
-        return "\n".join(lines)
-
-    def __add__(self, other):
-        return self.merge(other).apply(lambda v: sum(v))
 
