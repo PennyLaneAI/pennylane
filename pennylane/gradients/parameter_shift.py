@@ -697,7 +697,7 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     return tuple(new_pdA2)
 
 
-def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
+def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector):
     """The main auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
@@ -709,10 +709,6 @@ def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
         involutory = set(var_indices) - set(non_involutory_indices)
 
         if involutory:
-            if len(tape.measurements) > 1:
-                shot_vector = isinstance(pdA2[0], tuple) and len(pdA2[0]) > 1
-            else:
-                shot_vector = isinstance(pdA2, tuple) and len(pdA2) > 1
 
             if shot_vector:
                 new_pdA2 = []
@@ -737,15 +733,16 @@ def aux(tape, var_mask, pdA2, f0, pdA):
 
     """
     # TODO: update the logic below by using the updated aux function
+
     num_params = len(tape.trainable_params)
-    multi_measure = len(tape.measurements) > 1
-    if multi_measure:
+    num_measurements = len(tape.measurements)
+    if num_measurements > 1:
 
         if num_params == 1:
 
             var_grad = []
 
-            for m_idx in range(len(tape.measurements)):
+            for m_idx in range(num_measurements):
                 m_res = pdA[m_idx]
                 if var_mask[m_idx]:
                     _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
@@ -756,7 +753,7 @@ def aux(tape, var_mask, pdA2, f0, pdA):
             return tuple(var_grad)
 
         var_grad = []
-        for m_idx in range(len(tape.measurements)):
+        for m_idx in range(num_measurements):
             m_res = []
             if var_mask[m_idx]:
                 for p_idx in range(num_params):
@@ -807,27 +804,25 @@ def _create_variance_proc_fn(
     def processing_fn(results):
         f0 = results[0]
 
+        multi_measure = len(tape.measurements) > 1
+
+        if multi_measure:
+            shot_vector = isinstance(f0[0], tuple) and len(f0[0]) > 1
+        else:
+            shot_vector = isinstance(f0, tuple) and len(f0) > 1
+
         # analytic derivative of <A>
         pdA = pdA_fn(results[1:tape_boundary])
 
         # analytic derivative of <A^2>
         pdA2 = _get_pdA2(
-            results[tape_boundary:], tape, pdA2_fn, non_involutory_indices, var_indices
+            results[tape_boundary:], tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector
         )
 
         # The logic follows:
         # variances (var_mask==True): return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp
         # plain expectations (var_mask==False): return d<A>/dp
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
-        multi_measure = len(tape.measurements) > 1
-
-        res = f0
-
-        if multi_measure:
-            shot_vector = isinstance(f0[0], tuple) and len(res[0]) > 1
-        else:
-            shot_vector = isinstance(f0, tuple) and len(res) > 1
-
         if shot_vector:
             final_res = []
             num_shot_components = len(f0)
