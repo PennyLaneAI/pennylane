@@ -21,12 +21,10 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
-import functools
-import uuid
 from collections.abc import Iterable
 import warnings
 from enum import Enum
-from typing import Generic, TypeVar, Union, Callable
+from typing import Generic, TypeVar
 
 import numpy as np
 
@@ -1405,7 +1403,6 @@ class MeasurementValue(Generic[T]):
 
 
     Measurements on a single qubit in the computational basis are assumed.
-    
     Args:
         measurement_ids (str): The id of the measurement that this object depends on.
         fn (Callable): a transformation applied to the measurements.
