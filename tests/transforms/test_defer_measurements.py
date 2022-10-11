@@ -831,38 +831,24 @@ class TestMeasurementValueManipulation:
         assert m_inversion[0] == True
         assert m_inversion[1] == False
 
-    def test_lt(self):
+    def test_gt(self):
         m = MeasurementValue("m", fn=lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] == False
         assert m_inversion[1] == True
 
-    def merge_measurements_values_dependant_on_same_measurement(self):
-        m0 = MeasurementValue("m")
-        m1 = MeasurementValue("m")
+    def test_merge_measurements_values_dependant_on_same_measurement(self):
+        m0 = MeasurementValue("m", fn=lambda v: v)
+        m1 = MeasurementValue("m", fn=lambda v: v)
         combined = m0 + m1
-        assert combined.branches[(0,)] == 0
-        assert combined.branches[(1,)] == 2
+        assert combined[0] == 0
+        assert combined[1] == 2
 
-    def combine_measurement_value_with_measurement_leaf(self):
-        m0 = MeasurementValue("m")
-        l0 = MeasurementLeaf(10)
-        out = qml.apply_to_measurement(lambda x, y: x + y)(m0, l0)
-        assert out.branches[(0,)] == 10
-        assert out.branches[(1,)] == 11
-
-    def combine_measurement_value_with_measurement_leaf_reverse(self):
-        m0 = MeasurementValue("m")
-        l0 = MeasurementLeaf(10)
-        out = qml.apply_to_measurement(lambda x, y: x + y)(l0, m0)
-        assert out.branches[(0,)] == 10
-        assert out.branches[(1,)] == 11
-
-    def test_op_with_non_measurement_value(self):
-        m = MeasurementValue("m")
-        m_add = m + 10
-        assert m_add.branches[(0,)] == 10
-        assert m_add.branches[(1,)] == 11
+    def test_combine_measurement_value_with_non_measurement(self):
+        m0 = MeasurementValue("m", fn=lambda v: v)
+        out = m0 + 10
+        assert out[0] == 10
+        assert out[1] == 11
 
     def test_complex_function(self):
         m0 = MeasurementValue("m0")

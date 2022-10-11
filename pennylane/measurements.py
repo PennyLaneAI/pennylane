@@ -1440,6 +1440,11 @@ class MeasurementValue(Generic[T]):
             return self.merge(other).apply(lambda v: v[0] < v[1])
         return self.apply(lambda v: v < other)
 
+    def __gt__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self.merge(other).apply(lambda v: v[0] > v[1])
+        return self.apply(lambda v: v > other)
+
     def apply(self, fn):
         return MeasurementValue(
             *self.measurement_ids,
