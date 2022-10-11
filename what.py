@@ -16,16 +16,19 @@ import jax.numpy as jnp
 import pennylane.measurements as m
 
 a = m.MeasurementValueV2("a")
+b = m.MeasurementValueV2("b")
 print(a)
 
+print(a + b)
 
-def hey(x):
-    return 52 * x
 
-b = m.MeasurementValueV2("b").apply(hey)
-print(b)
-o = a.merge(b).merge(b)
-print(o)
+# def hey(x):
+#     return 52 * x
+#
+# b = m.MeasurementValueV2("b").apply(hey)
+# print(b)
+# o = a.merge(b).merge(b)
+# print(o)
 #
 # print(o.fn((1, 1)))
 #
