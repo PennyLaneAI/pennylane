@@ -73,7 +73,7 @@ def test_custom_op_with_matrix():
         qml.state()
 
     dev = qml.device("null.qubit", wires=1)
-    assert dev.execute(tape) == None
+    assert dev.execute(tape) == [0.0]
 
 
 class TestApply:
@@ -99,7 +99,7 @@ class TestApply:
         dev = nullqubit_device(wires=2)
         dev.reset()
         dev.apply([operation(input, wires=[0, 1])])
-        assert dev._state == None
+        assert dev._state == [0.0]
 
     test_data_single_wire_with_parameters = [
         (qml.PhaseShift, [1 / math.sqrt(5), 2 / math.sqrt(5)], [math.pi / 4]),
@@ -155,7 +155,7 @@ class TestApply:
                 op([0.543] * n_params, wires=range(n_wires))
             return qml.state()
 
-        assert circuit() == None
+        assert circuit() == [0.0]
 
 
 class TestExpval:
@@ -180,7 +180,7 @@ class TestExpval:
         dev.reset()
         dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.expval(obs)
-        assert res == None
+        assert res == [0.0]
 
     @pytest.mark.parametrize(
         "operation,input,par",
@@ -200,7 +200,7 @@ class TestExpval:
         dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.expval(obs)
 
-        assert res == None
+        assert res == [0.0]
 
     @pytest.mark.parametrize(
         "operation,input,par",
@@ -232,7 +232,7 @@ class TestExpval:
         dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
         res = dev.expval(obs)
 
-        assert res == None
+        assert res == [0.0]
 
 
 class TestVar:
@@ -257,7 +257,7 @@ class TestVar:
         dev.reset()
         dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.var(obs)
-        assert res == None
+        assert res == [0.0]
 
     @pytest.mark.parametrize(
         "operation,input,par",
@@ -277,7 +277,7 @@ class TestVar:
         dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.var(obs)
 
-        assert res == None
+        assert res == [0.0]
 
     @pytest.mark.parametrize(
         "operation,input,par",
@@ -309,7 +309,7 @@ class TestVar:
         dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
         res = dev.var(obs)
 
-        assert res == None
+        assert res == [0.0]
 
 
 class TestSample:
@@ -327,7 +327,7 @@ class TestSample:
 
         s1 = dev.sample(qml.PauliZ(0))
 
-        assert s1 == None
+        assert s1 == [0.0]
 
 
 class TestNullQubitIntegration:
@@ -371,7 +371,7 @@ class TestNullQubitIntegration:
             qml.RX(x, wires=0)
             return qml.state()
 
-        assert circuit(p) == None
+        assert circuit(p) == [0.0]
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_qubit_circuit_expval(self, nullqubit_device, r_dtype):
@@ -387,7 +387,7 @@ class TestNullQubitIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        assert circuit(p) == np.array(None, dtype=object)
+        assert circuit(p) == np.array([0.0], dtype=object)
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_qubit_circuit_var(self, nullqubit_device, r_dtype):
@@ -403,7 +403,7 @@ class TestNullQubitIntegration:
             qml.RX(x, wires=0)
             return qml.var(qml.PauliY(0))
 
-        assert circuit(p) == np.array(None, dtype=object)
+        assert circuit(p) == np.array([0.0], dtype=object)
 
     def test_qubit_identity(self, nullqubit_device):
         """Test that the NullQubit plugin provides correct result for the Identity expectation"""
@@ -416,7 +416,7 @@ class TestNullQubitIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.Identity(0))
 
-        assert circuit(p) == np.array(None, dtype=object)
+        assert circuit(p) == np.array([0.0], dtype=object)
 
     def test_nonzero_shots(self):
         """Test that the NullQubit plugin provides correct result for high shot number"""
@@ -434,7 +434,7 @@ class TestNullQubitIntegration:
         for _ in range(100):
             runs.append(circuit(p))
 
-        assert np.all(runs == np.array(None, dtype=object))
+        assert np.all(runs == np.array([0.0], dtype=object))
 
     @pytest.mark.parametrize(
         "name,state",
@@ -458,7 +458,7 @@ class TestNullQubitIntegration:
             qml.QubitStateVector(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
 
-        assert circuit() == np.array(None, dtype=object)
+        assert circuit() == np.array([0.0], dtype=object)
 
     @pytest.mark.parametrize(
         "name,state,par",
@@ -482,7 +482,7 @@ class TestNullQubitIntegration:
             qml.QubitStateVector(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
 
-        assert circuit() == np.array(None, dtype=object)
+        assert circuit() == np.array([0.0], dtype=object)
 
     @pytest.mark.parametrize(
         "name,state,par",
@@ -519,7 +519,7 @@ class TestNullQubitIntegration:
             qml.QubitStateVector(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
 
-        assert circuit() == np.array(None, dtype=object)
+        assert circuit() == np.array([0.0], dtype=object)
 
     @pytest.mark.parametrize(
         "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
@@ -538,7 +538,7 @@ class TestNullQubitIntegration:
             qml.RX(x, wires=0)
             return qml.state()
 
-        assert circuit(p) == None
+        assert circuit(p) == [0.0]
 
     @pytest.mark.parametrize(
         "method", ["best", "parameter-shift", "backprop", "finite-diff", "adjoint"]
@@ -558,7 +558,7 @@ class TestNullQubitIntegration:
                 qml.RX(x, wires=n)
             return [qml.expval(qml.PauliZ(i)) for i in range(4)]
 
-        assert np.all(circuit(p) == np.array(None, dtype=object))
+        assert np.all(circuit(p) == np.array([0.0], dtype=object))
 
 
 THETA = np.linspace(0.11, 1, 3)
@@ -587,7 +587,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
     def test_pauliz_identity(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
@@ -606,7 +606,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
     def test_pauliz_hadamard(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -624,7 +624,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
     def test_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -652,7 +652,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
     def test_hermitian_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
@@ -682,7 +682,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
     def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
@@ -699,7 +699,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
     def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
@@ -717,7 +717,7 @@ class TestTensorExpval:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.expval(obs) == None
+        assert dev.expval(obs) == [0.0]
 
 
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
@@ -741,7 +741,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
     def test_pauliz_identity(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
@@ -760,7 +760,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
     def test_pauliz_hadamard(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
@@ -778,7 +778,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
     def test_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -806,7 +806,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
     def test_hermitian_hermitian(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
@@ -836,7 +836,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
     def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
@@ -853,7 +853,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
     def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
@@ -871,7 +871,7 @@ class TestTensorVar:
             obs.diagonalizing_gates(),
         )
 
-        assert dev.var(obs) == None
+        assert dev.var(obs) == [0.0]
 
 
 @pytest.mark.parametrize("inverse", [True, False])
@@ -903,41 +903,41 @@ class TestApplyOps:
     def test_apply_single_qubit_op(self, method, inverse):
         """Test if the application of single qubit operations is correct."""
         state_out = method(self.state, axes=[1], inverse=inverse)
-        assert state_out == None
+        assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", two_qubit_ops)
     def test_apply_two_qubit_op(self, method, inverse):
         """Test if the application of two qubit operations is correct."""
         state_out = method(self.state, axes=[0, 1])
-        assert state_out == None
+        assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", two_qubit_ops)
     def test_apply_two_qubit_op_reverse(self, method, inverse):
         """Test if the application of two qubit operations is correct when the applied wires are
         reversed."""
         state_out = method(self.state, axes=[2, 1])
-        assert state_out == None
+        assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_smaller(self, method, inverse):
         """Test if the application of three qubit operations is correct when both control wires are
         smaller than the target wire."""
         state_out = method(self.state, axes=[0, 2, 3])
-        assert state_out == None
+        assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_greater(self, method, inverse):
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
-        assert state_out == None
+        assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_split(self, method, inverse):
         """Test if the application of three qubit operations is correct when one control wire is smaller
         and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
-        assert state_out == None
+        assert state_out == [0.0]
 
     single_qubit_ops_param = [
         (dev._apply_phase, [1.0]),
@@ -947,7 +947,7 @@ class TestApplyOps:
     def test_apply_single_qubit_op_(self, method, par, inverse):
         """Test if the application of single qubit operations (with parameter) is correct."""
         state_out = method(self.state, axes=[1], parameters=par, inverse=inverse)
-        assert state_out == None
+        assert state_out == [0.0]
 
 
 class TestStateInitialization:
@@ -973,7 +973,7 @@ class TestStateInitialization:
         spy = mocker.spy(dev, "_scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        assert dev._state == None
+        assert dev._state == [0.0]
         spy.assert_not_called()
 
     def test_basis_state_full_system(self, mocker):
@@ -996,7 +996,7 @@ class TestStateInitialization:
         spy = mocker.spy(dev, "_scatter")
         dev._apply_basis_state(state=state, wires=state_wires)
 
-        assert dev._state == None
+        assert dev._state == [0.0]
         spy.assert_not_called()
 
 
@@ -1164,4 +1164,4 @@ class TestState:
     )
     def test_state_measurement(self, measurement):
         """Test that the NullQubit plugin provides correct state results for a simple circuit"""
-        assert measurement == None
+        assert measurement == [0.0]

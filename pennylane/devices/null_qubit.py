@@ -155,7 +155,7 @@ class NullQubit(QubitDevice):
     # pylint: disable=arguments-differ
     def apply(self, operations, *args, **kwargs):
         for op in operations:
-            self._apply_operation(None, op)
+            self._apply_operation(self._state, op)
 
     def _apply_operation(self, state, operation):
         self._operation_calls[operation.base_name] += 1
@@ -172,46 +172,46 @@ class NullQubit(QubitDevice):
         return self._apply_unitary(state, None, wires)
 
     def _apply_x(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_y(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_z(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_hadamard(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_s(self, state, axes, inverse=False):
-        pass
+        return [0.0]
 
     def _apply_t(self, state, axes, inverse=False):
-        pass
+        return [0.0]
 
     def _apply_sx(self, state, axes, inverse=False):
-        pass
+        return [0.0]
 
     def _apply_cnot(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_swap(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_cz(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_toffoli(self, state, axes, **kwargs):
-        pass
+        return [0.0]
 
     def _apply_phase(self, state, axes, parameters, inverse=False):
-        pass
+        return [0.0]
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        pass
+        return [0.0]
 
     def var(self, observable, shot_range=None, bin_size=None):
-        pass
+        return [0.0]
 
     @classmethod
     def capabilities(cls):
@@ -233,35 +233,35 @@ class NullQubit(QubitDevice):
 
     @staticmethod
     def _create_basis_state(index):
-        return None
+        return [0.0]
 
     @property
     def state(self):
-        return None
+        return [0.0]
 
     def density_matrix(self, wires):
-        return None
+        return [0.0]
 
     def _apply_state_vector(self, state, device_wires):
-        pass
+        return [0.0]
 
     def _apply_basis_state(self, state, wires):
-        pass
+        return [0.0]
 
     def _apply_unitary(self, state, mat, wires):
-        pass
+        return [0.0]
 
     def _apply_unitary_einsum(self, state, mat, wires):
-        pass
+        return [0.0]
 
     def _apply_diagonal_unitary(self, state, phases, wires):
-        pass
+        return [0.0]
 
     def reset(self):
         self._operation_calls = defaultdict(int)
 
     def analytic_probability(self, wires=None):
-        pass
+        return [0.0]
 
     def generate_samples(self):
         """Returns the computational basis samples generated for all wires.
@@ -269,7 +269,7 @@ class NullQubit(QubitDevice):
         self.analytic_probability()
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
-        pass
+        return [0.0]
 
     def operation_calls(self):
         """Statistics of operation calls"""
@@ -278,11 +278,19 @@ class NullQubit(QubitDevice):
     def execute(self, circuit, **kwargs):
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
+        if self.tracker.active:
+            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.record()
+        return [0.0]
+
     def batch_execute(self, circuits, **kwargs):
         res = []
         for c in circuits:
             res.append(self.execute(c))
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
         return res
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
-        return None
+        return [0.0]
