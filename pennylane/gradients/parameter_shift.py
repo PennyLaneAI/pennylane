@@ -182,13 +182,34 @@ def _evaluate_gradient_new(tape, res, data, r0):
     num_measurements = len(tape.measurements)
     if num_measurements == 1:
 
-        res = qml.math.stack(res)
+        # TODO: single param case?
+        shot_vector = isinstance(res[0], tuple)
 
-        if len(res.shape) > 1:
-            res = qml.math.squeeze(res)
+        if not shot_vector:
+            res = qml.math.stack(res)
 
-        g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
-        g = _unshifted_coeff(g, unshifted_coeff, r0)
+            if len(res.shape) > 1:
+                res = qml.math.squeeze(res)
+
+            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
+            return _unshifted_coeff(g, unshifted_coeff, r0)
+
+        g = []
+
+        num_shot_components = len(res[0])
+        all_results = res
+        for i in range(num_shot_components):
+            res = [r[i] for r in all_results]
+            res = qml.math.stack(res)
+
+            if len(res.shape) > 1:
+                res = qml.math.squeeze(res)
+
+            shot_comp_res = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
+            shot_comp_res = _unshifted_coeff(shot_comp_res, unshifted_coeff, r0)
+            g.append(shot_comp_res)
+        g = tuple(g)
+
     else:
         g = []
 
@@ -478,6 +499,7 @@ def _expval_param_shift_tuple(
 
         single_measure = len(tape.measurements) == 1
         single_param = len(tape.trainable_params) == 1
+        shot_vector_single_meas = single_measure and isinstance(r0, tuple)
         shot_vector_multi_measure = not single_measure and (isinstance(r0[0], tuple))
 
         for data in gradient_data:
@@ -498,7 +520,10 @@ def _expval_param_shift_tuple(
         if single_measure:
             # This clause will be hit at least once (because otherwise all gradients would have
             # been zero), providing a representative for a zero gradient to emulate its type/shape.
-            zero_rep = qml.math.zeros_like(g)
+            if shot_vector_single_meas:
+                zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
+            else:
+                zero_rep = qml.math.zeros_like(g)
         else:
 
             if not shot_vector_multi_measure:
