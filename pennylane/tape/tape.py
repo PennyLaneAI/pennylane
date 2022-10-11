@@ -55,16 +55,20 @@ def get_active_tape():
     return QueuingManager.active_context()
 
 
-def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
+def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
     Args:
+        qscript (QuantumScript): The Quantum Script to expand
         depth (int): the depth the tape should be expanded
         stop_at (Callable): A function which accepts a queue object,
             and returns ``True`` if this object should *not* be expanded.
             If not provided, all objects that support expansion will be expanded.
         expand_measurements (bool): If ``True``, measurements will be expanded
             to basis rotations and computational basis measurements.
+
+    Returns:
+        QuantumScript: The expanded version of ``qscript``.
 
     **Example**
 
@@ -101,7 +105,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     RY(0.2, wires=['a'])]
     """
     if depth == 0:
-        return tape
+        return qscript
 
     if stop_at is None:
         # by default expand all objects
@@ -115,17 +119,17 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
-    # expansion acts on the original tape in place.
-    if tape._obs_sharing_wires:
+    # expansion acts on the original qscript in place.
+    if qscript._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
-                    tape._obs_sharing_wires
+                    qscript._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
                 if any(
                     m.return_type in (Probability, Sample, Counts, AllCounts)
-                    for m in tape.measurements
+                    for m in qscript.measurements
                 ):
                     raise qml.QuantumFunctionError(
                         "Only observables that are qubit-wise commuting "
@@ -138,19 +142,21 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 raise qml.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
                     "Pauli words can be returned on the same wire, "
-                    f"some of the following measurements do not commute:\n{tape.measurements}"
+                    f"some of the following measurements do not commute:\n{qscript.measurements}"
                 ) from e
 
-            tape._ops.extend(rotations)
+            qscript._ops.extend(rotations)
 
-            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-                new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
-                tape._measurements[i] = new_m
+            for o, i in zip(diag_obs, qscript._obs_sharing_wires_id):
+                new_m = qml.measurements.MeasurementProcess(
+                    qscript.measurements[i].return_type, obs=o
+                )
+                qscript._measurements[i] = new_m
 
     for queue, new_queue in [
-        (tape._prep, new_prep),
-        (tape._ops, new_ops),
-        (tape._measurements, new_measurements),
+        (qscript._prep, new_prep),
+        (qscript._ops, new_ops),
+        (qscript._measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
@@ -162,7 +168,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             if stop:
                 # do not expand out the object; append it to the
-                # new tape, and continue to the next object in the queue
+                # new qscript, and continue to the next object in the queue
                 new_queue.append(obj)
                 continue
 
@@ -176,30 +182,25 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     new_queue.append(obj)
                     continue
 
-            # recursively expand out the newly created tape
-            expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
+            # recursively expand out the newly created qscript
+            expanded_qscript = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_prep.extend(expanded_tape._prep)
-            new_ops.extend(expanded_tape._ops)
-            new_measurements.extend(expanded_tape._measurements)
+            new_prep.extend(expanded_qscript._prep)
+            new_ops.extend(expanded_qscript._ops)
+            new_measurements.extend(expanded_qscript._measurements)
 
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, _update=False)
-    new_tape._prep = new_prep
-    new_tape._ops = new_ops
-    new_tape._measurements = new_measurements
+    new_qscript = qscript.__class__(new_ops, new_measurements, new_prep, _update=False)
 
     # Update circuit info
-    new_tape.wires = copy.copy(tape.wires)
-    new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
-    new_tape._batch_size = tape.batch_size
-    new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
-    return new_tape
+    new_qscript.wires = copy.copy(qscript.wires)
+    new_qscript.num_wires = qscript.num_wires
+    new_qscript.is_sampled = qscript.is_sampled
+    new_qscript.all_sampled = qscript.all_sampled
+    new_qscript._batch_size = qscript.batch_size
+    new_qscript._output_dim = qscript.output_dim
+    new_qscript._qfunc_output = qscript._qfunc_output
+    return new_qscript
 
-
-_empty_wires = qml.wires.Wires([])
 
 # pylint: disable=too-many-public-methods
 class QuantumTape(QuantumScript, AnnotatedQueue):

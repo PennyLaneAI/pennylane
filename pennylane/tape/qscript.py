@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-module docstring
+This module defines the QuantumScript object responsible for storing quantum operations to be
+executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 

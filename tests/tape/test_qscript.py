@@ -15,6 +15,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.tape import QuantumScript
 
 
@@ -104,6 +105,18 @@ sample_measurements = [
 
 
 class TestUpdate:
+    """Test the methods called by _update."""
+
+    def test_cached_graph_specs_reset(self):
+
+        qs = QuantumScript()
+        qs._graph = "hello"
+        qs._specs = "something"
+
+        qs._update()
+        assert self._graph is None
+        assert self._specs is None
+
     def test_update_circuit_info_wires(self):
 
         prep = [qml.BasisState([1, 1], wires=(-1, -2))]
@@ -128,3 +141,27 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
         assert qs.is_sampled is False
         assert qs.all_sampled is False
+
+    def test_update_par_info(self):
+        """Tests setting the parameter info dictionary.  Makes sure to include operations with
+        multiple parameters, operations with matrix parameters, and measurement of observables with
+        parameters."""
+        ops = [
+            qml.RX(1.2, wires=0),
+            qml.Rot(2.3, 3.4, 5.6, wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+            qml.U2(-1, -2, wires=0),
+        ]
+        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+
+        p_i = qs._par_info
+
+        assert p_i[0] == {"op": ops[0], "p_idx": 0}
+        assert p_i[1] == {"op": ops[1], "p_idx": 0}
+        assert p_i[2] == {"op": ops[1], "p_idx": 1}
+        assert p_i[3] == {"op": ops[1], "p_idx": 2}
+        assert p_i[4] == {"op": ops[3], "p_idx": 0}
+        assert p_i[5] == {"op": ops[4], "p_idx": 0}
+        assert p_i[6] == {"op": ops[4], "p_idx": 1}
+        assert p_i[7] == {"op": m[0].obs, "p_idx": 0}
