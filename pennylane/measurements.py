@@ -1409,7 +1409,8 @@ class MeasurementValue(Generic[T]):
         fn (Callable): a transformation applied to the measurements.
     """
 
-    def __init__(self, *measurement_ids, fn=lambda x: x):
+    def __init__(self, *measurement_ids, fn=None):
+        assert fn is not None
         self.measurement_ids = measurement_ids
         self.fn = fn
 
@@ -1431,7 +1432,10 @@ class MeasurementValue(Generic[T]):
             return self.apply(lambda v: v == other)
 
     def apply(self, fn):
-        return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
+        return MeasurementValue(
+            *self.measurement_ids,
+            fn=lambda *x: fn(self.fn(*x))
+        )
 
     def merge(self, other: 'MeasurementValue'):
 
@@ -1513,5 +1517,5 @@ def measure(wires):
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
-    return MeasurementValue(measurement_id)
+    return MeasurementValue(measurement_id, fn=lambda v: v)
 

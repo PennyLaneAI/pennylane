@@ -19,7 +19,7 @@ import math
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MeasurementValue, MeasurementLeaf
+from pennylane.measurements import MeasurementValue
 
 
 class TestQNode:
@@ -798,7 +798,7 @@ class TestMeasurementValueManipulation:
 
         m = MeasurementValue("m")
 
-        sin_of_m = qml.apply_to_measurement(np.sin)(m)
+        sin_of_m = m.apply(np.sin)
         assert sin_of_m.branches[(0,)] == 0.0
         assert sin_of_m.branches[(1,)] == np.sin(1)
 
