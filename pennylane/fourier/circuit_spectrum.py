@@ -50,7 +50,7 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
 
     Returns:
         (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-            their frequency spectra as values.
+        their frequency spectra as values.
 
 
     **Details**

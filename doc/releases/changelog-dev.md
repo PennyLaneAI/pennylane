@@ -82,9 +82,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Add details to the output of `Exp.label()`.
+  [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
+
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
-
+  
 <h3>Breaking changes</h3>
 
  * `QueuingContext` is renamed `QueuingManager`.
@@ -107,6 +110,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Documentation</h3>
 
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
 <h3>Bug fixes</h3>
 
 * Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
@@ -124,10 +130,12 @@ Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
 Amintor Dusko,
+Diego Guala,
 Soran Jahangiri,
 Christina Lee,
 Lee J. O'Riordan,
 Mudit Pandey,
+Matthew Silverman,
 Jay Soni,
 Antal Száva,
 David Wierichs,
