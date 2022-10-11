@@ -1273,12 +1273,12 @@ def measure(wires):
 
 class MeasurementValueV2:
 
-    def __init__(self, measurement_ids, fn=lambda x: x):
+    def __init__(self, *measurement_ids, fn=lambda x: x):
         self.measurement_ids = measurement_ids
         self.fn = fn
 
     def apply(self, fn):
-        return MeasurementValueV2(self.measurement_ids, lambda x: (fn(self.fn(*x)),))
+        return MeasurementValueV2(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
 
     def merge(self, other: 'MeasurementValueV2'):
 
@@ -1287,15 +1287,15 @@ class MeasurementValueV2:
         merged_measurement_ids.sort()
 
         # create a new function that selects the correct indices for each sub function
-        def merged_fn(x):
-            out_1 = self.fn([x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]])
-            out_2 = other.fn([x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]])
+        def merged_fn(*x):
+            out_1 = self.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]))
+            out_2 = other.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]))
 
-            return *out_1, *out_2
+            return out_1, out_2
 
         return MeasurementValueV2(
-            merged_measurement_ids,
-            merged_fn
+            *merged_measurement_ids,
+            fn=merged_fn
         )
 
     def __getitem__(self, i):
@@ -1308,6 +1308,6 @@ class MeasurementValueV2:
         for i in range(2**(len(self.measurement_ids))):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             lines.append(
-                "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(branch))
+                "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(*branch))
             )
         return "\n".join(lines)

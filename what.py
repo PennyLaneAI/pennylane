@@ -15,9 +15,14 @@ import numpy as np
 import jax.numpy as jnp
 import pennylane.measurements as m
 
-a = m.MeasurementValueV2(("a",))
+a = m.MeasurementValueV2("a")
 print(a)
-b = m.MeasurementValueV2(("b",)).apply(lambda x: x * 52)
+
+
+def hey(x):
+    return 52 * x
+
+b = m.MeasurementValueV2("b").apply(hey)
 print(b)
 o = a.merge(b).merge(b)
 print(o)
