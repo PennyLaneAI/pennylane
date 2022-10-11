@@ -79,8 +79,6 @@ def _multi_dispatch(values):
     * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
       they will always be treated as non-differentiable constants.
     """
-    if "resource_variable" in getattr(values, "__module__", tuple()):
-        assert True
 
     interfaces = {get_interface(v) for v in values}
 
