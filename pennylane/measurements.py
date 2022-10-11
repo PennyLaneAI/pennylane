@@ -1277,8 +1277,8 @@ class MeasurementValueV2:
         self.measurement_ids = measurement_ids
         self.fn = fn
 
-    def apply_function(self, fn):
-        return MeasurementValueV2(self.measurement_ids, lambda x: fn(self.fn(*x)))
+    def apply(self, fn):
+        return MeasurementValueV2(self.measurement_ids, lambda x: (fn(self.fn(*x)),))
 
     def merge(self, other: 'MeasurementValueV2'):
 
@@ -1291,7 +1291,7 @@ class MeasurementValueV2:
             out_1 = self.fn([x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]])
             out_2 = other.fn([x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]])
 
-            return out_1, out_2
+            return *out_1, *out_2
 
         return MeasurementValueV2(
             merged_measurement_ids,
@@ -1300,11 +1300,14 @@ class MeasurementValueV2:
 
     def __getitem__(self, i):
         # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
-        branch = tuple(int(b) for b in np.binary_repr(i, width=2))
+        branch = tuple(int(b) for b in np.binary_repr(i))
         return self.fn(branch)
 
-    def __array_function__(self, func, types, args, kwargs):
-        print("hello!!")
-
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        print("I don't know")
+    def __str__(self):
+        lines = []
+        for i in range(2**(len(self.measurement_ids))):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            lines.append(
+                "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(branch))
+            )
+        return "\n".join(lines)
