@@ -200,6 +200,7 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
+        self.shots = device.shots  # TODO: Use `shots` argument`
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -214,7 +215,7 @@ class QNode:
             self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
-        self._tape = QuantumTape(shots=device.shots)  # TODO: Use `shots` argument`
+        self._tape = None
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
@@ -239,16 +240,6 @@ class QNode:
     def interface(self):
         """The interface used by the QNode"""
         return self._interface
-
-    @property
-    def shots(self):
-        """Number of circuit evaluations/random samples used to estimate
-        expectation values of observables"""
-        return self.tape.shots
-
-    @shots.setter
-    def shots(self, value: int):
-        self._tape = QuantumTape(shots=value)
 
     @interface.setter
     def interface(self, value):
@@ -526,6 +517,8 @@ class QNode:
 
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+
+        self._tape = QuantumTape(shots=self.shots)
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
