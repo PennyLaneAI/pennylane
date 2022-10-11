@@ -960,7 +960,7 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
     len_state = state.shape[0]
 
     if check_state:
-        if state.shape == (len_state):
+        if state.shape == (len_state,):
             _check_state_vector(state)
         else:
             _check_density_matrix(state)
