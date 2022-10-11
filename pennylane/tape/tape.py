@@ -1234,7 +1234,7 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.shape(dev)
             (4,)
         """
-        shapes = tuple(observable.shape(device) for observable in self._measurements)
+        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
 
         if len(shapes) == 1:
             return shapes[0]
