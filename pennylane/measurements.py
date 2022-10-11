@@ -998,230 +998,6 @@ class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
 
-def apply_to_measurement(func: Callable):
-    """
-    Apply an arbitrary function to a `MeasurementValue` or set of `MeasurementValue`s.
-    (func should be a "pure" function)
-
-    Ex:
-
-    .. code-block:: python
-
-        m0 = qml.measure(0)
-        m0_sin = qml.apply_to_measurement(np.sin)(m0)
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        partial = MeasurementLeaf()
-        for arg in args:
-            if not isinstance(arg, MeasurementValue):
-                arg = MeasurementLeaf(arg)
-            partial = partial.merge(arg)
-        partial.transform_leaves_inplace(
-            lambda *unwrapped: func(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
-        )
-        return partial
-
-    return wrapper
-
-
-T = TypeVar("T")
-
-
-class MeasurementLeaf(Generic[T]):
-    """
-    Leaf node for a MeasurementDependantValue tree structure.
-
-    This type should not be instantiated directly by the user. It is intended to be created by the `qml.measure`
-    function.
-    """
-
-    __slots__ = ("_values",)
-
-    def __init__(self, *values):
-        self._values = values
-
-    def merge(self, other: Union["MeasurementValue", "MeasurementLeaf"]):
-        """
-        Works with MeasurementDependantValue.merge
-        """
-        if isinstance(other, MeasurementValue):
-            return MeasurementValue(
-                other.depends_on, self.merge(other.zero_case), self.merge(other.one_case)
-            )
-        return MeasurementLeaf(*self._values, *other._values)
-
-    def transform_leaves_inplace(self, func):
-        """
-        Works with MeasurementDependantValue.transform_leaves
-        """
-        self._values = (func(*self._values),)
-
-    @property
-    def values(self):
-        """Values this Leaf node is holding."""
-        if len(self._values) == 1:
-            return self._values[0]
-        return self._values
-
-    def __str__(self):
-        measurements = self.measurements
-        lines = []
-        for k, v in self.branches.items():
-            lines.append(
-                "if "
-                + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))])
-                + " => "
-                + str(v)
-            )
-        return "\n".join(lines)
-
-    def __repr__(self):
-        return f"{type(self).__name__}({', '.join(str(v) for v in self._values)})"
-
-
-class MeasurementValue(Generic[T]):
-    """A class representing unknown measurement outcomes in the qubit model.
-
-    Measurements on a single qubit in the computational basis are assumed.
-
-    This type should not be instantiated directly by the user. It is intended to be created by the `qml.measure`
-    function.
-
-    Args:
-        measurement_id (str): The id of the measurement that this object depends on.
-        zero_case (MeasurementLeaf): the first measurement outcome value
-        one_case (MeasurementLeaf): the second measurement outcome value
-    """
-
-    __slots__ = ("depends_on", "zero_case", "one_case")
-
-    def __init__(
-        self,
-        measurement_id: str,
-        zero_case=MeasurementLeaf(0),
-        one_case=MeasurementLeaf(1),
-    ):
-        self.depends_on = measurement_id
-        self.zero_case: MeasurementLeaf = zero_case
-        self.one_case: MeasurementLeaf = one_case
-
-    def merge(self, other: Union["MeasurementValue", "MeasurementLeaf"]):
-        """
-        Merge this MeasurementDependantValue with `other`.
-
-        Ex: Merging a MeasurementDependantValue such as:
-        .. code-block:: python
-
-            if sfdfajif=0 => 3.4
-            if sfdfajif=1 => 1
-
-        with another MeasurementDependantValue:
-
-        .. code-block:: python
-
-            if fdjaibjs=0 => 100
-            if fdjaibjs=1 => 67
-
-        will result in:
-
-        .. code-block:: python
-
-            if fdjaibjs=0,sfdfajif=0 => 3.4,100
-            if fdjaibjs=0,sfdfajif=1 => 3.4,67
-            if fdjaibjs=1,sfdfajif=0 => 1,100
-            if fdjaibjs=0,sfdfajif=1 => 1,67
-
-        (note the uuids in the example represent distinct measurements of different qubit.)
-
-        """
-        if isinstance(other, MeasurementValue):
-            if self.depends_on == other.depends_on:
-                return MeasurementValue(
-                    self.depends_on,
-                    self.zero_case.merge(other.zero_case),
-                    self.one_case.merge(other.one_case),
-                )
-            if (
-                self.depends_on < other.depends_on
-            ):  # organize tree structure based on lexicographical order of uuids
-                return MeasurementValue(
-                    self.depends_on,
-                    self.zero_case.merge(other),
-                    self.one_case.merge(other),
-                )
-            return MeasurementValue(
-                other.depends_on,
-                self.merge(other.zero_case),
-                self.merge(other.one_case),
-            )
-        return MeasurementValue(
-            self.depends_on,
-            self.zero_case.merge(other),
-            self.one_case.merge(other),
-        )
-
-    def transform_leaves_inplace(self, func: Callable):
-        """
-        Transform the leaves of a MeasurementDependantValue with `func`.
-        """
-        self.zero_case.transform_leaves_inplace(func)
-        self.one_case.transform_leaves_inplace(func)
-
-    @property
-    def branches(self):
-        """A dictionary representing all the possible outcomes of the MeasurementValue."""
-        branch_dict = {}
-        if isinstance(self.zero_case, MeasurementValue):
-            for k, v in self.zero_case.branches.items():
-                branch_dict[(0, *k)] = v
-            # if _zero_case is a MeaurementDependantValue, then one_case is too.
-            for k, v in self.one_case.branches.items():
-                branch_dict[(1, *k)] = v
-        else:
-            branch_dict[(0,)] = self.zero_case.values
-            branch_dict[(1,)] = self.one_case.values
-        return branch_dict
-
-    def __add__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
-        return apply_to_measurement(lambda x, y: x + y)(self, other)
-
-    def __invert__(self):
-        """Return a copy of the measurement value with an inverted control
-        value."""
-        return apply_to_measurement(lambda x: not x)(self)
-
-    def __eq__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
-        """Allow asserting measurement values."""
-        return apply_to_measurement(lambda x, y: x == y)(self, other)
-
-    def __le__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
-        return apply_to_measurement(lambda x, y: x < y)(self, other)
-
-    def __gt__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
-        return apply_to_measurement(lambda x, y: x > y)(self, other)
-
-    def __str__(self):
-        m = self.measurements
-        lines = []
-        for k, v in self.branches.items():
-            lines.append(
-                "if " + ",".join([f"{m[i]}={k[i]}" for i in range(len(m))]) + " => " + str(v)
-            )
-        return "\n".join(lines)
-
-    def __repr__(self):
-        return f"{type(self).__name__}({repr(self.depends_on)}, {repr(self.zero_case)}, {repr(self.one_case)})"
-
-    @property
-    def measurements(self):
-        """List of all measurements this MeasurementDependantValue depends on."""
-        if isinstance(self.zero_case, MeasurementValue):
-            return [self.depends_on, *self.zero_case.measurements]
-        return [self.depends_on]
-
-
 def measure(wires):
     """Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
@@ -1271,16 +1047,16 @@ def measure(wires):
     return MeasurementValue(measurement_id)
 
 
-class MeasurementValueV2:
+class MeasurementValue:
 
     def __init__(self, *measurement_ids, fn=lambda x: x):
         self.measurement_ids = measurement_ids
         self.fn = fn
 
     def apply(self, fn):
-        return MeasurementValueV2(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
+        return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
 
-    def merge(self, other: 'MeasurementValueV2'):
+    def merge(self, other: 'MeasurementValue'):
 
         # create a new merged list with no duplicates and in lexical ordering
         merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
@@ -1293,7 +1069,7 @@ class MeasurementValueV2:
 
             return out_1, out_2
 
-        return MeasurementValueV2(
+        return MeasurementValue(
             *merged_measurement_ids,
             fn=merged_fn
         )
@@ -1314,3 +1090,4 @@ class MeasurementValueV2:
 
     def __add__(self, other):
         return self.merge(other).apply(lambda v: sum(v))
+
