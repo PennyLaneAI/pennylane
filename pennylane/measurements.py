@@ -1420,6 +1420,17 @@ class MeasurementValue(Generic[T]):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             yield branch, self.fn(*branch)
 
+    def __invert__(self):
+        """Return a copy of the measurement value with an inverted control
+        value."""
+        return self.apply(lambda v: not v)
+
+    def __eq__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self.merge(other).apply(lambda v: v[0] == v[1])
+        else:
+            return self.apply(lambda v: v == other)
+
     def apply(self, fn):
         return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
 
@@ -1455,11 +1466,6 @@ class MeasurementValue(Generic[T]):
             )
         return "\n".join(lines)
 
-    def __eq__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self.merge(other).apply(lambda v: v[0] == v[1])
-        else:
-            return self.apply(lambda v: v == other)
 
 
 def measure(wires):
