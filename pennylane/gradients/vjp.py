@@ -246,10 +246,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
             def func(_, num=None):  # pylint: disable=unused-argument
                 res = math.convert_like(np.zeros([num_params]), dy)
-                multi = len(tape.measurements) > 1
-                if multi:
-                    multi_dy = dy[0]
-                    return math.cast(res, multi_dy.dtype)
+                if qml.active_return():
+                    multi = len(tape.measurements) > 1
+                    if multi:
+                        multi_dy = dy[0]
+                        return math.cast(res, multi_dy.dtype)
                 return math.cast(res, dy.dtype)
 
             return [], func
