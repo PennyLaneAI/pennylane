@@ -569,6 +569,121 @@ class TestParameterShiftHessian:
             )
             assert np.allclose(hess, exp)
 
+    def test_multi_params_argnum(self):
+        """Test that the correct hessian is calculated for a tape with multiple operators
+        but not all parameters trainable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = np.array([0.1, 0.4, 0.7], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(x[0], wires=0)
+            qml.RY(x[1], wires=1)
+            qml.RY(x[2], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        expected = ((0, 0, 0), (0, 0, 0), (0, 0, -np.cos(x[2] + x[0])))
+
+        tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=(1, 2))
+        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
+
+        assert isinstance(hessian, tuple)
+        assert len(hessian) == 3
+        assert all(isinstance(hess, tuple) for hess in hessian)
+        assert all(len(hess) == 3 for hess in hessian)
+        assert all(
+            all(isinstance(h, np.ndarray) and h.shape == () for h in hess) for hess in hessian
+        )
+
+        assert np.allclose(hessian, expected)
+
+    def test_state_error(self):
+        """Test that an error is raised when computing the gradient of a tape
+        that returns state"""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = np.array(0.1, requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.state()
+
+        msg = "Computing the Hessian of circuits that return the state is not supported"
+        with pytest.raises(ValueError, match=msg):
+            tapes, fn = qml.gradients.param_shift_hessian(tape)
+
+    def test_variance_error(self):
+        """Test that an error is raised when computing the gradient of a tape
+        that returns variance"""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = np.array(0.1, requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.PauliZ(0))
+
+        msg = "Computing the Hessian of circuits that return variances is currently not supported"
+        with pytest.raises(ValueError, match=msg):
+            tapes, fn = qml.gradients.param_shift_hessian(tape)
+
+    @pytest.mark.parametrize("num_measurements", [1, 2])
+    def test_no_trainable_params_tape(self, num_measurements):
+        """Test that the correct output and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            for _ in range(num_measurements):
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        tape.trainable_params = []
+
+        msg = "Attempted to compute the hessian of a tape with no trainable parameters"
+        with pytest.warns(UserWarning, match=msg):
+            tapes, fn = qml.gradients.param_shift_hessian(tape)
+
+        res = fn(qml.execute(tapes, dev, None))
+
+        if num_measurements == 1:
+            res = (res,)
+
+        assert tapes == []
+        assert isinstance(res, tuple)
+        assert len(res) == num_measurements
+        assert all(isinstance(r, np.ndarray) and r.shape == (0,) for r in res)
+
+    @pytest.mark.parametrize("argnum", [None, (0,)])
+    def test_error_wrong_diagonal_shifts(self, argnum):
+        """Test that an error is raised if the number of diagonal shifts does
+        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.CRY(0.9, wires=[0, 1])
+
+        with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
+            qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
+
+    @pytest.mark.parametrize("argnum", [None, (0, 1)])
+    def test_error_wrong_offdiagonal_shifts(self, argnum):
+        """Test that an error is raised if the number of offdiagonal shifts does
+        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.CRY(0.9, wires=[0, 1])
+            qml.RX(-0.4, wires=0)
+
+        with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
+            qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
+
 
 @pytest.mark.skip("Requires QNode integration for new return types")
 class TestParameterShiftHessianQNode:
@@ -1288,28 +1403,6 @@ class TestParameterShiftHessianQNode:
 
         assert res == ()
 
-    def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device("default.qubit", wires=2)
-
-        weights = [0.1, 0.2]
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # TODO: remove once #2155 is resolved
-        tape.trainable_params = []
-
-        with pytest.warns(UserWarning, match="hessian of a tape with no trainable parameters"):
-            h_tapes, post_processing = qml.gradients.param_shift_hessian(tape)
-        res = post_processing(qml.execute(h_tapes, dev, None))
-
-        assert h_tapes == []
-        assert isinstance(res, np.ndarray)
-        assert res.shape == (1, 0, 0)
-
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
@@ -1576,31 +1669,6 @@ class TestParamShiftHessianWithKwargs:
             circuit, argnum=argnum, diagonal_shifts=d_shifts, off_diagonal_shifts=od_shifts
         )(*xy)
         assert np.allclose(hessian, expected.T)
-
-    @pytest.mark.parametrize("argnum", [None, (0,)])
-    def test_error_wrong_diagonal_shifts(self, argnum):
-        """Test that an error is raised if the number of diagonal shifts does
-        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.CRY(0.9, wires=[0, 1])
-
-        with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
-            qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
-
-    @pytest.mark.parametrize("argnum", [None, (0, 1)])
-    def test_error_wrong_offdiagonal_shifts(self, argnum):
-        """Test that an error is raised if the number of offdiagonal shifts does
-        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.CRY(0.9, wires=[0, 1])
-            qml.RX(-0.4, wires=0)
-
-        with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
-            qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 
 
 @pytest.mark.skip("Requires QNode integration for new return types")

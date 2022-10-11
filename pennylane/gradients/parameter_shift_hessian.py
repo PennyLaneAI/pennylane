@@ -822,7 +822,10 @@ def _param_shift_hessian_tuple(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
+        if len(tape.measurements) == 1:
+            return [], lambda _: qml.math.zeros((0,))
+
+        return [], lambda _: tuple(qml.math.zeros((0,)) for _ in tape.measurements)
 
     bool_argnum = _process_argnum(argnum, tape)
 
