@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import MutualInfo, State, VnEntropy
 
-from .finite_difference import finite_diff
+from .finite_difference import finite_diff, _all_zero_grad_new, _no_trainable_grad_new
 from .general_shift_rules import (
     _iterate_shift_rule,
     frequencies_to_period,
@@ -192,7 +192,11 @@ def _evaluate_gradient_new(tape, res, data, r0):
     else:
         g = []
 
-        shot_vector = isinstance(res[0], tuple) and len(res[0]) > 0 and isinstance(res[0][0], tuple)
+        # Multiple measurements case, so we can extract the first result
+        num_measurements = len(res[0])
+        shot_vector = (
+            isinstance(res[0], tuple) and num_measurements > 0 and isinstance(res[0][0], tuple)
+        )
         if shot_vector:
             num_shot_components = len(res[0][0])
             for idx_shot_comp in range(num_shot_components):
@@ -200,9 +204,20 @@ def _evaluate_gradient_new(tape, res, data, r0):
                 g.append(_eval_grad_multi_meas(_r, coeffs, r0, unshifted_coeff))
 
             g = tuple(g)
+
+            # TODO: what if multiple measurements with shot-vector?
         else:
             g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
 
+            for meas_idx in range(num_measurements):
+                # Gather the measurement results
+                single_result = [param_result[meas_idx] for param_result in res]
+                coeffs = qml.math.convert_like(coeffs, single_result)
+                g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
+                g.append(g_component)
+
+            g = _unshifted_coeff(g, unshifted_coeff, r0)
+            g = tuple(g)
     return g
 
 
@@ -391,7 +406,6 @@ def _expval_param_shift_tuple(
             start = start + num_tapes
 
             g = _evaluate_gradient_new(tape, res, data, r0)
-
             grads.append(g)
 
         if not multi_measure:
@@ -426,7 +440,7 @@ def _expval_param_shift_tuple(
                 for g in grads:
                     measurement_grad.append(g[i])
 
-                if len(measurement_grad) > 1:
+                if len(tape.trainable_params) > 1:
                     measurement_grad = tuple(measurement_grad)
                 else:
                     measurement_grad = measurement_grad[0]
@@ -434,6 +448,8 @@ def _expval_param_shift_tuple(
                 new_grad.append(measurement_grad)
 
             grads = new_grad
+        if len(tape.trainable_params) == 1 and not multi_measure:
+            return grads[0]
 
         if len(grads) == 1:
             return grads[0]
@@ -569,18 +585,25 @@ def expval_param_shift(
 
 def _get_var_with_second_order(pdA2, f0, pdA):
     """Auxiliary function to compute d(var(A))/dp = d<A^2>/dp -2 * <A> *
-    d<A>/dp for the variances
+    d<A>/dp for the variances.
 
-    Squeezing is performed on the result to get scalar arrays.
+    The result is converted to an array-like object as some terms (specifically f0) may not be array-like in every case.
+
+    Args:
+        pdA (tensor_like[float]): The analytic derivative of <A>.
+        pdA2 (tensor_like[float]): The analytic derivatives of the <A^2> observables.
+        f0 (tensor_like[float]): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
     """
-    return qml.math.squeeze(pdA2 - 2 * f0 * pdA)
+    return qml.math.array(pdA2 - 2 * f0 * pdA)
 
 
-def _process_pdA2_involutory(tape, pdA2, var_idx, non_involutory):
-    """Auxiliary function for post-processing the partial derivative of <A^2>
-    if there are involutory observables.
+def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
+    """Auxiliary function for replacing parts of the partial derivative of <A^2>
+    with the zero gradient of involutory observables.
 
-    If involutory observables are present, ensure they have zero gradient.
+    Involutory observables in the partial derivative of <A^2> have zero gradients.
     For the pdA2_tapes, we have replaced non-involutory observables with their
     square (A -> A^2). However, involutory observables have been left as-is
     (A), and have not been replaced by their square (A^2 = I). As a result,
@@ -590,38 +613,50 @@ def _process_pdA2_involutory(tape, pdA2, var_idx, non_involutory):
     """
     new_pdA2 = []
     for i in range(len(tape.measurements)):
-        if i in var_idx:
-            obs_involutory = i not in non_involutory
-            if obs_involutory:
-                if isinstance(pdA2[i], (tuple, np.ndarray)) and getattr(pdA2[i], "shape", None) != ():
-                    length = len(pdA2[i])
-                    item = tuple(np.array(0) for _ in range(length))
-                else:
-                    item = np.array(0)
+        # TODO: merge shot-vector case below
+        # Check if code below is required for shot-vector case
+        # -----------------
+        # if i in var_idx:
+        #     obs_involutory = i not in non_involutory
+        #     if obs_involutory:
+        #         if isinstance(pdA2[i], (tuple, np.ndarray)) and getattr(pdA2[i], "shape", None) != ():
+        #             length = len(pdA2[i])
+        #             item = tuple(np.array(0) for _ in range(length))
+        #         else:
+        #             item = np.array(0)
+        # -----------------
+
+        if i in involutory_indices:
+            num_params = len(tape.trainable_params)
+            if num_params == 1:
+                item = qml.math.array(0)
             else:
-                item = pdA2[i]
-            new_pdA2.append(item)
+                item = tuple(qml.math.array(0) for _ in range(num_params))
+        else:
+            item = pdA2[i]
+        new_pdA2.append(item)
 
     return new_pdA2
 
 
-def _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx):
-    """Auxiliary function to get the partial derivative of <A^2>."""
+def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
+    """The main auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
-    if non_involutory:
+    if non_involutory_indices:
         # compute the second derivative of non-involutory observables
-        pdA2 = pdA2_fn(results[tape_boundary:])
+        pdA2 = pdA2_fn(results)
 
         # For involutory observables (A^2 = I) we have d<A^2>/dp = 0.
-        involutory = set(var_idx) - set(non_involutory)
+        involutory = set(var_indices) - set(non_involutory_indices)
 
         if involutory:
-            pdA2 = _process_pdA2_involutory(tape, pdA2, var_idx, non_involutory)
-    print(pdA2)
+            pdA2 = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory)
     return pdA2
 
 
+# TODO: the logic of aux was created with the shot-vector logic and has been updated in master ---- update it with the
+# logic from master
 def aux(tape, mask, pdA2, f0, pdA):
     """Auxiliary function to return the derivative of variances.
 
@@ -673,40 +708,91 @@ def aux(tape, mask, pdA2, f0, pdA):
 
 
 def _create_variance_proc_fn(
-    tape, var_mask, var_idx, pdA_fn, pdA2_fn, tape_boundary, non_involutory
+    tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices
 ):
     """Auxiliary function to define the processing function for computing the
     derivative of variances using the parameter-shift rule.
 
     Args:
         var_mask (list): The mask of variance measurements in the measurement queue.
-        var_idx (list): The indices of variance measurements in the measurement queue.
+        var_indices (list): The indices of variance measurements in the measurement queue.
         pdA_fn (callable): The function required to evaluate the analytic derivative of <A>.
         pdA2_fn (callable): If not None, non-involutory observables are
             present; the partial derivative of <A^2> may be non-zero. Here, we
             calculate the analytic derivatives of the <A^2> observables.
         tape_boundary (callable): the number of first derivative tapes used to
             determine the number of results to post-process later
-        non_involutory (list): the indices in the measurement queue of all non-involutory
+        non_involutory_indices (list): the indices in the measurement queue of all non-involutory
             observables
     """
 
     def processing_fn(results):
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
-        res = results[0]
+        # --------
+        # # TODO: merge shot-vector case below
+        # res = results[0]
 
-        mask = []
-        # for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
-        #     array_func = np.ones if m else np.zeros
-        #     shape = qml.math.shape(r)
-        #     mask.append(array_func(shape, dtype=bool))
-        mask = var_mask
+        # mask = []
+        # # for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
+        # #     array_func = np.ones if m else np.zeros
+        # #     shape = qml.math.shape(r)
+        # #     mask.append(array_func(shape, dtype=bool))
+        # mask = var_mask
 
-        # Note: len(f0) == len(mask)
-        f0 = qml.math.expand_dims(res, -1)
+        # # Note: len(f0) == len(mask)
+        # f0 = qml.math.expand_dims(res, -1)
 
+        # multi_measure = len(tape.measurements) > 1
+        # if multi_measure:
+        #     shot_vector = isinstance(res[0], tuple) and len(res[0]) > 1
+        # else:
+        #     shot_vector = isinstance(res, tuple) and len(res) > 1
+
+        # if shot_vector:
+        #     final_res = []
+        #     num_shot_components = len(res)
+        #     for idx_shot_comp in range(num_shot_components):
+        #         _r = res[idx_shot_comp]
+        #         _f0 = f0[idx_shot_comp]
+
+        #         mask_reshaped = qml.math.reshape(mask, qml.math.shape(_f0))
+        #         mask = qml.math.convert_like(mask_reshaped, _r)
+
+        #         pdA = pdA_fn(results[1:tape_boundary][idx_shot_comp])
+        #         _pdA = pdA[idx_shot_comp]
+
+        #         pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
+        #         _pdA2 = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
+        #         print("mask, _pdA2, _f0, _pdA: ", mask, _pdA2, _f0, _pdA)
+        #         r = aux(tape, mask, _pdA2, _f0, _pdA)
+        #         final_res.append(r)
+
+        #     return final_res
+
+        # print("Results gathered: ", results[1:tape_boundary])
+        # mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
+        # pdA = pdA_fn(results[1:tape_boundary])
+        # pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
+        # print("mask, _pdA2, _f0, _pdA: ", mask, pdA2, f0, pdA)
+        # return aux(tape, mask, pdA2, f0, pdA)
+        # # -------- end of shot-vector case
+        f0 = results[0]
+
+        # analytic derivative of <A>
+        pdA = pdA_fn(results[1:tape_boundary])
+
+        # analytic derivative of <A^2>
+        pdA2 = _get_pdA2(
+            results[tape_boundary:], tape, pdA2_fn, non_involutory_indices, var_indices
+        )
+
+        # The logic follows:
+        # variances (var_mask==True): return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp
+        # plain expectations (var_mask==False): return d<A>/dp
+        # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
         multi_measure = len(tape.measurements) > 1
+
         if multi_measure:
             shot_vector = isinstance(res[0], tuple) and len(res[0]) > 1
         else:
@@ -733,12 +819,52 @@ def _create_variance_proc_fn(
 
             return final_res
 
-        print("Results gathered: ", results[1:tape_boundary])
-        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
-        pdA = pdA_fn(results[1:tape_boundary])
-        pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
-        print("mask, _pdA2, _f0, _pdA: ", mask, pdA2, f0, pdA)
-        return aux(tape, mask, pdA2, f0, pdA)
+        # TODO: update the logic below by using the updated aux function
+        num_params = len(tape.trainable_params)
+        if multi_measure:
+
+            if num_params == 1:
+
+                var_grad = []
+
+                for m_idx in range(len(tape.measurements)):
+                    m_res = pdA[m_idx]
+                    if var_mask[m_idx]:
+                        _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
+                        _f0 = f0[m_idx]
+                        m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
+
+                    var_grad.append(m_res)
+                return tuple(var_grad)
+
+            var_grad = []
+            for m_idx in range(len(tape.measurements)):
+                m_res = []
+                if var_mask[m_idx]:
+                    for p_idx in range(num_params):
+                        _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
+                        _f0 = f0[m_idx]
+                        _pdA = pdA[m_idx][p_idx]
+                        r = _get_var_with_second_order(_pdA2, _f0, _pdA)
+                        m_res.append(r)
+                    m_res = tuple(m_res)
+                else:
+                    m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
+                var_grad.append(m_res)
+            return tuple(var_grad)
+
+        # Single measurement case, meas has to be variance
+        if num_params == 1:
+            return _get_var_with_second_order(pdA2, f0, pdA)
+
+        var_grad = []
+
+        for p_idx in range(num_params):
+            _pdA2 = pdA2[p_idx] if pdA2 != 0 else pdA2
+            r = _get_var_with_second_order(_pdA2, f0, pdA[p_idx])
+            var_grad.append(r)
+
+        return tuple(var_grad)
 
     return processing_fn
 
@@ -779,7 +905,7 @@ def _var_param_shift_tuple(
 
     # Determine the locations of any variance measurements in the measurement queue.
     var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
-    var_idx = np.where(var_mask)[0]
+    var_indices = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
@@ -787,7 +913,7 @@ def _var_param_shift_tuple(
     gradient_tapes = [expval_tape]
 
     # Convert all variance measurements on the tape into expectation values
-    for i in var_idx:
+    for i in var_indices:
         obs = expval_tape._measurements[i].obs
         expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
             qml.measurements.Expectation, obs=obs
@@ -806,28 +932,28 @@ def _var_param_shift_tuple(
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
     # observables.
-    non_involutory = []
+    non_involutory_indices = []
 
-    for i in var_idx:
+    for i in var_indices:
         obs_name = tape.observables[i].name
 
         if isinstance(obs_name, list):
             # Observable is a tensor product, we must investigate all constituent observables.
             if any(name in NONINVOLUTORY_OBS for name in obs_name):
-                non_involutory.append(i)
+                non_involutory_indices.append(i)
 
         elif obs_name in NONINVOLUTORY_OBS:
-            non_involutory.append(i)
+            non_involutory_indices.append(i)
 
     pdA2_fn = None
-    if non_involutory:
-        expval_sq_tape = tape.copy(copy_operations=True)
+    if non_involutory_indices:
+        tape_with_obs_squared_expval = tape.copy(copy_operations=True)
 
-        for i in non_involutory:
+        for i in non_involutory_indices:
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
-            obs = _square_observable(expval_sq_tape._measurements[i].obs)
-            expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
+            obs = _square_observable(tape_with_obs_squared_expval._measurements[i].obs)
+            tape_with_obs_squared_expval._measurements[i] = qml.measurements.MeasurementProcess(
                 qml.measurements.Expectation, obs=obs
             )
 
@@ -835,7 +961,7 @@ def _var_param_shift_tuple(
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
         pdA2_tapes, pdA2_fn = expval_param_shift(
-            expval_sq_tape, argnum, shifts, gradient_recipes, f0, broadcast
+            tape_with_obs_squared_expval, argnum, shifts, gradient_recipes, f0, broadcast
         )
         gradient_tapes.extend(pdA2_tapes)
 
@@ -843,7 +969,7 @@ def _var_param_shift_tuple(
     # the number of results to post-process later.
     tape_boundary = len(pdA_tapes) + 1
     processing_fn = _create_variance_proc_fn(
-        tape, var_mask, var_idx, pdA_fn, pdA2_fn, tape_boundary, non_involutory
+        tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices
     )
     return gradient_tapes, processing_fn
 
@@ -996,6 +1122,334 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         return qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
 
     return gradient_tapes, processing_fn
+
+
+# TODO: docstrings
+@gradient_transform
+def _param_shift_new(
+    tape,
+    argnum=None,
+    shifts=None,
+    gradient_recipes=None,
+    fallback_fn=finite_diff,
+    f0=None,
+    broadcast=False,
+):
+    r"""Transform a QNode to compute the parameter-shift gradient of all gate
+    parameters with respect to its inputs.
+
+    This function uses the new return types system.
+
+    Args:
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        argnum (int or list[int] or None): Trainable parameter indices to differentiate
+            with respect to. If not provided, the derivative with respect to all
+            trainable indices are returned.
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
+        gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
+            for the parameter-shift method. One gradient recipe must be provided
+            per trainable parameter.
+
+            This is a tuple with one nested list per parameter. For
+            parameter :math:`\phi_k`, the nested list contains elements of the form
+            :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+            term, resulting in a gradient recipe of
+
+            .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+
+            If ``None``, the default gradient recipe containing the two terms
+            :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+            s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
+        fallback_fn (None or Callable): a fallback gradient function to use for
+            any parameters that do not support the parameter-shift rule.
+        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
+        broadcast (bool): Whether or not to use parameter broadcasting to create the
+            a single broadcasted tape per operation instead of one tape per shift angle.
+
+    Returns:
+        tensor_like or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, a tensor
+          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
+          is returned.
+
+        - If the input is a tape, a tuple containing a list of generated tapes,
+          in addition to a post-processing function to be applied to the
+          evaluated tapes.
+
+    For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
+    :math:`N` parameters :math:`\mathbf{p}`,
+    consider the expectation value of an observable :math:`O`:
+
+    .. math::
+
+        f(\mathbf{p})  = \langle \hat{O} \rangle(\mathbf{p}) = \langle 0 \vert
+        U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p}) \vert 0\rangle.
+
+
+    The gradient of this expectation value can be calculated via the parameter-shift rule:
+
+    .. math::
+
+        \frac{\partial f}{\partial \mathbf{p}} = \sum_{\mu=1}^{2R}
+        f\left(\mathbf{p}+\frac{2\mu-1}{2R}\pi\right)
+        \frac{(-1)^{\mu-1}}{4R\sin^2\left(\frac{2\mu-1}{4R}\pi\right)}
+
+    Here, :math:`R` is the number of frequencies with which the parameter :math:`\mathbf{p}`
+    enters the function :math:`f` via the operation :math:`U`, and we assumed that these
+    frequencies are equidistant.
+    For more general shift rules, both regarding the shifts and the frequencies, and
+    for more technical details, see
+    `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
+    `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`_.
+
+    **Gradients of variances**
+
+    For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
+    :math:`N` parameters :math:`\mathbf{p}`,
+    consider the variance of an observable :math:`O`:
+
+    .. math::
+
+        g(\mathbf{p})=\langle \hat{O}^2 \rangle (\mathbf{p}) - [\langle \hat{O}
+        \rangle(\mathbf{p})]^2.
+
+    We can relate this directly to the parameter-shift rule by noting that
+
+    .. math::
+
+        \frac{\partial g}{\partial \mathbf{p}}= \frac{\partial}{\partial
+        \mathbf{p}} \langle \hat{O}^2 \rangle (\mathbf{p})
+        - 2 f(\mathbf{p}) \frac{\partial f}{\partial \mathbf{p}}.
+
+    The derivatives in the expression on the right hand side can be computed via
+    the shift rule as above, allowing for the computation of the variance derivative.
+
+    In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first
+    term in the above expression vanishes, and we are simply left with
+
+    .. math::
+
+      \frac{\partial g}{\partial \mathbf{p}} = - 2 f(\mathbf{p})
+      \frac{\partial f}{\partial \mathbf{p}}.
+
+    **Example**
+
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    tensor([[-0.38751725, -0.18884792, -0.38355708],
+            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+    .. note::
+
+        ``param_shift`` performs multiple attempts to obtain the gradient recipes for
+        each operation:
+
+        - If an operation has a custom :attr:`~.operation.Operation.grad_recipe` defined,
+          it is used.
+
+        - If :attr:`~.operation.Operation.parameter_frequencies` yields a result, the frequencies
+          are used to construct the general parameter-shift rule via
+          :func:`.generate_shift_rule`.
+          Note that by default, the generator is used to compute the parameter frequencies
+          if they are not provided via a custom implementation.
+
+        That is, the order of precedence is :attr:`~.operation.Operation.grad_recipe`, custom
+        :attr:`~.operation.Operation.parameter_frequencies`, and finally
+        :meth:`~.operation.Operation.generator` via the default implementation of the frequencies.
+
+    .. warning::
+
+        Note that using parameter broadcasting via ``broadcast=True`` is not supported for tapes
+        with multiple return values or for evaluations with shot vectors.
+        As the option ``broadcast=True`` adds a broadcasting dimension, it is not compatible
+        with circuits that already are broadcasted.
+        Finally, operations with trainable parameters are required to support broadcasting.
+        One way of checking this is the `Attribute` `supports_broadcasting`:
+
+        >>> qml.RX in qml.ops.qubit.attributes.supports_broadcasting
+        True
+
+    .. details::
+        :title: Usage Details
+
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> qml.gradients.param_shift(circuit)(params)
+        tensor([[-0.38751725, -0.18884792, -0.38355708],
+                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+        This quantum gradient transform can also be applied to low-level
+        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        device evaluation. Instead, the processed tapes, and post-processing
+        function, which together define the gradient are directly returned:
+
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     qml.expval(qml.PauliZ(0))
+        ...     qml.var(qml.PauliZ(0))
+        >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
+        >>> gradient_tapes
+        [<QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>]
+
+        This can be useful if the underlying circuits representing the gradient
+        computation need to be analyzed.
+
+        The output tapes can then be evaluated and post-processed to retrieve
+        the gradient:
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> fn(qml.execute(gradient_tapes, dev, None))
+        [[-0.38751721 -0.18884787 -0.38355704]
+         [ 0.69916862  0.34072424  0.69202359]]
+
+        When setting the keyword argument ``broadcast`` to ``True``, the shifted
+        circuit evaluations for each operation are batched together, resulting in
+        broadcasted tapes:
+
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> with qml.tape.QuantumTape() as tape:
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     qml.expval(qml.PauliZ(0))
+        >>> gradient_tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
+        >>> len(gradient_tapes)
+        3
+        >>> [t.batch_size for t in gradient_tapes]
+        [2, 2, 2]
+
+        The postprocessing function will know that broadcasting is used and handle
+        the results accordingly:
+        >>> fn(qml.execute(gradient_tapes, dev, None))
+        array([[-0.3875172 , -0.18884787, -0.38355704]])
+
+        An advantage of using ``broadcast=True`` is a speedup:
+
+        >>> number = 100
+        >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(params)"
+        >>> timeit.timeit(serial_call, globals=globals(), number=number) / number
+        0.020183045039993887
+        >>> broadcasted_call = "qml.gradients.param_shift(circuit, broadcast=True)(params)"
+        >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
+        0.01244492811998498
+
+        This speedup grows with the number of shifts and qubits until all preprocessing and
+        postprocessing overhead becomes negligible. While it will depend strongly on the details
+        of the circuit, at least a small improvement can be expected in most cases.
+        Note that ``broadcast=True`` requires additional memory by a factor of the largest
+        batch_size of the created tapes.
+    """
+
+    if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
+        raise ValueError(
+            "Computing the gradient of circuits that return the state is not supported."
+        )
+
+    if broadcast and len(tape.measurements) > 1:
+        raise NotImplementedError(
+            "Broadcasting with multiple measurements is not supported yet. "
+            f"Set broadcast to False instead. The tape measurements are {tape.measurements}."
+        )
+
+    if argnum is None and not tape.trainable_params:
+        return _no_trainable_grad_new(tape)
+
+    gradient_analysis(tape, grad_fn=param_shift)
+    method = "analytic" if fallback_fn is None else "best"
+    diff_methods = grad_method_validation(method, tape)
+
+    if all(g == "0" for g in diff_methods):
+        return _all_zero_grad_new(tape)
+
+    method_map = choose_grad_methods(diff_methods, argnum)
+
+    # If there are unsupported operations, call the fallback gradient function
+    gradient_tapes = []
+    unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
+    argnum = [i for i, dm in method_map.items() if dm == "A"]
+
+    if unsupported_params:
+        if not argnum:
+            return fallback_fn(tape)
+
+        g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params)
+        gradient_tapes.extend(g_tapes)
+        fallback_len = len(g_tapes)
+
+        # remove finite difference parameters from the method map
+        method_map = {t_idx: dm for t_idx, dm in method_map.items() if dm != "F"}
+
+    # Generate parameter-shift gradient tapes
+
+    if gradient_recipes is None:
+        gradient_recipes = [None] * len(argnum)
+
+    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
+        g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+    else:
+        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+
+    gradient_tapes.extend(g_tapes)
+
+    if unsupported_params:
+        # If there are unsupported parameters, we must process
+        # the quantum results separately, once for the fallback
+        # function and once for the parameter-shift rule, and recombine.
+        def processing_fn(results):
+            unsupported_grads = fallback_proc_fn(results[:fallback_len])
+            supported_grads = fn(results[fallback_len:])
+
+            multi_measure = len(tape.measurements) > 1
+            if not multi_measure:
+                res = []
+                for i, j in zip(unsupported_grads, supported_grads):
+                    component = qml.math.array(i + j)
+                    res.append(component)
+                return tuple(res)
+
+            combined_grad = []
+            for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads):
+                meas_grad = []
+                for param_res1, param_res2 in zip(meas_res1, meas_res2):
+                    component = qml.math.array(param_res1 + param_res2)
+                    meas_grad.append(component)
+
+                meas_grad = tuple(meas_grad)
+                combined_grad.append(meas_grad)
+            return tuple(combined_grad)
+
+        return gradient_tapes, processing_fn
+
+    return gradient_tapes, fn
 
 
 @gradient_transform
@@ -1239,6 +1693,16 @@ def param_shift(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
+    if qml.active_return():
+        return _param_shift_new(
+            tape,
+            argnum=argnum,
+            shifts=shifts,
+            gradient_recipes=gradient_recipes,
+            fallback_fn=fallback_fn,
+            f0=f0,
+            broadcast=broadcast,
+        )
 
     if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
         raise ValueError(
@@ -1300,33 +1764,7 @@ def param_shift(
         # If there are unsupported parameters, we must process
         # the quantum results separately, once for the fallback
         # function and once for the parameter-shift rule, and recombine.
-        def _processing_fn_tuple(results):
-            unsupported_grads = fallback_proc_fn(results[:fallback_len])
-            supported_grads = fn(results[fallback_len:])
-
-            multi_measure = len(tape.measurements) > 1
-            if not multi_measure:
-                res = []
-                for i, j in zip(unsupported_grads, supported_grads):
-                    component = qml.math.array(i + j)
-                    res.append(component)
-                return tuple(res)
-
-            combined_grad = []
-            for meas_res1, meas_res2 in zip(unsupported_grads, supported_grads):
-                meas_grad = []
-                for param_res1, param_res2 in zip(meas_res1, meas_res2):
-                    component = qml.math.array(param_res1 + param_res2)
-                    meas_grad.append(component)
-
-                meas_grad = tuple(meas_grad)
-                combined_grad.append(meas_grad)
-            return tuple(combined_grad)
-
         def processing_fn(results):
-            if qml.active_return():
-                return _processing_fn_tuple(results)
-
             unsupported_grads = fallback_proc_fn(results[:fallback_len])
             supported_grads = fn(results[fallback_len:])
             return unsupported_grads + supported_grads
