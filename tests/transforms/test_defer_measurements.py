@@ -867,16 +867,16 @@ class TestMeasurementValueManipulation:
         assert out.branches[(1, 1, 1)] == np.sin(7)
 
     def test_str(self):
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
         assert str(m) == "if m=0 => 0\nif m=1 => 1"
 
     def test_complex_str(self):
-        a = MeasurementValue("a")
-        b = MeasurementValue("b")
+        a = MeasurementValue("a", fn=lambda v: v)
+        b = MeasurementValue("b", fn=lambda v: v)
         assert str(a + b) == "if a=0,b=0 => 0\nif a=0,b=1 => 1\nif a=1,b=0 => 1\nif a=1,b=1 => 2"
 
     def test_repr(self):
-        m = MeasurementValue("m")
+        m = MeasurementValue("m", fn=lambda v: v)
         assert repr(m) == "MeasurementValue('m', MeasurementLeaf(0), MeasurementLeaf(1))"
 
     def test_complex_cond(self):
