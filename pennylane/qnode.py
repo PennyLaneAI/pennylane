@@ -159,8 +159,8 @@ class QNode:
     def __init__(
         self,
         func,
-        device,
-        shots: int = None,
+        device: Device,
+        shots: int = None,  # pylint: disable=unused-argument
         interface="autograd",
         diff_method="best",
         expansion_strategy="gradient",
@@ -214,7 +214,7 @@ class QNode:
             self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
-        self._tape = QuantumTape(shots=shots)
+        self._tape = QuantumTape(shots=device.shots)  # TODO: Use `shots` argument`
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
