@@ -179,8 +179,8 @@ def _evaluate_gradient_new(tape, res, data, r0):
     if fn is not None:
         res = fn(res)
 
-    multi_measure = len(tape.measurements) > 1
-    if not multi_measure:
+    num_measurements = len(tape.measurements)
+    if num_measurements == 1:
 
         res = qml.math.stack(res)
 
@@ -193,23 +193,30 @@ def _evaluate_gradient_new(tape, res, data, r0):
         g = []
 
         # Multiple measurements case, so we can extract the first result
-        num_measurements = len(res[0])
-        shot_vector = (
-            isinstance(res[0], tuple) and num_measurements > 0 and isinstance(res[0][0], tuple)
-        )
+        shot_vector = isinstance(res[0], tuple) and isinstance(res[0][0], tuple)
         if shot_vector:
-            num_shot_components = len(res[0][0])
+            # The order of axes atm is:
+            # 1. Argnum (as qml.execute gets results for each tape)
+            # 2. Shot vector
+            # 3. Num measurements
+            num_shot_components = len(res[0])
+            num_measurements = len(res[0])
             for idx_shot_comp in range(num_shot_components):
-                _r = [r[idx_shot_comp] for r in res]
-                g.append(_eval_grad_multi_meas(_r, coeffs, r0, unshifted_coeff))
+                single_shot_component_result = [
+                    result_for_each_param[idx_shot_comp] for result_for_each_param in res
+                ]
+                multi_meas_grad = _eval_grad_multi_meas(
+                    single_shot_component_result, coeffs, r0, unshifted_coeff
+                )
+                g.append(multi_meas_grad)
 
             g = tuple(g)
-
-            # TODO: what if multiple measurements with shot-vector?
         else:
-            g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
 
             for meas_idx in range(num_measurements):
+                # TODO: can we just do?:
+                # g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
+
                 # Gather the measurement results
                 single_result = [param_result[meas_idx] for param_result in res]
                 coeffs = qml.math.convert_like(coeffs, single_result)
@@ -308,6 +315,84 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
+def _reorder_grad_axes_multi_measure(grads, multi_param, shot_vector_multi_measure):
+    """Reorder the axes for gradient results obtained for a tape with multiple measurements.
+
+    The order of axes of the gradient output matches the structure outputted by jax.jacobian for a tuple-valued
+    function. Internally, this may not be the case when computing the gradients, so the axes are reordered here.
+
+    The first axis always corresponds to the number of trainable parameters because the parameter-shift transform
+    defines multiple tapes each of which corresponds to a trainable parameter. Those tapes are then executed using a
+    device, which at the moment output results with the first axis corresponding to each tape output.
+
+    The final order of axes of gradient results should be:
+    1. Shot vector
+    2. Measurements
+    3. Number of trainable parameters (Num params)
+    4. Broadcasting dimension
+    5. Measurement shape
+
+    Parameter broadcasting doesn't yet support multiple measurements, hence such cases are not dealt with at the moment
+    by this function.
+
+    According to the order above, the following reorderings are done:
+
+    A) Analytic (``shots=None``) or finite shots:
+
+        Go from
+        1. Num params
+        2. Measurements
+        3. Measurement shape
+
+        To
+        1. Measurements
+        2. Num params
+        3. Measurement shape
+
+    B) Shot vectors:
+
+        Go from
+        1. Num params
+        2. Shot vector
+        3. Measurements
+        4. Measurement shape
+
+        To
+        1. Shot vector
+        2. Measurements
+        3. Num params
+        4. Measurement shape
+    """
+    num_params = len(grads)
+    if not shot_vector_multi_measure:
+        new_grad = []
+        num_measurements = len(grads[0])
+        for i in range(num_measurements):
+            measurement_grad = []
+            for j in range(num_params):
+                measurement_grad.append(grads[j][i])
+
+            measurement_grad = tuple(measurement_grad) if multi_param else measurement_grad[0]
+            new_grad.append(measurement_grad)
+    else:
+        num_shot_vec_components = len(grads[0])
+        num_measurements = len(grads[0][0])
+
+        new_grad = []
+        for i in range(num_shot_vec_components):
+            shot_vec_grad = []
+            for j in range(num_measurements):
+                measurement_grad = []
+                for k in range(num_params):
+                    measurement_grad.append(grads[k][i][j])
+
+                measurement_grad = tuple(measurement_grad) if multi_param else measurement_grad[0]
+                shot_vec_grad.append(measurement_grad)
+            new_grad.append(tuple(shot_vec_grad))
+
+    return new_grad
+
+
 def _expval_param_shift_tuple(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
 ):
@@ -391,7 +476,9 @@ def _expval_param_shift_tuple(
         start = 1 if at_least_one_unshifted and f0 is None else 0
         r0 = f0 or results[0]
 
-        multi_measure = len(tape.measurements) > 1
+        single_measure = len(tape.measurements) == 1
+        single_param = len(tape.trainable_params) == 1
+        shot_vector_multi_measure = not single_measure and (isinstance(r0[0], tuple))
 
         for data in gradient_data:
 
@@ -408,16 +495,13 @@ def _expval_param_shift_tuple(
             g = _evaluate_gradient_new(tape, res, data, r0)
             grads.append(g)
 
-        if not multi_measure:
+        if single_measure:
             # This clause will be hit at least once (because otherwise all gradients would have
             # been zero), providing a representative for a zero gradient to emulate its type/shape.
             zero_rep = qml.math.zeros_like(g)
         else:
 
-            shot_vector = (
-                isinstance(res[0], tuple) and len(res[0]) > 0 and isinstance(res[0][0], tuple)
-            )
-            if not shot_vector:
+            if not shot_vector_multi_measure:
                 zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
             else:
                 zero_rep = tuple(
@@ -429,29 +513,16 @@ def _expval_param_shift_tuple(
             if g is None:
                 grads[i] = zero_rep
 
-        # Switch up the "axes" for measurement results and parameters to
-        # match the structure outputted by jax.jacobian when inputting a
-        # tuple-valued function
-        if multi_measure:
-            new_grad = []
-            num_measurements = len(grads[0])
-            for i in range(num_measurements):
-                measurement_grad = []
-                for g in grads:
-                    measurement_grad.append(g[i])
+        if not single_measure:
+            grads = _reorder_grad_axes_multi_measure(
+                grads, not single_param, shot_vector_multi_measure
+            )
 
-                if len(tape.trainable_params) > 1:
-                    measurement_grad = tuple(measurement_grad)
-                else:
-                    measurement_grad = measurement_grad[0]
-
-                new_grad.append(measurement_grad)
-
-            grads = new_grad
-        if len(tape.trainable_params) == 1 and not multi_measure:
+        if single_measure and single_param:
             return grads[0]
 
         if len(grads) == 1:
+            # TODO: how does this relate to the single_measure and single_param case?
             return grads[0]
         return tuple(grads)
 
@@ -613,19 +684,6 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     """
     new_pdA2 = []
     for i in range(len(tape.measurements)):
-        # TODO: merge shot-vector case below
-        # Check if code below is required for shot-vector case
-        # -----------------
-        # if i in var_idx:
-        #     obs_involutory = i not in non_involutory
-        #     if obs_involutory:
-        #         if isinstance(pdA2[i], (tuple, np.ndarray)) and getattr(pdA2[i], "shape", None) != ():
-        #             length = len(pdA2[i])
-        #             item = tuple(np.array(0) for _ in range(length))
-        #         else:
-        #             item = np.array(0)
-        # -----------------
-
         if i in involutory_indices:
             num_params = len(tape.trainable_params)
             if num_params == 1:
@@ -636,7 +694,7 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
             item = pdA2[i]
         new_pdA2.append(item)
 
-    return new_pdA2
+    return tuple(new_pdA2)
 
 
 def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
@@ -651,60 +709,80 @@ def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices):
         involutory = set(var_indices) - set(non_involutory_indices)
 
         if involutory:
-            pdA2 = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory)
+            if len(tape.measurements) > 1:
+                shot_vector = isinstance(pdA2[0], tuple) and len(pdA2[0]) > 1
+            else:
+                shot_vector = isinstance(pdA2, tuple) and len(pdA2) > 1
+
+            if shot_vector:
+                new_pdA2 = []
+                for pdA2_shot_comp in pdA2:
+                    r = _put_zeros_in_pdA2_involutory(tape, pdA2_shot_comp, involutory)
+                    new_pdA2.append(r)
+                pdA2 = tuple(new_pdA2)
+            else:
+                pdA2 = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory)
     return pdA2
 
 
 # TODO: the logic of aux was created with the shot-vector logic and has been updated in master ---- update it with the
 # logic from master
-def aux(tape, mask, pdA2, f0, pdA):
+def aux(tape, var_mask, pdA2, f0, pdA):
     """Auxiliary function to return the derivative of variances.
 
-    return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
-    d<A>/dp for plain expectations (mask==False)
+    return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (var_mask==True)
+    d<A>/dp for plain expectations (var_mask==False)
 
     Note: if isinstance(pdA2, int) and pdA2 != 0, then len(pdA2) == len(pdA)
 
     """
-
+    # TODO: update the logic below by using the updated aux function
+    num_params = len(tape.trainable_params)
     multi_measure = len(tape.measurements) > 1
     if multi_measure:
-        num_params = len(tape.trainable_params)
 
-        if num_params > 1:
+        if num_params == 1:
+
             var_grad = []
+
             for m_idx in range(len(tape.measurements)):
-                m_res = []
-                measurement_is_var = mask[m_idx]
-                if measurement_is_var:
-                    for p_idx in range(num_params):
-                        _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
-                        _f0 = f0[m_idx]
-                        _pdA = pdA[m_idx][p_idx]
-                        r = _get_var_with_second_order(_pdA2, _f0, _pdA)
-                        m_res.append(r)
-                    m_res = tuple(m_res)
-                else:
-                    m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
+                m_res = pdA[m_idx]
+                if var_mask[m_idx]:
+                    _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
+                    _f0 = f0[m_idx]
+                    m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
+
                 var_grad.append(m_res)
             return tuple(var_grad)
 
         var_grad = []
         for m_idx in range(len(tape.measurements)):
-            measurement_is_var = mask[m_idx]
-            print("\n\npdA: ", pdA)
-            m_res = pdA[m_idx]
-            if measurement_is_var:
-                _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
-                _f0 = f0[m_idx]
-                m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
-
+            m_res = []
+            if var_mask[m_idx]:
+                for p_idx in range(num_params):
+                    _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
+                    _f0 = f0[m_idx]
+                    _pdA = pdA[m_idx][p_idx]
+                    r = _get_var_with_second_order(_pdA2, _f0, _pdA)
+                    m_res.append(r)
+                m_res = tuple(m_res)
+            else:
+                m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
             var_grad.append(m_res)
         return tuple(var_grad)
 
-    # Scalar
-    var_grad = _get_var_with_second_order(pdA2, f0, pdA) if mask else pdA
-    return var_grad
+    # Single measurement case, meas has to be variance
+    if num_params == 1:
+        return _get_var_with_second_order(pdA2, f0, pdA)
+
+    var_grad = []
+
+    for p_idx in range(num_params):
+        _pdA2 = pdA2[p_idx] if pdA2 != 0 else pdA2
+        r = _get_var_with_second_order(_pdA2, f0, pdA[p_idx])
+        var_grad.append(r)
+
+    return tuple(var_grad)
 
 
 def _create_variance_proc_fn(
@@ -727,56 +805,6 @@ def _create_variance_proc_fn(
     """
 
     def processing_fn(results):
-        # We need to expand the dimensions of the variance mask,
-        # and convert it to be the same type as the results.
-        # --------
-        # # TODO: merge shot-vector case below
-        # res = results[0]
-
-        # mask = []
-        # # for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
-        # #     array_func = np.ones if m else np.zeros
-        # #     shape = qml.math.shape(r)
-        # #     mask.append(array_func(shape, dtype=bool))
-        # mask = var_mask
-
-        # # Note: len(f0) == len(mask)
-        # f0 = qml.math.expand_dims(res, -1)
-
-        # multi_measure = len(tape.measurements) > 1
-        # if multi_measure:
-        #     shot_vector = isinstance(res[0], tuple) and len(res[0]) > 1
-        # else:
-        #     shot_vector = isinstance(res, tuple) and len(res) > 1
-
-        # if shot_vector:
-        #     final_res = []
-        #     num_shot_components = len(res)
-        #     for idx_shot_comp in range(num_shot_components):
-        #         _r = res[idx_shot_comp]
-        #         _f0 = f0[idx_shot_comp]
-
-        #         mask_reshaped = qml.math.reshape(mask, qml.math.shape(_f0))
-        #         mask = qml.math.convert_like(mask_reshaped, _r)
-
-        #         pdA = pdA_fn(results[1:tape_boundary][idx_shot_comp])
-        #         _pdA = pdA[idx_shot_comp]
-
-        #         pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
-        #         _pdA2 = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
-        #         print("mask, _pdA2, _f0, _pdA: ", mask, _pdA2, _f0, _pdA)
-        #         r = aux(tape, mask, _pdA2, _f0, _pdA)
-        #         final_res.append(r)
-
-        #     return final_res
-
-        # print("Results gathered: ", results[1:tape_boundary])
-        # mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
-        # pdA = pdA_fn(results[1:tape_boundary])
-        # pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
-        # print("mask, _pdA2, _f0, _pdA: ", mask, pdA2, f0, pdA)
-        # return aux(tape, mask, pdA2, f0, pdA)
-        # # -------- end of shot-vector case
         f0 = results[0]
 
         # analytic derivative of <A>
@@ -793,78 +821,28 @@ def _create_variance_proc_fn(
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
         multi_measure = len(tape.measurements) > 1
 
+        res = f0
+
         if multi_measure:
-            shot_vector = isinstance(res[0], tuple) and len(res[0]) > 1
+            shot_vector = isinstance(f0[0], tuple) and len(res[0]) > 1
         else:
-            shot_vector = isinstance(res, tuple) and len(res) > 1
+            shot_vector = isinstance(f0, tuple) and len(res) > 1
 
         if shot_vector:
             final_res = []
-            num_shot_components = len(res)
+            num_shot_components = len(f0)
             for idx_shot_comp in range(num_shot_components):
-                _r = res[idx_shot_comp]
                 _f0 = f0[idx_shot_comp]
 
-                mask_reshaped = qml.math.reshape(mask, qml.math.shape(_f0))
-                mask = qml.math.convert_like(mask_reshaped, _r)
-
-                pdA = pdA_fn(results[1:tape_boundary][idx_shot_comp])
                 _pdA = pdA[idx_shot_comp]
 
-                pdA2 = _get_pdA2(results, tape, pdA2_fn, tape_boundary, non_involutory, var_idx)
                 _pdA2 = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
-                print("mask, _pdA2, _f0, _pdA: ", mask, _pdA2, _f0, _pdA)
-                r = aux(tape, mask, _pdA2, _f0, _pdA)
+                r = aux(tape, var_mask, _pdA2, _f0, _pdA)
                 final_res.append(r)
 
-            return final_res
+            return tuple(final_res)
 
-        # TODO: update the logic below by using the updated aux function
-        num_params = len(tape.trainable_params)
-        if multi_measure:
-
-            if num_params == 1:
-
-                var_grad = []
-
-                for m_idx in range(len(tape.measurements)):
-                    m_res = pdA[m_idx]
-                    if var_mask[m_idx]:
-                        _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
-                        _f0 = f0[m_idx]
-                        m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
-
-                    var_grad.append(m_res)
-                return tuple(var_grad)
-
-            var_grad = []
-            for m_idx in range(len(tape.measurements)):
-                m_res = []
-                if var_mask[m_idx]:
-                    for p_idx in range(num_params):
-                        _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
-                        _f0 = f0[m_idx]
-                        _pdA = pdA[m_idx][p_idx]
-                        r = _get_var_with_second_order(_pdA2, _f0, _pdA)
-                        m_res.append(r)
-                    m_res = tuple(m_res)
-                else:
-                    m_res = tuple(pdA[m_idx][p_idx] for p_idx in range(num_params))
-                var_grad.append(m_res)
-            return tuple(var_grad)
-
-        # Single measurement case, meas has to be variance
-        if num_params == 1:
-            return _get_var_with_second_order(pdA2, f0, pdA)
-
-        var_grad = []
-
-        for p_idx in range(num_params):
-            _pdA2 = pdA2[p_idx] if pdA2 != 0 else pdA2
-            r = _get_var_with_second_order(_pdA2, f0, pdA[p_idx])
-            var_grad.append(r)
-
-        return tuple(var_grad)
+        return aux(tape, var_mask, pdA2, f0, pdA)
 
     return processing_fn
 
