@@ -1514,6 +1514,9 @@ class TestReturn:
         """For one measurement and one param, the gradient is a float."""
         dev = qml.device(dev_name, wires=1)
 
+        if diff_method == "Backprop":
+            pytest.skip()
+
         @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
