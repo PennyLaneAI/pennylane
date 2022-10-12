@@ -173,11 +173,11 @@ def convert_like(tensor1, tensor2):
 
 
 def get_interface(*values):
-    """Determines the correct framework to dispatch to given a tensor or a
+    """Determines the correct framework to dispatch to given a tensor-like object or a
     sequence of tensor-like objects.
 
     Args:
-        values (tensor_like, Sequence[tensor_like]): a sequence of tensor like objects
+        *values (tensor_like): variable length argument list with single tensor-like objects
 
     Returns:
         str: the name of the interface
@@ -185,11 +185,11 @@ def get_interface(*values):
     To determine the framework to dispatch to, the following rules
     are applied:
 
-    * Tensors that are incompatible (such as Torch and TensorFlow tensors)
+    * Tensors that are incompatible (such as Torch, TensorFlow and Jax tensors)
       cannot both be present.
 
-    * Autograd tensors *may* be present alongside Torch and TensorFlow tensors,
-      but Torch and TensorFlow take precendence; the autograd arrays will
+    * Autograd tensors *may* be present alongside Torch, TensorFlow and Jax tensors,
+      but Torch, TensorFlow and Jax take precendence; the autograd arrays will
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
@@ -198,9 +198,9 @@ def get_interface(*values):
     """
 
     if len(values) == 1:
-        return _get_interface(values[0])
+        return _get_interface_of_single_tensor(values[0])
 
-    interfaces = {_get_interface(v) for v in values}
+    interfaces = {_get_interface_of_single_tensor(v) for v in values}
 
     if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
@@ -212,7 +212,7 @@ def get_interface(*values):
         # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
-            "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
+            "TensorFlow, PyTorch, and  Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
 
@@ -231,7 +231,7 @@ def get_interface(*values):
     return "numpy"
 
 
-def _get_interface(tensor):
+def _get_interface_of_single_tensor(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
     :doc:`interfaces </introduction/interfaces>`.

@@ -34,7 +34,7 @@ sci = pytest.importorskip("scipy")
 
 
 class TestGetMultiTensorbox:
-    """Tests for the _multi_dispatch utility function"""
+    """Tests for the get_interface utility function"""
 
     def test_exception_tensorflow_and_torch(self):
         """Test that an exception is raised if the sequence of tensors contains
@@ -42,6 +42,16 @@ class TestGetMultiTensorbox:
         x = tf.Variable([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
         z = torch.tensor([0.6])
+
+        with pytest.raises(ValueError, match="Tensors contain mixed types"):
+            fn.get_interface(x, y, z)
+
+    def test_exception_tensorflow_and_jax(self):
+        """Test that an exception is raised if the sequence of tensors contains
+        tensors from incompatible dispatch libraries"""
+        x = tf.Variable([1.0, 2.0, 3.0])
+        y = onp.array([0.5, 0.1])
+        z = jnp.array([0.6])
 
         with pytest.raises(ValueError, match="Tensors contain mixed types"):
             fn.get_interface(x, y, z)
@@ -59,6 +69,15 @@ class TestGetMultiTensorbox:
         """Test that a warning is raised if the sequence of tensors contains
         both torch and autograd tensors."""
         x = torch.tensor([1.0, 2.0, 3.0])
+        y = np.array([0.5, 0.1])
+
+        with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
+            fn.get_interface(x, y)
+
+    def test_warning_jax_and_autograd(self):
+        """Test that a warning is raised if the sequence of tensors contains
+        both jax and autograd tensors."""
+        x = jnp.array([1.0, 2.0, 3.0])
         y = np.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
@@ -96,6 +115,14 @@ class TestGetMultiTensorbox:
 
         res = fn.get_interface(y, x)
         assert res == "autograd"
+
+    def test_return_jax_box(self):
+        """Test that jax is correctly identified as the dispatching library."""
+        x = jnp.array([1.0, 2.0, 3.0])
+        y = [0.5, 0.1]
+
+        res = fn.get_interface(y, x)
+        assert res == "jax"
 
     def test_return_numpy_box(self):
         """Test that NumPy is correctly identified as the dispatching library."""
