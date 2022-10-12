@@ -27,7 +27,7 @@ import inspect
 import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence
 
 from cachetools import LRUCache
 
@@ -230,7 +230,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 def _execute_new(
     tapes: Sequence[QuantumTape],
     device: Device,
-    gradient_fn: Union[None, Callable],
+    gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
@@ -456,7 +456,7 @@ def _execute_new(
 def execute(
     tapes: Sequence[QuantumTape],
     device: Device,
-    gradient_fn: Union[None, Callable],
+    gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
