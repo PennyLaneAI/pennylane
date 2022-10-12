@@ -146,7 +146,7 @@ class QuantumScript:
     """
 
     do_queue = False
-    """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be 
+    """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
     def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
