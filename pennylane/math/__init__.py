@@ -34,7 +34,6 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .multi_dispatch import (
-    _multi_dispatch,
     multi_dispatch,
     array,
     block_diag,
@@ -90,7 +89,6 @@ def __getattr__(name):
 
 
 __all__ = [
-    "_multi_dispatch",
     "multi_dispatch",
     "allclose",
     "allequal",

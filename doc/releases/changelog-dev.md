@@ -96,8 +96,40 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
    if the object isn't in the queue.
 
- * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
-   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
+* Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+  [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
+
+* `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
+  can now be called with one or multiple tensors as arguments.
+  [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
+
+  ```pycon
+  >>> torch_scalar = torch.tensor(1)
+  >>> torch_tensor = torch.Tensor([2, 3, 4])
+  >>> numpy_tensor = np.array([5, 6, 7])
+  >>> qml.math.get_interface(torch_scalar)
+  'torch'
+  >>> qml.math.get_interface(numpy_tensor)
+  'numpy'
+  ```
+
+  `_multi_dispatch` previously had only one argument which contained a list of the tensors to be
+  dispatched:
+
+  ```pycon
+  >>> qml.math._multi_dispatch([torch_scalar, torch_tensor, numpy_tensor])
+  'torch'
+  ```
+
+  To differentiate whether the user wants to get the interface of a single tensor or multiple
+  tensors, `get_interface` now accepts a different argument per tensor to be dispatched:
+
+  ```pycon
+  >>> qml.math.get_interface(*[torch_scalar, torch_tensor, numpy_tensor])
+  'torch'
+  >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
+  'torch'
+  ```
 
 <h3>Deprecations</h3>
 
