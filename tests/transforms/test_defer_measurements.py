@@ -814,9 +814,7 @@ class TestMeasurementValueManipulation:
     def test_equality_with_scalar(self):
         m = MeasurementValue("m", fn=lambda v: v)
         m_eq = m == 0
-        assert (
-            m_eq[0] == True
-        )  # confirming value is actually eq to True, not just truthy
+        assert m_eq[0] == True  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] == False
 
     def test_inversion(self):
