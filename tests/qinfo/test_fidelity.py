@@ -445,7 +445,7 @@ class TestFidelityQnode:
         with tf.GradientTape() as tape:
             entropy = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
 
-        fid_grad = [tape.gradient(e, p) for e, p in zip(entropy, params)]
+        fid_grad = tape.gradient(entropy, params)
         assert qml.math.allclose(fid_grad, expected_fid)
 
     @pytest.mark.jax
