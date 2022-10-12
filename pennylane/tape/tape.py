@@ -216,7 +216,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     Keyword Args:
         name (str): a name given to the quantum script
-        do_queue=False (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        do_queue=True (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
