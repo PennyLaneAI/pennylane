@@ -90,10 +90,7 @@ def compute_vjp_single(dy, jac):
     else:
         # No trainable parameters
         if len(jac) == 0:
-            if dy.shape == ():
-                res = qml.math.zeros((1, 0))
-            else:
-                res = qml.math.zeros((len(dy), 0))
+            res = qml.math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval
         if dy.shape == ():

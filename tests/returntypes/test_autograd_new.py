@@ -495,7 +495,11 @@ class TestAutogradExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-        dev = qml.device("default.qubit", wires=1)
+
+        if execute_kwargs["gradient_fn"] == "device":
+            pytest.skip("Adjoint differentiation does not yet support probabilities")
+
+        dev = qml.device("default.qubit", wires=2)
 
         def cost(params):
             with qml.tape.QuantumTape() as tape1:
@@ -511,19 +515,57 @@ class TestAutogradExecuteIntegration:
                 qml.RX(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+            with qml.tape.QuantumTape() as tape4:
+                qml.RY(np.array(0.5, requires_grad=False), wires=0)
+                qml.probs(wires=[0, 1])
+
+            return sum(
+                autograd.numpy.hstack(execute([tape1, tape2, tape3, tape4], dev, **execute_kwargs))
+            )
 
         params = np.array([0.1, 0.2], requires_grad=True)
         x, y = params
 
         res = cost(params)
-        print(res, type(res))
-        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        expected = 2 + np.cos(0.5) + np.cos(x) * np.cos(y)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         grad = qml.grad(cost)(params)
         expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_tapes_with_different_return_size(self, execute_kwargs, tol):
+        """Test that tapes wit different can be executed and differentiated."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def cost(params):
+            with qml.tape.QuantumTape() as tape1:
+                qml.RY(params[0], wires=0)
+                qml.RX(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            with qml.tape.QuantumTape() as tape2:
+                qml.RY(np.array(0.5, requires_grad=False), wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            with qml.tape.QuantumTape() as tape3:
+                qml.RY(params[0], wires=0)
+                qml.RX(params[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return autograd.numpy.hstack(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+
+        params = np.array([0.1, 0.2], requires_grad=True)
+        x, y = params
+
+        res = cost(params)
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (4,)
+
+        jac = qml.jacobian(cost)(params)
+        assert isinstance(jac, np.ndarray)
+        assert jac.shape == (4, 2)
 
     def test_reusing_quantum_tape(self, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -583,11 +625,11 @@ class TestAutogradExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
-        print(res)
+
         # Only two arguments are trainable
-        # assert isinstance(res, tuple) and len(res) == 2
-        # assert res[0].shape == (1,)
-        # assert res[1].shape == (1,)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == ()
+        assert res[1].shape == ()
 
     def test_no_trainable_parameters(self, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
