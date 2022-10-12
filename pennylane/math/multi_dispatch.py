@@ -742,21 +742,21 @@ def unwrap(values, max_depth=None):
     >>> print(grad)
     [0.99500417 0.98006658 0.95533649]
     """
-    res = []
 
-    for t in values:
-        if isinstance(t, ArrayBox):
-            a = np.to_numpy(t, max_depth=max_depth)
-        else:
-            a = np.to_numpy(t)
+    def convert(val):
+        if isinstance(val, list):
+            return unwrap(val)
+        new_val = (
+            np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
+        )
 
-        if isinstance(a, ndarray) and not a.shape:
-            # if NumPy array is scalar, convert to a Python float
-            res.append(a.tolist())
-        else:
-            res.append(a)
+        if isinstance(new_val, ndarray) and not new_val.shape:
+            # is a scalar
+            new_val = new_val.tolist()
 
-    return res
+        return new_val
+
+    return [convert(val) for val in values]
 
 
 def add(*args, **kwargs):
