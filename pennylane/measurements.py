@@ -1416,7 +1416,7 @@ class MeasurementValue(Generic[T]):
 
     def items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
-        for i in range(2**len(self.measurement_ids)):
+        for i in range(2 ** len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             yield branch, self.fn(*branch)
 
@@ -1446,12 +1446,11 @@ class MeasurementValue(Generic[T]):
         return self.apply(lambda v: v > other)
 
     def apply(self, fn):
-        return MeasurementValue(
-            *self.measurement_ids,
-            fn=lambda *x: fn(self.fn(*x))
-        )
+        """Apply a post computation to this measurement"""
+        return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
 
-    def merge(self, other: 'MeasurementValue'):
+    def merge(self, other: "MeasurementValue"):
+        """merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
         merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
@@ -1459,15 +1458,16 @@ class MeasurementValue(Generic[T]):
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
-            out_1 = self.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]))
-            out_2 = other.fn(*(x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]))
+            out_1 = self.fn(
+                *(x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids])
+            )
+            out_2 = other.fn(
+                *(x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids])
+            )
 
             return out_1, out_2
 
-        return MeasurementValue(
-            *merged_measurement_ids,
-            fn=merged_fn
-        )
+        return MeasurementValue(*merged_measurement_ids, fn=merged_fn)
 
     def __getitem__(self, i):
         # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
@@ -1476,13 +1476,15 @@ class MeasurementValue(Generic[T]):
 
     def __str__(self):
         lines = []
-        for i in range(2**(len(self.measurement_ids))):
+        for i in range(2 ** (len(self.measurement_ids))):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             lines.append(
-                "if " + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))]) + " => " + str(self.fn(*branch))
+                "if "
+                + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))])
+                + " => "
+                + str(self.fn(*branch))
             )
         return "\n".join(lines)
-
 
 
 def measure(wires):
@@ -1532,4 +1534,3 @@ def measure(wires):
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id, fn=lambda v: v)
-
