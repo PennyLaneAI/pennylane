@@ -21,16 +21,22 @@ import dill
 import zstd
 from unittest.mock import patch, mock_open
 
+from pennylane.ops.qubit import hamiltonian
+
 
 def test_build_dataset():
-    test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
+    """Test that a dataset builds correctly and returns the correct values."""
+    hamiltonian = qml.Hamiltonian(coeffs=[1], observables=[qml.PauliZ(wires=0)])
+    test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3], hamiltonian=hamiltonian)
 
     assert test_dataset.kw1 == 1
     assert test_dataset.kw2 == "2"
     assert test_dataset.kw3 == [3]
+    assert test_dataset.hamiltonian == hamiltonian
 
 
 def test_write_dataset(tmp_path):
+    """Test that a dataset writes to memory without errors."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     d = tmp_path / "sub"
     d.mkdir()
@@ -39,6 +45,7 @@ def test_write_dataset(tmp_path):
 
 
 def test_read_dataset(tmp_path):
+    """Test that a dataset can be read from memory and that the data was written correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     d = tmp_path / "sub"
     d.mkdir()

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the dataset class.
+Contains the :class:`~pennylane.data.Dataset` class and its associated functions.
 """
 
 from abc import ABC
@@ -22,7 +22,42 @@ import zstd
 
 
 class Dataset(ABC):
-    "The dataset data type. Allows users to create datasets with their own data"
+    """The dataset data type. This class is used to create general datasets.
+    It accepts general keyword arguments to be flexible for different types of data.
+
+    Args:
+        dtype (string): Optional, the type of dataset, e.g. 'qchem' or 'qspin'
+        **kwargs: variable length of keyword arguments containing data to store in the dataset
+
+    .. details::
+        :title: Usage Details
+        We can use the :class:`~pennylane.data.Dataset` class to create datasets as follows:
+
+        .. code-block:: python
+            import pennylane as qml
+
+            coefficients = [1]*10
+            observables = [qml.PauliZ(wires=i) for i in range(10)]
+            Hamiltonian = qml.Hamiltonian(coefficients, observables)
+
+            ex_dataset = qml.data.Dataset(Hamiltonian = Hamiltonian)
+
+        >>>ex_dataset.Hamiltonian
+          (1) [Z0]
+        + (1) [Z1]
+
+        To save the dataset to a file, we call `Dataset.write()`:
+
+        >>>ex_dataset.write('./path/to/file/ex_dataset.dat')
+
+        We can then retrieve the data using `Dataset.read()`
+
+        >>>retrieved_data = qml.data.Dataset()
+        >>>retrieved_data.read('./path/to/file/ex_dataset.dat')
+        >>>retrieved_data.Hamiltonian
+        (1) [Z0]
+        + (1) [Z1]
+    """
 
     def __init__(self, dtype=None, **kwargs):
         self.dtype = dtype
@@ -32,7 +67,7 @@ class Dataset(ABC):
 
     @staticmethod
     def _read_file(filepath):
-        """Reading the data from a saved file"""
+        """Loads data previously saved with :function:`~pennylane.data.dataset.write`."""
         with open(filepath, "rb") as file:
             compressed_pickle = file.read()
         depressed_pickle = zstd.decompress(compressed_pickle)
@@ -40,21 +75,28 @@ class Dataset(ABC):
         return data
 
     def read(self, filepath):
-        """Loading the dataset from a saved file"""
+        """Loads data from a saved file to the current dataset.
+        Args:
+            filepath (string): the desired location and filename to load, e.g. `'./path/to/file/file_name.dat'`.
+        """
         data = self._read_file(filepath)
         for (key, val) in data.items():
             setattr(self, f"{key}", val)
 
     @staticmethod
     def _write_file(filepath, data, protocol=4):
-        """Writing the data to a file"""
+        """Writes the input data to a file."""
         pickled_data = dill.dumps(data, protocol=protocol)  # returns data as a bytes object
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as file:
             file.write(compressed_pickle)
 
     def write(self, filepath, protocol=4):
-        """Writing the dataset to a file"""
+        """Writes a dataset to a file.
+
+        Args:
+            filepath (string): the desired save location and file name, e.g. `'./path/to/file/file_name.dat'`.
+        """
         dataset = {}
         for (key, val) in self.__dict__.items():
             dataset.update({key: val})
@@ -62,9 +104,16 @@ class Dataset(ABC):
 
     @staticmethod
     def from_dataset(dataset, copy_dtype=False):
-        """ Build a dataset from another dataset """
-        dataset = Dataset(dtype=dataset.dtype if copy_dtype else None)
+        """Builds a dataset from another dataset. Copies the data from another :class:`~pennylane.data.Dataset`.
+        Args:
+            dataset (Dataset): the dataset to copy
+            copy_dtype (bool): whether to give the new Dataset the same dtype as the original
+
+        Returns:
+            dataset (Dataset): a new dataset containing the same keys and values as the original
+        """
+        new_dataset = Dataset(dtype=dataset.dtype if copy_dtype else None)
         for (key, val) in dataset.__dict__.items():
             if key not in ["dtype"]:
-                dataset.setattr(key, val)
-        return dataset
+                new_dataset.__setattr__(key, val)
+        return new_dataset
