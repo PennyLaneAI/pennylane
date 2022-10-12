@@ -1514,9 +1514,6 @@ class TestReturn:
         """For one measurement and one param, the gradient is a float."""
         dev = qml.device(dev_name, wires=1)
 
-        if diff_method == "Backprop":
-            pytest.skip()
-
         @qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -1526,7 +1523,11 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
 
         grad = qml.grad(circuit)(a)
-        assert isinstance(grad, float)
+
+        if diff_method == "backprop":
+            assert isinstance(grad, np.ndarray)
+        else:
+            assert isinstance(grad, float)
 
     def test_execution_single_measurement_multiple_param(self, dev_name, diff_method, mode):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
