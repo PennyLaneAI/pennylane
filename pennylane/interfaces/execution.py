@@ -27,7 +27,7 @@ import inspect
 import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps
-from typing import Sequence
+from typing import Callable, Sequence, Union
 
 from cachetools import LRUCache
 
@@ -59,7 +59,9 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
-def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
+def _adjoint_jacobian_expansion(
+    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
+):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
 
@@ -83,7 +85,7 @@ def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
     return tapes
 
 
-def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
+def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -123,12 +125,12 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
     if expand_fn is not None:
         original_fn = fn
 
-        def fn(tapes, **kwargs):  # pylint: disable=function-redefined
+        def fn(tapes: Sequence[QuantumTape], **kwargs):  # pylint: disable=function-redefined
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 
     @wraps(fn)
-    def wrapper(tapes, **kwargs):
+    def wrapper(tapes: Sequence[QuantumTape], **kwargs):
 
         if not pass_kwargs:
             kwargs = {}
@@ -228,7 +230,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
 def _execute_new(
     tapes: Sequence[QuantumTape],
     device: Device,
-    gradient_fn,
+    gradient_fn: Union[None, Callable],
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
@@ -454,7 +456,7 @@ def _execute_new(
 def execute(
     tapes: Sequence[QuantumTape],
     device: Device,
-    gradient_fn,
+    gradient_fn: Union[None, Callable],
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
@@ -696,7 +698,7 @@ def execute(
     return batch_fn(res)
 
 
-def _get_jax_execute_fn(interface, tapes):
+def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
 
