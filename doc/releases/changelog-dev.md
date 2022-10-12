@@ -104,6 +104,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Add details to the output of `Exp.label()`.
+  [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
+
 <h3>Breaking changes</h3>
 
 * `QueuingContext` is renamed `QueuingManager`.
@@ -181,6 +184,7 @@ Diego Guala,
 Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
+Matthew Silverman,
 Jay Soni,
 Antal Száva,
 David Wierichs,
