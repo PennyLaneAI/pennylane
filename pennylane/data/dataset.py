@@ -16,7 +16,6 @@ Contains the :class:`~pennylane.data.Dataset` class and its associated functions
 """
 
 from abc import ABC
-import os
 import dill
 import zstd
 
