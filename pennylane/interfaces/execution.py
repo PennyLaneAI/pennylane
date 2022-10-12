@@ -23,13 +23,17 @@ devices with autodifferentiation support.
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
 # pylint: disable=too-many-statements, invalid-unary-operand-type
 
-from functools import wraps
-import warnings
 import inspect
+import warnings
 from contextlib import _GeneratorContextManager
+from functools import wraps
+from typing import Callable, Sequence
+
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane import Device
+from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
 
@@ -55,7 +59,9 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
-def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
+def _adjoint_jacobian_expansion(
+    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
+):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
 
@@ -68,7 +74,10 @@ def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
     else:
         non_trainable = ~qml.operation.is_trainable
 
-    stop_at = ~qml.operation.is_measurement & (non_trainable | qml.operation.has_unitary_gen)
+    stop_at = ~qml.operation.is_measurement & (
+        non_trainable  # pylint: disable=unsupported-binary-operation
+        | qml.operation.has_unitary_gen
+    )
     for i, tape in enumerate(tapes):
         if any(not stop_at(op) for op in tape.operations):
             tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
@@ -76,7 +85,7 @@ def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
     return tapes
 
 
-def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
+def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -116,12 +125,12 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
     if expand_fn is not None:
         original_fn = fn
 
-        def fn(tapes, **kwargs):  # pylint: disable=function-redefined
+        def fn(tapes: Sequence[QuantumTape], **kwargs):  # pylint: disable=function-redefined
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 
     @wraps(fn)
-    def wrapper(tapes, **kwargs):
+    def wrapper(tapes: Sequence[QuantumTape], **kwargs):
 
         if not pass_kwargs:
             kwargs = {}
@@ -219,9 +228,9 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
 
 
 def _execute_new(
-    tapes,
-    device,
-    gradient_fn,
+    tapes: Sequence[QuantumTape],
+    device: Device,
+    gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
@@ -447,9 +456,9 @@ def _execute_new(
 
 
 def execute(
-    tapes,
-    device,
-    gradient_fn,
+    tapes: Sequence[QuantumTape],
+    device: Device,
+    gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
     gradient_kwargs=None,
@@ -691,7 +700,7 @@ def execute(
     return batch_fn(res)
 
 
-def _get_jax_execute_fn(interface, tapes):
+def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
 
