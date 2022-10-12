@@ -104,7 +104,6 @@ def compute_vjp_single(dy, jac):
         else:
             jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, dy_row, [[1], [0]])
-            print(res)
     return res
 
 
