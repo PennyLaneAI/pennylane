@@ -107,20 +107,25 @@ def defer_measurements(tape):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
-            flipped = [False] * len(control)
-            for branch, value in op.meas_val.items():
-                if value:
-                    for i, wire_val in enumerate(branch):
-                        if wire_val and flipped[i] or not wire_val and not flipped[i]:
-                            qml.PauliX(control[i])
-                            flipped[i] = not flipped[i]
-                    ctrl(
-                        lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
-                        control=Wires(control),
-                    )()
-            for i, flip in enumerate(flipped):
-                if flip:
-                    qml.PauliX(control[i])
+            _add_control_gate(op, measured_wires)
         else:
             apply(op)
+
+
+def _add_control_gate(op, measured_wires):
+    """helper function to add control gates"""
+    control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    flipped = [False] * len(control)
+    for branch, value in op.meas_val.items():
+        if value:
+            for i, wire_val in enumerate(branch):
+                if wire_val and flipped[i] or not wire_val and not flipped[i]:
+                    qml.PauliX(control[i])
+                    flipped[i] = not flipped[i]
+            ctrl(
+                lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                control=Wires(control),
+            )()
+    for i, flip in enumerate(flipped):
+        if flip:
+            qml.PauliX(control[i])
