@@ -434,7 +434,7 @@ def _execute_new(
         elif mapped_interface == "tf":
             import tensorflow as tf  # pragma: no cover
 
-            if not tf.executing_eagerly() or "autograph" in interface:
+            if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
