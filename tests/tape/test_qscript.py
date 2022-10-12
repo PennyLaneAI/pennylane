@@ -69,7 +69,7 @@ class TestInitialization:
         ),
     )
     def test_provide_ops(self, ops):
-        """Test provided ops are coverted to lists."""
+        """Test provided ops are converted to lists."""
         qs = QuantumScript(ops)
         assert len(qs._ops) == 1
         assert isinstance(qs._ops, list)
@@ -140,7 +140,7 @@ class TestUpdate:
 
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
-        qs = QuantumScript(measurements=[qml.state(), sample_ms])
+        qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
         assert qs.is_sampled is True
         assert qs.all_sampled is False
 
