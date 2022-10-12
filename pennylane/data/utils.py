@@ -171,22 +171,11 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
 
     data_files = []
     for folder in all_folders:
-        file_prefix = os.path.join(directory_path, data_type, folder, folder.replace("/", "_"))
-        fname = f"{file_prefix}_{attributes[0]}.dat"
-        obj = Dataset(dfile=fname, dtype=data_type)
-        if attributes == ["full"]:
-            qdata = Dataset._read_file(fname)
-            for key, vals in qdata.items():
-                obj.setattr(key, vals)
-            doc_attrs, doc_vals = list(qdata.keys()), list(map(type, qdata.values()))
-        else:
-            doc_attrs, doc_vals = [], []
-            for attr in attributes:
-                fname = f"{file_prefix}_{attr}.dat"
-                qdata = Dataset._read_file(fname)
-                doc_attrs.append(attr)
-                doc_vals.append(type(qdata))
-                obj.setattr(attr, qdata)
+        real_folder = os.path.join(directory_path, data_type, folder)
+        obj = Dataset(data_type, real_folder, folder.replace("/", "_"), attributes=attributes)
+        obj.read(lazy=False)
+        doc_attrs = obj.list_attributes()
+        doc_vals = [type(getattr(obj, attr)) for attr in doc_attrs]
         args_idx = [data["attributes"].index(x) for x in doc_attrs]
         argsdocs = [data["docstrings"][x] for x in args_idx]
         obj.setdocstr(data["docstr"], doc_attrs, doc_vals, argsdocs)
