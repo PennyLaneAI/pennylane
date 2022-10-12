@@ -848,22 +848,6 @@ class TestMeasurementValueManipulation:
         assert out[0] == 10
         assert out[1] == 11
 
-    def test_complex_function(self):
-        m0 = MeasurementValue("m0")
-        m1 = MeasurementValue("m1")
-        m2 = MeasurementValue("m3")
-
-        out = qml.apply_to_measurement(lambda x, y, z: np.sin(4 * x + 2 * y + z))(m0, m1, m2)
-
-        assert out.branches[(0, 0, 0)] == np.sin(0)
-        assert out.branches[(0, 0, 1)] == np.sin(1)
-        assert out.branches[(0, 1, 0)] == np.sin(2)
-        assert out.branches[(0, 1, 1)] == np.sin(3)
-        assert out.branches[(1, 0, 0)] == np.sin(4)
-        assert out.branches[(1, 0, 1)] == np.sin(5)
-        assert out.branches[(1, 1, 0)] == np.sin(6)
-        assert out.branches[(1, 1, 1)] == np.sin(7)
-
     def test_str(self):
         m = MeasurementValue("m", fn=lambda v: v)
         assert str(m) == "if m=0 => 0\nif m=1 => 1"
