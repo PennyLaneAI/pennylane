@@ -804,7 +804,7 @@ class Rot(Operation):
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([phi, theta, omega])
+        interface = qml.math.get_interface(phi, theta, omega)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1986,7 +1986,7 @@ class CRot(Operation):
         # It might be that they are in different interfaces, e.g.,
         # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([phi, theta, omega])
+        interface = qml.math.get_interface(phi, theta, omega)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -2294,7 +2294,7 @@ class U2(Operation):
         tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
                 [ 0.7036+0.0706j,  0.6755+0.2090j]])
         """
-        interface = qml.math._multi_dispatch([phi, delta])
+        interface = qml.math.get_interface(phi, delta)
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
@@ -2442,7 +2442,7 @@ class U3(Operation):
         # It might be that they are in different interfaces, e.g.,
         # U3(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([theta, phi, delta])
+        interface = qml.math.get_interface(theta, phi, delta)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
