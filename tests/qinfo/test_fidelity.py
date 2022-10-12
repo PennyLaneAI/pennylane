@@ -612,7 +612,9 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        fid_grad = jax.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0,1])(
+        fid_grad = jax.grad(
+            qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1]
+        )(
             (jax.numpy.array(param)),
             (jax.numpy.array(2 * param)),
         )
@@ -633,9 +635,9 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        fid_grad = jax.jit(jax.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0,1]))(
-            (jax.numpy.array(param)), (jax.numpy.array(2 * param))
-        )
+        fid_grad = jax.jit(
+            jax.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1])
+        )((jax.numpy.array(param)), (jax.numpy.array(2 * param)))
         expected = expected_grad_fidelity_rx_pauliz(param)
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
