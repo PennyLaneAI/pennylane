@@ -71,7 +71,7 @@ class Dataset(ABC):
         """Loads data previously saved with :func:`~pennylane.data.dataset.write`."""
         with open(filepath, "rb") as file:
             compressed_pickle = file.read()
-            
+
         depressed_pickle = zstd.decompress(compressed_pickle)
         data = dill.loads(depressed_pickle)
         return data

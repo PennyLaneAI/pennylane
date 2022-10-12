@@ -40,32 +40,26 @@ def test_write_dataset(tmp_path):
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
 
     with patch("builtins.open", open_mock) as mock_file:
-        test_dataset.write('./path/to/file.dat')
+        test_dataset.write("./path/to/file.dat")
 
-    test_dict={ 'dtype':None, '__doc__':'','kw1':1,'kw2':"2",'kw3':[3]}
+    test_dict = {"dtype": None, "__doc__": "", "kw1": 1, "kw2": "2", "kw3": [3]}
     pickled_data = dill.dumps(test_dict, protocol=4)  # returns data as a bytes object
     compressed_pickle = zstd.compress(pickled_data)
 
-    open_mock.assert_called_with('./path/to/file.dat', 'wb') #check written to correct file
-    open_mock.return_value.write.assert_called_with(compressed_pickle) #check correct data written
+    open_mock.assert_called_with("./path/to/file.dat", "wb")  # check written to correct file
+    open_mock.return_value.write.assert_called_with(compressed_pickle)  # check correct data written
 
 
 def test_read_dataset(tmp_path):
     read_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-    dataset_bytes = b'(\xb5/\xfd C\x19\x02\x00\x80\x04\x958\x00\x00\x00\x00\x00\x00\x00}\x94(\x8c\x05dtype\x94N\x8c\x07__doc__\x94\x8c\x00\x94\x8c\x03kw1\x94K\x01\x8c\x03kw2\x94\x8c\x012\x94\x8c\x03kw3\x94]\x94K\x03au.'
+    dataset_bytes = b"(\xb5/\xfd C\x19\x02\x00\x80\x04\x958\x00\x00\x00\x00\x00\x00\x00}\x94(\x8c\x05dtype\x94N\x8c\x07__doc__\x94\x8c\x00\x94\x8c\x03kw1\x94K\x01\x8c\x03kw2\x94\x8c\x012\x94\x8c\x03kw3\x94]\x94K\x03au."
     open_mock = mock_open(read_data=dataset_bytes)
-    test_dataset= qml.data.Dataset()
-    
-    with patch("builtins.open", open_mock) as mock_file:
-        test_dataset.read('./path/to/file.dat')
+    test_dataset = qml.data.Dataset()
 
+    with patch("builtins.open", open_mock) as mock_file:
+        test_dataset.read("./path/to/file.dat")
 
     open_mock.return_value.read.assert_called()
-    open_mock.assert_called_with('./path/to/file.dat', 'rb')
-    
+    open_mock.assert_called_with("./path/to/file.dat", "rb")
+
     assert test_dataset.__dict__ == read_dataset.__dict__
-
-
-
-
-    
