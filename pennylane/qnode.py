@@ -244,6 +244,7 @@ class QNode:
     @shots.setter
     def shots(self, value: int):
         self.tape.shots = value
+        self.device.shots = value  # TODO: Remove this dependency
 
     @property
     def shot_vector(self):
