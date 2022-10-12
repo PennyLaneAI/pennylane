@@ -55,6 +55,7 @@ def get_active_tape():
     return QueuingManager.active_context()
 
 
+# TODO: move this function to its own file and rename
 def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
@@ -189,6 +190,8 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
             new_ops.extend(expanded_qscript._ops)
             new_measurements.extend(expanded_qscript._measurements)
 
+    # preserves inheritance structure
+    # if qscript is a QuantumTape, returned object will be a quantum tape
     new_qscript = qscript.__class__(new_ops, new_measurements, new_prep, _update=False)
 
     # Update circuit info
@@ -204,17 +207,23 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
 
 # pylint: disable=too-many-public-methods
 class QuantumTape(QuantumScript, AnnotatedQueue):
-    """A quantum tape recorder, that records, validates and executes variational quantum programs.
+    """A quantum tape recorder, that records and stores variational quantum programs.
 
     Args:
-        name (str): a name given to the quantum tape
-        do_queue (bool): Whether to queue this tape in a parent tape context.
+        ops (Iterable[Operator]): An iterable of the operations to be performed
+        measurements (Iterable[MeasurementProcess]): All the measurements to be performed
+        prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
+
+    Keyword Args:
+        name (str): a name given to the quantum script
+        do_queue=False (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        _update=True (bool): Whether or not to set various properties on initialization. Setting
+            ``_update=False`` reduces computations if the script is only an intermediary step.
+
 
     **Example**
 
     .. code-block:: python
-
-        import pennylane.tape
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.432, wires=0)
@@ -238,6 +247,17 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     <Wires = [0, 'a']>
     >>> tape.num_params
     3
+
+    Tapes can also be constructed by directly providing operations, measurements, and state preparations:
+
+    >>> ops = [qml.S(0), qml.T(1)]
+    >>> measurements = [qml.state()]
+    >>> prep = [qml.BasisState([1,0], wires=0)]
+    >>> tape = qml.tape.QuantumTape(ops, measurements, prep=prep)
+    >>> tape.circuit
+    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+
+    The existing circuit is overriden upon exiting a recording context.
 
     Iterating over the quantum circuit can be done by iterating over the tape
     object:

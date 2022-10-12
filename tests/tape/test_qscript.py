@@ -18,7 +18,6 @@ Things left to unittest:
 * Numeric Type
 * Expand
 * parameter stuff
-* update output dim
 * qasm
 """
 from collections import defaultdict
@@ -129,7 +128,7 @@ class TestUpdate:
         assert qs._specs is None
 
     def test_update_circuit_info_wires(self):
-
+        """Test that on construction wires and num_wires are set."""
         prep = [qml.BasisState([1, 1], wires=(-1, -2))]
         ops = [qml.S(0), qml.T("a"), qml.S(0)]
         measurement = [qml.probs(wires=("a"))]
@@ -140,6 +139,7 @@ class TestUpdate:
 
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
+        """Test that the all_sampled and is_sampled properties are set properly."""
         qs = QuantumScript(measurements=[qml.state(), sample_ms])
         assert qs.is_sampled is True
         assert qs.all_sampled is False
@@ -149,6 +149,8 @@ class TestUpdate:
         assert qs.all_sampled is True
 
     def test_update_circuit_info_no_sampling(self):
+        """Test that all_sampled and is_sampled properties are set to False if no sampling
+        measurement process exists."""
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
         assert qs.is_sampled is False
         assert qs.all_sampled is False
@@ -219,6 +221,7 @@ class TestUpdate:
         ],
     )
     def test_error_inconsistent_batch_sizes(self, x, rot, y):
+        """Tests that an error is raised if inconsistent batch sizes exist."""
         ops = [qml.RX(x, wires=0), qml.Rot(*rot, 1), qml.RX(y, wires=1)]
 
         with pytest.raises(
@@ -226,9 +229,21 @@ class TestUpdate:
         ):
             qs = QuantumScript(ops)
 
-    def test_update_output_dim(self):
-        # I'll get back to this at some point
-        pass
+    @pytest.mark.parametrize(
+        "m, output_dim",
+        [
+            ([qml.expval(qml.PauliX(0))], 1),
+            ([qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1))], 2),
+            ([qml.probs(wires=(0, 1))], 4),
+            ([qml.state()], 0),
+            ([qml.probs((0, 1)), qml.expval(qml.PauliX(0))], 5),
+        ],
+    )
+    @pytest.mark.parametrize("ops, factor", [([], 1), ([qml.RX([1.2, 2.3, 3.4], wires=0)], 3)])
+    def test_update_output_dim(self, m, output_dim, ops, factor):
+        """Test setting the output_dim property."""
+        qs = QuantumScript(ops, m)
+        assert qs.output_dim == output_dim * factor
 
 
 class TestIteration:

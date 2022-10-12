@@ -80,6 +80,8 @@ class QuantumScript:
     Keyword Args:
         name (str): a name given to the quantum script
         do_queue=False (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        _update=True (bool): Whether or not to set various properties on initialization. Setting
+            ``_update=False`` reduces computations if the script is only an intermediary step.
 
     .. seealso:: :class:`pennylane.tape.QuantumTape`
 
@@ -87,7 +89,7 @@ class QuantumScript:
 
     .. code-block:: python
 
-        from pennylane.qscript import QuantumScript
+        from pennylane.tape import QuantumScript
 
         prep = [qml.BasisState([1,1], wires=(0,1))]
 
@@ -251,7 +253,6 @@ class QuantumScript:
         """
         return self._prep + self._ops
 
-    # Let's try and deprecate this property
     @property
     def observables(self):
         """Returns the observables on the quantum script.
@@ -976,6 +977,7 @@ class QuantumScript:
         return new_script
 
     # NOT MOVING OVER INV
+    # As it will be deprecated soon.
 
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.
