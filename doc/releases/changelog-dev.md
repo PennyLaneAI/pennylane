@@ -86,6 +86,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
 
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
 <h3>Breaking changes</h3>
 
