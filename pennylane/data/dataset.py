@@ -25,36 +25,38 @@ class Dataset(ABC):
     It accepts general keyword arguments to be flexible for different types of data.
 
     Args:
-        dtype (string): Optional, the type of dataset, e.g. 'qchem' or 'qspin'
+        dtype (string): the type of dataset, e.g. 'qchem' or 'qspin'
         **kwargs: variable length of keyword arguments containing data to store in the dataset
 
     .. details::
         :title: Usage Details
+
         We can use the :class:`~pennylane.data.Dataset` class to create datasets as follows:
 
         .. code-block:: python
+
             import pennylane as qml
 
-            coefficients = [1]*10
-            observables = [qml.PauliZ(wires=i) for i in range(10)]
+            coefficients = [1]*2
+            observables = [qml.PauliZ(wires=i) for i in range(2)]
             Hamiltonian = qml.Hamiltonian(coefficients, observables)
 
             ex_dataset = qml.data.Dataset(Hamiltonian = Hamiltonian)
 
-        >>>ex_dataset.Hamiltonian
+        >>> print(ex_dataset.Hamiltonian)
           (1) [Z0]
         + (1) [Z1]
 
-        To save the dataset to a file, we call `Dataset.write()`:
+        To save the dataset to a file, we call :func:`Dataset.write()`:
 
-        >>>ex_dataset.write('./path/to/file/ex_dataset.dat')
+        >>> ex_dataset.write('./path/to/file/ex_dataset.dat')
 
-        We can then retrieve the data using `Dataset.read()`
+        We can then retrieve the data using :func:`Dataset.read()`
 
-        >>>retrieved_data = qml.data.Dataset()
-        >>>retrieved_data.read('./path/to/file/ex_dataset.dat')
-        >>>retrieved_data.Hamiltonian
-        (1) [Z0]
+        >>> retrieved_data = qml.data.Dataset()
+        >>> retrieved_data.read('./path/to/file/ex_dataset.dat')
+        >>> print(retrieved_data.Hamiltonian)
+          (1) [Z0]
         + (1) [Z1]
     """
 
@@ -66,9 +68,10 @@ class Dataset(ABC):
 
     @staticmethod
     def _read_file(filepath):
-        """Loads data previously saved with :function:`~pennylane.data.dataset.write`."""
+        """Loads data previously saved with :func:`~pennylane.data.dataset.write`."""
         with open(filepath, "rb") as file:
             compressed_pickle = file.read()
+            
         depressed_pickle = zstd.decompress(compressed_pickle)
         data = dill.loads(depressed_pickle)
         return data
@@ -91,7 +94,7 @@ class Dataset(ABC):
             file.write(compressed_pickle)
 
     def write(self, filepath, protocol=4):
-        """Writes a dataset to a file.
+        """Writes a dataset to a file as a dictionary.
 
         Args:
             filepath (string): the desired save location and file name, e.g. `'./path/to/file/file_name.dat'`.
