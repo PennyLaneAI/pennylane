@@ -13,11 +13,13 @@
 # limitations under the License.
 """Shot adaptive optimizer"""
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-branches
+from typing import Sequence
+
 from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
-
+from pennylane.qnode import QNode
 
 from .gradient_descent import GradientDescentOptimizer
 
@@ -206,7 +208,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         super().__init__(stepsize=stepsize)
 
     @staticmethod
-    def weighted_random_sampling(qnodes, coeffs, shots, argnums, *args, **kwargs):
+    def weighted_random_sampling(
+        qnodes: Sequence[QNode],
+        coeffs: Sequence[float],
+        shots: int,
+        argnums: Sequence[int],
+        *args,
+        **kwargs,
+    ):
         """Returns an array of length ``shots`` containing single-shot estimates
         of the Hamiltonian gradient. The shots are distributed randomly over
         the terms in the Hamiltonian, as per a multinomial distribution.
@@ -244,7 +253,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 continue
 
             # set the QNode device shots
-            h.device.shots = [(1, s)]
+            h.shots = [(1, s)]
 
             jacs = []
             for i in argnums:
@@ -301,7 +310,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         device = qnodes[0].device
 
         self.check_device(device)
-        original_shots = device.shots
+        original_shots = qnodes[0].shots
 
         if self.lipschitz is None:
             self.check_learning_rate(coeffs)
@@ -312,7 +321,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                     qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
                 )
             elif self.term_sampling is None:
-                device.shots = [(1, self.max_shots)]
+                for qnode in qnodes:
+                    qnode.shots = [(1, self.max_shots)]
                 # We iterate over each trainable argument, rather than using
                 # qml.jacobian(expval_cost), to take into account the edge case where
                 # different arguments have different shapes and cannot be stacked.
@@ -333,19 +343,17 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
-        device = qnode.device
-
         self.check_device(qnode.device)
-        original_shots = device.shots
+        original_shots = qnode.shots
 
         if self.lipschitz is None:
             self.check_learning_rate(1)
 
         try:
-            device.shots = [(1, self.max_shots)]
+            qnode.shots = [(1, self.max_shots)]
             grads = [qml.jacobian(qnode, argnum=i)(*args, **kwargs) for i in self.trainable_args]
         finally:
-            device.shots = original_shots
+            qnode.shots = original_shots
 
         return grads
 
@@ -366,8 +374,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         if isinstance(objective_fn, qml.ExpvalCost):
             grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
+        elif isinstance(objective_fn, qml.QNode):
             grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
+        elif hasattr(objective_fn, "qnode"):
+            grads = self._single_shot_qnode_gradients(objective_fn.qnode, args, kwargs)
         else:
             raise ValueError(
                 "The objective function must either be encoded as a single QNode or "

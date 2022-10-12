@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
-from scipy.stats import multinomial
 from flaky import flaky
 
 import pennylane as qml
@@ -104,7 +103,7 @@ class TestExceptions:
             opt.step(cost, np.array(0.5, requires_grad=True))
 
         # defining the device attribute allows it to proceed
-        cost.device = circuit.device
+        cost.qnode = circuit
         new_x = opt.step(cost, np.array(0.5, requires_grad=True))
 
         assert isinstance(new_x, np.tensor)
@@ -548,6 +547,7 @@ class TestOptimization:
         obs = [qml.PauliZ(0), qml.PauliX(0)]
         H = qml.Hamiltonian(coeffs, obs)
 
+        @qml.qnode(dev)
         def ansatz(x, **kwargs):
             qml.Rot(*x[0], wires=0)
             qml.Rot(*x[1], wires=1)
@@ -606,6 +606,7 @@ class TestStepAndCost:
         np.random.seed(0)
         dev = qml.device("default.qubit", wires=1, shots=10)
 
+        @qml.qnode(dev)
         def ansatz(x, **kwargs):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
