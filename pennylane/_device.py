@@ -25,22 +25,18 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.tape.tape import QuantumTape
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -687,7 +683,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumTape):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -714,7 +710,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-        finite_shots = self.shots is not None
+        finite_shots = circuit.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables

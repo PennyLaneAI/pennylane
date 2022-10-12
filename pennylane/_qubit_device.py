@@ -29,10 +29,9 @@ from pennylane import Device, DeviceError
 from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
-
 from pennylane.measurements import (
-    Counts,
     AllCounts,
+    Counts,
     Expectation,
     MeasurementProcess,
     MutualInfo,
