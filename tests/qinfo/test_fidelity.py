@@ -295,6 +295,58 @@ class TestFidelityQnode:
 
         assert qml.math.allclose(fid_grad, expected_fid_grad)
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_pauliz_rx_torch_grad(self, param, wire):
+        """Test the gradient of the fidelity between PauliZ and Rx circuits with Torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit0():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        expected_fid = expected_grad_fidelity_rx_pauliz(param)
+        param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
+        fid.backward()
+        fid_grad = param.grad
+
+        assert qml.math.allclose(fid_grad, expected_fid)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_rx_tworx_torch_grad(self, param, wire):
+        """Test the gradient of the fidelity between two trainable circuits with Torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        expected = expected_grad_fidelity_rx_pauliz(param)
+        expected_fid = [-expected, expected]
+        params = (
+            torch.tensor(param, dtype=torch.float64, requires_grad=True),
+            torch.tensor(2 * param, dtype=torch.float64, requires_grad=True),
+        )
+        fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
+        fid.backward()
+        fid_grad = [p.grad for p in params]
+        assert qml.math.allclose(fid_grad, expected_fid)
+
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
@@ -345,6 +397,56 @@ class TestFidelityQnode:
 
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_grad_fid)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_pauliz_rx_tf_grad(self, param, wire):
+        """Test the gradient of the fidelity between PauliZ and Rx circuits with Tensorflow."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit0():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        expected_fid = expected_grad_fidelity_rx_pauliz(param)
+        param = tf.Variable(param)
+        with tf.GradientTape() as tape:
+            entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
+
+        fid_grad = tape.gradient(entropy, param)
+        assert qml.math.allclose(fid_grad, expected_fid)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_rx_tworx_tf_grad(self, param, wire):
+        """Test the gradient of the fidelity between two trainable circuits with Tensorflow."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        expected = expected_grad_fidelity_rx_pauliz(param)
+        expected_fid = [-expected, expected]
+        params = (tf.Variable(param), tf.Variable(2 * param))
+        with tf.GradientTape() as tape:
+            entropy = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
+
+        fid_grad = [tape.gradient(e, p) for e, p in zip(entropy, params)]
+        assert qml.math.allclose(fid_grad, expected_fid)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
@@ -445,6 +547,97 @@ class TestFidelityQnode:
             jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))
         )((jax.numpy.array(param)))
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
+        assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_pauliz_rx_jax_grad(self, param, wire):
+        """Test the gradient of the fidelity between PauliZ and Rx circuits with Jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit0():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        fid_grad = jax.grad(
+            qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1
+        )(None, (jax.numpy.array(param)))
+        expected_fid = expected_grad_fidelity_rx_pauliz(param)
+        assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", parameters)
+    def test_fidelity_qnodes_pauliz_rx_jax_grad_jit(self, param):
+        """Test the gradient of the fidelity between PauliZ and Rx circuits with Jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit0():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        fid_grad = jax.jit(
+            jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1)
+        )(None, (jax.numpy.array(param)))
+        expected_fid = expected_grad_fidelity_rx_pauliz(param)
+        assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_rx_tworx_jax_grad(self, param, wire):
+        """Test the gradient of the fidelity between two trainable circuits with Jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        fid_grad = jax.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0,1])(
+            (jax.numpy.array(param)),
+            (jax.numpy.array(2 * param)),
+        )
+        expected = expected_grad_fidelity_rx_pauliz(param)
+        expected_fid = [-expected, expected]
+        assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", parameters)
+    def test_fidelity_qnodes_rx_tworx_jax_grad_jit(self, param):
+        """Test the gradient of the fidelity between two trainable circuits with Jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        fid_grad = jax.jit(jax.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0,1]))(
+            (jax.numpy.array(param)), (jax.numpy.array(2 * param))
+        )
+        expected = expected_grad_fidelity_rx_pauliz(param)
+        expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
 
     @pytest.mark.autograd
