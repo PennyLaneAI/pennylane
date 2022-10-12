@@ -76,7 +76,10 @@ class QuantumScript:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
+
+    Keyword Args:
         name (str): a name given to the quantum script
+        do_queue=False (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
 
     .. seealso:: :class:`pennylane.tape.QuantumTape`
 
@@ -142,8 +145,11 @@ class QuantumScript:
 
     """
 
+    do_queue = False
+    """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be 
+    True for its child Quantum Tape."""
+
     def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
-        # are we going to queue these?
         self.name = name
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
@@ -984,7 +990,7 @@ class QuantumScript:
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
         adj = self.__class__(ops=ops_adj, measurements=self._measurements, prep=self._prep)
-        if hasattr(self, "do_queue"):
+        if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
 

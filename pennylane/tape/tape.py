@@ -304,9 +304,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     def __init__(
         self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
     ):
+        self.do_queue = do_queue
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
-        self.do_queue = do_queue
 
     def __enter__(self):
         QuantumTape._lock.acquire()
