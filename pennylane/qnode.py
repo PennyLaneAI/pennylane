@@ -200,7 +200,7 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
-        self.shots = device.shots  # TODO: Use `shots` argument`
+        self.shots = shots or device.shots  # TODO: Stop using device shots
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -627,7 +627,7 @@ class QNode:
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
                 gradient_kwargs=self.gradient_kwargs,
-                override_shots=override_shots,
+                override_shots=self.shots,
                 **self.execute_kwargs,
             )
 
@@ -665,7 +665,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
+            override_shots=self.shots,
             **self.execute_kwargs,
         )
 

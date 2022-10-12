@@ -23,16 +23,19 @@ devices with autodifferentiation support.
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
 # pylint: disable=too-many-statements, invalid-unary-operand-type
 
-from functools import wraps
-import warnings
 import inspect
+import warnings
 from contextlib import _GeneratorContextManager
+from functools import wraps
+from typing import Sequence
+
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane import Device
+from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
-
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -69,7 +72,10 @@ def _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion):
     else:
         non_trainable = ~qml.operation.is_trainable
 
-    stop_at = ~qml.operation.is_measurement & (non_trainable | qml.operation.has_unitary_gen)
+    stop_at = ~qml.operation.is_measurement & (
+        non_trainable  # pylint: disable=unsupported-binary-operation
+        | qml.operation.has_unitary_gen
+    )
     for i, tape in enumerate(tapes):
         if any(not stop_at(op) for op in tape.operations):
             tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
@@ -220,8 +226,8 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
 
 
 def _execute_new(
-    tapes,
-    device,
+    tapes: Sequence[QuantumTape],
+    device: Device,
     gradient_fn,
     interface="autograd",
     mode="best",
@@ -446,8 +452,8 @@ def _execute_new(
 
 
 def execute(
-    tapes,
-    device,
+    tapes: Sequence[QuantumTape],
+    device: Device,
     gradient_fn,
     interface="autograd",
     mode="best",
