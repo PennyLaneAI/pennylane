@@ -241,6 +241,10 @@ class QNode:
         expectation values of observables"""
         return self.tape.shots
 
+    @shots.setter
+    def shots(self, value: int):
+        self.tape.shots = value
+
     @property
     def shot_vector(self):
         """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
