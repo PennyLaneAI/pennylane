@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module defines the QuantumScript object responsible for storing quantum operations to be
+This module defines the QuantumScript object responsible for storing quantum operations and measurements to be
 executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
@@ -219,7 +219,7 @@ class QuantumScript:
 
     @property
     def circuit(self):
-        """Returns the underlying quantum circuit object.
+        """Returns the underlying quantum circuit as a list of operations and measurements.
 
         The circuit is created with the assumptions that:
 
