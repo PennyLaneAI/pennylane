@@ -35,7 +35,7 @@ def test_build_dataset():
     assert test_dataset.hamiltonian == hamiltonian
 
 
-def test_write_dataset(tmp_path):
+def test_write_dataset():
     """Test that datasets are saved correctly."""
     open_mock = mock_open()
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
@@ -64,7 +64,7 @@ def test_read_dataset():
     open_mock.return_value.read.assert_called()
     open_mock.assert_called_with("./path/to/file.dat", "rb")
 
-    assert test_dataset.__dict__ == read_dataset.__dict__
+    assert test_dataset == read_dataset
 
 
 def test_from_dataset():
@@ -72,4 +72,4 @@ def test_from_dataset():
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
     new_dataset = qml.data.Dataset.from_dataset(test_dataset, copy_dtype=True)
 
-    assert new_dataset.__dict__ == test_dataset.__dict__
+    assert new_dataset == test_dataset

@@ -66,6 +66,9 @@ class Dataset(ABC):
         for key, val in kwargs.items():
             setattr(self, f"{key}", val)
 
+    def __eq__(self, __o):
+        return self.__dict__ == __o.__dict__
+
     @staticmethod
     def _read_file(filepath):
         """Loads data previously saved with :func:`~pennylane.data.dataset.write`.
