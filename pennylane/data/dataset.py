@@ -21,12 +21,12 @@ import zstd
 
 
 class Dataset(ABC):
-    """The dataset data type. This class is used to create general datasets.
-    It accepts general keyword arguments to be flexible for different types of data.
+    """Create a dataset object.
+    A dataset might be a collection of information that describes a physical system and its evolution. For example, a dataset for an arbitrary quantum system could have a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state.
 
     Args:
-        dtype (string): the type of dataset, e.g. 'qchem' or 'qspin'
-        **kwargs: variable length of keyword arguments containing data to store in the dataset
+        dtype (string): the type of dataset, e.g., `qchem`, `qspin`, etc.
+        **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
 
     .. details::
         :title: Usage Details
@@ -36,25 +36,29 @@ class Dataset(ABC):
         .. code-block:: python
 
             import pennylane as qml
+            from pennylane import numpy as np
 
-            coefficients = [1]*2
-            observables = [qml.PauliZ(wires=i) for i in range(2)]
-            Hamiltonian = qml.Hamiltonian(coefficients, observables)
+            Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+            solution = np.linalg.eigh(qml.matrix(Hamiltonian))
+            ground_energy = np.min(solution[0])
+            ground_state = np.transpose(solution[1])[np.argmin(solution[0])]
 
-            ex_dataset = qml.data.Dataset(Hamiltonian = Hamiltonian)
+            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian)
 
-        >>> print(ex_dataset.Hamiltonian)
+        >>> print(dataset.Hamiltonian)
           (1) [Z0]
         + (1) [Z1]
+        >>> print(dataset.ground_energy)
+        -2.0
 
         To save the dataset to a file, we call :func:`Dataset.write()`:
 
-        >>> ex_dataset.write('./path/to/file/ex_dataset.dat')
+        >>> ex_dataset.write('./path/to/file/dataset.dat')
 
         We can then retrieve the data using :func:`Dataset.read()`
 
         >>> retrieved_data = qml.data.Dataset()
-        >>> retrieved_data.read('./path/to/file/ex_dataset.dat')
+        >>> retrieved_data.read('./path/to/file/dataset.dat')
         >>> print(retrieved_data.Hamiltonian)
           (1) [Z0]
         + (1) [Z1]
@@ -94,7 +98,7 @@ class Dataset(ABC):
 
             import pennylane as qml
 
-            new_dataset = qml.data.Dataset()
+            new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
             new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
@@ -123,7 +127,7 @@ class Dataset(ABC):
 
             import pennylane as qml
 
-            new_dataset = qml.data.Dataset()
+            new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
             new_dataset.write('./path/to/file/file_name.dat')
         """
         dataset = {}
@@ -150,8 +154,13 @@ class Dataset(ABC):
 
             import pennylane as qml
 
-            original_dataset = qml.data.Dataset()
+            original_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
             new_dataset = qml.data.Dataset.from_dataset(original_dataset)
+
+            >>> print(original_dataset.__dict__)
+            {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
+            >>> print(new_dataset.__dict__)
+            {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
         """
         kwargs = {key: val for (key, val) in dataset.__dict__.items() if key not in ["dtype"]}
         return cls(dtype=dataset.dtype, **kwargs)
