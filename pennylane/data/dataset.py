@@ -21,7 +21,7 @@ import zstd
 
 
 class Dataset(ABC):
-    """The dataset data type. This class is used to create general datasets.
+    """Create a dataset object.
     It accepts general keyword arguments to be flexible for different types of data.
 
     Args:
