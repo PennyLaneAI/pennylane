@@ -79,15 +79,15 @@ class Dataset(ABC):
 
     def read(self, filepath):
         """Loads data from a saved file to the current dataset.
+
         Args:
-            filepath (string): the desired location and filename to load, e.g. `'./path/to/file/file_name.dat'`.
+            filepath (string): the desired location and filename to load, e.g. './path/to/file/file_name.dat'.
 
-        .. details::
-            :title: Usage Details
+        **Example**
 
-            We first initialize a :class:`~pennylane.data.Dataset` and then read saved data to it:
+        We first initialize a :class:`~pennylane.data.Dataset` and then read saved data to it:
 
-            .. code-block:: python
+        .. code-block:: python
 
             import pennylane as qml
 
@@ -110,14 +110,13 @@ class Dataset(ABC):
         """Writes a dataset to a file as a dictionary.
 
         Args:
-            filepath (string): the desired save location and file name, e.g. `'./path/to/file/file_name.dat'`.
+            filepath (string): the desired save location and file name, e.g. :code:'./path/to/file/file_name.dat'.
 
-        .. details::
-            :title: Usage Details
+        **Example**
 
-            We can save an existing dataset to a specific file as follows:
+        We can save an existing dataset to a specific file as follows:
 
-            .. code-block:: python
+        .. code-block:: python
 
             import pennylane as qml
 
@@ -132,20 +131,20 @@ class Dataset(ABC):
     @staticmethod
     def from_dataset(dataset, copy_dtype=False):
         """Builds a dataset from another dataset. Copies the data from another :class:`~pennylane.data.Dataset`.
+
         Args:
             dataset (Dataset): the dataset to copy
             copy_dtype (bool): whether to give the new Dataset the same dtype as the original
 
         Returns:
-            dataset (Dataset): a new dataset containing the same keys and values as the original
+            Dataset: a new dataset containing the same keys and values as the original
 
-        .. details::
-            :title: Usage Details
+        **Example**
 
-            For an existing :class:`~pennylane.data.Dataset`,
-            we can copy it to a new :class:`~pennylane.data.Dataset` as follows:
+        For an existing :class:`~pennylane.data.Dataset`,
+        we can copy it to a new :class:`~pennylane.data.Dataset` as follows:
 
-            .. code-block:: python
+        .. code-block:: python
 
             import pennylane as qml
 
