@@ -43,7 +43,7 @@ class Dataset(ABC):
             ground_energy = np.min(solution[0])
             ground_state = np.transpose(solution[1])[np.argmin(solution[0])]
 
-            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian)
+            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state= ground_state, ground_energy= ground_energy)
 
         >>> print(dataset.Hamiltonian)
           (1) [Z0]
