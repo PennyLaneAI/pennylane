@@ -148,7 +148,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 <h3>Bug fixes</h3>
 
 * Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
-  [(#31xx)](https://github.com/PennyLaneAI/pennylane/pull/31xx)
+  [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
 
 * Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
   [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
