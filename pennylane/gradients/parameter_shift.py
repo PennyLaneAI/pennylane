@@ -140,18 +140,24 @@ def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape)
     return recipe, at_least_one_unshifted, unshifted_coeff
 
 
-def _unshifted_coeff(g, unshifted_coeff, r0):
-    """Auxiliary function; if unshifted term exists, add its contribution."""
+def _single_res(result, coeffs, unshifted_coeff, r0):
+    """Compute the gradient for a single measurements by taking the linear combination of the coefficients and the
+    measurement result.
+
+    If unshifted term exists, its contribution is added to the gradient.
+    """
+    coeffs = qml.math.convert_like(coeffs, result)
+    g = qml.math.tensordot(result, coeffs, [[0], [0]])
     if unshifted_coeff is not None:
         # add the unshifted term
-        _g_before = g
         g = g + unshifted_coeff * r0
         g = qml.math.array(g)
     return g
 
 
 def _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff):
-
+    """Compute the gradient for multiple measurements by taking the linear combination of the coefficients and each
+    measurement result."""
     # Multiple measurements case, so we can extract the first result
     num_measurements = len(res[0])
 
@@ -159,11 +165,8 @@ def _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff):
     for meas_idx in range(num_measurements):
 
         # Gather the measurement results
-        single_result = [param_result[meas_idx] for param_result in res]
-        coeffs = qml.math.convert_like(coeffs, single_result)
-        g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
-
-        g_component = _unshifted_coeff(g_component, unshifted_coeff, r0)
+        meas_result = [param_result[meas_idx] for param_result in res]
+        g_component = _single_res(meas_result, coeffs, unshifted_coeff, r0)
         g.append(g_component)
 
     return tuple(g)
@@ -194,65 +197,45 @@ def _evaluate_gradient_new(tape, res, data, r0):
             if len(res.shape) > 1:
                 res = qml.math.squeeze(res)
 
-            g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
-            return _unshifted_coeff(g, unshifted_coeff, r0)
+            return _single_res(res, coeffs, unshifted_coeff, r0)
 
         g = []
 
         num_shot_components = len(res[0])
 
-        result_for_every_shot_comp = res
+        # Res has order of axes:
+        # 1. Number of parameters
+        # 2. Shot vector
         for i in range(num_shot_components):
-            shot_comp_res = [r[i] for r in result_for_every_shot_comp]
-            shot_comp_res = qml.math.stack(shot_comp_res)
-
-            if len(shot_comp_res.shape) > 1:
-                shot_comp_res = qml.math.squeeze(shot_comp_res)
-
-            shot_comp_res = qml.math.tensordot(
-                shot_comp_res, qml.math.convert_like(coeffs, shot_comp_res), [[0], [0]]
-            )
-            shot_comp_res = _unshifted_coeff(shot_comp_res, unshifted_coeff, r0[i])
+            shot_comp_res = [r[i] for r in res]
+            shot_comp_res = _single_res(shot_comp_res, coeffs, unshifted_coeff, r0[i])
             g.append(shot_comp_res)
-        g = tuple(g)
+        return tuple(g)
 
-    else:
-        g = []
+    g = []
 
-        # Multiple measurements case, so we can extract the first result
-        shot_vector = isinstance(res[0], tuple) and isinstance(res[0][0], tuple)
-        if shot_vector:
-            # The order of axes atm is:
-            # 1. Argnum (as qml.execute gets results for each tape)
-            # 2. Shot vector
-            # 3. Num measurements
-            num_shot_components = len(res[0])
-            num_measurements = len(res[0])
-            for idx_shot_comp in range(num_shot_components):
-                single_shot_component_result = [
-                    result_for_each_param[idx_shot_comp] for result_for_each_param in res
-                ]
-                multi_meas_grad = _eval_grad_multi_meas(
-                    single_shot_component_result, coeffs, r0, unshifted_coeff
-                )
-                g.append(multi_meas_grad)
+    # Multiple measurements case, so we can extract the first result
+    shot_vector = isinstance(res[0], tuple) and isinstance(res[0][0], tuple)
+    if not shot_vector:
+        g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
+        return tuple(g)
 
-            g = tuple(g)
-        else:
+    # Res has order of axes:
+    # 1. Number of parameters
+    # 2. Shot vector
+    # 3. Number of measurements
+    num_shot_components = len(res[0])
+    num_measurements = len(res[0])
+    for idx_shot_comp in range(num_shot_components):
+        single_shot_component_result = [
+            result_for_each_param[idx_shot_comp] for result_for_each_param in res
+        ]
+        multi_meas_grad = _eval_grad_multi_meas(
+            single_shot_component_result, coeffs, r0, unshifted_coeff
+        )
+        g.append(multi_meas_grad)
 
-            for meas_idx in range(num_measurements):
-                # TODO: can we just do?:
-                # g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
-
-                # Gather the measurement results
-                single_result = [param_result[meas_idx] for param_result in res]
-                coeffs = qml.math.convert_like(coeffs, single_result)
-                g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
-                g.append(g_component)
-
-            g = _unshifted_coeff(g, unshifted_coeff, r0)
-            g = tuple(g)
-    return g
+    return tuple(g)
 
 
 def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
@@ -342,15 +325,17 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
+# TODO: what if parameter broadcasting is on too?
 def _reorder_grad_axes_single_measure_shot_vector(grads):
-    """Reorder the axes for gradient results obtained for a tape with multiple measurements.
+    """Reorder the axes for gradient results obtained for a tape with a single measurement from a device that defined a
+    shot vector.
 
     The order of axes of the gradient output matches the structure outputted by jax.jacobian for a tuple-valued
     function. Internally, this may not be the case when computing the gradients, so the axes are reordered here.
 
     The first axis always corresponds to the number of trainable parameters because the parameter-shift transform
     defines multiple tapes each of which corresponds to a trainable parameter. Those tapes are then executed using a
-    device, which at the moment output results with the first axis corresponding to each tape output.
+    device, which at the moment outputs results with the first axis corresponding to each tape output.
 
     The final order of axes of gradient results should be:
     1. Shot vector
@@ -359,24 +344,19 @@ def _reorder_grad_axes_single_measure_shot_vector(grads):
     4. Broadcasting dimension
     5. Measurement shape
 
-    Parameter broadcasting doesn't yet support multiple measurements, hence such cases are not dealt with at the moment
-    by this function.
-
-    According to the order above, the following reorderings are done:
+    According to the order above, the following reordering is done:
 
     Shot vectors:
 
         Go from
         1. Num params
         2. Shot vector
-        (3. Measurements)
-        4. Measurement shape
+        3. Measurement shape
 
         To
         1. Shot vector
-        (2. Measurements)
-        3. Num params
-        4. Measurement shape
+        2. Num params
+        3. Measurement shape
     """
     num_params = len(grads)
     num_shot_vec_components = len(grads[0])
@@ -401,7 +381,7 @@ def _reorder_grad_axes_multi_measure(grads, shot_vector_multi_measure):
 
     The first axis always corresponds to the number of trainable parameters because the parameter-shift transform
     defines multiple tapes each of which corresponds to a trainable parameter. Those tapes are then executed using a
-    device, which at the moment output results with the first axis corresponding to each tape output.
+    device, which at the moment outputs results with the first axis corresponding to each tape output.
 
     The final order of axes of gradient results should be:
     1. Shot vector
@@ -551,7 +531,6 @@ def _expval_param_shift_tuple(
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
     def processing_fn(results):
-        grads = []
         start = 1 if at_least_one_unshifted and f0 is None else 0
         r0 = f0 or results[0]
 
@@ -560,6 +539,7 @@ def _expval_param_shift_tuple(
         shot_vector_single_meas = single_measure and isinstance(r0, tuple)
         shot_vector_multi_measure = not single_measure and (isinstance(r0[0], tuple))
 
+        grads = []
         for data in gradient_data:
 
             num_tapes, *_, batch_size = data
@@ -575,8 +555,6 @@ def _expval_param_shift_tuple(
             g = _evaluate_gradient_new(tape, res, data, r0)
             grads.append(g)
 
-        # This clause will be hit at least once (because otherwise all gradients would have
-        # been zero), providing a representative for a zero gradient to emulate its type/shape.
         if single_measure:
             zero_rep = qml.math.zeros_like(g)
         elif shot_vector_single_meas:
@@ -600,9 +578,6 @@ def _expval_param_shift_tuple(
         elif not single_measure:
             grads = _reorder_grad_axes_multi_measure(grads, shot_vector_multi_measure)
 
-        if len(grads) == 1:
-            # TODO: how does this relate to the single_measure and single_param case?
-            return grads[0]
         return tuple(grads)
 
     return gradient_tapes, processing_fn
