@@ -188,20 +188,13 @@ def _evaluate_gradient_new(tape, res, data, r0):
     num_measurements = len(tape.measurements)
     if num_measurements == 1:
 
-        # TODO: single param case?
+        # TODO: when shots are defined on the tape-level, determine the value of shot_vector directly using shots
         shot_vector = isinstance(res[0], tuple)
-
         if not shot_vector:
-            res = qml.math.stack(res)
-
-            if len(res.shape) > 1:
-                res = qml.math.squeeze(res)
-
             return _single_res(res, coeffs, unshifted_coeff, r0)
 
-        g = []
-
         num_shot_components = len(res[0])
+        g = []
 
         # Res has order of axes:
         # 1. Number of parameters
@@ -212,10 +205,12 @@ def _evaluate_gradient_new(tape, res, data, r0):
             g.append(shot_comp_res)
         return tuple(g)
 
-    g = []
-
+    # TODO: when shots are defined on the tape-level, determine the value of shot_vector directly using shots
+    #
     # Multiple measurements case, so we can extract the first result
     shot_vector = isinstance(res[0], tuple) and isinstance(res[0][0], tuple)
+
+    g = []
     if not shot_vector:
         g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
         return tuple(g)
@@ -664,6 +659,8 @@ def expval_param_shift(
         #     [[-1e1, 1, 0], [1e1, 1, 0]] if i in ops_with_custom_recipe else None
         #     for i in range(2)
         # )
+        #
+        # Note: this is an issue both with the existing and the new return type system
 
         g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
         gradient_tapes.extend(g_tapes)
@@ -786,9 +783,7 @@ def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_
     return pdA2
 
 
-# TODO: the logic of aux was created with the shot-vector logic and has been updated in master ---- update it with the
-# logic from master
-def aux(tape, var_mask, pdA2, f0, pdA):
+def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
     """Auxiliary function to return the derivative of variances.
 
     return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (var_mask==True)
@@ -797,8 +792,6 @@ def aux(tape, var_mask, pdA2, f0, pdA):
     Note: if isinstance(pdA2, int) and pdA2 != 0, then len(pdA2) == len(pdA)
 
     """
-    # TODO: update the logic below by using the updated aux function
-
     num_params = len(tape.trainable_params)
     num_measurements = len(tape.measurements)
     if num_measurements > 1:
@@ -897,12 +890,12 @@ def _create_variance_proc_fn(
                 _pdA = pdA[idx_shot_comp]
 
                 _pdA2 = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
-                r = aux(tape, var_mask, _pdA2, _f0, _pdA)
+                r = _single_variance_gradient(tape, var_mask, _pdA2, _f0, _pdA)
                 final_res.append(r)
 
             return tuple(final_res)
 
-        return aux(tape, var_mask, pdA2, f0, pdA)
+        return _single_variance_gradient(tape, var_mask, pdA2, f0, pdA)
 
     return processing_fn
 
