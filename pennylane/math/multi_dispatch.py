@@ -749,12 +749,7 @@ def unwrap(values, max_depth=None):
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
-
-        if not new_val.shape:
-            # is a scalar
-            new_val = new_val.tolist()
-
-        return new_val
+        return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
     return [convert(val) for val in values]
 
