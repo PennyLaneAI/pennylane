@@ -1213,26 +1213,39 @@ class QuantumTape(AnnotatedQueue):
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the
             tape result
 
-        **Example:**
+        **Examples**
 
         .. code-block:: python
 
             dev = qml.device("default.qubit", wires=2)
             a = np.array([0.1, 0.2, 0.3])
 
-            def func(a):
+            def qfunc():
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
 
             with qml.tape.QuantumTape() as tape:
-                func(a)
+                qfunc()
                 qml.state()
 
         .. code-block:: pycon
 
             >>> tape.shape(dev)
             (4,)
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as tape:
+                qfunc()
+                qml.state()
+                qml.expval(qml.PauliZ(wires=0))
+                qml.probs(wires=[0, 1])
+
+        .. code-block:: pycon
+
+            >>> tape.shape(dev)
+            ((4,), (), (4,))
         """
         shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
 
