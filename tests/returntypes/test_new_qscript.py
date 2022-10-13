@@ -360,7 +360,7 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
-        qs = QuantumScript(ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)])
+        qs = QuantumScript(ops, [qml.sample()] * num_samples)
 
         expected = tuple(
             tuple((3,) if s == 1 else (s, 3) for _ in range(num_samples)) for s in shots
