@@ -228,6 +228,7 @@ class Adjoint(SymbolicOp):
 
         return moveaxis(conj(base_matrix), -2, -1)
 
+    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         base_matrix = self.base.sparse_matrix(wire_order=wire_order)
         return transpose(conj(base_matrix)).asformat(format=format)
