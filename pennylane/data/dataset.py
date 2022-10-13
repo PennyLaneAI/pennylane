@@ -22,7 +22,9 @@ import zstd
 
 class Dataset(ABC):
     """Create a dataset object.
-    A dataset might be a collection of information that describes a physical system and its evolution. For example, a dataset for an arbitrary quantum system could have a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state.
+    A dataset might be a collection of information that describes a physical system and its evolution.
+    For example, a dataset for an arbitrary quantum system could have a Hamiltonian, its ground state,
+    and an efficient state-preparation circuit for that state.
 
     Args:
         dtype (string): the type of dataset, e.g., `qchem`, `qspin`, etc.
@@ -43,7 +45,8 @@ class Dataset(ABC):
             ground_energy = np.min(solution[0])
             ground_state = np.transpose(solution[1])[np.argmin(solution[0])]
 
-            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state= ground_state, ground_energy= ground_energy)
+            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state = ground_state, 
+                ground_energy = ground_energy)
 
         >>> print(dataset.Hamiltonian)
           (1) [Z0]
