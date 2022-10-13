@@ -68,7 +68,8 @@ class Dataset(ABC):
 
     @staticmethod
     def _read_file(filepath):
-        """Loads data previously saved with :func:`~pennylane.data.dataset.write`."""
+        """Loads data previously saved with :func:`~pennylane.data.dataset.write`.
+        Data is read as a dictionary."""
         with open(filepath, "rb") as file:
             compressed_pickle = file.read()
 
@@ -80,6 +81,18 @@ class Dataset(ABC):
         """Loads data from a saved file to the current dataset.
         Args:
             filepath (string): the desired location and filename to load, e.g. `'./path/to/file/file_name.dat'`.
+
+        .. details::
+            :title: Usage Details
+
+            We first initialize a :class:`~pennylane.data.Dataset` and then read saved data to it:
+
+            .. code-block:: python
+
+            import pennylane as qml
+
+            new_dataset = qml.data.Dataset()
+            new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
         for (key, val) in data.items():
@@ -87,7 +100,7 @@ class Dataset(ABC):
 
     @staticmethod
     def _write_file(filepath, data, protocol=4):
-        """Writes the input data to a file."""
+        """Writes the input data to a file as a dictionary."""
         pickled_data = dill.dumps(data, protocol=protocol)  # returns data as a bytes object
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as file:
@@ -98,6 +111,18 @@ class Dataset(ABC):
 
         Args:
             filepath (string): the desired save location and file name, e.g. `'./path/to/file/file_name.dat'`.
+
+        .. details::
+            :title: Usage Details
+
+            We can save an existing dataset to a specific file as follows:
+
+            .. code-block:: python
+
+            import pennylane as qml
+
+            new_dataset = qml.data.Dataset()
+            new_dataset.write('./path/to/file/file_name.dat')
         """
         dataset = {}
         for (key, val) in self.__dict__.items():
@@ -113,6 +138,19 @@ class Dataset(ABC):
 
         Returns:
             dataset (Dataset): a new dataset containing the same keys and values as the original
+
+        .. details::
+            :title: Usage Details
+
+            For an existing :class:`~pennylane.data.Dataset`,
+            we can copy it to a new :class:`~pennylane.data.Dataset` as follows:
+
+            .. code-block:: python
+
+            import pennylane as qml
+
+            original_dataset = qml.data.Dataset()
+            new_dataset.from_dataset(original_dataset)
         """
         new_dataset = Dataset(dtype=dataset.dtype if copy_dtype else None)
         for (key, val) in dataset.__dict__.items():
