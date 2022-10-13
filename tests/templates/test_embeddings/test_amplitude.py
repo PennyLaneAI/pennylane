@@ -385,6 +385,37 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("features", all_features)
+    def test_jax_jit_pad_with(self, tol, features):
+        """Tests jax tensors when using JIT and pad_with."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array(features)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit_decomposed(features):
+            # need to cast to complex tensor, which is implicitly done in the template
+            state = qml.math.cast(qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128)
+            qml.QubitStateVector(state, wires=range(4))
+            return qml.state()
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
+            return qml.state()
+
+        res = circuit(features)
+        res2 = circuit_decomposed(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests tf tensors."""
