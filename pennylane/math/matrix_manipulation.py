@@ -136,7 +136,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     wire_difference = list(set(subset_wire_order) - set(wires))
     expanded_wires = wires + wire_difference
 
-    # expand matrix if wire subset is larger that the matrix wires
+    # expand the matrix if the wire subset is larger than the matrix wires
     if wire_difference:
         if batch_dim is not None:
             batch_matrices = [
