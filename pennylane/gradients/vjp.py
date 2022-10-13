@@ -88,7 +88,6 @@ def compute_vjp_single(dy, jac):
         >>> compute_vjp_single(dy, jac)
         np.array([0.5, 1.1])
 
-
     """
     if jac is None:
         return None
@@ -173,7 +172,6 @@ def compute_vjp_multi(dy, jac):
         >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
         >>> compute_vjp_multi(dy, jac)
         np.array([1.2, 1.9])
-
 
     """
     if jac is None:
