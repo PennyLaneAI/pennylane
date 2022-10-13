@@ -23,8 +23,8 @@ from pennylane.operation import Observable, AnyWires
 
 
 shot_vec_tol = 10e-3
-default_shot_vector = (1000, 100)
-many_shots_shot_vector = (1000000, 10000000)
+default_shot_vector = (1000, 2000, 3000)
+many_shots_shot_vector = tuple([1000000] * 3)
 
 
 class TestParamShift:
@@ -294,7 +294,8 @@ class TestParamShift:
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        shot_vec = (100, 10, 1)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
         x = [0.543, -0.654]
 
         with qml.tape.QuantumTape() as tape:
@@ -303,7 +304,7 @@ class TestParamShift:
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = tuple(
-            [[-1e7, 1, 0], [1e7, 1, 1e-7]] if i in ops_with_custom_recipe else None
+            [[-1e3, 1, 0], [1e3, 1, 1e-3]] if i in ops_with_custom_recipe else None
             for i in range(2)
         )
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
@@ -315,7 +316,20 @@ class TestParamShift:
         assert len(tapes) == 2 * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
-        assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == len(shot_vec)
+        for shot_comp_grad in grad:
+            assert isinstance(grad, tuple)
+
+            # Two trainable params
+            assert len(shot_comp_grad) == 2
+            for g in shot_comp_grad:
+                assert isinstance(g, np.ndarray)
+                assert g.shape == ()
+
+        # Due to shot-based stochasticity the analytic values are not checked (multiplier are significant and the
+        # slightest of differences can cause major deviations from the analytic values
 
     @pytest.mark.parametrize("y_wire", [0, 1])
     def test_f0_provided(self, y_wire):
@@ -354,7 +368,7 @@ class TestParamShift:
             grad_recipe = ([[0.5, 1, s], [-0.5, 1, -s], [0.2, 1, 0]],)
 
         x = np.array([-0.361, 0.654], requires_grad=True)
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(x[0], wires=0)
@@ -373,12 +387,16 @@ class TestParamShift:
 
         grad = fn(dev.batch_execute(tapes))
         exp = np.stack([-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])])
-        assert len(grad) == len(exp)
-        for (
-            a,
-            b,
-        ) in zip(grad, exp):
-            assert np.allclose(a, b)
+        assert isinstance(grad, tuple)
+        assert len(grad) == len(default_shot_vector)
+        for g in grad:
+            assert isinstance(g, tuple)
+            assert len(g) == len(tape.trainable_params)
+            for (
+                a,
+                b,
+            ) in zip(g, exp):
+                assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
     def test_independent_parameters_analytic(self):
@@ -409,17 +427,19 @@ class TestParamShift:
 
         exp = -np.sin(1)
 
-        assert np.allclose(j1[0][0], exp, atol=shot_vec_tol)
-        assert np.allclose(j1[0][1], exp, atol=shot_vec_tol)
+        assert isinstance(j1, tuple)
+        assert len(j1) == len(many_shots_shot_vector)
+        for j in j1:
+            assert isinstance(j, tuple)
+            assert len(j) == len(tape1.trainable_params)
+            assert np.allclose(j[0], exp, atol=shot_vec_tol)
+            assert np.allclose(j[1], 0, atol=shot_vec_tol)
 
-        assert np.allclose(j1[1][0], 0, atol=shot_vec_tol)
-        assert np.allclose(j1[1][1], 0, atol=shot_vec_tol)
-
-        assert np.allclose(j2[0][0], 0, atol=shot_vec_tol)
-        assert np.allclose(j2[0][1], 0, atol=shot_vec_tol)
-
-        assert np.allclose(j2[1][0], exp, atol=shot_vec_tol)
-        assert np.allclose(j2[1][1], exp, atol=shot_vec_tol)
+        for j in j2:
+            assert isinstance(j, tuple)
+            assert len(j) == len(tape1.trainable_params)
+            assert np.allclose(j[0], 0, atol=shot_vec_tol)
+            assert np.allclose(j[1], exp, atol=shot_vec_tol)
 
     def test_grad_recipe_parameter_dependent(self, monkeypatch):
         """Test that an operation with a gradient recipe that depends on
@@ -512,10 +532,15 @@ class TestParamShiftShotVector:
         assert len(tapes) == 4
 
         res = fn(dev.batch_execute(tapes))
-        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert len(res) == len(many_shots_shot_vector)
 
-        for r in res:
-            assert len(r) == 2
+        for shot_comp_res in res:
+            assert isinstance(shot_comp_res, tuple)
+            assert len(shot_comp_res) == len(tape.trainable_params)
+            for r in shot_comp_res:
+                assert isinstance(r, tuple)
+                assert len(r) == len(tape.measurements)
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
@@ -717,9 +742,13 @@ class TestParamShiftShotVector:
         gradA = fn(dev.batch_execute(tapes))
 
         assert isinstance(gradA, tuple)
-        assert len(gradA) == 2
+        assert len(gradA) == len(many_shots_shot_vector)
         for shot_vec_res in gradA:
+            assert isinstance(shot_vec_res, tuple)
+            assert len(shot_vec_res) == len(tape.measurements)
             for meas_res in shot_vec_res:
+                assert isinstance(meas_res, tuple)
+                assert len(meas_res) == len(tape.trainable_params)
                 for param_res in meas_res:
                     assert isinstance(param_res, np.ndarray)
                     assert param_res.shape == ()
