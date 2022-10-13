@@ -90,7 +90,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     >>> res.requires_grad
     True
 
-    The method words with scipy sparse matrices, for example:
+    The method works with scipy sparse matrices, for example:
 
     >>> from scipy import sparse
     >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
