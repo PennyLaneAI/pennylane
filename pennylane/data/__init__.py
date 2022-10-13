@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The quantum datasets module can be used to load and manage data related
-to quantum systems.
+The data module can be used to load and manage datasets.
 """
 from .dataset import Dataset
