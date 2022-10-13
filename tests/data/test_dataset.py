@@ -14,11 +14,11 @@
 """
 Unit tests for the :mod:`pennylane.data.Dataset` class and its functions.
 """
-import pytest
 import pennylane as qml
 import dill
 import zstd
 from unittest.mock import patch, mock_open
+
 
 def test_build_dataset():
     """Test that a dataset builds correctly and returns the correct values."""
@@ -36,7 +36,7 @@ def test_write_dataset():
     open_mock = mock_open()
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
 
-    with patch("builtins.open", open_mock) as mock_file:
+    with patch("builtins.open", open_mock):
         test_dataset.write("./path/to/file.dat")
 
     test_dict = {"dtype": None, "__doc__": "", "kw1": 1, "kw2": "2", "kw3": [3]}
@@ -51,11 +51,11 @@ def test_read_dataset():
     """Test that datasets are loaded correctly."""
     # before conversion, read data is a compressed dictionary
     # generate correct read data
-    test_dict = {'kw1':1, 'kw2':"2", 'kw3':[3]}
+    test_dict = {"kw1": 1, "kw2": "2", "kw3": [3]}
     pickled_data = dill.dumps(test_dict, protocol=4)
     compressed_pickle = zstd.compress(pickled_data)
-    
-    #generate the expected dataset
+
+    # generate the expected dataset
     read_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
 
     open_mock = mock_open(read_data=compressed_pickle)

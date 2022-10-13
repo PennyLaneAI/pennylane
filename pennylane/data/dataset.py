@@ -22,7 +22,7 @@ import zstd
 
 class Dataset(ABC):
     """Create a dataset object.
-    A dataset might be a collection of information that describes a physical system and its evolution. For example, a dataset for an arbitrary quantum system could have a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state. 
+    A dataset might be a collection of information that describes a physical system and its evolution. For example, a dataset for an arbitrary quantum system could have a Hamiltonian, its ground state, and an efficient state-preparation circuit for that state.
 
     Args:
         dtype (string): the type of dataset, e.g., `qchem`, `qspin`, etc.
