@@ -14,8 +14,8 @@
 """
 Contains the Dataset utility functions.
 """
+from concurrent.futures import ThreadPoolExecutor, wait
 import os
-from threading import Thread
 import requests
 
 from pennylane.data.dataset import Dataset
@@ -77,19 +77,13 @@ def _refresh_data_struct():
     _data_struct = response.json()
 
 
-class Worker(Thread):
-    """Worker class used to download multiple files from S3 with multi-threading."""
-    def __init__(self, filename, dest_folder):
-        super().__init__()
-        self.filename = filename
-        self.dest_folder = dest_folder
-
-    def run(self):
-        response = requests.get(os.path.join(S3_URL, self.filename), timeout=5.0)
-        if not response.ok:
-            response.raise_for_status()
-        with open(os.path.join(self.dest_folder, self.filename), "wb") as f:
-            f.write(response.content)
+def _fetch_and_save(filename, dest_folder):
+    """Download a single file from S3 and save it locally."""
+    response = requests.get(os.path.join(S3_URL, filename), timeout=5.0)
+    if not response.ok:
+        response.raise_for_status()
+    with open(os.path.join(dest_folder, filename), "wb") as f:
+        f.write(response.content)
 
 
 def _s3_download(data_type, folders, attributes, dest_folder, force):
@@ -113,13 +107,9 @@ def _s3_download(data_type, folders, attributes, dest_folder, force):
         }
         files = list(set(files) - existing_files)
 
-    workers = []
-    for f in files:
-        worker = Worker(f, dest_folder)
-        worker.start()
-        workers.append(worker)
-    for w in workers:
-        w.join()
+    with ThreadPoolExecutor(50) as pool:
+        futures = [pool.submit(_fetch_and_save, f, dest_folder) for f in files]
+        wait(futures)
 
 
 def _generate_folders(node, folders):
