@@ -50,7 +50,7 @@ def test_write_dataset(tmp_path):
     open_mock.return_value.write.assert_called_with(compressed_pickle)  # check correct data written
 
 
-def test_read_dataset(tmp_path):
+def test_read_dataset():
     read_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     dataset_bytes = b"(\xb5/\xfd C\x19\x02\x00\x80\x04\x958\x00\x00\x00\x00\x00\x00\x00}\x94(\x8c\x05dtype\x94N\x8c\x07__doc__\x94\x8c\x00\x94\x8c\x03kw1\x94K\x01\x8c\x03kw2\x94\x8c\x012\x94\x8c\x03kw3\x94]\x94K\x03au."
     open_mock = mock_open(read_data=dataset_bytes)
@@ -63,3 +63,9 @@ def test_read_dataset(tmp_path):
     open_mock.assert_called_with("./path/to/file.dat", "rb")
 
     assert test_dataset.__dict__ == read_dataset.__dict__
+
+def test_from_dataset():
+    test_dataset = qml.data.Dataset(dtype="test_data",kw1=1, kw2="2", kw3=[3])
+    new_dataset = qml.data.Dataset.from_dataset(test_dataset, copy_dtype=True)
+    
+    assert new_dataset.__dict__ == test_dataset.__dict__
