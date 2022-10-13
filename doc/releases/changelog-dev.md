@@ -50,6 +50,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 <h3>Improvements</h3>
 
 * `Adjoint` now supports batching if the base operation supports batching.
+  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
 
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
