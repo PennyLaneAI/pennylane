@@ -517,7 +517,7 @@ def _vjp_new(
 
 
 def _compute_vjps(jacs, dy, multi_measurements):
-    """Compute the vjps of multiple tapes, directly for the Jacobian and dys."""
+    """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):
         if multi:

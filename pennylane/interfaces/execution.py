@@ -312,7 +312,7 @@ def _execute_new(
             # execute both tapes in a batch on the given device
             res = qml.execute(tapes, dev, qml.gradients.param_shift, max_diff=2)
 
-            return res[0][0] + res[1][0, 0] - res[1][0, 1]
+            return res[0] + res[1][0] - res[1][1]
 
     In this cost function, two **independent** quantum tapes are being
     constructed; one returning an expectation value, the other probabilities.
@@ -324,7 +324,7 @@ def _execute_new(
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> x = np.array([0.5], requires_grad=True)
     >>> cost_fn(params, x)
-    tensor(1.93050682, requires_grad=True)
+    1.93050682
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
@@ -432,6 +432,7 @@ def _execute_new(
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
         elif mapped_interface == "tf":
+            # TODO: remove pragmas when TF is supported
             import tensorflow as tf  # pragma: no cover
 
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
@@ -439,8 +440,10 @@ def _execute_new(
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
         elif mapped_interface == "torch":
+            # TODO: remove pragmas when Torch is supported
             from .torch import execute as _execute  # pragma: no cover
         else:  # is jax
+            # TODO: remove pragmas when Jax is supported
             _execute = _get_jax_execute_fn(interface, tapes)  # pragma: no cover
     except ImportError as e:
         raise qml.QuantumFunctionError(

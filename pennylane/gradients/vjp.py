@@ -24,7 +24,7 @@ from pennylane import math
 
 
 def _convert(jac, dy_row):
-    """Utility to convert and cast the jacobian as dy row."""
+    """Utility to convert and cast the jacobian as dy_row."""
     if isinstance(jac, tuple):
         jac_new = []
         for j in jac:
@@ -40,16 +40,55 @@ def _convert(jac, dy_row):
 
 def compute_vjp_single(dy, jac):
     """Convenience function to compute the vector-Jacobian product for a given
-    vector of gradient outputs and a Jacobian.
+    vector of gradient outputs and a Jacobian for a single measurement tape.
 
     Args:
         dy (tensor_like): vector of gradient outputs
-        jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
-            vector, the first n-dimensions of ``jac`` should match
-            the shape of ``dy``.
+        jac (tensor_like, tuple): Jacobian matrix
 
     Returns:
         tensor_like: the vector-Jacobian product
+
+    **Examples**
+
+    1. For a single parameter and a single measurement without shape:
+
+    .. code-block:: pycon
+
+        >>> jac = np.array(0.1)
+        >>> dy = np.array(2)
+        >>> compute_vjp_single(dy, jac)
+        np.array(0.2)
+
+    2. For a single parameter and a single measurment with shape:
+
+    .. code-block:: pycon
+
+        >>> jac = np.array([0.1, 0.2])
+        >>> dy = np.array([1.0, 1.0])
+        >>> compute_vjp_single(dy, jac)
+        np.array([0.3])
+
+
+    3. For multiple parameters (in this case 2 parameters) and a single measurement without shape:
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([np.array(0.1), np.array(0.2)])
+        >>> dy = np.array(2)
+        >>> compute_vjp_single(dy, jac)
+        np.array([0.2, 0.4])
+
+    3. For multiple parameters (in this case 2 parameters) and a single measurement with shape:
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([np.array([0.1, 0.2]), np.array([0.3, 0.4])])
+        >>> dy = np.array([1.0, 2.0])
+        >>> compute_vjp_single(dy, jac)
+        np.array([0.5, 1.1])
+
+
     """
     if jac is None:
         return None
@@ -88,7 +127,7 @@ def compute_vjp_single(dy, jac):
             res = math.tensordot(jac, dy_row, [[0], [0]])
     # Single measurement with multiple params
     else:
-        # No trainable parameters
+        # No trainable parameters (adjoint)
         if len(jac) == 0:
             res = qml.math.zeros((1, 0))
             return res
@@ -106,16 +145,36 @@ def compute_vjp_single(dy, jac):
 
 def compute_vjp_multi(dy, jac):
     """Convenience function to compute the vector-Jacobian product for a given
-    vector of gradient outputs and a Jacobian.
+    vector of gradient outputs and a Jacobian for a multiple measurements tape.
 
     Args:
         dy (tensor_like): vector of gradient outputs
-        jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
-            vector, the first n-dimensions of ``jac`` should match
-            the shape of ``dy``.
+        jac (tensor_like, tuple): Jacobian matrix
 
     Returns:
         tensor_like: the vector-Jacobian product
+
+    **Examples**
+
+    1. For a single parameter and multiple measurement (one without shape and one with shape):
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([np.array(0.1), np.array([0.3, 0.4])])
+        >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
+        >>> compute_vjp_multi(dy, jac)
+        np.array([1.2])
+
+    2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with shape):
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([tuple([np.array(0.1), np.array(0.2)]), tuple([np.array([0.3, 0.4]), np.array([0.5, 0.6])])])
+        >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
+        >>> compute_vjp_multi(dy, jac)
+        np.array([1.2, 1.9])
+
+
     """
     if jac is None:
         return None
