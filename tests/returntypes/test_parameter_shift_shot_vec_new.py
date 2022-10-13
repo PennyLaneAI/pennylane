@@ -511,18 +511,19 @@ class TestParamShift:
 # TODO: add test class for parameter broadcasting
 
 
+@pytest.mark.slow
 class TestParameterShiftRule:
     """Unit tests for the param_shift function used with a device that has a
     shot vector defined"""
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 3))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
-        dev = qml.device("default.qubit", wires=1, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=1, shots=many_shots_shot_vector)
 
         with qml.tape.QuantumTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -540,17 +541,27 @@ class TestParameterShiftRule:
         tape_fwd.set_parameters([theta + np.pi / 2])
         tape_bwd.set_parameters([theta - np.pi / 2])
 
-        manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
-        assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
+        shot_vec_manual_res = dev.batch_execute([tape_fwd, tape_bwd])
 
-        assert isinstance(autograd_val, np.ndarray)
-        assert autograd_val.shape == ()
+        # Parameter axis is the first - reorder the results from batch_execute
+        shot_vec_len = len(many_shots_shot_vector)
+        shot_vec_manual_res = [
+            tuple(comp[l] for comp in shot_vec_manual_res) for l in range(shot_vec_len)
+        ]
+        for r1, r2 in zip(autograd_val, shot_vec_manual_res):
+            manualgrad_val = np.subtract(*r2) / 2
+            assert np.allclose(r1, manualgrad_val, atol=shot_vec_tol, rtol=0)
+
+            assert isinstance(r1, np.ndarray)
+            assert r1.shape == ()
 
         assert spy.call_args[1]["shifts"] == (shift,)
 
-        tapes, fn = qml.gradients.finite_diff(tape)
-        numeric_val = fn(dev.batch_execute(tapes))
-        assert np.allclose(autograd_val, numeric_val, atol=tol, rtol=0)
+        # TODO: finite diff shot-vector update
+        # tapes, fn = qml.gradients.finite_diff(tape)
+        # numeric_val = fn(dev.batch_execute(tapes))
+        # for a_val, n_val in zip(autograd_val, numeric_val):
+        #     assert np.allclose(a_val, n_val, atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
@@ -593,13 +604,13 @@ class TestParameterShiftRule:
         assert len(autograd_val) == len(manualgrad_val)
 
         for a_val, m_val in zip(autograd_val, manualgrad_val):
-            assert np.allclose(a_val, m_val, atol=tol, rtol=0)
+            assert np.allclose(a_val, m_val, atol=shot_vec_tol, rtol=0)
             assert spy.call_args[1]["shifts"] == (shift,)
 
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute(tapes))
         for a_val, n_val in zip(autograd_val, numeric_val):
-            assert np.allclose(a_val, n_val, atol=tol, rtol=0)
+            assert np.allclose(a_val, n_val, atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
@@ -615,16 +626,16 @@ class TestParameterShiftRule:
         tape.trainable_params = {1}
 
         res = dev.execute(tape)
-        assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
+        assert np.allclose(res, -np.cos(b / 2), atol=shot_vec_tol, rtol=0)
 
         tapes, fn = qml.gradients.param_shift(tape)
         grad = fn(dev.batch_execute(tapes))
         expected = np.sin(b / 2) / 2
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert np.allclose(grad, expected, atol=shot_vec_tol, rtol=0)
 
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute(tapes))
-        assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
+        assert np.allclose(grad, numeric_val, atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
@@ -642,7 +653,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         tapes, fn = qml.gradients.param_shift(tape)
         assert len(tapes) == 4 * len(tape.trainable_params)
@@ -658,12 +669,12 @@ class TestParameterShiftRule:
         assert isinstance(grad, tuple)
         assert len(grad) == 3
         for idx, g in enumerate(grad):
-            assert np.allclose(g, expected[idx], atol=tol, rtol=0)
+            assert np.allclose(g, expected[idx], atol=shot_vec_tol, rtol=0)
 
         tapes, fn = qml.gradients.finite_diff(tape)
         numeric_val = fn(dev.batch_execute(tapes))
         for idx, g in enumerate(grad):
-            assert np.allclose(g, numeric_val[idx], atol=tol, rtol=0)
+            assert np.allclose(g, numeric_val[idx], atol=shot_vec_tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, tol):
         """Tests that the parameter-shift rule agrees with the first and second
@@ -690,8 +701,8 @@ class TestParameterShiftRule:
         grad_A = grad_fn(tape, dev)
 
         # gradients computed with different methods must agree
-        assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
-        assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+        assert np.allclose(grad_A, grad_F1, atol=shot_vec_tol, rtol=0)
+        assert np.allclose(grad_A, grad_F2, atol=shot_vec_tol, rtol=0)
 
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
@@ -720,8 +731,8 @@ class TestParameterShiftRule:
         # gradients computed with different methods must agree
         for idx1 in range(len(grad_A)):
             for idx2, g in enumerate(grad_A[idx1]):
-                assert np.allclose(g, grad_F1[idx1][idx2], atol=tol, rtol=0)
-                assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
+                assert np.allclose(g, grad_F1[idx1][idx2], atol=shot_vec_tol, rtol=0)
+                assert np.allclose(g, grad_F2[idx1][idx2], atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
     def test_fallback(self, mocker, tol):
@@ -770,15 +781,15 @@ class TestParameterShiftRule:
         assert len(res[1]) == 2
 
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # TODO: support Hessian with the new return types
         # check the second derivative
         # hessian = qml.jacobian(lambda params: np.stack(cost_fn(params)).T)(params)
         # hessian = qml.jacobian(cost_fn(params))(params)
 
-        # assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
-        # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
+        # assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=shot_vec_tol, rtol=0)
+        # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
     def test_fallback_single_meas(self, mocker, tol):
@@ -950,7 +961,7 @@ class TestParameterShiftRule:
         assert res[1].shape == ()
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -974,8 +985,8 @@ class TestParameterShiftRule:
         assert not isinstance(res[1], tuple)
 
         expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=shot_vec_tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=shot_vec_tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -1000,8 +1011,8 @@ class TestParameterShiftRule:
         assert len(res[1]) == 2
 
         expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=shot_vec_tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=shot_vec_tol, rtol=0)
 
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -1028,7 +1039,7 @@ class TestParameterShiftRule:
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
 
         for a, e in zip(res, expected):
-            assert np.allclose(np.squeeze(np.stack(a)), e, atol=tol, rtol=0)
+            assert np.allclose(np.squeeze(np.stack(a)), e, atol=shot_vec_tol, rtol=0)
 
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -1100,7 +1111,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = 1 - np.cos(a) ** 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1114,8 +1125,8 @@ class TestParameterShiftRule:
         assert len(tapes) == 2
 
         expected = 2 * np.sin(a) * np.cos(a)
-        assert gradF == pytest.approx(expected, abs=tol)
-        assert gradA == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=shot_vec_tol)
+        assert gradA == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_involutory_variance_multi_param(self, tol):
         """Tests qubit observables that are involutory with multiple trainable params"""
@@ -1132,7 +1143,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = 1 - np.cos(a + b) ** 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1152,11 +1163,11 @@ class TestParameterShiftRule:
         assert len(tapes) == 3
 
         expected = 2 * np.sin(a + b) * np.cos(a + b)
-        assert gradF[0] == pytest.approx(expected, abs=tol)
-        assert gradA[0] == pytest.approx(expected, abs=tol)
+        assert gradF[0] == pytest.approx(expected, abs=shot_vec_tol)
+        assert gradA[0] == pytest.approx(expected, abs=shot_vec_tol)
 
-        assert gradF[1] == pytest.approx(expected, abs=tol)
-        assert gradA[1] == pytest.approx(expected, abs=tol)
+        assert gradF[1] == pytest.approx(expected, abs=shot_vec_tol)
+        assert gradA[1] == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_non_involutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory with a single trainable parameter"""
@@ -1172,7 +1183,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1186,8 +1197,8 @@ class TestParameterShiftRule:
         assert len(tapes) == 2
 
         expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
-        assert gradA == pytest.approx(expected, abs=tol)
-        assert gradF == pytest.approx(expected, abs=tol)
+        assert gradA == pytest.approx(expected, abs=shot_vec_tol)
+        assert gradF == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_non_involutory_variance_multi_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
@@ -1205,7 +1216,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = (39 / 2) - 6 * np.sin(2 * (a + b)) + (35 / 2) * np.cos(2 * (a + b))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1224,11 +1235,11 @@ class TestParameterShiftRule:
         assert len(tapes) == 3
 
         expected = -35 * np.sin(2 * (a + b)) - 12 * np.cos(2 * (a + b))
-        assert gradA[0] == pytest.approx(expected, abs=tol)
-        assert gradF[0] == pytest.approx(expected, abs=tol)
+        assert gradA[0] == pytest.approx(expected, abs=shot_vec_tol)
+        assert gradF[0] == pytest.approx(expected, abs=shot_vec_tol)
 
-        assert gradA[1] == pytest.approx(expected, abs=tol)
-        assert gradF[1] == pytest.approx(expected, abs=tol)
+        assert gradA[1] == pytest.approx(expected, abs=shot_vec_tol)
+        assert gradF[1] == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_involutory_and_noninvolutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
@@ -1248,7 +1259,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1267,11 +1278,11 @@ class TestParameterShiftRule:
             assert isinstance(param_res, np.ndarray)
             assert param_res.shape == ()
 
-        assert gradA[0] == pytest.approx(expected[0], abs=tol)
-        assert gradA[1] == pytest.approx(expected[1], abs=tol)
+        assert gradA[0] == pytest.approx(expected[0], abs=shot_vec_tol)
+        assert gradA[1] == pytest.approx(expected[1], abs=shot_vec_tol)
 
-        assert gradF[0] == pytest.approx(expected[0], abs=tol)
-        assert gradF[1] == pytest.approx(expected[1], abs=tol)
+        assert gradF[0] == pytest.approx(expected[0], abs=shot_vec_tol)
+        assert gradF[1] == pytest.approx(expected[1], abs=shot_vec_tol)
 
     @pytest.mark.parametrize("ind", [0, 1])
     def test_var_and_probs_single_param(self, ind, tol):
@@ -1479,7 +1490,7 @@ class TestParameterShiftRule:
         )
 
         assert isinstance(res, tuple)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1493,8 +1504,8 @@ class TestParameterShiftRule:
         for a_comp, e_comp in zip(gradA, expected):
             assert isinstance(a_comp, np.ndarray)
             assert a_comp.shape == ()
-            assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
-        assert gradF == pytest.approx(expected, abs=tol)
+            assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
+        assert gradF == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_expval_and_variance_multi_param(self, tol):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
@@ -1525,7 +1536,7 @@ class TestParameterShiftRule:
         )
 
         assert isinstance(res, tuple)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1550,8 +1561,8 @@ class TestParameterShiftRule:
             for a_comp, e_comp in zip(a, e):
                 assert isinstance(a_comp, np.ndarray)
                 assert a_comp.shape == ()
-                assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
-        assert gradF == pytest.approx(expected, abs=tol)
+                assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
+        assert gradF == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_projector_variance(self, tol):
         """Test that the variance of a projector is correctly returned"""
@@ -1569,7 +1580,7 @@ class TestParameterShiftRule:
 
         res = dev.execute(tape)
         expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
         # # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
@@ -1584,8 +1595,8 @@ class TestParameterShiftRule:
                 -2 * np.cos(y) * np.sin(x / 2) ** 4 * np.sin(y),
             ]
         )
-        assert np.allclose(gradA, expected, atol=tol, rtol=0)
-        assert gradF == pytest.approx(expected, abs=tol)
+        assert np.allclose(gradA, expected, atol=shot_vec_tol, rtol=0)
+        assert gradF == pytest.approx(expected, abs=shot_vec_tol)
 
     def cost1(x):
         qml.Rot(*x, wires=0)
@@ -1874,7 +1885,7 @@ class TestParamShiftShotVector:
         expected = 2 * np.sin(a) * np.cos(a)
 
         # TODO: finite diff shot-vector update
-        # assert gradF == pytest.approx(expected, abs=tol)
+        # assert gradF == pytest.approx(expected, abs=shot_vec_tol)
         for _gA in gradA:
             assert _gA == pytest.approx(expected, abs=shot_vec_tol)
 
@@ -1911,7 +1922,7 @@ class TestParamShiftShotVector:
             assert isinstance(_gA, np.ndarray)
             assert _gA.shape == ()
             # TODO: finite diff shot-vector update
-            # assert gradF == pytest.approx(expected, abs=tol)
+            # assert gradF == pytest.approx(expected, abs=shot_vec_tol)
 
     def test_involutory_and_noninvolutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
