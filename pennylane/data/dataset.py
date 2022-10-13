@@ -26,7 +26,7 @@ class Dataset(ABC):
 
     Args:
         dtype (string): the type of dataset, e.g., `qchem`, `qspin`, etc.
-        **kwargs: variable length of keyword arguments containing data to store in the dataset
+        **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
 
     .. details::
         :title: Usage Details
