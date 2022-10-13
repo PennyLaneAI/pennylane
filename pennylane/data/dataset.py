@@ -25,7 +25,7 @@ class Dataset(ABC):
     It accepts general keyword arguments to be flexible for different types of data.
 
     Args:
-        dtype (string): the type of dataset, e.g. 'qchem' or 'qspin'
+        dtype (string): the type of dataset, e.g., `qchem`, `qspin`, etc.
         **kwargs: variable length of keyword arguments containing data to store in the dataset
 
     .. details::
