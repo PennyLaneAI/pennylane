@@ -723,6 +723,15 @@ class TestEigvals:
 
         assert qml.math.allclose(qml.math.conj(base_eigvals), adj_eigvals)
 
+    def test_batching_eigvals(self):
+        """Test that eigenvalues work with batched parameters."""
+        x = np.array([1.2, 2.3, 3.4])
+        base = qml.RX(x, 0)
+        adj = Adjoint(base)
+        compare = qml.RX(-x, 0)
+
+        assert qml.math.allclose(base.eigvals(), compare.eigvals())
+
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
         base = qml.QubitStateVector([1, 0], wires=0)
