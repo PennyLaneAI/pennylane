@@ -154,5 +154,5 @@ class Dataset(ABC):
         new_dataset = Dataset(dtype=dataset.dtype if copy_dtype else None)
         for (key, val) in dataset.__dict__.items():
             if key not in ["dtype"]:
-                new_dataset.__setattr__(key, val)
+                setattr(new_dataset, key, val)
         return new_dataset
