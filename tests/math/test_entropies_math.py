@@ -229,6 +229,8 @@ class TestRelativeEntropy:
 class TestMinEntropy:
     """Tests for the min entropy qml.math function"""
 
+    import jax
+
     base = [None, 2]
     check_states = [True, False]
 
@@ -252,24 +254,70 @@ class TestMinEntropy:
         div = 1 if base is None else np.log(base)
         assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    # Testing Differentiabilty
+
+    @pytest.mark.parametrize("interface", "autograd")
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([[1, 0], [0, 0]], -np.log(1)),
-            ([[0, 0], [0, 1]], -np.log(1)),
+            ([1, 0], -np.log(1)),
+            ([0, 1], -np.log(1)),
+            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
             (
-                [[1 / 3, 0.4714, 0, 0], [0.4714, 2 / 3, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-                -(np.sqrt(56249041) + 7500) / 15000,
+                [1 / np.sqrt(3), np.sqrt(2 / 3)],
+                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
             ),
         ],
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_density_matrix(self, interface, state, expected, base, check_state):
-        """Test that mutual information works for density matrices"""
+    def test_grad(self, interface, state, expected, base, check_state):
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.min_entropy(state, base=base, check_state=check_state)
+        grad = qml.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
-        div = 1 if base is None else np.log(base)
-        assert np.allclose(actual, expected / div, rtol=1e-06, atol=1e-07)
+        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", "jax")
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([1, 0], -np.log(1)),
+            ([0, 1], -np.log(1)),
+            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            (
+                [1 / np.sqrt(3), np.sqrt(2 / 3)],
+                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_states)
+    def test_grad(self, interface, state, expected, base, check_state):
+        state = qml.math.asarray(state, like=interface)
+        grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
+
+        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", "jax")
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([1, 0], -np.log(1)),
+            ([0, 1], -np.log(1)),
+            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            (
+                [1 / np.sqrt(3), np.sqrt(2 / 3)],
+                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_states)
+    def test_grad(self, interface, state, expected, base, check_state):
+        state = qml.math.asarray(state, like=interface)
+        grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
+
+        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
