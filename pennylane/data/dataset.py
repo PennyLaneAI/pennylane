@@ -39,7 +39,7 @@ class Dataset(ABC):
 
             coefficients = [1]*2
             observables = [qml.PauliZ(wires=i) for i in range(2)]
-            Hamiltonian = qml.Hamiltonian(coefficients, observables)
+            Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
 
             ex_dataset = qml.data.Dataset(Hamiltonian = Hamiltonian)
 
