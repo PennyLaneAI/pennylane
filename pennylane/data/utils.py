@@ -15,8 +15,7 @@
 Contains the Dataset utility functions.
 """
 import os
-import asyncio
-import aiohttp
+from threading import Thread
 import requests
 
 from pennylane.data.dataset import Dataset
@@ -78,15 +77,22 @@ def _refresh_data_struct():
     _data_struct = response.json()
 
 
-async def _s3_get_file(filename, dest_folder, session):
-    """Download and save a single file in its own coroutine."""
-    async with session.get(url=os.path.join(S3_URL, filename)) as response:
-        resp = await response.read()
-        with open(os.path.join(dest_folder, filename), "wb") as f:
-            f.write(resp)
+class Worker(Thread):
+    """Worker class used to download multiple files from S3 with multi-threading."""
+    def __init__(self, filename, dest_folder):
+        super().__init__()
+        self.filename = filename
+        self.dest_folder = dest_folder
+
+    def run(self):
+        response = requests.get(os.path.join(S3_URL, self.filename), timeout=5.0)
+        if not response.ok:
+            response.raise_for_status()
+        with open(os.path.join(self.dest_folder, self.filename), "wb") as f:
+            f.write(response.content)
 
 
-async def _s3_download(data_type, folders, attributes, dest_folder, force):
+def _s3_download(data_type, folders, attributes, dest_folder, force):
     """Download a file for each attribute from each folder to the specified destination."""
     files = []
     for folder in folders:
@@ -107,8 +113,13 @@ async def _s3_download(data_type, folders, attributes, dest_folder, force):
         }
         files = list(set(files) - existing_files)
 
-    async with aiohttp.ClientSession() as session:
-        await asyncio.gather(*[_s3_get_file(f, dest_folder, session) for f in files])
+    workers = []
+    for f in files:
+        worker = Worker(f, dest_folder)
+        worker.start()
+        workers.append(worker)
+    for w in workers:
+        w.join()
 
 
 def _generate_folders(node, folders):
@@ -167,7 +178,7 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
 
     folders = [description[param] for param in data["params"]]
     all_folders = _generate_folders(_foldermap[data_type], folders)
-    asyncio.run(_s3_download(data_type, all_folders, attributes, directory_path, force))
+    _s3_download(data_type, all_folders, attributes, directory_path, force)
 
     data_files = []
     for folder in all_folders:
