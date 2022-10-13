@@ -131,13 +131,12 @@ class Dataset(ABC):
             dataset.update({key: val})
         self._write_file(filepath=filepath, data=dataset, protocol=protocol)
 
-    @staticmethod
-    def from_dataset(dataset, copy_dtype=False):
+    @classmethod
+    def from_dataset(cls, dataset):
         """Builds a dataset from another dataset. Copies the data from another :class:`~pennylane.data.Dataset`.
 
         Args:
             dataset (Dataset): the dataset to copy
-            copy_dtype (bool): whether to give the new Dataset the same dtype as the original
 
         Returns:
             Dataset: a new dataset containing the same keys and values as the original
@@ -152,10 +151,7 @@ class Dataset(ABC):
             import pennylane as qml
 
             original_dataset = qml.data.Dataset()
-            new_dataset.from_dataset(original_dataset)
+            new_dataset = qml.data.Dataset.from_dataset(original_dataset)
         """
-        new_dataset = Dataset(dtype=dataset.dtype if copy_dtype else None)
-        for (key, val) in dataset.__dict__.items():
-            if key not in ["dtype"]:
-                new_dataset.__setattr__(key, val)
-        return new_dataset
+        kwargs = {key: val for (key, val) in dataset.__dict__.items() if key not in ["dtype"]}
+        return cls(dtype=dataset.dtype, **kwargs)

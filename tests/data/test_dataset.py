@@ -70,6 +70,6 @@ def test_read_dataset():
 def test_from_dataset():
     """Test that datasets can be built from other datasets"""
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
-    new_dataset = qml.data.Dataset.from_dataset(test_dataset, copy_dtype=True)
+    new_dataset = qml.data.Dataset.from_dataset(test_dataset)
 
     assert new_dataset == test_dataset
