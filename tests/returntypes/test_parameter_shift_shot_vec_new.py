@@ -26,6 +26,9 @@ shot_vec_tol = 10e-3
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
 
+# Pick 4 angles in the [-2 * np.pi, np.pi] interval
+angles = [-6.28318531, -3.92699082, 0.78539816, 3.14159265]
+
 
 class TestParamShift:
     """Unit tests for the param_shift function"""
@@ -516,7 +519,7 @@ class TestParameterShiftRule:
     """Unit tests for the param_shift function used with a device that has a
     shot vector defined"""
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 3))
+    @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift])
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, tol):
@@ -563,12 +566,12 @@ class TestParameterShiftRule:
         # for a_val, n_val in zip(autograd_val, numeric_val):
         #     assert np.allclose(a_val, n_val, atol=shot_vec_tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
-        dev = qml.device("default.qubit", wires=1, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=1, shots=many_shots_shot_vector)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.tape.QuantumTape() as tape:
@@ -584,8 +587,7 @@ class TestParameterShiftRule:
 
         autograd_val = fn(dev.batch_execute(tapes))
         assert isinstance(autograd_val, tuple)
-        assert len(autograd_val) == num_params
-        manualgrad_val = np.zeros((1, num_params))
+        assert len(autograd_val) == len(many_shots_shot_vector)
 
         manualgrad_val = []
         for idx in list(np.ndindex(*params.shape)):
@@ -598,24 +600,33 @@ class TestParameterShiftRule:
             tape.set_parameters(params - s)
             backward = dev.execute(tape)
 
-            component = (forward - backward) / 2
-            manualgrad_val.append(component)
+            shot_vec_comp = []
+            for f, b in zip(forward, backward):
+                shot_vec_comp.append((f - b) / 2)
 
+            manualgrad_val.append(tuple(shot_vec_comp))
+
+        # Parameter axis is the first - reorder the results
+        shot_vec_len = len(many_shots_shot_vector)
+        manualgrad_val = [tuple(comp[l] for comp in manualgrad_val) for l in range(shot_vec_len)]
         assert len(autograd_val) == len(manualgrad_val)
 
         for a_val, m_val in zip(autograd_val, manualgrad_val):
+            assert isinstance(a_val, tuple)
+            assert len(a_val) == num_params
             assert np.allclose(a_val, m_val, atol=shot_vec_tol, rtol=0)
             assert spy.call_args[1]["shifts"] == (shift,)
 
-        tapes, fn = qml.gradients.finite_diff(tape)
-        numeric_val = fn(dev.batch_execute(tapes))
-        for a_val, n_val in zip(autograd_val, numeric_val):
-            assert np.allclose(a_val, n_val, atol=shot_vec_tol, rtol=0)
+        # TODO: finite diff shot-vector update
+        # tapes, fn = qml.gradients.finite_diff(tape)
+        # numeric_val = fn(dev.batch_execute(tapes))
+        # for a_val, n_val in zip(autograd_val, numeric_val):
+        #     assert np.allclose(a_val, n_val, atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled rotation gates"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         b = 0.123
 
         with qml.tape.QuantumTape() as tape:
@@ -631,17 +642,20 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.param_shift(tape)
         grad = fn(dev.batch_execute(tapes))
         expected = np.sin(b / 2) / 2
+        assert isinstance(grad, tuple)
+        assert len(grad) == len(many_shots_shot_vector)
         assert np.allclose(grad, expected, atol=shot_vec_tol, rtol=0)
 
-        tapes, fn = qml.gradients.finite_diff(tape)
-        numeric_val = fn(dev.batch_execute(tapes))
-        assert np.allclose(grad, numeric_val, atol=shot_vec_tol, rtol=0)
+        # TODO: finite diff shot-vector update
+        # tapes, fn = qml.gradients.finite_diff(tape)
+        # numeric_val = fn(dev.batch_execute(tapes))
+        # assert np.allclose(grad, numeric_val, atol=shot_vec_tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    @pytest.mark.parametrize("theta", angles)
     def test_CRot_gradient(self, theta, tol):
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
         gate is correct."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.tape.QuantumTape() as tape:
@@ -692,7 +706,7 @@ class TestParameterShiftRule:
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 2, 3}
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
         grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
         grad_F2 = grad_fn(
@@ -720,7 +734,7 @@ class TestParameterShiftRule:
             qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape.trainable_params = {0, 2, 3}
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
         grad_F1 = grad_fn(tape, dev, fn=qml.gradients.finite_diff, approx_order=1)
         grad_F2 = grad_fn(
@@ -966,7 +980,7 @@ class TestParameterShiftRule:
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -991,7 +1005,7 @@ class TestParameterShiftRule:
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -1017,7 +1031,7 @@ class TestParameterShiftRule:
     def test_var_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -1045,7 +1059,7 @@ class TestParameterShiftRule:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -1100,7 +1114,7 @@ class TestParameterShiftRule:
 
     def test_involutory_variance_single_param(self, tol):
         """Tests qubit observables that are involutory with a single trainable param"""
-        dev = qml.device("default.qubit", wires=1, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=1, shots=many_shots_shot_vector)
         a = 0.54
 
         with qml.tape.QuantumTape() as tape:
@@ -1130,7 +1144,7 @@ class TestParameterShiftRule:
 
     def test_involutory_variance_multi_param(self, tol):
         """Tests qubit observables that are involutory with multiple trainable params"""
-        dev = qml.device("default.qubit", wires=1, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=1, shots=many_shots_shot_vector)
         a = 0.34
         b = 0.20
 
@@ -1171,7 +1185,7 @@ class TestParameterShiftRule:
 
     def test_non_involutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory with a single trainable parameter"""
-        dev = qml.device("default.qubit", wires=1, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=1, shots=many_shots_shot_vector)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
@@ -1202,7 +1216,7 @@ class TestParameterShiftRule:
 
     def test_non_involutory_variance_multi_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
-        dev = qml.device("default.qubit", wires=1, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=1, shots=many_shots_shot_vector)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.34
         b = 0.20
@@ -1244,7 +1258,7 @@ class TestParameterShiftRule:
     def test_involutory_and_noninvolutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
@@ -1288,7 +1302,7 @@ class TestParameterShiftRule:
     def test_var_and_probs_single_param(self, ind, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside an involutory observable and probs when
         there's one trainable parameter."""
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
@@ -1339,7 +1353,7 @@ class TestParameterShiftRule:
     def test_var_and_probs_multi_params(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside an involutory observable and probs when
         there are more trainable parameters."""
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
@@ -1462,7 +1476,7 @@ class TestParameterShiftRule:
     def test_expval_and_variance_single_param(self, tol):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with a
         single trainable parameter"""
-        dev = qml.device("default.qubit", wires=3, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector)
 
         a = 0.54
         b = -0.423
@@ -1510,7 +1524,7 @@ class TestParameterShiftRule:
     def test_expval_and_variance_multi_param(self, tol):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
-        dev = qml.device("default.qubit", wires=3, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector)
 
         a = 0.54
         b = -0.423
@@ -1566,7 +1580,7 @@ class TestParameterShiftRule:
 
     def test_projector_variance(self, tol):
         """Test that the variance of a projector is correctly returned"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         P = np.array([1])
         x, y = 0.765, -0.654
 
@@ -1631,7 +1645,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_expval)
     def test_output_shape_matches_qnode_expval(self, cost, expected_shape, list_output):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
@@ -1654,7 +1668,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, expected_shape, list_output):
         """Test that the transform output shape matches that of the QNode."""
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
         x = np.random.rand(3)
         circuit = qml.QNode(cost, dev)
@@ -1749,7 +1763,7 @@ class TestParameterShiftRule:
     def test_multi_measure_no_warning(self):
         """Test computing the gradient of a tape that contains multiple
         measurements omits no warnings."""
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
         par1 = qml.numpy.array(0.3)
         par2 = qml.numpy.array(0.1)

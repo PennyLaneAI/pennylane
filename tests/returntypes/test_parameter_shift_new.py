@@ -815,7 +815,6 @@ class TestParameterShiftRule:
         autograd_val = fn(dev.batch_execute(tapes))
         assert isinstance(autograd_val, tuple)
         assert len(autograd_val) == num_params
-        manualgrad_val = np.zeros((1, num_params))
 
         manualgrad_val = []
         for idx in list(np.ndindex(*params.shape)):
