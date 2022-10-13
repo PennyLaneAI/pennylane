@@ -12,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.data.Dataset` class.
+Unit tests for the :mod:`pennylane.data.Dataset` class and its functions.
 """
 import pytest
-import numpy as np
 import pennylane as qml
 import dill
 import zstd
 from unittest.mock import patch, mock_open
-
-from pennylane.ops.qubit import hamiltonian
-
 
 def test_build_dataset():
     """Test that a dataset builds correctly and returns the correct values."""
@@ -35,7 +31,7 @@ def test_build_dataset():
     assert test_dataset.hamiltonian == hamiltonian
 
 
-def test_write_dataset(tmp_path):
+def test_write_dataset():
     """Test that datasets are saved correctly."""
     open_mock = mock_open()
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
@@ -53,23 +49,30 @@ def test_write_dataset(tmp_path):
 
 def test_read_dataset():
     """Test that datasets are loaded correctly."""
+    # before conversion, read data is a compressed dictionary
+    # generate correct read data
+    test_dict = {'kw1':1, 'kw2':"2", 'kw3':[3]}
+    pickled_data = dill.dumps(test_dict, protocol=4)
+    compressed_pickle = zstd.compress(pickled_data)
+    
+    #generate the expected dataset
     read_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-    dataset_bytes = b"(\xb5/\xfd C\x19\x02\x00\x80\x04\x958\x00\x00\x00\x00\x00\x00\x00}\x94(\x8c\x05dtype\x94N\x8c\x07__doc__\x94\x8c\x00\x94\x8c\x03kw1\x94K\x01\x8c\x03kw2\x94\x8c\x012\x94\x8c\x03kw3\x94]\x94K\x03au."
-    open_mock = mock_open(read_data=dataset_bytes)
+    
+    open_mock = mock_open(read_data=compressed_pickle)
     test_dataset = qml.data.Dataset()
 
-    with patch("builtins.open", open_mock) as mock_file:
+    with patch("builtins.open", open_mock):
         test_dataset.read("./path/to/file.dat")
 
     open_mock.return_value.read.assert_called()
     open_mock.assert_called_with("./path/to/file.dat", "rb")
 
-    assert test_dataset.__dict__ == read_dataset.__dict__
+    assert test_dataset == read_dataset
 
 
 def test_from_dataset():
     """Test that datasets can be built from other datasets"""
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
-    new_dataset = qml.data.Dataset.from_dataset(test_dataset, copy_dtype=True)
+    new_dataset = qml.data.Dataset.from_dataset(test_dataset)
 
-    assert new_dataset.__dict__ == test_dataset.__dict__
+    assert new_dataset == test_dataset
