@@ -15,7 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 import pennylane as qml
-from pennylane.math import conj, transpose
+from pennylane.math import conj, transpose, moveaxis
 from pennylane.operation import Observable, Operation
 
 from .symbolicop import SymbolicOp
@@ -204,26 +204,35 @@ class Adjoint(SymbolicOp):
     def __repr__(self):
         return f"Adjoint({self.base})"
 
+    # pylint: disable=protected-access
+    def _check_batching(self, params):
+        self.base._check_batching(params)
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache=cache)
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return self.base.has_matrix if self.base.batch_size is None else False
-
     def matrix(self, wire_order=None):
-        if getattr(self.base, "batch_size", None) is not None:
-            raise qml.operation.MatrixUndefinedError
-
         if isinstance(self.base, qml.Hamiltonian):
             base_matrix = qml.matrix(self.base, wire_order=wire_order)
         else:
             base_matrix = self.base.matrix(wire_order=wire_order)
 
-        return transpose(conj(base_matrix))
+        return moveaxis(conj(base_matrix), -2, -1)
 
+    def sparse_matrix(self, wire_order=None, format="csr"):
+        base_matrix = self.base.sparse_matrix(wire_order=wire_order)
+        return transpose(conj(base_matrix)).asformat(format=format)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return self.base.has_adjoint or self.base.has_decomposition
@@ -234,16 +243,11 @@ class Adjoint(SymbolicOp):
         base_decomp = self.base.decomposition()
         return [Adjoint(op) for op in reversed(base_decomp)]
 
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_sparse_matrix(*params, base=None):
-        base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-        return transpose(conj(base_matrix)).tocsr()
-
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
@@ -251,6 +255,7 @@ class Adjoint(SymbolicOp):
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):
         return True
