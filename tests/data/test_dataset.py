@@ -57,7 +57,7 @@ def test_read_dataset():
     
     #generate the expected dataset
     read_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-    
+
     open_mock = mock_open(read_data=compressed_pickle)
     test_dataset = qml.data.Dataset()
 
