@@ -373,3 +373,60 @@ def _execute_with_fwd(
         res = res[0]
 
     return res
+
+
+
+def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+    """Execute a batch of tapes with JAX parameters on a device.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
+
+    Returns:
+        list[list[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+    """
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+
+    parameters = tuple(list(t.get_parameters()) for t in tapes)
+
+    if gradient_fn is None:
+        return _execute_fwd_new(
+            parameters,
+            tapes=tapes,
+            device=device,
+            execute_fn=execute_fn,
+            gradient_kwargs=gradient_kwargs,
+            _n=_n,
+        )
+
+    return _execute_new(
+        parameters,
+        tapes=tapes,
+        device=device,
+        execute_fn=execute_fn,
+        gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
+        _n=_n,
+    )
