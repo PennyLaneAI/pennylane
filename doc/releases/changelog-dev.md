@@ -79,6 +79,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
+* Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
+  [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
+
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
