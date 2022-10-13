@@ -401,7 +401,9 @@ class TestInterfaces:
         @qml.qnode(dev, interface="jax")
         def circuit_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
-            state = qml.math.cast(qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128)
+            state = qml.math.cast(
+                qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
+            )
             qml.QubitStateVector(state, wires=range(4))
             return qml.state()
 
