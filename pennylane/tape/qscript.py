@@ -802,7 +802,7 @@ class QuantumScript:
         return shape
 
     def shape(self, device):
-        """Produces the output shape of the script by inspecting its measurements
+        """Produces the output shape of the tape by inspecting its measurements
         and the device used for execution.
 
         .. note::
@@ -811,23 +811,28 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (.Device): the device that will be used for the tape execution
 
         Raises:
             ValueError: raised for unsupported cases for
-                example when the script contains heterogeneous measurements
+                example when the tape contains heterogeneous measurements
 
         Returns:
             Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
-            script result
+            tape result
 
         **Example:**
 
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> qscript = QuantumScript(measurements=[qml.state()])
-        >>> qscript.shape(dev)
-        (1, 4)
+        .. code-block:: pycon
+
+            >>> dev = qml.device('default.qubit', wires=2)
+            >>> qs = QuantumScript(measurements=[qml.state()])
+            >>> qs.shape(dev)
+            (1, 4)
         """
+        if qml.active_return():
+            return self._shape_new(device)
+
         output_shape = tuple()
 
         if len(self._measurements) == 1:
@@ -838,9 +843,50 @@ class QuantumScript:
                 output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
                 raise ValueError(
-                    "Getting the output shape of a quantum script that contains multiple types of measurements is unsupported."
+                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
         return output_shape
+
+    def _shape_new(self, device):
+        """Produces the output shape of the tape by inspecting its measurements
+        and the device used for execution.
+
+        .. note::
+
+            The computed shape is not stored because the output shape may be
+            dependent on the device used for execution.
+
+        Args:
+            device (.Device): the device that will be used for the tape execution
+
+        Returns:
+            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the
+            tape result
+
+        **Examples**
+
+        .. code-block:: pycon
+
+            >>> qml.enable_return()
+            >>> dev = qml.device('default.qubit', wires=2)
+            >>> qs = QuantumScript(measurements=[qml.state()])
+            >>> qs.shape(dev)
+            (4,)
+            >>> m = [qml.state(), qml.expval(qml.PauliZ(0)), qml.probs((0,1))]
+            >>> qs = QuantumScript(measurements=m)
+            >>> qs.shape(dev)
+            ((4,), (), (4,))
+        """
+        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
+
+        if len(shapes) == 1:
+            return shapes[0]
+
+        if device.shot_vector is not None:
+            # put the shot vector axis before the measurement axis
+            shapes = tuple(zip(*shapes))
+
+        return shapes
 
     @property
     def numeric_type(self):
@@ -861,22 +907,43 @@ class QuantumScript:
         >>> qscript.numeric_type
         complex
         """
+        if qml.active_return():
+            return self._numeric_type_new
         measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
             raise ValueError(
                 "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
             )
 
+        # Note: if one of the sample measurements contains outputs that
+        # are real, then the entire result will be real
         if list(measurement_types)[0] == qml.measurements.Sample:
-            for observable in self._measurements:
-                # Note: if one of the sample measurements contains outputs that
-                # are real, then the entire result will be real
-                if observable.numeric_type is float:
-                    return observable.numeric_type
-
-            return int
+            return next((float for mp in self._measurements if mp.numeric_type is float), int)
 
         return self._measurements[0].numeric_type
+
+    @property
+    def _numeric_type_new(self):
+        """Returns the expected numeric type of the tape result by inspecting
+        its measurements.
+
+        Returns:
+            Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
+            tape, or a tuple of such types if the tape contains multiple measurements
+
+        **Example:**
+
+        .. code-block:: pycon
+
+            >>> qml.enable_return()
+            >>> dev = qml.device('default.qubit', wires=2)
+            >>> qs = QuantumScript(measurements=[qml.state()])
+            >>> qs.numeric_type
+            complex
+        """
+        types = tuple(observable.numeric_type for observable in self._measurements)
+
+        return types[0] if len(types) == 1 else types
 
     # ========================================================
     # Transforms: Tape to Tape
