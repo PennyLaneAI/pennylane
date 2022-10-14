@@ -425,7 +425,7 @@ def _expval_hessian_param_shift_tuple(
             start = start + len(coeffs)
 
             hessian = []
-            for m in range(len(tape.measurements)):
+            for m in range(num_measurements):
                 measure_res = qml.math.stack([r[m] for r in res])
                 coeffs = qml.math.convert_like(coeffs, measure_res)
                 hess = qml.math.tensordot(measure_res, coeffs, [[0], [0]])
