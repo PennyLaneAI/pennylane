@@ -248,7 +248,8 @@ class QNode:
             )
 
         self._interface = value
-        self._update_gradient_fn()
+        if value != "auto":
+            self._update_gradient_fn()
 
     def _update_gradient_fn(self):
         if self.diff_method is None:
@@ -722,7 +723,7 @@ class QNode:
             return qml.math.squeeze(res, axis=0)
 
         if old_interface == "auto":
-            self._interface = "auto"
+            self.interface = "auto"
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)

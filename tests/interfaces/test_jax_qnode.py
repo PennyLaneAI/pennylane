@@ -711,6 +711,9 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
+        if interface == "auto":
+            pytest.skip("Can't detect interface without a non-parametrized tape")
+
         dev = qml.device(dev_name, wires=2, shots=10)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
