@@ -526,6 +526,7 @@ def _execute_bwd_new(
                 )
 
                 jvps = processing_fn(execute_fn(jvp_tapes)[0])
+                print(jvps)
 
         else:
             jvp_tapes, processing_fn = qml.gradients.batch_jvp(
@@ -533,7 +534,7 @@ def _execute_bwd_new(
             )
 
             jvps = processing_fn(
-                execute(
+                execute_new(
                     jvp_tapes,
                     device,
                     execute_fn,

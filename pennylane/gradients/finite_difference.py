@@ -337,7 +337,7 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = pre_grads + c * r0
+                    pre_grads = [pre_grads[0] + c * r0]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]

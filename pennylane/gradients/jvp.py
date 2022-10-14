@@ -33,10 +33,8 @@ def compute_jvp_single(tangent, jac):
     **Examples**
 
     """
-    print(jac, type(jac), tangent, type(tangent))
     if jac is None:
         return None
-
     # Single measurement with a single param
     if not isinstance(jac, tuple):
         # Single measurement with no dimension e.g. expval
@@ -59,12 +57,11 @@ def compute_jvp_single(tangent, jac):
         # Single measurement with dimension e.g. probs
         else:
             jac = qml.math.stack(jac)
-            print(jac.shape, tangent.shape)
             res = qml.math.tensordot(jac, tangent, [[0], [0]])
     return res
 
 
-def compute_vjp_multi(dy, jac):
+def compute_vjp_multi(tangent, jac):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a multiple measurements tape.
     Args:
@@ -77,23 +74,11 @@ def compute_vjp_multi(dy, jac):
     """
     if jac is None:
         return None
-    # Single parameter
-    if not isinstance(jac[0], tuple):
-        res = []
-        for i, elem in enumerate(dy):
-            res.append(compute_jvp_single(elem, jac[i]))
-        res = qml.math.stack(res)
-        res = qml.math.stack([math.sum(res)])
-    # Multiple parameters
-    else:
-        res = []
-        for i, elem in enumerate(dy):
-            sub_res = []
-            for j in jac[i]:
-                sub_res.append(qml.math.squeeze(compute_jvp_single(elem, j)))
-            res.append(sub_res)
-        res = qml.math.stack([qml.math.sum(x) for x in zip(*res)])
-    return res
+    res = []
+    for j in jac:
+        res.append(compute_jvp_single(tangent, j))
+
+    return tuple(res)
 
 
 def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
@@ -145,7 +130,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
         if multi:
-            compute_vjp_multi(tangent, jac)
+            return compute_vjp_multi(tangent, jac)
         return compute_jvp_single(tangent, jac)
 
     return gradient_tapes, processing_fn

@@ -178,7 +178,7 @@ def _evaluate_gradient_new(tape, res, data, r0):
         num_measurements = len(res[0])
         for meas_idx in range(num_measurements):
             # Gather the measurement results
-            single_result = [param_result[meas_idx] for param_result in res]
+            single_result = qml.math.stack([param_result[meas_idx] for param_result in res])
             coeffs = qml.math.convert_like(coeffs, single_result)
             g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
             g.append(g_component)
