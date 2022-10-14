@@ -71,6 +71,23 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
       `update_info`.
 
+* `qml.Identity` now accepts multiple wires.
+    [(#3049)](https://github.com/PennyLaneAI/pennylane/pull/3049)
+
+    ```pycon
+    >>> id_op = qml.Identity([0, 1])
+    >>> id_op.matrix()
+    array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+    >>> id_op.sparse_matrix()
+    <4x4 sparse matrix of type '<class 'numpy.float64'>'
+        with 4 stored elements in Compressed Sparse Row format>
+    >>> id_op.eigvals()
+    array([1., 1., 1., 1.])
+    ```
+
 * Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
   indicates whether the user wants to check for unitarity of the input matrix or not. Its default
   value is `false`.
@@ -85,8 +102,14 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+  [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
+
 * Add details to the output of `Exp.label()`.
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
+
+* `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
@@ -149,6 +172,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
+  [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
 
 * Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
   [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
