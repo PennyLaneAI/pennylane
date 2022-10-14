@@ -49,7 +49,9 @@ class TestParamShift:
 
         # But no shots are passed to transform
         tapes, fn = qml.gradients.param_shift(tape)
-        with pytest.raises(ValueError, match="pass the device shots using the shots argument"):
+        with pytest.raises(
+            ValueError, match="pass the device shots to the param_shift gradient transform"
+        ):
             fn(dev.batch_execute(tapes))
 
     def test_shot_vector_ragged_value_error_raises(self):
@@ -67,7 +69,9 @@ class TestParamShift:
 
         # But no shots are passed to transform
         tapes, fn = qml.gradients.param_shift(tape)
-        with pytest.raises(ValueError, match="pass the device shots using the shots argument"):
+        with pytest.raises(
+            ValueError, match="pass the device shots to the param_shift gradient transform"
+        ):
             fn(dev.batch_execute(tapes))
 
     def test_independent_parameter(self, mocker):
@@ -203,7 +207,8 @@ class TestParamShift:
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters with multiple returns."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        shot_vec = default_shot_vector
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         weights = [0.1, 0.2]
         with qml.tape.QuantumTape() as tape:
@@ -226,6 +231,7 @@ class TestParamShift:
     def test_all_zero_diff_methods_tape(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
+        shot_vec = default_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
@@ -258,8 +264,8 @@ class TestParamShift:
     def test_all_zero_diff_methods_multiple_returns_tape(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        shot_vec = default_shot_vector
+        dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
