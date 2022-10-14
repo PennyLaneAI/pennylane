@@ -74,7 +74,7 @@ def equal(
     """
     if op1.arithmetic_depth > 0 or op2.arithmetic_depth > 0:
         return op1.hash == op2.hash
-    if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
+    if op1.__class__ is not op2.__class__:
         return False
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
