@@ -105,6 +105,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Add details to the output of `Exp.label()`.
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
 
+* `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
+
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
   
