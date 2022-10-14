@@ -1510,6 +1510,11 @@ def _param_shift_new(
             )
             res = fn(results)
         except (ValueError, np.VisibleDeprecationWarning) as e:
+            warnings.filterwarnings(
+                "default",
+                "Creating an ndarray from ragged nested sequences",
+                np.VisibleDeprecationWarning,
+            )
             raise ValueError(
                 "The processing function of the gradient transform ran into issues"
                 " while the new return type system was turned on. Make sure to"
