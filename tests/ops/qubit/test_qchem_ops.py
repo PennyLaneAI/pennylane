@@ -767,21 +767,14 @@ class TestOrbitalRotation:
     def test_orbital_rotation_decomp(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct decomposition.
 
-        The decomposition is expressed in terms of two SingleExcitation gates. 
+        The decomposition is expressed in terms of two SingleExcitation gates.
         """
-        decomp1 = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0, 1, 2, 3])
-
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        res1 = op.decomposition()
-        res2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0, 1, 2, 3])
-
         decomposed_matrix = qml.matrix(
             qml.SingleExcitation(phi, [0, 2]) @ qml.SingleExcitation(phi, [1, 3]),
             wire_order=[0, 1, 2, 3],
         )
-        for res in [res1, res2]:
-            assert np.equal(decomposed_matrix.all(), op.matrix().all())
+        assert np.equal(decomposed_matrix.all(), op.matrix().all())
 
     def test_adjoint(self):
         """Test adjoint method for adjoint op decomposition."""
