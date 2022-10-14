@@ -185,7 +185,8 @@ class TestParamShift:
     def test_no_trainable_params_tape(self, broadcast):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        shot_vec = default_shot_vector
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         weights = [0.1, 0.2]
         with qml.tape.QuantumTape() as tape:
@@ -197,7 +198,9 @@ class TestParamShift:
         tape.trainable_params = []
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = qml.gradients.param_shift(tape, broadcast=broadcast)
+            g_tapes, post_processing = qml.gradients.param_shift(
+                tape, broadcast=broadcast, shots=shot_vec
+            )
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -232,7 +235,7 @@ class TestParamShift:
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
         shot_vec = default_shot_vector
-        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
@@ -385,7 +388,8 @@ class TestParamShift:
         """Test that if the original tape output is provided, then
         the tape is not executed additionally at the current parameter
         values."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
+        shot_vec = default_shot_vector
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
@@ -395,7 +399,7 @@ class TestParamShift:
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         f0 = dev.execute(tape)
         tapes, fn = qml.gradients.param_shift(
-            tape, gradient_recipes=gradient_recipes, f0=f0, shots=default_shot_vector
+            tape, gradient_recipes=gradient_recipes, f0=f0, shots=shot_vec
         )
 
         # one tape per parameter that impacts the expval
