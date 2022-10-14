@@ -1500,23 +1500,13 @@ def _param_shift_new(
         return gradient_tapes, processing_fn
 
     def proc_with_validation(results):
-        """Assume that if ragged array creation emits a warning or a ValueError is raised during the computation, then
+        """Assume if a ValueError is raised during the computation, then
         shot vectors are used and the shots argument was not set correctly."""
         try:
-            warnings.filterwarnings(
-                "error",
-                "Creating an ndarray from ragged nested sequences",
-                np.VisibleDeprecationWarning,
-            )
             res = fn(results)
-        except (ValueError, np.VisibleDeprecationWarning) as e:
-            warnings.filterwarnings(
-                "default",
-                "Creating an ndarray from ragged nested sequences",
-                np.VisibleDeprecationWarning,
-            )
+        except ValueError as e:
             raise ValueError(
-                "The processing function of the gradient transform ran into issues"
+                "The processing function of the gradient transform ran into errors"
                 " while the new return type system was turned on. Make sure to"
                 " pass the device shots to the param_shift gradient transform"
                 " using the shots argument or disable the new return type"

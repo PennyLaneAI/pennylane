@@ -35,25 +35,6 @@ angles = [-6.28318531, -3.92699082, 0.78539816, 3.14159265]
 class TestParamShift:
     """Unit tests for the param_shift function"""
 
-    def test_shot_vector_ragged_warning_raises_error(self):
-        """Test that a custom error is raised if the tape execution on a device with a shot vector raises a ragged array
-        deprecation warning, but the shots argument was not passed to param_shift."""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0, 1, 2])
-
-        # Device defines shot sequence
-        dev = qml.device("default.qubit", wires=3, shots=default_shot_vector)
-
-        # But no shots are passed to transform
-        tapes, fn = qml.gradients.param_shift(tape)
-        with pytest.raises(
-            ValueError, match="pass the device shots to the param_shift gradient transform"
-        ):
-            fn(dev.batch_execute(tapes))
-
     def test_shot_vector_ragged_value_error_raises(self):
         """Test that a custom error is raised if the tape execution on a device with a shot vector raises a ValueError,
         but the shots argument was not passed to param_shift."""
