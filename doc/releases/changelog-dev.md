@@ -49,11 +49,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
-* Adds a new class `pennylane.tape.QuantumScript`. Now `QuantumTape` inherits from `QuantumScript` as well
-  as `AnnotatedQueue`. `QuantumScript` contains all the non-queuing behavior of `QuantumTape`. Both classes
-  can be now constructed from optional iterables of operations, measurements, and state preperation operators.
+* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
+  as `AnnotatedQueue`.
   This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
-  should rely on `QNode`'s.
+  should continue to rely on `QNode`s.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
   ```pycon
