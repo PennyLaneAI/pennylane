@@ -36,23 +36,25 @@ class TestReturn:
 
         grad = jax.grad(circuit)(a)
 
-        print(grad)
+        assert isinstance(grad, jax.numpy.ndarray)
+        assert grad.shape == ()
 
     def test_execution_single_measurement_multiple_param(self, dev_name, diff_method, mode):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
+        import jax
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd", diff_method=diff_method)
+        @qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
 
-        grad = qml.grad(circuit)(a, b)
+        grad = jax.grad(circuit, argnums=[0, 1])(a, b)
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
@@ -61,21 +63,21 @@ class TestReturn:
 
     def test_execution_single_measurement_multiple_param_array(self, dev_name, diff_method, mode):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
+        import jax
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="autograd", diff_method=diff_method)
+        @qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = np.array([0.1, 0.2], requires_grad=True)
+        a = jax.numpy.array([0.1, 0.2])
 
-        grad = qml.grad(circuit)(a)
+        grad = jax.grad(circuit)(a)
 
-        assert isinstance(grad, np.ndarray)
-        assert len(grad) == 2
+        assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
 
     def test_execution_single_measurement_param_probs(self, dev_name, diff_method, mode):
@@ -83,47 +85,51 @@ class TestReturn:
         dimension"""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
+        import jax
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="autograd", diff_method=diff_method)
+        @qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = np.array(0.1, requires_grad=True)
+        a = jax.numpy.array(0.1)
 
-        jac = qml.jacobian(circuit)(a)
+        jac = jax.jacobian(circuit)(a)
 
-        assert isinstance(jac, np.ndarray)
+        assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
 
     def test_execution_single_measurement_probs_multiple_param(self, dev_name, diff_method, mode):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        import jax
+
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="autograd", diff_method=diff_method)
+        @qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
 
-        jac = qml.jacobian(circuit)(a, b)
+        jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        print(jac)
 
         assert isinstance(jac, tuple)
 
-        assert isinstance(jac[0], np.ndarray)
+        assert isinstance(jac[0], jax.numpy.ndarray)
         assert jac[0].shape == (4,)
 
-        assert isinstance(jac[1], np.ndarray)
+        assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
     def test_execution_single_measurement_probs_multiple_param_single_array(
@@ -131,21 +137,23 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        import jax
+
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="autograd", diff_method=diff_method)
+        @qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = np.array([0.1, 0.2], requires_grad=True)
-        jac = qml.jacobian(circuit)(a)
+        a = jax.numpy.array([0.1, 0.2])
+        jac = jax.jacobian(circuit)(a)
 
-        assert isinstance(jac, np.ndarray)
+        assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
 
     def test_execution_multiple_measurement_single_param(self, dev_name, diff_method, mode):

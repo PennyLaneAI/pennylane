@@ -449,7 +449,6 @@ def _execute_fwd_new(
     @jax.custom_jvp
     def exec_fwd(params):
         new_tapes = []
-        print(params)
         for t, a in zip(tapes, params):
             new_tapes.append(t.copy(copy_operations=True))
             new_tapes[-1].set_parameters(a)
@@ -461,14 +460,15 @@ def _execute_fwd_new(
 
     @exec_fwd.defjvp
     def exec_jvp(primal, tangents):
-        print(primal, tangents)
+        print("primal", primal, "tangents", tangents)
         res, jacs = exec_fwd(primal[0])
         print(res, jacs)
         # replace single
         jvps = [
             qml.gradients.compute_jvp_single(tangent, jac)
-            for tangent, jac in zip(tangents[0][0], jacs)
+            for tangent, jac in zip(tangents[0], jacs)
         ]
+        print("res", res, "jvps", jvps)
         return res, jvps
 
     res = exec_fwd(params)
@@ -519,7 +519,7 @@ def _execute_bwd_new(
             with qml.tape.Unwrap(*tapes):
                 jvp_tapes, processing_fn = qml.gradients.batch_jvp(
                     tapes,
-                    tangents,
+                    tangents[0],
                     gradient_fn,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
@@ -528,13 +528,13 @@ def _execute_bwd_new(
                 jvps = processing_fn(execute_fn(jvp_tapes)[0])
 
         else:
-            vjp_tapes, processing_fn = qml.gradients.batch_jvp(
-                tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+            jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                tapes, tangents[0], gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
             )
 
             jvps = processing_fn(
                 execute(
-                    vjp_tapes,
+                    jvp_tapes,
                     device,
                     execute_fn,
                     gradient_fn,
@@ -544,6 +544,6 @@ def _execute_bwd_new(
                 )
             )
 
-        return exec(primals), jvps
+        return exec(primals[0]), jvps
 
     return exec(params)

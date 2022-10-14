@@ -37,30 +37,30 @@ def compute_jvp_single(tangent, jac):
     if jac is None:
         return None
 
-    tangent_row = math.reshape(tangent, [-1])
-
     # Single measurement with a single param
     if not isinstance(jac, tuple):
         # Single measurement with no dimension e.g. expval
         if jac.shape == ():
             jac = math.reshape(jac, (1,))
-            tangent_row = math.reshape(tangent_row, (1,))
-            res = math.tensordot(jac, tangent_row, [[0], [0]])
+            tangent = math.reshape(tangent[0], (1,))
+            res = math.tensordot(jac, tangent, [[0], [0]])
         # Single measurement with dimension e.g. probs
         else:
-            jac = math.reshape(jac, (len(jac), 1))
-            res = math.tensordot(jac, tangent_row, [[0], [0]])
+            tangent = math.reshape(tangent[0], (1,))
+            jac = math.reshape(jac, (1, len(jac)))
+            res = math.tensordot(jac, tangent, [[0], [0]])
     # Single measurement with multiple params
     else:
         # Single measurement with no dimension e.g. expval
-        if tangent_row.shape == ():
-            jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
-            res = qml.math.tensordot(jac, tangent_row, [[0], [0]])
-
+        tangent = qml.math.stack(tangent)
+        if jac[0].shape == ():
+            jac = qml.math.stack(jac)
+            res = qml.math.tensordot(jac, tangent, 1)
         # Single measurement with dimension e.g. probs
         else:
             jac = qml.math.stack(jac)
-            res = qml.math.tensordot(jac, tangent_row, [[1], [0]])
+            print(jac.shape, tangent.shape)
+            res = qml.math.tensordot(jac, tangent, [[0], [0]])
     return res
 
 
