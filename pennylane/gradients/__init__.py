@@ -233,9 +233,9 @@ array([[-0.9316158 ,  0.01894799,  0.0289147 ],
        [ 0.01894799, -0.9316158 ,  0.05841749],
        [ 0.0289147 ,  0.05841749, -0.9316158 ]])
 
-Note that the default value of ``max_diff`` is ``1``; failing to set its value correctly may yield incorrect results for
-higher-order derivatives. Also, passing ``diff_method="parameter-shift"`` is equivalent to passing
-``diff_method=qml.gradients.param_shift``.
+Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
+set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
+``diff_method="parameter-shift"`` is equivalent to passing ``diff_method=qml.gradients.param_shift``.
 
 Transforming tapes
 ------------------
