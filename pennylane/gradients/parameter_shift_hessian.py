@@ -395,8 +395,6 @@ def _expval_hessian_param_shift_tuple(
     unshifted_coeffs = {key: val for key, val in unshifted_coeffs.items() if val is not None}
 
     def processing_fn(results):
-        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
 
         num_measurements = len(tape.measurements)
         if num_measurements == 1:
