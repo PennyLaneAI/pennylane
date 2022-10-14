@@ -55,25 +55,6 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   should continue to rely on `QNode`s.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
-  ```pycon
-  >>> ops = [qml.RX(0.432, 0),
-  ...     qml.RY(0.543, 0),
-  ...     qml.CNOT((0,"a")),
-  ...     qml.RX(0.133, "a")]
-  >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-  >>> print(qml.drawer.tape_text(qscript))
-  0: ──RX──RY─╭●─────┤  <Z>
-  a: ─────────╰X──RX─┤     
-  ```
-
-  This quantum script can be executed by a device:
-
-  ```pycon
-  >>> dev = qml.device('default.qubit', wires=(0, "a"))
-  >>> qml.execute([qscript], dev, gradient_fn=None)
-  [array([0.77750694])]
-  ```
-
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
