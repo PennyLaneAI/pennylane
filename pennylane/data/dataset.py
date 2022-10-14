@@ -21,19 +21,38 @@ import zstd
 
 
 class Dataset(ABC):
-    """Create a dataset object.
-    A dataset might be a collection of information that describes a physical system and its evolution.
-    For example, a dataset for an arbitrary quantum system could have a Hamiltonian, its ground state,
+    """Create a dataset object to store a collection of information describing
+    a physical system and its evolution. For example, a dataset for an arbitrary
+    quantum system could have a Hamiltonian, its ground state,
     and an efficient state-preparation circuit for that state.
 
     Args:
-        dtype (string): the type of dataset, e.g., `qchem`, `qspin`, etc.
+        dtype (string): the type of the dataset, e.g., `qchem`, `qspin`, etc.
         **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
+
+    **Example**
+
+    We can use the :class:`~pennylane.data.Dataset` class to create datasets as follows:
+
+    >>> import pennylane as qml
+    >>> from pennylane import numpy as np
+    >>> Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+    >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(Hamiltonian))
+    >>> ground_state_energy = np.min(eigvals)
+    >>> ground_state = np.transpose(eigvecs)[np.argmin(eigvals)]
+    >>> dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state = ground_state,
+            ground_state_energy = ground_state_energy)
+    >>> print(dataset.Hamiltonian)
+          (1) [Z0]
+        + (1) [Z1]
+    >>> print(dataset.ground_energy)
+    -2.0
 
     .. details::
         :title: Usage Details
 
-        We can use the :class:`~pennylane.data.Dataset` class to create datasets as follows:
+        In addition to creating datasets in memory, we can also store them in
+        the disk and then load them as follows. First we create the dataset:
 
         .. code-block:: python
 
@@ -41,28 +60,25 @@ class Dataset(ABC):
             from pennylane import numpy as np
 
             Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
-            solution = np.linalg.eigh(qml.matrix(Hamiltonian))
-            ground_energy = np.min(solution[0])
-            ground_state = np.transpose(solution[1])[np.argmin(solution[0])]
+            eigvals, eigvecs = np.linalg.eigh(qml.matrix(Hamiltonian))
+            ground_state_energy = np.min(eigvals)
 
-            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state = ground_state, 
-                ground_energy = ground_energy)
+            ground_state = np.transpose(eigvecs)[np.argmin(eigvals)]
+            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state = ground_state,
+                    ground_state_energy = ground_state_energy)
 
-        >>> print(dataset.Hamiltonian)
-          (1) [Z0]
-        + (1) [Z1]
-        >>> print(dataset.ground_energy)
-        -2.0
+        Then to save the dataset to a file, we call :func:`Dataset.write()`:
 
-        To save the dataset to a file, we call :func:`Dataset.write()`:
-
-        >>> ex_dataset.write('./path/to/file/dataset.dat')
+        >>> dataset.write('./path/to/file/dataset.dat')
 
         We can then retrieve the data using :func:`Dataset.read()`
 
         >>> retrieved_data = qml.data.Dataset()
         >>> retrieved_data.read('./path/to/file/dataset.dat')
         >>> print(retrieved_data.Hamiltonian)
+          (1) [Z0]
+        + (1) [Z1]
+        >>> print(dataset.Hamiltonian)
           (1) [Z0]
         + (1) [Z1]
     """
