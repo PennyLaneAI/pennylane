@@ -1029,7 +1029,8 @@ class OrbitalRotation(Operation):
 
         .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
 
-        For the source of this decomposition, see page 18 of
+        This operator is decomposed into two :class:`~.SingleExcitation` gates. For a decomposition
+        into more elementary gates, see page 18 of
         `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
         Args:
@@ -1041,43 +1042,15 @@ class OrbitalRotation(Operation):
 
         **Example:**
 
-        >>> qml.OrbitalRotation.compute_decomposition(1.23, wires=(0,1,2,3))
-        [Hadamard(wires=[3]),
-        Hadamard(wires=[2]),
-        CNOT(wires=[3, 1]),
-        CNOT(wires=[2, 0]),
-        RY(0.615, wires=[3]),
-        RY(0.615, wires=[2]),
-        RY(0.615, wires=[1]),
-        RY(0.615, wires=[0]),
-        CNOT(wires=[3, 1]),
-        CNOT(wires=[2, 0]),
-        Hadamard(wires=[3]),
-        Hadamard(wires=[2])]
+        >>> qml.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
+        [SingleExcitation(1.2, wires=[0, 2]), SingleExcitation(1.2, wires=[1, 3])]
 
         """
 
-        decomp_ops = [
+        return [
             qml.SingleExcitation(phi, wires=[wires[0], wires[2]]),
             qml.SingleExcitation(phi, wires=[wires[1], wires[3]]),
         ]
-
-        # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
-        # decomp_ops = [
-        #    qml.Hadamard(wires=wires[3]),
-        #    qml.Hadamard(wires=wires[2]),
-        #    qml.CNOT(wires=[wires[3], wires[1]]),
-        #    qml.CNOT(wires=[wires[2], wires[0]]),
-        #    qml.RY(phi / 2, wires=wires[3]),
-        #    qml.RY(phi / 2, wires=wires[2]),
-        #    qml.RY(phi / 2, wires=wires[1]),
-        #    qml.RY(phi / 2, wires=wires[0]),
-        #    qml.CNOT(wires=[wires[3], wires[1]]),
-        #    qml.CNOT(wires=[wires[2], wires[0]]),
-        #    qml.Hadamard(wires=wires[3]),
-        #    qml.Hadamard(wires=wires[2]),
-        # ]
-        return decomp_ops
 
     def adjoint(self):
         (phi,) = self.parameters

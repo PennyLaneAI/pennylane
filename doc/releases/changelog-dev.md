@@ -49,6 +49,8 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* `OrbitalRotation` is now decomposed into two `SingleExcitation` operators for faster execution and a more efficient parameter-shift gradient calculation.
+
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
