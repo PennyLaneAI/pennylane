@@ -110,6 +110,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Add details to the output of `Exp.label()`.
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
 
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
+  [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
+  
 <h3>Breaking changes</h3>
 
 * `QueuingContext` is renamed `QueuingManager`.
@@ -186,9 +189,11 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Amintor Dusko,
 Diego Guala,
 Soran Jahangiri,
 Christina Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
