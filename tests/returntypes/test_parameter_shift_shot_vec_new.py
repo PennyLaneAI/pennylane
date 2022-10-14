@@ -35,7 +35,7 @@ angles = [-6.28318531, -3.92699082, 0.78539816, 3.14159265]
 class TestParamShift:
     """Unit tests for the param_shift function"""
 
-    def test_shot_vector_ragged_value_error_raises(self):
+    def test_no_shots_passed_raises(self):
         """Test that a custom error is raised if the tape execution on a device with a shot vector raises a ValueError,
         but the shots argument was not passed to param_shift."""
         with qml.tape.QuantumTape() as tape:
@@ -52,6 +52,35 @@ class TestParamShift:
         tapes, fn = qml.gradients.param_shift(tape)
         with pytest.raises(
             ValueError, match="pass the device shots to the param_shift gradient transform"
+        ):
+            fn(dev.batch_execute(tapes))
+
+    def test_op_with_custom_unshifted_term_no_shots_raises(self):
+        """Test that an error is raised if the shots argument is not passed to the transform and an operation with a
+        gradient recipe that depends on its instantiated parameter values is used.
+        """
+        s = np.pi / 2
+
+        class RX(qml.RX):
+            """RX operation with an additional term in the grad recipe.
+            The grad_recipe no longer yields the derivative, but we account for this.
+            For this test, the presence of the unshifted term (with non-vanishing coefficient)
+            is essential."""
+
+            grad_recipe = ([[0.5, 1, s], [-0.5, 1, -s], [0.2, 1, 0]],)
+
+        x = np.array([-0.361, 0.654], requires_grad=True)
+        shot_vec = many_shots_shot_vector
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=0)
+            RX(x[1], wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        with pytest.raises(
+            TypeError, match="pass the device shots to the param_shift gradient transform"
         ):
             fn(dev.batch_execute(tapes))
 

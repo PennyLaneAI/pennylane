@@ -1504,8 +1504,8 @@ def _param_shift_new(
         shot vectors are used and the shots argument was not set correctly."""
         try:
             res = fn(results)
-        except ValueError as e:
-            raise ValueError(
+        except (ValueError, TypeError) as e:
+            raise e.__class__(
                 "The processing function of the gradient transform ran into errors"
                 " while the new return type system was turned on. Make sure to"
                 " pass the device shots to the param_shift gradient transform"
