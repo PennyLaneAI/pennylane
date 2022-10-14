@@ -21,7 +21,7 @@ devices with autodifferentiation support.
 
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 # pylint: disable=unused-argument,unnecessary-lambda-assignment,inconsistent-return-statements,
-# pylint: disable=too-many-statements, invalid-unary-operand-type, unsupported-binary-operation
+# pylint: disable=too-many-statements, invalid-unary-operand-type
 
 import inspect
 import warnings
