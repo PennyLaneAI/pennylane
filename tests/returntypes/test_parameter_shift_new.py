@@ -1725,8 +1725,8 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
 
-        # tapes, fn = qml.gradients.finite_diff(tape)
-        # gradF = fn(dev.batch_execute(tapes))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
 
         expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
         assert isinstance(gradA, tuple)
@@ -1734,7 +1734,7 @@ class TestParameterShiftRule:
             assert isinstance(a_comp, np.ndarray)
             assert a_comp.shape == ()
             assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
-        # assert gradF == pytest.approx(expected, abs=tol)
+        assert gradF == pytest.approx(expected, abs=tol)
 
     def test_expval_and_variance_multi_param(self, tol):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with

@@ -766,7 +766,7 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     return tuple(new_pdA2)
 
 
-def _getpdA2_comp(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector):
+def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector):
     """The main auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
@@ -875,7 +875,7 @@ def _create_variance_proc_fn(
         pdA = pdA_fn(results[1:tape_boundary])
 
         # analytic derivative of <A^2>
-        pdA2 = _getpdA2_comp(
+        pdA2 = _get_pdA2(
             results[tape_boundary:], tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector
         )
 
