@@ -86,7 +86,7 @@ def _fetch_and_save(filename, dest_folder):
         f.write(response.content)
 
 
-def _s3_download(data_type, folders, attributes, dest_folder, force):
+def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads):
     """Download a file for each attribute from each folder to the specified destination."""
     files = []
     for folder in folders:
@@ -107,7 +107,7 @@ def _s3_download(data_type, folders, attributes, dest_folder, force):
         }
         files = list(set(files) - existing_files)
 
-    with ThreadPoolExecutor(50) as pool:
+    with ThreadPoolExecutor(num_threads) as pool:
         futures = [pool.submit(_fetch_and_save, f, dest_folder) for f in files]
         wait(futures)
 
@@ -135,14 +135,15 @@ def _generate_folders(node, folders):
     ]
 
 
-def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **params):
+def load(data_type, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
 
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
         attributes (list): An optional list to specify individual data element that are required
-        folder_path (str): Path to the root folder where download takes place. By default dataset folder will be created in the working directory.
+        folder_path (str): Path to the root folder where download takes place. By default dataset folder will be created in the working directory
         force (Bool): Bool representing whether data has to be downloaded even if it is still present
+        num_threads (int): The maximum number of threads to spawn while downloading files (1 thread per file)
         params (kwargs): Keyword arguments exactly matching the parameters required for the data type. Note that these are not optional
 
     Returns:
@@ -168,7 +169,7 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, **
 
     folders = [description[param] for param in data["params"]]
     all_folders = _generate_folders(_foldermap[data_type], folders)
-    _s3_download(data_type, all_folders, attributes, directory_path, force)
+    _s3_download(data_type, all_folders, attributes, directory_path, force, num_threads)
 
     data_files = []
     for folder in all_folders:
