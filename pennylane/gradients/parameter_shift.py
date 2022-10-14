@@ -1165,7 +1165,7 @@ def var_param_shift(
     return gradient_tapes, processing_fn
 
 
-# TODO: docstrings
+# TODO: docstrings & mention shots arg
 @gradient_transform
 def _param_shift_new(
     tape,
