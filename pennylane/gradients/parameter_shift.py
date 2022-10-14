@@ -956,7 +956,7 @@ def _var_param_shift_tuple(
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(
-        expval_tape, argnum, shifts, gradient_recipes, f0, broadcast
+        expval_tape, argnum, shifts, gradient_recipes, f0, broadcast, shots
     )
     gradient_tapes.extend(pdA_tapes)
 
@@ -996,7 +996,7 @@ def _var_param_shift_tuple(
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
         pdA2_tapes, pdA2_fn = expval_param_shift(
-            tape_with_obs_squared_expval, argnum, shifts, gradient_recipes, f0, broadcast
+            tape_with_obs_squared_expval, argnum, shifts, gradient_recipes, f0, broadcast, shots
         )
         gradient_tapes.extend(pdA2_tapes)
 
@@ -1497,7 +1497,27 @@ def _param_shift_new(
 
         return gradient_tapes, processing_fn
 
-    return gradient_tapes, fn
+    def proc_with_validation(results):
+        """Assume that if ragged array creation emits a warning or a ValueError is raised during the computation, then
+        shot vectors are used and the shots argument was not set correctly."""
+        try:
+            warnings.filterwarnings(
+                "error",
+                "Creating an ndarray from ragged nested sequences",
+                np.VisibleDeprecationWarning,
+            )
+            res = fn(results)
+        except (ValueError, np.VisibleDeprecationWarning) as e:
+            raise ValueError(
+                "The processing function of the gradient transform ran into issues"
+                " while the new return type system was turned on. Make sure to"
+                " pass the device shots to the param_shift gradient transform"
+                " using the shots argument or disable the new return type"
+                " system by calling the qml.disable_return function."
+            ) from e
+        return res
+
+    return gradient_tapes, proc_with_validation
 
 
 @gradient_transform
