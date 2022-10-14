@@ -267,4 +267,3 @@ class Adjoint(SymbolicOp):
     @property
     def hash(self):
         return hash((self.name, self.base.hash))
-
