@@ -17,7 +17,6 @@ cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
 
-import numpy as np
 from scipy import sparse
 
 import pennylane as qml
