@@ -538,9 +538,9 @@ def _expval_param_shift_tuple(
             g = _evaluate_gradient_new(tape, res, data, r0, shots)
             grads.append(g)
 
-        if single_measure:
+        if single_measure and not shot_vector:
             zero_rep = qml.math.zeros_like(g)
-        elif single_measure and shot_vector:
+        elif single_measure:
             zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
         elif not shot_vector:
             zero_rep = tuple(qml.math.zeros_like(meas_g) for meas_g in g)
@@ -572,6 +572,7 @@ def _expval_param_shift_tuple(
                 num_shot_vec_components,
                 shot_vector_multi_measure,
             )
+        print("IN HERE")
 
         return tuple(grads)
 
@@ -1429,14 +1430,14 @@ def _param_shift_new(
         )
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape)
+        return _no_trainable_grad_new(tape, shots)
 
     gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape)
+        return _all_zero_grad_new(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 

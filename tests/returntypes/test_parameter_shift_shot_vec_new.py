@@ -211,11 +211,14 @@ class TestParamShift:
             g_tapes, post_processing = qml.gradients.param_shift(
                 tape, broadcast=broadcast, shots=shot_vec
             )
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        assert isinstance(all_res, tuple)
+        assert len(all_res) == len(shot_vec)
 
         assert g_tapes == []
-        assert isinstance(res, np.ndarray)
-        assert res.shape == (0,)
+        for res in all_res:
+            assert isinstance(res, np.ndarray)
+            assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -233,13 +236,17 @@ class TestParamShift:
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.param_shift(tape, shots=shot_vec)
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        assert isinstance(all_res, tuple)
+        assert len(all_res) == len(shot_vec)
 
         assert g_tapes == []
-        assert isinstance(res, tuple)
-        for r in res:
-            assert isinstance(r, np.ndarray)
-            assert r.shape == (0,)
+        for res in all_res:
+            assert isinstance(res, tuple)
+            assert len(res) == len(tape.measurements)
+            for r in res:
+                assert isinstance(r, np.ndarray)
+                assert r.shape == (0,)
 
     def test_all_zero_diff_methods_tape(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -256,23 +263,27 @@ class TestParamShift:
         g_tapes, post_processing = qml.gradients.param_shift(tape, shots=shot_vec)
         assert g_tapes == []
 
-        result = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        assert isinstance(all_res, tuple)
+        assert len(all_res) == len(shot_vec)
 
-        assert isinstance(result, tuple)
+        assert g_tapes == []
+        for result in all_res:
+            assert isinstance(result, tuple)
 
-        assert len(result) == 3
+            assert len(result) == len(tape.trainable_params)
 
-        assert isinstance(result[0], np.ndarray)
-        assert result[0].shape == (4,)
-        assert np.allclose(result[0], 0)
+            assert isinstance(result[0], np.ndarray)
+            assert result[0].shape == (4,)
+            assert np.allclose(result[0], 0)
 
-        assert isinstance(result[1], np.ndarray)
-        assert result[1].shape == (4,)
-        assert np.allclose(result[1], 0)
+            assert isinstance(result[1], np.ndarray)
+            assert result[1].shape == (4,)
+            assert np.allclose(result[1], 0)
 
-        assert isinstance(result[2], np.ndarray)
-        assert result[2].shape == (4,)
-        assert np.allclose(result[2], 0)
+            assert isinstance(result[2], np.ndarray)
+            assert result[2].shape == (4,)
+            assert np.allclose(result[2], 0)
 
     def test_all_zero_diff_methods_multiple_returns_tape(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -290,44 +301,42 @@ class TestParamShift:
         g_tapes, post_processing = qml.gradients.param_shift(tape, shots=shot_vec)
         assert g_tapes == []
 
-        result = post_processing(qml.execute(g_tapes, dev, None))
+        all_result = post_processing(dev.batch_execute(g_tapes))
 
-        assert isinstance(result, tuple)
+        assert isinstance(all_result, tuple)
 
-        assert len(result) == 2
+        assert len(all_result) == len(shot_vec)
 
         # First elem
-        assert len(result[0]) == 3
+        for result in all_result:
+            assert len(result[0]) == 3
 
-        assert isinstance(result[0][0], np.ndarray)
-        assert result[0][0].shape == (1,)
-        assert np.allclose(result[0][0], 0)
+            assert isinstance(result[0][0], np.ndarray)
+            assert result[0][0].shape == (1,)
+            assert np.allclose(result[0][0], 0)
 
-        assert isinstance(result[0][1], np.ndarray)
-        assert result[0][1].shape == (1,)
-        assert np.allclose(result[0][1], 0)
+            assert isinstance(result[0][1], np.ndarray)
+            assert result[0][1].shape == (1,)
+            assert np.allclose(result[0][1], 0)
 
-        assert isinstance(result[0][2], np.ndarray)
-        assert result[0][2].shape == (1,)
-        assert np.allclose(result[0][2], 0)
+            assert isinstance(result[0][2], np.ndarray)
+            assert result[0][2].shape == (1,)
+            assert np.allclose(result[0][2], 0)
 
-        # Second elem
-        assert len(result[0]) == 3
+            # Second elem
+            assert len(result[0]) == 3
 
-        assert isinstance(result[1][0], np.ndarray)
-        assert result[1][0].shape == (4,)
-        assert np.allclose(result[1][0], 0)
+            assert isinstance(result[1][0], np.ndarray)
+            assert result[1][0].shape == (4,)
+            assert np.allclose(result[1][0], 0)
 
-        assert isinstance(result[1][1], np.ndarray)
-        assert result[1][1].shape == (4,)
-        assert np.allclose(result[1][1], 0)
+            assert isinstance(result[1][1], np.ndarray)
+            assert result[1][1].shape == (4,)
+            assert np.allclose(result[1][1], 0)
 
-        assert isinstance(result[1][2], np.ndarray)
-        assert result[1][2].shape == (4,)
-        assert np.allclose(result[1][2], 0)
-
-        tapes, _ = qml.gradients.param_shift(tape, shots=shot_vec)
-        assert tapes == []
+            assert isinstance(result[1][2], np.ndarray)
+            assert result[1][2].shape == (4,)
+            assert np.allclose(result[1][2], 0)
 
     # TODO: uncomment when QNode decorator uses new qml.execute pipeline
     # @pytest.mark.parametrize("broadcast", [True, False])
