@@ -16,6 +16,9 @@ This submodule defines a base class for symbolic operations representing operato
 """
 from copy import copy
 
+import numpy as np
+
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
@@ -130,9 +133,23 @@ class SymbolicOp(Operator):
 
     @property
     def hash(self):
+        # these gates do not consider global phases in their hash
+        if self.base.name in ("RX", "RY", "RZ", "Rot"):
+            base_params = str(
+                [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
+            )
+            base_hash = hash(
+                (
+                    str(self.base.name),
+                    tuple(self.base.wires.tolist()),
+                    base_params,
+                )
+            )
+        else:
+            base_hash = self.base.hash
         return hash(
             (
                 str(self.name),
-                self.base.hash,
+                base_hash,
             )
         )

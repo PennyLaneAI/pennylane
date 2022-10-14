@@ -363,4 +363,4 @@ class Pow(SymbolicOp):
 
     @property
     def hash(self):
-        return hash((str(self.name), self.base.hash, str(self.z)))
+        return hash((super().hash, str(self.z)))

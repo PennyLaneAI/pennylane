@@ -263,7 +263,3 @@ class Adjoint(SymbolicOp):
         if self.base.has_adjoint:
             return base.adjoint().simplify()
         return Adjoint(base=base.simplify())
-
-    @property
-    def hash(self):
-        return hash((self.name, self.base.hash))

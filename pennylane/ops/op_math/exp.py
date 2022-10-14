@@ -247,4 +247,4 @@ class Exp(SymbolicOp):
 
     @property
     def hash(self):
-        return hash((str(self.name), self.base.hash, str(self.coeff)))
+        return hash((super().hash, str(self.coeff)))

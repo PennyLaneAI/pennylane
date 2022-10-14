@@ -215,22 +215,7 @@ class Controlled(SymbolicOp):
 
     @property
     def hash(self):
-        # these gates do not consider global phases in their hash
-        if self.base.name in ("RX", "RY", "RZ", "Rot"):
-            base_params = str(
-                [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
-            )
-            base_hash = hash(
-                (
-                    str(self.base.name),
-                    tuple(self.base.wires.tolist()),
-                    base_params,
-                )
-            )
-        else:
-            base_hash = self.base.hash
-
-        return hash((self.name, tuple(self.wires), tuple(self.control_values), base_hash))
+        return hash((super().hash, tuple(self.wires), tuple(self.control_values)))
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
