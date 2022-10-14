@@ -266,7 +266,7 @@ class SProd(SymbolicOp):
 
     @property
     def hash(self):
-        # We cast the self.coeff to numpy (or jax) because the other interfaces might have
+        # We cast the self.scalar to numpy because the other interfaces might have
         # different string representations
         interface = qml.math.get_interface(self.scalar)
         if interface == "torch":

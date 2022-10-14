@@ -367,7 +367,7 @@ class Pow(SymbolicOp):
 
     @property
     def hash(self):
-        # We cast the self.coeff to numpy (or jax) because the other interfaces might have
+        # We cast the self.z to numpy because the other interfaces might have
         # different string representations
         interface = qmlmath.get_interface(self.z)
         if interface == "torch":

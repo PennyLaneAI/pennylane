@@ -251,7 +251,7 @@ class Exp(SymbolicOp):
 
     @property
     def hash(self):
-        # We cast the self.coeff to numpy (or jax) because the other interfaces might have
+        # We cast the self.coeff to numpy because the other interfaces might have
         # different string representations
         interface = math.get_interface(self.coeff)
         if interface == "torch":
