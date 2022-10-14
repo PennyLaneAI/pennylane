@@ -16,8 +16,11 @@
 
 import pytest
 
+import tensorflow as tf
+import jax
 import pennylane as qml
 from pennylane import numpy as np
+
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -229,8 +232,6 @@ class TestRelativeEntropy:
 class TestMinEntropy:
     """Tests for the min entropy qml.math function"""
 
-    import jax
-
     base = [None, 2]
     check_states = [True, False]
 
@@ -248,6 +249,7 @@ class TestMinEntropy:
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
     def test_state(self, interface, state, expected, base, check_state):
+        """Test min_entropy function"""
         state = qml.math.asarray(state, like=interface)
         actual = qml.math.min_entropy(state, base=base, check_state=check_state)
 
@@ -299,6 +301,7 @@ class TestMinEntropy:
     def test_grad_jax(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the JAX interface"""
+
         state = qml.math.asarray(state, like=interface)
         grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
@@ -323,6 +326,7 @@ class TestMinEntropy:
     def test_grad_jaxjit(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the JAX-jit interface"""
+
         state = qml.math.asarray(state, like=interface)
         grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
 
@@ -347,12 +351,13 @@ class TestMinEntropy:
     def test_grad_tensorflow(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the tensorflow interface"""
+
         state = qml.math.asarray(state, like=interface)
+        entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
+
         state = tf.Variable(state)
         with tf.GradientTape() as tape:
-            entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
-
-        grad_entropy = tape.gradient(entropy, state)
+            grad_entropy = tape.gradient(entropy, state)
 
         assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
@@ -372,14 +377,13 @@ class TestMinEntropy:
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad_torch(self, interface, state, expected, base, check_state):
+    def test_grad_torch(self, interface, state, expected, base):
         """Test that the gradient of min_entropy works
         with the torch interface"""
         state = qml.math.asarray(state, like=interface)
-        state = torch.tensor(state, dtype=torch.float64, requires_grad=True)
-        entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
 
-        entropy.backward()
+        state = torch.tensor(state, dtype=torch.float64, requires_grad=True)
+
         grad_entropy = state.grad
 
         assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)
