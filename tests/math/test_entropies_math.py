@@ -260,13 +260,13 @@ class TestMinEntropy:
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([1, 0], -np.log(1)),
-            ([0, 1], -np.log(1)),
-            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
-            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, 0], -1),
+            ([0, 1], -1),
+            ([1, 1] / np.sqrt(2), -1),
+            ([1, -1] / np.sqrt(2), -1),
             (
                 [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+                -1 / ((np.sqrt(56249041) + 7500) / 15000),
             ),
         ],
     )
@@ -278,100 +278,108 @@ class TestMinEntropy:
         state = qml.math.asarray(state, like=interface)
         grad = qml.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+        assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", "jax")
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([1, 0], -np.log(1)),
-            ([0, 1], -np.log(1)),
-            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
-            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, 0], -1),
+            ([0, 1], -1),
+            ([1, 1] / np.sqrt(2), -1),
+            ([1, -1] / np.sqrt(2), -1),
             (
                 [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+                -1 / ((np.sqrt(56249041) + 7500) / 15000),
             ),
         ],
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad(self, interface, state, expected, base, check_state):
+    def test_grad_jax(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the JAX interface"""
         state = qml.math.asarray(state, like=interface)
         grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+        assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", "jax")
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([1, 0], -np.log(1)),
-            ([0, 1], -np.log(1)),
-            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
-            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, 0], -1),
+            ([0, 1], -1),
+            ([1, 1] / np.sqrt(2), -1),
+            ([1, -1] / np.sqrt(2), -1),
             (
                 [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+                -1 / ((np.sqrt(56249041) + 7500) / 15000),
             ),
         ],
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad(self, interface, state, expected, base, check_state):
+    def test_grad_jaxjit(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the JAX-jit interface"""
         state = qml.math.asarray(state, like=interface)
         grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+        assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", "tensorflow")
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([1, 0], -np.log(1)),
-            ([0, 1], -np.log(1)),
-            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
-            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, 0], -1),
+            ([0, 1], -1),
+            ([1, 1] / np.sqrt(2), -1),
+            ([1, -1] / np.sqrt(2), -1),
             (
                 [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+                -1 / ((np.sqrt(56249041) + 7500) / 15000),
             ),
         ],
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad(self, interface, state, expected, base, check_state):
+    def test_grad_tensorflow(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the tensorflow interface"""
         state = qml.math.asarray(state, like=interface)
-        grad = tf.gradient(qml.math.min_entropy)(state, base=base, check_state=check_state)
+        state = tf.Variable(state)
+        with tf.GradientTape() as tape:
+            entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+        grad_entropy = tape.gradient(entropy, state)
+
+        assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", "torch")
     @pytest.mark.parametrize(
         "state, expected",
         [
-            ([1, 0], -np.log(1)),
-            ([0, 1], -np.log(1)),
-            ([1, 1] / np.sqrt(2), -1 / (1 * np.log(base))),
-            ([1, -1] / np.sqrt(2), -1 / (1 * np.log(base))),
+            ([1, 0], -1),
+            ([0, 1], -1),
+            ([1, 1] / np.sqrt(2), -1),
+            ([1, -1] / np.sqrt(2), -1),
             (
                 [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                (-(np.sqrt(56249041) + 7500) / 15000) / (1 * np.log(base)),
+                -1 / ((np.sqrt(56249041) + 7500) / 15000),
             ),
         ],
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad(self, interface, state, expected, base, check_state):
+    def test_grad_torch(self, interface, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the torch interface"""
         state = qml.math.asarray(state, like=interface)
-        grad = torch.gradient(qml.math.min_entropy)(state, base=base, check_state=check_state)
+        state = torch.tensor(state, dtype=torch.float64, requires_grad=True)
+        entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected, rtol=1e-06, atol=1e-07)
+        entropy.backward()
+        grad_entropy = state.grad
+
+        assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)

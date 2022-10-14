@@ -980,7 +980,7 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
 
     >>> qml.math.relative_entropy(rho, base=2)
     0.5145731728297583
-    
+
     """
 
     # Cast as a c_dtype array
