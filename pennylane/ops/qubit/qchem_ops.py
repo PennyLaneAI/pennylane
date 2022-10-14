@@ -1056,21 +1056,27 @@ class OrbitalRotation(Operation):
         Hadamard(wires=[2])]
 
         """
-        # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
+
         decomp_ops = [
-            qml.Hadamard(wires=wires[3]),
-            qml.Hadamard(wires=wires[2]),
-            qml.CNOT(wires=[wires[3], wires[1]]),
-            qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.RY(phi / 2, wires=wires[3]),
-            qml.RY(phi / 2, wires=wires[2]),
-            qml.RY(phi / 2, wires=wires[1]),
-            qml.RY(phi / 2, wires=wires[0]),
-            qml.CNOT(wires=[wires[3], wires[1]]),
-            qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.Hadamard(wires=wires[3]),
-            qml.Hadamard(wires=wires[2]),
+            qml.SingleExcitation(phi, wires=[wires[0], wires[2]]),
+            qml.SingleExcitation(phi, wires=[wires[1], wires[3]]),
         ]
+
+        # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
+        # decomp_ops = [
+        #    qml.Hadamard(wires=wires[3]),
+        #    qml.Hadamard(wires=wires[2]),
+        #    qml.CNOT(wires=[wires[3], wires[1]]),
+        #    qml.CNOT(wires=[wires[2], wires[0]]),
+        #    qml.RY(phi / 2, wires=wires[3]),
+        #    qml.RY(phi / 2, wires=wires[2]),
+        #    qml.RY(phi / 2, wires=wires[1]),
+        #    qml.RY(phi / 2, wires=wires[0]),
+        #    qml.CNOT(wires=[wires[3], wires[1]]),
+        #    qml.CNOT(wires=[wires[2], wires[0]]),
+        #    qml.Hadamard(wires=wires[3]),
+        #    qml.Hadamard(wires=wires[2]),
+        # ]
         return decomp_ops
 
     def adjoint(self):
