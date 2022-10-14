@@ -720,4 +720,5 @@ def _get_jax_execute_fn_new(interface: str, tapes: Sequence[QuantumTape]):
     #    from .jax_jit import execute_new as _execute
     # else:
     from .jax import execute_new as _execute
+
     return _execute

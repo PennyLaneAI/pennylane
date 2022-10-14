@@ -152,13 +152,13 @@ def _validate_tapes(tapes):
 
 
 def _execute(
-        params,
-        tapes=None,
-        device=None,
-        execute_fn=None,
-        gradient_fn=None,
-        gradient_kwargs=None,
-        _n=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
@@ -220,8 +220,8 @@ def _execute(
 
             for t in tapes:
                 multi_probs = (
-                        any(o.return_type is Probability for o in t.observables)
-                        and len(t.observables) > 1
+                    any(o.return_type is Probability for o in t.observables)
+                    and len(t.observables) > 1
                 )
 
             if multi_probs:
@@ -243,7 +243,7 @@ def _execute(
 
             # Group the vjps based on the parameters of the tapes
             for p in params:
-                param_vjp = vjps[param_idx: param_idx + len(p)]
+                param_vjp = vjps[param_idx : param_idx + len(p)]
                 res.append(param_vjp)
                 param_idx += len(p)
 
@@ -304,12 +304,12 @@ def _raise_vector_valued_fwd(tapes):
 
 
 def _execute_with_fwd(
-        params,
-        tapes=None,
-        device=None,
-        execute_fn=None,
-        gradient_kwargs=None,
-        _n=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode or when no gradient function was
@@ -375,7 +375,9 @@ def _execute_with_fwd(
     return res
 
 
-def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def execute_new(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -433,21 +435,21 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
 
 
 def _execute_fwd_new(
-        params,
-        tapes=None,
-        device=None,
-        execute_fn=None,
-        gradient_kwargs=None,
-        _n=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
     provided. This function is does not allow multiple derivatives."""
 
-    @jax.custom_vjp
-    def exec(params):
+    @jax.custom_jvp
+    def exec_fwd(params):
         new_tapes = []
-
+        print(params)
         for t, a in zip(tapes, params):
             new_tapes.append(t.copy(copy_operations=True))
             new_tapes[-1].set_parameters(a)
@@ -457,13 +459,19 @@ def _execute_fwd_new(
 
         return res, jacs
 
-    @exec.defjvp
+    @exec_fwd.defjvp
     def exec_jvp(primal, tangents):
-        res, jacs = exec(primal)
-        jvps = [qml.gradients.compute_jvp(tangent, jac) for tangent, jac in zip(tangents, jacs)]
+        print(primal, tangents)
+        res, jacs = exec_fwd(primal[0])
+        print(res, jacs)
+        # replace single
+        jvps = [
+            qml.gradients.compute_jvp_single(tangent, jac)
+            for tangent, jac in zip(tangents[0][0], jacs)
+        ]
         return res, jvps
 
-    res = exec(params)
+    res = exec_fwd(params)
 
     tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
 
@@ -477,14 +485,14 @@ def _execute_fwd_new(
 
 
 def _execute_bwd_new(
-        params,
-        tapes=None,
-        device=None,
-        execute_fn=None,
-        gradient_fn=None,
-        gradient_kwargs=None,
-        _n=1,
-        max_diff=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+    max_diff=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
@@ -517,7 +525,7 @@ def _execute_bwd_new(
                     gradient_kwargs=gradient_kwargs,
                 )
 
-                jvps = processing_fn(execute_fn(jvp_tapes))  # [0]
+                jvps = processing_fn(execute_fn(jvp_tapes)[0])
 
         else:
             vjp_tapes, processing_fn = qml.gradients.batch_jvp(
