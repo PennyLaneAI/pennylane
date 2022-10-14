@@ -400,8 +400,16 @@ def _expval_hessian_param_shift_tuple(
         if num_measurements == 1:
             results = tuple((r,) for r in results)
 
+        # the hessian should have a nested tuple structure with shape
+        #     (num_measurements, num_params, num_params, *output_dims)
+        # first accumulate all elements of the hessian into a list
         hessians = []
+
+        # Keep track of tape results already consumed. Start with 1 if the unshifted tape was
+        # included in the tapes for the Hessian.
         start = 1 if unshifted_coeffs and f0 is None else 0
+
+        # Results of the unshifted tape.
         r0 = results[0] if start == 1 else f0
 
         for i, j in it.product(range(h_dim), repeat=2):
@@ -426,7 +434,13 @@ def _expval_hessian_param_shift_tuple(
 
             hessian = []
             for m in range(num_measurements):
+
+                # the res array has shape (num_tapes, num_measurements, *output_dims)
+
+                # first collect all tape results for the individual measurements
                 measure_res = qml.math.stack([r[m] for r in res])
+
+                # then compute the hessian via parameter-shift
                 coeffs = qml.math.convert_like(coeffs, measure_res)
                 hess = qml.math.tensordot(measure_res, coeffs, [[0], [0]])
                 unshifted_coeff = unshifted_coeffs.get((i, j), None)
@@ -439,10 +453,14 @@ def _expval_hessian_param_shift_tuple(
 
             hessians.append(tuple(hessian))
 
-        # reshape the hessian so that the num_measurements axis precedes the num_params axes
+        # at this point, the hessian has shape (num_params ** 2, num_measurements, *output_dims)
+
+        # swap the first two axes, so that the hessian now has
+        # shape (num_measurements, num_params ** 2, *output_dims)
         hessians = tuple(tuple(h[i] for h in hessians) for i in range(num_measurements))
 
-        # replace the num_params ** 2 axis with two num_params axes
+        # replace the axis of size num_params ** 2 with two axes of size num_params;
+        # that is, reshape the hessian to have shape (num_measurements, num_params, num_params, *output_dims)
         hessians = tuple(
             tuple(tuple(hess[i * h_dim + j] for j in range(h_dim)) for i in range(h_dim))
             for hess in hessians
