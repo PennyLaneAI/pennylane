@@ -18,6 +18,7 @@ import copy
 from typing import Union
 from warnings import warn
 
+import numpy as np
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
@@ -363,4 +364,7 @@ class Pow(SymbolicOp):
 
     @property
     def hash(self):
-        return hash((super().hash, str(self.z)))
+        # We use the string of the euler representation to avoid having different hashes
+        # for equal complex values: str(-3j) = '(-0-3j)' // str(0-3j) = '-3j'
+        euler_str = str(np.abs(self.z)) + str(np.angle(self.z))
+        return hash((super().hash, euler_str))

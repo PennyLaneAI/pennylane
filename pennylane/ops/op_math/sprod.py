@@ -17,6 +17,8 @@ computing the scalar product of operations.
 """
 from typing import Union
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
@@ -262,4 +264,7 @@ class SProd(SymbolicOp):
 
     @property
     def hash(self):
-        return hash((super().hash, str(self.scalar)))
+        # We use the string of the euler representation to avoid having different hashes
+        # for equal complex values: str(-3j) = '(-0-3j)' // str(0-3j) = '-3j'
+        euler_str = str(np.abs(self.scalar)) + str(np.angle(self.scalar))
+        return hash((super().hash, euler_str))

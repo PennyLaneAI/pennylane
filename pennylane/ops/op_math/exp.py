@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 from warnings import warn
 
+import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
@@ -247,4 +248,7 @@ class Exp(SymbolicOp):
 
     @property
     def hash(self):
-        return hash((super().hash, str(self.coeff)))
+        # We use the string of the euler representation to avoid having different hashes
+        # for equal complex values: str(-3j) = '(-0-3j)' // str(0-3j) = '-3j'
+        euler_str = str(np.abs(self.coeff)) + str(np.angle(self.coeff))
+        return hash((super().hash, euler_str))
