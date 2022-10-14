@@ -51,13 +51,12 @@ def _decompose_no_control_values(op: Operator) -> List[Operator]:
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
-
-    try:
-        # Need to use expand because of in-place inversion
-        # revert to decomposition once in-place inversion removed
-        base_decomp = op.base.expand().circuit
-    except DecompositionUndefinedError:
+    if not op.base.has_decomposition:
         return None
+
+    # Need to use expand because of in-place inversion
+    # revert to decomposition once in-place inversion removed
+    base_decomp = op.base.expand().circuit
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
@@ -353,11 +352,11 @@ class Controlled(SymbolicOp):
 
         try:
             target_mat = self.base.sparse_matrix()
-        except SparseMatrixUndefinedError:
-            try:
+        except operation.SparseMatrixUndefinedError as e:
+            if self.base.has_matrix:
                 target_mat = sparse.lil_matrix(self.base.matrix())
-            except MatrixUndefinedError as e:
-                raise SparseMatrixUndefinedError from e
+            else:
+                raise operation.SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
@@ -382,8 +381,25 @@ class Controlled(SymbolicOp):
 
         return qmlmath.concatenate([ones, base_eigvals])
 
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
+
+    @property
+    def has_decomposition(self):
+        if not all(self.control_values):
+            return True
+        if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
+            return True
+        if isinstance(self.base, qml.PauliX):
+            return True
+        if self.base.has_decomposition:
+            return True
+
+        return False
 
     def decomposition(self):
         if all(self.control_values):
@@ -410,6 +426,10 @@ class Controlled(SymbolicOp):
         sub_gen = self.base.generator()
         proj_tensor = Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
         return 1.0 * proj_tensor @ sub_gen
+
+    @property
+    def has_adjoint(self):
+        return self.base.has_adjoint
 
     def adjoint(self):
         return Controlled(

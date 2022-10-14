@@ -288,7 +288,9 @@ class LieAlgebraOptimizer:
             lie_gradient, self.stepsize, self.trottersteps, self.exact
         )(self.circuit.func)
 
-        self.circuit = qml.QNode(new_circuit, self.circuit.device)
+        # we can set diff_method=None because the gradient of the QNode is computed
+        # directly in this optimizer
+        self.circuit = qml.QNode(new_circuit, self.circuit.device, diff_method=None)
         return self.circuit, cost
 
     def get_su_n_operators(self, restriction):

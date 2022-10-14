@@ -16,16 +16,17 @@ This module contains the base quantum tape.
 """
 import contextlib
 import copy
+from warnings import warn
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
 
@@ -87,7 +88,12 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
-    return QueuingContext.active_context()
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    warn(message, UserWarning)
+    return QueuingManager.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -152,15 +158,28 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
                     tape._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
+                if any(
+                    m.return_type in (Probability, Sample, Counts, AllCounts)
+                    for m in tape.measurements
+                ):
+                    raise qml.QuantumFunctionError(
+                        "Only observables that are qubit-wise commuting "
+                        "Pauli words can be returned on the same wire.\n"
+                        "Try removing all probability, sample and counts measurements "
+                        "this will allow for splitting of execution and separate measurements "
+                        "for each non-commuting observable."
+                    ) from e
+
                 raise qml.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
-                    "Pauli words can be returned on the same wire"
+                    "Pauli words can be returned on the same wire, "
+                    f"some of the following measurements do not commute:\n{tape.measurements}"
                 ) from e
 
             tape._ops.extend(rotations)
@@ -366,7 +385,7 @@ class QuantumTape(AnnotatedQueue):
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
-                QueuingContext.append(self)
+                QueuingManager.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
@@ -425,10 +444,13 @@ class QuantumTape(AnnotatedQueue):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
+    # pylint: disable=no-self-use
     @contextlib.contextmanager
     def stop_recording(self):
         """Context manager to temporarily stop recording operations
         onto the tape. This is useful is scratch space is needed.
+
+        **Deprecated Method:** Please use ``qml.QueuingManager.stop_recording`` instead.
 
         **Example**
 
@@ -440,15 +462,12 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        if QueuingContext.active_context() is not self:
-            raise QueuingError(
-                "Cannot stop recording requested tape as it is not currently recording."
-            )
-
-        active_contexts = QueuingContext._active_contexts
-        QueuingContext._active_contexts = deque()
-        yield
-        QueuingContext._active_contexts = active_contexts
+        warn(
+            "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording.",
+            UserWarning,
+        )
+        with QueuingManager.stop_recording():
+            yield
 
     # ========================================================
     # construction methods
@@ -779,7 +798,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        with qml.tape.stop_recording():
+        with QueuingManager.stop_recording():
             new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 
@@ -787,7 +806,7 @@ class QuantumTape(AnnotatedQueue):
         # transform requires that the returned inverted object
         # is automatically queued.
         with QuantumTape._lock:
-            QueuingContext.append(new_tape)
+            QueuingManager.append(new_tape)
 
         return new_tape
 
@@ -1161,6 +1180,9 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.shape(dev)
             (1, 4)
         """
+        if qml.active_return():
+            return self._shape_new(device)
+
         output_shape = tuple()
 
         if len(self._measurements) == 1:
@@ -1174,6 +1196,67 @@ class QuantumTape(AnnotatedQueue):
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
         return output_shape
+
+    def _shape_new(self, device):
+        """Produces the output shape of the tape by inspecting its measurements
+        and the device used for execution.
+
+        .. note::
+
+            The computed shape is not stored because the output shape may be
+            dependent on the device used for execution.
+
+        Args:
+            device (.Device): the device that will be used for the tape execution
+
+        Returns:
+            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the
+            tape result
+
+        **Examples**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def qfunc():
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                qfunc()
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> tape.shape(dev)
+            (4,)
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as tape:
+                qfunc()
+                qml.state()
+                qml.expval(qml.PauliZ(wires=0))
+                qml.probs(wires=[0, 1])
+
+        .. code-block:: pycon
+
+            >>> tape.shape(dev)
+            ((4,), (), (4,))
+        """
+        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
+
+        if len(shapes) == 1:
+            return shapes[0]
+
+        if device.shot_vector is not None:
+            # put the shot vector axis before the measurement axis
+            shapes = tuple(zip(*shapes))
+
+        return shapes
 
     @property
     def numeric_type(self):
@@ -1209,6 +1292,9 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.numeric_type
             complex
         """
+        if qml.active_return():
+            return self._numeric_type_new
+
         measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
             raise TapeError(
@@ -1225,6 +1311,43 @@ class QuantumTape(AnnotatedQueue):
             return int
 
         return self._measurements[0].numeric_type
+
+    @property
+    def _numeric_type_new(self):
+        """Returns the expected numeric type of the tape result by inspecting
+        its measurements.
+
+        Returns:
+            Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
+            tape, or a tuple of such types if the tape contains multiple measurements
+
+        **Example:**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def func(a):
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                func(a)
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> tape.numeric_type
+            complex
+        """
+        types = tuple(observable.numeric_type for observable in self._measurements)
+
+        if len(types) == 1:
+            return types[0]
+
+        return types
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
