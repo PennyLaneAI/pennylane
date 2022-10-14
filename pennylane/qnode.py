@@ -722,7 +722,7 @@ class QNode:
             return qml.math.squeeze(res, axis=0)
 
         if old_interface == "auto":
-            self.interface = "auto"
+            self._interface = "auto"
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)

@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the autograd interface"""
-import functools
-import importlib
 import sys
 
 import autograd
 import pytest
-from pennylane import numpy as np
-from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
+from pennylane.operation import AnyWires, Observable
 
 pytestmark = pytest.mark.autograd
 
@@ -55,7 +53,8 @@ class TestAutogradExecuteUnitTests:
         ):
             qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 
-    def test_jacobian_options(self, mocker, tol):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_jacobian_options(self, interface, mocker, tol):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -74,6 +73,7 @@ class TestAutogradExecuteUnitTests:
                 device,
                 gradient_fn=param_shift,
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
+                interface=interface,
             )[0]
 
         res = qml.jacobian(cost)(a, device=dev)
@@ -81,7 +81,8 @@ class TestAutogradExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_incorrect_mode(self, interface):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = np.array([0.1, 0.2], requires_grad=True)
@@ -94,7 +95,9 @@ class TestAutogradExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=param_shift, mode="forward")[0]
+            return execute(
+                [tape], device, gradient_fn=param_shift, mode="forward", interface=interface
+            )[0]
 
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with mode='forward'"
@@ -118,7 +121,8 @@ class TestAutogradExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    def test_forward_mode(self, mocker):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_forward_mode(self, interface, mocker):
         """Test that forward mode uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
@@ -134,6 +138,7 @@ class TestAutogradExecuteUnitTests:
                 dev,
                 gradient_fn="device",
                 gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
+                interface=interface,
             )[0]
 
         a = np.array([0.1, 0.2], requires_grad=True)
@@ -143,7 +148,8 @@ class TestAutogradExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, mocker):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_backward_mode(self, interface, mocker):
         """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
@@ -161,6 +167,7 @@ class TestAutogradExecuteUnitTests:
                 gradient_fn="device",
                 mode="backward",
                 gradient_kwargs={"method": "adjoint_jacobian"},
+                interface=interface,
             )[0]
 
         a = np.array([0.1, 0.2], requires_grad=True)
