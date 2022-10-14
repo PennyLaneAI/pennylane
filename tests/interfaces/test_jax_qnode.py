@@ -14,12 +14,12 @@
 """Integration tests for using the jax interface and its jittable variant with
 a QNode"""
 import pytest
-from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
-from pennylane.tape import QuantumTape
+from pennylane import numpy as np
+from pennylane import qnode
 from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.tape import QuantumTape
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
@@ -33,6 +33,11 @@ qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
     ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
+    # Auto
+    ["default.qubit", "finite-diff", "backward", "auto"],
+    ["default.qubit", "parameter-shift", "backward", "auto"],
+    ["default.qubit", "adjoint", "forward", "auto"],
+    ["default.qubit", "adjoint", "backward", "auto"],
 ]
 
 pytestmark = pytest.mark.jax

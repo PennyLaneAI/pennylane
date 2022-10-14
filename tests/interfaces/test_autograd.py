@@ -414,11 +414,12 @@ execute_kwargs = [
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("interface", ["autograd", "auto"])
 class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs):
+    def test_execution(self, interface, execute_kwargs):
         """Test execution"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -433,7 +434,7 @@ class TestAutogradExecuteIntegration:
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape1, tape2], dev, **execute_kwargs)
+            return execute([tape1, tape2], dev, interface=interface, **execute_kwargs)
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -443,7 +444,7 @@ class TestAutogradExecuteIntegration:
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
 
-    def test_scalar_jacobian(self, execute_kwargs, tol):
+    def test_scalar_jacobian(self, interface, execute_kwargs, tol):
         """Test scalar jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
@@ -452,7 +453,7 @@ class TestAutogradExecuteIntegration:
             with qml.tape.QuantumTape() as tape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            return execute([tape], dev, **execute_kwargs)[0]
+            return execute([tape], dev, interface=interface, **execute_kwargs)[0]
 
         res = qml.jacobian(cost)(a)
         assert res.shape == (1,)
@@ -469,7 +470,7 @@ class TestAutogradExecuteIntegration:
         assert expected.shape == (1, 1)
         assert np.allclose(res, np.squeeze(expected), atol=tol, rtol=0)
 
-    def test_jacobian(self, execute_kwargs, tol):
+    def test_jacobian(self, interface, execute_kwargs, tol):
         """Test jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -481,7 +482,7 @@ class TestAutogradExecuteIntegration:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -497,7 +498,7 @@ class TestAutogradExecuteIntegration:
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    def test_tape_no_parameters(self, execute_kwargs, tol):
+    def test_tape_no_parameters(self, interface, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
         dev = qml.device("default.qubit", wires=1)
@@ -516,7 +517,7 @@ class TestAutogradExecuteIntegration:
                 qml.RX(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+            return sum(execute([tape1, tape2, tape3], dev, interface=interface, **execute_kwargs))
 
         params = np.array([0.1, 0.2], requires_grad=True)
         x, y = params
@@ -529,7 +530,7 @@ class TestAutogradExecuteIntegration:
         expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_reusing_quantum_tape(self, execute_kwargs, tol):
+    def test_reusing_quantum_tape(self, interface, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -547,7 +548,7 @@ class TestAutogradExecuteIntegration:
 
         def cost(a, b):
             tape.set_parameters([a, b])
-            return execute([tape], dev, **execute_kwargs)[0]
+            return execute([tape], dev, interface=interface, **execute_kwargs)[0]
 
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
@@ -570,7 +571,7 @@ class TestAutogradExecuteIntegration:
         assert isinstance(jac, tuple) and len(jac) == 2
         assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
 
-    def test_classical_processing(self, execute_kwargs, tol):
+    def test_classical_processing(self, interface, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -583,7 +584,7 @@ class TestAutogradExecuteIntegration:
                 qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
@@ -592,7 +593,7 @@ class TestAutogradExecuteIntegration:
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
 
-    def test_no_trainable_parameters(self, execute_kwargs, tol):
+    def test_no_trainable_parameters(self, interface, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
@@ -604,7 +605,7 @@ class TestAutogradExecuteIntegration:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, b, device=dev)
@@ -622,7 +623,7 @@ class TestAutogradExecuteIntegration:
 
         assert np.allclose(res, 0)
 
-    def test_matrix_parameter(self, execute_kwargs, tol):
+    def test_matrix_parameter(self, interface, execute_kwargs, tol):
         """Test that the autograd interface works correctly
         with a matrix parameter"""
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
@@ -633,7 +634,7 @@ class TestAutogradExecuteIntegration:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, U, device=dev)
@@ -643,7 +644,7 @@ class TestAutogradExecuteIntegration:
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, execute_kwargs, tol):
+    def test_differentiable_expand(self, interface, execute_kwargs, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
@@ -667,7 +668,7 @@ class TestAutogradExecuteIntegration:
                 qml.expval(qml.PauliX(0))
 
             tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
@@ -693,7 +694,7 @@ class TestAutogradExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_probability_differentiation(self, execute_kwargs, tol):
+    def test_probability_differentiation(self, interface, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
@@ -708,7 +709,7 @@ class TestAutogradExecuteIntegration:
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
 
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -747,7 +748,7 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, execute_kwargs, tol):
+    def test_ragged_differentiation(self, interface, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if execute_kwargs["gradient_fn"] == "device":
@@ -761,7 +762,7 @@ class TestAutogradExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -786,7 +787,7 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_sampling(self, execute_kwargs):
+    def test_sampling(self, interface, execute_kwargs):
         """Test sampling works as expected"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
@@ -798,7 +799,7 @@ class TestAutogradExecuteIntegration:
                 qml.sample(qml.PauliZ(0))
                 qml.sample(qml.PauliX(1))
 
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = np.array(0.543, requires_grad=True)
