@@ -1723,18 +1723,17 @@ class TestParameterShiftRule:
 
         # # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
-        all_res = fn(dev.batch_execute(tapes))
+        gradA = fn(dev.batch_execute(tapes))
 
         # tapes, fn = qml.gradients.finite_diff(tape)
         # gradF = fn(dev.batch_execute(tapes))
 
         expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
-        for gradA in all_res:
-            assert isinstance(gradA, tuple)
-            for a_comp, e_comp in zip(gradA, expected):
-                assert isinstance(a_comp, np.ndarray)
-                assert a_comp.shape == ()
-                assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
+        assert isinstance(gradA, tuple)
+        for a_comp, e_comp in zip(gradA, expected):
+            assert isinstance(a_comp, np.ndarray)
+            assert a_comp.shape == ()
+            assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
         # assert gradF == pytest.approx(expected, abs=tol)
 
     def test_expval_and_variance_multi_param(self, tol):
