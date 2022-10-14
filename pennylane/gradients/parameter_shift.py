@@ -750,7 +750,7 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     the gradient value with 0 (the known, correct gradient for involutory
     variables).
     """
-    newpdA2_comp = []
+    new_pdA2 = []
     for i in range(len(tape.measurements)):
         if i in involutory_indices:
             num_params = len(tape.trainable_params)
@@ -761,9 +761,9 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
             )
         else:
             item = pdA2[i]
-        newpdA2_comp.append(item)
+        new_pdA2.append(item)
 
-    return tuple(newpdA2_comp)
+    return tuple(new_pdA2)
 
 
 def _getpdA2_comp(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector):
