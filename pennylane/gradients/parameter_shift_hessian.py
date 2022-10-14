@@ -417,7 +417,7 @@ def _expval_hessian_param_shift_tuple(
 
             if coeffs is None or len(coeffs) == 0:
                 hessian = []
-                for m in range(len(tape.measurements)):
+                for m in range(num_measurements):
                     hessian.append(qml.math.zeros_like(results[0][m]))
 
                 hessians.append(tuple(hessian))
