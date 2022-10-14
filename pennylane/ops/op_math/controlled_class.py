@@ -352,11 +352,11 @@ class Controlled(SymbolicOp):
 
         try:
             target_mat = self.base.sparse_matrix()
-        except operation.SparseMatrixUndefinedError as e:
+        except SparseMatrixUndefinedError as e:
             if self.base.has_matrix:
                 target_mat = sparse.lil_matrix(self.base.matrix())
             else:
-                raise operation.SparseMatrixUndefinedError from e
+                raise SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
