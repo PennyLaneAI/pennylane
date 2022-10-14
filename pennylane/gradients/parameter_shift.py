@@ -140,11 +140,11 @@ def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape)
     return recipe, at_least_one_unshifted, unshifted_coeff
 
 
-def _single_res(result, coeffs, unshifted_coeff, r0):
-    """Compute the gradient for a single measurements by taking the linear combination of the coefficients and the
+def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
+    """Compute the gradient for a single measurement by taking the linear combination of the coefficients and the
     measurement result.
 
-    If unshifted term exists, its contribution is added to the gradient.
+    If an unshifted term exists, its contribution is added to the gradient.
     """
     coeffs = qml.math.convert_like(coeffs, result)
     g = qml.math.tensordot(result, coeffs, [[0], [0]])
@@ -155,18 +155,15 @@ def _single_res(result, coeffs, unshifted_coeff, r0):
     return g
 
 
-def _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff):
+def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     """Compute the gradient for multiple measurements by taking the linear combination of the coefficients and each
     measurement result."""
-    # Multiple measurements case, so we can extract the first result
-    num_measurements = len(res[0])
-
     g = []
     for meas_idx in range(num_measurements):
 
         # Gather the measurement results
         meas_result = [param_result[meas_idx] for param_result in res]
-        g_component = _single_res(meas_result, coeffs, unshifted_coeff, r0)
+        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0)
         g.append(g_component)
 
     return tuple(g)
@@ -191,9 +188,9 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
     if num_measurements == 1:
 
         if not shot_vector:
-            return _single_res(res, coeffs, unshifted_coeff, r0)
+            return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
 
-        num_shot_components = len(res[0])
+        num_shot_components = len(shots)
         g = []
 
         # Res has order of axes:
@@ -201,27 +198,27 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
         # 2. Shot vector
         for i in range(num_shot_components):
             shot_comp_res = [r[i] for r in res]
-            shot_comp_res = _single_res(shot_comp_res, coeffs, unshifted_coeff, r0[i])
+            shot_comp_res = _single_meas_grad(shot_comp_res, coeffs, unshifted_coeff, r0[i])
             g.append(shot_comp_res)
         return tuple(g)
 
     g = []
     if not shot_vector:
-        g = _eval_grad_multi_meas(res, coeffs, r0, unshifted_coeff)
+        g = _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
         return tuple(g)
+
+    num_shot_components = len(shots)
 
     # Res has order of axes:
     # 1. Number of parameters
     # 2. Shot vector
     # 3. Number of measurements
-    num_shot_components = len(res[0])
-    num_measurements = len(res[0])
     for idx_shot_comp in range(num_shot_components):
         single_shot_component_result = [
             result_for_each_param[idx_shot_comp] for result_for_each_param in res
         ]
-        multi_meas_grad = _eval_grad_multi_meas(
-            single_shot_component_result, coeffs, r0, unshifted_coeff
+        multi_meas_grad = _multi_meas_grad(
+            single_shot_component_result, coeffs, r0, unshifted_coeff, num_measurements
         )
         g.append(multi_meas_grad)
 
@@ -315,7 +312,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def _reorder_grad_axes_single_measure_shot_vector(grads):
+def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_vec_components):
     """Reorder the axes for gradient results obtained for a tape with a single measurement from a device that defined a
     shot vector.
 
@@ -347,9 +344,6 @@ def _reorder_grad_axes_single_measure_shot_vector(grads):
         2. Num params
         3. Measurement shape
     """
-    num_params = len(grads)
-    num_shot_vec_components = len(grads[0])
-
     new_grad = []
     for i in range(num_shot_vec_components):
         shot_vec_grad = []
@@ -362,7 +356,9 @@ def _reorder_grad_axes_single_measure_shot_vector(grads):
     return new_grad
 
 
-def _reorder_grad_axes_multi_measure(grads, shot_vector_multi_measure):
+def _reorder_grad_axes_multi_measure(
+    grads, num_params, num_measurements, num_shot_vec_components, shot_vector_multi_measure
+):
     """Reorder the axes for gradient results obtained for a tape with multiple measurements.
 
     The order of axes of the gradient output matches the structure outputted by jax.jacobian for a tuple-valued
@@ -410,11 +406,9 @@ def _reorder_grad_axes_multi_measure(grads, shot_vector_multi_measure):
         3. Num params
         4. Measurement shape
     """
-    num_params = len(grads)
     multi_param = num_params > 1
     if not shot_vector_multi_measure:
         new_grad = []
-        num_measurements = len(grads[0])
         for i in range(num_measurements):
             measurement_grad = []
             for j in range(num_params):
@@ -423,9 +417,6 @@ def _reorder_grad_axes_multi_measure(grads, shot_vector_multi_measure):
             measurement_grad = tuple(measurement_grad) if multi_param else measurement_grad[0]
             new_grad.append(measurement_grad)
     else:
-        num_shot_vec_components = len(grads[0])
-        num_measurements = len(grads[0][0])
-
         new_grad = []
         for i in range(num_shot_vec_components):
             shot_vec_grad = []
@@ -565,10 +556,22 @@ def _expval_param_shift_tuple(
         if single_measure and single_param:
             return grads[0]
 
+        num_params = len(tape.trainable_params)
+        num_shot_vec_components = len(shots) if shot_vector else None
         if single_measure and shot_vector:
-            grads = _reorder_grad_axes_single_measure_shot_vector(grads)
+            grads = _reorder_grad_axes_single_measure_shot_vector(
+                grads, num_params, num_shot_vec_components
+            )
         elif not single_measure:
-            grads = _reorder_grad_axes_multi_measure(grads, not single_measure and shot_vector)
+            shot_vector_multi_measure = not single_measure and shot_vector
+            num_measurements = len(tape.measurements)
+            grads = _reorder_grad_axes_multi_measure(
+                grads,
+                num_params,
+                num_measurements,
+                num_shot_vec_components,
+                shot_vector_multi_measure,
+            )
 
         return tuple(grads)
 
@@ -747,22 +750,23 @@ def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
     the gradient value with 0 (the known, correct gradient for involutory
     variables).
     """
-    new_pdA2 = []
+    newpdA2_comp = []
     for i in range(len(tape.measurements)):
         if i in involutory_indices:
             num_params = len(tape.trainable_params)
-            if num_params == 1:
-                item = qml.math.array(0)
-            else:
-                item = tuple(qml.math.array(0) for _ in range(num_params))
+            item = (
+                qml.math.array(0)
+                if num_params == 1
+                else tuple(qml.math.array(0) for _ in range(num_params))
+            )
         else:
             item = pdA2[i]
-        new_pdA2.append(item)
+        newpdA2_comp.append(item)
 
-    return tuple(new_pdA2)
+    return tuple(newpdA2_comp)
 
 
-def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector):
+def _getpdA2_comp(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector):
     """The main auxiliary function to get the partial derivative of <A^2>."""
     pdA2 = 0
 
@@ -774,13 +778,11 @@ def _get_pdA2(results, tape, pdA2_fn, non_involutory_indices, var_indices, shot_
         involutory = set(var_indices) - set(non_involutory_indices)
 
         if involutory:
-
             if shot_vector:
-                new_pdA2 = []
-                for pdA2_shot_comp in pdA2:
-                    r = _put_zeros_in_pdA2_involutory(tape, pdA2_shot_comp, involutory)
-                    new_pdA2.append(r)
-                pdA2 = tuple(new_pdA2)
+                pdA2 = tuple(
+                    _put_zeros_in_pdA2_involutory(tape, pdA2_shot_comp, involutory)
+                    for pdA2_shot_comp in pdA2
+                )
             else:
                 pdA2 = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory)
     return pdA2
@@ -806,9 +808,9 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
             for m_idx in range(num_measurements):
                 m_res = pdA[m_idx]
                 if var_mask[m_idx]:
-                    _pdA2 = pdA2[m_idx] if pdA2 != 0 else pdA2
-                    _f0 = f0[m_idx]
-                    m_res = _get_var_with_second_order(_pdA2, _f0, m_res)
+                    pdA2_comp = pdA2[m_idx] if pdA2 != 0 else pdA2
+                    f0_comp = f0[m_idx]
+                    m_res = _get_var_with_second_order(pdA2_comp, f0_comp, m_res)
 
                 var_grad.append(m_res)
             return tuple(var_grad)
@@ -818,10 +820,10 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
             m_res = []
             if var_mask[m_idx]:
                 for p_idx in range(num_params):
-                    _pdA2 = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
-                    _f0 = f0[m_idx]
-                    _pdA = pdA[m_idx][p_idx]
-                    r = _get_var_with_second_order(_pdA2, _f0, _pdA)
+                    pdA2_comp = pdA2[m_idx][p_idx] if pdA2 != 0 else pdA2
+                    f0_comp = f0[m_idx]
+                    pdA_comp = pdA[m_idx][p_idx]
+                    r = _get_var_with_second_order(pdA2_comp, f0_comp, pdA_comp)
                     m_res.append(r)
                 m_res = tuple(m_res)
             else:
@@ -836,8 +838,8 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
     var_grad = []
 
     for p_idx in range(num_params):
-        _pdA2 = pdA2[p_idx] if pdA2 != 0 else pdA2
-        r = _get_var_with_second_order(_pdA2, f0, pdA[p_idx])
+        pdA2_comp = pdA2[p_idx] if pdA2 != 0 else pdA2
+        r = _get_var_with_second_order(pdA2_comp, f0, pdA[p_idx])
         var_grad.append(r)
 
     return tuple(var_grad)
@@ -873,7 +875,7 @@ def _create_variance_proc_fn(
         pdA = pdA_fn(results[1:tape_boundary])
 
         # analytic derivative of <A^2>
-        pdA2 = _get_pdA2(
+        pdA2 = _getpdA2_comp(
             results[tape_boundary:], tape, pdA2_fn, non_involutory_indices, var_indices, shot_vector
         )
 
@@ -885,12 +887,12 @@ def _create_variance_proc_fn(
             final_res = []
             num_shot_components = len(f0)
             for idx_shot_comp in range(num_shot_components):
-                _f0 = f0[idx_shot_comp]
+                f0_comp = f0[idx_shot_comp]
 
-                _pdA = pdA[idx_shot_comp]
+                pdA_comp = pdA[idx_shot_comp]
 
-                _pdA2 = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
-                r = _single_variance_gradient(tape, var_mask, _pdA2, _f0, _pdA)
+                pdA2_comp = pdA2[idx_shot_comp] if not isinstance(pdA2, int) else pdA2
+                r = _single_variance_gradient(tape, var_mask, pdA2_comp, f0_comp, pdA_comp)
                 final_res.append(r)
 
             return tuple(final_res)
