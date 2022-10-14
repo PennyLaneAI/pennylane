@@ -134,4 +134,5 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
+    "min_entropy",
 ]
