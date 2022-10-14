@@ -17,14 +17,16 @@ computing the scalar product of operations.
 """
 from typing import Union
 
-import numpy as np
-
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
+
+SCALAR_PRECISION = 10
+"""Scalar precision used to compare scalar products."""
 
 
 def s_prod(scalar, operator, do_queue=True, id=None):
@@ -264,7 +266,19 @@ class SProd(SymbolicOp):
 
     @property
     def hash(self):
+        # We cast the self.coeff to numpy (or jax) because the other interfaces might have
+        # different string representations
+        interface = qml.math.get_interface(self.scalar)
+        if interface == "torch":
+            # Can't cast torch tensor to numpy when requires_grad = True --> Use .detach()
+            scalar = qml.math.convert_like(self.scalar.detach(), np.array(1.0))
+        elif interface == "jax":
+            scalar = self.scalar
+        else:
+            scalar = qml.math.convert_like(self.scalar, np.array(1.0))
         # We use the string of the euler representation to avoid having different hashes
         # for equal complex values: str(-3j) = '(-0-3j)' // str(0-3j) = '-3j'
-        euler_str = str(np.abs(self.scalar)) + str(np.angle(self.scalar))
+        scalar_str = str(qml.math.round(qml.math.abs(scalar), SCALAR_PRECISION))
+        angle_str = str(qml.math.round(qml.math.angle(scalar), SCALAR_PRECISION))
+        euler_str = scalar_str + angle_str
         return hash((super().hash, euler_str))

@@ -18,11 +18,11 @@ import copy
 from typing import Union
 from warnings import warn
 
-import numpy as np
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
+from pennylane import numpy as np
 from pennylane.operation import (
     DecompositionUndefinedError,
     Observable,
@@ -37,6 +37,9 @@ from pennylane.wires import Wires
 from .symbolicop import SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
+
+Z_PRECISION = 10
+"""Z precision used to compare Pow operators."""
 
 
 def pow(base, z=1, lazy=True, do_queue=True, id=None):
@@ -364,7 +367,19 @@ class Pow(SymbolicOp):
 
     @property
     def hash(self):
+        # We cast the self.coeff to numpy (or jax) because the other interfaces might have
+        # different string representations
+        interface = qmlmath.get_interface(self.z)
+        if interface == "torch":
+            # Can't cast torch tensor to numpy when requires_grad = True --> Use .detach()
+            z = qmlmath.convert_like(self.z.detach(), np.array(1.0))
+        elif interface == "jax":
+            z = self.z
+        else:
+            z = qmlmath.convert_like(self.z, np.array(1.0))
         # We use the string of the euler representation to avoid having different hashes
         # for equal complex values: str(-3j) = '(-0-3j)' // str(0-3j) = '-3j'
-        euler_str = str(np.abs(self.z)) + str(np.angle(self.z))
+        scalar_str = str(qmlmath.round(qmlmath.abs(z), Z_PRECISION))
+        angle_str = str(qmlmath.round(qmlmath.angle(z), Z_PRECISION))
+        euler_str = scalar_str + angle_str
         return hash((super().hash, euler_str))

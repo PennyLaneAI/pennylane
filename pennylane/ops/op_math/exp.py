@@ -16,15 +16,18 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 from warnings import warn
 
-import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
+from pennylane import numpy as np
 from pennylane.operation import OperatorPropertyUndefined, expand_matrix
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+
+COEFF_PRECISION = 10
+"""Coeff precision used to compare Exp operators."""
 
 
 def exp(op, coeff=1, id=None):
@@ -248,7 +251,20 @@ class Exp(SymbolicOp):
 
     @property
     def hash(self):
+        # We cast the self.coeff to numpy (or jax) because the other interfaces might have
+        # different string representations
+        interface = math.get_interface(self.coeff)
+        if interface == "torch":
+            # Can't cast torch tensor to numpy when requires_grad = True --> Use .detach()
+            coeff = math.convert_like(self.coeff.detach(), np.array(1.0))
+        elif interface == "jax":
+            # Can't cast jax Traced arrays to numpy --> use jax instead
+            coeff = self.coeff
+        else:
+            coeff = math.convert_like(self.coeff, np.array(1.0))
         # We use the string of the euler representation to avoid having different hashes
         # for equal complex values: str(-3j) = '(-0-3j)' // str(0-3j) = '-3j'
-        euler_str = str(np.abs(self.coeff)) + str(np.angle(self.coeff))
+        scalar_str = str(math.round(math.abs(coeff), COEFF_PRECISION))
+        angle_str = str(math.round(math.angle(coeff), COEFF_PRECISION))
+        euler_str = scalar_str + angle_str
         return hash((super().hash, euler_str))
