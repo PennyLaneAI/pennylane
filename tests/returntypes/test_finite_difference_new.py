@@ -172,6 +172,7 @@ class TestFiniteDiff:
 
         assert g_tapes == []
         assert isinstance(res, numpy.ndarray)
+        assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
