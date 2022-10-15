@@ -15,6 +15,9 @@ r"""
 Contains the Permute template.
 """
 
+import functools
+import numpy as np
+
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops import SWAP
 
@@ -165,6 +168,56 @@ class Permute(Operation):
     @property
     def num_params(self):
         return 0
+
+    @staticmethod
+    @functools.lru_cache()
+    def compute_matrix(n_wires, permutation):  # pylint: disable=arguments-differ
+        """
+        Compute the matrix representation of the permutation.
+
+        Args:
+          n_wires: the number of wires in the circuit
+          permutation: the permutation of the wires.
+
+        Returns:
+          The matrix that represents the permutation.
+        """
+        
+        # Iterate over the permutation and swap the element with
+        # the location where the actual index occurs
+        swap_order = []
+        for index, value in enumerate(permutation):
+            if value != index:
+                # Where do we need to send the qubit at this location?
+                j = permutation.index(index)
+
+                # SWAP based on the labels of the wires
+                swap_order.append((index, j))
+
+                # Update the permutations to account for the SWAP
+                permutation[index], permutation[j] = permutation[j], permutation[index]
+
+        # Reverse the swap_order to get the actual order of the SWAPs
+        swap_order.reverse()
+
+        # Update swap_order to support indexing from left to right
+        for index, value in enumerate(swap_order):
+            swap_order[index] = (n_wires - swap_order[0] - 1, n_wires - swap_order[1] - 1)
+
+        # Create the matrix representation of the permutation
+        dimension = 2**n_wires
+        mat = np.zeros((dimension, dimension), dtype=np.complex128)
+
+        # Iterate over the rows of the matrix
+        for i in range(dimension):
+            j = i
+            # Iterate over the SWAPs
+            for swap in swap_order:
+                # Swap the bits at the locations specified by the SWAP
+                xor = ((j >> swap[0]) ^ (j >> swap[1])) & 1
+                j = j ^ ((xor << swap[0]) | (xor << swap[1]))
+            mat[j, i] = 1  # Update matrix element
+        return mat
 
     @staticmethod
     def compute_decomposition(wires, permutation):  # pylint: disable=arguments-differ
