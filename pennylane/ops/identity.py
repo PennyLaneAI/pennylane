@@ -15,6 +15,8 @@
 This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
+from functools import lru_cache
+
 from scipy import sparse
 
 import pennylane as qml
@@ -77,6 +79,7 @@ class Identity(CVObservable, Operation):
         return qml.math.ones(2**n_wires)
 
     @staticmethod
+    @lru_cache()
     def compute_matrix(n_wires=1):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -97,6 +100,7 @@ class Identity(CVObservable, Operation):
         return qml.math.eye(int(2**n_wires))
 
     @staticmethod
+    @lru_cache()
     def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
         return sparse.eye(int(2**n_wires), format="csr")
 
