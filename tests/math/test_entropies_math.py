@@ -257,7 +257,6 @@ class TestMinEntropy:
     # Testing Differentiabilty
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", "autograd")
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -273,16 +272,17 @@ class TestMinEntropy:
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad(self, interface, state, expected, base, check_state):
+    def test_grad(self, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the autograd interface"""
+
+        interface = "autograd"
         state = qml.math.asarray(state, like=interface)
         grad = qml.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
         assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("interface", "jax")
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -298,19 +298,19 @@ class TestMinEntropy:
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad_jax(self, interface, state, expected, base, check_state):
+    def test_grad_jax(self, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the JAX interface"""
 
         import jax
 
+        interface = "jax"
         state = qml.math.asarray(state, like=interface)
         grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
         assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("interface", "jax")
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -326,19 +326,19 @@ class TestMinEntropy:
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad_jaxjit(self, interface, state, expected, base, check_state):
+    def test_grad_jaxjit(self, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the JAX-jit interface"""
 
         import jax
 
+        interface = "jax"
         state = qml.math.asarray(state, like=interface)
         grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
 
         assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", "tensorflow")
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -354,12 +354,13 @@ class TestMinEntropy:
     )
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_states)
-    def test_grad_tensorflow(self, interface, state, expected, base, check_state):
+    def test_grad_tensorflow(self, state, expected, base, check_state):
         """Test that the gradient of min_entropy works
         with the tensorflow interface"""
 
         import tensorflow as tf
 
+        interface = "tensorflow"
         state = qml.math.asarray(state, like=interface)
         entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
 
@@ -370,7 +371,6 @@ class TestMinEntropy:
         assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("interface", "torch")
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -385,12 +385,13 @@ class TestMinEntropy:
         ],
     )
     @pytest.mark.parametrize("base", base)
-    def test_grad_torch(self, interface, state, expected, base):
+    def test_grad_torch(self, state, expected, base):
         """Test that the gradient of min_entropy works
         with the torch interface"""
 
         import torch
 
+        interface = "torch"
         state = qml.math.asarray(state, like=interface)
 
         state = torch.tensor(state, dtype=torch.float64, requires_grad=True)
