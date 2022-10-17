@@ -172,14 +172,12 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
                     closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
 
                 # retrieve the captured context manager instance (for set_shots)
-                if (
-                    "self" in closure
-                    and isinstance(closure["self"], _GeneratorContextManager)
-                    and closure["self"].func.__name__ == "set_shots"
-                ):
-                    dev, shots = closure["self"].args
-                    shots = dev.shots if shots is False else shots
-                    finite_shots = isinstance(shots, int)
+                if "self" in closure and isinstance(closure["self"], _GeneratorContextManager):
+                    # retrieve the shots from the arguments or device instance
+                    if closure["self"].func.__name__ == "set_shots":
+                        dev, shots = closure["self"].args
+                        shots = dev.shots if shots is False else shots
+                        finite_shots = isinstance(shots, int)
 
                 if finite_shots and getattr(cache, "_persistent_cache", True):
                     warnings.warn(
