@@ -829,11 +829,44 @@ class TestMeasurementValueManipulation:
         assert m_inversion[0] == True
         assert m_inversion[1] == False
 
+    def test_lt_with_other_measurement_value(self):
+        m1 = MeasurementValue("m1", fn=lambda v: v)
+        m2 = MeasurementValue("m2", fn=lambda v: v)
+        compared = m1 < m2
+        assert compared[0] == False
+        assert compared[1] == True
+        assert compared[2] == False
+        assert compared[3] == False
+
     def test_gt(self):
         m = MeasurementValue("m", fn=lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] == False
         assert m_inversion[1] == True
+
+    def test_gt_with_other_measurement_value(self):
+        m1 = MeasurementValue("m1", fn=lambda v: v)
+        m2 = MeasurementValue("m2", fn=lambda v: v)
+        compared = m1 > m2
+        assert compared[0] == False
+        assert compared[1] == False
+        assert compared[2] == True
+        assert compared[3] == False
+
+    def test_eq(self):
+        m = MeasurementValue("m", fn=lambda v: v)
+        m_eq = m == 1
+        assert m_eq[0] == False
+        assert m_eq[1] == True
+
+    def test_eq_with_other_measurement_value(self):
+        m1 = MeasurementValue("m1", fn=lambda v: v)
+        m2 = MeasurementValue("m2", fn=lambda v: v)
+        compared = m1 == m2
+        assert compared[0] == True
+        assert compared[1] == False
+        assert compared[2] == False
+        assert compared[3] == True
 
     def test_merge_measurements_values_dependant_on_same_measurement(self):
         m0 = MeasurementValue("m", fn=lambda v: v)
@@ -855,4 +888,3 @@ class TestMeasurementValueManipulation:
     def test_complex_str(self):
         a = MeasurementValue("a", fn=lambda v: v)
         b = MeasurementValue("b", fn=lambda v: v)
-        assert str(a + b) == "if a=0,b=0 => 0\nif a=0,b=1 => 1\nif a=1,b=0 => 1\nif a=1,b=1 => 2"
