@@ -1471,10 +1471,8 @@ def _param_shift_new(
     gradient_tapes.extend(g_tapes)
 
     if unsupported_params:
-        # If there are unsupported parameters, we must process
-        # the quantum results separately, once for the fallback
-        # function and once for the parameter-shift rule, and recombine.
-        def processing_fn(results):
+
+        def _single_grad(results):
             unsupported_grads = fallback_proc_fn(results[:fallback_len])
             supported_grads = fn(results[fallback_len:])
 
@@ -1496,6 +1494,19 @@ def _param_shift_new(
                 meas_grad = tuple(meas_grad)
                 combined_grad.append(meas_grad)
             return tuple(combined_grad)
+
+        # If there are unsupported parameters, we must process
+        # the quantum results separately, once for the fallback
+        # function and once for the parameter-shift rule, and recombine.
+        def processing_fn(results):
+            shot_vector = isinstance(shots, Sequence)
+            if not shot_vector:
+                return _single_grad(results)
+
+            final_grad = []
+            for res in results:
+                final_grad.append(_single_grad(res))
+            return tuple(final_grad)
 
         return gradient_tapes, processing_fn
 
