@@ -52,5 +52,5 @@ def set_shots(device, shots):
             device.shots = shots
         yield
     finally:
-        device.shots = original_shots
+        device._shots = original_shots
         device._shot_vector = original_shot_vector

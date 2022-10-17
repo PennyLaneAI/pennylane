@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains tools and decorators for registering qfunc transforms."""
-# pylint: disable=too-few-public-methods
-from copy import deepcopy
 import functools
 import inspect
 import os
 import warnings
 
+# pylint: disable=too-few-public-methods
+from copy import deepcopy
+
 import pennylane as qml
+from pennylane.tape.tape import QuantumTape
 
 
 def make_tape(fn):
@@ -158,12 +160,12 @@ class single_tape_transform:
         self.transform_fn = transform_fn
         functools.update_wrapper(self, transform_fn)
 
-    def __call__(self, tape, *args, **kwargs):
+    def __call__(self, tape: QuantumTape, *args, **kwargs):
         tape_class = type(tape.__class__.__name__, (NonQueuingTape, tape.__class__), {})
 
         # new_tape, when first created, is of the class (NonQueuingTape, tape.__class__), so that it
         # doesn't result in a nested tape
-        with tape_class() as new_tape:
+        with tape_class(shots=tape._raw_shot_sequence) as new_tape:
             self.transform_fn(tape, *args, **kwargs)
 
         # Once we're done, revert it back to be simply an instance of tape.__class__.
