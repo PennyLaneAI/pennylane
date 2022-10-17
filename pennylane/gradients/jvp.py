@@ -75,6 +75,7 @@ def compute_vjp_multi(tangent, jac):
     if jac is None:
         return None
     res = []
+
     for j in jac:
         res.append(compute_jvp_single(tangent, j))
 

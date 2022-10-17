@@ -460,15 +460,12 @@ def _execute_fwd_new(
 
     @exec_fwd.defjvp
     def exec_jvp(primal, tangents):
-        print("primal", primal, "tangents", tangents)
         res, jacs = exec_fwd(primal[0])
-        print(res, jacs)
         # replace single
         jvps = [
             qml.gradients.compute_jvp_single(tangent, jac)
             for tangent, jac in zip(tangents[0], jacs)
         ]
-        print("res", res, "jvps", jvps)
         return res, jvps
 
     res = exec_fwd(params)
@@ -514,23 +511,26 @@ def _execute_bwd_new(
 
     @exec.defjvp
     def exec_jvp(primals, tangents):
+        new_tapes = [cp_tape(t, a) for t, a in zip(tapes, primals[0])]
 
         if _n == max_diff:
             with qml.tape.Unwrap(*tapes):
                 jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                    tapes,
+                    new_tapes,
                     tangents[0],
                     gradient_fn,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
                 )
-
                 jvps = processing_fn(execute_fn(jvp_tapes)[0])
-                print(jvps)
 
         else:
             jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                tapes, tangents[0], gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+                new_tapes,
+                tangents[0],
+                gradient_fn,
+                reduction="append",
+                gradient_kwargs=gradient_kwargs,
             )
 
             jvps = processing_fn(
