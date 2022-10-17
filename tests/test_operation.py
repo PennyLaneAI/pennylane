@@ -20,7 +20,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X, TADD, TSWAP
+from gate_data import CNOT, II, SWAP, TADD, TSWAP, I, Toffoli, X
 from numpy.linalg import multi_dot
 
 import pennylane as qml
@@ -333,8 +333,8 @@ class TestOperatorConstruction:
             def compute_matrix():
                 return np.eye(2)
 
-        assert MyOp.has_matrix
-        assert MyOp(wires=0).has_matrix
+        assert MyOp.has_matrix is True
+        assert MyOp(wires=0).has_matrix is True
 
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
@@ -342,8 +342,8 @@ class TestOperatorConstruction:
         class MyOp(qml.operation.Operator):
             num_wires = 1
 
-        assert not MyOp.has_matrix
-        assert not MyOp(wires=0).has_matrix
+        assert MyOp.has_matrix is False
+        assert MyOp(wires=0).has_matrix is False
 
     def test_has_matrix_false_concrete_template(self):
         """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
@@ -353,7 +353,102 @@ class TestOperatorConstruction:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
-        assert not op.has_matrix
+        assert op.has_matrix is False
+
+    def test_has_adjoint_true(self):
+        """Test has_adjoint property detects overriding of `adjoint` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            adjoint = lambda self: self
+
+        assert MyOp.has_adjoint is True
+        assert MyOp(wires=0).has_adjoint is True
+
+    def test_has_adjoint_false(self):
+        """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_adjoint is False
+        assert MyOp(wires=0).has_adjoint is False
+
+    def test_has_decomposition_true_compute_decomposition(self):
+        """Test has_decomposition property detects overriding of `compute_decomposition` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            @staticmethod
+            def compute_decomposition(x, wires=None):
+                return [qml.RX(x, wires=wires)]
+
+        assert MyOp.has_decomposition is True
+        assert MyOp(0.2, wires=1).has_decomposition is True
+
+    def test_has_decomposition_true_decomposition(self):
+        """Test has_decomposition property detects overriding of `decomposition` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            def decomposition(self):
+                return [qml.RX(self.parameters[0], wires=self.wires)]
+
+        assert MyOp.has_decomposition is True
+        assert MyOp(0.2, wires=1).has_decomposition is True
+
+    def test_has_decomposition_false(self):
+        """Test has_decomposition property defaults to false if neither
+        `decomposition` nor `compute_decomposition` are overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_decomposition is False
+        assert MyOp(wires=0).has_decomposition is False
+
+    def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
+        """Test has_diagonalizing_gates property detects
+        overriding of `compute_diagonalizing_gates` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            @staticmethod
+            def compute_diagonalizing_gates(x, wires=None):
+                return []
+
+        assert MyOp.has_diagonalizing_gates is True
+        assert MyOp(0.2, wires=1).has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_true_diagonalizing_gates(self):
+        """Test has_diagonalizing_gates property detects
+        overriding of `diagonalizing_gates` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            def diagonalizing_gates(self):
+                return [qml.RX(self.parameters[0], wires=self.wires)]
+
+        assert MyOp.has_diagonalizing_gates is True
+        assert MyOp(0.2, wires=1).has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false(self):
+        """Test has_diagonalizing_gates property defaults to false if neither
+        `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_diagonalizing_gates is False
+        assert MyOp(wires=0).has_diagonalizing_gates is False
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
@@ -807,7 +902,7 @@ class TestOperatorIntegration:
         sum_op = 5 + qml.CNOT(wires=[0, 1])
         final_op = qml.op_sum(
             qml.CNOT(wires=[0, 1]),
-            qml.s_prod(5, qml.prod(qml.Identity(0), qml.Identity(1))),
+            qml.s_prod(5, qml.Identity([0, 1])),
         )
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)

@@ -284,7 +284,8 @@ class TestQutritUnitary:
         assert np.allclose(res_dynamic, expected)
 
     def test_matrix_representation_broadcasted(self):
-        """Test that the matrix representation is defined correctly"""
+        """Test that the matrix representation is defined correctly for
+        broadcasted matrices"""
         U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]]) * 0.5
         U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
 
@@ -294,41 +295,18 @@ class TestQutritUnitary:
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
 
-    def test_controlled(self):
-        dev = qml.device("default.qutrit", wires=2)
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_controlled(self, inverse):
+        """Test QutritUnitary's controlled method."""
+        U = U_thadamard_01
+        base = qml.QutritUnitary(U, wires=0)
+        base.inverse = inverse
 
-        op = qml.QutritUnitary(U_thadamard_01, wires=1)
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=0)
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
+        expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
+        expected.inverse = inverse
 
-        res = dev.execute(tape)
-
-        expected = np.array([0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0])
-        assert np.allclose(res, expected)
-
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.array([1, 0, 0, 0, 0, 0, 0, 0, 0])
-        assert np.allclose(res, expected)
-
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
-
-        res = dev.execute(tape)
-
-        expected = np.array([0, 0, 0, 1, 0, 0, 0, 0, 0])
-        assert np.allclose(res, expected)
+        out = base._controlled("a")
+        assert qml.equal(out, expected)
 
 
 class TestControlledQutritUnitary:
@@ -458,8 +436,8 @@ class TestControlledQutritUnitary:
 
         # Pick random starting state for the control and target qutrits
         starting_state = np.random.normal(size=3 ** (len(control_wires + target_wires)))
+        starting_state = np.array([x * 1j if int(x * 10) % 2 == 0 else x for x in starting_state])
         starting_state = starting_state / np.linalg.norm(starting_state)
-        print(np.linalg.norm(starting_state))
         dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
         dev.apply(
             [
@@ -475,6 +453,9 @@ class TestControlledQutritUnitary:
 
         dev.reset()
         dev._state = starting_state.reshape([3] * len(control_wires + target_wires))
+
+        # Find which wires are controlled on "1" and "0", and shift the state of the device
+        # accordingly to apply the controls, and then undo them after the controlled operation
         one_locations = [x for x in range(len(control_values)) if control_values[x] == "1"]
         zero_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
 
@@ -517,7 +498,7 @@ class TestControlledQutritUnitary:
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     def test_matrix_representation_broadcasted(self, tol):
-        """Test that the matrix representation is defined correctly"""
+        """Test that the matrix representation is defined correctly when broadcasting"""
         U1 = unitary_group.rvs(3, random_state=10)
         U2 = unitary_group.rvs(3, random_state=10)
         U3 = unitary_group.rvs(3, random_state=10)
@@ -533,8 +514,7 @@ class TestControlledQutritUnitary:
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     def test_no_decomp(self):
-        """Test that ControlledQutritUnitary raises a decomposition undefined
-        error."""
+        """Test that ControlledQutritUnitary raises a DecompositionUndefinedError."""
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.ControlledQutritUnitary(U_thadamard_01, wires=0, control_wires=1).decomposition()
 
@@ -543,13 +523,16 @@ class TestControlledQutritUnitary:
         """Tests the metadata and unitary for a ControlledQutritUnitary raised to a power."""
         U1 = unitary_group.rvs(3, random_state=10)
 
-        op = qml.ControlledQutritUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qml.ControlledQutritUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
+        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -564,13 +547,16 @@ class TestControlledQutritUnitary:
             axes=0,
         )
 
-        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qml.ControlledQubitUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
+        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -585,7 +571,7 @@ class TestControlledQutritUnitary:
             op.pow(0.12)
 
     def test_noninteger_pow_broadcasted(self):
-        """Test that a ControlledQutritUnitary raised to a non-integer power raises an error."""
+        """Test that a ControlledQutritUnitary raised to a non-integer power raises an error when broadcasting."""
         U1 = unitary_group.rvs(3, random_state=10)
         U = np.array([U1, U1, U1])
 
@@ -594,47 +580,49 @@ class TestControlledQutritUnitary:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
 
-    def test_controlled(self):
-        dev = qml.device("default.qutrit", wires=3)
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_controlled(self, inverse):
+        """Test the _controlled method for ControlledQutritUnitary."""
 
-        op = qml.ControlledQutritUnitary(U_thadamard_01, control_wires=1, wires=2)
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=1)
-            qml.TShift(wires=1)
-            qml.TShift(wires=0)
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
+        U = TSWAP
 
-        res = dev.execute(tape)
+        original = qml.ControlledQutritUnitary(U, control_wires=(0, 1), wires=[4, 2])
+        original.inverse = inverse
+        expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
+        expected.inverse = inverse
 
-        expected = np.zeros(27)
-        expected[24] = 1 / np.sqrt(2)
-        expected[25] = 1 / np.sqrt(2)
-        assert np.allclose(res, expected)
+        out = original._controlled("a")
+        assert qml.equal(out, expected)
 
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            op._controlled(wire=0)
-            qml.state()
+        original = qml.ControlledQutritUnitary(
+            U, control_wires=(0, 1), wires=[4, 2], control_values="01"
+        )
+        original.inverse = inverse
+        expected = qml.ControlledQutritUnitary(
+            U, control_wires=(0, 1, "a"), wires=[4, 2], control_values="012"
+        )
+        expected.inverse = inverse
 
-        res = dev.execute(tape)
+        out = original._controlled("a")
+        assert qml.equal(out, expected)
 
-        expected = np.zeros(27)
-        expected[0] = 1
-        assert np.allclose(res, expected)
+    def test_adjoint(self):
+        """Tests the metadata and unitary for an adjoint ControlledQutritUnitary operation."""
+        U1 = unitary_group.rvs(3, random_state=10)
 
-        dev.reset()
-        with qml.tape.QuantumTape() as tape:
-            qml.TShift(wires=0)
-            op._controlled(wire=0)
-            qml.state()
+        op = qml.ControlledQutritUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
-        res = dev.execute(tape)
+        adjoint_op = op.adjoint()
+        assert isinstance(adjoint_op, qml.ControlledQutritUnitary)
 
-        expected = np.zeros(27)
-        expected[9] = 1
-        assert np.allclose(res, expected)
+        assert adjoint_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert adjoint_op.control_wires == op.control_wires
+        assert adjoint_op.hyperparameters["control_values"] == op.hyperparameters["control_values"]
+
+        adjoint_mat = op.data[0].T.conj()
+        assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)
 
 
 label_data = [

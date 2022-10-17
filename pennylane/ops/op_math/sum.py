@@ -214,6 +214,11 @@ class Sum(CompositeOp):
         """
         return None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
+
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
 
@@ -250,12 +255,7 @@ class Sum(CompositeOp):
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
-        return qml.s_prod(
-            0,
-            qml.prod(*(qml.Identity(w) for w in self.wires))
-            if len(self.wires) > 1
-            else qml.Identity(self.wires[0]),
-        )
+        return qml.s_prod(0, qml.Identity(self.wires))
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:

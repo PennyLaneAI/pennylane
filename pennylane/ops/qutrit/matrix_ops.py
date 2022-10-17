@@ -132,7 +132,8 @@ class QutritUnitary(Operation):
         return super().pow(z)
 
     def _controlled(self, wire):
-        ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+        new_op = ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+        return new_op.inv() if self.inverse else new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -147,6 +148,8 @@ class ControlledQutritUnitary(QutritUnitary):
 
     * ``control_wires``: wires that act as control for the operation
     * ``U``: unitary applied to the target wires
+    * ``control_values``: a string of trits representing the state of the control
+                qutrits to control on (default is the all 2s state)
 
     **Details:**
 
@@ -283,7 +286,7 @@ class ControlledQutritUnitary(QutritUnitary):
                 )
 
             # Make sure all values are either 0 or 1 or 2
-            if any(x not in ["0", "1", "2"] for x in control_values):
+            if not set(control_values).issubset({"0", "1", "2"}):
                 raise ValueError("String of control values can contain only '0' or '1' or '2'.")
 
             control_int = int(control_values, 3)
@@ -311,12 +314,27 @@ class ControlledQutritUnitary(QutritUnitary):
                     qml.math.linalg.matrix_power(self.data[0], z),
                     control_wires=self.control_wires,
                     wires=self.hyperparameters["u_wires"],
+                    control_values=self.hyperparameters["control_values"],
                 )
             ]
         return super().pow(z)
 
-    def _controlled(self, wire):
-        ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQutritUnitary(
-            *self.parameters, control_wires=ctrl_wires, wires=self.hyperparameters["u_wires"]
+    def adjoint(self):
+        return ControlledQutritUnitary(
+            qml.math.conj(qml.math.moveaxis(self.data[0], -2, -1)),
+            control_wires=self.control_wires,
+            wires=self.hyperparameters["u_wires"],
+            control_values=self.hyperparameters["control_values"],
         )
+
+    def _controlled(self, wire):
+        ctrl_wires = self.control_wires + wire
+        old_control_values = self.hyperparameters["control_values"]
+        values = None if old_control_values is None else f"{old_control_values}2"
+        new_op = ControlledQutritUnitary(
+            *self.parameters,
+            control_wires=ctrl_wires,
+            wires=self.hyperparameters["u_wires"],
+            control_values=values,
+        )
+        return new_op.inv() if self.inverse else new_op

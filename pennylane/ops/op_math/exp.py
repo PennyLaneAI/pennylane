@@ -205,6 +205,11 @@ class Exp(SymbolicOp):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
@@ -229,7 +234,10 @@ class Exp(SymbolicOp):
         return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Exp"
+        coeff = (
+            self.coeff if decimals is None else format(math.toarray(self.coeff), f".{decimals}f")
+        )
+        return base_label or f"Exp({coeff} {self.base.label(decimals=decimals, cache=cache)})"
 
     def pow(self, z):
         return Exp(self.base, self.coeff * z)

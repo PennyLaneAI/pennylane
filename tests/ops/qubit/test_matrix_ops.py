@@ -889,9 +889,11 @@ class TestControlledQubitUnitary:
 
         U = qml.PauliX(0).compute_matrix()
 
-        original = qml.ControlledQubitUnitary(U, control_wires=(0, 1), wires=4)
+        original = qml.ControlledQubitUnitary(U, control_wires=(0, 1), wires=4, control_values="01")
         original.inverse = inverse
-        expected = qml.ControlledQubitUnitary(U, control_wires=(0, 1, "a"), wires=4)
+        expected = qml.ControlledQubitUnitary(
+            U, control_wires=(0, 1, "a"), wires=4, control_values="011"
+        )
         expected.inverse = inverse
 
         out = original._controlled("a")
