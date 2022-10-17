@@ -352,7 +352,9 @@ def _expval_param_shift_tuple(
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
-        gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
+        # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
+        batch_size = g_tapes[0].batch_size if g_tapes else None
+        gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     def processing_fn(results):
         grads = []
@@ -488,7 +490,9 @@ def expval_param_shift(
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
-        gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
+        # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
+        batch_size = g_tapes[0].batch_size if g_tapes else None
+        gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.

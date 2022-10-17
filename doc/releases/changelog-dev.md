@@ -176,6 +176,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
+  in a custom recipe, or with a recipe that does not use evaluations.
+  [(#31xx)](https://github.com/PennyLaneAI/pennylane/pull/31xx)
+
 * Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
   [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
 
