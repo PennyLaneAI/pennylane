@@ -279,7 +279,8 @@ class TestMinEntropy:
         state = qml.math.asarray(state, like="autograd")
         grad = qml.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(grad, expected / div, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -306,7 +307,8 @@ class TestMinEntropy:
         state = qml.math.asarray(state, like="jax")
         grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(grad, expected / div, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -333,7 +335,8 @@ class TestMinEntropy:
         state = qml.math.asarray(state, like="jax")
         grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
 
-        assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(grad, expected / div, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
@@ -364,7 +367,8 @@ class TestMinEntropy:
         with tf.GradientTape() as tape:
             grad_entropy = tape.gradient(entropy, state)
 
-        assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(grad_entropy, expected / div, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -393,4 +397,5 @@ class TestMinEntropy:
 
         grad_entropy = state.grad
 
-        assert np.allclose(grad_entropy, expected / np.log(base), rtol=1e-06, atol=1e-07)
+        div = 1 if base is None else np.log(base)
+        assert np.allclose(grad_entropy, expected / div, rtol=1e-06, atol=1e-07)
