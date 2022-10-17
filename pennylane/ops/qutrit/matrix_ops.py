@@ -314,9 +314,18 @@ class ControlledQutritUnitary(QutritUnitary):
                     qml.math.linalg.matrix_power(self.data[0], z),
                     control_wires=self.control_wires,
                     wires=self.hyperparameters["u_wires"],
+                    control_values=self.hyperparameters["control_values"],
                 )
             ]
         return super().pow(z)
+
+    def adjoint(self):
+        return ControlledQutritUnitary(
+            qml.math.conj(qml.math.moveaxis(self.data[0], -2, -1)),
+            control_wires=self.control_wires,
+            wires=self.hyperparameters["u_wires"],
+            control_values=self.hyperparameters["control_values"],
+        )
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire

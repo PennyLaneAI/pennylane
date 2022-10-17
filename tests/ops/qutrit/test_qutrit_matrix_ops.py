@@ -523,13 +523,16 @@ class TestControlledQutritUnitary:
         """Tests the metadata and unitary for a ControlledQutritUnitary raised to a power."""
         U1 = unitary_group.rvs(3, random_state=10)
 
-        op = qml.ControlledQutritUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qml.ControlledQutritUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
+        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -544,13 +547,16 @@ class TestControlledQutritUnitary:
             axes=0,
         )
 
-        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qml.ControlledQubitUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
+        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -599,6 +605,24 @@ class TestControlledQutritUnitary:
 
         out = original._controlled("a")
         assert qml.equal(out, expected)
+
+    def test_adjoint(self):
+        """Tests the metadata and unitary for an adjoint ControlledQutritUnitary operation."""
+        U1 = unitary_group.rvs(3, random_state=10)
+
+        op = qml.ControlledQutritUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
+
+        adjoint_op = op.adjoint()
+        assert isinstance(adjoint_op, qml.ControlledQutritUnitary)
+
+        assert adjoint_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert adjoint_op.control_wires == op.control_wires
+        assert adjoint_op.hyperparameters["control_values"] == op.hyperparameters["control_values"]
+
+        adjoint_mat = op.data[0].T.conj()
+        assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)
 
 
 label_data = [
