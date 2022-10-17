@@ -221,8 +221,7 @@ class QNode:
         self.gradient_kwargs = None
         self._tape_cached = False
 
-        if self.interface != "auto":
-            self._update_gradient_fn()
+        self._update_gradient_fn()
         functools.update_wrapper(self, func)
 
     def __repr__(self):
@@ -248,14 +247,15 @@ class QNode:
             )
 
         self._interface = value
-        if value != "auto":
-            self._update_gradient_fn()
+        self._update_gradient_fn()
 
     def _update_gradient_fn(self):
         if self.diff_method is None:
             self._interface = None
             self.gradient_fn = None
             self.gradient_kwargs = {}
+            return
+        if self.interface == "auto":
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
