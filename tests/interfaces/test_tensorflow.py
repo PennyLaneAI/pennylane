@@ -694,7 +694,7 @@ class TestTensorFlowExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
-            pytest.skip("Can't detect interface without a non-parametrized tape")
+            pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
