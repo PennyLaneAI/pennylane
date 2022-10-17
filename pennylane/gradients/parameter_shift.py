@@ -547,6 +547,7 @@ def expval_param_shift(
                     continue
                 # The gradient for this parameter is computed from r0 alone.
                 g = _evaluate_gradient([], data, broadcast, r0, scalar_qfunc_output)
+                print(f"g={g}")
                 grads.append(g)
                 continue
 
@@ -554,8 +555,8 @@ def expval_param_shift(
             start = start + num_tapes
 
             g = _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output)
+            grads.append(g)
 
-        grads.append(g)
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
         zero_rep = qml.math.zeros_like(g)

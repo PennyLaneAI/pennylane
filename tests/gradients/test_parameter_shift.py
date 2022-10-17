@@ -326,6 +326,7 @@ class TestParamShift:
         assert len(tapes) == 2 * num_ops_standard_recipe + len(ops_with_custom_recipe) + 1
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
+        assert qml.math.shape(grad) == (1, 2)
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
@@ -357,6 +358,7 @@ class TestParamShift:
         expected = [
             -np.sin(x[0] + x[1]) if i not in ops_with_custom_recipe else 0 for i in range(2)
         ]
+        assert qml.math.shape(grad) == (1, 2)
         assert qml.math.allclose(grad, expected, atol=1e-5)
 
     @pytest.mark.parametrize("y_wire", [0, 1])
@@ -414,6 +416,7 @@ class TestParamShift:
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
         grad = fn(dev.batch_execute(tapes))
+        assert qml.math.shape(grad) == (1, 2)
         assert np.allclose(
             grad, [-np.sin(x[0] + x[1]), -np.sin(x[0] + x[1]) + 0.2 * np.cos(x[0] + x[1])]
         )
