@@ -1007,6 +1007,6 @@ def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
     # cast all eigenvalues to real
     evs_state = np.real(evs_state)
 
-    min_ent = -np.log(max(evs_state)) / div_base
+    min_ent = -np.log(np.nanmax(evs_state)) / div_base
 
     return min_ent
