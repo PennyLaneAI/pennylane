@@ -150,7 +150,8 @@ def _unshifted_coeff(g, unshifted_coeff, r0):
 
 def _evaluate_gradient_new(tape, res, data, r0):
     """Use shifted tape evaluations and parameter-shift rule coefficients
-    to evaluate a gradient result.
+    to evaluate a gradient result. If res is an empty list,
+    r0 and data[3] must be given and not None.
 
     This is a helper function for the new return type system.
     """
@@ -162,6 +163,12 @@ def _evaluate_gradient_new(tape, res, data, r0):
         res = fn(res)
 
     multi_measure = len(tape.measurements) > 1
+    if isinstance(res, list) and len(res)==0:
+        # No shifted evaluations are present, just the unshifted one.
+        if not multi_measure:
+            return unshifted_coeff * r0
+        return tuple(unshifted_coeff * r0)
+
     if not multi_measure:
 
         res = qml.math.stack(res)
@@ -191,9 +198,14 @@ def _evaluate_gradient_new(tape, res, data, r0):
 
 def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
     """Use shifted tape evaluations and parameter-shift rule coefficients
-    to evaluate a gradient result."""
+    to evaluate a gradient result. If res is an empty list,
+    r0 and data[3] must be given and not None."""
 
     _, coeffs, fn, unshifted_coeff, batch_size = data
+
+    if isinstance(res, list) and len(res)==0:
+        # No shifted evaluations are present, just the unshifted one.
+        return unshifted_coeff * r0
 
     # individual post-processing of e.g. Hamiltonian grad tapes
     if fn is not None:
@@ -365,11 +377,16 @@ def _expval_param_shift_tuple(
 
         for data in gradient_data:
 
-            num_tapes, *_, batch_size = data
+            num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
-                # parameter has zero gradient. We don't know the output shape yet, so just memorize
-                # that this gradient will be set to zero, via grad = None
-                grads.append(None)
+                if unshifted_coeff is None:
+                    # parameter has zero gradient. We don't know the output shape yet, so just
+                    # memorize that this gradient will be set to zero, via grad = None
+                    grads.append(None)
+                    continue
+                # The gradient for this parameter is computed from r0 alone.
+                g = _evaluate_gradient_new(tape, [], data, r0)
+                grads.append(g)
                 continue
 
             res = results[start : start + num_tapes] if batch_size is None else results[start]
@@ -378,9 +395,9 @@ def _expval_param_shift_tuple(
             g = _evaluate_gradient_new(tape, res, data, r0)
             grads.append(g)
 
+        # g will have been defined at least once (because otherwise all gradients would have
+        # been zero), providing a representative for a zero gradient to emulate its type/shape.
         if not multi_measure:
-            # This clause will be hit at least once (because otherwise all gradients would have
-            # been zero), providing a representative for a zero gradient to emulate its type/shape.
             zero_rep = qml.math.zeros_like(g)
         else:
             zero_rep = tuple(qml.math.zeros_like(grad_component) for grad_component in g)
@@ -509,11 +526,16 @@ def expval_param_shift(
 
         for data in gradient_data:
 
-            num_tapes, *_, batch_size = data
+            num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
-                # parameter has zero gradient. We don't know the output shape yet, so just memorize
-                # that this gradient will be set to zero, via grad = None
-                grads.append(None)
+                if unshifted_coeff is None:
+                    # parameter has zero gradient. We don't know the output shape yet, so just
+                    # memorize that this gradient will be set to zero, via grad = None
+                    grads.append(None)
+                    continue
+                # The gradient for this parameter is computed from r0 alone.
+                g = _evaluate_gradient([], data, broadcast, r0, scalar_qfunc_output)
+                grads.append(g)
                 continue
 
             res = results[start : start + num_tapes] if batch_size is None else results[start]
@@ -521,10 +543,10 @@ def expval_param_shift(
 
             g = _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output)
 
-            grads.append(g)
-            # This clause will be hit at least once (because otherwise all gradients would have
-            # been zero), providing a representative for a zero gradient to emulate its type/shape.
-            zero_rep = qml.math.zeros_like(g)
+        grads.append(g)
+        # g will have been defined at least once (because otherwise all gradients would have
+        # been zero), providing a representative for a zero gradient to emulate its type/shape.
+        zero_rep = qml.math.zeros_like(g)
 
         for i, g in enumerate(grads):
             # Fill in zero-valued gradients
