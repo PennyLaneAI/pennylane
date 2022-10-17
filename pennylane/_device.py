@@ -711,7 +711,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-        finite_shots = circuit.shots is not None
+        finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
