@@ -227,7 +227,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_ops.extend(expanded_tape._ops)
             new_measurements.extend(expanded_tape._measurements)
 
-    new_tape = QuantumTape()
+    new_tape = QuantumTape(shots=tape.shots)
     new_tape._prep = new_prep
     new_tape._ops = new_ops
     new_tape._measurements = new_measurements
