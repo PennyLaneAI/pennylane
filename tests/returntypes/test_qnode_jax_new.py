@@ -388,89 +388,150 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
-        print(hess)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], tuple)
+        assert len(hess[0][0]) == 2
+        assert isinstance(hess[0][0][0], jax.numpy.ndarray)
+        assert hess[0][0][0].shape == ()
+        assert isinstance(hess[0][0][1], jax.numpy.ndarray)
+        assert hess[0][0][1].shape == ()
+        assert isinstance(hess[0][1], tuple)
+        assert len(hess[0][1]) == 2
+        assert isinstance(hess[0][1][0], jax.numpy.ndarray)
+        assert hess[0][1][0].shape == ()
+        assert isinstance(hess[0][1][1], jax.numpy.ndarray)
+        assert hess[0][1][1].shape == ()
+
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], tuple)
+        assert len(hess[1][0]) == 2
+        assert isinstance(hess[1][0][0], jax.numpy.ndarray)
+        assert hess[1][0][0].shape == (4,)
+        assert isinstance(hess[1][0][1], jax.numpy.ndarray)
+        assert hess[1][0][1].shape == (4,)
+        assert isinstance(hess[1][1], tuple)
+        assert len(hess[1][1]) == 2
+        assert isinstance(hess[1][1][0], jax.numpy.ndarray)
+        assert hess[1][1][0].shape == (4,)
+        assert isinstance(hess[1][1][1], jax.numpy.ndarray)
+        assert hess[1][1][1].shape == (4,)
 
     def test_multiple_derivative_expval_probs_multiple_param_array(
         self, dev_name, diff_method, mode
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
+        import jax
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         dev = qml.device(dev_name, wires=2)
 
-        params = qml.numpy.array([0.1, 0.2], requires_grad=True)
+        params = jax.numpy.array([0.1, 0.2])
 
-        @qnode(dev, interface="autograd", diff_method=diff_method, max_diff=2)
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        def cost(x):
-            return anp.hstack(circuit(x))
+        hess = jax.hessian(circuit)(params)
 
-        hess = qml.jacobian(qml.jacobian(cost))(params)
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
 
-        assert isinstance(hess, np.ndarray)
-        assert hess.shape == (5, 2, 2)
+        assert isinstance(hess[0], jax.numpy.ndarray)
+        assert hess[0].shape == (2, 2)
+
+        assert isinstance(hess[1], jax.numpy.ndarray)
+        assert hess[1].shape == (4, 2, 2)
 
     def test_multiple_derivative_probs_var_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        import jax
+
         dev = qml.device(dev_name, wires=2)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        par_0 = qml.numpy.array(0.1, requires_grad=True)
-        par_1 = qml.numpy.array(0.2, requires_grad=True)
+        par_0 = qml.numpy.array(0.1)
+        par_1 = qml.numpy.array(0.2)
 
-        @qnode(dev, interface="autograd", diff_method=diff_method, max_diff=2)
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        def circuit_stack(x, y):
-            return anp.hstack(circuit(x, y))
-
-        def cost(x, y):
-            return anp.hstack(qml.jacobian(circuit_stack)(x, y))
-
-        hess = qml.jacobian(cost)(par_0, par_1)
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], np.ndarray)
-        assert hess[0].shape == (10,)
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], tuple)
+        assert len(hess[0][0]) == 2
+        assert isinstance(hess[0][0][0], jax.numpy.ndarray)
+        assert hess[0][0][0].shape == ()
+        assert isinstance(hess[0][0][1], jax.numpy.ndarray)
+        assert hess[0][0][1].shape == ()
+        assert isinstance(hess[0][1], tuple)
+        assert len(hess[0][1]) == 2
+        assert isinstance(hess[0][1][0], jax.numpy.ndarray)
+        assert hess[0][1][0].shape == ()
+        assert isinstance(hess[0][1][1], jax.numpy.ndarray)
+        assert hess[0][1][1].shape == ()
 
-        assert isinstance(hess[1], np.ndarray)
-        assert hess[1].shape == (10,)
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], tuple)
+        assert len(hess[1][0]) == 2
+        assert isinstance(hess[1][0][0], jax.numpy.ndarray)
+        assert hess[1][0][0].shape == (4,)
+        assert isinstance(hess[1][0][1], jax.numpy.ndarray)
+        assert hess[1][0][1].shape == (4,)
+        assert isinstance(hess[1][1], tuple)
+        assert len(hess[1][1]) == 2
+        assert isinstance(hess[1][1][0], jax.numpy.ndarray)
+        assert hess[1][1][0].shape == (4,)
+        assert isinstance(hess[1][1][1], jax.numpy.ndarray)
+        assert hess[1][1][1].shape == (4,)
 
-    def test_multiple_derivative_var_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_multiple_derivative_var_probs_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with a multiple param array return a single array."""
+        import jax
+
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         dev = qml.device(dev_name, wires=2)
 
-        params = qml.numpy.array([0.1, 0.2], requires_grad=True)
+        params = jax.numpy.array([0.1, 0.2])
 
-        @qnode(dev, interface="autograd", diff_method=diff_method, max_diff=2)
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        def cost(x):
-            return anp.hstack(circuit(x))
+        hess = jax.hessian(circuit)(params)
 
-        hess = qml.jacobian(qml.jacobian(cost))(params)
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
 
-        assert isinstance(hess, np.ndarray)
-        assert hess.shape == (5, 2, 2)
+        assert isinstance(hess[0], jax.numpy.ndarray)
+        assert hess[0].shape == (2, 2)
+
+        assert isinstance(hess[1], jax.numpy.ndarray)
+        assert hess[1].shape == (4, 2, 2)
