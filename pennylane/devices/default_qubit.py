@@ -110,6 +110,7 @@ class DefaultQubit(QubitDevice):
         "CNOT",
         "SWAP",
         "ISWAP",
+        "PSWAP",
         "Adjoint(ISWAP)",
         "SISWAP",
         "Adjoint(SISWAP)",
@@ -159,6 +160,7 @@ class DefaultQubit(QubitDevice):
         "Sum",
         "SProd",
         "Prod",
+        "Exp",
     }
 
     def __init__(
@@ -621,7 +623,6 @@ class DefaultQubit(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             supports_broadcasting=True,
@@ -900,7 +901,7 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, circuit, seed=None):
+    def classical_shadow(self, obs, circuit):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -931,16 +932,15 @@ class DefaultQubit(QubitDevice):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            wires (Sequence[int]): The wires to perform Pauli measurements on
-            n_snapshots (int): The number of snapshots
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
-            seed (Union[int, None]): If provided, it is used to seed the random
-                number generation for generating the Pauli measurements.
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
+        wires = obs.wires
+        seed = obs.seed
 
         n_qubits = len(wires)
         n_snapshots = self.shots
@@ -1014,7 +1014,7 @@ class DefaultQubit(QubitDevice):
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
             rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.uint8)]
+            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.int8)]
 
             # re-normalize the collapsed state
             norms = np.sqrt(
@@ -1024,4 +1024,4 @@ class DefaultQubit(QubitDevice):
             )
             stacked_state /= norms
 
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.uint8)
+        return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)

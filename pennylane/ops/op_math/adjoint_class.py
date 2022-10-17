@@ -16,7 +16,7 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 """
 import pennylane as qml
 from pennylane.math import conj, transpose
-from pennylane.operation import AdjointUndefinedError, Observable, Operation
+from pennylane.operation import Observable, Operation
 
 from .symbolicop import SymbolicOp
 
@@ -201,8 +201,12 @@ class Adjoint(SymbolicOp):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, do_queue=do_queue, id=id)
 
+    def __repr__(self):
+        return f"Adjoint({self.base})"
+
     def label(self, decimals=None, base_label=None, cache=None):
-        return f"{self.base.label(decimals, base_label, cache=cache)}†"
+        base_label = self.base.label(decimals, base_label, cache=cache)
+        return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -210,7 +214,7 @@ class Adjoint(SymbolicOp):
         return self.base.has_matrix if self.base.batch_size is None else False
 
     def matrix(self, wire_order=None):
-        if self.base.batch_size is not None:
+        if getattr(self.base, "batch_size", None) is not None:
             raise qml.operation.MatrixUndefinedError
 
         if isinstance(self.base, qml.Hamiltonian):
@@ -220,12 +224,15 @@ class Adjoint(SymbolicOp):
 
         return transpose(conj(base_matrix))
 
+    @property
+    def has_decomposition(self):
+        return self.base.has_adjoint or self.base.has_decomposition
+
     def decomposition(self):
-        try:
+        if self.base.has_adjoint:
             return [self.base.adjoint()]
-        except AdjointUndefinedError:
-            base_decomp = self.base.decomposition()
-            return [Adjoint(op) for op in reversed(base_decomp)]
+        base_decomp = self.base.decomposition()
+        return [Adjoint(op) for op in reversed(base_decomp)]
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -237,14 +244,22 @@ class Adjoint(SymbolicOp):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
 
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
+
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return self.base.queue()
 
     def simplify(self):
-        try:
-            return self.base.adjoint().simplify()
-        except AdjointUndefinedError:
-            return Adjoint(base=self.base.simplify())
+        base = self.base.simplify()
+        if self.base.has_adjoint:
+            return base.adjoint().simplify()
+        return Adjoint(base=base.simplify())

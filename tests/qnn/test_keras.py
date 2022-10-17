@@ -341,7 +341,7 @@ class TestKerasLayer:
         layer_out = layer(x)
         weights = [w.numpy() for w in layer.qnode_weights.values()]
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
@@ -371,7 +371,7 @@ class TestKerasLayer:
         weights = [w.numpy() for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     @pytest.mark.parametrize("batch_size", [2])
@@ -401,7 +401,7 @@ class TestKerasLayer:
         weights = [w.numpy() for w in layer.qnode_weights.values()]
 
         assert layer_out.shape == (batch_size, output_dim)
-        assert np.allclose(layer_out[0], c(x[0], *weights))
+        assert np.allclose(layer_out[0], c(x[0], *weights), atol=1e-7)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
@@ -549,12 +549,12 @@ class TestKerasLayerIntegration:
     def test_model_save_weights(self, model, n_qubits, tmpdir):
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
-        prediction = model.predict(np.ones(n_qubits))
+        prediction = model.predict(np.ones((1, n_qubits)))
         weights = model.get_weights()
         file = str(tmpdir) + "/model"
         model.save_weights(file)
         model.load_weights(file)
-        prediction_loaded = model.predict(np.ones(n_qubits))
+        prediction_loaded = model.predict(np.ones((1, n_qubits)))
         weights_loaded = model.get_weights()
 
         assert np.allclose(prediction, prediction_loaded)
@@ -601,12 +601,12 @@ class TestKerasLayerIntegrationDM:
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
 
-        prediction = model_dm.predict(np.ones(n_qubits))
+        prediction = model_dm.predict(np.ones((1, n_qubits)))
         weights = model_dm.get_weights()
         file = str(tmpdir) + "/model"
         model_dm.save_weights(file)
         model_dm.load_weights(file)
-        prediction_loaded = model_dm.predict(np.ones(n_qubits))
+        prediction_loaded = model_dm.predict(np.ones((1, n_qubits)))
         weights_loaded = model_dm.get_weights()
 
         assert np.allclose(prediction, prediction_loaded)

@@ -15,16 +15,17 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
-from collections.abc import Sequence
 import functools
 import inspect
 import warnings
+from collections.abc import Sequence
 
 import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
+from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.tape import QuantumTape
 
 
 class QNode:
@@ -484,15 +485,13 @@ class QNode:
     @staticmethod
     def _validate_device_method(device):
         # determine if the device provides its own jacobian method
-        provides_jacobian = device.capabilities().get("provides_jacobian", False)
+        if device.capabilities().get("provides_jacobian", False):
+            return "device", {}, device
 
-        if not provides_jacobian:
-            raise qml.QuantumFunctionError(
-                f"The {device.short_name} device does not provide a native "
-                "method for computing the jacobian."
-            )
-
-        return "device", {}, device
+        raise qml.QuantumFunctionError(
+            f"The {device.short_name} device does not provide a native "
+            "method for computing the jacobian."
+        )
 
     @staticmethod
     def _validate_parameter_shift(device):
@@ -510,7 +509,7 @@ class QNode:
         )
 
     @property
-    def tape(self):
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 
@@ -546,17 +545,19 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
         ]
-        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
+        if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
 
         for obj in self.tape.operations + self.tape.observables:
 
-            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+            if (
+                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
+                and len(obj.wires) != self.device.num_wires
+            ):
                 # check here only if enough wires
-                if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
+                raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
@@ -618,7 +619,7 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
-            res = qml.execute_new(
+            res = qml.execute(
                 [self.tape],
                 device=self.device,
                 gradient_fn=self.gradient_fn,
@@ -631,9 +632,8 @@ class QNode:
             res = res[0]
 
             # Special case of single Measurement in a list
-            if isinstance(self._qfunc_output, list):
-                if len(self._qfunc_output) == 1:
-                    return [res]
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
 
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
@@ -649,12 +649,12 @@ class QNode:
                 not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
                 and not backprop
             ):
-                if not self.device._shot_vector:
-                    res = type(self.tape._qfunc_output)(res)
-                else:
+                if self.device._shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
 
+                else:
+                    res = type(self.tape._qfunc_output)(res)
             return res
 
         res = qml.execute(
@@ -681,19 +681,19 @@ class QNode:
 
             res = res[0]
 
-        if (
-            not isinstance(self._qfunc_output, Sequence)
-            and self._qfunc_output.return_type is qml.measurements.Counts
+        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
+            qml.measurements.Counts,
+            qml.measurements.AllCounts,
         ):
+            if self.device._has_partitioned_shots():
+                return tuple(res)
 
-            if not self.device._has_partitioned_shots():
-                # return a dictionary with counts not as a single-element array
-                return res[0]
-
-            return tuple(res)
+            # return a dictionary with counts not as a single-element array
+            return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the

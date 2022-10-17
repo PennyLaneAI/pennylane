@@ -130,7 +130,7 @@ NumPy
 
 When using the standard NumPy framework, PennyLane offers some built-in optimizers.
 Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
-:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, and :class:`~.ShotAdaptiveOptimizer`.
+:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, :class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
 
 :html:`<div class="summary-table">`
 
@@ -149,6 +149,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.RotoselectOptimizer
     ~pennylane.ShotAdaptiveOptimizer
     ~pennylane.SPSAOptimizer
+    ~pennylane.QNSPSAOptimizer
 
 :html:`</div>`
 
@@ -291,6 +292,58 @@ This is because gradient transforms do not take into account classical computati
 support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
+
+
+Differentiating gradient transforms and higher-order derivatives
+----------------------------------------------------------------
+
+Gradient transforms are themselves differentiable, allowing higher-order
+gradients to be computed:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> circuit(weights)
+tensor(0.9316158, requires_grad=True)
+>>> qml.gradients.param_shift(circuit)(weights)  # gradient
+array([[-0.09347337, -0.18884787, -0.28818254]])
+>>> qml.jacobian(qml.gradients.param_shift(circuit))(weights)  # hessian
+array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
+        [ 0.01894799, -0.9316158 ,  0.05841749],
+        [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
+
+Another way to compute higher-order derivatives is by passing the ``max_diff`` and
+``diff_method`` arguments to the QNode and by successive differentiation:
+
+.. code-block:: python
+
+    @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> qml.jacobian(qml.jacobian(circuit))(weights)  # hessian
+array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+       [ 0.01894799, -0.9316158 ,  0.05841749],
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
+
+Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
+set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
+``diff_method="parameter-shift"`` is equivalent to passing ``diff_method=qml.gradients.param_shift``.
 
 Supported configurations
 ------------------------

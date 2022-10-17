@@ -95,7 +95,7 @@ class TShift(Operation):
         **Example**
 
         >>> print(qml.TShift.compute_eigvals())
-        [ -0.5+0.8660254j -0.5-0.8660254j  1. +0.j       ]
+        [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
         """
         return np.array([OMEGA, OMEGA**2, 1])
 
@@ -211,6 +211,9 @@ class TAdd(Operation):
 
     The construction of this operator is based on definition 7 from
     `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_.
+    It performs the controlled :class:`~.TShift` operation, and sends
+    :math:`\hbox{TAdd} \vert i \rangle \vert j \rangle = \vert i \rangle \vert i + j \rangle`,
+    where addition is taken modulo 3. The matrix representation is
 
     .. math:: TAdd = \begin{bmatrix}
                         1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
@@ -325,7 +328,10 @@ class TAdd(Operation):
 
 class TSWAP(Operation):
     r"""TSWAP(wires)
-    The ternary swap operator
+    The ternary swap operator.
+
+    This operation is analogous to the qubit SWAP and acts on two-qutrit computational basis states
+    according to :math:`TSWAP\vert i, j\rangle = \vert j, i \rangle`. Its matrix representation is
 
     .. math:: TSWAP = \begin{bmatrix}
                 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
@@ -392,6 +398,30 @@ class TSWAP(Operation):
                 [0, 0, 0, 0, 0, 0, 0, 0, 1],
             ]
         )
+
+    @staticmethod
+    def compute_eigvals():
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.TSWAP.eigvals`
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> print(qml.TSWAP.compute_eigvals())
+        [ 1. -1.  1. -1.  1. -1.  1.  1.  1.]
+        """
+        return np.array([1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, 1.0, 1.0])
 
     # TODO: Add compute_decomposition()
 

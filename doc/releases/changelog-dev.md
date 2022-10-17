@@ -1,136 +1,220 @@
 :orphan:
 
-# Release 0.26.0-dev (development release)
+# Release 0.27.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* Added `QutritDevice` as an abstract base class for qutrit devices.
-  [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
+* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
+  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
+  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
+  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
+  integrals tensor are diagonal.
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
 
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
-* Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
-  [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
-
-  ```pycon
-  >>> dev = qml.device("default.qutrit", wires=1)
-  >>> @qml.qnode(dev)
-  ... def circuit(U):
-  ...     qml.QutritUnitary(U, wires=0)
-  ...     return qml.probs(wires=0)
-  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-  >>> print(circuit(U))
-  [0.5 0.5 0. ]
-  ```
-
-* Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
-  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
-
-* Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
-  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
-  * Added `qml.TAdd` operation for qutrit devices, which is the generalized analog of the CX operation.
-  ([#2842](https://github.com/PennyLaneAI/pennylane/pull/2842))
-  * Added `qml.TSWAP` operation for qutrit devices, which swaps the state between two wires.
-  ([#2843](https://github.com/PennyLaneAI/pennylane/pull/2843))
-  * Added `qml.ControlledQutritUnitary` operation for qutrit devices, which allows users to apply a controlled arbitrary unitary operation.
+* Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
+Users can specify the control wires as well as the values to control the operation on.
   ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
-  * Added `TRX()` operation, which applies an X rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit basis states the operation applies to. Updated `pennylane/qnode.py` to support parameter shift differentiation on qutrit devices.
+
+* Added the `qml.TRX` qutrit operation, which applies an X rotation to a specified subspace. Also updated `pennylane/qnode.py` to support
+parameter-shift differentiation on qutrit devices.
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
-  * Added `TRY()` operation, which applies an Y rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit basis states the operation applies to.
+
+* Added `TRY()` operation, which applies an Y rotation to a subspace specified by the user. The subspace determines which 2 of 3 one-qutrit
+basis states the operation applies to.
   ([#2846](https://github.com/PennyLaneAI/pennylane/pull/2846))
 
-**Classical shadows**
+* `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
+  symmetries of the Hamiltonian.
+  [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
-* Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
-
-  The measurement protocol is described in detail in the
-  [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
-  will return the randomized Pauli measurements (the `recipes`) that are performed
-  for each qubit, identified as a unique integer:
-
-  - 0 for Pauli X
-  - 1 for Pauli Y
-  - 2 for Pauli Z
-
-  It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
-  is sampled, and `1` if the -1 eigenvalue is sampled.
-
-  For example,
-
-  ```python
-  dev = qml.device("default.qubit", wires=2, shots=5)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.classical_shadow(wires=[0, 1])
-  ```
   ```pycon
-  >>> bits, recipes = circuit()
-  tensor([[0, 0],
-          [1, 0],
-          [1, 0],
-          [0, 0],
-          [0, 1]], dtype=uint8, requires_grad=True)
-  >>> recipes
-  tensor([[2, 2],
-          [0, 2],
-          [1, 0],
-          [0, 2],
-          [0, 2]], dtype=uint8, requires_grad=True)
+    >>> symbols = ['He', 'H']
+    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qchem.symmetry_generators(H)
+    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
+    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
+                                generators, paulixops, paulix_sector, wire_order=H.wires)
+    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
+    ```
+
+  When used within a QNode, this method applies the tapered operation directly:
+
+  ```pycon
+    >>> dev = qml.device('default.qubit', wires=[0, 1])
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
+    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    >>> print(drawer(params=[3.14159]))
+        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
+        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
   ```
 
 <h3>Improvements</h3>
 
-* Automatic circuit cutting is improved by making better partition imbalance derivations.
-  Now it is more likely to generate optimal cuts for larger circuits.
-  [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
+* `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
+  [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
-* The `qml.simplify` method now can compute the adjoint and power of specific operators.
-  [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
 
-  ```pycon
-  >>> adj_op = qml.adjoint(qml.RX(1, 0))
-  >>> qml.simplify(adj_op)
-  RX(-1, wires=[0])
-  ```
+* Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
+  [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-* `qml.operation.expand_matrix` now supports qutrit matrices such that `Operator.matrix` is now able to permute and
-  expand qutrit matrices according to the given wire order.
+  * `QueuingContext` is renamed to `QueuingManager`.
+  * `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+  * `QueuingManager` is no longer an abstract base class.
+  * `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+  * `QueuingManager` is no longer a context manager.
+  * Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
+     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+  * `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+      is now only available through `QueuingManager`.
+  * `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
+      and `_get_info` methods. The public analogues should be used instead.
+  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+      `update_info`.
 
-  ```pycon
-  >>> op = qml.TShift(wires=0)
-  >>> op.matrix(wire_order=[0, 1])
-  array([[0, 0, 0, 0, 0, 0, 1, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 1, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 1],
-         [1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 1, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 1, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 1, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 1, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 1, 0, 0, 0]])
+* `qml.Identity` now accepts multiple wires.
+    [(#3049)](https://github.com/PennyLaneAI/pennylane/pull/3049)
+
+    ```pycon
+    >>> id_op = qml.Identity([0, 1])
+    >>> id_op.matrix()
+    array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+    >>> id_op.sparse_matrix()
+    <4x4 sparse matrix of type '<class 'numpy.float64'>'
+        with 4 stored elements in Compressed Sparse Row format>
+    >>> id_op.eigvals()
+    array([1., 1., 1., 1.])
     ```
+
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
+
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.
+  [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
+
+* Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
+  [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
+
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
+
+* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+  [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
+
+* Add details to the output of `Exp.label()`.
+  [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
+
+* `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
+
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
+  [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
 <h3>Breaking changes</h3>
 
+* `QueuingContext` is renamed `QueuingManager`.
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
+
+* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
+
+* Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+  [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
+
+* `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
+  can now be called with one or multiple tensors as arguments.
+  [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
+
+  ```pycon
+  >>> torch_scalar = torch.tensor(1)
+  >>> torch_tensor = torch.Tensor([2, 3, 4])
+  >>> numpy_tensor = np.array([5, 6, 7])
+  >>> qml.math.get_interface(torch_scalar)
+  'torch'
+  >>> qml.math.get_interface(numpy_tensor)
+  'numpy'
+  ```
+
+  `_multi_dispatch` previously had only one argument which contained a list of the tensors to be
+  dispatched:
+
+  ```pycon
+  >>> qml.math._multi_dispatch([torch_scalar, torch_tensor, numpy_tensor])
+  'torch'
+  ```
+
+  To differentiate whether the user wants to get the interface of a single tensor or multiple
+  tensors, `get_interface` now accepts a different argument per tensor to be dispatched:
+
+  ```pycon
+  >>> qml.math.get_interface(*[torch_scalar, torch_tensor, numpy_tensor])
+  'torch'
+  >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
+  'torch'
+  ```
+
 <h3>Deprecations</h3>
+
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
 <h3>Documentation</h3>
 
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
 <h3>Bug fixes</h3>
+
+* Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
+  [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
+
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
+
+* Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
+  [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo,
-Josh Izaac,
-Edward Jiang,
-Korbinian Kottmann,
-Zeyue Niu,
+Guillermo Alonso-Linaje,
+Juan Miguel Arrazola,
+Albert Mitjans Coma,
+Utkarsh Azad,
+Amintor Dusko,
+Diego Guala,
+Soran Jahangiri,
+Christina Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
-Antal Száva
+Matthew Silverman,
+Jay Soni,
+Antal Száva,
+David Wierichs,

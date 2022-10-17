@@ -16,16 +16,17 @@ This module contains the base quantum tape.
 """
 import contextlib
 import copy
+from warnings import warn
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from threading import RLock
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow
-from pennylane.operation import DecompositionUndefinedError, Operation
-from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
+from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
 
@@ -87,7 +88,12 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
-    return QueuingContext.active_context()
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    warn(message, UserWarning)
+    return QueuingManager.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -143,22 +149,37 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         def stop_at(obj):  # pylint: disable=unused-argument
             return False
 
-    new_tape = QuantumTape()
+    new_prep = []
+    new_ops = []
+    new_measurements = []
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
     if tape._obs_sharing_wires:
-        with qml.tape.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
                     tape._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
+                if any(
+                    m.return_type in (Probability, Sample, Counts, AllCounts)
+                    for m in tape.measurements
+                ):
+                    raise qml.QuantumFunctionError(
+                        "Only observables that are qubit-wise commuting "
+                        "Pauli words can be returned on the same wire.\n"
+                        "Try removing all probability, sample and counts measurements "
+                        "this will allow for splitting of execution and separate measurements "
+                        "for each non-commuting observable."
+                    ) from e
+
                 raise qml.QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
-                    "Pauli words can be returned on the same wire"
+                    "Pauli words can be returned on the same wire, "
+                    f"some of the following measurements do not commute:\n{tape.measurements}"
                 ) from e
 
             tape._ops.extend(rotations)
@@ -167,8 +188,12 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
                 tape._measurements[i] = new_m
 
-    for queue in ("_prep", "_ops", "_measurements"):
-        for obj in getattr(tape, queue):
+    for queue, new_queue in [
+        (tape._prep, new_prep),
+        (tape._ops, new_ops),
+        (tape._measurements, new_measurements),
+    ]:
+        for obj in queue:
             stop = stop_at(obj)
 
             if not expand_measurements:
@@ -179,33 +204,43 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if stop:
                 # do not expand out the object; append it to the
                 # new tape, and continue to the next object in the queue
-                getattr(new_tape, queue).append(obj)
+                new_queue.append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operator, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
                 except DecompositionUndefinedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
-                    getattr(new_tape, queue).append(obj)
+                    new_queue.append(obj)
                     continue
 
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
-            new_tape._prep += expanded_tape._prep
-            new_tape._ops += expanded_tape._ops
-            new_tape._measurements += expanded_tape._measurements
+            new_prep.extend(expanded_tape._prep)
+            new_ops.extend(expanded_tape._ops)
+            new_measurements.extend(expanded_tape._measurements)
+
+    new_tape = QuantumTape()
+    new_tape._prep = new_prep
+    new_tape._ops = new_ops
+    new_tape._measurements = new_measurements
 
     # Update circuit info
-    new_tape._update_circuit_info()
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
     new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
+
+_empty_wires = qml.wires.Wires([])
 
 # pylint: disable=too-many-public-methods
 class QuantumTape(AnnotatedQueue):
@@ -327,12 +362,11 @@ class QuantumTape(AnnotatedQueue):
         self._trainable_params = []
         self._graph = None
         self._specs = None
-        self._depth = None
         self._output_dim = 0
-        self._batch_size = 0
+        self._batch_size = None
         self._qfunc_output = None
 
-        self.wires = qml.wires.Wires([])
+        self.wires = _empty_wires
         self.num_wires = 0
 
         self.is_sampled = False
@@ -351,7 +385,7 @@ class QuantumTape(AnnotatedQueue):
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
-                QueuingContext.append(self)
+                QueuingManager.append(self)
             return super().__enter__()
         except Exception as _:
             QuantumTape._lock.release()
@@ -360,6 +394,11 @@ class QuantumTape(AnnotatedQueue):
     def __exit__(self, exception_type, exception_value, traceback):
         try:
             super().__exit__(exception_type, exception_value, traceback)
+            # After other optimizations in #2963, #2986 and follow-up work, we should check whether
+            # calling `_process_queue` only if there is no `exception_type` saves time. This would
+            # be done via the following:
+            # if exception_type is None:
+            #    self._process_queue()
             self._process_queue()
         finally:
             QuantumTape._lock.release()
@@ -405,10 +444,13 @@ class QuantumTape(AnnotatedQueue):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
 
+    # pylint: disable=no-self-use
     @contextlib.contextmanager
     def stop_recording(self):
         """Context manager to temporarily stop recording operations
         onto the tape. This is useful is scratch space is needed.
+
+        **Deprecated Method:** Please use ``qml.QueuingManager.stop_recording`` instead.
 
         **Example**
 
@@ -420,15 +462,12 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        if QueuingContext.active_context() is not self:
-            raise QueuingError(
-                "Cannot stop recording requested tape as it is not currently recording."
-            )
-
-        active_contexts = QueuingContext._active_contexts
-        QueuingContext._active_contexts = deque()
-        yield
-        QueuingContext._active_contexts = active_contexts
+        warn(
+            "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording.",
+            UserWarning,
+        )
+        with QueuingManager.stop_recording():
+            yield
 
     # ========================================================
     # construction methods
@@ -442,14 +481,12 @@ class QuantumTape(AnnotatedQueue):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
 
-        This method sets the following attributes:
+        Sets:
+            _prep (list[~.Operation]): Preparation operations
+            _ops (list[~.Operation]): Main tape operations
+            _measurements (list[~.MeasurementProcess]): Tape measurements
 
-        * ``_ops``
-        * ``_measurements``
-        * ``_par_info``
-        * ``_output_dim``
-        * ``_trainable_params``
-        * ``is_sampled``
+        Also calls `_update()` which sets many attributes.
         """
         self._prep = []
         self._ops = []
@@ -472,63 +509,30 @@ class QuantumTape(AnnotatedQueue):
         self._update()
 
     def _update_circuit_info(self):
-        """Update circuit metadata"""
-        self.wires = qml.wires.Wires.all_wires(
-            [op.wires for op in self.operations + self.observables]
-        )
+        """Update circuit metadata
+
+        Sets:
+            wires (~.Wires): Wires
+            num_wires (int): Number of wires
+            is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
+            all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
+        """
+        self.wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
 
-        self.is_sampled = any(m.return_type in (Sample, Counts, Shadow) for m in self.measurements)
-        self.all_sampled = all(m.return_type in (Sample, Counts, Shadow) for m in self.measurements)
-
-    def _update_batch_size(self):
-        """Infer the batch_size from the batch sizes of the tape operations and
-        check the latter for consistency."""
-        candidate = None
-        for op in self.operations:
-            op_batch_size = getattr(op, "batch_size", None)
-            if op_batch_size is None:
-                continue
-            if candidate and op_batch_size != candidate:
-                raise ValueError(
-                    "The batch sizes of the tape operations do not match, they include "
-                    f"{candidate} and {op_batch_size}."
-                )
-            candidate = candidate or op_batch_size
-
-        self._batch_size = candidate
-
-    def _update_output_dim(self):
-        self._output_dim = 0
-        for m in self.measurements:
-            # attempt to infer the output dimension
-            if m.return_type is qml.measurements.Probability:
-                # TODO: what if we had a CV device here? Having the base as
-                # 2 would have to be swapped to the cutoff value
-                self._output_dim += 2 ** len(m.wires)
-            elif m.return_type is not qml.measurements.State:
-                self._output_dim += 1
-        if self.batch_size:
-            self._output_dim *= self.batch_size
-
-    def _update_observables(self):
-        """Update information about observables, including the wires that are acted upon and
-        identifying any observables that share wires"""
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
-        self._obs_sharing_wires = []
-        self._obs_sharing_wires_id = []
-
-        if len(obs_wires) != len(set(obs_wires)):
-            c = Counter(obs_wires)
-            repeated_wires = {w for w in obs_wires if c[w] > 1}
-
-            for i, m in enumerate(self.measurements):
-                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
-                    self._obs_sharing_wires.append(m.obs)
-                    self._obs_sharing_wires_id.append(i)
+        is_sample_type = [
+            m.return_type in (Sample, Counts, AllCounts, Shadow, ShadowExpval)
+            for m in self.measurements
+        ]
+        self.is_sampled = any(is_sample_type)
+        self.all_sampled = all(is_sample_type)
 
     def _update_par_info(self):
-        """Update the parameter information dictionary"""
+        """Update the parameter information dictionary.
+
+        Sets:
+            _par_info (dict): Parameter information dictionary
+        """
         param_count = 0
 
         for obj in self.operations + self.observables:
@@ -543,23 +547,100 @@ class QuantumTape(AnnotatedQueue):
     def _update_trainable_params(self):
         """Set the trainable parameters
 
-        self._par_info.keys() is assumed to be sorted
-        As its order is maintained, this assumes that self._par_info
-        is created in a sorted manner, as in _update_par_info
+        Sets:
+            _trainable_params (list[int]): Tape parameter indices of trainable parameters
+
+        self._par_info.keys() is assumed to be sorted and up to date when calling
+        this method. This assumes that self._par_info was created in a sorted manner,
+        as in _update_par_info.
+
+        Call `_update_par_info` before `_update_trainable_params`
         """
         self._trainable_params = list(self._par_info)
+
+    def _update_observables(self):
+        """Update information about observables, including the wires that are acted upon and
+        identifying any observables that share wires.
+
+        Sets:
+            _obs_sharing_wires (list[~.Observable]): Observables that share wires with
+                any other observable
+            _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
+                the observables in _obs_sharing_wires
+        """
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        self._obs_sharing_wires = []
+        self._obs_sharing_wires_id = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
+                    self._obs_sharing_wires.append(m.obs)
+                    self._obs_sharing_wires_id.append(i)
+
+    def _update_batch_size(self):
+        """Infer the batch_size of the tape from the batch sizes of its operations
+        and check the latter for consistency.
+
+        Sets:
+            _batch_size (int): The common batch size of the tape operations, if any has one
+        """
+        candidate = None
+        for op in self.operations:
+            op_batch_size = getattr(op, "batch_size", None)
+            if op_batch_size is None:
+                continue
+            if candidate:
+                if op_batch_size != candidate:
+                    raise ValueError(
+                        "The batch sizes of the tape operations do not match, they include "
+                        f"{candidate} and {op_batch_size}."
+                    )
+            else:
+                candidate = op_batch_size
+
+        self._batch_size = candidate
+
+    def _update_output_dim(self):
+        """Update the dimension of the output of the tape.
+
+        Sets:
+            self._output_dim (int): Size of the tape output (when flattened)
+
+        This method makes use of `self.batch_size`, so that `self._batch_size`
+        needs to be up to date when calling it.
+        Call `_update_batch_size` before `_update_output_dim`
+        """
+        self._output_dim = 0
+        for m in self.measurements:
+            # attempt to infer the output dimension
+            if m.return_type is qml.measurements.Probability:
+                # TODO: what if we had a CV device here? Having the base as
+                # 2 would have to be swapped to the cutoff value
+                self._output_dim += 2 ** len(m.wires)
+            elif m.return_type is not qml.measurements.State:
+                self._output_dim += 1
+        if self.batch_size:
+            self._output_dim *= self.batch_size
 
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._depth = None
-        self._update_circuit_info()
-        self._update_par_info()
-        self._update_trainable_params()
-        self._update_observables()
-        self._update_batch_size()
-        self._update_output_dim()
+        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
+
+        # The following line requires _par_info to be up to date
+        self._update_trainable_params()  # Updates the _trainable_params; O(1)
+
+        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        self._update_batch_size()  # Updates _batch_size; O(ops)
+
+        # The following line requires _batch_size to be up to date
+        self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -703,10 +784,7 @@ class QuantumTape(AnnotatedQueue):
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
         for idx, op in enumerate(self._ops):
-            try:
-                self._ops[idx] = op.adjoint()
-            except qml.operation.AdjointUndefinedError:
-                op.inverse = not op.inverse
+            self._ops[idx] = qml.adjoint(op, lazy=False)
 
         self._ops = list(reversed(self._ops))
 
@@ -720,7 +798,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        with qml.tape.stop_recording():
+        with QueuingManager.stop_recording():
             new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 
@@ -728,7 +806,7 @@ class QuantumTape(AnnotatedQueue):
         # transform requires that the returned inverted object
         # is automatically queued.
         with QuantumTape._lock:
-            QueuingContext.append(new_tape)
+            QueuingManager.append(new_tape)
 
         return new_tape
 
@@ -785,8 +863,9 @@ class QuantumTape(AnnotatedQueue):
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be non-negative integers.")
 
-        if any(i > len(self._par_info) for i in param_indices):
-            raise ValueError(f"Tape has at most {self.num_params} parameters.")
+        num_params = len(self._par_info)
+        if any(i > num_params for i in param_indices):
+            raise ValueError(f"Tape only has {num_params} parameters.")
 
         self._trainable_params = sorted(set(param_indices))
 
@@ -1101,6 +1180,9 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.shape(dev)
             (1, 4)
         """
+        if qml.active_return():
+            return self._shape_new(device)
+
         output_shape = tuple()
 
         if len(self._measurements) == 1:
@@ -1114,6 +1196,67 @@ class QuantumTape(AnnotatedQueue):
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
         return output_shape
+
+    def _shape_new(self, device):
+        """Produces the output shape of the tape by inspecting its measurements
+        and the device used for execution.
+
+        .. note::
+
+            The computed shape is not stored because the output shape may be
+            dependent on the device used for execution.
+
+        Args:
+            device (.Device): the device that will be used for the tape execution
+
+        Returns:
+            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the
+            tape result
+
+        **Examples**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def qfunc():
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                qfunc()
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> tape.shape(dev)
+            (4,)
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as tape:
+                qfunc()
+                qml.state()
+                qml.expval(qml.PauliZ(wires=0))
+                qml.probs(wires=[0, 1])
+
+        .. code-block:: pycon
+
+            >>> tape.shape(dev)
+            ((4,), (), (4,))
+        """
+        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
+
+        if len(shapes) == 1:
+            return shapes[0]
+
+        if device.shot_vector is not None:
+            # put the shot vector axis before the measurement axis
+            shapes = tuple(zip(*shapes))
+
+        return shapes
 
     @property
     def numeric_type(self):
@@ -1149,6 +1292,9 @@ class QuantumTape(AnnotatedQueue):
             >>> tape.numeric_type
             complex
         """
+        if qml.active_return():
+            return self._numeric_type_new
+
         measurement_types = {meas.return_type for meas in self._measurements}
         if len(measurement_types) > 1:
             raise TapeError(
@@ -1165,6 +1311,43 @@ class QuantumTape(AnnotatedQueue):
             return int
 
         return self._measurements[0].numeric_type
+
+    @property
+    def _numeric_type_new(self):
+        """Returns the expected numeric type of the tape result by inspecting
+        its measurements.
+
+        Returns:
+            Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
+            tape, or a tuple of such types if the tape contains multiple measurements
+
+        **Example:**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def func(a):
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                func(a)
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> tape.numeric_type
+            complex
+        """
+        types = tuple(observable.numeric_type for observable in self._measurements)
+
+        if len(types) == 1:
+            return types[0]
+
+        return types
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
@@ -1200,7 +1383,7 @@ class QuantumTape(AnnotatedQueue):
     # ========================================================
 
     @property
-    def operations(self) -> List[Operation]:
+    def operations(self) -> List[Operator]:
         """Returns the operations on the quantum tape.
 
         Returns:
@@ -1262,7 +1445,7 @@ class QuantumTape(AnnotatedQueue):
         """Returns the measurements on the quantum tape.
 
         Returns:
-            list[.MeasurementProcess]: list of recorded measurement processess
+            list[.MeasurementProcess]: list of recorded measurement processes
 
         **Example**
 
@@ -1447,7 +1630,6 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: OpenQASM serialization of the circuit
         """
-        # We import decompose_queue here to avoid a circular import
         wires = wires or self.wires
 
         # add the QASM headers
@@ -1547,6 +1729,7 @@ class QuantumTape(AnnotatedQueue):
             tape._prep = [copy.copy(op) for op in self._prep]
             tape._ops = [copy.copy(op) for op in self._ops]
             tape._measurements = [copy.copy(op) for op in self._measurements]
+            tape._graph = None
         else:
             # Perform a shallow copy of the state prep, operation, and measurement queues. The
             # operations within the queues will be references to the original tape operations;
@@ -1554,9 +1737,18 @@ class QuantumTape(AnnotatedQueue):
             tape._prep = self._prep.copy()
             tape._ops = self._ops.copy()
             tape._measurements = self._measurements.copy()
+            tape._graph = self._graph
 
-        tape._update()
+        tape._specs = None
+        tape.wires = copy.copy(self.wires)
+        tape.num_wires = self.num_wires
+        tape.is_sampled = self.is_sampled
+        tape.all_sampled = self.all_sampled
+        tape._update_par_info()
         tape.trainable_params = self.trainable_params.copy()
+        tape._obs_sharing_wires = self._obs_sharing_wires
+        tape._obs_sharing_wires_id = self._obs_sharing_wires_id
+        tape._batch_size = self.batch_size
         tape._output_dim = self.output_dim
 
         return tape

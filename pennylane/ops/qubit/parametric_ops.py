@@ -24,14 +24,23 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation, expand_matrix
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
+from pennylane.math import expand_matrix
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops.qubit.non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
+
+
+def _can_replace(x, y):
+    """
+    Convenience function that returns true if x is close to y and if
+    x does not require grad
+    """
+    return (not qml.math.requires_grad(x)) and qml.math.allclose(x, y)
 
 
 class RX(Operation):
@@ -115,7 +124,16 @@ class RX(Operation):
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        CRX(*self.parameters, wires=wire + self.wires)
+        new_op = CRX(*self.parameters, wires=wire + self.wires)
+        return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        theta = self.data[0] % (4 * np.pi)
+
+        if _can_replace(theta, 0):
+            return qml.Identity(wires=self.wires)
+
+        return RX(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
@@ -204,7 +222,16 @@ class RY(Operation):
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        CRY(*self.parameters, wires=wire + self.wires)
+        new_op = CRY(*self.parameters, wires=wire + self.wires)
+        return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        theta = self.data[0] % (4 * np.pi)
+
+        if _can_replace(theta, 0):
+            return qml.Identity(wires=self.wires)
+
+        return RY(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
@@ -333,7 +360,16 @@ class RZ(Operation):
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        CRZ(*self.parameters, wires=wire + self.wires)
+        new_op = CRZ(*self.parameters, wires=wire + self.wires)
+        return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        theta = self.data[0] % (4 * np.pi)
+
+        if _can_replace(theta, 0):
+            return qml.Identity(wires=self.wires)
+
+        return RZ(theta, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
@@ -491,7 +527,16 @@ class PhaseShift(Operation):
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+        new_op = ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+        return new_op.inv() if self.inverse else new_op
+
+    def simplify(self):
+        phi = self.data[0] % (2 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires)
+
+        return PhaseShift(phi, wires=self.wires)
 
     def single_qubit_rot_angles(self):
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
@@ -668,6 +713,14 @@ class ControlledPhaseShift(Operation):
     def pow(self, z):
         return [ControlledPhaseShift(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = self.data[0] % (2 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return ControlledPhaseShift(phi, wires=self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -751,7 +804,7 @@ class Rot(Operation):
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([phi, theta, omega])
+        interface = qml.math.get_interface(phi, theta, omega)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -817,7 +870,8 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
     def _controlled(self, wire):
-        CRot(*self.parameters, wires=wire + self.wires)
+        new_op = CRot(*self.parameters, wires=wire + self.wires)
+        return new_op.inv() if self.inverse else new_op
 
     def single_qubit_rot_angles(self):
         return self.data
@@ -831,18 +885,20 @@ class Rot(Operation):
         Hadamard(wires=[0])
 
         """
-        p0, p1, p2 = np.mod(self.data, 2 * np.pi)
+        p0, p1, p2 = [p % (4 * np.pi) for p in self.data]
 
-        if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
-            return qml.RX(self.data[1], wires=self.wires)
-        if np.allclose(p0, 0) and np.allclose(p2, 0):
-            return qml.RY(self.data[1], wires=self.wires)
-        if np.allclose(p1, 0):
-            return qml.RZ(self.data[0] + self.data[2], wires=self.wires)
-        if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
+        if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
+            return qml.Identity(wires=self.wires)
+        if _can_replace(p0, np.pi / 2) and _can_replace(p2, 7 * np.pi / 2):
+            return qml.RX(p1, wires=self.wires)
+        if _can_replace(p0, 0) and _can_replace(p2, 0):
+            return qml.RY(p1, wires=self.wires)
+        if _can_replace(p1, 0):
+            return qml.RZ((p0 + p2) % (4 * np.pi), wires=self.wires)
+        if _can_replace(p0, np.pi) and _can_replace(p1, np.pi / 2) and _can_replace(p2, 0):
             return qml.Hadamard(wires=self.wires)
 
-        return self
+        return Rot(p0, p1, p2, wires=self.wires)
 
 
 class MultiRZ(Operation):
@@ -1004,6 +1060,14 @@ class MultiRZ(Operation):
 
     def pow(self, z):
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        theta = self.data[0] % (4 * np.pi)
+
+        if _can_replace(theta, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return MultiRZ(theta, wires=self.wires)
 
 
 class PauliRot(Operation):
@@ -1467,6 +1531,14 @@ class CRX(Operation):
     def pow(self, z):
         return [CRX(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return CRX(phi, wires=self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1618,6 +1690,14 @@ class CRY(Operation):
 
     def pow(self, z):
         return [CRY(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return CRY(phi, wires=self.wires)
 
     @property
     def control_wires(self):
@@ -1807,6 +1887,14 @@ class CRZ(Operation):
     def pow(self, z):
         return [CRZ(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return CRZ(phi, wires=self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1898,7 +1986,7 @@ class CRot(Operation):
         # It might be that they are in different interfaces, e.g.,
         # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([phi, theta, omega])
+        interface = qml.math.get_interface(phi, theta, omega)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1998,19 +2086,20 @@ class CRot(Operation):
         wires = self.wires
         params = self.parameters
 
-        p0, p1, p2 = np.mod(params, 2 * np.pi)
+        p0, p1, p2 = [p % (4 * np.pi) for p in params]
 
-        if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(self.data[2], -2 * np.pi), -np.pi / 2):
-            return qml.CRX(self.data[1], wires=wires)
-        if np.allclose(p0, 0) and np.allclose(p2, 0):
-            return qml.CRY(self.data[1], wires=wires)
-        if np.allclose(p1, 0):
-            return qml.CRZ(self.data[0] + self.data[2], wires=wires)
-        if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
-            hadamard = qml.Hadamard
-            return qml.ctrl(hadamard, control=self.control_wires)(wires=target_wires)
+        if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
+            return qml.Identity(wires=wires[0])
+        if _can_replace(p0, np.pi / 2) and _can_replace(p2, 7 * np.pi / 2):
+            return qml.CRX(p1, wires=wires)
+        if _can_replace(p0, 0) and _can_replace(p2, 0):
+            return qml.CRY(p1, wires=wires)
+        if _can_replace(p1, 0):
+            return qml.CRZ((p0 + p2) % (4 * np.pi), wires=wires)
+        if _can_replace(p0, np.pi) and _can_replace(p1, np.pi / 2) and _can_replace(p2, 0):
+            return qml.ctrl(qml.Hadamard(wires=target_wires), control=self.control_wires)
 
-        return self
+        return CRot(p0, p1, p2, wires=wires)
 
 
 class U1(Operation):
@@ -2084,6 +2173,8 @@ class U1(Operation):
         else:
             fac = np.array([0, 1])
 
+        fac = qml.math.convert_like(fac, phi)
+
         arg = 1j * phi
         if qml.math.ndim(arg) == 0:
             return qml.math.diag(qml.math.exp(arg * fac))
@@ -2120,6 +2211,14 @@ class U1(Operation):
 
     def pow(self, z):
         return [U1(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = self.data[0] % (2 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires)
+
+        return U1(phi, wires=self.wires)
 
 
 class U2(Operation):
@@ -2195,7 +2294,7 @@ class U2(Operation):
         tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
                 [ 0.7036+0.0706j,  0.6755+0.2090j]])
         """
-        interface = qml.math._multi_dispatch([phi, delta])
+        interface = qml.math.get_interface(phi, delta)
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
@@ -2252,16 +2351,16 @@ class U2(Operation):
         """Simplifies the gate into RX or RY gates if possible."""
         wires = self.wires
 
-        if np.allclose(np.mod(self.data[1], 2 * np.pi), 0) and np.allclose(
-            np.mod(self.data[0] + self.data[1], 2 * np.pi), 0
-        ):
-            return qml.RY(np.pi / 2, wires=wires)
-        if np.allclose(np.mod(self.data[1], np.pi / 2), 0) and np.allclose(
-            np.mod(self.data[0] + self.data[1], 2 * np.pi), 0
-        ):
-            return qml.RX(self.data[1], wires=wires)
+        phi, delta = [p % (2 * np.pi) for p in self.data]
 
-        return self
+        if _can_replace(delta, 0) and _can_replace(phi, 0):
+            return qml.RY(np.pi / 2, wires=wires)
+        if _can_replace(delta, np.pi / 2) and _can_replace(phi, 3 * np.pi / 2):
+            return qml.RX(np.pi / 2, wires=wires)
+        if _can_replace(delta, 3 * np.pi / 2) and _can_replace(phi, np.pi / 2):
+            return qml.RX(3 * np.pi / 2, wires=wires)
+
+        return U2(phi, delta, wires=wires)
 
 
 class U3(Operation):
@@ -2343,7 +2442,7 @@ class U3(Operation):
         # It might be that they are in different interfaces, e.g.,
         # U3(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([theta, phi, delta])
+        interface = qml.math.get_interface(theta, phi, delta)
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -2417,20 +2516,23 @@ class U3(Operation):
         wires = self.wires
         params = self.parameters
 
-        p0, p1, p2 = np.mod(params, 2 * np.pi)
+        p0 = params[0] % (4 * np.pi)
+        p1, p2 = [p % (2 * np.pi) for p in params[1:]]
 
-        if np.allclose(p0, 0) and not np.allclose(p1, 0) and np.allclose(p2, 0):
-            return qml.PhaseShift(self.data[1], wires=wires)
+        if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
+            return qml.Identity(wires=wires)
+        if _can_replace(p0, 0) and not _can_replace(p1, 0) and _can_replace(p2, 0):
+            return qml.PhaseShift(p1, wires=wires)
         if (
-            np.allclose(p2, np.pi / 2)
-            and np.allclose(np.mod(self.data[1] + self.data[2], 2 * np.pi), 0)
-            and not np.allclose(p0, 0)
+            _can_replace(p2, np.pi / 2)
+            and _can_replace(p1, 3 * np.pi / 2)
+            and not _can_replace(p0, 0)
         ):
-            return qml.RX(self.data[0], wires=wires)
-        if not np.allclose(p0, 0) and np.allclose(p1, 0) and np.allclose(p2, 0):
-            return qml.RY(self.data[0], wires=wires)
+            return qml.RX(p0, wires=wires)
+        if not _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
+            return qml.RY(p0, wires=wires)
 
-        return self
+        return U3(p0, p1, p2, wires=wires)
 
 
 class IsingXX(Operation):
@@ -2561,6 +2663,14 @@ class IsingXX(Operation):
     def pow(self, z):
         return [IsingXX(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return IsingXX(phi, wires=self.wires)
+
 
 class IsingYY(Operation):
     r"""
@@ -2672,12 +2782,22 @@ class IsingYY(Operation):
             s = qml.math.cast_like(s, 1j)
 
         js = 1j * s
-        if qml.math.ndim(phi) == 0:
-            return c * np.eye(4) + js * np.diag([1, -1, -1, 1])[::-1]
-
-        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(
-            js, np.diag([1, -1, -1, 1])[::-1], axes=0
+        r_term = qml.math.cast_like(
+            qml.math.array(
+                [
+                    [0.0, 0.0, 0.0, 1.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, -1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                ],
+                like=js,
+            ),
+            1j,
         )
+        if qml.math.ndim(phi) == 0:
+            return c * qml.math.cast_like(qml.math.eye(4, like=c), c) + js * r_term
+
+        return qml.math.tensordot(c, np.eye(4), axes=0) + qml.math.tensordot(js, r_term, axes=0)
 
     def adjoint(self):
         (phi,) = self.parameters
@@ -2685,6 +2805,14 @@ class IsingYY(Operation):
 
     def pow(self, z):
         return [IsingYY(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return IsingYY(phi, wires=self.wires)
 
 
 class IsingZZ(Operation):
@@ -2852,6 +2980,14 @@ class IsingZZ(Operation):
     def pow(self, z):
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
 
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return IsingZZ(phi, wires=self.wires)
+
 
 class IsingXY(Operation):
     r"""
@@ -2979,12 +3115,24 @@ class IsingXY(Operation):
             s = qml.math.cast_like(s, 1j)
 
         js = 1j * s
+        off_diag = qml.math.cast_like(
+            qml.math.array(
+                [
+                    [0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0],
+                ],
+                like=js,
+            ),
+            1j,
+        )
         if qml.math.ndim(phi) == 0:
-            return qml.math.diag([1, c, c, 1]) + qml.math.diag([0, js, js, 0])[::-1]
+            return qml.math.diag([1, c, c, 1]) + js * off_diag
 
         ones = qml.math.ones_like(c)
         diags = stack_last([ones, c, c, ones])[:, :, np.newaxis]
-        return diags * np.eye(4) + qml.math.tensordot(js, np.diag([0, 1, 1, 0])[::-1], axes=0)
+        return diags * np.eye(4) + qml.math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -3028,3 +3176,160 @@ class IsingXY(Operation):
 
     def pow(self, z):
         return [IsingXY(self.data[0] * z, wires=self.wires)]
+
+    def simplify(self):
+        phi = self.data[0] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires[0])
+
+        return IsingXY(phi, wires=self.wires)
+
+
+class PSWAP(Operation):
+    r"""Phase SWAP gate
+
+    .. math:: PSWAP(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 0 & e^{i \phi} & 0 \\
+            0 & e^{i \phi} & 0 & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe:
+
+    .. math::
+        \frac{d}{d \phi} PSWAP(\phi)
+        = \frac{1}{2} \left[ PSWAP(\phi + \pi / 2) - PSWAP(\phi - \pi / 2) \right]
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+    """
+    num_wires = 2
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.PSWAP.decomposition`.
+
+        Args:
+            phi (float): the phase angle
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PSWAP.compute_decomposition(1.23, wires=(0,1))
+        [SWAP(wires=[0, 1]), CNOT(wires=[0, 1]), PhaseShift(1.23, wires=[1]), CNOT(wires=[0, 1])]
+        """
+        return [
+            qml.SWAP(wires=wires),
+            qml.CNOT(wires=wires),
+            qml.PhaseShift(phi, wires=[wires[1]]),
+            qml.CNOT(wires=wires),
+        ]
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PSWAP.matrix`
+
+
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PSWAP.compute_matrix(0.5)
+        array([[1.        +0.j, 0.        +0.j        , 0.        +0.j        , 0.        +0.j],
+              [0.        +0.j, 0.        +0.j        , 0.87758256+0.47942554j, 0.        +0.j],
+              [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
+              [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        e = qml.math.exp(1j * phi)
+
+        return qml.math.stack(
+            [
+                stack_last([1, 0, 0, 0]),
+                stack_last([0, 0, e, 0]),
+                stack_last([0, e, 0, 0]),
+                stack_last([0, 0, 0, 1]),
+            ],
+            axis=-2,
+        )
+
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PSWAP.eigvals`
+
+
+        Args:
+            phi (tensor_like or float): phase angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.PSWAP.compute_eigvals(0.5)
+        array([ 1.        +0.j        ,  1.        +0.j,       -0.87758256-0.47942554j,  0.87758256+0.47942554j])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        return qml.math.stack([1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)])
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return PSWAP(-phi, wires=self.wires)
+
+    def simplify(self):
+        phi = self.data[0] % (2 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qml.SWAP(wires=self.wires)
+
+        return PSWAP(phi, wires=self.wires)

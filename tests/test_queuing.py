@@ -12,106 +12,164 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`QueuingContext` class.
+Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
-import contextlib
-
 import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.tape import OperationRecorder
+from pennylane.queuing import (
+    AnnotatedQueue,
+    QueuingManager,
+    QueuingError,
+)
 
 
-@pytest.fixture(scope="function")
-def mock_queuing_context(monkeypatch):
-    """A mock instance of the abstract QueuingContext class."""
-    with monkeypatch.context() as m:
-        m.setattr(QueuingContext, "__abstractmethods__", frozenset())
-        m.setattr(
-            QueuingContext,
-            "_append",
-            lambda self, operator: self.queue.append(operator),
-        )
-        m.setattr(
-            QueuingContext,
-            "_remove",
-            lambda self, operator: self.queue.remove(operator),
-        )
-        context = QueuingContext()
-        context.queue = []
+class TestStopRecording:
+    """Test the stop_recording method of QueuingManager."""
 
-        yield context
+    def test_stop_recording_on_function_inside_QNode(self):
+        """Test that the stop_recording transform when applied to a function
+        is not recorded by a QNode"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @QueuingManager.stop_recording()
+        def my_op():
+            return [qml.RX(0.123, wires=0), qml.RY(2.32, wires=0), qml.RZ(1.95, wires=0)]
+
+        res = []
+
+        @qml.qnode(dev)
+        def my_circuit():
+            res.extend(my_op())
+            return qml.expval(qml.PauliZ(0))
+
+        my_circuit.construct([], {})
+        tape = my_circuit.qtape
+
+        assert len(tape.operations) == 0
+        assert len(res) == 3
+
+    def test_stop_recording_directly_on_op(self):
+        """Test that stop_recording transform works when directly applied to an op"""
+        dev = qml.device("default.qubit", wires=1)
+        res = []
+
+        @qml.qnode(dev)
+        def my_circuit():
+            op1 = QueuingManager.stop_recording()(qml.RX)(np.pi / 4.0, wires=0)
+            op2 = qml.RY(np.pi / 4.0, wires=0)
+            res.extend([op1, op2])
+            return qml.expval(qml.PauliZ(0))
+
+        my_circuit.construct([], {})
+        tape = my_circuit.qtape
+
+        assert len(tape.operations) == 1
+        assert tape.operations[0] == res[1]
+        assert len(res) == 2
+
+    def test_nested_stop_recording_on_function(self):
+        """Test that stop_recording works when nested with other stop_recordings"""
+
+        @QueuingManager.stop_recording()
+        @QueuingManager.stop_recording()
+        def my_op():
+            return [
+                qml.RX(0.123, wires=0),
+                qml.RY(2.32, wires=0),
+                qml.RZ(1.95, wires=0),
+            ]
+
+        # the stop_recording function will still work outside of any queuing contexts
+        res = my_op()
+        assert len(res) == 3
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def my_circuit():
+            my_op()
+
+            with QueuingManager.stop_recording():
+                qml.PauliX(wires=0)
+                my_op()
+
+            qml.Hadamard(wires=0)
+            my_op()
+            return qml.state()
+
+        my_circuit.construct([], {})
+        tape = my_circuit.qtape
+
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "Hadamard"
+
+    def test_stop_recording_qnode_qfunc(self):
+        """A QNode with a stop_recording qfunc will result in no quantum measurements."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        @QueuingManager.stop_recording()
+        def my_circuit():
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = my_circuit()
+        assert len(result) == 0
+
+        tape = my_circuit.qtape
+        assert len(tape.operations) == 0
+        assert len(tape.measurements) == 0
+
+    def test_stop_recording_qnode(self):
+        """A stop_recording QNode is unaffected"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @QueuingManager.stop_recording()
+        @qml.qnode(dev)
+        def my_circuit():
+            qml.RX(np.pi, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = my_circuit()
+        assert result == -1.0
 
 
-@pytest.fixture(scope="function")
-def three_mock_queuing_contexts(monkeypatch):
-    """A list of three mock instances of the abstract QueuingContext class."""
-    with monkeypatch.context() as m:
-        m.setattr(QueuingContext, "__abstractmethods__", frozenset())
-        m.setattr(
-            QueuingContext,
-            "_append",
-            lambda self, operator: self.queue.append(operator),
-        )
-        m.setattr(
-            QueuingContext,
-            "_remove",
-            lambda self, operator: self.queue.remove(operator),
-        )
-
-        contexts = [QueuingContext() for _ in range(3)]
-        for context in contexts:
-            context.queue = []
-
-        yield contexts
+def test_name_change_warning():
+    """Test that a warning is raised when QueuingContext is requested from the queuing module."""
+    with pytest.warns(
+        UserWarning, match=r"QueuingContext has been renamed qml.queuing.QueuingManager"
+    ):
+        out = qml.queuing.QueuingContext
+    assert out is QueuingManager
 
 
-class TestQueuingContext:
-    """Test the logic associated with the QueuingContext class."""
-
-    def test_context_activation(self, mock_queuing_context):
-        """Test that the QueuingContext is properly activated and deactivated."""
-
-        # Assert that the list of active contexts is empty
-        assert not QueuingContext._active_contexts
-
-        with mock_queuing_context:
-            assert len(QueuingContext._active_contexts) == 1
-            assert mock_queuing_context in QueuingContext._active_contexts
-
-        assert not QueuingContext._active_contexts
-
-    def test_multiple_context_activation(self, three_mock_queuing_contexts):
-        """Test that multiple QueuingContexts are properly activated and deactivated."""
-
-        # Assert that the list of active contexts is empty
-        assert not QueuingContext._active_contexts
-
-        with three_mock_queuing_contexts[0]:
-            with three_mock_queuing_contexts[1]:
-                with three_mock_queuing_contexts[2]:
-                    assert len(QueuingContext._active_contexts) == 3
-                    assert three_mock_queuing_contexts[0] in QueuingContext._active_contexts
-                    assert three_mock_queuing_contexts[1] in QueuingContext._active_contexts
-                    assert three_mock_queuing_contexts[2] in QueuingContext._active_contexts
-
-        assert not QueuingContext._active_contexts
+class TestQueuingManager:
+    """Test the logic associated with the QueuingManager class."""
 
     def test_append_no_context(self):
         """Test that append does not fail when no context is present."""
 
-        QueuingContext.append(qml.PauliZ(0))
+        QueuingManager.append(qml.PauliZ(0))
 
     def test_remove_no_context(self):
         """Test that remove does not fail when no context is present."""
 
-        QueuingContext.remove(qml.PauliZ(0))
+        QueuingManager.remove(qml.PauliZ(0))
 
-    def test_no_active_context(self, mock_queuing_context):
+    def test_no_active_context(self):
         """Test that if there are no active contexts, active_context() returns None"""
-        assert mock_queuing_context.active_context() is None
+        assert QueuingManager.active_context() is None
+
+    def test_safe_update_info_deprecation(self):
+        """Test that safe_update_info raises a deprecation warning."""
+        with AnnotatedQueue() as q:
+            op = qml.PauliZ(0)
+            with pytest.warns(UserWarning, match=r"QueuingManager.safe_update_info is deprecated."):
+                QueuingManager.safe_update_info(op, owner=4)
+
+            assert QueuingManager.get_info(op) == {"owner": 4}
 
 
 class TestAnnotatedQueue:
@@ -186,7 +244,7 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
 
-        assert q._get_info(A) == {"inv": True}
+        assert q.get_info(A) == {"inv": True}
 
     def test_get_info_error(self):
         """Test that an exception is raised if get_info is called
@@ -198,7 +256,7 @@ class TestAnnotatedQueue:
         B = qml.PauliY(1)
 
         with pytest.raises(QueuingError, match="not in the queue"):
-            q._get_info(B)
+            q.get_info(B)
 
     def test_get_info_none(self):
         """Test that get_info returns None if there is no active queuing context"""
@@ -207,7 +265,7 @@ class TestAnnotatedQueue:
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
 
-        assert QueuingContext.get_info(A) is None
+        assert QueuingManager.get_info(A) is None
 
     def test_update_info(self):
         """Test that update_info correctly updates an annotation"""
@@ -215,64 +273,29 @@ class TestAnnotatedQueue:
 
         with AnnotatedQueue() as q:
             q.append(A, inv=True)
-            assert QueuingContext.get_info(A) == {"inv": True}
+            assert QueuingManager.get_info(A) == {"inv": True}
 
-            qml.QueuingContext.update_info(A, key="value1")
+            QueuingManager.update_info(A, key="value1")
 
         # should pass silently because no longer recording
-        qml.QueuingContext.update_info(A, key="value2")
+        QueuingManager.update_info(A, key="value2")
 
-        assert q._get_info(A) == {"inv": True, "key": "value1"}
+        assert q.get_info(A) == {"inv": True, "key": "value1"}
 
-        q._update_info(A, inv=False, owner=None)
-        assert q._get_info(A) == {"inv": False, "owner": None, "key": "value1"}
+        q.update_info(A, inv=False, owner=None)
+        assert q.get_info(A) == {"inv": False, "owner": None, "key": "value1"}
 
-    def test_update_error(self):
-        """Test that an exception is raised if get_info is called
-        for a non-existent object"""
+    def test_update_info_not_in_queue(self):
+        """Test that no exception is raised if get_info is called
+        for a non-existent object."""
 
         with AnnotatedQueue() as q:
             A = qml.PauliZ(0)
 
         B = qml.PauliY(1)
 
-        with pytest.raises(QueuingError, match="not in the queue"):
-            q._update_info(B, inv=True)
-
-    def test_safe_update_info_queued(self):
-        """Test the `safe_update_info` method if the object is already queued."""
-        op = qml.RX(0.5, wires=1)
-
-        with AnnotatedQueue() as q:
-            q.append(op, key="value1")
-            assert q.get_info(op) == {"key": "value1"}
-            qml.QueuingContext.safe_update_info(op, key="value2")
-
-        qml.QueuingContext.safe_update_info(op, key="no changes here")
-        assert q.get_info(op) == {"key": "value2"}
-
-        q.safe_update_info(op, key="value3")
-        assert q.get_info(op) == {"key": "value3"}
-
-        q._safe_update_info(op, key="value4")
-        assert q.get_info(op) == {"key": "value4"}
-
-    def test_safe_update_info_not_queued(self):
-        """Tests the safe_update_info method passes silently if the object is
-        not already queued."""
-        op = qml.RX(0.5, wires=1)
-
-        with AnnotatedQueue() as q:
-            qml.QueuingContext.safe_update_info(op, key="value2")
-        qml.QueuingContext.safe_update_info(op, key="no changes here")
-
-        assert len(q.queue) == 0
-
-        q.safe_update_info(op, key="value3")
-        assert len(q.queue) == 0
-
-        q._safe_update_info(op, key="value4")
-        assert len(q.queue) == 0
+        q.update_info(B, inv=True)
+        assert len(q.queue) == 1
 
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
@@ -283,106 +306,18 @@ class TestAnnotatedQueue:
             tensor_op = qml.operation.Tensor(A, B)
 
         assert q.queue == [A, B, tensor_op]
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
-        assert q._get_info(tensor_op) == {"owns": (A, B)}
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}
+        assert q.get_info(tensor_op) == {"owns": (A, B)}
 
+    def test_annotated_queue_safe_update_info_deprecation(self):
+        """Test that AnnotatedQueue.safe_update_info raises a deprecation warning."""
+        with AnnotatedQueue() as q:
+            op = qml.PauliZ(0)
+            with pytest.warns(UserWarning, match=r"AnnotatedQueue.safe_update_info is deprecated."):
+                q.safe_update_info(op, owner=4)
 
-class TestOperationRecorder:
-    """Test the OperationRecorder class."""
-
-    def test_circuit_integration(self):
-        """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""
-        expected_output = (
-            "Operations\n"
-            + "==========\n"
-            + "PauliY(wires=[0])\n"
-            + "PauliY(wires=[1])\n"
-            + "RZ(0.4, wires=[0])\n"
-            + "RZ(0.4, wires=[1])\n"
-            + "CNOT(wires=[0, 1])\n"
-            + "\n"
-            + "Observables\n"
-            + "===========\n"
-        )
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=1)
-
-            with qml.tape.OperationRecorder() as recorder:
-                ops = [
-                    qml.PauliY(0),
-                    qml.PauliY(1),
-                    qml.RZ(c, wires=0),
-                    qml.RZ(c, wires=1),
-                    qml.CNOT(wires=[0, 1]),
-                ]
-
-            assert str(recorder) == expected_output
-            assert recorder.queue == ops
-
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        circuit(0.1, 0.2, 0.4)
-
-    def test_template_integration(self):
-        """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""
-        expected_output = (
-            "Operations\n"
-            + "==========\n"
-            + "RZ(0, wires=[0])\n"
-            + "RZ(3, wires=[0])\n"
-            + "RZ(6, wires=[0])\n"
-            + "RZ(9, wires=[0])\n"
-            + "RZ(12, wires=[0])\n"
-            + "\n"
-            + "Observables\n"
-            + "===========\n"
-        )
-
-        def template(x):
-            for i in range(5):
-                qml.RZ(i * x, wires=0)
-
-        with qml.tape.OperationRecorder() as recorder:
-            template(3)
-
-        assert str(recorder) == expected_output
-
-    def test_template_with_return_integration(self):
-        """Tests that the OperationRecorder integrates well with the
-        core behaviour of PennyLane."""
-        expected_output = (
-            "Operations\n"
-            + "==========\n"
-            + "RZ(0, wires=[0])\n"
-            + "RZ(3, wires=[0])\n"
-            + "RZ(6, wires=[0])\n"
-            + "RZ(9, wires=[0])\n"
-            + "RZ(12, wires=[0])\n"
-            + "\n"
-            + "Observables\n"
-            + "===========\n"
-            + "var(PauliZ(wires=[0]))\n"
-            + "sample(PauliX(wires=[1]))\n"
-        )
-
-        def template(x):
-            for i in range(5):
-                qml.RZ(i * x, wires=0)
-
-            return qml.var(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
-
-        with qml.tape.OperationRecorder() as recorder:
-            template(3)
-
-        assert str(recorder) == expected_output
+            assert q.get_info(op) == {"owner": 4}
 
 
 test_observables = [

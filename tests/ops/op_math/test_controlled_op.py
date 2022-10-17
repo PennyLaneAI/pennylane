@@ -17,6 +17,7 @@ from copy import copy
 import pytest
 from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
+import numpy as onp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -26,7 +27,11 @@ from pennylane.operation import (
     Operation,
     Operator,
 )
-from pennylane.ops.op_math.controlled_class import Controlled, ControlledOp
+from pennylane.ops.op_math.controlled_class import (
+    Controlled,
+    ControlledOp,
+    _decompose_no_control_values,
+)
 from pennylane.wires import Wires
 
 base_num_control_mats = [
@@ -146,9 +151,9 @@ class TestInitialization:
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
-        """Test checking control_values are booleans."""
-        with pytest.raises(ValueError, match="control_values can only take on"):
-            Controlled(self.temp_op, (0, 1), ["b", 2])
+        """Test control values are converted to booleans."""
+        op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
+        assert op.control_values == [False, False, True]
 
     def test_control_values_wrong_length(self):
         """Test checking control_values length error."""
@@ -204,7 +209,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):
-        """Test that controlled defers has_matrix to base operator."""
+        """Test that Controlled defers has_matrix to base operator."""
 
         class DummyOp(Operator):
             num_wires = 1
@@ -221,6 +226,75 @@ class TestProperties:
         op = Controlled(base, 1)
         assert op.has_matrix is False
 
+    @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
+    def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
+        """Test that Controlled claims `has_decomposition` to be true if there are
+        any negated control values."""
+
+        op = Controlled(TempOperation(0.2, wires=1), cwires, cvalues)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_ctrl_single_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        only one control wire is used and the base has a `_controlled` method."""
+
+        op = Controlled(qml.RX(0.2, wires=1), 4)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_pauli_x(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        the base is a `PauliX` operator"""
+
+        op = Controlled(qml.PauliX(3), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_decomp(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        the base has a decomposition and indicates this via `has_decomposition`."""
+
+        op = Controlled(qml.IsingXX(0.6, [1, 3]), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_false_single_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use a single control wire."""
+
+        # all control values are 1, there is only one control wire but TempOperator does
+        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), 0)
+        assert op.has_decomposition is False
+
+    def test_has_decomposition_false_multi_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use multiple control wires."""
+
+        # all control values are 1, there are multiple control wires,
+        # `RX` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(qml.RX(0.5, 1), [0, 5])
+        assert op.has_decomposition is False
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_adjoint(self, value):
+        """Test that Controlled defers has_adjoint to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_adjoint = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_adjoint is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that Controlled defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_diagonalizing_gates is value
+
     @pytest.mark.parametrize("value", ("_ops", "_prep", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
@@ -234,7 +308,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
-        """Test that controlled defers `is_hermitian` to base operator."""
+        """Test that Controlled defers `is_hermitian` to base operator."""
 
         class DummyOp(Operator):
             num_wires = 1
@@ -278,6 +352,20 @@ class TestProperties:
 
 class TestMiscMethods:
     """Test miscellaneous minor Controlled methods."""
+
+    def test_repr(self):
+        """Test __repr__ method."""
+        assert repr(Controlled(qml.S(0), [1])) == "Controlled(S(wires=[0]), control_wires=[1])"
+
+        base = qml.S(0) + qml.T(1)
+        op = Controlled(base, [2])
+        assert repr(op) == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2])"
+
+        op = Controlled(base, [2, 3], control_values=[True, False], work_wires=[4])
+        assert (
+            repr(op)
+            == "Controlled(S(wires=[0]) + T(wires=[1]), control_wires=[2, 3], work_wires=[4], control_values=[True, False])"
+        )
 
     def test_copy(self):
         """Test that a copy of a controlled oeprator can have its parameters updated
@@ -363,6 +451,31 @@ class TestMiscMethods:
         for op1, op2 in zip(op_gates, base_gates):
             assert op1.__class__ is op2.__class__
             assert op1.wires == op2.wires
+
+    def test_hash(self):
+        """Test that op.hash uniquely describes an op up to work wires."""
+
+        base = qml.RY(1.2, wires=0)
+        # different control wires
+        op1 = Controlled(base, (1, 2), [0, 1])
+        op2 = Controlled(base, (2, 1), [0, 1])
+        assert op1.hash != op2.hash
+
+        # different control values
+        op3 = Controlled(base, (1, 2), [1, 0])
+        assert op1.hash != op3.hash
+        assert op2.hash != op3.hash
+
+        # all variations on default control_values
+        op4 = Controlled(base, (1, 2))
+        op5 = Controlled(base, (1, 2), [True, True])
+        op6 = Controlled(base, (1, 2), [1, 1])
+        assert op4.hash == op5.hash
+        assert op4.hash == op6.hash
+
+        # work wires
+        op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
+        assert op7.hash != op1.hash
 
 
 class TestOperationProperties:
@@ -481,7 +594,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Controlled)
-        for s1, s2 in zip(final_op.base.summands, simplified_op.base.summands):
+        for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -585,7 +698,7 @@ class TestMatrix:
         op = Controlled(base, 0)
 
         method_order = op.matrix(wire_order=(1, 0))
-        function_order = qml.operation.expand_matrix(op.matrix(), op.wires, (1, 0))
+        function_order = qml.math.expand_matrix(op.matrix(), op.wires, (1, 0))
 
         assert qml.math.allclose(method_order, function_order)
 
@@ -659,10 +772,67 @@ class TestMatrix:
         assert isinstance(lil_mat, sparse.lil_matrix)
 
 
+class TestHelperMethod:
+    """Unittests for the _decompose_no_control_values helper function."""
+
+    def test_crx(self):
+        """Test case with single control wire and defined _controlled"""
+        base = qml.RX(1.0, wires=0)
+        op = Controlled(base, 1)
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.CRX(1.0, wires=(1, 0)))
+
+    def test_inverts_decomp_if_target_inverted(self):
+        """Tests that the method preserves the inverse parameter."""
+        base = qml.RX(1.0, wires=0).inv()
+        op = Controlled(base, 1)
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert decomp[0].inverse
+
+    def test_toffoli(self):
+        """Test case when PauliX with two controls."""
+        op = Controlled(qml.PauliX("c"), ("a", 2))
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.Toffoli(("a", 2, "c")))
+
+    def test_multicontrolledx(self):
+        """Test case when PauliX has many controls."""
+        op = Controlled(qml.PauliX(4), (0, 1, 2, 3))
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.MultiControlledX(wires=(0, 1, 2, 3, 4)))
+
+    @pytest.mark.parametrize("inverse", (True, False))
+    def test_decomposes_target(self, inverse):
+        """Test that we decompose the target if we don't have a special case."""
+        target = qml.IsingXX(1.0, wires=(0, 1))
+        target.inverse = inverse
+        op = Controlled(target, (3, 4))
+
+        decomp = _decompose_no_control_values(op)
+        assert len(decomp) == 3
+
+        target_decomp = target.expand().circuit
+        for op1, target in zip(decomp, target_decomp):
+            assert isinstance(op1, Controlled)
+            assert op1.control_wires == (3, 4)
+
+            assert qml.equal(op1.base, target)
+
+    def test_None_default(self):
+        """Test that helper returns None if no special decomposition."""
+        op = Controlled(TempOperator(0), (1, 2))
+        assert _decompose_no_control_values(op) is None
+
+
+@pytest.mark.parametrize("test_expand", (False, True))
 class TestDecomposition:
     """Test controlled's decomposition method."""
 
-    def test_control_values(self):
+    def test_control_values_no_special_decomp(self, test_expand):
         """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
 
         control_wires = (0, 1, 2)
@@ -671,27 +841,57 @@ class TestDecomposition:
         base = TempOperator("a")
         op = Controlled(base, (0, 1, 2), [True, False, False])
 
-        decomp = op.decomposition()
+        decomp = op.expand().circuit if test_expand else op.decomposition()
 
-        for i in (0, 3):
-            assert isinstance(decomp[i], qml.PauliX)
-            assert decomp[i].wires == qml.wires.Wires(1)
-
-        for i in (1, 4):
-            assert isinstance(decomp[i], qml.PauliX)
-            assert decomp[i].wires == qml.wires.Wires(2)
+        assert qml.equal(decomp[0], qml.PauliX(1))
+        assert qml.equal(decomp[1], qml.PauliX(2))
 
         assert isinstance(decomp[2], Controlled)
         assert decomp[2].control_values == [True, True, True]
 
-    def test_control_on_one_decomp_error(self):
-        """Test if all control_values are true, decomp raises decomp error."""
+        assert qml.equal(decomp[3], qml.PauliX(1))
+        assert qml.equal(decomp[4], qml.PauliX(2))
+
+    def test_control_values_special_decomp(self, test_expand):
+        """Test decomposition when needs control_values flips and special decomp exists."""
+
+        base = qml.PauliX(2)
+        op = Controlled(base, (0, 1), (True, False))
+
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        expected = [qml.PauliX(1), qml.Toffoli((0, 1, 2)), qml.PauliX(1)]
+        for op1, op2 in zip(decomp, expected):
+            assert qml.equal(op1, op2)
+
+    def test_no_control_values_special_decomp(self, test_expand):
+        """Test a case with no control values but a special decomposition."""
+        base = qml.RX(1.0, 2)
+        op = Controlled(base, 1)
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        assert len(decomp) == 1
+        assert qml.equal(decomp[0], qml.CRX(1.0, (1, 2)))
+
+    def test_no_control_values_target_decomposition(self, test_expand):
+        """Tests a case with no control values and no special decomposition but
+        the ability to decompose the target."""
+        base = qml.IsingXX(1.23, wires=(0, 1))
+        op = Controlled(base, "a")
+
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        base_decomp = base.decomposition()
+        for cop, base_op in zip(decomp, base_decomp):
+            assert isinstance(cop, Controlled)
+            assert qml.equal(cop.base, base_op)
+
+    def test_no_control_values_no_special_decomp(self, test_expand):
+        """Test if all control_values are true and no special decomposition exists,
+        the method raises a DecompositionUndefinedError."""
 
         base = TempOperator("a")
-        op = Controlled(base, (0, 1, 2), [1, 1, 1])
+        op = Controlled(base, (0, 1, 2))
 
         with pytest.raises(DecompositionUndefinedError):
-            op.decomposition()
+            decomp = op.expand().circuit if test_expand else op.decomposition()
 
 
 class TestArithmetic:
@@ -741,3 +941,99 @@ class TestArithmetic:
         assert pow_op.control_wires == self.control_wires
         assert pow_op.control_values == self.control_values
         assert pow_op.work_wires == self.work_wires
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+class TestDifferentiation:
+    """Tests for differentiation"""
+
+    @pytest.mark.autograd
+    def test_autograd(self, diff_method):
+        """Test differentiation using autograd"""
+        from pennylane import numpy as pnp
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = pnp.array(0.123, requires_grad=True)
+        res = qml.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.torch
+    def test_torch(self, diff_method):
+        """Test differentiation using torch"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = torch.tensor(0.123, requires_grad=True)
+        loss = circuit(b)
+        loss.backward()
+
+        res = b.grad.detach()
+        expected = np.sin(b.detach() / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    def test_jax(self, diff_method, jax_interface):
+        """Test differentiation using JAX"""
+
+        import jax
+
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
+        def circuit(b):
+            init_state = onp.array([1.0, -1.0]) / np.sqrt(2)
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = jnp.array(0.123)
+        res = jax.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.tf
+    def test_tf(self, diff_method):
+        """Test differentiation using TF"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            Controlled(qml.RY(b, wires=1), control_wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        b = tf.Variable(0.123, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            loss = circuit(b)
+
+        res = tape.gradient(loss, b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)

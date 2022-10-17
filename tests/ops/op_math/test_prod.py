@@ -14,8 +14,6 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-from copy import copy
-
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -23,8 +21,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
-from pennylane.operation import MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Prod, prod
+from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -80,13 +78,6 @@ ops = (
     ),
 )
 
-ops_rep = (
-    "PauliZ(wires=[0]) @ PauliX(wires=[1])",
-    "PauliX(wires=[0]) @ PauliZ(wires=[0]) @ Hadamard(wires=[0])",
-    "CNOT(wires=[0, 1]) @ RX(1.23, wires=[1]) @ Identity(wires=[0])",
-    "IsingXX(4.56, wires=[2, 3]) @ Toffoli(wires=[1, 2, 3]) @ Rot(0.34, 1.0, 0, wires=[0])",
-)
-
 ops_hermitian_status = (  # computed manually
     True,  # True
     False,  # True
@@ -115,6 +106,15 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
+class MyOp(qml.RX):
+    """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+
+    has_matrix = False
+    has_adjoint = False
+    has_decomposition = False
+    has_diagonalizing_gates = False
+
+
 class TestInitialization:
     """Test the initialization."""
 
@@ -133,33 +133,6 @@ class TestInitialization:
         assert prod_op.parameters == [[], [0.23]]
         assert prod_op.num_params == 1
 
-    def test_raise_error_fewer_then_2_factors(self):
-        """Test that initializing a Prod operator with less than 2 factors raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to multiply;"):
-            prod(qml.PauliX(wires=0))
-
-    def test_parameters(self):
-        """Test that parameters are initialized correctly."""
-        prod_op = prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert prod_op.parameters == [[9.87], [1.23, 4.0, 5.67]]
-
-    def test_data(self):
-        """Test that data is initialized correctly."""
-        prod_op = prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert prod_op.data == [[9.87], [1.23, 4.0, 5.67]]
-
-    def test_data_setter(self):
-        """Test the setter method for data"""
-        prod_op = prod(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert prod_op.data == [[9.87], [1.23, 4.0, 5.67]]
-
-        new_data = [[1.23], [0.0, -1.0, -2.0]]
-        prod_op.data = new_data
-        assert prod_op.data == new_data
-
-        for op, new_entry in zip(prod_op.factors, new_data):
-            assert op.data == new_entry
-
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
         """Test that terms are initialized correctly."""
@@ -172,7 +145,7 @@ class TestInitialization:
         assert prod_op.data == prod_term_ops[0].data
         assert prod_op.wires == prod_term_ops[0].wires
 
-        for f1, f2 in zip(prod_op.factors, prod_term_ops[0].factors):
+        for f1, f2 in zip(prod_op.operands, prod_term_ops[0].operands):
             assert qml.equal(f1, f2)
 
     def test_batch_size(self):
@@ -198,19 +171,17 @@ class TestInitialization:
         for op1, op2 in zip(decomposition, true_decomposition):
             assert qml.equal(op1, op2)
 
-    def test_diagonalizing_gates(self):
-        """Test that the diagonalizing gates are correct."""
-        diag_prod_op = Prod(qml.PauliX(wires=0), qml.Identity(wires=1), qml.PauliX(wires=0))
-        diagonalizing_gates = diag_prod_op.diagonalizing_gates()
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_decomposition_on_tape(self, ops_lst):
+        """Test the decomposition of a prod of operators is a list
+        of the provided factors on a tape."""
+        prod_op = prod(*ops_lst)
+        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
+        with qml.tape.QuantumTape() as tape:
+            prod_op.decomposition()
 
-        assert len(diagonalizing_gates) == 1
-        diagonalizing_mat = diagonalizing_gates[0].matrix()
-
-        true_mat = qnp.array(
-            [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
-        )
-
-        assert np.allclose(diagonalizing_mat, true_mat)
+        for op1, op2 in zip(tape.operations, true_decomposition):
+            assert qml.equal(op1, op2)
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -220,38 +191,116 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = prod_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0)
-        ]
+        eigs_cache = prod_op._eigs[prod_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    def test_has_matrix_true_via_factors_have_matrix(self):
+        """Test that a product of operators that have `has_matrix=True`
+        has `has_matrix=True` as well."""
 
-class TestMscMethods:
-    """Test dunder methods."""
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True)
+        assert prod_op.has_matrix is True
 
-    @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
-    def test_repr(self, ops_lst, ops_rep):
-        """Test __repr__ method."""
-        prod_op = Prod(*ops_lst)
-        assert ops_rep == repr(prod_op)
+    def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
+        """Test that a product of operators of which one does not have `has_matrix=True`
+        but is a Hamiltonian has `has_matrix=True`."""
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_copy(self, ops_lst):
-        """Test __copy__ method."""
-        prod_op = Prod(*ops_lst)
-        copied_op = copy(prod_op)
+        H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        prod_op = prod(H, qml.RZ(0.23, wires=5), do_queue=True)
+        assert prod_op.has_matrix is True
 
-        assert prod_op.id == copied_op.id
-        assert prod_op.data == copied_op.data
-        assert prod_op.wires == copied_op.wires
+    @pytest.mark.parametrize(
+        "first_factor", [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])]
+    )
+    def test_has_matrix_false_via_factor_has_no_matrix(self, first_factor):
+        """Test that a product of operators of which one does not have `has_matrix=True`
+        has `has_matrix=False`."""
 
-        for f1, f2 in zip(prod_op.factors, copied_op.factors):
-            assert qml.equal(f1, f2)
-            assert f1 is not f2
+        prod_op = prod(first_factor, MyOp(0.23, wires="a"), do_queue=True)
+        assert prod_op.has_matrix is False
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
+            [
+                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
+                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
+            ],
+            [MyOp(3.1, 0), qml.CNOT([0, 2])],
+        ),
+    )
+    def test_has_adjoint_true_always(self, factors):
+        """Test that a product of operators that have `has_matrix=True`
+        has `has_matrix=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_adjoint is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
+            [
+                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
+                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
+            ],
+            [MyOp(3.1, 0), qml.CNOT([0, 2])],
+        ),
+    )
+    def test_has_decomposition_true_always(self, factors):
+        """Test that a product of operators that have `has_decomposition=True`
+        has `has_decomposition=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_decomposition is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY(0)],
+            [qml.Hamiltonian([0.523], [qml.PauliX(3)]), qml.PauliZ(3)],
+            [
+                qml.Hamiltonian([0.523], [qml.PauliX(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([-1.301], [qml.PauliY(2) @ qml.PauliZ(1)]),
+            ],
+        ),
+    )
+    def test_has_diagonalizing_gates_true_via_overlapping_factors(self, factors):
+        """Test that a product of operators that have `has_diagonalizing_gates=True`
+        has `has_diagonalizing_gates=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_diagonalizing_gates is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.PauliX(wires=1)],
+            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY("s")],
+            [qml.Hermitian(np.eye(4), wires=[0, 2]), qml.PauliX(wires=1)],
+        ),
+    )
+    def test_has_diagonalizing_gates_true_via_factors(self, factors):
+        """Test that a product of operators that have `has_diagonalizing_gates=True`
+        has `has_diagonalizing_gates=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false_via_factor(self):
+        """Test that a product of operators of which one has
+        `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
+
+        prod_op = prod(MyOp(3.1, 0), qml.PauliX(2), do_queue=True)
+        assert prod_op.has_diagonalizing_gates is False
 
 
 class TestMatrix:
@@ -270,7 +319,10 @@ class TestMatrix:
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
         true_mat = mat1 @ mat2
 
-        prod_op = Prod(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
+        prod_op = Prod(
+            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+        )
         prod_mat = prod_op.matrix()
 
         assert np.allclose(prod_mat, true_mat)
@@ -506,28 +558,58 @@ class TestMatrix:
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
 
+    # sparse matrix tests:
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined and correct."""
+        prod_op = prod(op1(wires=0), op2(wires=1))
+        true_mat = math.kron(mat1, mat2)
+        prod_mat = prod_op.sparse_matrix().todense()
+
+        assert np.allclose(true_mat, prod_mat)
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_same_wires(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined and correct."""
+        prod_op = prod(op1(wires=0), op2(wires=0))
+        true_mat = mat1 @ mat2
+        prod_mat = prod_op.sparse_matrix().todense()
+
+        assert np.allclose(true_mat, prod_mat)
+
+    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
+    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
+    def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
+        """Test that the sparse matrix of a Prod op is defined
+        with wire order and correct."""
+        true_mat = math.kron(math.kron(mat2, np.eye(2)), mat1)
+
+        prod_op = prod(op1(wires=2), op2(wires=0))
+        prod_mat = prod_op.sparse_matrix(wire_order=[0, 1, 2]).todense()
+
+        assert np.allclose(true_mat, prod_mat)
+
+    def test_sparse_matrix_undefined_error(self):
+        """Test that an error is raised when the sparse matrix method
+        is undefined for any of the factors."""
+
+        class DummyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def sparse_matrix(self, wire_order=None):
+                raise qml.operation.SparseMatrixUndefinedError
+
+        prod_op = prod(qml.PauliX(wires=0), DummyOp(wires=1))
+
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            prod_op.sparse_matrix()
+
 
 class TestProperties:
     """Test class properties."""
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_num_params(self, ops_lst):
-        """Test num_params property updates correctly."""
-        prod_op = Prod(*ops_lst)
-        true_num_params = sum(op.num_params for op in ops_lst)
-
-        assert prod_op.num_params == true_num_params
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_num_wires(self, ops_lst):
-        """Test num_wires property updates correctly."""
-        prod_op = Prod(*ops_lst)
-        true_wires = set()
-
-        for op in ops_lst:
-            true_wires = true_wires.union(op.wires.toset())
-
-        assert prod_op.num_wires == len(true_wires)
 
     @pytest.mark.parametrize(
         "ops_lst, hermitian_status",
@@ -539,7 +621,6 @@ class TestProperties:
         assert prod_op.is_hermitian == hermitian_status
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
         import tensorflow as tf
@@ -552,10 +633,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_jax(self):
         """Test that is_hermitian works when a jax type scalar is provided."""
         import jax.numpy as jnp
@@ -568,10 +648,9 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
-    @pytest.mark.xfail  # this will fail until we can support is_hermitian checks for parametric ops
     def test_is_hermitian_torch(self):
         """Test that is_hermitian works when a torch type scalar is provided."""
         import torch
@@ -584,7 +663,7 @@ class TestProperties:
         true_hermitian_states = (True, False)
 
         for op, hermitian_state in zip(ops, true_hermitian_states):
-            assert op.is_hermitian == hermitian_state
+            assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):
@@ -637,9 +716,7 @@ class TestProperties:
 
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
-        eigs_cache = diag_prod_op._eigs[
-            (1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-        ]
+        eigs_cache = diag_prod_op._eigs[diag_prod_op.hash]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -649,19 +726,7 @@ class TestProperties:
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
-        diagonalizing_gates = diag_prod_op.diagonalizing_gates()[0].matrix()
-        true_diagonalizing_gates = qnp.array(
-            (  # the gates that swap eigvals till they are ordered smallest --> largest
-                [
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [1.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ]
-            )
-        )
-
-        assert np.allclose(diagonalizing_gates, true_diagonalizing_gates)
+        assert diag_prod_op.diagonalizing_gates() == []
 
 
 class TestSimplify:
@@ -674,6 +739,11 @@ class TestSimplify:
         )
         assert prod_op.arithmetic_depth == 3
 
+        op_constructed = Prod(
+            qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1), qml.PauliX(0)
+        )
+        assert op_constructed.arithmetic_depth == 1
+
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         prod_op = qml.RZ(1.32, wires=0) @ qml.Identity(wires=0) @ qml.RX(1.9, wires=1)
@@ -683,7 +753,7 @@ class TestSimplify:
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -696,7 +766,7 @@ class TestSimplify:
         final_op = qml.PauliX(0)
         simplified_op = prod_op.simplify()
 
-        assert isinstance(simplified_op, qml.PauliX)
+        assert qml.equal(final_op, simplified_op)
 
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
@@ -704,12 +774,12 @@ class TestSimplify:
         final_op = qml.op_sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
-            qml.RX(1, 0) @ qml.PauliX(1),
+            qml.PauliX(1) @ qml.RX(1, 0),
             qml.RX(1, 0) @ qml.RX(1, 1),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -718,13 +788,13 @@ class TestSimplify:
     def test_simplify_with_nested_prod_and_adjoints(self):
         """Test simplify method with nested product and adjoint operators."""
         prod_op = Prod(qml.adjoint(Prod(qml.RX(1, 0), qml.RY(1, 0))), qml.RZ(1, 0))
-        final_op = Prod(qml.RY(-1, 0), qml.RX(-1, 0), qml.RZ(1, 0))
+        final_op = Prod(qml.RY(4 * np.pi - 1, 0), qml.RX(4 * np.pi - 1, 0), qml.RZ(1, 0))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
         assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.factors, simplified_op.factors):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -742,28 +812,145 @@ class TestSimplify:
                         qml.Identity(0),
                     )
                 ),
-                qml.PauliX(1) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
+                qml.PauliX(0) + 5 * (qml.RX(1, 1) + qml.PauliX(1)),
             ),
             qml.Identity(0),
         )
+        mod_angle = -1 % (4 * np.pi)
         final_op = qml.op_sum(
-            Prod(qml.PauliX(0), qml.PauliX(1)),
-            qml.PauliX(0) @ (5 * qml.RX(1, 1)),
-            qml.PauliX(0) @ qml.s_prod(5, qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.RX(-1, 0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.PauliX(1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), 5 * qml.RX(1, 1)),
-            Prod(qml.PauliX(0), qml.PauliX(0), qml.s_prod(5, qml.PauliX(1))),
+            qml.Identity(0),
+            5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.PauliX(0), qml.PauliX(1)),
+            qml.RX(mod_angle, 0),
+            5 * Prod(qml.RX(mod_angle, 0), qml.PauliX(0), qml.RX(1, 1)),
+            5 * Prod(qml.RX(mod_angle, 0), qml.PauliX(0), qml.PauliX(1)),
+            qml.PauliX(0),
+            5 * qml.RX(1, 1),
+            qml.s_prod(5, qml.PauliX(1)),
         )
         simplified_op = prod_op.simplify()
         assert isinstance(simplified_op, qml.ops.Sum)
-        for s1, s2 in zip(final_op.summands, simplified_op.summands):
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_groups_rotations(self):
+        """Test that the simplify method groups rotation operators."""
+        prod_op = qml.prod(
+            qml.RX(1, 0), qml.RZ(1, 1), qml.CNOT((1, 2)), qml.RZ(1, 1), qml.RX(3, 0), qml.RZ(1, 1)
+        )
+        final_op = qml.prod(qml.RZ(1, 1), qml.CNOT((1, 2)), qml.RX(4, 0), qml.RZ(2, 1))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_with_pauli_words(self):
+        """Test that the simplify method groups pauli words."""
+        prod_op = qml.prod(
+            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+        )
+        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
+            assert repr(s1) == repr(s2)
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_simplify_method_groups_identical_operators(self):
+        """Test that the simplify method groups identical operators."""
+        prod_op = qml.prod(
+            qml.PauliX(0),
+            qml.CNOT((1, 2)),
+            qml.PauliZ(3),
+            qml.Toffoli((4, 5, 6)),
+            qml.CNOT((1, 2)),
+            qml.Toffoli((4, 5, 6)),
+            qml.PauliX(0),
+            qml.PauliZ(3),
+        )
+        final_op = qml.Identity(range(7))
+        simplified_op = prod_op.simplify()
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        assert isinstance(simplified_op, qml.Identity)
+        assert final_op.name == simplified_op.name
+        assert final_op.wires == simplified_op.wires
+        assert final_op.data == simplified_op.data
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+
+    def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
+        """Test that the simplify method removes grouped elements with zero coeff."""
+        prod_op = qml.prod(
+            qml.U3(1.23, 2.34, 3.45, wires=0),
+            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+        )
+        final_op = qml.Identity(0)
+        simplified_op = prod_op.simplify()
+
+        assert qml.equal(final_op, simplified_op)
+
+    def test_grouping_with_product_of_sum(self):
+        """Test that grouping works with product of a sum"""
+        prod_op = qml.prod(
+            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+        )
+        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        simplified_op = prod_op.simplify()
+
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_product_of_sums(self):
+        """Test that grouping works with product of two sums"""
+        prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
+        final_op = qml.op_sum(
+            qml.PauliZ(wires=[0]),
+            2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
+            qml.S(wires=[1]),
+        )
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, qml.ops.Sum)
+        for s1, s2 in zip(final_op.operands, simplified_op.operands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_barriers(self):
+        """Test that grouping is not done when a barrier is present."""
+        prod_op = qml.prod(qml.S(0), qml.Barrier(0), qml.S(0)).simplify()
+        simplified_op = prod_op.simplify()
+        assert isinstance(simplified_op, Prod)
+        for s1, s2 in zip(prod_op.operands, simplified_op.operands):
+            assert s1.name == s2.name
+            assert s1.wires == s2.wires
+            assert s1.data == s2.data
+            assert s1.arithmetic_depth == s2.arithmetic_depth
+
+    def test_grouping_with_only_visual_barriers(self):
+        """Test that grouping is implemented when an only-visual barrier is present."""
+        prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
+        assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
 
 
 class TestWrapperFunc:
@@ -780,7 +967,7 @@ class TestWrapperFunc:
         prod_func_op = prod(*factors, id=op_id, do_queue=do_queue)
         prod_class_op = Prod(*factors, id=op_id, do_queue=do_queue)
 
-        assert prod_class_op.factors == prod_func_op.factors
+        assert prod_class_op.operands == prod_func_op.operands
         assert np.allclose(prod_class_op.matrix(), prod_func_op.matrix())
         assert prod_class_op.id == prod_func_op.id
         assert prod_class_op.wires == prod_func_op.wires
@@ -819,7 +1006,7 @@ class TestIntegration:
         assert qnp.allclose(var, true_var)
 
     def test_measurement_process_probs(self):
-        """Test Prod class instance in probs measurement process raises error."""  # currently can't support due to bug
+        """Test Prod class instance in probs measurement process raises error."""
         dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
 
@@ -835,20 +1022,35 @@ class TestIntegration:
             my_circ()
 
     def test_measurement_process_sample(self):
-        """Test Prod class instance in sample measurement process raises error."""  # currently can't support due to bug
-        dev = qml.device("default.qubit", wires=2, shots=2)
-        prod_op = Prod(qml.PauliX(wires=0), qml.Hadamard(wires=1))
+        """Test Prod class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
-            qml.PauliX(0)
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
             return qml.sample(op=prod_op)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for sampling yet.",
-        ):
-            my_circ()
+        results = my_circ()
+
+        assert len(results) == 20
+        assert (results == 1).all()
+
+    def test_measurement_process_counts(self):
+        """Test Prod class instance in sample measurement process."""
+        dev = qml.device("default.qubit", wires=2, shots=20)
+        prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
+
+        @qml.qnode(dev)
+        def my_circ():
+            Prod(qml.Hadamard(0), qml.Hadamard(1))
+            return qml.counts(op=prod_op)
+
+        results = my_circ()
+
+        assert sum(results.values()) == 20
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -867,7 +1069,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise an error."""
+        """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         prod_op = Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -877,7 +1079,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(QuantumFunctionError, match="Prod is not an observable:"):
+        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             my_circ()
 
     def test_operation_integration(self):
@@ -926,3 +1128,124 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+
+class TestSortWires:
+    """Tests for the wire sorting algorithm."""
+
+    def test_sorting_operators_with_one_wire(self):
+        """Test that the sorting alforithm works for operators that act on one wire."""
+        op_list = [
+            qml.PauliX(3),
+            qml.PauliZ(2),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(3),
+            qml.PauliX(5),
+        ]
+        sorted_list = Prod._sort(op_list)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliY(1),
+            qml.PauliZ(2),
+            qml.PauliX(3),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+            qml.PauliX(5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_multiple_wires(self):
+        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        op_tuple = (
+            qml.PauliX(3),
+            qml.PauliX(5),
+            qml.Toffoli([2, 3, 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.PauliZ(3),
+            qml.CRY(1, [1, 2]),
+        )
+        sorted_list = Prod._sort(op_tuple)
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX(3),
+            qml.Toffoli([2, 3, 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, [1, 2]),
+            qml.PauliZ(3),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
+    def test_sorting_operators_with_wire_map(self):
+        """Test that the sorting alforithm works using a wire map."""
+        op_list = [
+            qml.PauliX("three"),
+            qml.PauliX(5),
+            qml.Toffoli([2, "three", 4]),
+            qml.CNOT([2, 5]),
+            qml.RX(1, 5),
+            qml.PauliY(0),
+            qml.CRX(1, [0, 2]),
+            qml.PauliZ("three"),
+            qml.CRY(1, ["test", 2]),
+        ]
+        sorted_list = Prod._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        final_list = [
+            qml.PauliY(0),
+            qml.PauliX("three"),
+            qml.Toffoli([2, "three", 4]),
+            qml.PauliX(5),
+            qml.CNOT([2, 5]),
+            qml.CRX(1, [0, 2]),
+            qml.CRY(1, ["test", 2]),
+            qml.PauliZ("three"),
+            qml.RX(1, 5),
+        ]
+
+        for op1, op2 in zip(final_list, sorted_list):
+            assert op1.name == op2.name
+            assert op1.wires == op2.wires
+            assert op1.data == op2.data
+
+
+swappable_ops = {
+    (qml.PauliX(1), qml.PauliY(0)),
+    (qml.PauliY(5), qml.PauliX(2)),
+    (qml.PauliZ(3), qml.PauliX(2)),
+    (qml.CNOT((1, 2)), qml.PauliX(0)),
+    (qml.PauliX(3), qml.Toffoli((0, 1, 2))),
+}
+
+non_swappable_ops = {
+    (qml.PauliX(1), qml.PauliY(1)),
+    (qml.PauliY(5), qml.RY(1, 5)),
+    (qml.PauliZ(0), qml.PauliX(1)),
+    (qml.CNOT((1, 2)), qml.PauliX(1)),
+    (qml.PauliX(2), qml.Toffoli((0, 1, 2))),
+}
+
+
+class TestSwappableOps:
+    """Tests for the _swappable_ops function."""
+
+    @pytest.mark.parametrize(["op1", "op2"], swappable_ops)
+    def test_swappable_ops(self, op1, op2):
+        """Test the check for swappable operators."""
+        assert _swappable_ops(op1, op2)
+        assert not _swappable_ops(op2, op1)
+
+    @pytest.mark.parametrize(["op1", "op2"], non_swappable_ops)
+    def test_non_swappable_ops(self, op1, op2):
+        """Test the check for non-swappable operators."""
+        assert not _swappable_ops(op1, op2)
