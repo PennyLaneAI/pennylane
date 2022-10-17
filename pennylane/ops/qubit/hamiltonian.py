@@ -652,14 +652,14 @@ class Hamiltonian(Observable):
         return self
 
     def map_wires(self, wire_map: dict):
-        """Returns a copy of the current tensor with its wires changed according to the given
+        """Returns a copy of the current hamiltonian with its wires changed according to the given
         wire map.
 
         Args:
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
 
         Returns:
-            .Tensor: new tensor
+            .Hamiltonian: new hamiltonian
         """
         cls = self.__class__
         new_op = cls.__new__(cls)
