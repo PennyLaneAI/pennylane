@@ -572,7 +572,6 @@ def _expval_param_shift_tuple(
                 num_shot_vec_components,
                 shot_vector_multi_measure,
             )
-        print("IN HERE")
 
         return tuple(grads)
 
