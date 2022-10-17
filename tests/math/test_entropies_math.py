@@ -276,8 +276,7 @@ class TestMinEntropy:
         """Test that the gradient of min_entropy works
         with the autograd interface"""
 
-        interface = "autograd"
-        state = qml.math.asarray(state, like=interface)
+        state = qml.math.asarray(state, like="autograd")
         grad = qml.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
         assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
@@ -304,8 +303,7 @@ class TestMinEntropy:
 
         import jax
 
-        interface = "jax"
-        state = qml.math.asarray(state, like=interface)
+        state = qml.math.asarray(state, like="jax")
         grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
         assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
@@ -332,8 +330,7 @@ class TestMinEntropy:
 
         import jax
 
-        interface = "jax"
-        state = qml.math.asarray(state, like=interface)
+        state = qml.math.asarray(state, like="jax")
         grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
 
         assert np.allclose(grad, expected / np.log(base), rtol=1e-06, atol=1e-07)
@@ -360,8 +357,7 @@ class TestMinEntropy:
 
         import tensorflow as tf
 
-        interface = "tensorflow"
-        state = qml.math.asarray(state, like=interface)
+        state = qml.math.asarray(state, like="tensorflow")
         entropy = qml.math.min_entropy(state, base=base, check_state=check_state)
 
         state = tf.Variable(state)
@@ -391,8 +387,7 @@ class TestMinEntropy:
 
         import torch
 
-        interface = "torch"
-        state = qml.math.asarray(state, like=interface)
+        state = qml.math.asarray(state, like="torch")
 
         state = torch.tensor(state, dtype=torch.float64, requires_grad=True)
 
