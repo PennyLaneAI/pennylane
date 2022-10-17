@@ -1859,7 +1859,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             .QuantumTape: a shallow copy of the tape
         """
-        tape = QuantumTape()
+        tape = QuantumTape(shots=self.shots)
 
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement

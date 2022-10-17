@@ -262,6 +262,7 @@ class Device(abc.ABC):
 
             self._shots = shots
             self._shot_vector = None
+            self._raw_shot_sequence = shots
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
