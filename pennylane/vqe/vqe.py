@@ -189,8 +189,7 @@ class ExpvalCost:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
             obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
-            d = device[0] if self._multiple_devices else device
-            w = d.wires.tolist()
+            w = device.wires.tolist()
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
             def circuit(*qnode_args, obs, **qnode_kwargs):
@@ -200,8 +199,8 @@ class ExpvalCost:
 
             def cost_fn(*qnode_args, **qnode_kwargs):
                 """Combine results from grouped QNode executions with grouped coefficients"""
-                if device.shot_vector:
-                    shots_batch = sum(i[1] for i in device.shot_vector)
+                if circuit.shot_vector:
+                    shots_batch = sum(i[1] for i in circuit.shot_vector)
 
                     total = [0] * shots_batch
 
