@@ -51,6 +51,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
 
+  We can therefore execute the same parametrized QNode with parameters from different interfaces,
+  and the class will automatically detect the interface:
+
   ```python
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev, interface="auto")
@@ -62,15 +65,15 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   interface_tensors = [[0, 1], np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1])]
   for tensor in interface_tensors:
     res = circuit(weight=tensor)
-    print(res, type(res))
+    print(f"Result value: {res:.2f}; Result type: {type(res)}")
   ```
 
   ```pycon
-  1.0 <class 'pennylane.numpy.tensor.tensor'>
-  1.0 <class 'pennylane.numpy.tensor.tensor'>
-  tensor(1.0000, dtype=torch.float64) <class 'torch.Tensor'>
-  tf.Tensor(0.9999999896704281, shape=(), dtype=float64) <class 'tensorflow.python.framework.ops.EagerTensor'>
-  1.0 <class 'jaxlib.xla_extension.DeviceArray'>
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'torch.Tensor'>
+  Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
+  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
   ```
 
 <h3>Improvements</h3>
