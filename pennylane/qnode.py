@@ -634,6 +634,9 @@ class QNode:
                 **self.execute_kwargs,
             )
 
+            if old_interface == "auto":
+                self.interface = "auto"
+
             res = res[0]
 
             # Special case of single Measurement in a list
@@ -671,6 +674,9 @@ class QNode:
             override_shots=override_shots,
             **self.execute_kwargs,
         )
+
+        if old_interface == "auto":
+            self.interface = "auto"
 
         if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             # If a device batch transform was applied, we need to 'unpack'
@@ -721,9 +727,6 @@ class QNode:
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
             return qml.math.squeeze(res, axis=0)
-
-        if old_interface == "auto":
-            self.interface = "auto"
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)
