@@ -14,19 +14,19 @@
 """
 Unit tests for the available non-parametric qubit operations
 """
-import itertools
-import pytest
 import copy
+import itertools
+
 import numpy as np
+import pytest
+from gate_data import CNOT, CSWAP, CZ, ECR, ISWAP, SISWAP, SWAP, H, I, S, T, Toffoli, X, Y, Z
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import math
+from pennylane.operation import AnyWires
 from pennylane.wires import Wires
-
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
-
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
@@ -56,7 +56,7 @@ class TestOperations:
     @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_nonparametrized_op_copy(self, op_cls, mat, tol):
         """Tests that copied nonparametrized ops function as expected"""
-        op = op_cls(wires=range(op_cls.num_wires))
+        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
@@ -67,7 +67,7 @@ class TestOperations:
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=range(ops.num_wires))
+        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
         res_static = op.compute_matrix()
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
