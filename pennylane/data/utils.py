@@ -24,7 +24,7 @@ from pennylane.data.dataset import Dataset
 # from pennylane.qdata.qspin_dataset import SpinDataset
 
 URL = "https://pl-qd-flask-app.herokuapp.com"
-S3_URL = "https://xanadu-quantum-data.s3.amazonaws.com"
+S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
 FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
 DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
 

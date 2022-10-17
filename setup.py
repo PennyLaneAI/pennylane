@@ -32,8 +32,6 @@ requirements = [
     "dill",
     "zstd",
     "requests",
-    "asyncio",
-    "aiohttp",
 ]
 
 info = {
