@@ -103,7 +103,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
-        return _execute_with_fwd(
+        return _execute_fwd(
             parameters,
             tapes=tapes,
             device=device,
@@ -303,7 +303,7 @@ def _raise_vector_valued_fwd(tapes):
         )
 
 
-def _execute_with_fwd(
+def _execute_fwd(
     params,
     tapes=None,
     device=None,
@@ -375,16 +375,11 @@ def _execute_with_fwd(
     return res
 
 
-def execute_new(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
-):
+def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
-            If the device does not provide a ``batch_execute`` method,
-            by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
@@ -398,34 +393,32 @@ def execute_new(
             the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # Set the trainable parameters
     for tape in tapes:
-        # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
+        # PennyLane forward execution
         return _execute_fwd_new(
             parameters,
             tapes=tapes,
-            device=device,
             execute_fn=execute_fn,
             gradient_kwargs=gradient_kwargs,
             _n=_n,
         )
 
+    # PennyLane backward execution
     return _execute_bwd_new(
         parameters,
         tapes=tapes,
-        device=device,
         execute_fn=execute_fn,
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
@@ -436,12 +429,11 @@ def execute_new(
 
 def _execute_fwd_new(
     params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_kwargs=None,
+    tapes,
+    execute_fn,
+    gradient_kwargs,
     _n=1,
-):  # pylint: disable=dangerous-default-value,unused-argument
+):
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
     provided. This function is does not allow multiple derivatives."""
@@ -460,12 +452,11 @@ def _execute_fwd_new(
 
     @exec_fwd.defjvp
     def exec_jvp(primal, tangents):
+
         res, jacs = exec_fwd(primal[0])
-        # replace single
-        jvps = [
-            qml.gradients.compute_jvp_single(tangent, jac)
-            for tangent, jac in zip(tangents[0], jacs)
-        ]
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+
+        jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
         return res, jvps
 
     res = exec_fwd(params)
@@ -481,16 +472,26 @@ def _execute_fwd_new(
     return res
 
 
+def _compute_jvps(jacs, tangents, multi_measurements):
+    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
+    jvps = []
+    for i, multi in enumerate(multi_measurements):
+        if multi:
+            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i]))
+        else:
+            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i]))
+    return jvps
+
+
 def _execute_bwd_new(
     params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
+    tapes,
+    execute_fn,
+    gradient_fn,
+    gradient_kwargs,
     _n=1,
     max_diff=1,
-):  # pylint: disable=dangerous-default-value,unused-argument
+):
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
 
@@ -501,7 +502,7 @@ def _execute_bwd_new(
         return tc
 
     @jax.custom_jvp
-    def exec(params):
+    def execute_wrapper(params):
         new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
 
         with qml.tape.Unwrap(*new_tapes):
@@ -509,7 +510,7 @@ def _execute_bwd_new(
 
         return res
 
-    @exec.defjvp
+    @execute_wrapper.defjvp
     def exec_jvp(primals, tangents):
         new_tapes = [cp_tape(t, a) for t, a in zip(tapes, primals[0])]
 
@@ -536,7 +537,6 @@ def _execute_bwd_new(
             jvps = processing_fn(
                 execute_new(
                     jvp_tapes,
-                    device,
                     execute_fn,
                     gradient_fn,
                     gradient_kwargs,
@@ -545,6 +545,6 @@ def _execute_bwd_new(
                 )
             )
 
-        return exec(primals[0]), jvps
+        return execute_wrapper(primals[0]), jvps
 
-    return exec(params)
+    return execute_wrapper(params)

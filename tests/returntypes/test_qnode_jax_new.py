@@ -173,6 +173,143 @@ class TestReturn:
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
 
+    def test_jacobian_expval_expval_multiple_params(self, dev_name, diff_method, mode):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device(dev_name, wires=2)
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+        jac = jax.jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(jac, tuple)
+
+        assert isinstance(jac[0], tuple)
+        assert len(jac[0]) == 2
+        assert isinstance(jac[0][0], jax.numpy.ndarray)
+        assert jac[0][0].shape == ()
+        assert isinstance(jac[0][1], jax.numpy.ndarray)
+        assert jac[0][1].shape == ()
+
+        assert isinstance(jac[1], tuple)
+        assert len(jac[1]) == 2
+        assert isinstance(jac[1][0], jax.numpy.ndarray)
+        assert jac[1][0].shape == ()
+        assert isinstance(jac[1][1], jax.numpy.ndarray)
+        assert jac[1][1].shape == ()
+
+    def test_jacobian_expval_expval_multiple_params_array(self, dev_name, diff_method, mode):
+        """The jacobian of multiple measurements with a multiple params array return a single array."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array([0.1, 0.2])
+
+        jac = jax.jacobian(circuit)(a)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2  # measurements
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == (2,)
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (2,)
+
+    def test_jacobian_var_var_multiple_params(self, dev_name, diff_method, mode):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of var.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+
+        jac = jax.jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], tuple)
+        assert len(jac[0]) == 2
+        assert isinstance(jac[0][0], jax.numpy.ndarray)
+        assert jac[0][0].shape == ()
+        assert isinstance(jac[0][1], jax.numpy.ndarray)
+        assert jac[0][1].shape == ()
+
+        assert isinstance(jac[1], tuple)
+        assert len(jac[1]) == 2
+        assert isinstance(jac[1][0], jax.numpy.ndarray)
+        assert jac[1][0].shape == ()
+        assert isinstance(jac[1][1], jax.numpy.ndarray)
+        assert jac[1][1].shape == ()
+
+    def test_jacobian_var_var_multiple_params_array(self, dev_name, diff_method, mode):
+        """The jacobian of multiple measurements with a multiple params array return a single array."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of var.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+
+        a = jax.numpy.array([0.1, 0.2])
+
+        jac = jax.jacobian(circuit)(a)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2  # measurements
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == (2,)
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (2,)
+
     def test_execution_multiple_measurement_single_param(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a single params return an array."""
         import jax
@@ -486,7 +623,7 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
         hess = jax.hessian(circuit)(params)
-        print(hess)
+
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 

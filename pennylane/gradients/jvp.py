@@ -61,7 +61,7 @@ def compute_jvp_single(tangent, jac):
     return res
 
 
-def compute_vjp_multi(tangent, jac):
+def compute_jvp_multi(tangent, jac):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a multiple measurements tape.
     Args:
@@ -131,7 +131,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
         if multi:
-            return compute_vjp_multi(tangent, jac)
+            return compute_jvp_multi(tangent, jac)
         return compute_jvp_single(tangent, jac)
 
     return gradient_tapes, processing_fn
