@@ -907,7 +907,7 @@ class TestOperatorIntegration:
         sum_op = 5 + qml.CNOT(wires=[0, 1])
         final_op = qml.op_sum(
             qml.CNOT(wires=[0, 1]),
-            qml.s_prod(5, qml.prod(qml.Identity(0), qml.Identity(1))),
+            qml.s_prod(5, qml.Identity([0, 1])),
         )
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, qml.ops.Sum)
