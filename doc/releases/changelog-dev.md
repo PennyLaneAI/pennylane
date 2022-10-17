@@ -53,6 +53,9 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Improvements</h3>
 
+* `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
+  [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
+
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)

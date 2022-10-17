@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.26.0-dev (current release)
+# Release 0.26.0 (current release)
 
 <h3>New features since last release</h3>
 
