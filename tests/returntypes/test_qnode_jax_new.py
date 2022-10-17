@@ -1,6 +1,4 @@
-import jax
 import pytest
-import autograd.numpy as anp
 from pennylane import numpy as np
 
 import pennylane as qml
@@ -24,6 +22,9 @@ class TestReturn:
         """For one measurement and one param, the gradient is a float."""
         # qml.disable_return()
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=1)
 
@@ -43,6 +44,9 @@ class TestReturn:
     def test_execution_single_measurement_multiple_param(self, dev_name, diff_method, mode):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=1)
 
@@ -65,6 +69,9 @@ class TestReturn:
     def test_execution_single_measurement_multiple_param_array(self, dev_name, diff_method, mode):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=1)
 
@@ -84,9 +91,13 @@ class TestReturn:
     def test_execution_single_measurement_param_probs(self, dev_name, diff_method, mode):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
-        import jax
 
         dev = qml.device(dev_name, wires=2)
 
@@ -107,6 +118,9 @@ class TestReturn:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
@@ -123,7 +137,6 @@ class TestReturn:
         b = jax.numpy.array(0.2)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
-        print(jac)
 
         assert isinstance(jac, tuple)
 
@@ -139,6 +152,9 @@ class TestReturn:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
@@ -160,6 +176,9 @@ class TestReturn:
     def test_execution_multiple_measurement_single_param(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a single params return an array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -188,6 +207,9 @@ class TestReturn:
     def test_execution_multiple_measurement_multiple_param(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
@@ -225,6 +247,9 @@ class TestReturn:
     def test_execution_multiple_measurement_multiple_param_array(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
@@ -253,6 +278,9 @@ class TestReturn:
     def test_hessian_expval_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -289,6 +317,9 @@ class TestReturn:
     def test_multiple_derivative_expval_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -312,6 +343,9 @@ class TestReturn:
     def test_multiple_derivative_var_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -348,6 +382,9 @@ class TestReturn:
     def test_multiple_derivative_var_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -371,6 +408,9 @@ class TestReturn:
     def test_multiple_derivative_probs_expval_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -427,6 +467,9 @@ class TestReturn:
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -443,7 +486,7 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
         hess = jax.hessian(circuit)(params)
-
+        print(hess)
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
@@ -456,6 +499,9 @@ class TestReturn:
     def test_multiple_derivative_probs_var_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -510,6 +556,9 @@ class TestReturn:
     def test_multiple_derivative_var_probs_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
