@@ -178,7 +178,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
   in a custom recipe, and when using any unshifted terms at all under the new return type system.
-  [(#31xx)](https://github.com/PennyLaneAI/pennylane/pull/31xx)
+  [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
 
 * Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
   [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
