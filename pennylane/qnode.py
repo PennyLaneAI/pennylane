@@ -246,7 +246,6 @@ class QNode:
     @shots.setter
     def shots(self, value: int):
         self.tape.shots = value
-        self.device.shots = value  # TODO: Remove this dependency
 
     @property
     def shot_vector(self):
@@ -674,7 +673,7 @@ class QNode:
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
                 gradient_kwargs=self.gradient_kwargs,
-                override_shots=self.shots,
+                override_shots=self.tape._raw_shot_sequence,
                 **self.execute_kwargs,
             )
 
@@ -698,7 +697,7 @@ class QNode:
                 not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
                 and not backprop
             ):
-                if self.device._shot_vector:
+                if self.shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
 
@@ -712,7 +711,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
-            override_shots=self.shots,
+            override_shots=self.tape._raw_shot_sequence,
             **self.execute_kwargs,
         )
 
@@ -734,7 +733,7 @@ class QNode:
             qml.measurements.Counts,
             qml.measurements.AllCounts,
         ):
-            if self.device._has_partitioned_shots():
+            if self._has_partitioned_shots():
                 return tuple(res)
 
             # return a dictionary with counts not as a single-element array
@@ -758,7 +757,7 @@ class QNode:
         self._update_original_device()
 
         if isinstance(self._qfunc_output, Sequence) or (
-            self.tape.is_sampled and self.device._has_partitioned_shots()
+            self.tape.is_sampled and self._has_partitioned_shots()
         ):
             return res
 
