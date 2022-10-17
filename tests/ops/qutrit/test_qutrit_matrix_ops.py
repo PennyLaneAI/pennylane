@@ -547,7 +547,7 @@ class TestControlledQutritUnitary:
             axes=0,
         )
 
-        op = qml.ControlledQubitUnitary(
+        op = qml.ControlledQutritUnitary(
             U1, control_wires=("b", "c"), wires="a", control_values="01"
         )
 
