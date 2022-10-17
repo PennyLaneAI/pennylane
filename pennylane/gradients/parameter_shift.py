@@ -163,7 +163,7 @@ def _evaluate_gradient_new(tape, res, data, r0):
         res = fn(res)
 
     multi_measure = len(tape.measurements) > 1
-    if isinstance(res, list) and len(res)==0:
+    if isinstance(res, list) and len(res) == 0:
         # No shifted evaluations are present, just the unshifted one.
         if not multi_measure:
             return unshifted_coeff * r0
@@ -203,7 +203,7 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
 
     _, coeffs, fn, unshifted_coeff, batch_size = data
 
-    if isinstance(res, list) and len(res)==0:
+    if isinstance(res, list) and len(res) == 0:
         # No shifted evaluations are present, just the unshifted one.
         return unshifted_coeff * r0
 
