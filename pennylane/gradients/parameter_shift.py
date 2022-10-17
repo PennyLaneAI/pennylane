@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches
 import warnings
 from collections.abc import Sequence
 
@@ -140,12 +140,26 @@ def _extract_unshifted(recipe, at_least_one_unshifted, f0, gradient_tapes, tape)
     return recipe, at_least_one_unshifted, unshifted_coeff
 
 
-def _unshifted_coeff(g, unshifted_coeff, r0):
-    """Auxiliary function; if unshifted term exists, add its contribution."""
-    if unshifted_coeff is not None:
-        # add the unshifted term
-        g = g + unshifted_coeff * r0
-    return g
+def _unshifted_coeff(g, unshifted_coeff, r0, multi_measure):
+    """Auxiliary function; if unshifted term exists, add its contribution.
+    If unshifted term does not exist, do nothing.
+    If g is None, act as if it is zero,
+    The case g is None and unshifted_coeff is None simply returns None but
+    is not supposed to be used.
+    """
+    if unshifted_coeff is None:
+        return g
+    # add the unshifted term
+    if not multi_measure:
+        if g is None:
+            # g is None, it is supposed to be zero but we didn't know the shape/dtype
+            g = r0 * 0
+        return g + unshifted_coeff * r0
+
+    if g is None:
+        # g is None, it is supposed to be zero but we didn't know the shape/dtype
+        g = tuple(r0_val * 0 for r0_val in r0)
+    return tuple(g_val + unshifted_coeff * r0_val for g_val, r0_val in zip(g, r0))
 
 
 def _evaluate_gradient_new(tape, res, data, r0):
@@ -165,9 +179,7 @@ def _evaluate_gradient_new(tape, res, data, r0):
     multi_measure = len(tape.measurements) > 1
     if isinstance(res, list) and len(res) == 0:
         # No shifted evaluations are present, just the unshifted one.
-        if not multi_measure:
-            return unshifted_coeff * r0
-        return tuple(unshifted_coeff * r0)
+        return _unshifted_coeff(None, unshifted_coeff, r0, multi_measure)
 
     if not multi_measure:
 
@@ -177,7 +189,7 @@ def _evaluate_gradient_new(tape, res, data, r0):
             res = qml.math.squeeze(res)
 
         g = qml.math.tensordot(res, qml.math.convert_like(coeffs, res), [[0], [0]])
-        g = _unshifted_coeff(g, unshifted_coeff, r0)
+        g = _unshifted_coeff(g, unshifted_coeff, r0, False)
     else:
         g = []
 
@@ -190,7 +202,7 @@ def _evaluate_gradient_new(tape, res, data, r0):
             g_component = qml.math.tensordot(single_result, coeffs, [[0], [0]])
             g.append(g_component)
 
-        g = _unshifted_coeff(g, unshifted_coeff, r0)
+        g = _unshifted_coeff(g, unshifted_coeff, r0, True)
         g = tuple(g)
 
     return g
