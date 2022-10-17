@@ -16,6 +16,7 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
+
 import jax
 import jax.numpy as jnp
 
@@ -437,9 +438,10 @@ def _execute_fwd_new(
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
     provided. This function is does not allow multiple derivatives."""
+    # pylint: disable=unused-variable
 
     @jax.custom_jvp
-    def exec_fwd(params):
+    def execute_wrapper(params):
         new_tapes = []
         for t, a in zip(tapes, params):
             new_tapes.append(t.copy(copy_operations=True))
@@ -450,16 +452,16 @@ def _execute_fwd_new(
 
         return res, jacs
 
-    @exec_fwd.defjvp
-    def exec_jvp(primal, tangents):
+    @execute_wrapper.defjvp
+    def execute_wrapper_jvp(primal, tangents):
 
-        res, jacs = exec_fwd(primal[0])
+        res, jacs = execute_wrapper(primal[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
         return res, jvps
 
-    res = exec_fwd(params)
+    res = execute_wrapper(params)
 
     tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
 
@@ -494,6 +496,7 @@ def _execute_bwd_new(
 ):
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
+    # pylint: disable=unused-variable
 
     # Copy a given tape with operations and set parameters
     def cp_tape(t, a):
@@ -511,7 +514,7 @@ def _execute_bwd_new(
         return res
 
     @execute_wrapper.defjvp
-    def exec_jvp(primals, tangents):
+    def execute_wrapper_jvp(primals, tangents):
         new_tapes = [cp_tape(t, a) for t, a in zip(tapes, primals[0])]
 
         if _n == max_diff:
