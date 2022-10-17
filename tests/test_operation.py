@@ -1671,6 +1671,18 @@ class TestTensor:
         with pytest.raises(ValueError, match="Can only compute"):
             t.sparse_matrix()
 
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_tensor = tensor.map_wires(wire_map=wire_map)
+        final_obs = [qml.PauliX(10), qml.PauliY(11), qml.PauliZ(12)]
+        assert tensor is not mapped_tensor
+        assert tensor.wires == Wires([0, 1, 2])
+        assert mapped_tensor.wires == Wires([10, 11, 12])
+        for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
+            assert qml.equal(obs1, obs2)
+
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
