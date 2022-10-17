@@ -260,10 +260,6 @@ class AnnotatedQueue:
         """Returns a list of objects in the annotated queue"""
         return list(self._queue.keys())
 
-    def reset(self):
-        """Reset queue."""
-        self._queue = OrderedDict()
-
 
 def apply(op, context=QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
