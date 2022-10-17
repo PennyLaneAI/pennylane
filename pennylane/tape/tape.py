@@ -227,10 +227,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             new_ops.extend(expanded_tape._ops)
             new_measurements.extend(expanded_tape._measurements)
 
-    new_tape = QuantumTape(shots=tape.shots)
+    new_tape = QuantumTape()
     new_tape._prep = new_prep
     new_tape._ops = new_ops
     new_tape._measurements = new_measurements
+    new_tape.shots = tape._raw_shot_sequence
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -536,6 +537,7 @@ class QuantumTape(AnnotatedQueue):
 
             self._shots = shots
             self._shot_vector = None
+            self._raw_shot_sequence = shots
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
@@ -1859,7 +1861,7 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             .QuantumTape: a shallow copy of the tape
         """
-        tape = QuantumTape(shots=self.shots)
+        tape = QuantumTape()
 
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement
@@ -1889,6 +1891,7 @@ class QuantumTape(AnnotatedQueue):
         tape._obs_sharing_wires_id = self._obs_sharing_wires_id
         tape._batch_size = self.batch_size
         tape._output_dim = self.output_dim
+        tape.shots = self._raw_shot_sequence
 
         return tape
 
