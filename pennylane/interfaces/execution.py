@@ -32,8 +32,6 @@ from typing import Callable, Sequence
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane import Device
-from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
 
@@ -59,9 +57,7 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
-def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
-):
+def _adjoint_jacobian_expansion(tapes: Sequence, mode: str, interface: str, max_expansion: int):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
 
@@ -125,12 +121,12 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     if expand_fn is not None:
         original_fn = fn
 
-        def fn(tapes: Sequence[QuantumTape], **kwargs):  # pylint: disable=function-redefined
+        def fn(tapes: Sequence, **kwargs):  # pylint: disable=function-redefined
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 
     @wraps(fn)
-    def wrapper(tapes: Sequence[QuantumTape], **kwargs):
+    def wrapper(tapes: Sequence, **kwargs):
 
         if not pass_kwargs:
             kwargs = {}
@@ -228,8 +224,8 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
 
 def _execute_new(
-    tapes: Sequence[QuantumTape],
-    device: Device,
+    tapes: Sequence,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -454,8 +450,8 @@ def _execute_new(
 
 
 def execute(
-    tapes: Sequence[QuantumTape],
-    device: Device,
+    tapes: Sequence,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -698,7 +694,7 @@ def execute(
     return batch_fn(res)
 
 
-def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
+def _get_jax_execute_fn(interface: str, tapes: Sequence):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
 
