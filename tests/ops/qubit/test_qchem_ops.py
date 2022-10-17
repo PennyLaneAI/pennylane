@@ -774,7 +774,7 @@ class TestOrbitalRotation:
             qml.SingleExcitation(phi, [0, 2]) @ qml.SingleExcitation(phi, [1, 3]),
             wire_order=[0, 1, 2, 3],
         )
-        assert np.equal(decomposed_matrix.all(), op.matrix().all())
+        assert np.array_equal(decomposed_matrix, op.matrix())
 
     def test_adjoint(self):
         """Test adjoint method for adjoint op decomposition."""
