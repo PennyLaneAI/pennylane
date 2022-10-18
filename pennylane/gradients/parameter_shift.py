@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches
+# pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
 from collections.abc import Sequence
 
@@ -217,7 +217,7 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
 
     if isinstance(res, list) and len(res) == 0:
         # No shifted evaluations are present, just the unshifted one.
-        return unshifted_coeff * r0
+        return r0 * unshifted_coeff
 
     # individual post-processing of e.g. Hamiltonian grad tapes
     if fn is not None:
@@ -333,6 +333,7 @@ def _expval_param_shift_tuple(
             list of generated tapes, in addition to a post-processing
             function to be applied to the results of the evaluated tapes.
     """
+    # pylint: disable=too-many-branches
     argnum = argnum or tape.trainable_params
 
     gradient_tapes = []
@@ -388,7 +389,6 @@ def _expval_param_shift_tuple(
         multi_measure = len(tape.measurements) > 1
 
         for data in gradient_data:
-
             num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
                 if unshifted_coeff is None:
