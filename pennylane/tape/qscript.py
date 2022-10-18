@@ -157,10 +157,9 @@ class QuantumScript:
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
 
-        self._par_info = {}
-        """dict[int, dict[str, Operator or int]]: Parameter information. Keys are
-        parameter indices (in the order they appear on the quantum script), and values are a
-        dictionary containing the corresponding operation and operation parameter index."""
+        self._par_info = []
+        """list[dict[str, Operator or int]]: Parameter information.
+        Values are dictionaries containing the corresponding operation and operation parameter index."""
 
         self._trainable_params = []
         self._graph = None
@@ -343,7 +342,7 @@ class QuantumScript:
         self._graph = None
         self._specs = None
         self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
-        self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
+        self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         # The following line requires _par_info to be up to date
         self._update_trainable_params()  # Updates the _trainable_params; O(1)
@@ -379,16 +378,13 @@ class QuantumScript:
         Sets:
             _par_info (dict): Parameter information dictionary
         """
-        param_count = 0
+        self._par_info = []
+        for op in self.operations:
+            self._par_info.extend({"op": op, "p_idx": i} for i, d in enumerate(op.data))
 
-        for obj in self.operations + self.observables:
-
-            for p in range(len(obj.data)):
-                info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p})
-
-                self._par_info[param_count] = info
-                param_count += 1
+        for m in self.measurements:
+            if m.obs is not None:
+                self._par_info.extend({"op": m.obs, "p_idx": i} for i, d in enumerate(m.obs.data))
 
     def _update_trainable_params(self):
         """Set the trainable parameters
@@ -402,7 +398,7 @@ class QuantumScript:
 
         Call `_update_par_info` before `_update_trainable_params`
         """
-        self._trainable_params = list(self._par_info)
+        self._trainable_params = list(range(len(self._par_info)))
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -552,14 +548,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-
-        # get the corresponding operation
-        op = info["op"]
-
-        # get the corresponding operation parameter index
-        # (that is, index of the parameter within the operation)
-        p_idx = info["p_idx"]
-        return op, p_idx
+        return info["op"], info["p_idx"]
 
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
@@ -599,7 +588,7 @@ class QuantumScript:
         [0.432, 0.543, 0.133]
         """
         params = []
-        iterator = self.trainable_params if trainable_only else self._par_info
+        iterator = self.trainable_params if trainable_only else range(len(self._par_info))
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]

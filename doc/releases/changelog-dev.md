@@ -139,6 +139,8 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   
 <h3>Breaking changes</h3>
 
+* `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
+
 * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
