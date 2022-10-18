@@ -513,16 +513,16 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         new_args = self.step(objective_fn, *args, **kwargs)
 
         if isinstance(objective_fn, qml.ExpvalCost):
-            device = objective_fn.qnodes[0].device
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
-            device = objective_fn.device
+            qnodes = objective_fn.qnodes
+        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "qnode"):
+            qnodes = [objective_fn]
 
-        original_shots = device.shots
-
+        original_shots = [qnode.shots for qnode in objective_fn.qnodes]
         try:
-            device.shots = int(self.max_shots)
+            for qnode in objective_fn.qnodes:
+                qnode.shots = int(self.max_shots)
             forward = objective_fn(*args, **kwargs)
         finally:
-            device.shots = original_shots
-
+            for qnode, init_shots in zip(qnodes, original_shots):
+                qnode.shots = init_shots
         return new_args, forward
