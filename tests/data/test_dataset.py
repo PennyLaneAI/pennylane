@@ -31,43 +31,30 @@ def test_build_dataset():
     assert test_dataset.hamiltonian == hamiltonian
 
 
-def test_write_dataset():
+def test_write_dataset(tmp_path):
     """Test that datasets are saved correctly."""
-    open_mock = mock_open()
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-
-    with patch("builtins.open", open_mock):
-        test_dataset.write("./path/to/file.dat")
-
-    test_dict = {"dtype": None, "__doc__": "", "kw1": 1, "kw2": "2", "kw3": [3]}
-    pickled_data = dill.dumps(test_dict, protocol=4)  # returns data as a bytes object
-    compressed_pickle = zstd.compress(pickled_data)
-
-    open_mock.assert_called_with("./path/to/file.dat", "wb")  # check written to correct file
-    open_mock.return_value.write.assert_called_with(compressed_pickle)  # check correct data written
+    d = tmp_path / "sub"
+    d.mkdir()
+    p = d / "test_dataset"
+    test_dataset.write(p)
 
 
-def test_read_dataset():
+def test_read_dataset(tmp_path):
     """Test that datasets are loaded correctly."""
-    # before conversion, read data is a compressed dictionary
-    # generate correct read data
-    test_dict = {"kw1": 1, "kw2": "2", "kw3": [3]}
-    pickled_data = dill.dumps(test_dict, protocol=4)
-    compressed_pickle = zstd.compress(pickled_data)
+    test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
+    d = tmp_path / "sub"
+    d.mkdir()
+    p = d / "test_dataset"
+    test_dataset.write(p)
 
-    # generate the expected dataset
-    read_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-
-    open_mock = mock_open(read_data=compressed_pickle)
     test_dataset = qml.data.Dataset()
+    test_dataset.read(p)
 
-    with patch("builtins.open", open_mock):
-        test_dataset.read("./path/to/file.dat")
+    assert test_dataset.kw1 == 1
+    assert test_dataset.kw2 == "2"
+    assert test_dataset.kw3 == [3]
 
-    open_mock.return_value.read.assert_called()
-    open_mock.assert_called_with("./path/to/file.dat", "rb")
-
-    assert test_dataset == read_dataset
 
 
 def test_from_dataset():
