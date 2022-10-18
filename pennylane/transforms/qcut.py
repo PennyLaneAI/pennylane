@@ -630,7 +630,7 @@ def expand_fragment_tape(
 
     n_meas = len(measure_nodes)
     if n_meas >= 1:
-        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
+        measure_combinations = qml.pauli.partition_pauli_group(len(measure_nodes))
     else:
         measure_combinations = [[""]]
 
@@ -1577,7 +1577,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
     2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
       ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
-      will be the result of ``qml.grouping.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      will be the result of ``qml.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
       YY.
     3. Reshapes into the final target shape ``(4,) * (n_prep + n_meas)``
     4. Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from
@@ -1599,7 +1599,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     intermediate_tensor = qml.math.reshape(results, intermediate_shape)
 
     # Step 2
-    grouped = qml.grouping.partition_pauli_group(n_meas)
+    grouped = qml.pauli.partition_pauli_group(n_meas)
     grouped_flat = [term for group in grouped for term in group]
     order = qml.math.argsort(grouped_flat)
 
@@ -1801,7 +1801,7 @@ def cut_circuit(
 
             qml.CZ(wires=[1, 2])
 
-            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+            return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
     Executing ``circuit`` will run multiple configurations of the :math:`2`-qubit fragments which
     are then postprocessed to give the result of the original circuit:
@@ -1834,7 +1834,7 @@ def cut_circuit(
 
             qml.CZ(wires=[1, 2])
 
-            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+            return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
     >>> x = np.array(0.531, requires_grad=True)
     >>> circuit(x)
@@ -1882,7 +1882,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2])
 
-                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -1916,7 +1916,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2])
 
-                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
                 graph = qml.transforms.qcut.tape_to_graph(uncut_tape),

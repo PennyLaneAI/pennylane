@@ -2963,10 +2963,10 @@ class TestQCutProcessingFn:
         def f(state, measurement):
             qml.QubitStateVector(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
-            return [qml.expval(qml.grouping.string_to_pauli_word(m)) for m in measurement]
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 
         prod_inp = itertools.product(range(4), repeat=n)
-        prod_out = qml.grouping.partition_pauli_group(n)
+        prod_out = qml.pauli.partition_pauli_group(n)
 
         results = []
 
@@ -4717,7 +4717,7 @@ class TestAutoCutCircuit:
         with qml.tape.QuantumTape() as tape0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
-                qml.expval(qml.grouping.string_to_pauli_word("Z" * n_wires))
+                qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 

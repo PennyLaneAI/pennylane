@@ -303,7 +303,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
                         qml.Identity(i)
                         - qml.PauliZ(i)
                         - qml.PauliZ(j)
-                        + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
+                        + qml.pauli.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
                     )
                 )
         ops_l.append(ops_l_.tolist())

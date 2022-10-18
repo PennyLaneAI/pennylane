@@ -286,7 +286,7 @@ def _observable_mult(obs_a, obs_b):
     c = []
     for i in range(len(obs_a.terms()[0])):
         for j in range(len(obs_b.terms()[0])):
-            op, phase = qml.grouping.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
+            op, phase = qml.pauli.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
             o.append(op)
             c.append(phase * obs_a.terms()[0][i] * obs_b.terms()[0][j])
     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
@@ -307,9 +307,9 @@ def clifford(generators, paulixops):
 
     **Example**
 
-    >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
-    >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
-    >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
+    >>> t1 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIIZ')])
     >>> generators = [t1, t2, t3]
     >>> paulixops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
     >>> u = clifford(generators, paulixops)
@@ -374,7 +374,7 @@ def taper(h, generators, paulixops, paulix_sector):
 
     for idx, w in enumerate(paulix_wires):
         for i in range(len(h.terms()[0])):
-            s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
+            s = qml.pauli.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
             if s[w] == "X":
                 val[i] *= paulix_sector[idx]
 
@@ -383,11 +383,11 @@ def taper(h, generators, paulixops, paulix_sector):
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
     for i in range(len(h.terms()[0])):
-        s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
+        s = qml.pauli.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
 
         wires = [x for x in h.wires if x not in paulix_wires]
         o.append(
-            qml.grouping.string_to_pauli_word(
+            qml.pauli.string_to_pauli_word(
                 "".join([s[wiremap[i]] for i in wires]), wire_map=wiremap_tap
             )
         )
@@ -670,11 +670,11 @@ def taper_operation(operation, generators, paulixops, paulix_sector, wire_order,
     if qml.QueuingManager.recording():
         qml.QueuingManager.update_info(operation, owner=gen_tapered)
         for coeff, op in zip(*gen_tapered.terms()):
-            qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+            qml.PauliRot(-2 * params * coeff, qml.pauli.pauli_word_to_string(op), op.wires)
     else:
         ops_tapered = []
         for coeff, op in zip(*gen_tapered.terms()):
             ops_tapered.append(
-                qml.PauliRot(-2 * params * coeff, qml.grouping.pauli_word_to_string(op), op.wires)
+                qml.PauliRot(-2 * params * coeff, qml.pauli.pauli_word_to_string(op), op.wires)
             )
         return ops_tapered

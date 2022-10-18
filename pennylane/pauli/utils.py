@@ -795,7 +795,7 @@ def pauli_group(n_qubits, wire_map=None):
     The ``pauli_group`` generator can be used to loop over the Pauli group as follows.
     (Note: in the example below, we display only the first 5 elements for brevity.)
 
-    >>> from pennylane.grouping import pauli_group
+    >>> from pennylane.pauli import pauli_group
     >>> n_qubits = 3
     >>> for p in pauli_group(n_qubits):
     ...     print(p)
@@ -864,7 +864,7 @@ def pauli_mult(pauli_1, pauli_2, wire_map=None):
     This function enables multiplication of Pauli group elements at the level of
     Pauli words, rather than matrices. For example,
 
-    >>> from pennylane.grouping import pauli_mult
+    >>> from pennylane.pauli import pauli_mult
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product = pauli_mult(pauli_1, pauli_2)
@@ -920,7 +920,7 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
     phase accumulated as a result of the ordering of Paulis in the product (e.g., :math:`XY = iZ`,
     and :math:`YX = -iZ`).
 
-    >>> from pennylane.grouping import pauli_mult_with_phase
+    >>> from pennylane.pauli import pauli_mult_with_phase
     >>> pauli_1 = qml.PauliX(0) @ qml.PauliZ(1)
     >>> pauli_2 = qml.PauliY(0) @ qml.PauliZ(1)
     >>> product, phase = pauli_mult_with_phase(pauli_1, pauli_2)
@@ -979,7 +979,7 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
 
     **Example**
 
-    >>> qml.grouping.partition_pauli_group(3)
+    >>> qml.pauli.partition_pauli_group(3)
     [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
      ['IIX', 'IZX', 'ZIX', 'ZZX'],
      ['IIY', 'IZY', 'ZIY', 'ZZY'],
@@ -1081,7 +1081,7 @@ def simplify(h, cutoff=1.0e-12):
     c, o = [], []
     for i, op in enumerate(h.ops):
         op = qml.operation.Tensor(op).prune()
-        op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
+        op = qml.pauli.pauli_word_to_string(op, wire_map=wiremap)
         if op not in o:
             c.append(h.coeffs[i])
             o.append(op)
@@ -1092,7 +1092,7 @@ def simplify(h, cutoff=1.0e-12):
     nonzero_ind = np.argwhere(abs(np.array(c)) > cutoff).flatten()
     for i in nonzero_ind:
         coeffs.append(c[i])
-        ops.append(qml.grouping.string_to_pauli_word(o[i], wire_map=wiremap))
+        ops.append(qml.pauli.string_to_pauli_word(o[i], wire_map=wiremap))
 
     try:
         coeffs = qml.math.stack(coeffs)
