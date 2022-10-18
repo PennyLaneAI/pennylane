@@ -767,50 +767,14 @@ class TestOrbitalRotation:
     def test_orbital_rotation_decomp(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct decomposition.
 
-        The decomposition has already been expressed in terms of single-qubit rotations
-        and CNOTs. For each term in the decomposition we need to construct the appropriate
-        four-qubit tensor product matrix and then multiply them together.
+        The decomposition is expressed in terms of two SingleExcitation gates.
         """
-        decomp1 = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0, 1, 2, 3])
-
-        from functools import reduce
-
-        # To compute the matrix for CX on an arbitrary number of qubits, use the fact that
-        # CU  = |0><0| \otimes I + |1><1| \otimes U
-        def cnot_four_qubits(wires):
-            proj_0_term = [StateZeroProjector if idx == wires[0] else np.eye(2) for idx in range(4)]
-
-            proj_1_term = [np.eye(2) for idx in range(4)]
-            proj_1_term[wires[0]] = StateOneProjector
-            proj_1_term[wires[1]] = X
-
-            proj_0_kron = reduce(np.kron, proj_0_term)
-            proj_1_kron = reduce(np.kron, proj_1_term)
-
-            return proj_0_kron + proj_1_kron
-
-        # Inserts a single-qubit matrix into a four-qubit matrix at the right place
-        def single_mat_four_qubits(mat, wire):
-            individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
-            return reduce(np.kron, individual_mats)
-
-        for decomp in [decomp1, decomp2]:
-            mats = []
-            for i in reversed(decomp):
-                # Single-qubit gate
-                if len(i.wires.tolist()) == 1:
-                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
-                    mats.append(mat)
-                # Two-qubit gate
-                else:
-                    mat = cnot_four_qubits(i.wires.tolist())
-                    mats.append(mat)
-
-            decomposed_matrix = np.linalg.multi_dot(mats)
-            exp = OrbitalRotation(phi)
-
-            assert np.allclose(decomposed_matrix, exp)
+        op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        decomposed_matrix = qml.matrix(
+            qml.SingleExcitation(phi, [0, 2]) @ qml.SingleExcitation(phi, [1, 3]),
+            wire_order=[0, 1, 2, 3],
+        )
+        assert np.array_equal(decomposed_matrix, op.matrix())
 
     def test_adjoint(self):
         """Test adjoint method for adjoint op decomposition."""
