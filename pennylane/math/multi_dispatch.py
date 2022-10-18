@@ -13,9 +13,8 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
-import warnings
-from collections.abc import Sequence
 import functools
+from collections.abc import Sequence
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -52,64 +51,6 @@ def eye(*args, like=None, **kwargs):
     if like is not None and get_interface(like) == "torch":
         res = res.to(device=like.device)
     return res
-
-
-def _multi_dispatch(values):
-    """Determines the correct framework to dispatch to given a
-    sequence of tensor-like objects.
-
-    Args:
-        values (Sequence[tensor_like]): a sequence of tensor like objects
-
-    Returns:
-        str: the name of the interface
-
-    To determine the framework to dispatch to, the following rules
-    are applied:
-
-    * Tensors that are incompatible (such as Torch and TensorFlow tensors)
-      cannot both be present.
-
-    * Autograd tensors *may* be present alongside Torch and TensorFlow tensors,
-      but Torch and TensorFlow take precendence; the autograd arrays will
-      be treated as non-differentiable NumPy arrays. A warning will be raised
-      suggesting that vanilla NumPy be used instead.
-
-    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
-      they will always be treated as non-differentiable constants.
-    """
-    if "resource_variable" in getattr(values, "__module__", tuple()):
-        values = np.asarray(values)
-
-    interfaces = {get_interface(v) for v in values}
-
-    if len(set(interfaces) - {"numpy", "scipy", "autograd"}) > 1:
-        # contains multiple non-autograd interfaces
-        raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
-
-    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
-
-    if len(non_numpy_scipy_interfaces) > 1:
-        # contains autograd and another interface
-        warnings.warn(
-            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
-            "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
-            UserWarning,
-        )
-
-    if "tensorflow" in interfaces:
-        return "tensorflow"
-
-    if "torch" in interfaces:
-        return "torch"
-
-    if "autograd" in interfaces:
-        return "autograd"
-
-    if "jax" in interfaces:
-        return "jax"
-
-    return "numpy"
 
 
 def multi_dispatch(argnum=None, tensor_list=None):
@@ -201,7 +142,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
                     dispatch_args.append(args[a])
 
             interface = kwargs.pop("like", None)
-            interface = interface or _multi_dispatch(dispatch_args)
+            interface = interface or get_interface(*dispatch_args)
             kwargs["like"] = interface
 
             return fn(*args, **kwargs)
@@ -587,7 +528,7 @@ def einsum(indices, *operands, like=None):
     array([ 30,  80, 130, 180, 230])
     """
     if like is None:
-        like = _multi_dispatch(operands)
+        like = get_interface(*operands)
     operands = np.coerce(operands, like=like)
     return np.einsum(indices, *operands, like=like)
 
@@ -656,7 +597,7 @@ def where(condition, x=None, y=None):
 
     """
     if x is None and y is None:
-        interface = _multi_dispatch([condition])
+        interface = get_interface(condition)
         res = np.where(condition, like=interface)
 
         if interface == "tensorflow":
@@ -664,7 +605,7 @@ def where(condition, x=None, y=None):
 
         return res
 
-    interface = _multi_dispatch([condition, x, y])
+    interface = get_interface(condition, x, y)
     res = np.where(condition, x, y, like=interface)
 
     return res
@@ -801,21 +742,16 @@ def unwrap(values, max_depth=None):
     >>> print(grad)
     [0.99500417 0.98006658 0.95533649]
     """
-    res = []
 
-    for t in values:
-        if isinstance(t, ArrayBox):
-            a = np.to_numpy(t, max_depth=max_depth)
-        else:
-            a = np.to_numpy(t)
+    def convert(val):
+        if isinstance(val, list):
+            return unwrap(val)
+        new_val = (
+            np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
+        )
+        return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-        if isinstance(a, ndarray) and not a.shape:
-            # if NumPy array is scalar, convert to a Python float
-            res.append(a.tolist())
-        else:
-            res.append(a)
-
-    return res
+    return [convert(val) for val in values]
 
 
 def add(*args, **kwargs):
