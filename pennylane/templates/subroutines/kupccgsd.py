@@ -269,10 +269,9 @@ class kUpCCGSD(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        init_state_flipped = np.flip(init_state)
         op_list = []
 
-        op_list.append(qml.BasisEmbedding(init_state_flipped, wires=wires))
+        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):
