@@ -22,9 +22,12 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
+
+# pylint: disable=too-many-instance-attributes
 
 
-class CompositeOp(Operator, abc.ABC):
+class CompositeOp(Operator):
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -257,6 +260,15 @@ class CompositeOp(Operator, abc.ABC):
         return 1 + max(op.arithmetic_depth for op in self)
 
     def map_wires(self, wire_map: dict):
-        new_op = super().map_wires(wire_map=wire_map)
+        cls = self.__class__
+        new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op.data = self.data.copy()
+        for attr, value in vars(self).items():
+            if attr not in {"data", "operands", "_wires"}:
+                setattr(new_op, attr, value)
+
         return new_op
