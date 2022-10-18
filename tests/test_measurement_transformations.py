@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 from pennylane import PauliX, PauliY, PauliZ, Identity, Hadamard, Hermitian, RX, RY, U3
 from pennylane.pauli.utils import are_identical_pauli_words
-from pennylane.grouping.transformations import (
+from pennylane.pauli.utils import (
     qwc_rotation,
     diagonalize_pauli_word,
     diagonalize_qwc_pauli_words,
