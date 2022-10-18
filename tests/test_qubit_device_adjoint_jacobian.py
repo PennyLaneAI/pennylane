@@ -17,8 +17,9 @@ Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitD
 import pytest
 
 import pennylane as qml
+from pennylane import QNode
 from pennylane import numpy as np
-from pennylane import QNode, qnode
+from pennylane import qnode
 
 
 class TestAdjointJacobian:
@@ -44,7 +45,7 @@ class TestAdjointJacobian:
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.QuantumTape(shots=1) as tape:
             qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
@@ -366,7 +367,9 @@ class TestAdjointJacobianQNode:
         """Tests that the correct gradient is computed for qnodes which
         use the same parameter in multiple gates."""
 
-        from gate_data import Rotx as Rx, Roty as Ry, Rotz as Rz
+        from gate_data import Rotx as Rx
+        from gate_data import Roty as Ry
+        from gate_data import Rotz as Rz
 
         def expZ(state):
             return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2

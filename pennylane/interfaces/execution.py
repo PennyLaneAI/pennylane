@@ -566,6 +566,7 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    tapes = list(tapes)
     for i, tape in enumerate(tapes):
         if override_shots is not False:
             new_tape = tape.copy()
