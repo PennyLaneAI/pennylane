@@ -31,7 +31,7 @@ class Dataset(ABC):
         **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
 
     **Example**
-    
+
     >>> Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
     >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(Hamiltonian))
     >>> ground_state_energy = np.min(eigvals)

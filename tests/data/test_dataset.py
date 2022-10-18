@@ -56,7 +56,6 @@ def test_read_dataset(tmp_path):
     assert test_dataset.kw3 == [3]
 
 
-
 def test_from_dataset():
     """Test that datasets can be built from other datasets"""
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
