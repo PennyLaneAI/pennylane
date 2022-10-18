@@ -1204,7 +1204,7 @@ class TestTensor:
 
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""
-        p = np.array([0.5])
+        p = np.array([[0.5]])
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1212,7 +1212,7 @@ class TestTensor:
 
     def test_wires(self):
         """Test that the correct nested list of wires is returned"""
-        p = np.array([0.5])
+        p = np.array([[0.5]])
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1220,7 +1220,7 @@ class TestTensor:
 
     def test_params(self):
         """Test that the correct flattened list of parameters is returned"""
-        p = np.array([0.5])
+        p = np.array([[0.5]])
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1228,7 +1228,7 @@ class TestTensor:
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
-        p = np.array([0.5])
+        p = np.array([[0.5]])
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         Z = qml.Hermitian(p, wires=[1, 2])
@@ -1237,7 +1237,7 @@ class TestTensor:
 
     def test_parameters(self):
         """Test that the correct nested list of parameters is returned"""
-        p = np.array([0.5])
+        p = np.array([[0.5]])
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
