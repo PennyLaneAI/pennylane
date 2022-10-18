@@ -53,6 +53,9 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Improvements</h3>
 
+* `Adjoint` now supports batching if the base operation supports batching.
+  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
+
 * `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
@@ -108,6 +111,17 @@ Users can specify the control wires as well as the values to control the operati
 
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
+
+* Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
+  its wires changed according to the given wire map.
+  [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
+
+  ```pycon
+  >>> op = qml.Toffoli([0, 1, 2])
+  >>> wire_map = {0: 2, 2: 0}
+  >>> op.map_wires(wire_map=wire_map)
+  Toffoli(wires=[2, 1, 0])
+  ```
 
 * Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
   [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
