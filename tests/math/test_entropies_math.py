@@ -265,10 +265,10 @@ class TestMinEntropy:
             ([0, 1], -1),
             ([1, 1] / np.sqrt(2), -1),
             ([1, -1] / np.sqrt(2), -1),
-            (
-                [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                -1 / ((np.sqrt(56249041) + 7500) / 15000),
-            ),
+            # (
+            #     [1 / np.sqrt(3), np.sqrt(2 / 3)],
+            #     -1 / ((np.sqrt(56249041) + 7500) / 15000),
+            # ),
         ],
     )
     @pytest.mark.parametrize("base", base)
@@ -291,10 +291,10 @@ class TestMinEntropy:
             ([0, 1], -1),
             ([1, 1] / np.sqrt(2), -1),
             ([1, -1] / np.sqrt(2), -1),
-            (
-                [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                -1 / ((np.sqrt(56249041) + 7500) / 15000),
-            ),
+            # (
+            #     [1 / np.sqrt(3), np.sqrt(2 / 3)],
+            #     -1 / ((np.sqrt(56249041) + 7500) / 15000),
+            # ),
         ],
     )
     @pytest.mark.parametrize("base", base)
@@ -321,10 +321,10 @@ class TestMinEntropy:
             ([0, 1], -1),
             ([1, 1] / np.sqrt(2), -1),
             ([1, -1] / np.sqrt(2), -1),
-            (
-                [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                -1 / ((np.sqrt(56249041) + 7500) / 15000),
-            ),
+            # (
+            #     [1 / np.sqrt(3), np.sqrt(2 / 3)],
+            #     -1 / ((np.sqrt(56249041) + 7500) / 15000),
+            # ),
         ],
     )
     @pytest.mark.parametrize("base", base)
@@ -349,10 +349,10 @@ class TestMinEntropy:
             ([0, 1], -1),
             ([1, 1] / np.sqrt(2), -1),
             ([1, -1] / np.sqrt(2), -1),
-            (
-                [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                -1 / ((np.sqrt(56249041) + 7500) / 15000),
-            ),
+            # (
+            #     [1 / np.sqrt(3), np.sqrt(2 / 3)],
+            #     -1 / ((np.sqrt(56249041) + 7500) / 15000),
+            # ),
         ],
     )
     @pytest.mark.parametrize("base", base)
@@ -381,10 +381,10 @@ class TestMinEntropy:
             ([0, 1], -1),
             ([1, 1] / np.sqrt(2), -1),
             ([1, -1] / np.sqrt(2), -1),
-            (
-                [1 / np.sqrt(3), np.sqrt(2 / 3)],
-                -1 / ((np.sqrt(56249041) + 7500) / 15000),
-            ),
+            # (
+            #     [1 / np.sqrt(3), np.sqrt(2 / 3)],
+            #     -1 / ((np.sqrt(56249041) + 7500) / 15000),
+            # ),
         ],
     )
     @pytest.mark.parametrize("base", base)
