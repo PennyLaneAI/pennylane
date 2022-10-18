@@ -20,13 +20,16 @@ from functools import reduce
 
 import numpy as np
 import pytest
+import tensorflow as tf
+import torch
 from gate_data import CNOT, II, SWAP, TADD, TSWAP, I, Toffoli, X
+from jax import numpy as jnp
 from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import Operation, Operator, Tensor, operation_derivative
-from pennylane.ops import cv
+from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -878,7 +881,7 @@ class TestOperatorIntegration:
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
         final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
+        assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -890,7 +893,7 @@ class TestOperatorIntegration:
         sum_op = 5 + qml.PauliX(0) + 0
         final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
+        assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -899,8 +902,33 @@ class TestOperatorIntegration:
 
     def test_sum_scalar_tensor(self):
         """Test the __sum__ dunder method with a scalar tensor."""
-        sum_op = qml.RX(1.23, 0) + pnp.array(5)
-        assert type(sum_op[1].scalar) == pnp.tensor
+        scalar = pnp.array(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.torch
+    def test_sum_scalar_torch_tensor(self):
+        """Test the __sum__ dunder method with a scalar torch tensor."""
+        scalar = torch.tensor(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.tf
+    def test_sum_scalar_tf_tensor(self):
+        """Test the __sum__ dunder method with a scalar tf tensor."""
+        scalar = tf.constant(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.jax
+    def test_sum_scalar_jax_tensor(self):
+        """Test the __sum__ dunder method with a scalar jax tensor."""
+        scalar = jnp.array(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
 
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
@@ -910,7 +938,7 @@ class TestOperatorIntegration:
             qml.s_prod(5, qml.Identity([0, 1])),
         )
         # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
+        assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -941,16 +969,42 @@ class TestOperatorIntegration:
         assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
         assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
 
-    def test_mul_with_scalar_tensor(self):
+    def test_mul_scalar_tensor(self):
         """Test the __mul__ dunder method with a scalar tensor."""
-        sum_op = qml.RX(1.23, 0) * pnp.array(5)
-        assert type(sum_op.scalar) == pnp.tensor
+        scalar = pnp.array(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.torch
+    def test_mul_scalar_torch_tensor(self):
+        """Test the __mul__ dunder method with a scalar torch tensor."""
+        scalar = torch.tensor(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.tf
+    def test_mul_scalar_tf_tensor(self):
+        """Test the __mul__ dunder method with a scalar tf tensor."""
+        scalar = tf.constant(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.jax
+    def test_mul_scalar_jax_tensor(self):
+        """Test the __mul__ dunder method with a scalar jax tensor."""
+        scalar = jnp.array(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
 
     def test_mul_with_operator(self):
         """Test the __matmul__ dunder method with an operator."""
         prod_op = qml.RX(1, 0) @ qml.PauliX(0)
         final_op = qml.prod(qml.RX(1, 0), qml.PauliX(0))
-        assert isinstance(prod_op, qml.ops.Prod)
+        assert isinstance(prod_op, Prod)
         assert prod_op.name == final_op.name
         assert prod_op.wires == final_op.wires
         assert prod_op.data == final_op.data
