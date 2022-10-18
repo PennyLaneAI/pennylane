@@ -649,7 +649,7 @@ def expand_fragment_tape(
                 n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
-            with QuantumTape() as tape_:
+            with tape.new_tape() as tape_:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
@@ -805,7 +805,7 @@ def expand_fragment_tapes_mc(
     for tape in tapes:
         frag_config = []
         for shot in range(shots):
-            with qml.tape.QuantumTape() as new_tape:
+            with tape.new_tape() as new_tape:
                 for op in tape.operations:
                     w = op.wires[0]
                     if isinstance(op, PrepareNode):
@@ -2205,7 +2205,7 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
     copy_ops = [copy.copy(op) for op in tape.operations]
     copy_meas = [copy.copy(op) for op in tape.measurements]
 
-    with QuantumTape() as new_tape:
+    with tape.new_tape() as new_tape:
         for op in copy_ops:
             new_wires = Wires([wire_map[w] for w in op.wires])
             op._wires = new_wires

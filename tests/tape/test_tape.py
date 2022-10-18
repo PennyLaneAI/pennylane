@@ -27,9 +27,9 @@ from pennylane.measurements import (
     MeasurementShapeError,
     counts,
     expval,
+    probs,
     sample,
     var,
-    probs,
 )
 from pennylane.tape import QuantumTape, TapeError
 
@@ -279,11 +279,11 @@ class TestConstruction:
     def test_repr(self):
         """Test the string representation"""
 
-        with QuantumTape() as tape:
+        with QuantumTape(shots=100) as tape:
             qml.RX(0.432, wires=0)
 
         s = tape.__repr__()
-        expected = "<QuantumTape: wires=[0], params=1>"
+        expected = "<QuantumTape: wires=[0], shots=100, params=1>"
         assert s == expected
 
     def test_circuit_property(self):

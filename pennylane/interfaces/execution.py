@@ -566,8 +566,13 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    for tape in tapes:
-        tape.shots = override_shots or device._raw_shot_sequence  # pylint: disable=protected-access
+    for i, tape in enumerate(tapes):
+        if override_shots is not False:
+            new_tape = tape.copy()
+            new_tape.shots = override_shots
+            tapes[i] = new_tape
+        elif tape.shots is None:
+            tape.shots = device._raw_shot_sequence  # pylint: disable=protected-access
 
     if qml.active_return():
         return _execute_new(

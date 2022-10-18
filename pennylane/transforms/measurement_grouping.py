@@ -15,9 +15,10 @@
 Contains the measurement grouping transform
 """
 import pennylane as qml
+from pennylane.tape import QuantumTape
 
 
-def measurement_grouping(tape, obs_list, coeffs_list):
+def measurement_grouping(tape: QuantumTape, obs_list, coeffs_list):
     """Returns a list of measurement optimized tapes, and a classical processing function, for
     evaluating the expectation value of a provided Hamiltonian.
 
@@ -78,7 +79,7 @@ def measurement_grouping(tape, obs_list, coeffs_list):
 
     for obs in obs_groupings:
 
-        with tape.__class__() as new_tape:
+        with tape.new_tape() as new_tape:
             for op in tape.operations:
                 op.queue()
 

@@ -14,18 +14,18 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
-import pytest
-import numpy as np
 from random import random
 
+import numpy as np
+import pytest
+
 import pennylane as qml
+from pennylane import DeviceError, QuantumFunctionError, QubitDevice
 from pennylane import numpy as pnp
-from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.wires import Wires
+from pennylane.measurements import Expectation, Probability, Sample, State, Variance, state
 from pennylane.tape import QuantumTape
-from pennylane.measurements import state
+from pennylane.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -314,11 +314,12 @@ class TestExtractStatistics:
             num_wires = 1
             return_type = returntype
 
-        obs = SomeObservable(wires=0)
+        with QuantumTape() as tape:
+            return SomeObservable(wires=0)
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(tape)
 
         assert results == [0]
 
@@ -328,10 +329,12 @@ class TestExtractStatistics:
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
+            with QuantumTape() as tape:
+                return state()
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
-                dev.statistics([state()])
+                dev.statistics(tape)
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
@@ -341,11 +344,12 @@ class TestExtractStatistics:
             num_wires = 1
             return_type = returntype
 
-        obs = SomeObservable(wires=0)
+        with QuantumTape() as tape:
+            return SomeObservable(wires=0)
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(tape)
 
         assert results == []
 
@@ -359,11 +363,12 @@ class TestExtractStatistics:
             num_wires = 1
             return_type = returntype
 
-        obs = SomeObservable(wires=0)
+        with QuantumTape() as tape:
+            return SomeObservable(wires=0)
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
-            dev.statistics([obs])
+            dev.statistics(tape)
 
 
 class TestGenerateSamples:

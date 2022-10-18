@@ -13,16 +13,17 @@
 # limitations under the License.
 """Classical shadow transforms"""
 
-from itertools import product
-from functools import reduce, wraps
 import warnings
+from functools import reduce, wraps
+from itertools import product
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.tape.tape import QuantumTape
 
 
 @qml.batch_transform
-def _replace_obs(tape, obs, *args, **kwargs):
+def _replace_obs(tape: QuantumTape, obs, *args, **kwargs):
     """
     Tape transform to replace the measurement processes with the given one
     """
@@ -33,7 +34,7 @@ def _replace_obs(tape, obs, *args, **kwargs):
                 f"Tape measurement must be {qml.measurements.Shadow!r}, got {o.return_type!r}"
             )
 
-    with qml.tape.QuantumTape() as new_tape:
+    with tape.new_tape() as new_tape:
         # queue everything from the old tape except the measurement processes
         for op in tape.operations:
             qml.apply(op)

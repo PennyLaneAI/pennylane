@@ -145,7 +145,7 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return f"<{self.__class__.__name__} device (wires={self.num_wires}, shots={self.shots}) at {hex(id(self))}>"
+        return f"<{self.__class__.__name__} device (wires={self.num_wires}) at {hex(id(self))}>"
 
     def __str__(self):
         """Verbose string representation."""
@@ -155,8 +155,7 @@ class Device(abc.ABC):
             f"Package: {package}\n"
             f"Plugin version: {self.version}\n"
             f"Author: {self.author}\n"
-            f"Wires: {self.num_wires}\n"
-            f"Shots: {self.shots}"
+            f"Wires: {self.num_wires}"
         )
 
     @property
@@ -211,9 +210,7 @@ class Device(abc.ABC):
     @property
     def analytic(self):
         """Whether shots is None or not. Kept for backwards compatability."""
-        if self._shots is None:
-            return True
-        return False
+        return self._shots is None
 
     @property
     def wires(self):
@@ -711,7 +708,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-        finite_shots = self.shots is not None
+        finite_shots = circuit.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables

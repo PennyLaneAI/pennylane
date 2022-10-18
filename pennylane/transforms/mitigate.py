@@ -13,15 +13,13 @@
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
-
 from typing import Any, Dict, Optional, Sequence, Union
 
-from pennylane import QNode, apply, adjoint
-from pennylane.math import mean, shape, round
+import pennylane as qml
+from pennylane import QNode, adjoint, apply
+from pennylane.math import mean, round, shape
 from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform
-
-import pennylane as qml
 
 
 @batch_transform
@@ -185,7 +183,7 @@ def _divmod(a, b):
     return int(out1), int(out2)
 
 
-def fold_global_tape(circuit, scale_factor):
+def fold_global_tape(circuit: QuantumTape, scale_factor):
     r"""
     This is the internal tape transform to be used with :func:`~.pennylane.transforms.mitigate_with_zne`.
     For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
@@ -216,7 +214,7 @@ def fold_global_tape(circuit, scale_factor):
     num_to_fold = int(round(fraction_scale * n_ops / 2))
 
     # Create new_circuit from folded list
-    with QuantumTape() as new_circuit:
+    with circuit.new_tape() as new_circuit:
         # Original U
         for op in base_ops:
             qfunc(op)
@@ -505,7 +503,7 @@ def mitigate_with_zne(
 
     tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
 
-    with QuantumTape() as tape_removed:
+    with tape.new_tape() as tape_removed:
         for op in tape._ops:
             apply(op)
 
@@ -520,7 +518,7 @@ def mitigate_with_zne(
 
     for tape_ in tapes:
         # pylint: disable=expression-not-assigned
-        with QuantumTape() as t:
+        with tape_.new_tape() as t:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]
             [apply(m) for m in tape.measurements]

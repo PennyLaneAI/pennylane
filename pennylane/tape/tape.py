@@ -28,7 +28,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import AllCounts, Counts, Probability, Sample, Shadow, ShadowExpval
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import DecompositionUndefinedError, Observable, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
@@ -440,7 +440,7 @@ class QuantumTape(AnnotatedQueue):
         self._obs_sharing_wires_id = []
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, shots={self.shots}, params={self.num_params}>"
 
     def __enter__(self):
         QuantumTape._lock.acquire()
@@ -1547,7 +1547,7 @@ class QuantumTape(AnnotatedQueue):
         return self._prep + self._ops
 
     @property
-    def observables(self):
+    def observables(self) -> List[Observable]:
         """Returns the observables on the quantum tape.
 
         Returns:
@@ -1906,3 +1906,17 @@ class QuantumTape(AnnotatedQueue):
         fingerprint.extend(m.hash for m in self.measurements)
         fingerprint.extend(self.trainable_params)
         return hash(tuple(fingerprint))
+
+    def new_tape(self, shots: int = False, **kwargs):
+        """Create a new quantum tape.
+
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables. If None ``self.shots`` is used. Defaults to None.
+
+        Returns:
+            .QuantumTape: new quantum tape
+        """
+        if shots is False:
+            shots = self._raw_shot_sequence
+        return self.__class__(shots=shots, **kwargs)

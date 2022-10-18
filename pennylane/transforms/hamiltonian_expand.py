@@ -16,9 +16,10 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 import pennylane as qml
+from pennylane.tape import QuantumTape
 
 
-def hamiltonian_expand(tape, group=True):
+def hamiltonian_expand(tape: QuantumTape, group=True):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
     and provides a function to recombine the results.
@@ -152,7 +153,7 @@ def hamiltonian_expand(tape, group=True):
         tapes = []
         for obs in obs_groupings:
 
-            with tape.__class__() as new_tape:
+            with tape.new_tape() as new_tape:
                 for op in tape.operations:
                     op.queue()
 
@@ -176,7 +177,7 @@ def hamiltonian_expand(tape, group=True):
     # make one tape per observable
     tapes = []
     for o in hamiltonian.ops:
-        with tape.__class__() as new_tape:
+        with tape.new_tape() as new_tape:
             for op in tape.operations:
                 op.queue()
             qml.expval(o)

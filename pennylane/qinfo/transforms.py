@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
-# pylint: disable=import-outside-toplevel, not-callable
+# pylint: disable=import-outside-toplevel, not-callable, unnecessary-lambda-assignment
 import functools
-import pennylane as qml
 
-from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.tape.tape import QuantumTape
+from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -236,12 +237,12 @@ def _compute_cfim(p, dp):
 
 
 @batch_transform
-def _make_probs(tape, wires=None, post_processing_fn=None):
+def _make_probs(tape: QuantumTape, wires=None, post_processing_fn=None):
     """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
     if wires is None:
         wires = tape.wires
 
-    with qml.tape.QuantumTape() as new_tape:
+    with tape.new_tape() as new_tape:
         for op in tape.operations:
             qml.apply(op)
         qml.probs(wires=wires)

@@ -160,7 +160,7 @@ class QNode:
         self,
         func,
         device: Device,
-        shots: int = None,  # pylint: disable=unused-argument
+        shots: int = None,
         interface="autograd",
         diff_method="best",
         expansion_strategy="gradient",
@@ -564,7 +564,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = QuantumTape(shots=self.tape._raw_shot_sequence)
+        self._tape = self.tape.new_tape()
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
@@ -648,11 +648,11 @@ class QNode:
 
                 # store the initialization gradient function
                 original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
-                original_shots = self.shots
+                original_tape = self.tape
 
                 # pylint: disable=not-callable
                 # update the gradient function
-                self.shots = override_shots
+                self._tape = self.tape.new_tape(shots=override_shots)
                 self._update_gradient_fn()
 
         # construct the tape
@@ -673,7 +673,7 @@ class QNode:
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
                 gradient_kwargs=self.gradient_kwargs,
-                override_shots=self.tape._raw_shot_sequence,
+                override_shots=override_shots,
                 **self.execute_kwargs,
             )
 
@@ -711,7 +711,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
-            override_shots=self.tape._raw_shot_sequence,
+            override_shots=override_shots,
             **self.execute_kwargs,
         )
 
@@ -752,7 +752,7 @@ class QNode:
         if override_shots is not False:
             # restore the initialization gradient function
             self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
-            self.shots = original_shots
+            self._tape = original_tape
 
         self._update_original_device()
 
