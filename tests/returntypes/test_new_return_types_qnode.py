@@ -124,7 +124,7 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
-    @pytest.mark.xfail(reason="qml.execute shot vec support required")
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
     def test_vn_entropy_shot_vec_error(self):
         """Test an error is raised when using shot vectors with vn_entropy."""
         dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
@@ -156,7 +156,7 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
-    @pytest.mark.xfail(reason="qml.execute shot vec support required")
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
     def test_mutual_info_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
         dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
