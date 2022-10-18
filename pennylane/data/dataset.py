@@ -16,6 +16,7 @@ Contains the dataset class.
 """
 
 from abc import ABC
+from glob import glob
 import os
 import dill
 import zstd
@@ -23,20 +24,69 @@ import zstd
 
 class Dataset(ABC):
     "The dataset data type. Allows users to create datasets with their own data"
-    CFG_ATTRS = {"dtype", "folder", "file_prefix", "file_fstring", "_attributes", "__doc__"}
 
-    def __init__(self, dtype, folder, file_prefix, attributes=None, **kwargs):
-        self.dtype = dtype
-        self.folder = folder
-        self.file_prefix = file_prefix
-        self.file_fstring = os.path.join(folder, file_prefix) + "_{}.dat"
-        self._attributes = attributes or []
-        self.__doc__ = ""
+    def __init__(self, **kwargs):
         for key, val in kwargs.items():
             setattr(self, f"{key}", val)
 
+    @property
+    def attrs(self):
+        return {k: v for k,v in vars(self).items() if k[0] != '_'}
+
+    @staticmethod
+    def _read_file(filepath):
+        """Reading the data from a saved file"""
+        with open(filepath, "rb") as file:
+            compressed_pickle = file.read()
+        depressed_pickle = zstd.decompress(compressed_pickle)
+        return dill.loads(depressed_pickle)
+
+    def read(self, filename=None, foldername=None, lazy=True):
+        """Loading the dataset from saved files"""
+        if filename:
+            files = [os.path.join(foldername, filename)] if foldername else [filename]
+        elif foldername:
+            files = glob(foldername + "/*.dat")
+        else:
+            raise ValueError("Must provide one or more of {filename, foldername}")
+        for f in files:
+            data = self._read_file(f)
+            for attr, val in data.items():
+                setattr(self, f"{attr}", None if lazy else val)
+
+    def write(self, filepath, protocol=4):
+        """Writing the data to a file"""
+        pickled_data = dill.dumps(self.attrs, protocol=protocol)  # returns data as a bytes object
+        compressed_pickle = zstd.compress(pickled_data)
+        with open(filepath, "wb") as file:
+            file.write(compressed_pickle)
+
+    def list_attributes(self):
+        """List the attributes saved on the Dataset"""
+        return list(self.attrs)
+
+    @staticmethod
+    def from_dataset(source, new_folder=None):
+        copied = Dataset(source._dtype, new_folder or source.folder, source.file_prefix)
+        for key, val in source.attrs.items():
+            copied.setattr(key, val)
+        return copied
+
+
+class RemoteDataset(Dataset):
+    def __init__(self, dtype, folder, attr_prefix):
+        self._dtype = dtype
+        self._folder = folder.rstrip('/')
+        self._prefix = os.path.join(self._folder, attr_prefix)+"_{}.dat"
+        self.__doc__ == ""
+
+        for f in glob(self._folder + "/*.dat"):
+            data = self._read_file(f)
+            for attr, value in data.items():
+                setattr(self, f"{attr}", value)
+
     def __get_filename_for_attribute(self, attribute):
-        return self.file_fstring.format(attribute)
+        return self._prefix.format(attribute)
 
     def __getattribute__(self, name):
         try:
@@ -52,59 +102,6 @@ class Dataset(ABC):
             f"'Dataset' object has no attribute {name} and no matching file was found"
         )
 
-    @staticmethod
-    def _read_file(filepath):
-        """Reading the data from a saved file"""
-        with open(filepath, "rb") as file:
-            compressed_pickle = file.read()
-        depressed_pickle = zstd.decompress(compressed_pickle)
-        data = dill.loads(depressed_pickle)
-        return data
-
-    def read(self, lazy=True):
-        """Loading the dataset from saved files"""
-        if self._attributes == ["full"]:
-            data = self._read_file(self.__get_filename_for_attribute("full"))
-            for attr, val in data.items():
-                setattr(self, f"{attr}", None if lazy else val)
-            return
-        for attr in self._attributes:
-            val = None if lazy else self._read_file(self.__get_filename_for_attribute(attr))
-            setattr(self, f"{attr}", val)
-
-    @staticmethod
-    def _write_file(filepath, data, protocol=4):
-        """Writing the data to a file"""
-        pickled_data = dill.dumps(data, protocol=protocol)  # returns data as a bytes object
-        compressed_pickle = zstd.compress(pickled_data)
-        with open(filepath, "wb") as file:
-            file.write(compressed_pickle)
-
-    def write(self, filepath, protocol=4):
-        """Writing the dataset to a file"""
-        dataset = {}
-        for key, val in vars(self).items():
-            dataset.update({key: val})
-        self._write_file(filepath=filepath, data=dataset, protocol=protocol)
-
-    def setattr(self, name, value, update_file=False, protocol=4):
-        """Set value of an attribute and its file"""
-        setattr(self, name, value)
-        if update_file:
-            self._write_file(self.__get_filename_for_attribute(name), value, protocol)
-
-    def list_attributes(self):
-        """List the attributes saved on the Dataset"""
-        return list(set(vars(self)) - self.CFG_ATTRS)
-
-    @staticmethod
-    def from_dataset(source, new_folder=None):
-        copied = Dataset(source.dtype, new_folder or source.folder, source.file_prefix)
-        for key, val in vars(source).items():
-            if key not in ["dtype", "folder", "file_prefix", "file_fstring"]:
-                copied.setattr(key, val)
-        return copied
-
     def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
         """Build the docstring for the Dataset class"""
         docstring = f"{docstr}\n\n"
@@ -112,5 +109,5 @@ class Dataset(ABC):
             docstring += "Args:\n"
             for arg, argdoc, argtype in zip(args, argsdocs, argtypes):
                 docstring += f"\t{arg} ({argtype}): {argdoc}\n"
-            docstring += f"\nReturns:\n\tDataset({self.dtype})"
+            docstring += f"\nReturns:\n\tDataset({self._dtype})"
         self.__doc__ = docstring

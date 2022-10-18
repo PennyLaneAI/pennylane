@@ -18,12 +18,8 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import os
 import requests
 
-from pennylane.data.dataset import Dataset
+from pennylane.data.dataset import RemoteDataset
 
-# from pennylane.qdata.qchem_dataset import ChemDataset
-# from pennylane.qdata.qspin_dataset import SpinDataset
-
-URL = "https://pl-qd-flask-app.herokuapp.com"
 S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
 FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
 DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
@@ -174,8 +170,7 @@ def load(data_type, attributes=None, lazy=False, folder_path="", force=False, nu
     data_files = []
     for folder in all_folders:
         real_folder = os.path.join(directory_path, data_type, folder)
-        obj = Dataset(data_type, real_folder, folder.replace("/", "_"), attributes=attributes)
-        obj.read(lazy=False)
+        obj = RemoteDataset(data_type, real_folder, folder.replace("/", "_"))
         doc_attrs = obj.list_attributes()
         doc_vals = [type(getattr(obj, attr)) for attr in doc_attrs]
         args_idx = [data["attributes"].index(x) for x in doc_attrs]
