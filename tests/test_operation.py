@@ -20,10 +20,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
-import tensorflow as tf
-import torch
 from gate_data import CNOT, II, SWAP, TADD, TSWAP, I, Toffoli, X
-from jax import numpy as jnp
 from numpy.linalg import multi_dot
 
 import pennylane as qml
@@ -909,6 +906,8 @@ class TestOperatorIntegration:
     @pytest.mark.torch
     def test_sum_scalar_torch_tensor(self):
         """Test the __sum__ dunder method with a scalar torch tensor."""
+        import torch
+
         scalar = torch.tensor(5)
         sum_op = qml.RX(1.23, 0) + scalar
         assert isinstance(sum_op, Sum)
@@ -917,6 +916,8 @@ class TestOperatorIntegration:
     @pytest.mark.tf
     def test_sum_scalar_tf_tensor(self):
         """Test the __sum__ dunder method with a scalar tf tensor."""
+        import tensorflow as tf
+
         scalar = tf.constant(5)
         sum_op = qml.RX(1.23, 0) + scalar
         assert isinstance(sum_op, Sum)
@@ -925,6 +926,8 @@ class TestOperatorIntegration:
     @pytest.mark.jax
     def test_sum_scalar_jax_tensor(self):
         """Test the __sum__ dunder method with a scalar jax tensor."""
+        from jax import numpy as jnp
+
         scalar = jnp.array(5)
         sum_op = qml.RX(1.23, 0) + scalar
         assert isinstance(sum_op, Sum)
@@ -979,6 +982,8 @@ class TestOperatorIntegration:
     @pytest.mark.torch
     def test_mul_scalar_torch_tensor(self):
         """Test the __mul__ dunder method with a scalar torch tensor."""
+        import torch
+
         scalar = torch.tensor(5)
         prod_op = qml.RX(1.23, 0) * scalar
         assert isinstance(prod_op, SProd)
@@ -987,6 +992,8 @@ class TestOperatorIntegration:
     @pytest.mark.tf
     def test_mul_scalar_tf_tensor(self):
         """Test the __mul__ dunder method with a scalar tf tensor."""
+        import tensorflow as tf
+
         scalar = tf.constant(5)
         prod_op = qml.RX(1.23, 0) * scalar
         assert isinstance(prod_op, SProd)
@@ -995,6 +1002,8 @@ class TestOperatorIntegration:
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
+        from jax import numpy as jnp
+
         scalar = jnp.array(5)
         prod_op = qml.RX(1.23, 0) * scalar
         assert isinstance(prod_op, SProd)
