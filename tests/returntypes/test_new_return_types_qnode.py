@@ -124,6 +124,22 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
+    @pytest.mark.xfail(reason="qml.execute shot vec support required")
+    def test_vn_entropy_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with vn_entropy."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
+
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
@@ -139,6 +155,22 @@ class TestIntegrationSingleReturn:
 
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
+
+    @pytest.mark.xfail(reason="qml.execute shot vec support required")
+    def test_mutual_info_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with mutual_info."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
 
     herm = np.diag([1, 2, 3, 4])
     probs_data = [
