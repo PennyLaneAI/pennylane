@@ -310,7 +310,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         device = qnodes[0].device
 
         self.check_device(device)
-        original_shots = qnodes[0].shots
+        original_shots = [qnode.shots for qnode in qnodes]
 
         if self.lipschitz is None:
             self.check_learning_rate(coeffs)
@@ -337,7 +337,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                     "term_sampling=None currently supported."
                 )
         finally:
-            device.shots = original_shots
+            for qnode, init_shots in zip(qnodes, original_shots):
+                qnode.shots = init_shots
 
         return grads
 
