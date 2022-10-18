@@ -63,6 +63,7 @@ class Hermitian(Observable):
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
+        A = qml.math.asarray(A)
         super().__init__(A, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
