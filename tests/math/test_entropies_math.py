@@ -277,7 +277,9 @@ class TestMinEntropy:
         """Test that the gradient of min_entropy works
         with the autograd interface"""
 
+        c_dtype = "complex128"
         state = qml.math.asarray(state, like="autograd")
+        state = cast(state, dtype=c_dtype)
         grad = qml.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
         div = 1 if base is None else np.log(base)
@@ -335,7 +337,9 @@ class TestMinEntropy:
 
         import jax
 
+        c_dtype = "complex128"
         state = qml.math.asarray(state, like="jax")
+        state = cast(state, dtype=c_dtype)
         grad = jax.jit(jax.grad(qml.math.min_entropy))(state, base=base, check_state=check_state)
 
         div = 1 if base is None else np.log(base)
@@ -394,10 +398,11 @@ class TestMinEntropy:
 
         import torch
 
+        c_dtype = "complex128"
         state = qml.math.asarray(state, like="torch")
 
         state = torch.tensor(state, dtype=torch.float64, requires_grad=True)
-
+        state = cast(state, dtype=c_dtype)
         grad_entropy = state.grad
 
         div = 1 if base is None else np.log(base)
