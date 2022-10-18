@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.wires import Wires
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -939,6 +940,22 @@ class TestHamiltonian:
         """Test that empty Hamiltonian does not raise an empty wire error."""
         hamiltonian = qml.Hamiltonian([], [])
         assert isinstance(hamiltonian, qml.Hamiltonian)
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)]
+        h = qml.Hamiltonian(coeffs, ops)
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_h = h.map_wires(wire_map=wire_map)
+        final_obs = [qml.PauliX(10), qml.PauliZ(11), qml.PauliY(12)]
+        assert h is not mapped_h
+        assert h.wires == Wires([0, 1, 2])
+        assert mapped_h.wires == Wires([10, 11, 12])
+        for obs1, obs2 in zip(mapped_h.ops, final_obs):
+            assert qml.equal(obs1, obs2)
+        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
+            assert coeff1 == coeff2
 
 
 class TestHamiltonianCoefficients:
