@@ -20,6 +20,7 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+from typing import List
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -164,7 +165,7 @@ class Hamiltonian(Observable):
     def __init__(
         self,
         coeffs,
-        observables,
+        observables: List[Observable],
         simplify=False,
         grouping_type=None,
         method="rlf",
@@ -649,3 +650,28 @@ class Hamiltonian(Observable):
             context.update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current hamiltonian with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Hamiltonian: new hamiltonian
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)
+        new_op.data = self.data.copy()
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op._ops = [  # pylint: disable=protected-access
+            op.map_wires(wire_map) for op in self.ops
+        ]
+        for attr, value in vars(self).items():
+            if attr not in {"data", "_wires", "_ops"}:
+                setattr(new_op, attr, value)
+        new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        return new_op
