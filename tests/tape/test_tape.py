@@ -1658,6 +1658,21 @@ class TestStopRecording:
         assert len(temp_tape.operations) == 1
         assert temp_tape.operations[0] == op1
 
+    @pytest.mark.parametrize("ret", [expval, var])
+    def test_stop_recording_within_tape_cleans_up(self, ret):
+        """Test if some error is raised within a stop_recording context, the previously
+        active contexts are still returned to avoid popping from an empty deque"""
+        @qml.transforms.insert(qml.RY, 0.1)
+        def circuit():
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0)) # non-commuting, will raise error
+            ret(op=qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            with QuantumTape() as tape:
+                circuit()
+
 
 def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
