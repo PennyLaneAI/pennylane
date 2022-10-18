@@ -49,6 +49,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* `Adjoint` now supports batching if the base operation supports batching.
+  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
+
 * `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
