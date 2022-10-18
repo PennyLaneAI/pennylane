@@ -32,7 +32,7 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane import numpy as np
-from pennylane.grouping import string_to_pauli_word
+from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
