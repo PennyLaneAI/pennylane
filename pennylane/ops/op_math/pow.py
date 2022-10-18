@@ -351,11 +351,7 @@ class Pow(SymbolicOp):
         try:
             ops = base.pow(z=self.z)
             if not ops:
-                return (
-                    qml.prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                return qml.Identity(self.wires)
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:
