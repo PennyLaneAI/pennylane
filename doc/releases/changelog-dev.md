@@ -55,6 +55,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   should continue to rely on `QNode`s.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
+* `Adjoint` now supports batching if the base operation supports batching.
+  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
+
+* `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
+  [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
+
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
@@ -108,8 +114,14 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+  [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
+
 * Add details to the output of `Exp.label()`.
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
+
+* `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
@@ -172,6 +184,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
+  [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
 
 * Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
   [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)

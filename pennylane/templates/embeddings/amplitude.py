@@ -218,7 +218,7 @@ class AmplitudeEmbedding(Operation):
                         dat_type = type(feature_set)
                         padding = dat_type(padding).to(feature_set.device)
 
-                    feature_set = qml.math.concatenate([feature_set, padding], axis=0)
+                    feature_set = qml.math.hstack([feature_set, padding])
 
             # normalize
             norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
