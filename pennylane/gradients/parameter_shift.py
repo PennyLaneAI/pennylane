@@ -547,7 +547,6 @@ def expval_param_shift(
                     continue
                 # The gradient for this parameter is computed from r0 alone.
                 g = _evaluate_gradient([], data, broadcast, r0, scalar_qfunc_output)
-                print(f"g={g}")
                 grads.append(g)
                 continue
 

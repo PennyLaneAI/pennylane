@@ -443,7 +443,8 @@ class TestParamShift:
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
-    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe):
+    @pytest.mark.parametrize("multi_measure", [False, True])
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -454,6 +455,8 @@ class TestParamShift:
             qml.RX(x[0], wires=[0])
             qml.RX(x[1], wires=[0])
             qml.expval(qml.PauliZ(0))
+            if multi_measure:
+                qml.expval(qml.PauliZ(1))
 
         gradient_recipes = tuple(
             [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
