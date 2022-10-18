@@ -50,6 +50,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* `Adjoint` now supports batching if the base operation supports batching.
+  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
+
+* `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
+  [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
+
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
@@ -72,6 +78,23 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
       `update_info`.
 
+* `qml.Identity` now accepts multiple wires.
+    [(#3049)](https://github.com/PennyLaneAI/pennylane/pull/3049)
+
+    ```pycon
+    >>> id_op = qml.Identity([0, 1])
+    >>> id_op.matrix()
+    array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+    >>> id_op.sparse_matrix()
+    <4x4 sparse matrix of type '<class 'numpy.float64'>'
+        with 4 stored elements in Compressed Sparse Row format>
+    >>> id_op.eigvals()
+    array([1., 1., 1., 1.])
+    ```
+
 * Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
   indicates whether the user wants to check for unitarity of the input matrix or not. Its default
   value is `false`.
@@ -86,9 +109,29 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
+  its wires changed according to the given wire map.
+  [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
+
+  ```pycon
+  >>> op = qml.Toffoli([0, 1, 2])
+  >>> wire_map = {0: 2, 2: 0}
+  >>> op.map_wires(wire_map=wire_map)
+  Toffoli(wires=[2, 1, 0])
+  ```
+
+* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+  [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
+
 * Add details to the output of `Exp.label()`.
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
 
+* `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
+
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
+  [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
+  
 <h3>Breaking changes</h3>
 
 * `QueuingContext` is renamed `QueuingManager`.
@@ -148,11 +191,21 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
+  informative error message when using devices that define a vector of shots.
+  [(#3180)](https://github.com/PennyLaneAI/pennylane/pull/3180)
+
+* Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
+  [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
+
 * Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
   [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
 
 * Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
   [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
+
+* Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
+  [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
 
 <h3>Contributors</h3>
 
@@ -162,9 +215,11 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Amintor Dusko,
 Diego Guala,
 Soran Jahangiri,
 Christina Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
