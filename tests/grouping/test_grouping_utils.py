@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`grouping` utility functions in ``grouping/utils.py``.
+Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
 import pytest
 import numpy as np
@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ, Hadamard, Hermitian, U3
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
-from pennylane.grouping.utils import (
+from pennylane.pauli.utils import (
     is_pauli_word,
     are_identical_pauli_words,
     pauli_to_binary,

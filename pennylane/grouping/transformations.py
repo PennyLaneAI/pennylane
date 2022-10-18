@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import OperationRecorder
 from pennylane.operation import Tensor
-from pennylane.grouping.utils import (
+from pennylane.pauli.utils import (
     are_identical_pauli_words,
     are_pauli_words_qwc,
     is_pauli_word,

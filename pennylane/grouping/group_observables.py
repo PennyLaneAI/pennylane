@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
-from pennylane.grouping.utils import (
+from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
     observables_to_binary_matrix,
