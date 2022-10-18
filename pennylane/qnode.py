@@ -479,7 +479,6 @@ class QNode:
                 " Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
-
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
@@ -655,6 +654,13 @@ class QNode:
 
                 else:
                     res = type(self.tape._qfunc_output)(res)
+
+            if override_shots is not False:
+                # restore the initialization gradient function
+                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+
+            self._update_original_device()
+
             return res
 
         res = qml.execute(

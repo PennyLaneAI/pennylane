@@ -81,7 +81,6 @@ def _adjoint_jacobian_expansion(
     for i, tape in enumerate(tapes):
         if any(not stop_at(op) for op in tape.operations):
             tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
-
     return tapes
 
 
@@ -389,6 +388,10 @@ def _execute_new(
         elif mode == "backward":
             # disable caching on the forward pass
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
+
+            # For adjoint backward pass the state needs to be reset
+            if gradient_kwargs["method"] == "adjoint_jacobian":
+                gradient_kwargs["use_device_state"] = False
 
             # replace the backward gradient computation
             gradient_fn = qml.interfaces.cache_execute(
