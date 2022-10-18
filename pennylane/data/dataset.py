@@ -31,11 +31,7 @@ class Dataset(ABC):
         **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
 
     **Example**
-
-    We can use the :class:`~pennylane.data.Dataset` class to create datasets as follows:
-
-    >>> import pennylane as qml
-    >>> from pennylane import numpy as np
+    
     >>> Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
     >>> eigvals, eigvecs = np.linalg.eigh(qml.matrix(Hamiltonian))
     >>> ground_state_energy = np.min(eigvals)
@@ -54,18 +50,12 @@ class Dataset(ABC):
         In addition to creating datasets in memory, we can also store them in
         the disk and then load them as follows. First we create the dataset:
 
-        .. code-block:: python
-
-            import pennylane as qml
-            from pennylane import numpy as np
-
-            Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
-            eigvals, eigvecs = np.linalg.eigh(qml.matrix(Hamiltonian))
-            ground_state_energy = np.min(eigvals)
-
-            ground_state = np.transpose(eigvecs)[np.argmin(eigvals)]
-            dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state = ground_state,
-                    ground_state_energy = ground_state_energy)
+        >>> Hamiltonian = qml.Hamiltonian([1., 1.], [qml.PauliZ(wires=0), qml.PauliZ(wires=1)])
+        ...     eigvals, eigvecs = np.linalg.eigh(qml.matrix(Hamiltonian))
+        >>> ground_state_energy = np.min(eigvals)
+        >>> ground_state = np.transpose(eigvecs)[np.argmin(eigvals)]
+        >>> dataset = qml.data.Dataset(Hamiltonian = Hamiltonian, ground_state = ground_state,
+        ...     ground_state_energy = ground_state_energy)
 
         Then to save the dataset to a file, we call :func:`Dataset.write()`:
 
@@ -87,7 +77,7 @@ class Dataset(ABC):
         self.dtype = dtype
         self.__doc__ = ""
         for key, val in kwargs.items():
-            setattr(self, f"{key}", val)
+            setattr(self, key, val)
 
     def __eq__(self, __o):
         return self.__dict__ == __o.__dict__
@@ -111,14 +101,8 @@ class Dataset(ABC):
 
         **Example**
 
-        We first initialize a :class:`~pennylane.data.Dataset` and then read saved data to it:
-
-        .. code-block:: python
-
-            import pennylane as qml
-
-            new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
-            new_dataset.read('./path/to/file/file_name.dat')
+        >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
+        >>> new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
         for (key, val) in data.items():
@@ -136,18 +120,12 @@ class Dataset(ABC):
         """Writes a dataset to a file as a dictionary.
 
         Args:
-            filepath (string): the desired save location and file name, e.g. :code:'./path/to/file/file_name.dat'.
+            filepath (string): the desired save location and file name
 
         **Example**
 
-        We can save an existing dataset to a specific file as follows:
-
-        .. code-block:: python
-
-            import pennylane as qml
-
-            new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
-            new_dataset.write('./path/to/file/file_name.dat')
+        >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
+        >>> new_dataset.write('./path/to/file/file_name.dat')
         """
         dataset = {}
         for (key, val) in self.__dict__.items():
@@ -166,19 +144,11 @@ class Dataset(ABC):
 
         **Example**
 
-        For an existing :class:`~pennylane.data.Dataset`,
-        we can copy it to a new :class:`~pennylane.data.Dataset` as follows:
-
-        .. code-block:: python
-
-            import pennylane as qml
-
-            original_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
-            new_dataset = qml.data.Dataset.from_dataset(original_dataset)
-
-            >>> print(original_dataset.__dict__)
+            >>> original_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
+            >>> new_dataset = qml.data.Dataset.from_dataset(original_dataset)
+            >>> print(vars(original_dataset))
             {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
-            >>> print(new_dataset.__dict__)
+            >>> print(vars(new_dataset))
             {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
         """
         kwargs = {key: val for (key, val) in dataset.__dict__.items() if key not in ["dtype"]}
