@@ -542,9 +542,9 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
 
 def _build_callables(operation, op_wires=None, op_gen=None):
-    r"""Instantiates objects for whichever of the ``operation`` or ``op_gen`` args are callables. For the former one,
-    it is done with an arbitrary choice of variational arguments and specified wires. Whereas for the latter one, it
-    is done with only the specified wires.
+    r"""Instantiates objects for whichever of the ``operation`` or ``op_gen`` args are callables. For the former,
+    it is done using an arbitrary choice of variational arguments to be 1.0 and the specified wires. Whereas for the latter, it
+    is done only with the specified wires.
 
     Args:
         operation (Operation or Callable): qubit operation to be tapered, or a function that applies that operation
@@ -599,7 +599,7 @@ def _build_generator(operation, wire_order, op_gen=None):
         op_gen (Hamiltonian): generator of the operation in case it cannot be computed internally.
 
     Returns:
-        Hamiltonian
+        Hamiltonian: the generator of the operation
 
     Raises:
         NotImplementedError: generator of the operation cannot be constructed internally
