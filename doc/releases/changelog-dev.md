@@ -49,6 +49,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
+  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
+
 * `Adjoint` now supports batching if the base operation supports batching.
   [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
 
@@ -189,6 +192,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
 <h3>Bug fixes</h3>
+
+* Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
+  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
 * The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
   informative error message when using devices that define a vector of shots.
