@@ -865,50 +865,6 @@ class TestObservableConstruction:
         op = DummyObserv(wires=0)
         assert op.is_hermitian is True
 
-    def test_simplify(self):
-        """Test that simplify method returns the same instance."""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        op = DummyObserv(wires=0)
-        sim_op = op.simplify()
-        assert op is sim_op
-
-    def test_map_wires(self):
-        """Test the map_wires method."""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 3
-            grad_method = None
-
-        op = DummyObserv(wires=[0, 1, 2])
-        wire_map = {0: 10, 1: 11, 2: 12}
-        mapped_op = op.map_wires(wire_map=wire_map)
-        assert op is not mapped_op
-        assert op.wires == Wires([0, 1, 2])
-        assert mapped_op.wires == Wires([10, 11, 12])
-
-    def test_map_wires_uncomplete_wire_map(self):
-        """Test that the map_wires method doesn't change wires that are not present in the wire
-        map."""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 3
-            grad_method = None
-
-        op = DummyObserv(wires=[0, 1, 2])
-        wire_map = {0: 10, 2: 12}
-        mapped_op = op.map_wires(wire_map=wire_map)
-        assert op is not mapped_op
-        assert op.wires == Wires([0, 1, 2])
-        assert mapped_op.wires == Wires([10, 1, 12])
-
-
 
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
