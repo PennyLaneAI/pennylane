@@ -1667,6 +1667,7 @@ class TestStopRecording:
                 with qml.QueuingManager.stop_recording():
                     raise ValueError
 
+
 def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
     recording tape, or None if no tape is recording"""
