@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli.utils import are_identical_pauli_words
-from pennylane.grouping.optimize_measurements import optimize_measurements
+from pennylane.pauli.grouping.optimize_measurements import optimize_measurements
 
 
 class TestOptimizeMeasurements:
