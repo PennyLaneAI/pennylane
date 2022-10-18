@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the dataset class.
+Contains the dataset class and a special wrapper class for datasets
+following a certain folder organization, usually generated remotely.
 """
 
 from abc import ABC
@@ -77,16 +78,21 @@ class RemoteDataset(Dataset):
     def __init__(self, dtype, folder, attr_prefix):
         self._dtype = dtype
         self._folder = folder.rstrip('/')
-        self._prefix = os.path.join(self._folder, attr_prefix)+"_{}.dat"
+        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/"))+"_{}.dat"
         self.__doc__ == ""
 
+        self._fullfile = self._prefix.format("full")
+        if not os.path.exists(self._fullfile):
+            self._fullfile = None
+
         for f in glob(self._folder + "/*.dat"):
+            print(f)
             data = self._read_file(f)
             for attr, value in data.items():
                 setattr(self, f"{attr}", value)
 
     def __get_filename_for_attribute(self, attribute):
-        return self._prefix.format(attribute)
+        return self._fullfile if self._fullfile else self._prefix.format(attribute)
 
     def __getattribute__(self, name):
         try:
@@ -96,7 +102,7 @@ class RemoteDataset(Dataset):
         filepath = self.__get_filename_for_attribute(name)
         if os.path.exists(filepath):
             # TODO: setattr?
-            return self._read_file(filepath)
+            return self._read_file(filepath)[name]
         # TODO: download the file here?
         raise AttributeError(
             f"'Dataset' object has no attribute {name} and no matching file was found"
