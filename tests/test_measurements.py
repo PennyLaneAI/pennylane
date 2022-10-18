@@ -1039,8 +1039,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (A)}
+        assert q.get_info(A) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -1057,8 +1057,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(Herm) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (Herm)}
+        assert q.get_info(Herm) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1083,9 +1083,9 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1113,7 +1113,7 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
 
 @pytest.mark.parametrize("stat_func", [expval, var, sample])
@@ -1264,6 +1264,50 @@ class TestExpansion:
         be expanded has no observable"""
         with pytest.raises(DecompositionUndefinedError):
             MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1])).expand()
+
+    @pytest.mark.parametrize(
+        "return_type, obs",
+        [
+            (Expectation, qml.PauliX(0) @ qml.PauliY(1)),
+            (Variance, qml.PauliX(0) @ qml.PauliY(1)),
+            (Probability, qml.PauliX(0) @ qml.PauliY(1)),
+            (Expectation, qml.PauliX(5)),
+            (Variance, qml.PauliZ(0) @ qml.Identity(3)),
+            (Probability, qml.PauliZ(0) @ qml.Identity(3)),
+        ],
+    )
+    def test_has_decomposition_true_pauli(self, return_type, obs):
+        """Test that measurements of Paulis report to have a decomposition."""
+        m = MeasurementProcess(return_type, obs=obs)
+        assert m.has_decomposition is True
+
+    def test_has_decomposition_true_hermitian(self):
+        """Test that measurements of Hermitians report to have a decomposition."""
+        H = np.array([[1, 2], [2, 4]])
+        obs = qml.Hermitian(H, wires=["a"])
+        m = MeasurementProcess(Expectation, obs=obs)
+        assert m.has_decomposition is True
+
+    def test_has_decomposition_false_hermitian_wo_diaggates(self):
+        """Test that measurements of Hermitians report to have a decomposition."""
+
+        class HermitianNoDiagGates(qml.Hermitian):
+            @property
+            def has_diagonalizing_gates(self):
+                return False
+
+        H = np.array([[1, 2], [2, 4]])
+        obs = HermitianNoDiagGates(H, wires=["a"])
+        m = MeasurementProcess(Expectation, obs=obs)
+        assert m.has_decomposition is False
+
+    def test_has_decomposition_false_no_observable(self):
+        """Check a MeasurementProcess without observable to report not having a decomposition"""
+        m = MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1]))
+        assert m.has_decomposition is False
+
+        m = MeasurementProcess(Expectation, wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
+        assert m.has_decomposition is False
 
 
 class TestDiagonalizingGates:

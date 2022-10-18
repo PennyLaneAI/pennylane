@@ -29,6 +29,7 @@ from pennylane.measurements import (
     expval,
     sample,
     var,
+    probs,
 )
 from pennylane.tape import QuantumTape, TapeError
 
@@ -1160,7 +1161,7 @@ class TestExpand:
 
         assert tape1_exp.graph.hash == tape2.graph.hash
 
-    @pytest.mark.parametrize("ret", [expval, var, sample, counts])
+    @pytest.mark.parametrize("ret", [expval, var])
     def test_expand_tape_multiple_wires_non_commuting(self, ret):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables are on the same wire"""
@@ -1168,9 +1169,30 @@ class TestExpand:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             qml.expval(qml.PauliX(0))
-            ret(qml.PauliZ(0))
+            ret(op=qml.PauliZ(0))
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.expand(expand_measurements=True)
+
+    @pytest.mark.parametrize("ret", [sample, counts, probs])
+    def test_expand_tape_multiple_wires_non_commuting_for_sample_type_measurements(self, ret):
+        """Test if a more verbose QuantumFunctionError is raised during tape expansion of non-commuting
+        observables on the same wire with sample type measurements present"""
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.expval(qml.PauliX(0))
+            ret(op=qml.PauliZ(0))
+
+        expected_error_msg = (
+            "Only observables that are qubit-wise commuting "
+            "Pauli words can be returned on the same wire.\n"
+            "Try removing all probability, sample and counts measurements "
+            "this will allow for splitting of execution and separate measurements "
+            "for each non-commuting observable."
+        )
+
+        with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
             tape.expand(expand_measurements=True)
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
@@ -1560,42 +1582,24 @@ class TestTapeCopying:
 class TestStopRecording:
     """Test that the stop_recording function works as expected"""
 
-    def test_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape:
-            qml.RX(0.1, wires=0)
-
-        with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-            with tape.stop_recording():
-                pass
-
-    def test_nested_tape_not_recording(self):
-        """Test that an error is raised if the tape is no
-        longer recording"""
-        with QuantumTape() as tape1:
-            qml.RX(0.1, wires=0)
-
-            with QuantumTape() as tape2:
-                qml.RX(0.1, wires=0)
-
-                with pytest.raises(qml.queuing.QueuingError, match="Cannot stop recording"):
-                    with tape1.stop_recording():
-                        pass
+    deprecation_warning = (
+        "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording"
+    )
 
     def test_recording_stopped(self):
         """Test that recording is stopped within a tape context"""
 
         with QuantumTape() as tape:
             op0 = qml.RX(0, wires=0)
-            assert tape.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
-            with tape.stop_recording():
-                op1 = qml.RY(1.0, wires=1)
-                assert tape.active_context() is None
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
+                with tape.stop_recording():
+                    op1 = qml.RY(1.0, wires=1)
+                    assert qml.queuing.QueuingManager.active_context() is None
 
-            op2 = qml.RZ(2, wires=1)
-            assert tape.active_context() is tape
+                op2 = qml.RZ(2, wires=1)
+                assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
@@ -1606,21 +1610,22 @@ class TestStopRecording:
 
         with QuantumTape() as tape1:
             op0 = qml.RX(0, wires=0)
-            assert tape1.active_context() is tape1
+            assert qml.queuing.QueuingManager.active_context() is tape1
 
             with QuantumTape() as tape2:
-                assert tape1.active_context() is tape2
+                assert qml.queuing.QueuingManager.active_context() is tape2
                 op1 = qml.RY(1.0, wires=1)
 
-                with tape2.stop_recording():
-                    assert tape1.active_context() is None
-                    op2 = qml.RZ(0.6, wires=2)
-                    op3 = qml.CNOT(wires=[0, 2])
+                with pytest.warns(UserWarning, match=self.deprecation_warning):
+                    with tape2.stop_recording():
+                        assert qml.queuing.QueuingManager.active_context() is None
+                        op2 = qml.RZ(0.6, wires=2)
+                        op3 = qml.CNOT(wires=[0, 2])
 
                 op4 = qml.Hadamard(wires=0)
 
             op5 = qml.RZ(2, wires=1)
-            assert tape1.active_context() is tape1
+            assert qml.queuing.QueuingManager.active_context() is tape1
 
         assert len(tape1.operations) == 3
         assert tape1.operations[0] == op0
@@ -1636,14 +1641,15 @@ class TestStopRecording:
         space is properly created and accessible"""
         with QuantumTape() as tape:
             op0 = qml.RX(0, wires=0)
-            assert tape.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
-            with tape.stop_recording(), QuantumTape() as temp_tape:
-                assert tape.active_context() is temp_tape
-                op1 = qml.RY(1.0, wires=1)
+            with pytest.warns(UserWarning, match=self.deprecation_warning):
+                with tape.stop_recording(), QuantumTape() as temp_tape:
+                    assert qml.queuing.QueuingManager.active_context() is temp_tape
+                    op1 = qml.RY(1.0, wires=1)
 
             op2 = qml.RZ(2, wires=1)
-            assert tape.active_context() is tape
+            assert qml.queuing.QueuingManager.active_context() is tape
 
         assert len(tape.operations) == 2
         assert tape.operations[0] == op0
@@ -1653,20 +1659,29 @@ class TestStopRecording:
         assert temp_tape.operations[0] == op1
 
 
-def test_gate_tape():
+def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
     recording tape, or None if no tape is recording"""
-    assert qml.tape.get_active_tape() is None
+    message = (
+        "qml.tape.get_active_tape is now deprecated."
+        " Please use qml.QueuingManager.active_context"
+    )
+    with pytest.warns(UserWarning, match=message):
+        assert qml.tape.get_active_tape() is None
 
     with QuantumTape() as tape1:
-        assert qml.tape.get_active_tape() is tape1
+        with pytest.warns(UserWarning, match=message):
+            assert qml.tape.get_active_tape() is tape1
 
         with QuantumTape() as tape2:
-            assert qml.tape.get_active_tape() is tape2
+            with pytest.warns(UserWarning, match=message):
+                assert qml.tape.get_active_tape() is tape2
 
-        assert qml.tape.get_active_tape() is tape1
+        with pytest.warns(UserWarning, match=message):
+            assert qml.tape.get_active_tape() is tape1
 
-    assert qml.tape.get_active_tape() is None
+    with pytest.warns(UserWarning, match=message):
+        assert qml.tape.get_active_tape() is None
 
 
 class TestHashing:

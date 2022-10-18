@@ -33,6 +33,10 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
 from .composite import CompositeOp
 
+MAX_NUM_WIRES_KRON_PRODUCT = 9
+"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
+computing the sparse matrix representation."""
+
 
 def prod(*ops, do_queue=True, id=None):
     """Construct an operator which represents the generalized product of the
@@ -177,6 +181,11 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return True
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -184,7 +193,7 @@ class Prod(CompositeOp):
         to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
         that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
         """
-        if qml.queuing.QueuingContext.recording():
+        if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
@@ -228,8 +237,7 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Prod op in csr representation."""
-        if self.has_overlapping_wires:
+        if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
             reduced_mat, prod_wires = math.reduce_matrices(
@@ -259,6 +267,11 @@ class Prod(CompositeOp):
         Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self) else None
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
