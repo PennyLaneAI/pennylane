@@ -49,7 +49,7 @@ class Hermitian(Observable):
     * Gradient recipe: None
 
     Args:
-        A (array): square hermitian matrix
+        A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
@@ -64,7 +64,17 @@ class Hermitian(Observable):
 
     def __init__(self, A, wires, do_queue=True, id=None):
         A = qml.math.asarray(A)
+        Hermitian._validate_input(A)
         super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def _validate_input(A):
+        """Validate the input matrix."""
+        if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
+            raise ValueError("Observable must be a square matrix.")
+
+        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
+            raise ValueError("Observable must be Hermitian.")
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -92,13 +102,7 @@ class Hermitian(Observable):
          [ 1.+2.j -1.+0.j]]
         """
         A = qml.math.asarray(A)
-
-        if A.shape[0] != A.shape[1]:
-            raise ValueError("Observable must be a square matrix.")
-
-        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
-            raise ValueError("Observable must be Hermitian.")
-
+        Hermitian._validate_input(A)
         return A
 
     @property
