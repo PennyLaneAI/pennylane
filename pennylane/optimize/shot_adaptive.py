@@ -517,9 +517,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "qnode"):
             qnodes = [objective_fn]
 
-        original_shots = [qnode.shots for qnode in objective_fn.qnodes]
+        original_shots = [qnode.shots for qnode in qnodes]
         try:
-            for qnode in objective_fn.qnodes:
+            for qnode in qnodes:
                 qnode.shots = int(self.max_shots)
             forward = objective_fn(*args, **kwargs)
         finally:
