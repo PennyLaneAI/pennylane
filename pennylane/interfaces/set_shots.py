@@ -18,9 +18,11 @@ to be temporarily modified.
 # pylint: disable=protected-access
 import contextlib
 
+from pennylane import Device
+
 
 @contextlib.contextmanager
-def set_shots(device, shots):
+def set_shots(device: Device, shots):
     """Context manager to temporarily change the shots
     of a device.
 
@@ -44,13 +46,11 @@ def set_shots(device, shots):
         yield
         return
 
-    original_shots = device.shots
-    original_shot_vector = device._shot_vector
+    original_shots = device._raw_shot_sequence
 
     try:
         if shots is not False and device.shots != shots:
             device.shots = shots
         yield
     finally:
-        device._shots = original_shots
-        device._shot_vector = original_shot_vector
+        device.shots = original_shots
