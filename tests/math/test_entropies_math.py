@@ -18,7 +18,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-
+import pennylane
+from pennylane.math.utils import cast
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -304,7 +305,9 @@ class TestMinEntropy:
 
         import jax
 
+        c_dtype = "complex128"
         state = qml.math.asarray(state, like="jax")
+        state = cast(state, dtype=c_dtype)
         grad = jax.grad(qml.math.min_entropy)(state, base=base, check_state=check_state)
 
         div = 1 if base is None else np.log(base)
