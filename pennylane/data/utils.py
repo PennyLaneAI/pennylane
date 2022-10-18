@@ -131,7 +131,9 @@ def _generate_folders(node, folders):
     ]
 
 
-def load(data_type, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params):
+def load(
+    data_type, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
+):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
 
     Args:

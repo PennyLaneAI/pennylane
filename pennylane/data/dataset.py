@@ -77,14 +77,12 @@ class Dataset(ABC):
 
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
-            setattr(self, f"{key}", val)
-
-    def __eq__(self, __o):
-        return self.__dict__ == __o.__dict__
+            setattr(self, key, val)
 
     @property
     def attrs(self):
-        return {k: v for k,v in vars(self).items() if k[0] != '_'}
+        """Returns attributes of the dataset"""
+        return {k: v for k, v in vars(self).items() if k[0] != "_"}
 
     @staticmethod
     def _read_file(filepath):
@@ -93,8 +91,7 @@ class Dataset(ABC):
             compressed_pickle = file.read()
 
         depressed_pickle = zstd.decompress(compressed_pickle)
-        data = dill.loads(depressed_pickle)
-        return data
+        return dill.loads(depressed_pickle)
 
     def read(self, filepath):
         """Loads data from a saved file to the current dataset.
@@ -150,15 +147,18 @@ class Dataset(ABC):
             >>> print(vars(new_dataset))
             {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
         """
-        return cls(**self.attrs)
+        return cls(**dataset.attrs)
 
 
 class RemoteDataset(Dataset):
-    def __init__(self, dtype, folder, attr_prefix):
+    """A dataset object that provides additional utility, given that the data comes
+    from the PennyLane remote dataset source."""
+
+    def __init__(self, dtype, folder, attr_prefix, **kwargs):
         self._dtype = dtype
-        self._folder = folder.rstrip('/')
-        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/"))+"_{}.dat"
-        self.__doc__ == ""
+        self._folder = folder.rstrip("/")
+        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/")) + "_{}.dat"
+        self.__doc__ = ""
 
         self._fullfile = self._prefix.format("full")
         if not os.path.exists(self._fullfile):
@@ -169,6 +169,8 @@ class RemoteDataset(Dataset):
             data = self._read_file(f)
             for attr, value in data.items():
                 setattr(self, f"{attr}", value)
+
+        super().__init__(**kwargs)
 
     def __get_filename_for_attribute(self, attribute):
         return self._fullfile if self._fullfile else self._prefix.format(attribute)
