@@ -547,7 +547,6 @@ class TestOptimization:
         obs = [qml.PauliZ(0), qml.PauliX(0)]
         H = qml.Hamiltonian(coeffs, obs)
 
-        @qml.qnode(dev)
         def ansatz(x, **kwargs):
             qml.Rot(*x[0], wires=0)
             qml.Rot(*x[1], wires=1)
@@ -606,7 +605,6 @@ class TestStepAndCost:
         np.random.seed(0)
         dev = qml.device("default.qubit", wires=1, shots=10)
 
-        @qml.qnode(dev)
         def ansatz(x, **kwargs):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
