@@ -47,7 +47,7 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for observable in observables:
-                if qml.pauli.utils.are_identical_pauli_words(pauli_word, observable):
+                if qml.pauli.are_identical_pauli_words(pauli_word, observable):
                     ind = observables.index(observable)
                     indices_this_group.append(available_indices[ind])
                     # delete this observable and its index, so it cannot be found again
