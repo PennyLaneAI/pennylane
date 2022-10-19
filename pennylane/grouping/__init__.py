@@ -19,3 +19,23 @@ functionality used in measurement optimization.
 from . import graph_colouring
 from .group_observables import group_observables, PauliGroupingStrategy
 from .optimize_measurements import optimize_measurements
+from .transformations import (
+    qwc_rotation,
+    diagonalize_pauli_word,
+    diagonalize_qwc_pauli_words,
+    diagonalize_qwc_groupings,
+)
+from .utils import (
+    is_pauli_word,
+    are_identical_pauli_words,
+    pauli_to_binary,
+    binary_to_pauli,
+    pauli_word_to_string,
+    string_to_pauli_word,
+    pauli_word_to_matrix,
+    is_qwc,
+    are_pauli_words_qwc,
+    observables_to_binary_matrix,
+    qwc_complement_adj_matrix,
+)
+from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase, partition_pauli_group
