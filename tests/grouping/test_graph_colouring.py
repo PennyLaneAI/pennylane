@@ -16,7 +16,7 @@ Unit tests for heuristic Pauli graph colouring functions in ``grouping/graph_col
 """
 import pytest
 import numpy as np
-from pennylane.pauli.grouping.graph_colouring import largest_first, recursive_largest_first
+from pennylane.grouping.graph_colouring import largest_first, recursive_largest_first
 
 
 class TestGraphcolouringFunctions:

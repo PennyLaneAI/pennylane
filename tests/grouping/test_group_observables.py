@@ -18,8 +18,8 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli.utils import are_identical_pauli_words
-from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
+from pennylane.grouping.utils import are_identical_pauli_words
+from pennylane.grouping.group_observables import PauliGroupingStrategy, group_observables
 from pennylane import numpy as pnp
 
 
