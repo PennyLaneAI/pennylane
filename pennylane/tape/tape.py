@@ -16,16 +16,16 @@ This module contains the base quantum tape.
 """
 import contextlib
 import copy
-from warnings import warn
 
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
 from collections import Counter, defaultdict
 from threading import RLock
 from typing import List
+from warnings import warn
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts, Probability
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.measurements import AllCounts, Counts, Probability, Sample, Shadow, ShadowExpval
+from pennylane.operation import DecompositionUndefinedError, Observable, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 
 from .unwrap import UnwrapTape
@@ -1406,7 +1406,7 @@ class QuantumTape(AnnotatedQueue):
         return self._prep + self._ops
 
     @property
-    def observables(self):
+    def observables(self) -> List[Observable]:
         """Returns the observables on the quantum tape.
 
         Returns:

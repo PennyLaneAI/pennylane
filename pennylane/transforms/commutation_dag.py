@@ -15,12 +15,14 @@
 A transform to obtain the commutation DAG of a quantum circuit.
 """
 import heapq
-from functools import wraps
 from collections import OrderedDict
-from networkx.drawing.nx_pydot import to_pydot
+from functools import wraps
 
 import networkx as nx
+from networkx.drawing.nx_pydot import to_pydot
+
 import pennylane as qml
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 
@@ -210,7 +212,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, tape):
+    def __init__(self, tape: QuantumTape):
 
         self.num_wires = len(tape.wires)
         self.node_id = -1
@@ -220,13 +222,13 @@ class CommutationDAG:
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
 
         for operation in tape.operations:
-            operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
+            operation = operation.map_wires(wire_map=wires_map)
             self.add_node(operation)
 
         self._add_successors()
 
         for obs in tape.observables:
-            obs._wires = Wires([wires_map[wire] for wire in obs.wires.tolist()])
+            obs = obs.map_wires(wire_map=wires_map)
 
         self.observables = tape.observables if tape.observables is not None else []
 
