@@ -222,13 +222,13 @@ class CommutationDAG:
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
 
         for operation in tape.operations:
-            operation = operation.map_wires(wire_map=wires_map)
+            operation = qml.map_wires(operation, wire_map=wires_map)
             self.add_node(operation)
 
         self._add_successors()
 
         for obs in tape.observables:
-            obs = obs.map_wires(wire_map=wires_map)
+            obs = qml.map_wires(obs, wire_map=wires_map)
 
         self.observables = tape.observables if tape.observables is not None else []
 

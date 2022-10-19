@@ -24,7 +24,15 @@ from typing import List
 from warnings import warn
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, Probability, Sample, Shadow, ShadowExpval
+from pennylane.measurements import (
+    AllCounts,
+    Counts,
+    MeasurementProcess,
+    Probability,
+    Sample,
+    Shadow,
+    ShadowExpval,
+)
 from pennylane.operation import DecompositionUndefinedError, Observable, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 
@@ -1441,7 +1449,7 @@ class QuantumTape(AnnotatedQueue):
         return obs
 
     @property
-    def measurements(self):
+    def measurements(self) -> List[MeasurementProcess]:
         """Returns the measurements on the quantum tape.
 
         Returns:

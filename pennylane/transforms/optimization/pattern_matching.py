@@ -172,7 +172,6 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
     # pylint: disable=protected-access, too-many-branches
 
     measurements = tape.measurements
-    observables = tape.observables
 
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
@@ -244,7 +243,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                             node = group.template_dag.get_node(index)
                             inst = copy.deepcopy(node.op)
 
-                            inst = inst.map_wires(wire_map=dict(zip(inst.wires, wires)))
+                            inst = qml.map_wires(inst, wire_map=dict(zip(inst.wires, wires)))
 
                             adjoint(inst, lazy=False)
 
@@ -257,14 +256,11 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                 tape = tape_inside
 
     for op in tape.operations:
-        op = op.map_wires(wire_map=inverse_wires_map)
+        op = qml.map_wires(op, wire_map=inverse_wires_map, queue=True)
 
     # After optimization, simply apply the measurements
-    for obs in observables:
-        obs = obs.map_wires(wire_map=inverse_wires_map)
-
     for m in measurements:
-        apply(m)
+        m = qml.map_wires(m, wire_map=inverse_wires_map, queue=True)
 
 
 def pattern_matching(circuit_dag, pattern_dag):
