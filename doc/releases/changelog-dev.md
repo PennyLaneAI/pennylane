@@ -57,25 +57,31 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
   >>> op
   (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
-  >>> wire_map = {0: 3, 1: 2, 2: 1, 3: 0}
+  >>> wire_map = {0: 10, 1: 11, 2: 12, 3: 13}
   >>> qml.map_wires(op, wire_map)
-  (RX(0.54, wires=[3]) + PauliX(wires=[2])) + (PauliZ(wires=[1]) @ RY(1.23, wires=[0]))
+  (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
   ```
 
   Using `qml.map_wires` with a `QNode`:
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=4)
+  >>> dev = qml.device("default.qubit", wires=[10, 11, 12, 13])
   >>> @qml.qnode(dev)
   ... def circuit():
-  ...     qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
+  ...     qml.RX(0.54, wires=0)
+  ...     qml.PauliX(1)
+  ...     qml.PauliZ(2)
+  ...     qml.RY(1.23, wires=3)
   ...     return qml.probs(wires=0)
   >>> mapped_circuit = qml.map_wires(circuit, wire_map)
   >>> mapped_circuit()
   tensor([0.92885434, 0.07114566], requires_grad=True)
   >>> list(mapped_circuit.tape)
-  [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]),
-  probs(wires=[3])]
+  [RX(0.54, wires=[10]),
+  PauliX(wires=[11]),
+  PauliZ(wires=[12]),
+  RY(1.23, wires=[13]),
+  probs(wires=[10])]
   ```
 
 <h3>Improvements</h3>
@@ -159,7 +165,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
   [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
-* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
   
 <h3>Breaking changes</h3>
