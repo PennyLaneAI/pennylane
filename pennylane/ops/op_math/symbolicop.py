@@ -92,16 +92,6 @@ class SymbolicOp(Operator):
     def wires(self):
         return self.base.wires
 
-    # pylint: disable=protected-access
-    @property
-    def _wires(self):
-        return self.base._wires
-
-    # pylint: disable=protected-access
-    @_wires.setter
-    def _wires(self, new_wires):
-        self.base._wires = new_wires
-
     @property
     def num_wires(self):
         return len(self.wires)

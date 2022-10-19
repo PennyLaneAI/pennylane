@@ -482,7 +482,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
             for meas in copy_meas:
                 obs = meas.obs
-                obs._wires = Wires([wire_map[w] for w in obs.wires])
+                obs = obs.map_wires(wire_map=wire_map)
                 observables.append(obs)
 
                 if return_type is Sample:
@@ -2207,19 +2207,17 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
 
     with QuantumTape() as new_tape:
         for op in copy_ops:
-            new_wires = Wires([wire_map[w] for w in op.wires])
-            op._wires = new_wires
+            op = op.map_wires(wire_map=wire_map)
             apply(op)
         for meas in copy_meas:
             obs = meas.obs
 
             if isinstance(obs, Tensor):
                 for obs in obs.obs:
-                    new_wires = Wires([wire_map[w] for w in obs.wires])
-                    obs._wires = new_wires
+                    new_obs = obs.map_wires(wire_map=wire_map)
             else:
-                new_wires = Wires([wire_map[w] for w in obs.wires])
-                obs._wires = new_wires
+                new_obs = obs.map_wires(wire_map=wire_map)
+            meas.obs = new_obs
             apply(meas)
 
     return new_tape
