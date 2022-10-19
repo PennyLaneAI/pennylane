@@ -140,6 +140,16 @@ class TestProperties:
         op = SymbolicOp(DummyOp("b"))
         assert op._queue_category == queue_cat
 
+    def test_map_wires(self):
+        """Test that base wires can be set through the operator's private `_wires` property."""
+        w = qml.wires.Wires("a")
+        base = TempOperator(w)
+        op = SymbolicOp(base)
+
+        new_op = op.map_wires(wire_map={"a": "c"})
+
+        assert new_op.wires == Wires("c")
+
     def test_num_wires(self):
         """Test that the number of wires is the length of the `wires` property, rather
         than the `num_wires` set by the base."""
