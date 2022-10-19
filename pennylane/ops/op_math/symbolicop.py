@@ -56,8 +56,8 @@ class SymbolicOp(Operator):
             if attr not in {"_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
-        copied_op._hyperparameters = copy(self._hyperparameters)
-        copied_op._hyperparameters["base"] = copy(self.base)
+        copied_op._hyperparameters = copy(self.hyperparameters)
+        copied_op.hyperparameters["base"] = copy(self.base)
 
         return copied_op
 
@@ -126,3 +126,8 @@ class SymbolicOp(Operator):
                 self.base.hash,
             )
         )
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy(self)
+        new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
+        return new_op
