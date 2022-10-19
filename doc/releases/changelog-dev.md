@@ -67,9 +67,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   ```pycon
   >>> dev = qml.device("default.qubit", wires=4)
   >>> @qml.qnode(dev)
-      def circuit():
-          qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
-          return qml.probs(wires=0)
+  ... def circuit():
+  ...     qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
+  ...     return qml.probs(wires=0)
   >>> mapped_circuit = qml.map_wires(circuit, wire_map)
   >>> mapped_circuit()
   tensor([0.92885434, 0.07114566], requires_grad=True)
