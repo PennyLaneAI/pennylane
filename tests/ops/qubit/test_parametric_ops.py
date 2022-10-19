@@ -23,7 +23,7 @@ from pennylane import numpy as npp
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import ControlledPhaseShift, Z
+from tests.gate_data import ControlledPhaseShift, Z
 
 PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
@@ -816,6 +816,394 @@ class TestDecompositions:
         exp = np.array([np.diag([1, 1, 1, 1, 1, el, 1, el]) for el in lam])
 
         assert np.allclose(decomposed_matrix, exp)
+
+
+class TestControlled_reset_zero_register_to_N:
+    def test_wrong_input(self):
+        """
+        Test that the Controlled_reset_zero_register_to_N operator raises
+        an error when instantiated with wrong parameter.
+        """
+        with pytest.raises(
+                Exception, match='N is too big for the register wires_zero_register'
+                ):
+                    qml.Controlled_reset_zero_register_to_N.compute_decomposition(5, wires=[0,1,2])
+
+    def test_controlled_reset_zero_register_to_N_decomp(self):
+        """Tests that the decomposition of the Controlled_reset_zero_register_to_N gate is correct"""
+        op = qml.Controlled_reset_zero_register_to_N(5,wires=[0,1,2,3])
+        res = op.decomposition()
+
+        for i in range(len(res)):
+            assert res[i].name == "CNOT"
+
+        assert res[0].wires == Wires([0, 1])
+        assert res[1].wires == Wires([0, 3])
+
+
+class TestAdder_MOD:
+    def test_wrong_input(self):
+        """
+        Test that the Adder_MOD operator raises
+        an error when instantiated with wrong number of wires.
+        """
+
+        with pytest.raises(
+            Exception, match='Wrong number of wires:'
+        ):
+            qml.ADDER_MOD(2, wires=[0,1,2]).decomposition()
+
+    def test_adder_mod_decomp(self):
+        """Tests that the decomposition of the ADDER_MOD gate is correct"""
+        op = qml.ADDER_MOD(2, wires=[0,1,2,3,4,5,6,7,8,9])
+        res = op.decomposition()
+
+        assert res[0].name == "ADDER"
+        assert res[0].wires == Wires([0, 1, 2, 3, 4, 5, 6])
+
+        assert res[1].name == "ADDER_inv"
+        assert res[1].wires == Wires([7, 8, 2, 3, 4, 5, 6])
+
+        assert res[2].name == "PauliX"
+        assert res[2].wires == Wires(4)
+
+        assert res[3].name == "CNOT"
+        assert res[3].wires == Wires([4, 9])
+
+        assert res[4].name == "PauliX"
+        assert res[4].wires == Wires(4)
+
+        assert res[5].name == "Controlled_reset_zero_register_to_N"
+        assert res[5].wires == Wires([9, 7, 8])
+
+        assert res[6].name == "ADDER"
+        assert res[6].wires == Wires([7, 8, 2, 3, 4, 5, 6])
+
+        assert res[7].name == "Controlled_reset_zero_register_to_N"
+        assert res[7].wires == Wires([9, 7, 8])
+
+        assert res[8].name == "ADDER_inv"
+        assert res[8].wires == Wires([0, 1, 2, 3, 4, 5, 6])
+
+        assert res[9].name == "CNOT"
+        assert res[9].wires == Wires([4, 9])
+
+        assert res[10].name == "ADDER"
+        assert res[10].wires == Wires([0, 1, 2, 3, 4, 5, 6])
+
+
+class TestAdder_MOD_inv:
+    def test_wrong_input(self):
+        """
+        Test that the Adder_MOD_inv operator raises
+        an error when instantiated with wrong number of wires.
+        """
+        with pytest.raises(
+            Exception, match='Wrong number of wires:'
+        ):
+            qml.ADDER_MOD_inv(2, wires=[0,1,2]).decomposition()
+
+    def test_adder_mod_inv_decomp(self):
+        """Tests that the decomposition of the ADDER_MOD_inv gate is correct"""
+        op = qml.ADDER_MOD_inv(2, wires=[0,1,2,3,4,5,6,7,8,9])
+        res = op.decomposition()
+
+        assert res[0].name == "ADDER_inv"
+        assert res[0].wires == Wires([0, 1, 2, 3, 4, 5, 6])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([4, 9])
+
+        assert res[2].name == "ADDER"
+        assert res[2].wires == Wires([0, 1, 2, 3, 4, 5, 6])
+
+        assert res[3].name == "Controlled_reset_zero_register_to_N"
+        assert res[3].wires == Wires([9, 7, 8])
+
+        assert res[4].name == "ADDER_inv"
+        assert res[4].wires == Wires([7, 8, 2, 3, 4, 5, 6])
+
+        assert res[5].name == "Controlled_reset_zero_register_to_N"
+        assert res[5].wires == Wires([9, 7, 8])
+
+        assert res[6].name == "PauliX"
+        assert res[6].wires == Wires(4)
+
+        assert res[7].name == "CNOT"
+        assert res[7].wires == Wires([4, 9])
+
+        assert res[8].name == "PauliX"
+        assert res[8].wires == Wires(4)
+
+        assert res[9].name == "ADDER"
+        assert res[9].wires == Wires([7, 8, 2, 3, 4, 5, 6])
+
+        assert res[10].name == "ADDER_inv"
+        assert res[10].wires == Wires([0, 1, 2, 3, 4, 5, 6])
+
+
+class TestCtrl_MULT_MOD:
+    """
+    Test that the Ctrl_MULT_MOD operator raises
+    an error when instantiated with wrong number of wires.
+    """
+    def test_wrong_input(self):
+        with pytest.raises(
+            Exception, match="Wrong size of registers"
+        ):
+            qml.Ctrl_MULT_MOD(2, 3, wires=[0, 1, 2, 3, 4, 5]).decomposition()
+
+    def test_wrong_n_size(self):
+        """
+        Test that the Ctrl_MULT_MOD operator raises
+        an error when instantiated with wrong parameters.
+        """
+        with pytest.raises(
+            Exception, match="N is too big for the register wires_N"
+        ):
+            qml.Ctrl_MULT_MOD(10, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12]).decomposition()
+
+    def test_ctrl_mult_mod_decomp(self):
+        """Tests that the decomposition of the Ctrl_MULT_MOD gate is correct"""
+        op = qml.Ctrl_MULT_MOD(2, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12])
+        res = op.decomposition()
+
+        assert res[0].name == "Toffoli"
+        assert res[0].wires == Wires([0, 1, 3])
+
+        assert res[1].name == "ADDER_MOD"
+        assert res[1].wires == Wires([3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        assert res[2].name == "Toffoli"
+        assert res[2].wires == Wires([0, 1, 3])
+
+        assert res[3].name == "ADDER_MOD"
+        assert res[3].wires == Wires([3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        assert res[4].name == "PauliX"
+        assert res[4].wires == Wires(0)
+
+        assert res[5].name == "Toffoli"
+        assert res[5].wires == Wires([0, 1, 3])
+
+        assert res[6].name == "Toffoli"
+        assert res[6].wires == Wires([0, 2, 4])
+
+        assert res[7].name == "PauliX"
+        assert res[7].wires == Wires(0)
+
+
+class TestCtrl_MULT_MOD_inv:
+    def test_wrong_input(self):
+        """
+        Test that the Ctrl_MULT_MOD_inv operator raises
+        an error when instantiated with wrong number of wires.
+        """
+        with pytest.raises(
+            Exception, match="Wrong size of registers"
+        ):
+            qml.Ctrl_MULT_MOD_inv(2, 3, wires=[0, 1, 2, 3, 4, 5]).decomposition()
+
+    def test_wrong_n_size(self):
+        """
+        Test that the Ctrl_MULT_MOD_inv operator raises
+        an error when instantiated with wrong parameters.
+        """
+        with pytest.raises(
+            Exception, match="N is too big for the register wires_N"
+        ):
+            qml.Ctrl_MULT_MOD_inv.compute_decomposition(10,2,wires=[0,1,2,3,4,5,6,7])
+
+    def test_ctrl_mult_mod_inv_decomp(self):
+        """Tests that the decomposition of the Ctrl_MULT_MOD gate is correct"""
+        op = qml.Ctrl_MULT_MOD_inv(2, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12])
+        res = op.decomposition()
+
+        assert res[0].name == "PauliX"
+        assert res[0].wires == Wires(0)
+
+        assert res[1].name == "Toffoli"
+        assert res[1].wires == Wires([0, 1, 3])
+
+        assert res[2].name == "Toffoli"
+        assert res[2].wires == Wires([0, 2, 4])
+
+        assert res[3].name == "PauliX"
+        assert res[3].wires == Wires(0)
+
+        assert res[4].name == "ADDER_MOD_inv"
+        assert res[4].wires == Wires([3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        assert res[5].name == "Toffoli"
+        assert res[5].wires == Wires([0, 1, 3])
+
+        assert res[6].name == "ADDER_MOD_inv"
+        assert res[6].wires == Wires([3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        assert res[7].name == "Toffoli"
+        assert res[7].wires == Wires([0, 1, 3])
+
+
+class TestModular_exponentiation:
+    def test_wrong_input(self):
+        """
+        Test that the MODULAR_EXPONENTIATION operator raises
+        an error when instantiated with wrong number of wires.
+        """
+        with pytest.raises(
+            Exception, match="Wrong size of registers"
+        ):
+            qml.MODULAR_EXPONENTIATION(5, 3, 3, wires=[0,1,2,3,4,5,6,7,8]).decomposition()
+
+    def test_wrong_n_size(self):
+        """
+        Test that the Ctrl_MULT_MOD_inv operator raises
+        an error when instantiated with wrong parameters.
+        """
+        with pytest.raises(
+            Exception, match="N is too big for the register wires_N"
+        ):
+            qml.MODULAR_EXPONENTIATION(10, 3, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]).decomposition()
+
+    def test_modular_decomp(self):
+        """Tests that the decomposition of the MODULAR_EXPONENTIATION gate is correct"""
+        op = qml.MODULAR_EXPONENTIATION(5, 3, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19])
+        res = op.decomposition()
+
+        assert res[0].name == "Ctrl_MULT_MOD"
+        assert res[0].wires == Wires([0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+
+        assert res[1].name == "Ctrl_SWAP"
+        assert res[1].wires == Wires([0, 3, 9])
+
+        assert res[2].name == "Ctrl_SWAP"
+        assert res[2].wires == Wires([0, 4, 10])
+
+        assert res[3].name == "Ctrl_SWAP"
+        assert res[3].wires == Wires([0, 5, 11])
+
+        assert res[4].name == "Ctrl_MULT_MOD_inv"
+        assert res[4].wires == Wires([0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+
+        assert res[5].name == "Ctrl_MULT_MOD"
+        assert res[5].wires == Wires([1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+
+        assert res[6].name == "Ctrl_SWAP"
+        assert res[6].wires == Wires([1, 3, 9])
+
+        assert res[7].name == "Ctrl_SWAP"
+        assert res[7].wires == Wires([1, 4, 10])
+
+        assert res[8].name == "Ctrl_SWAP"
+        assert res[8].wires == Wires([1, 5, 11])
+
+        assert res[9].name == "Ctrl_MULT_MOD_inv"
+        assert res[9].wires == Wires([1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+
+        assert res[10].name == "Ctrl_MULT_MOD"
+        assert res[10].wires == Wires([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+
+        assert res[11].name == "Ctrl_SWAP"
+        assert res[11].wires == Wires([2, 3, 9])
+
+        assert res[12].name == "Ctrl_SWAP"
+        assert res[12].wires == Wires([2, 4, 10])
+
+        assert res[13].name == "Ctrl_SWAP"
+        assert res[13].wires == Wires([2, 5, 11])
+
+        assert res[14].name == "Ctrl_MULT_MOD_inv"
+        assert res[14].wires == Wires([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+
+
+
+
+class TestCR_k:
+    def test_cr_k_decomp(self):
+        """Tests that the decomposition of the CR_k gate is correct"""
+        op = qml.CR_k(2, wires=[0,1])
+        res = op.decomposition()
+
+        assert res[0].name == "RZ"
+        assert res[0].wires == Wires(1)
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([0,1])
+
+        assert res[2].name == "RZ"
+        assert res[2].wires == Wires(1)
+
+        assert res[3].name == "CNOT"
+        assert res[3].wires == Wires([0,1])
+
+        assert res[4].name == "PhaseShift"
+        assert res[4].wires == Wires(0)
+
+class TestCR_k_inv:
+    def test_cr_k_inv_decomp(self):
+        """Tests that the decomposition of the CR_k_inv gate is correct"""
+        op = qml.CR_k_inv(2, wires=[0,1])
+        res = op.decomposition()
+
+        assert res[0].name == "RZ"
+        assert res[0].wires == Wires(1)
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([0, 1])
+
+        assert res[2].name == "RZ"
+        assert res[2].wires == Wires(1)
+
+        assert res[3].name == "CNOT"
+        assert res[3].wires == Wires([0, 1])
+
+        assert res[4].name == "PhaseShift"
+        assert res[4].wires == Wires(0)
+
+
+class TestOrder_Finding:
+    def test_wrong_input(self):
+        """
+        Test that the Order_Finding operator raises
+        an error when instantiated with wrong number of wires.
+        """
+        with pytest.raises(
+            Exception, match="Wrong size of registers"
+        ):
+            qml.Order_Finding(5, 3, 8,
+                              wires=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]).decomposition()
+
+    def test_wrong_n_size(self):
+        """
+        Test that the Order_Finding operator raises
+        an error when instantiated with wrong parameters.
+        """
+        with pytest.raises(
+            Exception, match="N is too big for the register wires_N"
+        ):
+            qml.Order_Finding(10, 3, 8,
+                              wires=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                                     23, 24]).decomposition()
+
+    def test_order_finding_decomop(self):
+        """Tests that the decomposition of the Order_Finding gate is correct"""
+        op = qml.Order_Finding(5, 3, 8,
+                              wires=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                                     23, 24])
+        res = op.decomposition()
+
+
+        for i in range(len(res) - 2):
+            assert res[i].name == "Hadamard"
+            assert res[i].wires == Wires(i)
+
+        assert res[len(res) - 2].name == "MODULAR_EXPONENTIATION"
+        assert res[len(res) - 2].wires == Wires(
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+        )
+
+        assert res[len(res)-1].name == "QFT_inv"
+        assert res[len(res)-1].wires == Wires([0, 1, 2, 3, 4, 5, 6, 7])
 
 
 class TestMatrix:

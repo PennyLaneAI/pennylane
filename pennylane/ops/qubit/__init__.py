@@ -98,6 +98,23 @@ ops = {
     "OrbitalRotation",
     "Barrier",
     "WireCut",
+    "SUM",
+    "CARRY",
+    "CARRY_inv",
+    "ADDER",
+    "ADDER_inv",
+    "Ctrl_SWAP",
+    "QFT_",
+    "QFT_inv",   
+    "Controlled_reset_zero_register_to_N",
+    "ADDER_MOD",
+    "ADDER_MOD_inv",
+    "Ctrl_MULT_MOD",
+    "Ctrl_MULT_MOD_inv",
+    "MODULAR_EXPONENTIATION",
+    "CR_k",
+    "CR_k_inv",
+    "Order_Finding",
 }
 
 

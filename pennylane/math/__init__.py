@@ -80,6 +80,7 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+from .classical_operations import *
 
 # small constant for numerical stability that the user can modify
 eps = 1e-14
@@ -128,4 +129,9 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
+    "gcd",
+    "states_vector",
+    "diophantine_equation_auxiliary",
+    "diophantine_equation",
+    "modular_multiplicative_inverse",
 ]

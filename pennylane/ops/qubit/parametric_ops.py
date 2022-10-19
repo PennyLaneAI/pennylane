@@ -24,9 +24,17 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane.math import expand_matrix
+from pennylane.math import expand_matrix,  modular_multiplicative_inverse, states_vector
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
+from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Toffoli, Hadamard
+from .non_parametric_ops import (
+    ADDER,
+    ADDER_inv,
+    Ctrl_SWAP,
+    SWAP,
+    QFT_inv
+)
+
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -3334,3 +3342,797 @@ class PSWAP(Operation):
             return qml.SWAP(wires=self.wires)
 
         return PSWAP(phi, wires=self.wires)
+
+
+class Controlled_reset_zero_register_to_N(Operation):
+    r"""
+    Implements resetting register with zeros to binary representation of classicaly known number N
+    conditional on 1-wire control.
+    If control == 1, then resulting values in the wires_zero_register are [N_0, N1, ... , N(n-1)],
+    where N = N_(n-1) 2^(n-1) + ... + N_1 2^1 + N_0 * 2^0
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+
+    Args:
+        parameters[0] (int): N - a number to be put into wires_zero_register
+        wires (int): the subsystem with structure [control_wire, wires_zero_register] the gate acts on
+    """
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.Controlled_reset_zero_register_to_N(5,wires=[0,1,2,3]).decomposition())
+        [CNOT(wires=[0, 1]), CNOT(wires=[0, 3])]
+        """
+        # check inputs
+        N = int(parameters[0])
+        control_wire = wires[0]
+        wires_zero_register = wires[1:]
+
+        # check if N does not match the size of wires_zero_register
+        if N > 2 ** (len(wires_zero_register)) - 1:
+            raise Exception('N is too big for the register wires_zero_register')
+        # make a string with a binary represenatation of N (in reverse order)
+        N = bin(N)[2:][::-1]
+        # add zeros to match the register's size
+        N = N + '0' * (len(wires_zero_register) - len(N))
+
+        decomp_ops = list()
+
+        # CNOTs with control=control_wire and taget - wire in wires_zero_register, for which N == '1'
+        for i in range(len(wires_zero_register)):
+            if N[i] == '1':
+                decomp_ops += [qml.CNOT(wires=[control_wire, wires_zero_register[i]])]
+
+        return decomp_ops
+
+
+class ADDER_MOD(Operation):
+    r"""
+    ADDER_MOD is a circuit that implements modular addition for classical inputs
+    (i.e. 0s or 1s in a qubit registers).
+    Circuit works asan addition of a and b modulo N only if 0 <= a,b < N. The result is a "number" a in register wires_a, "number" a+b mod N in register wires_b, zeros in register wires_c, "number" N in register wires_N, zero in register wires_t
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+
+    Args:
+        parameters[0] (int): N - a number
+        wires (int): the subsystem with structure [wires_a, wires_b, wires_c, wires_N, wires_t] the gate acts on, where
+    wires_a - names for wires of register of "number" a to be added modulo N
+    wires_b - names for wires of register of "number" b to be added modulo N
+    wires_c - names for wires of register c initialized with zeros
+    wires_N - names for wires of register of "number" N
+    wires_t - name for auxiliary control wire of register t
+    """
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.ADDER_MOD(2, wires=[0,1,2,3,4,5,6,7,8,9]).decomposition())
+        [ADDER(wires=[0, 1, 2, 3, 4, 5, 6]),
+        ADDER_inv(wires=[7, 8, 2, 3, 4, 5, 6]),
+        PauliX(wires=[4]),
+        CNOT(wires=[4, 9]),
+        PauliX(wires=[4]),
+        Controlled_reset_zero_register_to_N(2, wires=[9, 7, 8]),
+        ADDER(wires=[7, 8, 2, 3, 4, 5, 6]),
+        Controlled_reset_zero_register_to_N(2, wires=[9, 7, 8]),
+        ADDER_inv(wires=[0, 1, 2, 3, 4, 5, 6]),
+        CNOT(wires=[4, 9]),
+        ADDER(wires=[0, 1, 2, 3, 4, 5, 6])]
+        """
+
+        # check inputs
+        # is it true that wires_a == wires_N ???
+        if (len(wires) - 2) % 4 != 0 or len(wires) < 6:
+            raise Exception(
+                'Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b, n wires for wires_c, n wires for wires_N and 1 wire for wires_t')
+        else:
+            n = int((len(wires) - 2) / 4)
+            wires_a = wires[:n]
+            wires_b = wires[n:2 * n + 1]
+            wires_c = wires[2 * n + 1:3 * n + 1]
+            wires_N = wires[3 * n + 1:4 * n + 1]
+            wires_t = wires[-1]
+            N = int(parameters[0])
+
+        # check N
+        # check if N does not match the size of wires_N
+        if N > 2 ** (len(wires_N)) - 1:
+            raise Exception('N is too big for the register wires_N')
+
+        decomp_ops = [
+            ADDER(wires=wires_a + wires_b + wires_c),
+            ADDER_inv(wires=wires_N + wires_b + wires_c),
+
+            qml.PauliX(wires=wires_b[-1]),
+            qml.CNOT(wires=[wires_b[-1], wires_t]),
+            qml.PauliX(wires=wires_b[-1]),
+
+            Controlled_reset_zero_register_to_N(N, wires=[wires_t] + wires_N),
+            ADDER(wires=wires_N + wires_b + wires_c),
+            Controlled_reset_zero_register_to_N(N, wires=[wires_t] + wires_N),
+
+            ADDER_inv(wires=wires_a + wires_b + wires_c),
+            qml.CNOT(wires=[wires_b[-1], wires_t]),
+            ADDER(wires=wires_a + wires_b + wires_c)
+        ]
+
+        return decomp_ops
+
+
+class ADDER_MOD_inv(Operation):
+    r"""
+    ADDER_MOD_inv is an operation that is inverse for ADDER_MOD-operation
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 1
+
+    Args:
+        parameters[0] (int): N - a number
+        wires (int): the subsystem with structure [wires_a, wires_b, wires_c, wires_N, wires_t] the gate acts on, where
+    wires_a - names for wires of register of "number" a to be added modulo N
+    wires_b - names for wires of register of "number" b to be added modulo N
+    wires_c - names for wires of register c initialized with zeros
+    wires_N - names for wires of register of "number" N
+    wires_t - name for auxiliary control wire of register t
+    """
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.ADDER_MOD_inv(2, wires=[0,1,2,3,4,5,6,7,8,9]).decomposition())
+        [ADDER_inv(wires=[0, 1, 2, 3, 4, 5, 6]),
+        CNOT(wires=[4, 9]),
+        ADDER(wires=[0, 1, 2, 3, 4, 5, 6]),
+        Controlled_reset_zero_register_to_N(2, wires=[9, 7, 8]),
+        ADDER_inv(wires=[7, 8, 2, 3, 4, 5, 6]),
+        Controlled_reset_zero_register_to_N(2, wires=[9, 7, 8]),
+        PauliX(wires=[4]),
+        CNOT(wires=[4, 9]),
+        PauliX(wires=[4]),
+        ADDER(wires=[7, 8, 2, 3, 4, 5, 6]),
+        ADDER_inv(wires=[0, 1, 2, 3, 4, 5, 6])]
+        """
+
+        # check inputs
+        # is it true that wires_a == wires_N ???
+        if (len(wires) - 2) % 4 != 0 or len(wires) < 6:
+            raise Exception(
+                'Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b, n wires for wires_c, n wires for wires_N and 1 wire for wires_t')
+        else:
+            n = int((len(wires) - 2) / 4)
+            wires_a = wires[:n]
+            wires_b = wires[n:2 * n + 1]
+            wires_c = wires[2 * n + 1:3 * n + 1]
+            wires_N = wires[3 * n + 1:4 * n + 1]
+            wires_t = wires[-1]
+            N = int(parameters[0])
+
+        # check N
+        # check if N does not match the size of wires_N
+        if N > 2 ** (len(wires_N)) - 1:
+            raise Exception('N is too big for the register wires_N')
+
+        decomp_ops = [
+            ADDER_inv(wires=wires_a + wires_b + wires_c),
+            qml.CNOT(wires=[wires_b[-1], wires_t]),
+            ADDER(wires=wires_a + wires_b + wires_c),
+
+            Controlled_reset_zero_register_to_N(N, wires=[wires_t] + wires_N),
+            ADDER_inv(wires=wires_N + wires_b + wires_c),
+            Controlled_reset_zero_register_to_N(N, wires=[wires_t] + wires_N),
+
+            qml.PauliX(wires=wires_b[-1]),
+            qml.CNOT(wires=[wires_b[-1], wires_t]),
+            qml.PauliX(wires=wires_b[-1]),
+
+            ADDER(wires=wires_N + wires_b + wires_c),
+            ADDER_inv(wires=wires_a + wires_b + wires_c),
+        ]
+
+        return decomp_ops
+
+
+# input parameters: N,m
+class Ctrl_MULT_MOD(Operation):
+    r"""
+    Ctrl_MULT_MOD is a circuit that implements controlled modular multiplication of a "number" z in the register wires_z by a number m modulo N, where N and m are given in parameters. The result is put into corresponding wires-register
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 2
+
+    Args:
+        parameters[0] (int): N - a number
+        parameters[1] (int): m - a number
+        wires (int): the subsystem with structure [control_wire, wires_z, wires_a, wires_b, wires_c, wires_N, wires_t] the gate acts on, where
+    control_wire - name for control wire
+    wires_z - names for wires of register of "number" z to be multiplied by m modulo N
+    wires_a - names for auxiliary wires of register a initialized with zeros
+    wires_b - names for auxiliary wires of register of b initialized with zeros
+    wires_c - names for auxiliary wires of register c initialized with zeros
+    wires_N - names for wires of register of "number" N
+    wires_t - name for auxiliary control wire of register t
+    """
+
+    num_params = 2
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""
+        Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.Ctrl_MULT_MOD(2, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12]).decomposition())
+        [Toffoli(wires=[0, 1, 3]),
+        ADDER_MOD(2, wires=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        Toffoli(wires=[0, 1, 3]),
+        ADDER_MOD(2, wires=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        PauliX(wires=[0]),
+        Toffoli(wires=[0, 1, 3]),
+        Toffoli(wires=[0, 2, 4]),
+        PauliX(wires=[0])]
+        """
+        # check wires
+        if (len(wires) - 3) % 5 != 0 or len(wires) < 8:
+            raise Exception(
+                'Wrong size of registers - it should be: \n 1 wire for the control register (control_wire) \n n wires for the register with z (wires_z) \n n wires for the register with a (wires_a) \n n+1 wires for the register with b (wires_b) \n n wires for the register with |0..0> (wires_c) \n n wires for the register with N (wires_N) \n 1 wire for the register with t=|0> (wires_t)')
+        else:
+            n = int((len(wires) - 3) / 5)
+            control_wire = wires[0]
+            wires_z = wires[1:n + 1]
+            wires_a = wires[n + 1:2 * n + 1]
+            wires_b = wires[2 * n + 1:3 * n + 2]
+            wires_c = wires[3 * n + 2:4 * n + 2]
+            wires_N = wires[4 * n + 2:5 * n + 2]
+            wires_t = wires[-1]
+            N = int(parameters[0])
+            m = int(parameters[1])
+
+        # check N
+        # check if N does not match the size of wires_N
+        if N > 2 ** (len(wires_N)) - 1:
+            raise Exception('N is too big for the register wires_N')
+
+        decomp_ops = list()
+
+        ### block with ADDER_MODs
+        # cycle to iteratively add ADDER_MODs each surrounded by Toffoli gates with control1=control_wire,
+        # control2=wires_z[i] and target - wire in wires_a, for which m*2^i == '1'
+        for i in range(len(wires_z)):
+            # binary representation of m*2^i mod N
+            m_2_to_power_i_mod_N = bin((m * (2 ** i)) % N)[2:][::-1]
+            m_2_to_power_i_mod_N = m_2_to_power_i_mod_N + '0' * (len(wires_a) - len(m_2_to_power_i_mod_N))
+
+            # cycle for Toffoli gates before ADDER_MOD to put m*2^i to wires_a if control_wire == 1
+            for j in range(len(wires_a)):
+                if m_2_to_power_i_mod_N[j] == '1':
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+
+            # ADDER_MOD[i]
+            decomp_ops += [ADDER_MOD(N, wires=wires_a + wires_b + wires_c + wires_N + [wires_t])]
+
+            # cycle for Toffoli gates after ADDER_MOD to make wires_a |0..0> if control_wire == 1
+            for j in range(len(wires_a)):
+                if m_2_to_power_i_mod_N[j] == '1':
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+
+        ### block for copying z into wires_a conditional on control_wire == |0>.
+        # That is, we want |0,z,0> -> |0,z,z>
+        decomp_ops += [qml.PauliX(wires=control_wire)]
+        for i in range(len(wires_z)):
+            decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[i]])]
+        decomp_ops += [qml.PauliX(wires=control_wire)]
+
+        return decomp_ops
+
+
+# input parameters: N,m
+class Ctrl_MULT_MOD_inv(Operation):
+    r"""
+    Ctrl_MULT_MOD_inv is an operation that is inverse for Ctrl_MULT_MOD-operation
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 2
+
+    Args:
+        parameters[0] (int): N - a number
+        parameters[1] (int): m - a number
+        wires (int): the subsystem with structure
+        [control_wire, wires_z, wires_a, wires_b, wires_c, wires_N, wires_t] the gate acts on, where
+    control_wire - name for control wire
+    wires_z - names for wires of register of "number" z to be multiplied by m modulo N
+    wires_a - names for auxiliary wires of register a initialized with zeros
+    wires_b - names for auxiliary wires of register of b initialized with zeros
+    wires_c - names for auxiliary wires of register c initialized with zeros
+    wires_N - names for wires of register of "number" N
+    wires_t - name for auxiliary control wire of register t
+    """
+
+    num_params = 2
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""
+        Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.Ctrl_MULT_MOD_inv(2, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12]).decomposition())
+        [PauliX(wires=[0]),
+        Toffoli(wires=[0, 1, 3]),
+        Toffoli(wires=[0, 2, 4]),
+        PauliX(wires=[0]),
+        ADDER_MOD_inv(2, wires=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        Toffoli(wires=[0, 1, 3]),
+        ADDER_MOD_inv(2, wires=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        Toffoli(wires=[0, 1, 3])]
+        """
+
+        # check wires
+        if (len(wires) - 3) % 5 != 0 or len(wires) < 8:
+            raise Exception(
+                'Wrong size of registers - it should be: \n 1 wire for the control register (control_wire) \n n wires for the register with z (wires_z) \n n wires for the register with a (wires_a) \n n+1 wires for the register with b (wires_b) \n n wires for the register with |0..0> (wires_c) \n n wires for the register with N (wires_N) \n 1 wire for the register with t=|0> (wires_t)')
+        else:
+            n = int((len(wires) - 3) / 5)
+            control_wire = wires[0]
+            wires_z = wires[1:n + 1]
+            wires_a = wires[n + 1:2 * n + 1]
+            wires_b = wires[2 * n + 1:3 * n + 2]
+            wires_c = wires[3 * n + 2:4 * n + 2]
+            wires_N = wires[4 * n + 2:5 * n + 2]
+            wires_t = wires[-1]
+            N = int(parameters[0])
+            m = int(parameters[1])
+
+        # check N
+        # check if N does not match the size of wires_N
+        if N > 2 ** (len(wires_N)) - 1:
+            raise Exception('N is too big for the register wires_N')
+
+        decomp_ops = list()
+
+        ### block for copying z into wires_a conditional on control_wire == |0>
+        decomp_ops += [qml.PauliX(wires=control_wire)]
+        for i in range(len(wires_z)):
+            decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[i]])]
+        decomp_ops += [qml.PauliX(wires=control_wire)]
+
+        for i in range(len(wires_z) - 1, -1, -1):
+            # binary representation of m*2^i mod N
+            m_2_to_power_i_mod_N = bin((m * (2 ** i)) % N)[2:][::-1]
+            m_2_to_power_i_mod_N = m_2_to_power_i_mod_N + '0' * (len(wires_a) - len(m_2_to_power_i_mod_N))
+
+            # cycle for Toffoli gates after ADDER_MOD to make wires_a |0..0> if control_wire == 1
+            for j in range(len(wires_a)):
+                if m_2_to_power_i_mod_N[j] == '1':
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+
+            # ADDER_MOD[i]
+            decomp_ops += [ADDER_MOD_inv(N, wires=wires_a + wires_b + wires_c + wires_N + [wires_t])]
+
+            # cycle for Toffoli gates before ADDER_MOD to put m*2^i to wires_a if control_wire == 1
+            for j in range(len(wires_a)):
+                if m_2_to_power_i_mod_N[j] == '1':
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+
+        return decomp_ops
+
+
+# input parameters: N,y
+class MODULAR_EXPONENTIATION(Operation):
+    r"""
+    MODULAR_EXPONENTIATION is a circuit which implements effective O(n^3) modular exponentiation
+    for classical inputs (i.e. 0s or 1s in a qubit registers).
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 3
+
+    Args:
+        parameters[0] (int): N - a number
+        parameters[1] (int): y - a number to be exponentiated to the power x modulo N
+        parameters[2] (int): n_x - a number of wires for the register with x (wires_x)
+        wires (int): the subsystem with structure
+        [wires_x, wires_z, wires_a, wires_b, wires_c, wires_N, wires_t] the gate acts on, where
+    wires_x - name for wires with "number" x to be "number" y's power
+    wires_z - names for wires of register initialized with "number" 1
+    wires_a - names for auxiliary wires of register a initialized with zeros
+    wires_b - names for auxiliary wires of register of b initialized with zeros
+    wires_c - names for auxiliary wires of register c initialized with zeros
+    wires_N - names for wires of register of "number" N
+    wires_t - name for auxiliary control wire of register t
+
+    Result:
+    wires_x - initially passed x
+    wires_z - y^x mod N
+    wires_a - initially passed zeros
+    wires_b - initially passed zeros
+    wires_c - initially passed zeros
+    wires_N - initially passed N
+    wires_t - initially passed auxiliary control
+
+    """
+    num_params = 3
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.MODULAR_EXPONENTIATION(5, 3, 3, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]).decomposition())
+        [Ctrl_MULT_MOD(5, 3, wires=[0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+        Ctrl_SWAP(wires=[0, 3, 9]),
+        Ctrl_SWAP(wires=[0, 4, 10]),
+        Ctrl_SWAP(wires=[0, 5, 11]),
+        Ctrl_MULT_MOD_inv(5, 2, wires=[0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+        Ctrl_MULT_MOD(5, 9, wires=[1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+        Ctrl_SWAP(wires=[1, 3, 9]),
+        Ctrl_SWAP(wires=[1, 4, 10]),
+        Ctrl_SWAP(wires=[1, 5, 11]),
+        Ctrl_MULT_MOD_inv(5, 4, wires=[1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+        Ctrl_MULT_MOD(5, 81, wires=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]),
+        Ctrl_SWAP(wires=[2, 3, 9]),
+        Ctrl_SWAP(wires=[2, 4, 10]),
+        Ctrl_SWAP(wires=[2, 5, 11]),
+        Ctrl_MULT_MOD_inv(5, 1, wires=[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])]
+        """
+
+        # check wires
+        n_x = int(parameters[2])
+        if (len(wires) - 2 - n_x) % 5 != 0:
+            raise Exception(
+                'Wrong size of registers - it should be: \n n_x wires for the register with x (wires_x) \n n wires for the register with z (wires_z) \n n wires for the register with a (wires_a) \n n+1 wires for the register with b (wires_b) \n n wires for the register with |0..0> (wires_c) \n n wires for the register with N (wires_N) \n 1 wire for the register with t=|0> (wires_t)')
+        else:
+            n = int((len(wires) - 2 - n_x) / 5)
+            N = int(parameters[0])
+            y = int(parameters[1])
+            wires_x = wires[0:n_x]
+            wires_z = wires[n_x:n_x + n]
+            wires_a = wires[n_x + n:n_x + 2 * n]
+            wires_b = wires[n_x + 2 * n:n_x + 3 * n + 1]
+            wires_c = wires[n_x + 3 * n + 1:n_x + 4 * n + 1]
+            wires_N = wires[n_x + 4 * n + 1:n_x + 5 * n + 1]
+            wires_t = wires[-1]
+
+        # check inputs
+        # check N
+        # check if N does not match the size of wires_N
+        if N > 2 ** (len(wires_N)) - 1:
+            raise Exception('N is too big for the register wires_N')
+
+        decomp_ops = list()
+
+        for i in range(len(wires_x)):
+            decomp_ops += [Ctrl_MULT_MOD(N, y ** (2 ** i),
+                                         wires=[wires_x[i]] + wires_z + wires_a + wires_b + wires_c + wires_N + [
+                                             wires_t])]
+            # SWAP register wires_z with wires_b[:-1]
+            for j in range(len(wires_z)):
+                decomp_ops += [Ctrl_SWAP(wires=[wires_x[i], wires_z[j], wires_b[j]])]
+            # find modular multiplicative inverse of y**(2**i)
+            inverse_y_2_i = modular_multiplicative_inverse(a=y ** (2 ** i), N=N)
+            decomp_ops += [Ctrl_MULT_MOD_inv(N, inverse_y_2_i,
+                                             wires=[wires_x[i]] + wires_z + wires_a + wires_b + wires_c + wires_N + [
+                                                 wires_t])]
+
+        return decomp_ops
+
+
+class CR_k(Operation):
+    r"""
+    Implements 2-qubit controlled R_k - phase shift gate which is used in QFT.
+
+    R_k has matrix form [[1,0 ], [0,exp(2pi i / (2^k))]]
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+
+    Args:
+        parameters[0] (int): k - a number
+        wires (int): the subsystem with structure [control_wire, operation_wire] the gate acts on
+    """
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CR_k(2, wires=[0,1]).decomposition())
+        [RZ(0.7853981633974483, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RZ(-0.7853981633974483, wires=[1]),
+        CNOT(wires=[0, 1]),
+        PhaseShift(0.7853981633974483, wires=[0])]
+        """
+
+        k = int(parameters[0])
+
+        decomp_ops = [
+            qml.RZ(np.pi / (2 ** k), wires=wires[1]),
+            qml.CNOT(wires=wires),
+            qml.RZ(-np.pi / (2 ** k), wires=wires[1]),
+            qml.CNOT(wires=wires),
+            qml.PhaseShift(np.pi / (2 ** k), wires=wires[0])
+        ]
+
+        return decomp_ops
+
+
+class CR_k_inv(Operation):
+    r"""
+    CR_k_inv is an operation that is inverse for CR_k-operation
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+
+    Args:
+        parameters[0] (int): k - a number
+        wires (int): the subsystem with structure [control_wire, operation_wire] the gate acts on
+    """
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CR_k_inv(2, wires=[0,1]).decomposition())
+        [RZ(-0.7853981633974483, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RZ(0.7853981633974483, wires=[1]),
+        CNOT(wires=[0, 1]),
+        PhaseShift(-0.7853981633974483, wires=[0])]
+        """
+
+        k = int(parameters[0])
+
+        decomp_ops = [
+            qml.RZ(-np.pi / (2 ** k), wires=wires[1]),
+            qml.CNOT(wires=wires),
+            qml.RZ(np.pi / (2 ** k), wires=wires[1]),
+            qml.CNOT(wires=wires),
+            qml.PhaseShift(-np.pi / (2 ** k), wires=wires[0])
+        ]
+
+        return decomp_ops
+
+
+# input parameters: N,y
+class Order_Finding(Operation):
+    r"""
+    Order_Finding is a circuit that implements order-finding procedure using effective O(n^3) MODULAR_EXPONENTIATION procedure
+    for classical inputs (i.e. 0s or 1s in a qubit registers).
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 3
+
+    Args:
+        parameters[0] (int): N - a number
+        parameters[1] (int): y - a number to be exponentiated to the power x modulo N
+        parameters[2] (int): n_x - a number of wires for the register with x (wires_x)
+        wires (int): the subsystem with structure [wires_x, wires_z, wires_a, wires_b, wires_c, wires_N, wires_t] the gate acts on, where the following registers are used by underlying MODULAR_EXPONENTIATION procedure:
+    wires_x - name for wires with "number" x to be "number" y's power
+    wires_z - names for wires of register initialized with "number" 1
+    wires_a - names for auxiliary wires of register a initialized with zeros
+    wires_b - names for auxiliary wires of register of b initialized with zeros
+    wires_c - names for auxiliary wires of register c initialized with zeros
+    wires_N - names for wires of register of "number" N
+    wires_t - name for auxiliary control wire of register t
+    """
+
+    num_params = 3
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(*parameters, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        Args:
+            parameters - the set of parameters
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.Order_Finding(5, 3, 8, wires=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]).decomposition())
+        [Hadamard(wires=[0]),
+        Hadamard(wires=[1]),
+        Hadamard(wires=[2]),
+        Hadamard(wires=[3]),
+        Hadamard(wires=[4]),
+        Hadamard(wires=[5]),
+        Hadamard(wires=[6]),
+        Hadamard(wires=[7]),
+        MODULAR_EXPONENTIATION(5, 3, 8, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]),
+        QFT_inv(wires=[0, 1, 2, 3, 4, 5, 6, 7])]
+        """
+        # check wires and define registers
+        n_x = int(parameters[2])
+        if (len(wires) - 2 - n_x) % 5 != 0:
+            raise Exception(
+                'Wrong size of registers - it should be: \n n_x wires for the register with x (wires_x) \n n wires for the register with z (wires_z) \n n wires for the register with a (wires_a) \n n+1 wires for the register with b (wires_b) \n n wires for the register with |0..0> (wires_c) \n n wires for the register with N (wires_N) \n 1 wire for the register with t=|0> (wires_t)')
+        else:
+            N = int(parameters[0])
+            y = int(parameters[1])
+            n = int((len(wires) - 2 - n_x) / 5)
+            wires_x = wires[0:n_x]
+            wires_z = wires[n_x:n_x + n]
+            wires_a = wires[n_x + n:n_x + 2 * n]
+            wires_b = wires[n_x + 2 * n:n_x + 3 * n + 1]
+            wires_c = wires[n_x + 3 * n + 1:n_x + 4 * n + 1]
+            wires_N = wires[n_x + 4 * n + 1:n_x + 5 * n + 1]
+            wires_t = wires[-1]
+
+        # check inputs
+        # check N
+        # check if N does not match the size of wires_N
+        if N > 2 ** (len(wires_N)) - 1:
+            raise Exception('N is too big for the register wires_N')
+
+        decomp_ops = list()
+
+        # Create superposition with Hadamard gates
+        for i in range(len(wires_x)):
+            decomp_ops += [qml.Hadamard(wires=wires_x[i])]
+
+        # Apply modular exponentiation
+        decomp_ops += [MODULAR_EXPONENTIATION(N, y, n_x, wires=wires_x + wires_z + wires_a + wires_b + wires_c + wires_N + [wires_t])]
+
+        # Apply inverse Quantum Fourier transform to the first register
+        decomp_ops += [QFT_inv(wires=wires_x)]
+
+        return decomp_ops
+

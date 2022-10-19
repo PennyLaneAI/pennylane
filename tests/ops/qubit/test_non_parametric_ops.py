@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.wires import Wires
 
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
+from tests.gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
 
 
 # Non-parametrized operations and their matrix representation
@@ -79,7 +79,6 @@ class TestDecompositions:
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
         res = op.decomposition()
-
         assert len(res) == 3
 
         assert res[0].name == "PhaseShift"
@@ -446,6 +445,194 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot(mat)
 
         assert np.allclose(decomposed_matrix, opr.matrix())
+
+    def test_sum_decomposition(self):
+        """"Tests the decomposition of the Sum is correct"""
+        op = qml.SUM(wires=[0, 1, 2])
+        res = op.decomposition()
+
+        assert len(res) == 2
+
+        assert res[0].name == "CNOT"
+        assert res[0].wires == Wires([1, 2])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([0, 2])
+
+    def test_carry_decomposition(self):
+        """"Tests the decomposition of the Carry is correct"""
+        op = qml.CARRY(wires=[0, 1, 2, 3])
+        res = op.decomposition()
+
+        assert len(res) == 3
+
+        assert res[0].name == "Toffoli"
+        assert res[0].wires == Wires([1, 2, 3])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([1, 2])
+
+        assert res[2].name == "Toffoli"
+        assert res[2].wires == Wires([0, 2, 3])
+
+    def test_carry_inv_decomposition(self):
+        """"Tests the decomposition of the Carry_inv is correct"""
+        op = qml.CARRY_inv(wires=[0, 1, 2, 3])
+        res = op.decomposition()
+
+        assert len(res) == 3
+
+        assert res[0].name == "Toffoli"
+        assert res[0].wires == Wires([0, 2, 3])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([1, 2])
+
+        assert res[2].name == "Toffoli"
+        assert res[2].wires == Wires([1, 2, 3])
+
+    def test_ctrl_swap_decomposition(self):
+        """Tests the decomposition of the Ctrl_swap is correct"""
+        op = qml.Ctrl_SWAP(wires=[0,1,2])
+        res = op.decomposition()
+
+        assert len(res) == 3
+
+        assert res[0].name == "CNOT"
+        assert res[0].wires == Wires([1, 2])
+
+        assert res[1].name == "Toffoli"
+        assert res[1].wires == Wires([0, 2, 1])
+
+        assert res[2].name == "CNOT"
+        assert res[2].wires == Wires([1, 2])
+
+
+class TestAdder:
+    def test_wrong_number_wires_list_raises_error(self):
+        """Test that the ADDER operator raises an error when instantiated with wrong number of wires."""
+        with pytest.raises(
+                Exception,
+                match='Wrong number of wires:'
+        ):
+            qml.ADDER.compute_decomposition(wires=[0,1,2,3,4])
+
+    def test_adder_decomposition(self):
+        """Tests the decomposition of the ADDER is correct"""
+        op = qml.ADDER(wires=[0,1,2,3])
+        res = op.decomposition()
+
+        assert res[0].name == "CARRY"
+        assert res[0].wires == Wires([3, 0, 1, 2])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([0, 1])
+
+        assert res[2].name == "SUM"
+        assert res[2].wires == Wires([3, 0, 1])
+
+
+class TestAdder_inv:
+    def test_wrong_number_wires_list_raises_error(self):
+        """Test that the ADDER_inv operator raises an error when instantiated with wrong number of wires."""
+        with pytest.raises(
+                Exception, match='Wrong number of wires:'
+        ):
+            qml.ADDER_inv(wires=[0,1,2,3,4]).compute_decomposition(wires=[0,1,2,3,4])
+
+    def test_adder_inv_decomposition(self):
+        """Tests the decomposition of the ADDER_inv is correct"""
+        op = qml.ADDER_inv(wires=[0, 1, 2, 3])
+        res = op.decomposition()
+
+        assert res[0].name == "SUM"
+        assert res[0].wires == Wires([3, 0, 1])
+
+        assert res[1].name == "CNOT"
+        assert res[1].wires == Wires([0, 1])
+
+        assert res[2].name == "CARRY_inv"
+        assert res[2].wires == Wires([3, 0, 1, 2])
+
+
+class TestQFT_:
+    def test_qft_decomposition(self):
+        """Tests the decomposition of the QFT_ is correct"""
+        op = qml.QFT_(wires=[0,1,2,3])
+        res = op.decomposition()
+
+        assert res[0].name == "Hadamard"
+        assert res[0].wires == Wires(0)
+
+        assert res[1].name == "CR_k"
+        assert res[1].wires == Wires([1, 0])
+        assert res[2].name == "CR_k"
+        assert res[2].wires == Wires([2, 0])
+        assert res[3].name == "CR_k"
+        assert res[3].wires == Wires([3, 0])
+
+        assert res[4].name == "Hadamard"
+        assert res[4].wires == Wires(1)
+
+        assert res[5].name == "CR_k"
+        assert res[5].wires == Wires([2, 1])
+        assert res[6].name == "CR_k"
+        assert res[6].wires == Wires([3, 1])
+
+        assert res[7].name == "Hadamard"
+        assert res[7].wires == Wires(2)
+
+        assert res[8].name == "CR_k"
+        assert res[8].wires == Wires([3, 2])
+
+        assert res[9].name == "Hadamard"
+        assert res[9].wires == Wires(3)
+
+        assert res[10].name == "SWAP"
+        assert res[10].wires == Wires([0, 3])
+
+        assert res[11].name == "SWAP"
+        assert res[11].wires == Wires([1, 2])
+
+
+class TestQFT_inv:
+    def test_qft_inv_decomposition(self):
+        """Tests the decomposition of the QFT_inv is correct"""
+        op = qml.QFT_inv(wires=[0,1,2,3])
+        res = op.decomposition()
+
+        assert res[0].name == "Hadamard"
+        assert res[0].wires == Wires(0)
+
+        assert res[1].name == "CR_k_inv"
+        assert res[1].wires == Wires([1, 0])
+        assert res[2].name == "CR_k_inv"
+        assert res[2].wires == Wires([2, 0])
+        assert res[3].name == "CR_k_inv"
+        assert res[3].wires == Wires([3, 0])
+
+        assert res[4].name == "Hadamard"
+        assert res[4].wires == Wires(1)
+
+        assert res[5].name == "CR_k_inv"
+        assert res[5].wires == Wires([2, 1])
+        assert res[6].name == "CR_k_inv"
+        assert res[6].wires == Wires([3, 1])
+
+        assert res[7].name == "Hadamard"
+        assert res[7].wires == Wires(2)
+
+        assert res[8].name == "CR_k_inv"
+        assert res[8].wires == Wires([3, 2])
+
+        assert res[9].name == "Hadamard"
+        assert res[9].wires == Wires(3)
+
+        assert res[10].name == "SWAP"
+        assert res[10].wires == Wires([0, 3])
+
+        assert res[11].name == "SWAP"
+        assert res[11].wires == Wires([1, 2])
 
 
 class TestEigenval:

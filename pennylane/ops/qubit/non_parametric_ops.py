@@ -29,7 +29,6 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
-
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
@@ -2371,3 +2370,478 @@ class WireCut(Operation):
 
     def pow(self, z):
         return [copy(self)]
+
+
+class SUM(Operation):
+    r"""SUM(wires)
+    Implements 3-wires quantum analog of the bit-wise summation operation. For every basis vector, the operation flips the third wire if the sum of bits in the first two wires equals 1 modulo 2.
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = 3
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.SUM.compute_decomposition((0,1,2)))
+        [CNOT(wires=[1, 2]),
+         CNOT(wires=[0, 2])]
+
+        """
+
+        decomp_ops = [
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.CNOT(wires=[wires[0], wires[2]])
+        ]
+
+        return decomp_ops
+
+    def adjoint(self):
+        return SUM(wires=self.wires)
+
+
+class CARRY(Operation):
+    r"""CARRY(wires)
+    Implements 4-wires carry operation. If we denote wires[0] = c_i, wires[1] = a_i, wires[2] = bi, wires[3] = c(i+1) = |0>, then the operation carries |1> in wires[3] = c_(i+1) if c_i + a_i + b_i > 1.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CARRY.compute_decomposition((0,1,2,3)))
+        [Toffoli(wires=[1, 2, 3]),
+        CNOT(wires=[1, 2]),
+        Toffoli(wires=[0, 2, 3])]
+
+        """
+
+        decomp_ops = [
+            qml.Toffoli(wires=wires[1:]),
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[3]])
+        ]
+
+        return decomp_ops
+
+
+class CARRY_inv(Operation):
+    r"""CARRY_inv(wires)
+    Implements 4-wires operation that is inverse for CARRY-operation
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CARRY_inv.compute_decomposition((0,1,2,3)))
+        [Toffoli(wires=[0, 2, 3]),
+        CNOT(wires=[1, 2]),
+        Toffoli(wires=[1, 2, 3])]
+
+        """
+
+        decomp_ops = [
+            qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.Toffoli(wires=wires[1:])
+        ]
+
+        return decomp_ops
+
+
+class ADDER(Operation):
+    r"""ADDER(wires)
+    ADDER is a circuit which implements addition for classical inputs (i.e. 0s or 1s in a qubit registers)
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.ADDER.compute_decomposition((0,1,2,3)))
+        [CARRY(wires=[3, 0, 1, 2]),
+        CNOT(wires=[0, 1]),
+        SUM(wires=[3, 0, 1])]
+
+        """
+
+        # check inputs
+        if (len(wires) - 1) % 3 != 0 or len(wires) < 4:
+            raise Exception(
+                'Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b and n wires for wires_c'
+            )
+        else:
+            n = int((len(wires) - 1) / 3)
+            wires_a = wires[:n]
+            wires_b = wires[n:2 * n + 1]
+            wires_c = wires[2 * n + 1:]
+
+        decomp_ops = list()
+
+        # block of CARRY gates
+        for i in range(len(wires_a) - 1):
+            decomp_ops += [CARRY(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
+        decomp_ops += [CARRY(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1],
+                                    wires_b[len(wires_a)]])]
+
+        decomp_ops += [qml.CNOT(wires=[wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
+
+        # block of inverse-CARRY and SUM gates
+        decomp_ops += [SUM(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
+        for i in range(len(wires_a) - 2, -1, -1):
+            decomp_ops += [CARRY_inv(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
+            decomp_ops += [SUM(wires=[wires_c[i], wires_a[i], wires_b[i]])]
+
+        return decomp_ops
+
+
+class ADDER_inv(Operation):
+    r"""ADDER_inv(wires)
+    Implements operation that is inverse for ADDER-operation
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.ADDER_inv.compute_decomposition((0,1,2,3)))
+        [SUM(wires=[3, 0, 1]),
+        CNOT(wires=[0, 1]),
+        CARRY_inv(wires=[3, 0, 1, 2])]
+
+        """
+
+        # check inputs
+        if (len(wires) - 1) % 3 != 0 or len(wires) < 4:
+            raise Exception(
+                'Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b and n wires for wires_c')
+        else:
+            n = int((len(wires) - 1) / 3)
+            wires_a = wires[:n]
+            wires_b = wires[n:2 * n + 1]
+            wires_c = wires[2 * n + 1:]
+
+        decomp_ops = list()
+
+        # block of inverse-SUM and CARRY gates
+        for i in range(len(wires_a) - 1):
+            decomp_ops += [SUM(wires=[wires_c[i], wires_a[i], wires_b[i]])]
+            decomp_ops += [CARRY(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
+        decomp_ops += [SUM(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
+
+        decomp_ops += [qml.CNOT(wires=[wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
+
+        # block of inverse-CARRY gates
+        decomp_ops += [CARRY_inv(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1],
+                                        wires_b[len(wires_a)]])]
+        for i in range(len(wires_a) - 2, -1, -1):
+            decomp_ops += [CARRY_inv(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
+
+        return decomp_ops
+
+
+# control_wire = wire[0], swap_wires = wire[1:]
+
+class Ctrl_SWAP(Operation):
+    r"""Ctrl_SWAP(wires)
+    Implements 2-wires SWAP conditional on 1-wire control
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = 3
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.Ctrl_SWAP(wires=[0,1,2]).decomposition())
+        [CNOT(wires=[1, 2]),
+        Toffoli(wires=[0, 2, 1]),
+        CNOT(wires=[1, 2])]
+
+        """
+
+        control_wire = wires[0]
+
+        decomp_ops = [
+            qml.CNOT(wires=[wires[1], wires[2]]),
+            qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
+            qml.CNOT(wires=[wires[1], wires[2]])
+        ]
+
+        return decomp_ops
+
+
+class QFT_(Operation):
+    r"""QFT_(wires)
+    QFT_ is a circuit that implements quantum Fourier transform
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.QFT_.compute_decomposition((0,1,2,3)))
+        [Hadamard(wires=[0]),
+        CR_k(2, wires=[1, 0]),
+        CR_k(3, wires=[2, 0]),
+        CR_k(4, wires=[3, 0]),
+        Hadamard(wires=[1]),
+        CR_k(2, wires=[2, 1]),
+        CR_k(3, wires=[3, 1]),
+        Hadamard(wires=[2]),
+        CR_k(2, wires=[3, 2]),
+        Hadamard(wires=[3]),
+        SWAP(wires=[0, 3]),
+        SWAP(wires=[1, 2])]
+
+        """
+        # local import to avoid Circular Import
+        from .parametric_ops import CR_k
+        decomp_ops = list()
+
+        # block of Hadamard and CR_k gates
+        for i in range(len(wires)):
+            decomp_ops += [qml.Hadamard(wires=wires[i])]
+            for k in range(2, (len(wires) - i) + 1):
+                decomp_ops += [CR_k(k, wires=[wires[i + (k - 1)], wires[i]])]
+
+        # block of SWAP gates
+        # works both if len(wires)%2 == 0 or len(wires)%2 == 1
+        for i in range(int(len(wires) / 2)):
+            decomp_ops += [qml.SWAP(wires=[wires[i], wires[len(wires) - (i + 1)]])]
+
+        return decomp_ops
+
+
+class QFT_inv(Operation):
+    r"""QFT_(wires)
+    QFT_ is a circuit that implements quantum Fourier transform
+
+    **Details:**
+
+    * Number of wires: Any
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    par_domain = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.QFT_inv.compute_decomposition((0,1,2,3)))
+       [Hadamard(wires=[0]),
+       CR_k_inv(2, wires=[1, 0]),
+       CR_k_inv(3, wires=[2, 0]),
+       CR_k_inv(4, wires=[3, 0]),
+       Hadamard(wires=[1]),
+       CR_k_inv(2, wires=[2, 1]),
+       CR_k_inv(3, wires=[3, 1]),
+       Hadamard(wires=[2]),
+       CR_k_inv(2, wires=[3, 2]),
+       Hadamard(wires=[3]),
+       SWAP(wires=[0, 3]),
+       SWAP(wires=[1, 2])]
+
+        """
+        # local import to avoid Circular Import
+        from .parametric_ops import CR_k_inv
+        decomp_ops = list()
+
+        # block of Hadamard and CR_k gates
+        for i in range(len(wires)):
+            decomp_ops += [qml.Hadamard(wires=wires[i])]
+            for k in range(2, (len(wires) - i) + 1):
+                decomp_ops += [CR_k_inv(k, wires=[wires[i + (k - 1)], wires[i]])]
+
+        # block of SWAP gates
+        # works both if len(wires)%2 == 0 or len(wires)%2 == 1
+        for i in range(int(len(wires) / 2)):
+            decomp_ops += [qml.SWAP(wires=[wires[i], wires[len(wires) - (i + 1)]])]
+
+        return decomp_ops
+
+
+
