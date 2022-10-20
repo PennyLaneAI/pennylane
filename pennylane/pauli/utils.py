@@ -137,6 +137,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
+    # pylint: disable=isinstance-second-argument-not-valid-type
     """Converts a Pauli word to the binary vector representation.
 
     This functions follows convention that the first half of binary vector components specify
@@ -240,9 +241,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
 
     paulis_with_identity = (PauliX, PauliY, PauliZ, Identity)
 
-    if isinstance(
-        pauli_word, paulis_with_identity
-    ):  # pylint: disable=isinstance-second-argument-not-valid-type
+    if isinstance(pauli_word, paulis_with_identity):
         operations_zip = zip(pauli_wires, [pauli_word.name])
     else:
         operations_zip = zip(pauli_wires, pauli_word.name)
