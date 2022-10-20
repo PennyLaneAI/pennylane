@@ -34,6 +34,12 @@ abstract class NumericResult{
     Catch-all for numeric data
 }
 abstract class AbstractDevice{
+    +//execute(qscript: Union[QuantumScript, List[QuantumScript]]): NumericResult//
+    +//gradient(qscript: QuantumScript, order: int): NumericResult//
+    +//vjp(qscript: QuantumScript): NumericResult//
+}
+
+class ConcreteDevice{
     -device_config: DeviceConfig
     -execution_config: ExecutionConfig
     +execute(qscript: Union[QuantumScript, List[QuantumScript]]): NumericResult
@@ -46,7 +52,9 @@ DeviceConfig *-- DeviceType
 ExecutionConfig ..> FnType
 
 AbstractDevice ..> NumericResult
-AbstractDevice *-- DeviceConfig
-AbstractDevice *-- ExecutionConfig
+AbstractDevice <|-- ConcreteDevice
+
+ConcreteDevice o-- DeviceConfig : optional
+ConcreteDevice o-- ExecutionConfig : optional
 
 @enduml
