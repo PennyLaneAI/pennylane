@@ -17,7 +17,7 @@ Contains the Dataset utility functions.
 from concurrent.futures import ThreadPoolExecutor, wait
 import os
 import requests
-
+from pennylane.data.dataset import Dataset
 from pennylane.data.dataset import RemoteDataset
 
 S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
@@ -182,6 +182,13 @@ def load(
 
     return data_files
 
+def read(filepath):
+    dataset = Dataset()
+    dataset.read(filepath)
+    return dataset
+
+def write(dataset,filepath):
+    dataset.write(filepath)
 
 def _direc_to_dict(path):
     r"""Helper function to create dictionary structure from directory path"""

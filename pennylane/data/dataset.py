@@ -105,7 +105,7 @@ class Dataset(ABC):
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
-        for (key, val) in data.items():
+        for key, val in data.items():
             setattr(self, f"{key}", val)
 
     def write(self, filepath, protocol=4):
