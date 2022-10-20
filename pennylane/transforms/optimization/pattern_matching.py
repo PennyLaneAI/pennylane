@@ -21,7 +21,7 @@ from collections import OrderedDict
 import numpy as np
 
 import pennylane as qml
-from pennylane import adjoint, apply
+from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
@@ -227,7 +227,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                         for elem in pred:
                             node = circuit_dag.get_node(elem)
                             inst = copy.deepcopy(node.op)
-                            apply(inst)
+                            qml.map_wires(inst, wire_map=inverse_wires_map, queue=True)
                             already_sub.append(elem)
 
                         already_sub = already_sub + circuit_sub
@@ -244,23 +244,23 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                             inst = copy.deepcopy(node.op)
 
                             inst = qml.map_wires(inst, wire_map=dict(zip(inst.wires, wires)))
-
+                            inst = qml.map_wires(inst, wire_map=inverse_wires_map)
                             adjoint(inst, lazy=False)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
                         node = circuit_dag.get_node(node_id)
                         inst = copy.deepcopy(node.op)
-                        apply(inst)
+                        qml.map_wires(inst, wire_map=inverse_wires_map, queue=True)
 
                 tape = tape_inside
 
     for op in tape.operations:
-        op = qml.map_wires(op, wire_map=inverse_wires_map, queue=True)
+        qml.apply(op)
 
     # After optimization, simply apply the measurements
     for m in measurements:
-        m = qml.map_wires(m, wire_map=inverse_wires_map, queue=True)
+        qml.apply(m)
 
 
 def pattern_matching(circuit_dag, pattern_dag):
