@@ -1,5 +1,6 @@
 from functools import reduce
 from string import ascii_letters as ABC
+from pennylane.tape import QuantumScript
 
 import numpy as np
 
@@ -37,7 +38,7 @@ class PlainNumpySimulator:
         pass
 
     @classmethod
-    def execute(cls, quantumscript, dtype=np.complex128):
+    def execute(cls, quantumscript: QuantumScript, dtype=np.complex128):
 
         num_indices = len(quantumscript.wires)
         state = cls.create_zeroes_state(num_indices, dtype=dtype)
