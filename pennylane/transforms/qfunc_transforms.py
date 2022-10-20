@@ -161,15 +161,9 @@ class single_tape_transform:
         functools.update_wrapper(self, transform_fn)
 
     def __call__(self, tape: QuantumTape, *args, **kwargs):
-        tape_class = type(tape.__class__.__name__, (NonQueuingTape, tape.__class__), {})
-
-        # new_tape, when first created, is of the class (NonQueuingTape, tape.__class__), so that it
-        # doesn't result in a nested tape
-        with tape_class(shots=tape._raw_shot_sequence) as new_tape:
+        with tape.new_tape() as new_tape:
             self.transform_fn(tape, *args, **kwargs)
 
-        # Once we're done, revert it back to be simply an instance of tape.__class__.
-        new_tape.__class__ = tape.__class__
         return new_tape
 
 
