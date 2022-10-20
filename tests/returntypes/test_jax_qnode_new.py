@@ -754,12 +754,16 @@ class TestQubitIntegration:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         res = circuit()
 
-        assert res.shape == (2, 10)
-        assert isinstance(res, jnp.DeviceArray)
+        assert isinstance(res, tuple)
+
+        assert isinstance(res[0], jnp.DeviceArray)
+        assert res[0].shape == (10,)
+        assert isinstance(res[1], jnp.DeviceArray)
+        assert res[1].shape == (10,)
 
     def test_chained_qnodes(self, dev_name, diff_method, mode, interface):
         """Test that the gradient of chained QNodes works without error"""
@@ -803,8 +807,9 @@ class TestQubitIntegration:
 
     def test_second_derivative(self, dev_name, diff_method, mode, interface, tol):
         """Test second derivative calculation of a scalar valued QNode"""
-        if diff_method not in {"backprop"}:
-            pytest.skip("Test only supports backprop")
+
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not second derivative.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -831,12 +836,15 @@ class TestQubitIntegration:
             -np.cos(a) * np.cos(b) + np.sin(a) * np.sin(b),
             np.sin(a) * np.sin(b) - np.cos(a) * np.cos(b),
         ]
-        assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
+        if diff_method == "finite-diff":
+            assert np.allclose(g2, expected_g2, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(self, dev_name, diff_method, mode, interface, tol):
         """Test hessian calculation of a scalar valued QNode"""
-        if diff_method not in {"backprop"}:
-            pytest.skip("Test only supports  backprop")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support second derivative.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -866,12 +874,15 @@ class TestQubitIntegration:
             [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
             [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
         ]
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        if diff_method == "finite-diff":
+            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued(self, dev_name, diff_method, mode, interface, tol):
         """Test hessian calculation of a vector valued QNode"""
-        if diff_method not in {"backprop"}:
-            pytest.skip("Test only supports backprop")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support second derivative.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -910,26 +921,28 @@ class TestQubitIntegration:
                 [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
             ],
         ]
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        if diff_method == "finite-diff":
+            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
         self, dev_name, diff_method, interface, mode, tol
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
-        if diff_method not in {"backprop"}:
-            pytest.skip("Test only supports backprop")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support second derivative.")
 
         dev = qml.device(dev_name, wires=1)
 
-        # Test only applies to backprop -> interface="jax"
         @qnode(dev, diff_method=diff_method, interface="jax", mode=mode, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
-            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))]
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
 
         def cost_fn(x):
-            return x @ circuit(x)
+            return x @ jax.numpy.array(circuit(x))
 
         x = jnp.array(
             [0.76, -0.87],
@@ -962,14 +975,17 @@ class TestQubitIntegration:
             ],
         ]
 
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        if diff_method == "finite-diff":
+            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(
         self, dev_name, diff_method, mode, interface, mocker, tol
     ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
-        if diff_method not in {"backprop"}:
-            pytest.skip("Test only supports backprop")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support second derivative.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -1017,7 +1033,10 @@ class TestQubitIntegration:
                 ],
             ]
         )
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        if diff_method == "finite-diff":
+            assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        else:
+            assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_state(self, dev_name, diff_method, mode, interface, tol):
         """Test that the state can be returned and differentiated"""
@@ -1237,19 +1256,20 @@ class TestTapeExpansion:
         spy.assert_not_called()
 
         # test gradients
-        # grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
-        # expected_w = [
-        #    -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
-        #    -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
-        # ]
-        # expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
-        # assert np.allclose(grad[0], expected_w)
-        # assert np.allclose(grad[1], expected_c)
+        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
+        expected_w = [
+            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
+            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+        ]
+        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
+        assert np.allclose(grad[0], expected_w)
+        assert np.allclose(grad[1], expected_c)
 
+        # TODO: Add parameter shift when the bug with trainablle params and hamiltonian_grad is solved.
         # test second-order derivatives
-        if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
-            # grad2_c = jax.jacobian(jax.grad(circuit, argnums=[2]), argnums=[2])(d, w, c)
-            # assert np.allclose(grad2_c, 0)
+        if diff_method in "backprop" and max_diff == 2:
+            grad2_c = jax.jacobian(jax.grad(circuit, argnums=[2]), argnums=[2])(d, w, c)
+            assert np.allclose(grad2_c, 0)
 
             grad2_w_c = jax.jacobian(jax.grad(circuit, argnums=[1]), argnums=[2])(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
@@ -1259,6 +1279,8 @@ class TestTapeExpansion:
             ]
             assert np.allclose(grad2_w_c, expected)
 
+    # TODO: Rework hamiltonian expand the for the new return type system.
+    @pytest.mark.xfail(reason="Rework hamiltonian expand the for the new return type system.")
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
         self, dev_name, diff_method, mode, interface, max_diff, mocker
@@ -1326,7 +1348,8 @@ jit_qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward"],
 ]
 
-
+# TODO: Addd interface for Jax-jit and create a new test file.
+@pytest.mark.xfail(reason="Add interface for Jax-jit")
 @pytest.mark.parametrize("dev_name,diff_method,mode", jit_qubit_device_and_diff_method)
 class TestJIT:
     """Test JAX JIT integration with the QNode and automatic resolution of the
