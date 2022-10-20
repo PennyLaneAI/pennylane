@@ -20,7 +20,6 @@ from functools import reduce
 import autograd.numpy as anp
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.pauli.utils import _pauli_mult, simplify
 
 
