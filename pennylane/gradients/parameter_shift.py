@@ -204,8 +204,8 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
 
     g = []
     if not shot_vector:
-        g = _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
-        return tuple(g)
+        return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
+
 
     num_shot_components = len(shots)
 
@@ -344,16 +344,9 @@ def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_ve
         2. Num params
         3. Measurement shape
     """
-    new_grad = []
-    for i in range(num_shot_vec_components):
-        shot_vec_grad = []
-        for j in range(num_params):
-            shot_vec_grad.append(grads[j][i])
-
-        shot_vec_grad = tuple(shot_vec_grad) if num_params > 1 else shot_vec_grad[0]
-        new_grad.append(shot_vec_grad)
-
-    return new_grad
+    if num_params == 1:
+        return [grads[0][i] for i in range(num_shot_vec_components)]
+    return [tuple(grads[j][i] for j in range(num_params)) for i in range(num_shot_vec_components)]
 
 
 def _reorder_grad_axes_multi_measure(
