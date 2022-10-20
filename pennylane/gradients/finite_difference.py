@@ -181,12 +181,15 @@ def _all_zero_grad_new(tape, shots=None):
     for m in tape.measurements:
         # TODO: Update shape for CV variables
         if m.return_type is qml.measurements.Probability:
-            dim = 2 ** len(m.wires)
+            shape = 2 ** len(m.wires)
         else:
-            dim = 1
+            shape = ()
 
-        sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
-        sub_list_zeros = tuple(sub_list_zeros)
+        if len(tape.trainable_params) == 1:
+            sub_list_zeros = qml.math.zeros(shape)
+        else:
+            sub_list_zeros = [qml.math.zeros(shape) for _ in range(len(tape.trainable_params))]
+            sub_list_zeros = tuple(sub_list_zeros)
 
         list_zeros.append(sub_list_zeros)
 

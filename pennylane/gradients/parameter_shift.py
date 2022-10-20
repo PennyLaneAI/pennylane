@@ -206,7 +206,6 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
     if not shot_vector:
         return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
-
     num_shot_components = len(shots)
 
     # Res has order of axes:
@@ -345,8 +344,10 @@ def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_ve
         3. Measurement shape
     """
     if num_params == 1:
-        return [grads[0][i] for i in range(num_shot_vec_components)]
-    return [tuple(grads[j][i] for j in range(num_params)) for i in range(num_shot_vec_components)]
+        return tuple(grads[0][i] for i in range(num_shot_vec_components))
+    return tuple(
+        tuple(grads[j][i] for j in range(num_params)) for i in range(num_shot_vec_components)
+    )
 
 
 def _reorder_grad_axes_multi_measure(
@@ -552,10 +553,10 @@ def _expval_param_shift_tuple(
         num_params = len(tape.trainable_params)
         num_shot_vec_components = len(shots) if shot_vector else None
         if single_measure and shot_vector:
-            grads = _reorder_grad_axes_single_measure_shot_vector(
+            return _reorder_grad_axes_single_measure_shot_vector(
                 grads, num_params, num_shot_vec_components
             )
-        elif not single_measure:
+        if not single_measure:
             shot_vector_multi_measure = not single_measure and shot_vector
             num_measurements = len(tape.measurements)
             grads = _reorder_grad_axes_multi_measure(

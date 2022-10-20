@@ -2426,3 +2426,151 @@ class TestHamiltonianExpvalGradients:
 
         # res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
         # assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
+
+
+pauliz = qml.PauliZ(wires=0)
+proj = qml.Projector([1], wires=0)
+A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+hermitian = qml.Hermitian(A, wires=0)
+
+expval = qml.expval(pauliz)
+probs = qml.probs(wires=[1, 0])
+var_involutory = qml.var(proj)
+var_non_involutory = qml.var(hermitian)
+
+single_scalar_output_measurements = [
+    expval,
+    probs,
+    var_involutory,
+    var_non_involutory,
+]
+
+single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
+
+"""
+Shot vectors may have some edge cases:
+
+1. All different, "random order", e.g., (100,1,10)
+2. At least 1 shot value repeated, e.g., (1,1,10)
+3. All same, e.g., (1,1,1)
+"""
+
+
+@pytest.mark.parametrize("shot_vec", [(100, 1, 10), (1, 1, 10), (*[1] * 2, 10), (1, 1, 1)])
+class TestReturn:
+    """Class to test the shape of Jacobian with different return types.
+
+    The parameter-shift pipeline has at least 4 major logical paths:
+
+    1. Expval
+    2. Probs
+    3. Var - involutory observable
+    4. Var - non-involutory observable
+
+    The return types have the following major cases:
+
+    1. 1 trainable param, 1 measurement
+    2. >1 trainable param, 1 measurement
+    3. 1 trainable param, >1 measurement
+    4. >1 trainable param, >1 measurement
+    """
+
+    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
+    @pytest.mark.parametrize("op_wires", [0, 2])
+    def test_1_1(self, shot_vec, meas, shape, op_wires):
+        """Test one param one measurement case"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(
+                x, wires=[op_wires]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qml.apply(meas)  # Measurements act on wires 0 and 1
+
+        # One trainable param
+        tape.trainable_params = {0}
+
+        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == len(shot_vec)
+        assert isinstance(all_res, tuple)
+
+        for res in all_res:
+            assert isinstance(res, np.ndarray)
+            assert res.shape == shape
+
+    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
+    @pytest.mark.parametrize("op_wires", [0, 2])
+    def test_1_N(self, shot_vec, meas, shape, op_wires):
+        """Test one param multi-measurement case"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        x = 0.543
+        y = 0.213
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(
+                x, wires=[op_wires]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qml.RY(
+                y, wires=[op_wires]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qml.apply(meas)  # Measurements act on wires 0 and 1
+
+        # Multiple trainable params
+        tape.trainable_params = {0, 1}
+
+        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == len(shot_vec)
+        assert isinstance(all_res, tuple)
+
+        for param_res in all_res:
+            for res in param_res:
+                assert isinstance(res, np.ndarray)
+                assert res.shape == shape
+
+    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
+    @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
+    def test_N_N(self, shot_vec, meas, shape, op_wires):
+        """Test multi-param multi-measurement case"""
+        dev = qml.device("default.qubit", wires=6, shots=shot_vec)
+        params = np.random.random(6)
+
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        with qml.tape.QuantumTape() as tape:
+            for idx, w in enumerate(op_wires):
+                qml.RY(
+                    params[idx], wires=[w]
+                )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+
+            # Extra op - 5 measurements in total
+            qml.RY(
+                params[5], wires=[w]
+            )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+
+            # 4 measurements
+            qml.expval(qml.PauliZ(wires=0))
+            qml.probs(wires=[2, 1])
+            qml.var(qml.Projector([1], wires=3))
+            qml.var(qml.Hermitian(A, wires=4))
+
+        # Multiple trainable params
+        tape.trainable_params = {0, 1, 2, 3, 4}
+
+        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == len(shot_vec)
+        assert isinstance(all_res, tuple)
+
+        expected_shapes = [(), (4,), (), ()]
+        for meas_res in all_res:
+            assert len(meas_res) == 4
+            for idx, param_res in enumerate(meas_res):
+                assert len(param_res) == 5
+                for res in param_res:
+                    assert isinstance(res, np.ndarray)
+                    assert res.shape == expected_shapes[idx]
