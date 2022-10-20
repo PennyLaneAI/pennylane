@@ -246,7 +246,7 @@ class QNode:
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
-        self._interface = value
+        self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn()
 
     def _update_gradient_fn(self):
@@ -634,6 +634,8 @@ class QNode:
                 **self.execute_kwargs,
             )
 
+            new_interface = self.interface
+
             if old_interface == "auto":
                 self.interface = "auto"
 
@@ -647,7 +649,7 @@ class QNode:
             backprop = False
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
-            ) and self.interface in ("tf", "autograd"):
+            ) and new_interface in ("tf", "autograd"):
                 backprop = any(qml.math.in_backprop(x) for x in res)
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
