@@ -42,6 +42,9 @@ def append_gate(tape, params, gates):
 
 
 class AdaptiveOptimizer:
+    """Adaptive optimizer.
+
+    """
     def __init__(self, tol=1e-5):
         self.tol = tol
 
