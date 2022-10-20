@@ -53,7 +53,7 @@ def _validate_params(data_type, description, attributes):
         except:
             if not val in tempmap:
                 raise ValueError(
-                    f"'{key}' value of {val} not available. Available values are {', '.join(tempmap.keys() if isinstance(tempmap, dict) else tempmap)}"
+                    f"'{key}' value of '{val}' not available. Available values are {', '.join(tempmap.keys() if isinstance(tempmap, dict) else tempmap)}"
                 )
 
     if not isinstance(attributes, list):
@@ -64,9 +64,6 @@ def _validate_params(data_type, description, attributes):
         raise ValueError(
             f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
         )
-
-    
-    
 
 
 def _refresh_foldermap():
