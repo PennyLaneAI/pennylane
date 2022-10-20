@@ -79,6 +79,7 @@ class PauliWord(dict):
 
     >>> w = PauliWord({"a": X, 2: Y, 3: Z})
     """
+
     def __missing__(self, key):
         """If the wire is not in the Pauli word,
         then no operator acts on it, so return the Identity."""
@@ -218,8 +219,7 @@ class PauliSentence(dict):
             wire_order = self.wires
 
         mats_and_wires_gen = (
-            (coeff * pw.to_mat(format=format), pw.wires)
-            for pw, coeff in self.items()
+            (coeff * pw.to_mat(format=format), pw.wires) for pw, coeff in self.items()
         )
 
         reduced_mat, result_wire_order = math.reduce_matrices(

@@ -13,46 +13,42 @@
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
 import pytest
+
 # import numpy as np
 # from scipy import sparse
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
 pw1 = PauliWord({0: I, 1: X, 2: Y})
-pw2 = PauliWord({'a': X, 'b': X, 'c': Z})
-pw3 = PauliWord({0: Z, 'b': Z})
+pw2 = PauliWord({"a": X, "b": X, "c": Z})
+pw3 = PauliWord({0: Z, "b": Z})
 pw4 = PauliWord({})
 
 
 class TestPauliWord:
     def test_missing(self):
         """Test the result when a missing key is indexed"""
-        pw = PauliWord({0:I, 1:X, 2:Y})
+        pw = PauliWord({0: I, 1: X, 2: Y})
         assert 3 not in pw.keys()
         assert pw[3] == I
 
     def test_set_items(self):
         """Test that setting items raises an error"""
-        pw = PauliWord({0:I, 1:X, 2:Y})
+        pw = PauliWord({0: I, 1: X, 2: Y})
         with pytest.raises(NotImplementedError):
             pw[3] = Z  # trying to add to a pw after instantiation is prohibited
 
     def test_hash(self):
         """Test that a unique hash exists for different PauliWords."""
-        pw1 = PauliWord({0:I, 1:X, 2:Y})
-        pw2 = PauliWord({0:I, 1:X, 2:Y})  # same as 1
-        pw3 = PauliWord({1:X, 2:Y, 0:I})  # same as 1 but reordered
-        pw4 = PauliWord({1:Z, 2:Z})  # distinct from above
+        pw1 = PauliWord({0: I, 1: X, 2: Y})
+        pw2 = PauliWord({0: I, 1: X, 2: Y})  # same as 1
+        pw3 = PauliWord({1: X, 2: Y, 0: I})  # same as 1 but reordered
+        pw4 = PauliWord({1: Z, 2: Z})  # distinct from above
 
         assert pw1.__hash__() == pw2.__hash__()
         assert pw1.__hash__() == pw3.__hash__()
         assert pw1.__hash__() != pw4.__hash__()
 
-    tup_pws_wires = (
-        (pw1, {0, 1, 2}),
-        (pw2, {'a', 'b', 'c'}),
-        (pw3, {0, 'b'}),
-        (pw4, {})
-    )
+    tup_pws_wires = ((pw1, {0, 1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b"}), (pw4, {}))
 
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
@@ -75,9 +71,9 @@ class TestPauliWord:
 class TestPauliSentence:
     def test_missing(self):
         """Test the result when a missing key is indexed"""
-        pw = {0:X}
-        new_pw = {'a':Z}
-        ps = PauliSentence({pw:1.0})
+        pw = {0: X}
+        new_pw = {"a": Z}
+        ps = PauliSentence({pw: 1.0})
 
         assert new_pw not in ps.keys()
         assert ps[new_pw] == 0.0
@@ -87,7 +83,7 @@ class TestPauliSentence:
         pw = {0: X}
         ps = PauliSentence({pw: 1.0})
 
-        new_pw = {'a': Z}
+        new_pw = {"a": Z}
         assert new_pw not in ps.keys()
 
         ps[new_pw] = 3.45
