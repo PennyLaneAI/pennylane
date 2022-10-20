@@ -64,8 +64,8 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
   interface_tensors = [[0, 1], np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1])]
   for tensor in interface_tensors:
-    res = circuit(weight=tensor)
-    print(f"Result value: {res:.2f}; Result type: {type(res)}")
+      res = circuit(weight=tensor)
+      print(f"Result value: {res:.2f}; Result type: {type(res)}")
   ```
 
   ```pycon
