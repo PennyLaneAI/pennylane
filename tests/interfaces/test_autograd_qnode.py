@@ -13,6 +13,7 @@
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
 import pytest
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -436,6 +437,30 @@ class TestQNode:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_sparse_hamiltonian(self, interface, dev_name, diff_method, mode, tol):
+        """Test that a QNode accepting a sparse hamiltonian as input works with the autograd
+        interface"""
+
+        if diff_method != "parameter-shift":
+            pytest.skip(
+                """SparseHamiltonian observable must be used with the parameter-shift 
+                differentiation method."""
+            )
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
+        def circuit(H):
+            return qml.expval(qml.SparseHamiltonian(H, wires=0))
+
+        H = csr_matrix([[0, 1], [2, 3]])
+
+        res = circuit(H)
+
+        assert type(res) == np.tensor
+        assert circuit.interface == interface
+        assert res == 0.0
 
 
 class TestShotsIntegration:
