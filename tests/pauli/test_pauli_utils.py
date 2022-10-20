@@ -1040,7 +1040,7 @@ class TestTapering:
             ),
         ],
     )
-    def test_binary_matrix(terms, num_qubits, result):
+    def test_binary_matrix(self, terms, num_qubits, result):
         r"""Test that _binary_matrix returns the correct result."""
         binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
         assert (binary_matrix == result).all()

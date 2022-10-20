@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""A module containing utility functions for working with Pauli operators"""
 
 from .utils import (
     is_pauli_word,
@@ -34,3 +35,5 @@ from .utils import (
     diagonalize_qwc_groupings,
     simplify,
 )
+
+from .grouping import *
