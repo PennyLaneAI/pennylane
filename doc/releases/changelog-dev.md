@@ -50,6 +50,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
+  [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
+
 * `Adjoint` now supports batching if the base operation supports batching.
   [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
 
@@ -206,6 +209,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
   [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
+
+* Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
+  [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
 <h3>Contributors</h3>
 
