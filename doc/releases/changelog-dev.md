@@ -209,6 +209,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
   [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
 
+* Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
+  [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
