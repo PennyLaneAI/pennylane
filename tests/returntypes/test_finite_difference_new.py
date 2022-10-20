@@ -190,13 +190,12 @@ class TestFiniteDiff:
         assert isinstance(res, tuple)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", ["autograd", "auto"])
-    def test_no_trainable_params_qnode_autograd(self, interface):
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -209,13 +208,12 @@ class TestFiniteDiff:
         assert res == ()
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("interface", ["torch", "auto"])
-    def test_no_trainable_params_qnode_torch(self, interface):
+    def test_no_trainable_params_qnode_torch(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="torch")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -228,13 +226,12 @@ class TestFiniteDiff:
         assert res == ()
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
-    def test_no_trainable_params_qnode_tf(self, interface):
+    def test_no_trainable_params_qnode_tf(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="tf")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -247,13 +244,12 @@ class TestFiniteDiff:
         assert res == ()
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("interface", ["jax", "auto"])
-    def test_no_trainable_params_qnode_jax(self, interface):
+    def test_no_trainable_params_qnode_jax(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
