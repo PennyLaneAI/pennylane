@@ -660,7 +660,8 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
     @pytest.mark.jax
-    def test_gradient_unitary_to_rot_two_qubit_jax(self):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_gradient_unitary_to_rot_two_qubit_jax(self, diff_method):
         """Tests differentiability in jax interface."""
         import jax
         from jax import numpy as jnp
@@ -684,12 +685,12 @@ class TestTwoQubitUnitaryDifferentiability:
         dev = qml.device("default.qubit", wires=3)
 
         original_qnode = qml.QNode(
-            two_qubit_decomp_qnode, device=dev, interface="jax", diff_method="backprop"
+            two_qubit_decomp_qnode, device=dev, interface="jax", diff_method=diff_method
         )
 
         transformed_qfunc = unitary_to_rot(two_qubit_decomp_qnode)
         transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="jax", diff_method="backprop"
+            transformed_qfunc, dev, interface="jax", diff_method=diff_method
         )
 
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))
