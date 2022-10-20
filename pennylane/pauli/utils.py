@@ -84,7 +84,8 @@ def is_pauli_word(observable):
     return observable.name in pauli_word_names
 
 
-def are_identical_pauli_words(pauli_1, pauli_2): # pylint: disable=isinstance-second-argument-not-valid-type
+def are_identical_pauli_words(pauli_1, pauli_2):
+    # pylint: disable=isinstance-second-argument-not-valid-type
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
     This is a convenience function that checks if two given :class:`~.Tensor` instances specify the same
@@ -239,7 +240,9 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
 
     paulis_with_identity = (PauliX, PauliY, PauliZ, Identity)
 
-    if isinstance(pauli_word, paulis_with_identity):  # pylint: disable=isinstance-second-argument-not-valid-type
+    if isinstance(
+        pauli_word, paulis_with_identity
+    ):  # pylint: disable=isinstance-second-argument-not-valid-type
         operations_zip = zip(pauli_wires, [pauli_word.name])
     else:
         operations_zip = zip(pauli_wires, pauli_word.name)
