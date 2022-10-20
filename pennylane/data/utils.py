@@ -43,6 +43,19 @@ def _validate_params(data_type, description, attributes):
             f"Supported parameter values for {data_type} are {params_needed}, but got {list(description)}."
         )
 
+    # check that the attributes exist in the server or locally
+    # description is a dict containing attribute names and values, e.g. 'basis': 'sto-3g', 'bondlength':'0.41'
+    tempmap = _foldermap[data_type]
+    for key, val in description.items():
+        try:
+            tempmap = tempmap[val]
+            #this will fail at the end when we just want to access the bondlength, e.g tempmap['sto-3g']['0.41'] should be tempmap['sto-eg']
+        except:
+            if not val in tempmap:
+                raise ValueError(
+                    f"'{key}' value of {val} not available. Available values are {', '.join(tempmap.keys() if isinstance(tempmap, dict) else tempmap)}"
+                )
+
     if not isinstance(attributes, list):
         raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes)}.")
 
@@ -51,6 +64,9 @@ def _validate_params(data_type, description, attributes):
         raise ValueError(
             f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
         )
+
+    
+    
 
 
 def _refresh_foldermap():
@@ -134,7 +150,7 @@ def _generate_folders(node, folders):
 def load(
     data_type, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a Datset object
+    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
 
     Args:
         data_type (str):  A string representing the type of the data required - qchem or qspin
@@ -150,6 +166,10 @@ def load(
     """
 
     _ = lazy
+
+    if data_type not in _foldermap:
+        _refresh_foldermap()
+
     if not _data_struct:
         _refresh_data_struct()
     if not attributes:
@@ -161,9 +181,6 @@ def load(
     description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
     data = _data_struct[data_type]
     directory_path = os.path.join(folder_path, "datasets")
-
-    if data_type not in _foldermap:
-        _refresh_foldermap()
 
     folders = [description[param] for param in data["params"]]
     all_folders = _generate_folders(_foldermap[data_type], folders)
