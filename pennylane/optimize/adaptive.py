@@ -20,7 +20,7 @@ from pennylane import numpy as np
 
 @qml.qfunc_transform
 def append_gate(tape, params, gates):
-    """Append parameterized gates to an existing circuit.
+    """Append parameterized gates to an existing tape.
 
     Args:
         tape (QuantumTape): quantum tape to transform by adding gates
@@ -44,26 +44,52 @@ def append_gate(tape, params, gates):
 class AdaptiveOptimizer:
     """Adaptive optimizer."""
 
-    def __init__(self, tol=1e-5):
+    def __init__(self, tol=1e-5, paramopt_steps=10):
         self.tol = tol
+        self.paramopt_steps = paramopt_steps
 
     def _circuit(self, params, gates, initial_circuit):
+        """Append parameterized gates to an existing circuit.
 
+        Args:
+            params (array[float]): parameters of the gates to be added
+            gates (list[Operator]): list of the gates to be added
+            initial_circuit (function): user defined circuit that returns an expectation value
+
+        Returns:
+            function: user defined circuit with appended gates
+        """
         final_circuit = append_gate(params, gates)(initial_circuit)
 
         return final_circuit()
+
+    def step(self, circuit, pool):
+        r"""Update the circuit with one step of the optimizer.
+
+        Args:
+            circuit (.QNode): user defined circuit returning an expectation value
+            pool (list[Operator]): list of the gates to be used for adaptive optimization
+
+        Returns:
+           .QNode: the optimized circuit
+        """
+        return self.step_and_cost(circuit, pool)[0]
 
     def step_and_cost(self, circuit, pool, drain_pool=False):
         r"""Update the circuit with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
+        Args:
+            circuit (.QNode): user defined circuit returning an expectation value
+            pool (list[Operator]): list of the gates to be used for adaptive optimization
+            drain_pool (bool): flag to remove selected gates from the pool
+
         Returns:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
-            to the step.
+            to the step
         """
+        cost = circuit()
         device = circuit.device
-
-        energy = circuit()
 
         if drain_pool:
             repeated_gates = [
@@ -75,27 +101,20 @@ class AdaptiveOptimizer:
             for gate in repeated_gates:
                 pool.remove(gate)
 
-        params = np.array([x.parameters[0] for x in pool], requires_grad=True)
-
-        _qnode = qml.QNode(self._circuit, device)
-
-        grads = qml.grad(_qnode)(params, gates=pool, initial_circuit=circuit.func)
+        params = np.array([gate.parameters[0] for gate in pool], requires_grad=True)
+        qnode = qml.QNode(self._circuit, device)
+        grads = qml.grad(qnode)(params, gates=pool, initial_circuit=circuit.func)
 
         if np.max(abs(grads)) > self.tol:
-
             selected_gate = pool[np.argmax(abs(grads))]
-
             optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
-
             params = np.zeros(1)
-
             for n in range(10):
-                params, energy = optimizer.step_and_cost(
-                    _qnode, params, gates=selected_gate, initial_circuit=circuit.func
+                params, cost = optimizer.step_and_cost(
+                    qnode, params, gates=selected_gate, initial_circuit=circuit.func
                 )
-
             circuit = append_gate(params, selected_gate)(circuit.func)
 
         qnode = qml.QNode(circuit, device)
 
-        return qnode, energy
+        return qnode, cost

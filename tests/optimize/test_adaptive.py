@@ -48,18 +48,48 @@ def initial_circuit():
     return qml.expval(H)
 
 
+energy_h3p_hf = -1.2613705937768127
 energy_h3p = -1.274397672040264
 
 
 @pytest.mark.parametrize(
-    "circuit, energy_ref",
+    "circuit, energy_ref, pool",
     [
-        (initial_circuit, energy_h3p),
+        (initial_circuit, energy_h3p, pool),
     ],
 )
-def test_energy(circuit, energy_ref):
-    opt = qml.AdaptiveOptimizer()
+def test_step_and_cost(circuit, energy_ref, pool):
+    opt = qml.AdaptiveOptimizer(paramopt_steps=5)
+
     for i in range(len(pool)):
         circuit, energy = opt.step_and_cost(circuit, pool, drain_pool=True)
+
+    assert np.allclose(energy, energy_ref)
+
+
+pool = [
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
+    qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
+    qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
+    qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
+    qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
+]
+
+
+@pytest.mark.parametrize(
+    "circuit, energy_ref, pool",
+    [
+        (initial_circuit, energy_h3p_hf, pool),
+    ],
+)
+def test_step(circuit, energy_ref, pool):
+    opt = qml.AdaptiveOptimizer(paramopt_steps=5)
+
+    circuit = opt.step(circuit, pool)
+
+    energy = circuit()
 
     assert np.allclose(energy, energy_ref)
