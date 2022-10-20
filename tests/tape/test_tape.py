@@ -1662,6 +1662,15 @@ class TestStopRecording:
         assert len(temp_tape.operations) == 1
         assert temp_tape.operations[0] == op1
 
+    def test_stop_recording_within_tape_cleans_up(self):
+        """Test if some error is raised within a stop_recording context, the previously
+        active contexts are still returned to avoid popping from an empty deque"""
+
+        with pytest.raises(ValueError):
+            with qml.queuing.AnnotatedQueue() as q:
+                with qml.QueuingManager.stop_recording():
+                    raise ValueError
+
 
 def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
