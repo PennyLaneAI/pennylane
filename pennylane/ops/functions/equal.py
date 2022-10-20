@@ -15,13 +15,15 @@
 This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
+from typing import Union
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
 
 def equal(
-    op1: Operator,
-    op2: Operator,
+    op1: Union[Operator, MeasurementProcess],
+    op2: Union[Operator, MeasurementProcess],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -30,8 +32,8 @@ def equal(
     r"""Function for determining operator equality.
 
     Args:
-        op1 (.Operator): First operator to compare
-        op2 (.Operator): Second operator to compare
+        op1 (.Operator or .MeasurementProcess): First operator or MeasurementProcess to compare
+        op2 (.Operator or .MeasurementProcess): Second operator or MeasurementProcess to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
@@ -42,17 +44,22 @@ def equal(
 
     **Example**
 
-    Given two operators, ``qml.equal`` determines their equality:
+    Given two operators or measurement processes, ``qml.equal`` determines their equality:
 
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
     True False
 
+    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
+    >>> True
+    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
+    >>> False
+
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments to get more specific results.
+        You can use the optional arguments when comparing Operators to get more specific results.
 
         Consider the following comparisons:
 
@@ -72,8 +79,33 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
+
+    if op1.__class__ is not op2.__class__:
         return False
+
+    if op1.__class__ is MeasurementProcess:
+
+        if op1.return_type != op2.return_type:
+            return False
+
+        # Check the existence of m.obs, compare if exists for both
+        if op1.obs != op2.obs:
+            return False
+        elif op1.obs == op2.obs and op1.obs is not None:
+            return True
+
+        # Check wires
+        if op1.wires != op2.wires:
+            return False
+        else:
+            return True
+        
+        # TODO: consider that both obs and wires can be none
+        
+    # If operator:
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return False
+
     if op1.arithmetic_depth > 0:
         raise NotImplementedError(
             "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."

@@ -107,6 +107,44 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
 )
 
 
+PARAMETRIZED_MEASUREMENTS_WIRES = [
+    qml.density_matrix,
+    qml.vn_entropy,
+    qml.measure,
+    qml.mutual_info,
+    qml.classical_shadow,
+
+    qml.shadow_expval, # porbably wires, or maybe obs since expval
+    qml.state, # probably has wires?
+]
+
+PARAMETRIZED_MEASUREMENTS_OBS = [
+    qml.var,
+    qml.expval
+]
+
+PARAMETRIZED_MEASUREMENTS_EITHER = [
+    qml.sample,
+    qml.counts,
+    qml.probs
+]
+
+
+PARAMETRIZED_MEASUREMENTS = [
+    qml.sample,
+    qml.counts,
+    qml.density_matrix,
+    qml.var,
+    qml.expval,
+    qml.probs,
+    qml.state,
+    qml.measure,
+    qml.vn_entropy,
+    qml.mutual_info,
+    qml.classical_shadow,
+    qml.shadow_expval
+]
+
 class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
@@ -940,3 +978,15 @@ class TestEqual:
         op1 = qml.PauliX(0)
         op2 = qml.PauliX(0).inv()
         assert not qml.equal(op1, op2)
+
+    # Test cases
+    # 1. test not equal 2 MeasurementProcess with observables only
+    # 2. test equal 2 MeasurementProcess with observables only
+    # 3. test not equal 2 MeasurementProcess with wires only 
+    # 4. test equal 2 MeasurementProcess with wires only
+    # 5. test not equal MeasurementProcess with wires and Measurement Process with observable
+    # 6. test not equal MeasurementProcess and Operator
+    # 7. test state
+    # 8. test raises error when object type not MeasurementProcess or Operator
+
+        
