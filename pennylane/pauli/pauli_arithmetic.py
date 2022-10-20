@@ -229,6 +229,7 @@ class PauliSentence(dict):
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
 
     def simplify(self, tol=1e-8):
+        """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
         for pw in self:
             if abs(self[pw]) <= tol:
                 del self[pw]
