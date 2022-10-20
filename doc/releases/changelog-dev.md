@@ -137,9 +137,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
   [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
-* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
-  
+
+* Favor decomposition and avoid matrix construction for large operations.
+  [(#3193)](https://github.com/PennyLaneAI/pennylane/pull/3193)
+
 <h3>Breaking changes</h3>
 
 * `QueuingContext` is renamed `QueuingManager`.
