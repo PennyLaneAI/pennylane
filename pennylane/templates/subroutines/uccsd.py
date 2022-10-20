@@ -142,7 +142,7 @@ class UCCSD(Operation):
             optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
 
             # Optimize the circuit parameters and compute the energy
-            for n in range(20):
+            for n in range(21):
                 params, energy = optimizer.step_and_cost(circuit, params,
                 wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
                 if n % 2 == 0:
