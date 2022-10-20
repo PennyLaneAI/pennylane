@@ -476,7 +476,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 )
 
             for meas in copy_meas:
-                obs = qml.map_wires(meas.obs, wire_map=wire_map)
+                meas = qml.map_wires(meas, wire_map=wire_map)
+                obs = meas.obs
                 observables.append(obs)
 
                 if return_type is Sample:
