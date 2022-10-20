@@ -42,16 +42,10 @@ def append_gate(tape, params, gates):
 
 
 class AdaptiveOptimizer:
-    """Adaptive optimizer.
+    """Adaptive optimizer."""
 
-    """
     def __init__(self, tol=1e-5):
         self.tol = tol
-
-    def _equal(self, a, b):
-        if a.name == b.name and a.wires == b.wires:
-            return True
-        return False
 
     def _circuit(self, params, gates, initial_circuit):
 
@@ -59,17 +53,27 @@ class AdaptiveOptimizer:
 
         return final_circuit()
 
-    def step_and_cost(self, circuit, pool, drain=False):
+    def step_and_cost(self, circuit, pool, drain_pool=False):
+        r"""Update the circuit with one step of the optimizer and return the corresponding
+        objective function value prior to the step.
 
+        Returns:
+            tuple[.QNode, float]: the optimized circuit and the objective function output prior
+            to the step.
+        """
         device = circuit.device
 
         energy = circuit()
 
-        if drain:
-            for gate in pool:
-                for operation in circuit.tape.operations:
-                    if self._equal(gate, operation):
-                        pool.remove(gate)
+        if drain_pool:
+            repeated_gates = [
+                gate
+                for gate in pool
+                for operation in circuit.tape.operations
+                if qml.equal(gate, operation, rtol=float("inf"))
+            ]
+            for gate in repeated_gates:
+                pool.remove(gate)
 
         params = np.array([x.parameters[0] for x in pool], requires_grad=True)
 
