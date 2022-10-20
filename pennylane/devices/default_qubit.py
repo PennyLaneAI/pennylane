@@ -192,8 +192,14 @@ class DefaultQubit(QubitDevice):
     def stopping_condition(self):
         def accepts_obj(obj):
             if getattr(obj, "has_matrix", False):
+                # if the obj has_matrix, we check if it has_decomposition and its decomposition_threshold.
+                # the decomposition_threshold defaults to 13 qubits, this is the point at which the matrix becomes 1GB and over.
+                if getattr(obj, "has_decomposition", False) and (
+                    len(obj.wires) >= getattr(obj, "decomposition_threshold", 13)
+                ):
+                    return False
                 # pow operations dont work with backprop or adjoint without decomposition
-                # use class name string so we don't need to use isisntance check
+                # use class name string so we don't need to use isinstance check
                 return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
