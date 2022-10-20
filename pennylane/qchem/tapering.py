@@ -23,51 +23,10 @@ import scipy
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qchem.observable_hf import simplify, jordan_wigner
+from pennylane.pauli import simplify
+from pennylane.pauli.utils import _binary_matrix
+from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
-
-
-def _binary_matrix(terms, num_qubits, wire_map=None):
-    r"""Get a binary matrix representation of the Hamiltonian where each row corresponds to a
-    Pauli term, which is represented by a concatenation of Z and X vectors.
-
-    Args:
-        terms (Iterable[Observable]): operators defining the Hamiltonian
-        num_qubits (int): number of wires required to define the Hamiltonian
-        wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
-            unique integer labels as their values
-
-    Returns:
-        array[int]: binary matrix representation of the Hamiltonian of shape
-        :math:`len(terms) \times 2*num_qubits`
-
-    **Example**
-
-    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
-    >>> terms = [qml.PauliZ(wires=['a']) @ qml.PauliX(wires=['b']),
-    ...          qml.PauliZ(wires=['a']) @ qml.PauliY(wires=['c']),
-    ...          qml.PauliX(wires=['a']) @ qml.PauliY(wires=['d'])]
-    >>> _binary_matrix(terms, 4, wire_map=wire_map)
-    array([[1, 0, 0, 0, 0, 1, 0, 0],
-           [1, 0, 1, 0, 0, 0, 1, 0],
-           [0, 0, 0, 1, 1, 0, 0, 1]])
-    """
-    if wire_map is None:
-        all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
-        wire_map = {i: c for c, i in enumerate(all_wires)}
-
-    binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
-    for idx, term in enumerate(terms):
-        ops, wires = term.name, term.wires
-        if len(wires) == 1:
-            ops = [ops]
-        for op, wire in zip(ops, wires):
-            if op in ["PauliX", "PauliY"]:
-                binary_matrix[idx][wire_map[wire] + num_qubits] = 1
-            if op in ["PauliZ", "PauliY"]:
-                binary_matrix[idx][wire_map[wire]] = 1
-
-    return binary_matrix
 
 
 def _reduced_row_echelon(binary_matrix):

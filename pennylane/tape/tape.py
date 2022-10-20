@@ -160,9 +160,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if tape._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
-                rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(
-                    tape._obs_sharing_wires
-                )
+                rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
             except (TypeError, ValueError) as e:
                 if any(
                     m.return_type in (Probability, Sample, Counts, AllCounts)
