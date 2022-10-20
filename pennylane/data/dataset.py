@@ -119,6 +119,8 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.write('./path/to/file/file_name.dat')
         """
+        if not os.path.exists(filepath):
+            os.makedirs(os.path.dirname(filepath))
         pickled_data = dill.dumps(self.attrs, protocol=protocol)  # returns data as a bytes object
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as file:
