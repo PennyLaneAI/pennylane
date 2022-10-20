@@ -50,10 +50,13 @@ class TestParamShift:
 
         # But no shots are passed to transform
         tapes, fn = qml.gradients.param_shift(tape)
-        with pytest.raises(
-            ValueError, match="pass the device shots to the param_shift gradient transform"
+        with pytest.warns(
+            np.VisibleDeprecationWarning, match="Creating an ndarray from ragged nested sequences"
         ):
-            fn(dev.batch_execute(tapes))
+            with pytest.raises(
+                ValueError, match="pass the device shots to the param_shift gradient transform"
+            ):
+                fn(dev.batch_execute(tapes))
 
     def test_op_with_custom_unshifted_term_no_shots_raises(self):
         """Test that an error is raised if the shots argument is not passed to the transform and an operation with a

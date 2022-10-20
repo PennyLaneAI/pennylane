@@ -344,16 +344,9 @@ def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_ve
         2. Num params
         3. Measurement shape
     """
-    new_grad = []
-    for i in range(num_shot_vec_components):
-        shot_vec_grad = []
-        for j in range(num_params):
-            shot_vec_grad.append(grads[j][i])
-
-        shot_vec_grad = tuple(shot_vec_grad) if num_params > 1 else shot_vec_grad[0]
-        new_grad.append(shot_vec_grad)
-
-    return new_grad
+    if num_params == 1:
+        return [grads[0][i] for i in range(num_shot_vec_components)]
+    return [tuple(grads[j][i] for j in range(num_params)) for i in range(num_shot_vec_components)]
 
 
 def _reorder_grad_axes_multi_measure(
