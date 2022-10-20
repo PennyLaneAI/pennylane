@@ -75,6 +75,12 @@ class QFT(Operation):
     def num_params(self):
         return 0
 
+    @property
+    def decomposition_threshold(self):
+        """Defines the threshold for automatic transition from computing the full matrix
+        and applying the operation decomposition, if defined."""
+        return 6
+
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires):  # pylint: disable=arguments-differ
