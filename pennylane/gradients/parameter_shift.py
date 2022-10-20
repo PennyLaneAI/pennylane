@@ -204,8 +204,8 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
 
     g = []
     if not shot_vector:
-        g = _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
-        return tuple(g)
+        return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
+
 
     num_shot_components = len(shots)
 
