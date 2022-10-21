@@ -15,7 +15,7 @@
 This module defines the QuantumScript object responsible for storing quantum operations and measurements to be
 executed by a device.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-public-methods,too-many-arguments
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-public-methods
 
 import contextlib
 import copy
@@ -219,7 +219,9 @@ class QuantumScript:
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True):
+    def __init__(
+        self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True
+    ):  # pylint: disable=too-many-arguments
         self.name = name
         self.shots = shots
         self._prep = [] if prep is None else list(prep)
