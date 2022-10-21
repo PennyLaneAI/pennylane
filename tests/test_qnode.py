@@ -57,9 +57,12 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
 
+    @pytest.mark.torch
     def test_valid_interface(self):
         """Test that changing to a valid interface works as expected, and the
         diff method is updated as required."""
+        import torch
+
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="best")
