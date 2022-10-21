@@ -1347,8 +1347,12 @@ class QuantumScript:
 
     @property
     def shots(self):
-        """Number of circuit evaluations/random samples used to estimate
-        expectation values of observables"""
+        """Shots property.
+
+        Returns:
+            int: Number of circuit evaluations/random samples used to estimate
+                expectation values of observables.
+        """
         return self._shots
 
     @shots.setter
@@ -1389,16 +1393,17 @@ class QuantumScript:
 
     @property
     def shot_vector(self):
-        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
-        representation of the shot sequence used by the device
-        when evaluating QNodes.
+        """Returns a sparse representation of the shot sequence.
+
+        Returns:
+            list[.ShotTuple[int, int]]: sparse representation of the shot sequence
 
         **Example**
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
-        >>> dev.shots
+        >>> tape = QuantumTape(shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> tape.shots
         57
-        >>> dev.shot_vector
+        >>> tape.shot_vector
         [ShotTuple(shots=3, copies=1),
          ShotTuple(shots=1, copies=1),
          ShotTuple(shots=2, copies=4),
