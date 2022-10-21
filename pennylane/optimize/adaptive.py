@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adaptive optimizer"""
-# pylint: disable= no-value-for-parameter, unused-variable
+# pylint: disable= no-value-for-parameter
 import pennylane as qml
 
 from pennylane import numpy as np
@@ -170,7 +170,7 @@ class AdaptiveOptimizer:
         Args:
             circuit (.QNode): user defined circuit returning an expectation value
             operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
-            drain_pool (bool): flag to remove selected gates from the operator_pool
+            drain_pool (bool): flag to remove selected gates from the operator pool
 
         Returns:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
@@ -197,7 +197,7 @@ class AdaptiveOptimizer:
         optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
         params = np.zeros(1)
         for n in range(10):
-            params, cost = optimizer.step_and_cost(
+            params, _ = optimizer.step_and_cost(
                 qnode, params, gates=selected_gate, initial_circuit=circuit.func
             )
         circuit = append_gate(params, selected_gate)(circuit.func)
