@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adaptive optimizer"""
-# pylint: disable= no-value-for-parameter
+# pylint: disable= no-value-for-parameter, unused-variable
 import pennylane as qml
 
 from pennylane import numpy as np
@@ -39,7 +39,7 @@ def append_gate(tape, params, gates):
 
 
 class AdaptiveOptimizer:
-    """Adaptive optimizer.
+    r"""Adaptive optimizer.
 
     Quantum circuits can be built by adding gates
     `adaptively <https://www.nature.com/articles/s41467-019-10988-2>`_. The adaptive optimizer
@@ -54,12 +54,11 @@ class AdaptiveOptimizer:
     Args:
         paramopt_steps (float): number of steps for optimizing the parameter of a selected gate
 
-
     **Examples:**
 
     This examples shows an implementation of the
     `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ algorithm for building an
-    adaptive circuit for the :math:`H_3^+` cation.
+    adaptive circuit for the :math:`\text{H}_3^+` cation.
 
     >>> import pennylane as qml
     >>> from pennylane import numpy as np
@@ -103,36 +102,35 @@ class AdaptiveOptimizer:
     ...     if gradient < 1e-3:
     ...         break
 
-    ```pycon
-    Energy: -1.2613705937615631
-    0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
-    Gradient max: 0.14399872776724146
+    .. code-block :: pycon
 
-    Energy: -1.2743941385501283
-    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
-    Gradient max: 0.13493495624216287
+        Energy: -1.2613705937615631
+        0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
+        1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+        2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+        3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+        4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+        5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
+        Gradient max: 0.14399872776724146
 
-    Energy: -1.2743974223749222
-    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)───────────┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(-0.00)─┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────├G²(0.19)─│─────────┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(-0.00)─┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)─────────────────────┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)─────────────────────┤ ╰<𝓗>
-    Gradient max: 0.0004084175685509349
+        Energy: -1.2743941385501283
+        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+        2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
+        3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
+        4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
+        5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
+        Gradient max: 0.13493495624216287
+
+        Energy: -1.2743974223749222
+        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)───────────┤ ╭<𝓗>
+        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(-0.00)─┤ ├<𝓗>
+        2: ─├BasisState(M0)─│─────────├G²(0.19)─│─────────┤ ├<𝓗>
+        3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(-0.00)─┤ ├<𝓗>
+        4: ─├BasisState(M0)─├G²(0.20)─────────────────────┤ ├<𝓗>
+        5: ─╰BasisState(M0)─╰G²(0.20)─────────────────────┤ ╰<𝓗>
+        Gradient max: 0.0004084175685509349
     ```
-
-
     """
 
     def __init__(self, paramopt_steps=10):
