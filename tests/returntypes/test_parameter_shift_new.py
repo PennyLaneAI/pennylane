@@ -351,7 +351,7 @@ class TestParamShift:
         assert np.allclose(result[0][1], 0)
 
         assert isinstance(result[0][2], np.ndarray)
-        assert result[0][2].shape == (1,)
+        assert result[0][2].shape == ()
         assert np.allclose(result[0][2], 0)
 
         # Second elem

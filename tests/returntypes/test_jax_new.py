@@ -217,9 +217,13 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
-                0
-            ][0]
+            return execute(
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                cache=cache,
+                interface=interface,
+            )[0]
 
         custom_cache = {}
         params = jnp.array([0.1, 0.2])

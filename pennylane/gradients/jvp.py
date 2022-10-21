@@ -51,7 +51,6 @@ def compute_jvp_single(tangent, jac):
     else:
         # Single measurement with no dimension e.g. expval
         tangent = qml.math.stack(tangent)
-        print(jac)
         if jac[0].shape == ():
             jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, tangent, 1)
