@@ -540,7 +540,6 @@ class Hamiltonian(Observable):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-            print(coeffs, terms)
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):

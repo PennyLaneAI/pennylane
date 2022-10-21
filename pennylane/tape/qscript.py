@@ -69,7 +69,7 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 class QuantumScript:
-    """The state preparation, operations, and measurments that represent instructions for
+    """The state preparation, operations, and measurements that represent instructions for
     execution on a quantum device.
 
     Args:
@@ -79,7 +79,7 @@ class QuantumScript:
 
     Keyword Args:
         name (str): a name given to the quantum script
-        do_queue=False (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
+        do_queue=False (bool): Whether or not to queue. Defaults to ``False`` for ``QuantumScript``.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -91,7 +91,7 @@ class QuantumScript:
 
         from pennylane.tape import QuantumScript
 
-        prep = [qml.BasisState([1,1], wires=(0,1))]
+        prep = [qml.BasisState(np.array([1,1]), wires=(0,"a"))]
 
         ops = [qml.RX(0.432, 0),
                qml.RY(0.543, 0),
@@ -101,13 +101,15 @@ class QuantumScript:
         qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], prep)
 
     >>> list(qscript)
-    [RX(0.432, wires=[0]),
+    [BasisState(array([1, 1]), wires=[0, "a"]),
+    RX(0.432, wires=[0]),
     RY(0.543, wires=[0]),
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a']),
     expval(PauliZ(wires=[0]))]
     >>> qscript.operations
-    [RX(0.432, wires=[0]),
+    [BasisState(array([1, 1]), wires=[0, "a"]),
+    RX(0.432, wires=[0]),
     RY(0.543, wires=[0]),
     CNOT(wires=[0, 'a']),
     RX(0.133, wires=['a'])]
@@ -118,6 +120,7 @@ class QuantumScript:
 
     >>> for op in qscript:
     ...     print(op)
+    BasisState(array([1, 1]), wires=[0, "a"])
     RX(0.432, wires=[0])
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
@@ -127,9 +130,9 @@ class QuantumScript:
     Quantum scripts also support indexing and length determination:
 
     >>> qscript[0]
-    RX(0.432, wires=[0])
+    BasisState(array([1, 1]), wires=[0, "a"])
     >>> len(qscript)
-    5
+    6
 
     Once constructed, the script can be executed directly on a quantum device
     using the :func:`~.pennylane.execute` function:
@@ -376,7 +379,7 @@ class QuantumScript:
         """Update the parameter information dictionary.
 
         Sets:
-            _par_info (dict): Parameter information dictionary
+            _par_info (list): Parameter information dictionary
         """
         self._par_info = []
         for op in self.operations:
