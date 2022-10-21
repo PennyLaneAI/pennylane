@@ -14,13 +14,24 @@
 """Unit Tests for the PauliWord and PauliSentence classes"""
 import pytest
 
-# import numpy as np
-# from scipy import sparse
+import numpy as np
+from scipy import sparse
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
+
+
+matI = np.eye(2)
+matX = np.array([[0, 1], [1, 0]])
+matY = np.array([[0, -1j], [1j, 0]])
+matZ = np.array([[1, 0], [0, -1]])
+
+sparse_matI = sparse.eye(2, format="csr")
+sparse_matX = sparse.csr_matrix([[0, 1], [1, 0]])
+sparse_matY = sparse.csr_matrix([[0, -1j], [1j, 0]])
+sparse_matZ = sparse.csr_matrix([[1, 0], [0, -1]])
 
 pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({"a": X, "b": X, "c": Z})
-pw3 = PauliWord({0: Z, "b": Z})
+pw3 = PauliWord({0: Z, "b": Z, "c": Z})
 pw4 = PauliWord({})
 
 
@@ -48,24 +59,60 @@ class TestPauliWord:
         assert pw1.__hash__() == pw3.__hash__()
         assert pw1.__hash__() != pw4.__hash__()
 
-    tup_pws_wires = ((pw1, {0, 1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b"}), (pw4, set()))
+    tup_pws_wires = ((pw1, {0, 1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b", "c"}), (pw4, set()))
 
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
         """Test that the wires are tracked correctly."""
         assert pw.wires == wires
 
-    def test_mul(self):
-        assert True
+    tup_pws_mult = (
+        (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
+        (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
+        (pw2, pw3, PauliWord({"a": X, "b": Y, 0: Z}), -1.0j),
+        (pw3, pw4, pw3, 1.0)
+    )
 
-    def test_to_mat(self):
-        assert True
+    @pytest.mark.parametrize("pw1, pw2, result_pw, coeff", tup_pws_mult)
+    def test_mul(self, pw1, pw2, result_pw, coeff):
+        assert pw1 * pw2 == (result_pw, coeff)
 
-    def test_to_mat_wire_order(self):
-        assert True
+    tup_pws_mat = (
+        (pw1, np.kron(np.kron(matI, matX), matY)),
+        (pw2, np.kron(np.kron(matX, matX), matZ)),
+        (pw3, np.kron(np.kron(matZ, matZ), matZ)),
+    )
 
-    def test_to_mat_sparse(self):
-        assert True
+    @pytest.mark.parametrize("pw, true_matrix", tup_pws_mat)
+    def test_to_mat(self, pw, true_matrix):
+        """Test that the correct matrix is generated for the PauliWord."""
+        assert np.allclose(pw.to_mat(), true_matrix)
+
+    tup_pws_mat_wire = (
+        (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
+        (pw2, ["c", "b", "a"], np.kron(np.kron(matZ, matX), matX)),
+        (pw3, None, np.kron(np.kron(matZ, matZ), matZ)),
+    )
+
+    def test_to_mat_error(self):
+        """Test that an appropriate error is raised when an empty
+        PauliWord is cast to matrix."""
+        with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
+            pw4.to_mat()
+
+    @pytest.mark.parametrize("pw, wire_order, true_matrix", tup_pws_mat_wire)
+    def test_to_mat_wire_order(self, pw, wire_order, true_matrix):
+        """Test that the wire_order is correctly incorporated in computing the
+        matrix representation."""
+        assert np.allclose(pw.to_mat(wire_order=wire_order), true_matrix)
+
+    @pytest.mark.parametrize("pw, dense_matrix", tup_pws_mat)
+    def test_to_mat_format(self, pw, dense_matrix):
+        """Test that the correct type of matrix is returned given the
+        format kwarg."""
+        sparse_mat = pw.to_mat(format="csr")
+        assert sparse.issparse(sparse_mat)
+        assert np.allclose(sparse_mat.toarray(), dense_matrix)
 
 
 class TestPauliSentence:
@@ -83,7 +130,7 @@ class TestPauliSentence:
         pw = PauliWord({0: X})
         ps = PauliSentence({pw: 1.0})
 
-        new_pw = {"a": Z}
+        new_pw = PauliWord({"a": Z})
         assert new_pw not in ps.keys()
 
         ps[new_pw] = 3.45

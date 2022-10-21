@@ -102,12 +102,12 @@ class PauliWord(dict):
             result(PauliWord): The resulting operator of the multiplication
             coeff(complex): The complex phase factor
         """
-        result, iterator = (dict(self), other) if len(self) > len(other) else (dict(other), self)
+        result, iterator, swapped = (dict(self), other, False) if len(self) > len(other) else (dict(other), self, True)
         coeff = 1
 
         for wire, term in iterator.items():
             if wire in result:
-                factor, new_op = mul_map[result[wire]][term]
+                factor, new_op = mul_map[result[wire]][term] if not swapped else mul_map[term][result[wire]]
                 if new_op == I:
                     del result[wire]
                 else:
@@ -133,10 +133,16 @@ class PauliWord(dict):
 
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauliword
+
+        Raises:
+            ValueError: Can't get the matrix of an empty PauliWord.
         """
+        if len(self) == 0:
+            raise ValueError("Can't get the matrix of an empty PauliWord.")
+
         matrix_map = sparse_mat_map if format != "dense" else mat_map
         if wire_order is None:
-            wire_order = self.wires
+            wire_order = list(self.wires)
 
         initial_wire = wire_order[0]
         result_matrix = matrix_map[self[initial_wire]]
@@ -214,9 +220,15 @@ class PauliSentence(dict):
 
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the PauliSentence.
+
+        Rasies:
+            ValueError: Can't get the matrix of an empty PauliSentence.
         """
+        if len(self) == 0:
+            raise ValueError("Can't get the matrix of an empty PauliSentence.")
+
         if wire_order is None:
-            wire_order = self.wires
+            wire_order = list(self.wires)
 
         mats_and_wires_gen = (
             (coeff * pw.to_mat(format=format), pw.wires) for pw, coeff in self.items()
