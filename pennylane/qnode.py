@@ -213,7 +213,7 @@ class QNode:
             self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
-        self._tape = None
+        self._tape = QuantumTape(shots=device.shots)
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
@@ -512,6 +512,60 @@ class QNode:
     def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
+
+    @property
+    def shots(self):
+        """Number of circuit evaluations/random samples used to estimate
+        expectation values of observables"""
+        return self.tape.shots
+
+    @shots.setter
+    def shots(self, shots):
+        """Changes the number of shots.
+
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables
+
+        Raises:
+            ValueError: if number of shots is less than 1
+        """
+        self.tape.shots = shots
+
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence used by the device
+        when evaluating QNodes.
+
+        **Example**
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev.shots
+        57
+        >>> dev.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self.tape._shot_vector
+
+    def has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self.tape.has_partitioned_shots()
 
     qtape = tape  # for backwards compatibility
 
