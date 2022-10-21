@@ -49,6 +49,15 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
+  as `AnnotatedQueue`.
+  This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
+  should continue to rely on `QNode`s.
+  [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
+
+* The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
+  [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
+
 * `Adjoint` now supports batching if the base operation supports batching.
   [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
 
@@ -190,6 +199,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
+  informative error message when using devices that define a vector of shots.
+  [(#3180)](https://github.com/PennyLaneAI/pennylane/pull/3180)
+
 * Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
   [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
 
@@ -201,6 +214,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
   [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
+
+* Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
+  [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
 <h3>Contributors</h3>
 
