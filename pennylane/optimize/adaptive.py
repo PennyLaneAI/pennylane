@@ -42,7 +42,98 @@ def append_gate(tape, params, gates):
 
 
 class AdaptiveOptimizer:
-    """Adaptive optimizer."""
+    """Adaptive optimizer.
+
+    Quantum circuits can be built by adding gates
+    `adaptively <https://www.nature.com/articles/s41467-019-10988-2>`_. The adaptive optimizer
+    implements an algorithm that grows and optimizes an input quantum circuit by selecting and
+    adding gates from a user-defined collection of operators. The algorithm starts with adding all
+    the gates to the circuit and computing the circuit gradients with respect to the gate
+    parameters. The algorithm then retains the gate which has the largest gradient and optimizes its
+    parameter. The processes of growing the circuit is repeated until the computed gradients
+    converge within a given threshold. The adaptive optimizer can be used to implement algorithms
+    such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
+
+    Args:
+        tol (float): cutoff value determining the convergence of the gradients
+        paramopt_steps (float): number of steps for optimizing the parameter of a selected gate
+
+
+    **Examples:**
+
+    This examples shows an implementation of the
+    `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ algorithm for building an
+    adaptive circuit for the :math:`H_3^+` cation.
+
+    >>> import pennylane as qml
+    >>> from pennylane import numpy as np
+
+    The molecule is defined and the Hamiltonian is computed with:
+
+    >>> symbols = ["H", "H", "H"]
+    >>> geometry = np.array([[0.01076341, 0.04449877, 0.0],
+    ...                      [0.98729513, 1.63059094, 0.0],
+    ...                      [1.87262415, -0.00815842, 0.0]], requires_grad=False)
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
+
+    The collection of gates to grow the circuit adaptively contntains aa singles and doubles
+    excitations:
+
+    >>> n_electrons = 2
+    >>> singles, doubles = qml.qchem.excitations(active_electrons, qubits)
+    >>> operator_pool = doubles + singles  # collection of gates to build the circuit adaptively
+
+    An initial circuit preparing the Hartree-Fock state and returning the expectation value of the
+    Hamiltonian is defined:
+
+    >>> hf_state = qml.qchem.hf_state(n_electrons, qubits)
+    >>> dev = qml.device("default.qubit", wires=qubits)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.BasisState(hf_state, wires=range(qubits))
+    ... return qml.expval(H)
+
+    The optimizer is instantiated and the circuit is optimized adaptively:
+
+    >>> opt = AdaptiveOptimizer()
+    >>> params = np.zeros(len(pool))
+    >>> operator_pool = pool_gate(params, operator_pool)
+    >>> for i in range(len(operator_pool)):
+    ...     circuit, energy = opt.step_and_cost(circuit, pool)
+    ...     print('Energy:', energy)
+    ...     print(qml.draw(circuit)())
+    Energy: -1.2613705937766437
+    0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
+    1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+    2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+    3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+    4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+    5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
+
+    Energy: -1.2743941385511997
+    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+    2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
+    3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
+    4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
+    5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
+
+    Energy: -1.2743974238659665
+    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)───────────┤ ╭<𝓗>
+    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(-0.00)─┤ ├<𝓗>
+    2: ─├BasisState(M0)─│─────────├G²(0.19)─│─────────┤ ├<𝓗>
+    3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(-0.00)─┤ ├<𝓗>
+    4: ─├BasisState(M0)─├G²(0.20)─────────────────────┤ ├<𝓗>
+    5: ─╰BasisState(M0)─╰G²(0.20)─────────────────────┤ ╰<𝓗>
+
+    Energy: -1.2743976720399803
+    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)───────────╭G(0.00)─┤ ╭<𝓗>
+    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(-0.00)─│────────┤ ├<𝓗>
+    2: ─├BasisState(M0)─│─────────├G²(0.19)─│─────────│────────┤ ├<𝓗>
+    3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(-0.00)─│────────┤ ├<𝓗>
+    4: ─├BasisState(M0)─├G²(0.20)─────────────────────╰G(0.00)─┤ ├<𝓗>
+    5: ─╰BasisState(M0)─╰G²(0.20)──────────────────────────────┤ ╰<𝓗>
+    """
 
     def __init__(self, tol=1e-5, paramopt_steps=10):
         self.tol = tol
