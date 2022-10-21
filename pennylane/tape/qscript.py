@@ -18,12 +18,15 @@ executed by a device.
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
 import contextlib
-from collections import Counter, defaultdict
 import copy
+from collections import Counter, defaultdict, namedtuple
+from collections.abc import Sequence
 from typing import List
 
+import numpy as np
+
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
+from pennylane.measurements import AllCounts, Counts, Sample, Shadow, ShadowExpval
 from pennylane.operation import Operator
 
 _empty_wires = qml.wires.Wires([])
@@ -66,6 +69,61 @@ Note that QASM has two native gates:
 All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
+
+ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
+"""tuple[int, int]: Represents copies of a shot number."""
+
+
+def _process_shot_sequence(shot_list):
+    """Process the shot sequence, to determine the total
+    number of shots and the shot vector.
+
+    Args:
+        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
+
+    Returns:
+        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
+        of shots, as well as a list of shot tuples.
+
+    **Example**
+
+    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
+    >>> _process_shot_sequence(shot_list)
+    (57,
+     [ShotTuple(shots=3, copies=1),
+      ShotTuple(shots=1, copies=1),
+      ShotTuple(shots=2, copies=4),
+      ShotTuple(shots=6, copies=1),
+      ShotTuple(shots=1, copies=2),
+      ShotTuple(shots=5, copies=1),
+      ShotTuple(shots=12, copies=1),
+      ShotTuple(shots=10, copies=2)])
+
+    The total number of shots (57), and a sparse representation of the shot
+    sequence is returned, where tuples indicate the number of times a shot
+    integer is repeated.
+    """
+    if all(isinstance(s, int) for s in shot_list):
+
+        if len(set(shot_list)) == 1:
+            # All shots are identical, only require a single shot tuple
+            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
+        else:
+            # Iterate through the shots, and group consecutive identical shots
+            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
+            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
+
+    elif all(isinstance(s, (int, tuple)) for s in shot_list):
+        # shot list contains tuples; assume it is already in a sparse representation
+        shot_vector = [
+            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
+        ]
+
+    else:
+        raise ValueError(f"Unknown shot sequence format {shot_list}")
+
+    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
+    return total_shots, shot_vector
 
 
 class QuantumScript:
@@ -154,8 +212,11 @@ class QuantumScript:
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
+    def __init__(
+        self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True
+    ):  # pylint: disable=too-many-arguments
         self.name = name
+        self.shots = shots
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -1283,3 +1344,83 @@ class QuantumScript:
                 qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
+
+    @property
+    def shots(self):
+        """Number of circuit evaluations/random samples used to estimate
+        expectation values of observables"""
+        return self._shots
+
+    @shots.setter
+    def shots(self, shots):
+        """Changes the number of shots.
+
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables
+
+        Raises:
+            DeviceError: if number of shots is less than 1
+        """
+        if shots is None:
+            # device is in analytic mode
+            self._shots = shots
+            self._shot_vector = None
+            self._raw_shot_sequence = None
+
+        elif isinstance(shots, int):
+            # device is in sampling mode (unbatched)
+            if shots < 1:
+                raise ValueError(
+                    f"The specified number of shots needs to be at least 1. Got {shots}."
+                )
+
+            self._shots = shots
+            self._shot_vector = None
+
+        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # device is in batched sampling mode
+            self._shots, self._shot_vector = _process_shot_sequence(shots)
+            self._raw_shot_sequence = shots
+
+        else:
+            raise ValueError(
+                "Shots must be a single non-negative integer or a sequence of non-negative integers."
+            )
+
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence used by the device
+        when evaluating QNodes.
+
+        **Example**
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev.shots
+        57
+        >>> dev.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self._shot_vector
+
+    def _has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self._shot_vector is not None and (
+            len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
+        )
