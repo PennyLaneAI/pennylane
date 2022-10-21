@@ -78,7 +78,7 @@ pool = [
 )
 def test_step(circuit, energy_ref, pool):
     """Test that step function returns the correct cost."""
-    opt = qml.AdaptiveOptimizer(paramopt_steps=5)
+    opt = qml.AdaptiveOptimizer(paramopt_steps=10)
     circuit = opt.step(circuit, pool)
     energy = circuit()
     assert np.allclose(energy, energy_ref)
@@ -104,7 +104,7 @@ pool = [
 )
 def test_step_and_cost(circuit, energy_ref, pool):
     """Test that step function returns the correct cost."""
-    opt = qml.AdaptiveOptimizer(paramopt_steps=5)
+    opt = qml.AdaptiveOptimizer(paramopt_steps=10)
     for i in range(4):
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
     assert np.allclose(energy, energy_ref)

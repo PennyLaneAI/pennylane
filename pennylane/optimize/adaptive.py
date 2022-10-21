@@ -193,14 +193,16 @@ class AdaptiveOptimizer:
         qnode = qml.QNode(self._circuit, device)
         grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
-        selected_gate = [operator_pool[np.argmax(abs(grads))]]
+        selected_gates = [operator_pool[np.argmax(abs(grads))]]
         optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
-        params = np.zeros(1)
-        for n in range(10):
+        params = np.zeros(len(selected_gates))
+
+        for _ in range(self.paramopt_steps):
             params, _ = optimizer.step_and_cost(
-                qnode, params, gates=selected_gate, initial_circuit=circuit.func
+                qnode, params, gates=selected_gates, initial_circuit=circuit.func
             )
-        circuit = append_gate(params, selected_gate)(circuit.func)
+
+        circuit = append_gate(params, selected_gates)(circuit.func)
 
         qnode = qml.QNode(circuit, device)
 
