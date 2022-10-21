@@ -21,8 +21,8 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
-from collections.abc import Iterable
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -402,8 +402,7 @@ class MeasurementProcess:
         elif self.return_type == qml.measurements.Sample:
             if self.obs is not None:
                 shape = tuple(
-                    (shot_val,) if shot_val != 1 else tuple()
-                    for shot_val in device._raw_shot_sequence
+                    (shot_val,) if shot_val != 1 else tuple() for shot_val in device.raw_shots
                 )
             else:
                 # TODO: revisit when qml.sample without an observable fully
@@ -445,13 +444,12 @@ class MeasurementProcess:
         elif self.return_type == qml.measurements.Sample:
             if self.obs is not None:
                 shape = tuple(
-                    (shot_val,) if shot_val != 1 else tuple()
-                    for shot_val in device._raw_shot_sequence
+                    (shot_val,) if shot_val != 1 else tuple() for shot_val in device.raw_shots
                 )
             else:
                 shape = tuple(
                     (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
-                    for shot_val in device._raw_shot_sequence
+                    for shot_val in device.raw_shots
                 )
 
         elif self.return_type == qml.measurements.State:

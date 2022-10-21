@@ -44,7 +44,7 @@ def set_shots(device, shots):
         yield
         return
 
-    original_shots = device._raw_shot_sequence
+    original_shots = device.raw_shots
 
     try:
         if shots is not False and device.shots != shots:

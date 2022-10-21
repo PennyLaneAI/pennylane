@@ -246,7 +246,7 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
-        self._raw_shot_sequence = shots
+        self.raw_shots = shots
         if shots is None:
             # device is in analytic mode
             self._shots = shots

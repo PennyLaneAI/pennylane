@@ -213,7 +213,7 @@ class QNode:
             self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
-        self._tape = QuantumTape(shots=device._raw_shot_sequence)
+        self._tape = QuantumTape(shots=device.raw_shots)
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
