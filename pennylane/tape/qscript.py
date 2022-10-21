@@ -253,7 +253,7 @@ class QuantumScript:
             self._update()
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, shots={self.shots}, params={self.num_params}>"
 
     @property
     def hash(self):

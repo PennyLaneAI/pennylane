@@ -2125,7 +2125,7 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.QuantumTape(shots=shots) as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for m in measurements:
@@ -2181,7 +2181,7 @@ class TestOutputShape:
         b = np.array(0.2)
 
         num_samples = 3
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.QuantumTape(shots=shots) as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for i in range(num_samples):
@@ -2206,7 +2206,7 @@ class TestOutputShape:
         using a device with a shot vector."""
         dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.QuantumTape(shots=(1, 2, 3)) as tape:
             qml.probs(wires=[0])
             qml.probs(wires=[1, 2])
 

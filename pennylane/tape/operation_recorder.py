@@ -44,10 +44,17 @@ class OperationRecorder(QuantumTape):
     """
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, name=None, do_queue=False, _update=True
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        name=None,
+        do_queue=False,
+        _update=True,
     ):
         super().__init__(
-            ops, measurements, prep=prep, name=name, do_queue=do_queue, _update=_update
+            ops, measurements, prep=prep, shots=shots, name=name, do_queue=do_queue, _update=_update
         )
         self.ops = None
         self.obs = None
