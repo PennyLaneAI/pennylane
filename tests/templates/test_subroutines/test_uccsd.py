@@ -31,7 +31,7 @@ class TestDecomposition:
                 [],
                 np.array([3.815]),
                 [
-                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([0, 0, 0, 0, 1, 1])]],
+                    [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
                     [1, qml.RX, [0], [-np.pi / 2]],
                     [5, qml.RZ, [2], [1.9075]],
                     [6, qml.CNOT, [1, 2], []],
@@ -286,7 +286,7 @@ def circuit_template(weights):
         wires=range(4),
         s_wires=[[0, 1]],
         d_wires=[[[0, 1], [2, 3]]],
-        init_state=np.array([0, 0, 0, 1]),
+        init_state=np.array([1, 0, 0, 0]),
     )
     return qml.expval(qml.PauliZ(0))
 
