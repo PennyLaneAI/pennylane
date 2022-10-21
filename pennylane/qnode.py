@@ -515,9 +515,22 @@ class QNode:
 
     @property
     def shots(self):
-        """Number of circuit evaluations/random samples used to estimate
-        expectation values of observables"""
+        """Shots property.
+
+        Returns:
+            int: Number of circuit evaluations/random samples used to estimate
+                expectation values of observables.
+        """
         return self.tape.shots
+
+    @property
+    def raw_shots(self):
+        """Raw shots property.
+
+        Returns:
+            Union[int, Sequence]: raw shot sequence
+        """
+        return self.tape.raw_shots
 
     @shots.setter
     def shots(self, shots):
@@ -572,7 +585,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = QuantumTape(shots=self.shots)
+        self._tape = QuantumTape(shots=self.raw_shots)
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
