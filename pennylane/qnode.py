@@ -572,7 +572,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.QuantumTape()
+        self._tape = QuantumTape(shots=self.shots)
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
