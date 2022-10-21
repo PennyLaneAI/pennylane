@@ -961,6 +961,30 @@ class Operator(abc.ABC):
 
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
+    def has_decomposition_threshold(cls):
+        r"""Bool: Whether or not the Operator offers a threshold from computing the full matrix and
+        its decomposition as a product of other operators.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (
+            cls.has_matrix
+            and cls.has_decomposition
+            and (cls.decomposition_threshold != Operator.decomposition_threshold)
+        )
+
+    @property
+    def decomposition_threshold(self):
+        """Defines the threshold for automatic transition from computing the full matrix
+        and applying the operation decomposition.
+
+        Returns:
+            int or None: Number of wires marking the threshold, if defined, else ``None``.
+        """
+        return None
+
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
     def has_diagonalizing_gates(cls):
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 

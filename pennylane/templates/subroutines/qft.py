@@ -78,7 +78,11 @@ class QFT(Operation):
     @property
     def decomposition_threshold(self):
         """Defines the threshold for automatic transition from computing the full matrix
-        and applying the operation decomposition, if defined."""
+        and applying the operation decomposition.
+
+        Returns:
+            int or None: Number of wires marking the threshold, if defined, else ``None``.
+        """
         return 6
 
     @staticmethod
