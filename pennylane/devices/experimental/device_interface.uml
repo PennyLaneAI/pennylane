@@ -86,9 +86,9 @@ package RuntimeManager <<Folder>> {
 
     class FnType <<Enum>>{
         PREPROCESS
-        PREPROCESS_TRACED
+        'PREPROCESS_TRACED
         EXECUTE
-        POSTPROCESS_TRACED
+        'POSTPROCESS_TRACED
         POSTPROCESS
         GRADIENT
         VJP

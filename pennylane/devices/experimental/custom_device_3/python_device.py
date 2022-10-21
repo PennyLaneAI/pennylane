@@ -1,5 +1,5 @@
-from .device_interface import *
-from .python_simulator import *
+from ..device_interface import *
+from .python_device_driver import *
 
 class TestDevicePythonSim(AbstractDevice):
     "Device containing a Python simulator favouring composition-like interface"

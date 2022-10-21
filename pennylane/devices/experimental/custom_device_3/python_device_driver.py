@@ -4,6 +4,7 @@ from pennylane.tape import QuantumScript
 
 import numpy as np
 
+from ..device_interface.abstract_device_driver import AbstractDeviceDriver
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -14,7 +15,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-class PlainNumpySimulator:
+class PlainNumpySimulator(AbstractDeviceDriver):
     """
 
     Current Restrictions:

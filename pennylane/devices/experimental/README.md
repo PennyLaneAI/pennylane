@@ -27,3 +27,15 @@ We have identified the following list of features that new and existing devices 
     * Return probabilities from given a `QuantumScript`.
 * NOTE: Additional features to follow following updates with recent merges modernizations
 
+## Static class diagram (WIP)
+
+![High-level class diagrams and expected interfaces](device_interface_nolink_c4.png)
+
+## Custom device tests
+
+To adhere to a modular design principle, different aspects of the execution pipeline are maintained in seaprate directories, with an aim to follow the above class diagram as closely as possible to aid rather than hinder progress:
+
+* `device_interface`: All functionality to build a given device plugin that interacts with PennyLane follows from the structures here.
+* `runtime_manager`: Functionality to build hybrid computation pipelines (pre-,post- and quantum executions) live here.
+
+As a bare demonstrator of plugin-building with the new functions we have defined several devices, under the `custom_device_x` directories.

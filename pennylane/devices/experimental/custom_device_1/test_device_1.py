@@ -1,4 +1,4 @@
-from .device_interface import *
+from ..device_interface import *
 
 class TestDeviceBare(AbstractDevice):
     "Naive derived class with no provided methods."

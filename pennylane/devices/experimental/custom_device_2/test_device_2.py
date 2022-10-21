@@ -1,9 +1,12 @@
-from .device_interface import *
+import pennylane
+from ..device_interface import *
+
+from pennylane.tape.qscript import QuantumScript
 
 class TestDeviceDefault(AbstractDevice):
     "Class with bare device methods"
 
-    def gradient(self, qscript: qml.tape.QuantumScript, order=1):
+    def gradient(self, qscript: QuantumScript, order=1):
         return f"Hello from gradient order {order} with arg: {qscript}"
     
     def vjp(self, qscript: QuantumScript):
