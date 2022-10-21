@@ -15,7 +15,7 @@
 This module defines the QuantumScript object responsible for storing quantum operations and measurements to be
 executed by a device.
 """
-# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods, too-many-arguments
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-public-methods,too-many-arguments
 
 import contextlib
 import copy
