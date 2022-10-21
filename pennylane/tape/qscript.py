@@ -1362,11 +1362,11 @@ class QuantumScript:
         Raises:
             DeviceError: if number of shots is less than 1
         """
+        self.raw_shots = shots
         if shots is None:
             # device is in analytic mode
             self._shots = shots
             self._shot_vector = None
-            self._raw_shot_sequence = None
 
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
@@ -1381,7 +1381,6 @@ class QuantumScript:
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
-            self._raw_shot_sequence = shots
 
         else:
             raise ValueError(
@@ -1415,7 +1414,7 @@ class QuantumScript:
         """
         return self._shot_vector
 
-    def _has_partitioned_shots(self):
+    def has_partitioned_shots(self):
         """Checks if the device was instructed to perform executions with partitioned shots.
 
         Returns:
