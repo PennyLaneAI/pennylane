@@ -1344,9 +1344,11 @@ class QuantumScript:
     @shots.setter
     def shots(self, shots):
         """Changes the number of shots.
+
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
                 expectation values of observables
+
         Raises:
             ValueError: if number of shots is less than 1
         """
@@ -1379,9 +1381,13 @@ class QuantumScript:
 
     @property
     def shot_vector(self):
-        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
-        representation of the shot sequence.
+        """Returns a sparse representation of the shot sequence.
+
+        Returns:
+            list[.ShotTuple[int, int]]: sparse representation of the shot sequence
+
         **Example**
+
         >>> tape = QuantumTape(shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> tape.shots
         57
@@ -1394,6 +1400,7 @@ class QuantumScript:
          ShotTuple(shots=5, copies=1),
          ShotTuple(shots=12, copies=1),
          ShotTuple(shots=10, copies=2)]
+
         The sparse representation of the shot
         sequence is returned, where tuples indicate the number of times a shot
         integer is repeated.
@@ -1402,6 +1409,7 @@ class QuantumScript:
 
     def _has_partitioned_shots(self):
         """Checks if the quantum tape was instructed to perform executions with partitioned shots.
+
         Returns:
             bool: whether or not shots are partitioned
         """
@@ -1411,9 +1419,11 @@ class QuantumScript:
 
     def new_tape(self, shots: int = False, **kwargs):
         """Create a new quantum tape.
+
         Args:
             shots (int): number of circuit evaluations/random samples used to estimate
                 expectation values of observables. If None ``self.shots`` is used. Defaults to None.
+
         Returns:
             .QuantumTape: new quantum tape
         """
