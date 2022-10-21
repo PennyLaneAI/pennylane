@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adaptive optimizer"""
-
+# pylint: disable= no-value-for-parameter
 import pennylane as qml
 
 from pennylane import numpy as np
@@ -76,8 +76,8 @@ class AdaptiveOptimizer:
     excitations:
 
     >>> n_electrons = 2
-    >>> singles, doubles = qml.qchem.excitations(active_electrons, qubits)
-    >>> operator_pool = doubles + singles  # collection of gates to build the circuit adaptively
+    >>> singles, doubles = qml.qchem.excitations(n_electrons, qubits)
+    >>> operator_pool = doubles + singles
 
     An initial circuit preparing the Hartree-Fock state and returning the expectation value of the
     Hamiltonian is defined:
@@ -87,54 +87,59 @@ class AdaptiveOptimizer:
     >>> @qml.qnode(dev)
     ... def circuit():
     ...     qml.BasisState(hf_state, wires=range(qubits))
-    ... return qml.expval(H)
+    ...     return qml.expval(H)
 
     The optimizer is instantiated and the circuit is optimized adaptively:
 
     >>> opt = AdaptiveOptimizer()
-    >>> params = np.zeros(len(pool))
+    >>> params = np.zeros(len(operator_pool))
     >>> operator_pool = pool_gate(params, operator_pool)
     >>> for i in range(len(operator_pool)):
-    ...     circuit, energy = opt.step_and_cost(circuit, operator_pool)
+    ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
     ...     print('Energy:', energy)
     ...     print(qml.draw(circuit)())
-    Energy: -1.2613705937766437
+    ...     print('Gradient max:', gradient)
+    ...     print()
+    ...     if gradient < 1e-3:
+    ...         break
+
+    ```pycon
+    Energy: -1.2613705937615631
     0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
     1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
     2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
     3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
     4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
     5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
+    Gradient max: 0.14399872776724146
 
-    Energy: -1.2743941385511997
+    Energy: -1.2743941385501283
     0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
     1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
     2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
     3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
     4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
     5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
+    Gradient max: 0.13493495624216287
 
-    Energy: -1.2743974238659665
+    Energy: -1.2743974223749222
     0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)───────────┤ ╭<𝓗>
     1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(-0.00)─┤ ├<𝓗>
     2: ─├BasisState(M0)─│─────────├G²(0.19)─│─────────┤ ├<𝓗>
     3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(-0.00)─┤ ├<𝓗>
     4: ─├BasisState(M0)─├G²(0.20)─────────────────────┤ ├<𝓗>
     5: ─╰BasisState(M0)─╰G²(0.20)─────────────────────┤ ╰<𝓗>
+    Gradient max: 0.0004084175685509349
+    ```
 
-    Energy: -1.2743976720399803
-    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)───────────╭G(0.00)─┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(-0.00)─│────────┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────├G²(0.19)─│─────────│────────┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(-0.00)─│────────┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)─────────────────────╰G(0.00)─┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)──────────────────────────────┤ ╰<𝓗>
+
     """
 
     def __init__(self, paramopt_steps=10):
         self.paramopt_steps = paramopt_steps
 
-    def _circuit(self, params, gates, initial_circuit):
+    @staticmethod
+    def _circuit(params, gates, initial_circuit):
         """Append parameterized gates to an existing circuit.
 
         Args:
