@@ -634,23 +634,22 @@ class QNode:
                 **self.execute_kwargs,
             )
 
-            new_interface = self.interface
-
-            if old_interface == "auto":
-                self.interface = "auto"
-
             res = res[0]
-
-            # Special case of single Measurement in a list
-            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
-                return [res]
 
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
-            ) and new_interface in ("tf", "autograd"):
+            ) and self.interface in ("tf", "autograd"):
                 backprop = any(qml.math.in_backprop(x) for x in res)
+
+            if old_interface == "auto":
+                self.interface = "auto"
+
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
+
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 
