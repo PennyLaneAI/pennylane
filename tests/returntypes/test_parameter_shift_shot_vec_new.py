@@ -861,8 +861,8 @@ class TestParameterShiftRule:
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
-        shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit.autograd", wires=2, shots=shot_vec)
+        shot_vec = tuple([1000000] * 4)
+        dev = qml.device("default.qubit.autograd", wires=3, shots=shot_vec)
         x = 0.543
         y = -0.654
 
@@ -878,6 +878,7 @@ class TestParameterShiftRule:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
+                qml.expval(qml.PauliZ(2))
 
             tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff, shots=shot_vec)
             assert len(tapes) == 5
@@ -889,24 +890,21 @@ class TestParameterShiftRule:
             return fn(dev.batch_execute(tapes))
 
         all_res = cost_fn(params)
-        print(all_res)
 
+        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)], [0, 0]])
         for res in all_res:
             assert isinstance(res, tuple)
+            assert len(res) == 3
 
-            assert len(res) == 2
+            for r in res:
+                assert isinstance(r, tuple)
+                assert len(r) == 2
 
-            assert isinstance(res[0], tuple)
-            assert len(res[0]) == 2
-            assert isinstance(res[0][0], np.ndarray)
-            assert res[0][0].shape == ()
-            assert isinstance(res[0][1], np.ndarray)
-            assert res[0][1].shape == ()
+                assert isinstance(r[0], np.ndarray)
+                assert r[0].shape == ()
+                assert isinstance(r[1], np.ndarray)
+                assert r[1].shape == ()
 
-            assert isinstance(res[1], tuple)
-            assert len(res[1]) == 2
-
-            expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
             assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
 
             # TODO: support Hessian with the new return types

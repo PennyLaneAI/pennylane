@@ -1472,10 +1472,7 @@ def _param_shift_new(
 
     if unsupported_params:
 
-        def _single_grad(results):
-            unsupported_grads = fallback_proc_fn(results[:fallback_len])
-            supported_grads = fn(results[fallback_len:])
-
+        def _single_grad(unsupported_grads, supported_grads):
             multi_measure = len(tape.measurements) > 1
             if not multi_measure:
                 res = []
@@ -1499,13 +1496,31 @@ def _param_shift_new(
         # the quantum results separately, once for the fallback
         # function and once for the parameter-shift rule, and recombine.
         def processing_fn(results):
+            num_params = len(tape.trainable_params)
+
+            unsupported_grads = results[:fallback_len]
+            supported_grads = results[fallback_len:]
+
             shot_vector = isinstance(shots, Sequence)
             if not shot_vector:
-                return _single_grad(results)
+                unsupported_grads = fallback_proc_fn(unsupported_grads)
+                supported_grads = fn(supported_grads)
+                return _single_grad(unsupported_grads, supported_grads)
+
+            num_shot_vec_components = len(shots) if shot_vector else None
+            num_measurements = len(tape.measurements)
+            multi_measure = num_measurements > 1
+
+            unsupported_grads = fallback_proc_fn(unsupported_grads)
+            supported_grads = fn(supported_grads)
+            print(unsupported_grads, supported_grads)
 
             final_grad = []
-            for res in results:
-                final_grad.append(_single_grad(res))
+            # for unsup_grad, sup_grad in zip(unsupported_grads, supported_grads):
+            for idx in range(num_shot_vec_components):
+                unsup = [u[idx] for u in unsupported_grads]
+                sup = [s[idx] for s in supported_grads]
+                final_grad.append(_single_grad(unsup, sup))
             return tuple(final_grad)
 
         return gradient_tapes, processing_fn
