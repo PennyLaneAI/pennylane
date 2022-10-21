@@ -174,7 +174,7 @@ def _all_zero_grad_new(tape):
         if m.return_type is qml.measurements.Probability:
             dim = 2 ** len(m.wires)
         else:
-            dim = 1
+            dim = ()
 
         sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
         sub_list_zeros = tuple(sub_list_zeros)

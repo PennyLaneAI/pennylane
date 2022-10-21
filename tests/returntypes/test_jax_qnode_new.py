@@ -632,8 +632,6 @@ class TestVectorValuedQNode:
 
 # TODO: add jit tests
 # "jax-jit"
-
-
 @pytest.mark.parametrize("interface", ["jax-python"])
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
