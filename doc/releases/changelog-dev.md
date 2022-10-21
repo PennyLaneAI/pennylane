@@ -27,24 +27,25 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
-                                generators, paulixops, paulix_sector, wire_order=H.wires)
-    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
-    ```
+    >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+    ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    >>> tap_op(3.14159)
+    [Exp(1.570795j, 'PauliY', wires=[0])]
+  ```
 
-  When used within a QNode, this method applies the tapered operation directly:
+  Moreover, the obtained tapered operation can be directly used within a QNode:
 
   ```pycon
     >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
     ... def circuit(params):
-    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
-    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     tap_op(params[0])
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
-        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
+        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
+        1: ───────────────────────┤ ╰<Z@Z>
+
   ```
 
 <h3>Improvements</h3>
