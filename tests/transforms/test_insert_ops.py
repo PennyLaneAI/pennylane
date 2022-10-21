@@ -472,7 +472,7 @@ def test_insert_template():
     assert np.allclose(f1(w1, w2), f2(w1, w2))
 
 
-def test_insert_decorator_doesnt_cause_deque_error():
+def test_insert_decorator_doesnt_cause_index_error():
     """Test that the insert transform catches and reports errors from the enclosed function."""
 
     def noise(noise_param, wires):
@@ -489,10 +489,8 @@ def test_insert_decorator_doesnt_cause_deque_error():
         qml.T(wires=0)
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    try:
+    # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
+    with pytest.raises(Exception) as e:
         noisy_circuit(0.4)
-        assert False
-    except Exception as e:
-        # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
-        assert not isinstance(e, IndexError)
-        assert isinstance(e, qml.QuantumFunctionError)
+    assert e.type != IndexError
+    assert e.type == qml.QuantumFunctionError
