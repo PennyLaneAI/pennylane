@@ -25,22 +25,17 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -251,11 +246,11 @@ class Device(abc.ABC):
         Raises:
             DeviceError: if number of shots is less than 1
         """
+        self._raw_shot_sequence = shots
         if shots is None:
             # device is in analytic mode
             self._shots = shots
             self._shot_vector = None
-            self._raw_shot_sequence = None
 
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
@@ -270,7 +265,6 @@ class Device(abc.ABC):
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
-            self._raw_shot_sequence = shots
 
         else:
             raise DeviceError(

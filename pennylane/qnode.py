@@ -213,7 +213,7 @@ class QNode:
             self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
-        self._tape = QuantumTape(shots=device.shots)
+        self._tape = QuantumTape(shots=device._raw_shot_sequence)
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
@@ -226,10 +226,11 @@ class QNode:
 
     def __repr__(self):
         """String representation."""
-        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        detail = "<QNode: wires={}, device='{}', shots='{}', interface='{}', diff_method='{}'>"
         return detail.format(
             self.device.num_wires,
             self.device.short_name,
+            self.shots,
             self.interface,
             self.diff_method,
         )
@@ -698,7 +699,7 @@ class QNode:
                 not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
                 and not backprop
             ):
-                if self.device._shot_vector:
+                if self.shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
 
