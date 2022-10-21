@@ -29,7 +29,7 @@ We have identified the following list of features that new and existing devices 
 
 ## Static class diagram (WIP)
 
-![High-level class diagrams and expected interfaces](device_interface_nolink_c4.png)
+![High-level class diagrams and expected interfaces](device_interface_nolink.png)
 
 ## Custom device tests
 
