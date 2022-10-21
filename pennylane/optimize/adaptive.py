@@ -88,7 +88,7 @@ class AdaptiveOptimizer:
     ...     qml.BasisState(hf_state, wires=range(qubits))
     ...     return qml.expval(H)
 
-    The optimizer is instantiated and the circuit is optimized adaptively:
+    The optimizer is instantiated and the circuit is created and optimized adaptively:
 
     >>> opt = AdaptiveOptimizer()
     >>> params = np.zeros(len(operator_pool))
@@ -130,7 +130,6 @@ class AdaptiveOptimizer:
         4: ─├BasisState(M0)─├G²(0.20)─────────────────────┤ ├<𝓗>
         5: ─╰BasisState(M0)─╰G²(0.20)─────────────────────┤ ╰<𝓗>
         Gradient max: 0.0004084175685509349
-    ```
     """
 
     def __init__(self, paramopt_steps=10):
