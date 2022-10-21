@@ -1406,3 +1406,15 @@ class QuantumScript:
         return self._shot_vector is not None and (
             len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
         )
+
+    def new_tape(self, shots: int = False, **kwargs):
+        """Create a new quantum tape.
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables. If None ``self.shots`` is used. Defaults to None.
+        Returns:
+            .QuantumTape: new quantum tape
+        """
+        if shots is False:
+            shots = self._raw_shot_sequence
+        return self.__class__(shots=shots, **kwargs)
