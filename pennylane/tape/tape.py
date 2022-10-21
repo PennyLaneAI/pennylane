@@ -17,7 +17,7 @@ This module contains the base quantum tape.
 import contextlib
 import copy
 
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods,too-many-arguments
 from threading import RLock
 from warnings import warn
 
