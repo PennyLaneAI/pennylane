@@ -167,7 +167,6 @@ class RemoteDataset(Dataset):
             self._fullfile = None
 
         for f in glob(self._folder + "/*.dat"):
-            print(f)
             data = self._read_file(f)
             for attr, value in data.items():
                 setattr(self, f"{attr}", value)
@@ -185,7 +184,9 @@ class RemoteDataset(Dataset):
         filepath = self.__get_filename_for_attribute(name)
         if os.path.exists(filepath):
             # TODO: setattr?
-            return self._read_file(filepath)[name]
+            filedata = self._read_file(filepath)
+            if name in filedata:
+                return filedata[name]
         # TODO: download the file here?
         raise AttributeError(
             f"'Dataset' object has no attribute {name} and no matching file was found"
