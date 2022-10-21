@@ -27,9 +27,6 @@ def append_gate(tape, params, gates):
         params (array[float]): parameters of the gates to be added
         gates (list[Operator]): list of the gates to be added
     """
-    if len(params) == 1:
-        gates = [gates]
-
     for o in tape.operations:
         qml.apply(o)
 
@@ -55,7 +52,6 @@ class AdaptiveOptimizer:
     such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
     Args:
-        tol (float): cutoff value determining the convergence of the gradients
         paramopt_steps (float): number of steps for optimizing the parameter of a selected gate
 
 
@@ -99,7 +95,7 @@ class AdaptiveOptimizer:
     >>> params = np.zeros(len(pool))
     >>> operator_pool = pool_gate(params, operator_pool)
     >>> for i in range(len(operator_pool)):
-    ...     circuit, energy = opt.step_and_cost(circuit, pool)
+    ...     circuit, energy = opt.step_and_cost(circuit, operator_pool)
     ...     print('Energy:', energy)
     ...     print(qml.draw(circuit)())
     Energy: -1.2613705937766437
@@ -135,8 +131,7 @@ class AdaptiveOptimizer:
     5: ─╰BasisState(M0)─╰G²(0.20)──────────────────────────────┤ ╰<𝓗>
     """
 
-    def __init__(self, tol=1e-5, paramopt_steps=10):
-        self.tol = tol
+    def __init__(self, paramopt_steps=10):
         self.paramopt_steps = paramopt_steps
 
     def _circuit(self, params, gates, initial_circuit):
@@ -154,26 +149,26 @@ class AdaptiveOptimizer:
 
         return final_circuit()
 
-    def step(self, circuit, pool):
+    def step(self, circuit, operator_pool):
         r"""Update the circuit with one step of the optimizer.
 
         Args:
             circuit (.QNode): user defined circuit returning an expectation value
-            pool (list[Operator]): list of the gates to be used for adaptive optimization
+            operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
 
         Returns:
            .QNode: the optimized circuit
         """
-        return self.step_and_cost(circuit, pool)[0]
+        return self.step_and_cost(circuit, operator_pool)[0]
 
-    def step_and_cost(self, circuit, pool, drain_pool=False):
+    def step_and_cost(self, circuit, operator_pool, drain_pool=False):
         r"""Update the circuit with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
         Args:
             circuit (.QNode): user defined circuit returning an expectation value
-            pool (list[Operator]): list of the gates to be used for adaptive optimization
-            drain_pool (bool): flag to remove selected gates from the pool
+            operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
+            drain_pool (bool): flag to remove selected gates from the operator_pool
 
         Returns:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
@@ -185,27 +180,26 @@ class AdaptiveOptimizer:
         if drain_pool:
             repeated_gates = [
                 gate
-                for gate in pool
+                for gate in operator_pool
                 for operation in circuit.tape.operations
                 if qml.equal(gate, operation, rtol=float("inf"))
             ]
             for gate in repeated_gates:
-                pool.remove(gate)
+                operator_pool.remove(gate)
 
-        params = np.array([gate.parameters[0] for gate in pool], requires_grad=True)
+        params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode = qml.QNode(self._circuit, device)
-        grads = qml.grad(qnode)(params, gates=pool, initial_circuit=circuit.func)
+        grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
-        if np.max(abs(grads)) > self.tol:
-            selected_gate = pool[np.argmax(abs(grads))]
-            optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
-            params = np.zeros(1)
-            for n in range(10):
-                params, cost = optimizer.step_and_cost(
-                    qnode, params, gates=selected_gate, initial_circuit=circuit.func
-                )
-            circuit = append_gate(params, selected_gate)(circuit.func)
+        selected_gate = [operator_pool[np.argmax(abs(grads))]]
+        optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
+        params = np.zeros(1)
+        for n in range(10):
+            params, cost = optimizer.step_and_cost(
+                qnode, params, gates=selected_gate, initial_circuit=circuit.func
+            )
+        circuit = append_gate(params, selected_gate)(circuit.func)
 
         qnode = qml.QNode(circuit, device)
 
-        return qnode, cost
+        return qnode, cost, max(abs(qml.math.toarray(grads)))

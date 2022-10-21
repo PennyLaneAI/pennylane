@@ -61,8 +61,8 @@ energy_h3p = -1.274397672040264
 def test_step_and_cost(circuit, energy_ref, pool):
     opt = qml.AdaptiveOptimizer(paramopt_steps=5)
 
-    for i in range(len(pool)):
-        circuit, energy = opt.step_and_cost(circuit, pool, drain_pool=True)
+    for i in range(4):
+        circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
 
     assert np.allclose(energy, energy_ref)
 
