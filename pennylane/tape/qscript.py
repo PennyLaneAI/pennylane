@@ -15,15 +15,25 @@
 This module defines the QuantumScript object responsible for storing quantum operations and measurements to be
 executed by a device.
 """
-# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
+# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods, too-many-arguments
 
 import contextlib
-from collections import Counter, defaultdict
 import copy
+from collections import Counter, defaultdict, namedtuple
+from collections.abc import Sequence
 from typing import List
 
+import numpy as np
+
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
+from pennylane.measurements import (
+    AllCounts,
+    Counts,
+    MeasurementProcess,
+    Sample,
+    Shadow,
+    ShadowExpval,
+)
 from pennylane.operation import Operator
 
 _empty_wires = qml.wires.Wires([])
@@ -66,6 +76,61 @@ Note that QASM has two native gates:
 All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
+
+ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
+"""tuple[int, int]: Represents copies of a shot number."""
+
+
+def _process_shot_sequence(shot_list):
+    """Process the shot sequence, to determine the total
+    number of shots and the shot vector.
+
+    Args:
+        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
+
+    Returns:
+        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
+        of shots, as well as a list of shot tuples.
+
+    **Example**
+
+    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
+    >>> _process_shot_sequence(shot_list)
+    (57,
+     [ShotTuple(shots=3, copies=1),
+      ShotTuple(shots=1, copies=1),
+      ShotTuple(shots=2, copies=4),
+      ShotTuple(shots=6, copies=1),
+      ShotTuple(shots=1, copies=2),
+      ShotTuple(shots=5, copies=1),
+      ShotTuple(shots=12, copies=1),
+      ShotTuple(shots=10, copies=2)])
+
+    The total number of shots (57), and a sparse representation of the shot
+    sequence is returned, where tuples indicate the number of times a shot
+    integer is repeated.
+    """
+    if all(isinstance(s, int) for s in shot_list):
+
+        if len(set(shot_list)) == 1:
+            # All shots are identical, only require a single shot tuple
+            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
+        else:
+            # Iterate through the shots, and group consecutive identical shots
+            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
+            shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
+
+    elif all(isinstance(s, (int, tuple)) for s in shot_list):
+        # shot list contains tuples; assume it is already in a sparse representation
+        shot_vector = [
+            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
+        ]
+
+    else:
+        raise ValueError(f"Unknown shot sequence format {shot_list}")
+
+    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
+    return total_shots, shot_vector
 
 
 class QuantumScript:
@@ -154,8 +219,9 @@ class QuantumScript:
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
+    def __init__(self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True):
         self.name = name
+        self.shots = shots
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -275,7 +341,7 @@ class QuantumScript:
         # measurement processes rather than specific observables.
         obs = []
 
-        for m in self._measurements:
+        for m in self.measurements:
             if m.obs is not None:
                 m.obs.return_type = m.return_type
                 obs.append(m.obs)
@@ -285,7 +351,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self):
+    def measurements(self) -> List[MeasurementProcess]:
         """Returns the measurements on the quantum script.
 
         Returns:
@@ -673,23 +739,7 @@ class QuantumScript:
     # We can extract the private static methods to a new class later
     # ========================================================
 
-    @staticmethod
-    def _single_measurement_shape(measurement_process, device):
-        """Auxiliary function of shape that determines the output
-        shape of a quantum script with a single measurement.
-
-        Args:
-            measurement_process (MeasurementProcess): the measurement process
-                associated with the single measurement
-            device (~.Device): a PennyLane device
-
-        Returns:
-            tuple: output shape
-        """
-        return measurement_process.shape(device)
-
-    @staticmethod
-    def _multi_homogenous_measurement_shape(mps, device):
+    def _multi_homogenous_measurement_shape(self, device):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with multiple homogenous measurements.
 
@@ -714,14 +764,14 @@ class QuantumScript:
 
         # We know that there's one type of return_type, gather it from the
         # first one
+        mps = self.measurements
         ret_type = mps[0].return_type
         if ret_type == qml.measurements.State:
             raise ValueError(
                 "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
-        shot_vector = device._shot_vector
-        if shot_vector is None:
+        if self.shot_vector is None:
             if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
 
                 shape = (len(mps),)
@@ -750,12 +800,11 @@ class QuantumScript:
             # No other measurement type to check
 
         else:
-            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device)
+            shape = self._shape_shot_vector_multi_homogenous(device)
 
         return shape
 
-    @staticmethod
-    def _shape_shot_vector_multi_homogenous(mps, device):
+    def _shape_shot_vector_multi_homogenous(self, device):
         """Auxiliary function for determining the output shape of the quantum script for
         multiple homogenous measurements for a device with a shot vector.
 
@@ -764,28 +813,19 @@ class QuantumScript:
         """
         shape = tuple()
 
+        mps = self.measurements
         ret_type = mps[0].return_type
-        shot_vector = device._shot_vector
 
         # Shot vector was defined
         if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
-            num = sum(shottup.copies for shottup in shot_vector)
+            num = sum(shottup.copies for shottup in self.shot_vector)
             shape = (num, len(mps))
 
         elif ret_type == qml.measurements.Probability:
 
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
-            if same_num_wires:
-                # All probability measurements have the same number of
-                # wires, gather the length from the first one
-
-                len_wires = len(mps[0].wires)
-                dim = mps[0]._get_num_basis_states(len_wires, device)
-                shot_copies_sum = sum(s.copies for s in shot_vector)
-                shape = (shot_copies_sum, len(mps), dim)
-
-            else:
+            if not same_num_wires:
                 # There is a varying number of wires that the probability
                 # measurement processes act on
                 # TODO: revisit when issues with this case are resolved
@@ -793,6 +833,13 @@ class QuantumScript:
                     "Getting the output shape of a quantum script with multiple probability measurements "
                     "along with a device that defines a shot vector is not supported."
                 )
+
+            # All probability measurements have the same number of
+            # wires, gather the length from the first one
+
+            len_wires = len(mps[0].wires)
+            dim = mps[0]._get_num_basis_states(len_wires, device)
+            shape = sum(s.copies for s in self.shot_vector), len(mps), dim
 
         elif ret_type == qml.measurements.Sample:
             shape = []
@@ -838,12 +885,12 @@ class QuantumScript:
 
         output_shape = tuple()
 
-        if len(self._measurements) == 1:
-            output_shape = self._single_measurement_shape(self._measurements[0], device)
+        if len(self.measurements) == 1:
+            output_shape = self.measurements[0].shape(device)
         else:
-            num_measurements = len({meas.return_type for meas in self._measurements})
+            num_measurements = len({meas.return_type for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(device)
             else:
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
@@ -880,12 +927,12 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
+        shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
 
         if len(shapes) == 1:
             return shapes[0]
 
-        if device.shot_vector is not None:
+        if self.shot_vector is not None:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
@@ -912,7 +959,7 @@ class QuantumScript:
         """
         if qml.active_return():
             return self._numeric_type_new
-        measurement_types = {meas.return_type for meas in self._measurements}
+        measurement_types = {meas.return_type for meas in self.measurements}
         if len(measurement_types) > 1:
             raise ValueError(
                 "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
@@ -921,9 +968,9 @@ class QuantumScript:
         # Note: if one of the sample measurements contains outputs that
         # are real, then the entire result will be real
         if list(measurement_types)[0] == qml.measurements.Sample:
-            return next((float for mp in self._measurements if mp.numeric_type is float), int)
+            return next((float for mp in self.measurements if mp.numeric_type is float), int)
 
-        return self._measurements[0].numeric_type
+        return self.measurements[0].numeric_type
 
     @property
     def _numeric_type_new(self):
@@ -944,7 +991,7 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
-        types = tuple(observable.numeric_type for observable in self._measurements)
+        types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
 
@@ -970,16 +1017,18 @@ class QuantumScript:
             # unless modified.
             _prep = [copy.copy(op) for op in self._prep]
             _ops = [copy.copy(op) for op in self._ops]
-            _measurements = [copy.copy(op) for op in self._measurements]
+            _measurements = [copy.copy(op) for op in self.measurements]
         else:
             # Perform a shallow copy of the state prep, operation, and measurement queues. The
             # operations within the queues will be references to the original tape operations;
             # changing the original operations will always alter the operations on the copied tape.
             _prep = self._prep.copy()
             _ops = self._ops.copy()
-            _measurements = self._measurements.copy()
+            _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
+        new_qscript = self.__class__(
+            ops=_ops, measurements=_measurements, prep=_prep, shots=self._raw_shot_sequence
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
@@ -1061,7 +1110,7 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(ops=ops_adj, measurements=self._measurements, prep=self._prep)
+        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep)
         if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
@@ -1283,3 +1332,77 @@ class QuantumScript:
                 qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
+
+    @property
+    def shots(self):
+        """Number of circuit evaluations/random samples used to estimate
+        expectation values of observables"""
+        return self._shots
+
+    @shots.setter
+    def shots(self, shots):
+        """Changes the number of shots.
+        Args:
+            shots (int): number of circuit evaluations/random samples used to estimate
+                expectation values of observables
+        Raises:
+            ValueError: if number of shots is less than 1
+        """
+        if shots is None:
+            # device is in analytic mode
+            self._shots = shots
+            self._shot_vector = None
+            self._raw_shot_sequence = None
+
+        elif isinstance(shots, int):
+            # device is in sampling mode (unbatched)
+            if shots < 1:
+                raise ValueError(
+                    f"The specified number of shots needs to be at least 1. Got {shots}."
+                )
+
+            self._shots = shots
+            self._shot_vector = None
+            self._raw_shot_sequence = shots
+
+        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # device is in batched sampling mode
+            self._shots, self._shot_vector = _process_shot_sequence(shots)
+            self._raw_shot_sequence = shots
+
+        else:
+            raise ValueError(
+                "Shots must be a single non-negative integer or a sequence of non-negative integers."
+            )
+
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence.
+        **Example**
+        >>> tape = QuantumTape(shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> tape.shots
+        57
+        >>> tape.shot_vector
+        [ShotTuple(shots=3, copies=1),
+         ShotTuple(shots=1, copies=1),
+         ShotTuple(shots=2, copies=4),
+         ShotTuple(shots=6, copies=1),
+         ShotTuple(shots=1, copies=2),
+         ShotTuple(shots=5, copies=1),
+         ShotTuple(shots=12, copies=1),
+         ShotTuple(shots=10, copies=2)]
+        The sparse representation of the shot
+        sequence is returned, where tuples indicate the number of times a shot
+        integer is repeated.
+        """
+        return self._shot_vector
+
+    def _has_partitioned_shots(self):
+        """Checks if the quantum tape was instructed to perform executions with partitioned shots.
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return self._shot_vector is not None and (
+            len(self._shot_vector) > 1 or self._shot_vector[0].copies > 1
+        )

@@ -12,27 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumScript"""
-import copy
-import warnings
-from collections import defaultdict
-
 import numpy as np
 import pytest
-from this import d
 
 import pennylane as qml
-from pennylane import CircuitGraph
-from pennylane.measurements import (
-    MeasurementProcess,
-    MeasurementShapeError,
-    counts,
-    expval,
-    sample,
-    var,
-    probs,
-)
+from pennylane.measurements import MeasurementShapeError
 from pennylane.tape import QuantumScript
-
 
 measures = [
     (qml.expval(qml.PauliZ(0)), ()),
@@ -111,7 +96,7 @@ class TestMeasurementProcess:
         assert measurement.shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_shot_vector)
-    def test_output_shapes_no_shots(self, measurement, expected_shape):
+    def test_output_shapes_shot_vector(self, measurement, expected_shape):
         """Test that the output shape of the measurement process is expected
         when shots is a vector"""
         num_wires = 3
@@ -156,7 +141,7 @@ class TestOutputShape:
         b = np.array(0.2)
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [measurement])
+        qs = QuantumScript(ops, [measurement], shots=shots)
 
         shot_dim = len(shots) if isinstance(shots, tuple) else shots
         if expected_shape is None:
@@ -184,7 +169,7 @@ class TestOutputShape:
         b = np.array(0.2)
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [measurement])
+        qs = QuantumScript(ops, [measurement], shots=shots)
 
         if shots is not None and measurement.return_type is qml.measurements.State:
             # this is allowed by the tape but raises a warning
@@ -256,7 +241,7 @@ class TestOutputShape:
         expectation value, variance and probability measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        qs = QuantumScript(measurements=measurements)
+        qs = QuantumScript(measurements=measurements, shots=shots)
 
         if measurements[0].return_type is qml.measurements.Sample:
             expected[1] = shots
@@ -290,7 +275,7 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, measurements)
+        qs = QuantumScript(ops, measurements, shots=shots)
 
         # Update expected as we're using a shotvector
         expected = tuple(expected for _ in shots)
@@ -315,7 +300,9 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)])
+        qs = QuantumScript(
+            ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
+        )
 
         expected = tuple(() if shots == 1 else (shots,) for _ in range(num_samples))
 
@@ -339,7 +326,9 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
-        qs = QuantumScript(ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)])
+        qs = QuantumScript(
+            ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
+        )
 
         expected = tuple(tuple(() if s == 1 else (s,) for _ in range(num_samples)) for s in shots)
 
@@ -360,7 +349,7 @@ class TestOutputShape:
 
         num_samples = 3
         ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
-        qs = QuantumScript(ops, [qml.sample()] * num_samples)
+        qs = QuantumScript(ops, [qml.sample()] * num_samples, shots=shots)
 
         expected = tuple(
             tuple((3,) if s == 1 else (s, 3) for _ in range(num_samples)) for s in shots
@@ -389,7 +378,7 @@ class TestNumericType:
 
         a, b = 0.3, 0.2
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
-        qs = QuantumScript(ops, [ret])
+        qs = QuantumScript(ops, [ret], shots=shots)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
         if not isinstance(result, tuple):
@@ -431,7 +420,7 @@ class TestNumericType:
             ]
         )
         herm = np.outer(arr, arr)
-        qs = QuantumScript([qml.RY(0.4, 0)], [ret])
+        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
@@ -454,7 +443,7 @@ class TestNumericType:
         )
         herm = np.outer(arr, arr)
 
-        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))])
+        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
@@ -480,7 +469,7 @@ class TestNumericType:
         a, b = 0, 3
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         m = [qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))]
-        qs = QuantumScript(ops, m)
+        qs = QuantumScript(ops, m, shots=5)
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
