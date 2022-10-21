@@ -400,20 +400,12 @@ class TestJVP:
 
 def expected(params):
     x, y = 1.0 * params
-    return (
-        np.array(
-            [
-                (np.cos(y / 2) ** 2 * np.sin(x)) + (np.cos(y / 2) ** 2 * np.sin(x)),
-                (np.cos(x / 2) ** 2 * np.sin(y)) - (np.sin(x / 2) ** 2 * np.sin(y)),
-            ]
-        )
-        / 2
-    )
+    return np.array([-np.sin(x / 2) * np.cos(x / 2), 0.0, 0.0, np.sin(x / 2) * np.cos(x / 2)])
 
 
 def ansatz(x, y):
     qml.RX(x, wires=[0])
-    qml.RY(y, wires=[1])
+    qml.RZ(y, wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.probs(wires=[0, 1])
 
@@ -423,7 +415,7 @@ class TestJVPGradients:
 
     @pytest.mark.autograd
     def test_autograd(self, tol):
-        """Tests that the output of the VJP transform
+        """Tests that the output of the JVP transform
         can be differentiated using autograd."""
         dev = qml.device("default.qubit.autograd", wires=2)
         params = np.array([0.543, -0.654], requires_grad=True)
@@ -435,20 +427,18 @@ class TestJVPGradients:
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
             jvp = fn(dev.batch_execute(tapes))
-            print("jvp", jvp)
             return jvp
 
-        tangent = np.array([-1.0, 0.0], requires_grad=False)
+        tangent = np.array([1.0, 0.0], requires_grad=False)
         res = cost_fn(params, tangent)
-        print("expected", expected(params))
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
 
-        # res = qml.jacobian(cost_fn)(params, tangent)
-        # assert np.allclose(res, qml.jacobian(expected)(params), atol=tol, rtol=0)
+        res = qml.jacobian(cost_fn)(params, tangent)
+        assert np.allclose(res, qml.jacobian(expected)(params), atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):
-        """Tests that the output of the VJP transform
+        """Tests that the output of the JVP transform
         can be differentiated using Torch."""
         import torch
 
@@ -456,18 +446,18 @@ class TestJVPGradients:
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
-        dy = torch.tensor([-1.0, 0.0, 0.0, 1.0], dtype=torch.float64)
+        tangent = torch.tensor([1.0, 0.0], dtype=torch.float64)
 
         with qml.tape.QuantumTape() as tape:
             ansatz(params[0], params[1])
 
         tape.trainable_params = {0, 1}
-        tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-        vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
-        print(vjp)
-        assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        jvp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
 
-        cost = vjp[0]
+        assert np.allclose(jvp.detach(), expected(params.detach()), atol=tol, rtol=0)
+
+        cost = jvp[0]
         cost.backward()
 
         exp = qml.jacobian(lambda x: expected(x)[0])(params_np)
@@ -476,7 +466,7 @@ class TestJVPGradients:
     @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
-        """Tests that the output of the VJP transform
+        """Tests that the output of the JVP transform
         can be differentiated using TF."""
         import tensorflow as tf
 
@@ -484,19 +474,25 @@ class TestJVPGradients:
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = tf.Variable(params_np, dtype=tf.float64)
-        dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
+        tangent = tf.constant(
+            [
+                1.0,
+                0.0,
+            ],
+            dtype=tf.float64,
+        )
 
         with tf.GradientTape() as t:
             with qml.tape.QuantumTape() as tape:
                 ansatz(params[0], params[1])
 
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(dev.batch_execute(tapes))
+            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            jvp = fn(dev.batch_execute(tapes))
+        assert np.allclose(jvp, expected(params), atol=tol, rtol=0)
 
-        assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
-
-        res = t.jacobian(vjp, params)
+        res = t.jacobian(jvp, params)
+        print(res)
         assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
     # TODO: to be added when lighting and TF compatible with return types
@@ -536,7 +532,6 @@ class TestJVPGradients:
     #    assert len(grads) == 1
 
     @pytest.mark.jax
-    @pytest.mark.slow
     def test_jax(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using JAX."""
@@ -547,15 +542,14 @@ class TestJVPGradients:
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = jnp.array(params_np)
 
-        @partial(jax.jit, static_argnums=1)
         def cost_fn(x):
             with qml.tape.QuantumTape() as tape:
                 ansatz(x[0], x[1])
-            dy = jax.numpy.array([-1.0, 0.0, 0.0, 1.0])
+            tangent = jax.numpy.array([1.0, 0.0])
             tape.trainable_params = {0, 1}
-            tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-            vjp = fn(dev.batch_execute(tapes))
-            return vjp
+            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            jvp = fn(dev.batch_execute(tapes))
+            return jvp
 
         res = cost_fn(params)
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
@@ -595,7 +589,7 @@ class TestBatchJVP:
         # Even though there are 3 parameters, only two contribute
         # to the VJP, so only 2*2=4 quantum evals
         res = fn(dev.batch_execute(v_tapes))
-        print(res)
+
         assert res[0] is None
         assert res[1] is not None
 

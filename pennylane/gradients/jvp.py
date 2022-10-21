@@ -232,8 +232,9 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
                 continue
 
             if isinstance(reduction, str):
-                if not isinstance(jvp_, tuple) and jvp_.shape == ():
-                    jvp_ = math.reshape(jvp_, (1,))
+                if reduction == "extend":
+                    if not isinstance(jvp_, tuple) and jvp_.shape == ():
+                        jvp_ = math.reshape(jvp_, (1,))
                 getattr(jvps, reduction)(jvp_)
             elif callable(reduction):
                 reduction(jvps, jvp_)
