@@ -490,7 +490,7 @@ def test_insert_decorator_doesnt_cause_index_error():
         return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
     # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
-    with pytest.raises(Exception) as e:
+    with pytest.raises(Exception, match="Only observables that are qubit-wise commuting") as e:
         noisy_circuit(0.4)
     assert e.type != IndexError
     assert e.type == qml.QuantumFunctionError
