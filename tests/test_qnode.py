@@ -22,7 +22,6 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
-from pennylane import qnode
 from pennylane.tape import QuantumTape
 
 
@@ -48,7 +47,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(wires=0)
             return qml.probs(wires=0)
@@ -63,7 +62,7 @@ class TestValidation:
         diff method is updated as required."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface="autograd", diff_method="best")
+        @qml.qnode(dev, interface="autograd", diff_method="best")
         def circuit(x):
             qml.RX(wires=0)
             return qml.probs(wires=0)
@@ -414,7 +413,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(qml.gradients.finite_difference, "finite_diff_coeffs")
 
-        @qnode(dev, diff_method=qml.gradients.finite_diff)
+        @qml.qnode(dev, diff_method=qml.gradients.finite_diff)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -477,7 +476,7 @@ class TestValidation:
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
 
-            @qnode(dev, diff_method="adjoint")
+            @qml.qnode(dev, diff_method="adjoint")
             def circ():
                 return qml.expval(qml.PauliZ(0))
 
@@ -487,7 +486,7 @@ class TestValidation:
         differentiation method is not parameter-shift."""
         dev = qml.device("default.qubit", wires=2, shots=None)
 
-        @qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
             return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
@@ -520,7 +519,7 @@ class TestValidation:
         device swapping."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, diff_method=None)
+        @qml.qnode(dev, diff_method=None)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -672,7 +671,7 @@ class TestTapeConstruction:
 
         w = np.random.random((2, 3, 3))
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def f(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(3))
             return (
@@ -700,7 +699,7 @@ class TestTapeConstruction:
 
         w = np.random.random((2, 3, 3))
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def f(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(3))
             return qml.expval(qml.PauliX(0)), qml.var(qml.PauliX(0) @ qml.PauliZ(1))
@@ -748,7 +747,7 @@ class TestDecorator:
         """Test that the decorator correctly creates a QNode."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def func(x, y):
             """My function docstring"""
             qml.RX(x, wires=0)
@@ -930,7 +929,7 @@ class TestIntegration:
         x = anp.array(0.543, requires_grad=True)
         y = anp.array(-0.654, requires_grad=True)
 
-        @qnode(
+        @qml.qnode(
             dev, diff_method=diff_method, argnum=[1]
         )  # <--- we only choose one trainable parameter
         def circuit(x, y):
@@ -1146,7 +1145,7 @@ class TestShots:
         """Tests that shots can be set per call for a sample return type."""
         dev = qml.device("default.qubit", wires=1, shots=10)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(wires=0))
@@ -1161,7 +1160,7 @@ class TestShots:
         Note: this test has a vanishingly small probability to fail."""
         dev = qml.device("default.qubit", wires=1, shots=None)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             return qml.expval(qml.PauliZ(wires=0))
@@ -1228,7 +1227,7 @@ class TestShots:
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
 
-            @qnode(dev)
+            @qml.qnode(dev)
             def circuit(a, shots):
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
@@ -1242,7 +1241,7 @@ class TestShots:
 
         dev = qml.device("default.qubit", wires=1, shots=3)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(wires=0))
@@ -1332,7 +1331,7 @@ class TestSpecs:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
@@ -1347,7 +1346,7 @@ class TestSpecs:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(x, y):
             qml.RX(x[0], wires=0)
             qml.Toffoli(wires=(0, 1, 2))
@@ -1404,7 +1403,7 @@ class TestTapeExpansion:
                     qml.RX(3 * self.data[0], wires=self.wires)
                 return tape
 
-        @qnode(dev, diff_method=diff_method, mode=mode)
+        @qml.qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(x):
             UnsupportedOp(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -1439,7 +1438,7 @@ class TestTapeExpansion:
                     qml.RX(3 * self.data[0], wires=self.wires)
                 return tape
 
-        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             UnsupportedOp(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -1480,7 +1479,7 @@ class TestTapeExpansion:
                     qml.RY(3 * self.data[0], wires=self.wires)
                 return tape
 
-        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.Hadamard(wires=0)
             PhaseShift(x, wires=0)
@@ -1525,7 +1524,7 @@ class TestTapeExpansion:
 
         assert len(H.grouping_indices) == 2
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             return qml.expval(H)
 
@@ -1544,7 +1543,7 @@ class TestTapeExpansion:
 
         assert len(H.grouping_indices) == 2
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             return qml.expval(H)
 
@@ -1569,7 +1568,7 @@ class TestTapeExpansion:
 
         assert len(H.grouping_indices) == 2
 
-        @qnode(dev)
+        @qml.qnode(dev)
         def circuit():
             return qml.expval(H), qml.expval(H)
 
@@ -1584,7 +1583,7 @@ class TestTapeExpansion:
         dev = qml.device("default.qubit", wires=2)
         x = pnp.array(0.5, requires_grad=True)
 
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+        @qml.qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
         def circuit(x):
             qml.SingleExcitation(x, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
