@@ -21,6 +21,21 @@ import pennylane as qml
 from pennylane import math
 
 
+def _convert(jac, tangent):
+    """Utility to convert and cast the jacobian as tangent."""
+    if isinstance(jac, tuple):
+        jac_new = []
+        for j in jac:
+            j_ = math.convert_like(j, tangent)
+            j_ = math.cast(j_, tangent.dtype)
+            jac_new.append(j_)
+        jac = tuple(jac_new)
+    else:
+        jac = math.convert_like(jac, tangent)
+        jac = math.cast(jac, tangent.dtype)
+    return jac
+
+
 def compute_jvp_single(tangent, jac):
     """Convenience function to compute the Jacobian vector product for a given
     vector of gradient outputs and a Jacobian for a single measurement tape.
@@ -35,7 +50,10 @@ def compute_jvp_single(tangent, jac):
     """
     if jac is None:
         return None
+
     tangent = qml.math.stack(tangent)
+    jac = _convert(jac, tangent)
+
     # Single measurement with a single param
     if not isinstance(jac, tuple):
         # Single measurement with no dimension e.g. expval
@@ -104,33 +122,53 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
+    num_measurements = len(tape.measurements)
 
     if num_params == 0:
-        # The tape has no trainable parameters; the VJP
+        # The tape has no trainable parameters; the JVP
         # is simply none.
         return [], lambda _, num=None: None
 
+    multi_m = num_measurements > 1
+    multi_p = num_params > 1
+
     try:
-        if math.allclose(tangent, 0):
-            # If the dy vector is zero, then the
-            # corresponding element of the VJP will be zero,
+        if math.allclose(qml.math.stack(tangent), 0):
+            # If the tangent vector is zero, then the
+            # corresponding element of the JVP will be zero,
             # and we can avoid a quantum computation.
 
             def func(_):  # pylint: disable=unused-argument
-                res = math.convert_like(np.zeros([num_params]), tangent)
-                return math.cast(res, tangent.dtype)
+                if not multi_m:
+                    res = math.convert_like(np.zeros([num_params]), tangent)
+                    res = math.cast(res, tangent.dtype)
+                    if multi_p:
+                        res = tuple(res)
+                else:
+                    res = []
+                    for m in tape.measurements:
+                        # TODO: Update shape for CV variables
+                        if m.return_type is qml.measurements.Probability:
+                            dim = 2 ** len(m.wires)
+                        else:
+                            dim = ()
+                        sub_res = math.convert_like(np.zeros(dim), tangent)
+                        sub_res = math.cast(sub_res, tangent.dtype)
+                        res.append(sub_res)
+                    res = tuple(res)
+
+                return res
 
             return [], func
     except (AttributeError, TypeError):
         pass
 
-    multi = len(tape.measurements) > 1
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        if multi:
+        if multi_m:
             return compute_jvp_multi(tangent, jac)
         return compute_jvp_single(tangent, jac)
 

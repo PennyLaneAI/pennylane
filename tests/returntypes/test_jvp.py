@@ -120,7 +120,7 @@ class TestComputeJVP:
         assert np.allclose(jvp[1], [0.8, 2.1])
 
     def test_jacobian_is_none_single(self):
-        """A None Jacobian returns a None VJP"""
+        """A None Jacobian returns a None JVP"""
 
         tangent = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
@@ -129,7 +129,7 @@ class TestComputeJVP:
         assert jvp is None
 
     def test_jacobian_is_none_multi(self):
-        """A None Jacobian returns a None VJP"""
+        """A None Jacobian returns a None JVP"""
 
         tangent = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
@@ -137,25 +137,25 @@ class TestComputeJVP:
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
         assert jvp is None
 
-    def test_zero_dy_single_measurement_single_params(self):
+    def test_zero_tangent_single_measurement_single_params(self):
         """A zero dy vector will return a zero matrix"""
-        dy = np.zeros([1])
+        tangent = np.zeros([1])
         jac = np.array(0.1)
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
-        assert np.all(vjp == np.zeros([1]))
+        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        assert np.all(jvp == np.zeros([1]))
 
-    def test_zero_dy_single_measurement_multi_params(self):
-        """A zero dy vector will return a zero matrix"""
-        dy = np.zeros([2])
+    def test_zero_tangent_single_measurement_multi_params(self):
+        """A zero tangent vector will return a zero matrix"""
+        tangent = np.zeros([2])
         jac = tuple([np.array(0.1), np.array(0.2)])
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
-        assert np.all(vjp == np.zeros([2]))
+        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        assert np.all(jvp == np.zeros([1]))
 
     def test_zero_dy_multi(self):
-        """A zero dy vector will return a zero matrix"""
-        dy = tuple([np.array(0.0), np.array([0.0, 0.0])])
+        """A zero tangent vector will return a zero matrix"""
+        tangent = np.array([0.0, 0.0, 0.0])
         jac = tuple(
             [
                 tuple([np.array(0.1), np.array(0.1), np.array(0.1)]),
@@ -163,44 +163,11 @@ class TestComputeJVP:
             ]
         )
 
-        vjp = qml.gradients.compute_vjp_multi(dy, jac)
-        assert np.all(vjp == np.zeros([3]))
+        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
 
-    @pytest.mark.torch
-    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
-    def test_dtype_torch(self, dtype1, dtype2):
-        """Test that using the Torch interface the dtype of the result is
-        determined by the dtype of the dy."""
-        import torch
-
-        dtype1 = getattr(torch, dtype1)
-        dtype2 = getattr(torch, dtype2)
-        a = torch.ones((1), dtype=dtype1)
-        b = torch.ones((2), dtype=dtype1)
-
-        dy = tuple([a, b])
-        jac = tuple([torch.ones((1), dtype=dtype2), torch.ones((2), dtype=dtype2)])
-
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype1
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
-    def test_dtype_tf(self, dtype1, dtype2):
-        """Test that using the TensorFlow interface the dtype of the result is
-        determined by the dtype of the dy."""
-        import tensorflow as tf
-
-        dtype = dtype1
-        dtype1 = getattr(tf, dtype1)
-        dtype2 = getattr(tf, dtype2)
-
-        a = tf.ones((1), dtype=dtype1)
-        b = tf.ones((2), dtype=dtype1)
-
-        dy = tuple([a, b])
-        jac = tuple([tf.ones((1), dtype=dtype2), tf.ones((2), dtype=dtype2)])
-
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
+        assert isinstance(jvp, tuple)
+        assert np.all(jvp[0] == np.zeros([1]))
+        assert np.all(jvp[1] == np.zeros([2]))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -216,12 +183,12 @@ class TestComputeJVP:
         dtype1 = getattr(jax.numpy, dtype1)
         dtype2 = getattr(jax.numpy, dtype2)
 
-        dy = tuple([jax.numpy.array(1, dtype=dtype1), jax.numpy.array([1, 1], dtype=dtype1)])
+        tangent = jax.numpy.array([1], dtype=dtype1)
         jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
+        assert qml.gradients.compute_jvp_multi(tangent, jac)[0].dtype == dtype
 
 
-class TestVJP:
+class TestJVP:
     """Tests for the vjp function"""
 
     def test_no_trainable_parameters(self):
@@ -233,14 +200,29 @@ class TestVJP:
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {}
-        dy = np.array([1.0])
-        tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
+        tangent = np.array([1.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert not tapes
         assert fn(tapes) is None
 
-    def test_zero_dy(self):
-        """A zero dy vector will return no tapes and a zero matrix"""
+    def test_zero_tangent_single_measurement_single_param(self):
+        """A zero tangent vector will return no tapes and a zero matrix"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0}
+        tangent = np.array([0.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+
+        assert not tapes
+        assert np.all(fn(tapes) == np.zeros([1]))
+
+    def test_zero_tangent_single_measurement_multiple_param(self):
+        """A zero tangent vector will return no tapes and a zero matrix"""
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.4, wires=0)
@@ -249,11 +231,63 @@ class TestVJP:
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 1}
-        dy = np.array([0.0])
-        tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
+        tangent = np.array([0.0, 0.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert not tapes
-        assert np.all(fn(tapes) == np.zeros([len(tape.trainable_params)]))
+        assert isinstance(fn(tapes), tuple)
+        assert np.all(fn(tapes) == np.zeros([1]))
+
+    def test_zero_tangent_multiple_measurement_single_param(self):
+        """A zero tangent vector will return no tapes and a zero matrix"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0])
+
+        tape.trainable_params = {0}
+        tangent = np.array([0.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        res = fn(tapes)
+
+        assert not tapes
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], np.ndarray)
+        assert np.allclose(res[0], 0)
+
+        assert isinstance(res[1], np.ndarray)
+        assert np.allclose(res[1], [0, 0])
+
+    def test_zero_tangent_multiple_measurement_multiple_param(self):
+        """A zero tangent vector will return no tapes and a zero matrix"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RX(0.6, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0])
+
+        tape.trainable_params = {0, 1}
+        tangent = np.array([0.0, 0.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        res = fn(tapes)
+
+        assert not tapes
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], np.ndarray)
+        assert np.allclose(res[0], 0)
+
+        assert isinstance(res[1], np.ndarray)
+        assert np.allclose(res[1], [0, 0])
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
