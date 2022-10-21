@@ -141,7 +141,7 @@ def refresh_devices():
 plugin_devices = _get_device_entrypoints()
 
 
-def device(name, *args, **kwargs):
+def device(name, *args, **kwargs) -> Device:
     r"""device(name, wires=1, *args, **kwargs)
     Load a :class:`~.Device` and return the instance.
 

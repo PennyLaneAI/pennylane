@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-from collections import defaultdict
-import pytest
 import warnings
+from collections import defaultdict
+
 import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import QNode
 from pennylane import numpy as pnp
-from pennylane import qnode, QNode
+from pennylane import qnode
 from pennylane.tape import QuantumTape
 
 
@@ -56,12 +58,9 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
 
-    @pytest.mark.torch
     def test_valid_interface(self):
         """Test that changing to a valid interface works as expected, and the
         diff method is updated as required."""
-        import torch
-
         dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev, interface="autograd", diff_method="best")
@@ -90,10 +89,12 @@ class TestValidation:
             qml.QuantumFunctionError,
             match="does not provide a native method for computing the jacobian",
         ):
-            QNode._validate_device_method(dev)
+            qnode = QNode(func=dummyfunc, device=dev)
+            qnode._validate_device_method()
 
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-        method, diff_options, device = QNode._validate_device_method(dev)
+        qnode = QNode(func=dummyfunc, device=dev)
+        method, diff_options, device = qnode._validate_device_method()
 
         assert method == "device"
         assert device is dev
@@ -102,9 +103,10 @@ class TestValidation:
         """Test that the method for validating the backprop diff method
         tape raises an exception if the device does not support backprop."""
         dev = qml.device("default.gaussian", wires=1)
-
+        qnode = QNode(func=dummyfunc, device=dev)
+        qnode._interface = None
         with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
-            QNode._validate_backprop_method(dev, None)
+            qnode._validate_backprop_method()
 
     def test_validate_backprop_method_invalid_interface(self, monkeypatch):
         """Test that the method for validating the backprop diff method
@@ -115,7 +117,7 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
         with pytest.raises(qml.QuantumFunctionError, match=f"when using the {test_interface}"):
-            QNode._validate_backprop_method(dev, None)
+            QNode(func=dummyfunc, device=dev, interface=None)._validate_backprop_method()
 
     def test_validate_backprop_method(self, monkeypatch):
         """Test that the method for validating the backprop diff method
@@ -124,7 +126,10 @@ class TestValidation:
         test_interface = "something"
         monkeypatch.setitem(dev._capabilities, "passthru_interface", test_interface)
 
-        method, diff_options, device = QNode._validate_backprop_method(dev, "something")
+        qnode = QNode(func=dummyfunc, device=dev)
+        qnode._interface = test_interface
+
+        method, diff_options, device = qnode._validate_backprop_method()
 
         assert method == "backprop"
         assert device is dev
@@ -138,7 +143,9 @@ class TestValidation:
 
         dev = qml.device("default.qubit", wires=1)
 
-        diff_method, _, new_dev = QNode._validate_backprop_method(dev, accepted_name)
+        qnode = QNode(func=dummyfunc, device=dev)
+        qnode._interface = accepted_name
+        diff_method, _, new_dev = qnode._validate_backprop_method()
 
         assert diff_method == "backprop"
         assert new_dev.capabilities().get("passthru_interface") == official_name
@@ -153,7 +160,9 @@ class TestValidation:
         orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
         monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
 
-        method, diff_options, device = QNode._validate_backprop_method(dev, test_interface)
+        qnode = QNode(func=dummyfunc, device=dev)
+        qnode._interface = test_interface
+        method, diff_options, device = qnode._validate_backprop_method()
 
         assert method == "backprop"
         assert isinstance(device, qml.devices.DefaultGaussian)
@@ -168,26 +177,32 @@ class TestValidation:
         orig_capabilities["passthru_devices"] = {test_interface: "default.gaussian"}
         monkeypatch.setattr(dev, "capabilities", lambda: orig_capabilities)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+        qnode._interface = "another_interface"
+
         with pytest.raises(
             qml.QuantumFunctionError, match=r"when using the \['something'\] interface"
         ):
-            QNode._validate_backprop_method(dev, "another_interface")
+            qnode._validate_backprop_method()
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
     def test_validate_backprop_finite_shots(self, device_string):
         """Test that a device with finite shots cannot be used with backpropagation."""
         dev = qml.device(device_string, wires=1, shots=100)
+        qnode = QNode(func=dummyfunc, device=dev)
+        qnode._interface = "autograd"
 
         with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
-            QNode._validate_backprop_method(dev, "autograd")
+            qnode._validate_backprop_method()
 
     @pytest.mark.autograd
     def test_parameter_shift_qubit_device(self):
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for qubit devices."""
         dev = qml.device("default.qubit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
+        qnode = QNode(func=dummyfunc, device=dev)
+        gradient_fn = qnode._validate_parameter_shift()
         assert gradient_fn[0] is qml.gradients.param_shift
 
     @pytest.mark.autograd
@@ -195,7 +210,8 @@ class TestValidation:
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for cv devices."""
         dev = qml.device("default.gaussian", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
+        qnode = QNode(func=dummyfunc, device=dev)
+        gradient_fn = qnode._validate_parameter_shift()
         assert gradient_fn[0] is qml.gradients.param_shift_cv
         assert gradient_fn[1] == {"dev": dev}
 
@@ -209,11 +225,12 @@ class TestValidation:
 
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         dev = qml.device("default.qubit", wires=1)
+        qnode = QNode(func=dummyfunc, device=dev)
 
         with pytest.raises(
             qml.QuantumFunctionError, match="does not support the parameter-shift rule"
         ):
-            QNode._validate_parameter_shift(dev)
+            qnode._validate_parameter_shift()
 
     @pytest.mark.autograd
     def test_best_method_is_device(self, monkeypatch):
@@ -223,12 +240,16 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # basic check if the device provides a Jacobian
-        res = QNode.get_best_method(dev, "another_interface")
+        qnode._interface = "another_interface"
+        res = qnode.get_best_method()
         assert res == ("device", {}, dev)
 
         # device is returned even if backpropagation is possible
-        res = QNode.get_best_method(dev, "some_interface")
+        qnode._interface = "some_interface"
+        res = qnode.get_best_method()
         assert res == ("device", {}, dev)
 
     def test_best_method_is_backprop(self, monkeypatch):
@@ -238,8 +259,11 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # backprop is returned when the interfaces match and Jacobian is not provided
-        res = QNode.get_best_method(dev, "some_interface")
+        qnode._interface = "some_interface"
+        res = qnode.get_best_method()
         assert res == ("backprop", {}, dev)
 
     def test_best_method_is_param_shift(self, monkeypatch):
@@ -249,9 +273,12 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # parameter shift is returned when Jacobian is not provided and
         # the backprop interfaces do not match
-        res = QNode.get_best_method(dev, "another_interface")
+        qnode._interface = "another_interface"
+        res = qnode.get_best_method()
         assert res == (qml.gradients.param_shift, {}, dev)
 
     def test_best_method_is_finite_diff(self, monkeypatch):
@@ -266,9 +293,12 @@ class TestValidation:
             capabilities.update(model="None")
             return capabilities
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # finite differences is the fallback when we know nothing about the device
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
-        res = QNode.get_best_method(dev, "another_interface")
+        qnode._interface = "another_interface"
+        res = qnode.get_best_method()
         assert res == (qml.gradients.finite_diff, {}, dev)
 
     def test_best_method_str_is_device(self, monkeypatch):
@@ -278,12 +308,16 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # basic check if the device provides a Jacobian
-        res = QNode.best_method_str(dev, "another_interface")
+        qnode._interface = "another_interface"
+        res = qnode.best_method_str()
         assert res == "device"
 
         # device is returned even if backpropagation is possible
-        res = QNode.best_method_str(dev, "some_interface")
+        qnode._interface = "some_interface"
+        res = qnode.best_method_str()
         assert res == "device"
 
     def test_best_method_str_is_backprop(self, monkeypatch):
@@ -293,8 +327,11 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # backprop is returned when the interfaces match and Jacobian is not provided
-        res = QNode.best_method_str(dev, "some_interface")
+        qnode._interface = "some_interface"
+        res = qnode.best_method_str()
         assert res == "backprop"
 
     def test_best_method_str_is_param_shift(self, monkeypatch):
@@ -304,9 +341,12 @@ class TestValidation:
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # parameter shift is returned when Jacobian is not provided and
         # the backprop interfaces do not match
-        res = QNode.best_method_str(dev, "another_interface")
+        qnode._interface = "another_interface"
+        res = qnode.best_method_str()
         assert res == "parameter-shift"
 
     def test_best_method_str_is_finite_diff(self, monkeypatch):
@@ -321,9 +361,12 @@ class TestValidation:
             capabilities.update(model="None")
             return capabilities
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         # finite differences is the fallback when we know nothing about the device
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
-        res = QNode.best_method_str(dev, "another_interface")
+        qnode._interface = "another_interface"
+        res = qnode.best_method_str()
         assert res == "finite-diff"
 
     def test_diff_method(self, mocker):
@@ -406,18 +449,22 @@ class TestValidation:
 
         dev = qml.device("default.gaussian", wires=1)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         with pytest.raises(ValueError, match="The default.gaussian device does not"):
-            QNode._validate_adjoint_method(dev)
+            qnode._validate_adjoint_method()
 
     def test_validate_adjoint_finite_shots(self):
         """Test that a UserWarning is raised when device has finite shots"""
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
+        qnode = QNode(func=dummyfunc, device=dev)
+
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
-            QNode._validate_adjoint_method(dev)
+            qnode._validate_adjoint_method()
 
     def test_adjoint_finite_shots(self):
         """Tests that UserWarning is raised with the adjoint differentiation method

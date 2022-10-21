@@ -1400,10 +1400,10 @@ class QuantumScript:
 
         **Example**
 
-        >>> tape = QuantumTape(shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
-        >>> tape.shots
+        >>> script = QuantumScript(shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> script.shots
         57
-        >>> tape.shot_vector
+        >>> script.shot_vector
         [ShotTuple(shots=3, copies=1),
          ShotTuple(shots=1, copies=1),
          ShotTuple(shots=2, copies=4),
