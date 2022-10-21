@@ -492,7 +492,6 @@ class TestJVPGradients:
         assert np.allclose(jvp, expected(params), atol=tol, rtol=0)
 
         res = t.jacobian(jvp, params)
-        print(res)
         assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
     # TODO: to be added when lighting and TF compatible with return types
