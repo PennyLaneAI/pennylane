@@ -48,7 +48,7 @@ class TestPauliWord:
         assert pw1.__hash__() == pw3.__hash__()
         assert pw1.__hash__() != pw4.__hash__()
 
-    tup_pws_wires = ((pw1, {0, 1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b"}), (pw4, {}))
+    tup_pws_wires = ((pw1, {0, 1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b"}), (pw4, set()))
 
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
@@ -71,16 +71,16 @@ class TestPauliWord:
 class TestPauliSentence:
     def test_missing(self):
         """Test the result when a missing key is indexed"""
-        pw = {0: X}
-        new_pw = {"a": Z}
+        pw = PauliWord({0: X})
+        new_pw = PauliWord({"a": Z})
         ps = PauliSentence({pw: 1.0})
 
         assert new_pw not in ps.keys()
         assert ps[new_pw] == 0.0
 
     def test_set_items(self):
-        """Test that we can added to a PauliSentence"""
-        pw = {0: X}
+        """Test that we can add to a PauliSentence"""
+        pw = PauliWord({0: X})
         ps = PauliSentence({pw: 1.0})
 
         new_pw = {"a": Z}
