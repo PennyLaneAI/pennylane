@@ -225,10 +225,6 @@ class ControlledQutritUnitary(QutritUnitary):
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
 
     @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):
-        raise DecompositionUndefinedError
-
-    @staticmethod
     def compute_matrix(
         U, control_wires, u_wires, control_values=None
     ):  # pylint: disable=arguments-differ
@@ -306,6 +302,12 @@ class ControlledQutritUnitary(QutritUnitary):
     @property
     def control_wires(self):
         return self.hyperparameters["control_wires"]
+
+    @property
+    def control_values(self):
+        """str.  Specifies whether or not to control on zero "0", one "1", or two "2" for each
+        control wire."""
+        return self.hyperparameters["control_values"]
 
     def pow(self, z):
         if isinstance(z, int):

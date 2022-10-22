@@ -532,7 +532,7 @@ class TestControlledQutritUnitary:
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
+        assert pow_ops[0].control_values == op.control_values
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -556,7 +556,7 @@ class TestControlledQutritUnitary:
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
+        assert pow_ops[0].control_values == op.control_values
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -619,7 +619,7 @@ class TestControlledQutritUnitary:
 
         assert adjoint_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert adjoint_op.control_wires == op.control_wires
-        assert adjoint_op.hyperparameters["control_values"] == op.hyperparameters["control_values"]
+        assert adjoint_op.control_values == op.control_values
 
         adjoint_mat = op.data[0].T.conj()
         assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)
