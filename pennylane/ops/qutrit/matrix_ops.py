@@ -305,7 +305,7 @@ class ControlledQutritUnitary(QutritUnitary):
 
     @property
     def control_values(self):
-        """str.  Specifies whether or not to control on zero "0", one "1", or two "2" for each
+        """str. Specifies whether or not to control on zero "0", one "1", or two "2" for each
         control wire."""
         return self.hyperparameters["control_values"]
 
