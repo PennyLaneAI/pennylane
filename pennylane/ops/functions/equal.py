@@ -17,19 +17,19 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess],
-    op2: Union[Operator, MeasurementProcess],
+    op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
+    op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
 ):
-    r"""Function for determining operator equality.
+    r"""Function for determining operator or measurement equality.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First operator or MeasurementProcess to compare
@@ -83,26 +83,9 @@ def equal(
     if op1.__class__ is not op2.__class__:
         return False
 
-    if op1.__class__ is MeasurementProcess:
+    if op1.__class__ is MeasurementProcess or op1.__class__ is ShadowMeasurementProcess:
+        return equal_measurements(op1, op2)
 
-        if op1.return_type != op2.return_type:
-            return False
-
-        # Check the existence of m.obs, compare if exists for both
-        if op1.obs != op2.obs:
-            return False
-        elif op1.obs == op2.obs and op1.obs is not None:
-            return True
-
-        # Check wires
-        if op1.wires != op2.wires:
-            return False
-        else:
-            return True
-        
-        # TODO: consider that both obs and wires can be none
-        
-    # If operator:
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -131,3 +114,13 @@ def equal(
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+def equal_measurements(op1, op2):
+    """Determine whether two MeasurementProcesses or ShadowMeasurementProcesses are equal"""
+    return_types_match = op1.return_type == op2.return_type
+    observables_match = op1.obs == op2.obs
+    wires_match = op1.wires == op2.wires
+
+    if return_types_match and observables_match and wires_match:
+        return True
+    return False
