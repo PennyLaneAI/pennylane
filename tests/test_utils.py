@@ -291,7 +291,7 @@ class TestSparse:
         sparse_matrix = (
             qml.utils.sparse_hamiltonian(H, wires)
             if ref_matrix.shape[0] % 2 == 0
-            else qml.utils.sparse_hamiltonian(H, wires, dim=3)
+            else qml.utils.sparse_hamiltonian(H, wires, level=3)
         )
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)

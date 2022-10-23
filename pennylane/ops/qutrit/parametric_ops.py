@@ -34,9 +34,13 @@ class TRX(Operation):
     The construction of this operator is based on section 3 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
-    .. math:: TR_x^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),
-                \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|,
-                j, k \in \{0, 1, 2\}, j \neq k
+    .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),\\
+                \text{where } \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|,\\
+                j, k \in \{0, 1, 2\}, j < k\\
+                \text{The qutrit basis states are defined as follows:}\\
+                \displaystyle \begin{align} |0\rangle &= \left(\begin{array}{ccc} 1 \\ 0\\ 0\end{array}\right) \;\;\;\;\;\;\;\;\;\;
+                |1\rangle = \left(\begin{array}{ccc} 0 \\ 1\\ 0\end{array}\right)\;\;\;\;\;\;\;\;\;\;
+                |2\rangle = \left(\begin{array}{ccc} 0 \\ 0\\ 1\end{array}\right) \\
 
     **Details:**
 

@@ -108,7 +108,7 @@ def decompose_hamiltonian(H, hide_identity=False, wire_order=None):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H, wires=None, dim=2):
+def sparse_hamiltonian(H, wires=None, level=2):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
@@ -116,7 +116,7 @@ def sparse_hamiltonian(H, wires=None, dim=2):
          computed
         wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
          is constructed. If not profided, ``H.wires`` is used.
-        dim (int): Number of dimensions of qudit(s) for which the Hamiltonian has been constructed
+        level (int): Number of levels per qudit for which the Hamiltonian has been constructed
 
     Returns:
         csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
@@ -151,7 +151,7 @@ def sparse_hamiltonian(H, wires=None, dim=2):
         wires = qml.wires.Wires(wires)
 
     n = len(wires)
-    matrix = scipy.sparse.csr_matrix((dim**n, dim**n), dtype="complex128")
+    matrix = scipy.sparse.csr_matrix((level**n, level**n), dtype="complex128")
 
     coeffs = qml.math.toarray(H.data)
 
@@ -175,7 +175,7 @@ def sparse_hamiltonian(H, wires=None, dim=2):
         for wire_lab in wires:
             if wire_lab in op.wires:
                 if i_count > 0:
-                    mat.append(scipy.sparse.eye(dim**i_count, format="coo"))
+                    mat.append(scipy.sparse.eye(level**i_count, format="coo"))
                 i_count = 0
                 idx = op.wires.index(wire_lab)
                 # obs is an array storing the single-wire observables which
@@ -186,7 +186,7 @@ def sparse_hamiltonian(H, wires=None, dim=2):
                 i_count += 1
 
         if i_count > 0:
-            mat.append(scipy.sparse.eye(dim**i_count, format="coo"))
+            mat.append(scipy.sparse.eye(level**i_count, format="coo"))
 
         red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 

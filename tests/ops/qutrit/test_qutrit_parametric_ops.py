@@ -97,7 +97,7 @@ class TestParameterFrequencies:
         except (AttributeError, qml.operation.MatrixUndefinedError):
 
             if isinstance(gen, qml.Hamiltonian):
-                mat = qml.utils.sparse_hamiltonian(gen, dim=3).toarray()
+                mat = qml.utils.sparse_hamiltonian(gen, level=3).toarray()
             elif isinstance(gen, qml.SparseHamiltonian):
                 mat = gen.sparse_matrix().toarray()
             else:
