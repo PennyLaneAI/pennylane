@@ -14,10 +14,6 @@
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
-  
-* Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
-Users can specify the control wires as well as the values to control the operation on.
-  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 * Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
 Users can specify the control wires as well as the values to control the operation on.
@@ -62,7 +58,7 @@ parameter-shift differentiation on qutrit devices.
 
 <h4>Pauli Module</h4>
 
-* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli`
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
@@ -70,7 +66,7 @@ parameter-shift differentiation on qutrit devices.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
   Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
-  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`.
   Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
   argument.
 
@@ -150,9 +146,9 @@ parameter-shift differentiation on qutrit devices.
   tensor([0.92885434, 0.07114566], requires_grad=True)
   >>> print(qml.draw(mapped_circuit)())
   10: ──RX(0.54)─┤  Probs
-  11: ──X────────┤       
-  12: ──Z────────┤       
-  13: ──RY(1.23)─┤  
+  11: ──X────────┤
+  12: ──Z────────┤
+  13: ──RY(1.23)─┤
   ```
 
 * An optimizer is added for building and optimizing quantum circuits adaptively.
@@ -209,7 +205,7 @@ parameter-shift differentiation on qutrit devices.
       if gradient < 1e-3:
           break
   ```
-  
+
    ```pycon
   Energy: -1.246549938420637
   0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
@@ -237,7 +233,7 @@ parameter-shift differentiation on qutrit devices.
   4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
   5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
   Largest Gradient: 0.00040841755397108586
-  ``` 
+  ```
 
 <h3>Improvements</h3>
 
@@ -245,7 +241,7 @@ parameter-shift differentiation on qutrit devices.
   if computational basis samples are being generated.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
-* The parameters of a basis set containing different number of Gaussian functions are easier to 
+* The parameters of a basis set containing different number of Gaussian functions are easier to
   differentiate.
   [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
 
