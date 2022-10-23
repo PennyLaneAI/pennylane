@@ -430,6 +430,21 @@ Qutrit gates constructed from a matrix
 
 :html:`</div>`
 
+.. _intro_ref_ops_qutrit_param:
+
+Qutrit parametrized gates
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.TRX
+
+:html:`</div>`
+
 .. _intro_ref_ops_qutrit_obs:
 
 Qutrit Observables

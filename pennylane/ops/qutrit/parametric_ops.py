@@ -18,8 +18,6 @@ core parameterized gates for qutrits.
 """
 import itertools
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops.qutrit.observables import THermitian
@@ -155,16 +153,19 @@ class TRX(Operation):
 
         shape = qml.math.shape(theta)
         is_broadcasted = len(shape) != 0 and shape[0] > 1
+        # Construct identity matrices and cast to complex type
         mat = (
             qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
             if is_broadcasted
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, js)
+        # Create slices that determine the indices at which the rotation terms of the matrix should be
         slices = tuple(itertools.product(subspace, subspace))
         if is_broadcasted:
             slices = [(Ellipsis, *s) for s in slices]
 
+        # Put rotation terms in the appropriate indices using the slices
         mat[slices[0]] = mat[slices[3]] = c
         mat[slices[1]] = mat[slices[2]] = js
         return qml.math.convert_like(mat, theta)
