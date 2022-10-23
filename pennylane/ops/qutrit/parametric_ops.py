@@ -20,7 +20,6 @@ import itertools
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops.qutrit.observables import THermitian
 
 
 class TRX(Operation):
@@ -107,14 +106,14 @@ class TRX(Operation):
 
     @property
     def subspace(self):
-        """The single-qutrit basis states which the operator acts on
+        """The single-qutrit basis states the operator acts on.
 
         This property returns the 2D subspace on which the operator acts. This subspace
         determines which two single-qutrit basis states the operator acts on. The remaining
         basis state is not affected by the operator.
 
         Returns:
-            tuple[int]: subspace on which operator acts
+            tuple[int]: subspace on which the operator acts
         """
         return tuple(sorted(self._subspace))
 
@@ -131,7 +130,7 @@ class TRX(Operation):
 
         Args:
             theta (tensor_like or float): rotation angle
-            subspace (Sequence[int]): the 2D subspace on which to apply operation
+            subspace (Sequence[int]): the 2D subspace on which to apply the operation
 
         Returns:
             tensor_like: canonical matrix
