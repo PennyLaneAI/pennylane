@@ -17,8 +17,8 @@ import pytest
 
 pytestmark = pytest.mark.jax
 
-import jax
-import jax.numpy as jnp
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 from jax.config import config
 
