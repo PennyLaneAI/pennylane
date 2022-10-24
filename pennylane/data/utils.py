@@ -14,11 +14,11 @@
 """
 Contains the Dataset utility functions.
 """
+# pylint:disable=too-many-arguments
 from concurrent.futures import ThreadPoolExecutor, wait
 import os
 import requests
 from pennylane.data.dataset import Dataset
-from pennylane.data.dataset import RemoteDataset
 
 S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
 FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
@@ -96,7 +96,17 @@ def _fetch_and_save(filename, dest_folder):
 
 
 def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads):
-    """Download a file for each attribute from each folder to the specified destination."""
+    """Download a file for each attribute from each folder to the specified destination.
+
+    Args:
+        data_type   (str)  : The type of the data required
+        folders     (list) : A list of folders corresponding to S3 object prefixes
+        attributes  (list) : A list to specify individual data elements that are required
+        dest_folder (str)  : Path to the root folder where files should be saved
+        force       (bool) : Whether data has to be downloaded even if it is still present
+        num_threads (int)  : The maximum number of threads to spawn while downloading files
+            (1 thread per file)
+    """
     files = []
     for folder in folders:
         local_folder = os.path.join(dest_folder, data_type, folder)
@@ -125,8 +135,8 @@ def _generate_folders(node, folders):
     """Recursively generate and return a tree of all folder names below a node.
 
     Args:
-        node (dict): A sub-dict of the foldermap for which we will generate a list of sub-folders.
-        folders: (list[list[str]]): The ordered list of folder names requested.
+        node (dict) : A sub-dict of the foldermap for which a list of sub-folders is generated
+        folders (list[list[str]]) : The ordered list of folder names requested.
             The value ``["full"]`` will expand to all possible folders at that depth
 
     Returns:
@@ -150,16 +160,17 @@ def load(
     r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
 
     Args:
-        data_type (str):  A string representing the type of the data required - qchem or qspin
-        attributes (list): An optional list to specify individual data element that are required
-        folder_path (str): Path to the root folder where download takes place. By default dataset folder will be created in the working directory
-        force (Bool): Bool representing whether data has to be downloaded even if it is still present
-        num_threads (int): The maximum number of threads to spawn while downloading files (1 thread per file)
-        params (kwargs): Keyword arguments exactly matching the parameters required for the data type. Note that these are not optional
+        data_type (str)   : A string representing the type of the data required - qchem or qspin
+        attributes (list) : An optional list to specify individual data element that are required
+        folder_path (str) : Path to the root folder where download takes place.
+            By default dataset folder will be created in the working directory
+        force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
+        num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
+        params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
+            Note that these are not optional
 
     Returns:
         list[DatasetFile]
-
     """
 
     _ = lazy
@@ -186,7 +197,7 @@ def load(
     data_files = []
     for folder in all_folders:
         real_folder = os.path.join(directory_path, data_type, folder)
-        obj = RemoteDataset(data_type, real_folder, folder.replace("/", "_"))
+        obj = Dataset(data_type, real_folder, folder.replace("/", "_"), standard=True)
         doc_attrs = obj.list_attributes()
         doc_vals = [type(getattr(obj, attr)) for attr in doc_attrs]
         args_idx = [data["attributes"].index(x) for x in doc_attrs]
@@ -198,13 +209,10 @@ def load(
 
 
 def read(filepath):
+    """Create a new dataset from a file."""
     dataset = Dataset()
     dataset.read(filepath)
     return dataset
-
-
-def write(dataset, filepath):
-    dataset.write(filepath)
 
 
 def _direc_to_dict(path):

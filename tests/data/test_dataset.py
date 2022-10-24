@@ -61,4 +61,4 @@ def test_from_dataset():
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
     new_dataset = qml.data.Dataset.from_dataset(test_dataset)
 
-    assert new_dataset == test_dataset
+    assert new_dataset.attrs == test_dataset.attrs

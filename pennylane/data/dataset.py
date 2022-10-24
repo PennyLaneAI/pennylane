@@ -75,20 +75,54 @@ class Dataset(ABC):
         + (1) [Z1]
     """
 
-    def __init__(self, **kwargs):
+    _standard_argnames = ["data_type", "folder", "attr_prefix"]
+
+    def __std_init__(self, data_type, folder, attr_prefix):
+        """Constructor for standardized datasets."""
+        self._dtype = data_type
+        self._folder = folder.rstrip("/")
+        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/")) + "_{}.dat"
+        self.__doc__ = ""
+
+        self._fullfile = self._prefix.format("full")
+        if not os.path.exists(self._fullfile):
+            self._fullfile = None
+
+        for f in glob(self._folder + "/*.dat"):
+            data = self._read_file(f)
+            for attr, value in data.items():
+                setattr(self, f"{attr}", value)
+
+    def __base_init__(self, **kwargs):
+        """Constructor for user-defined datasets."""
         for key, val in kwargs.items():
             setattr(self, key, val)
 
+    def __init__(self, *args, standard=False, **kwargs):
+        if standard:
+            if len(args) != len(self._standard_argnames):
+                raise TypeError(
+                    f"Standard datasets expect {len(self._standard_argnames)} arguments: {self._standard_argnames}"
+                )
+            for name, val in zip(self._standard_argnames, args):
+                if not isinstance(val, str):
+                    raise ValueError(f"Expected {name} to be a str, got {type(val).__name__}")
+            self._is_standard = True
+            self.__std_init__(*args)
+        else:
+            self._is_standard = False
+            self.__base_init__(**kwargs)
+
     @property
     def attrs(self):
-        """Returns attributes of the dataset"""
+        """Returns attributes of the dataset."""
         return {k: v for k, v in vars(self).items() if k[0] != "_"}
 
     @staticmethod
     def _read_file(filepath):
         """Reading the data from a saved file. Returns a dictionary."""
-        with open(filepath, "rb") as file:
-            compressed_pickle = file.read()
+        with open(filepath, "rb") as f:
+            compressed_pickle = f.read()
 
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
@@ -121,10 +155,10 @@ class Dataset(ABC):
         """
         if not os.path.exists(os.path.dirname(filepath)):
             os.makedirs(os.path.dirname(filepath))
-        pickled_data = dill.dumps(self.attrs, protocol=protocol)  # returns data as a bytes object
+        pickled_data = dill.dumps(self.attrs, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
-        with open(filepath, "wb") as file:
-            file.write(compressed_pickle)
+        with open(filepath, "wb") as f:
+            f.write(compressed_pickle)
 
     def list_attributes(self):
         """List the attributes saved on the Dataset"""
@@ -151,46 +185,24 @@ class Dataset(ABC):
         """
         return cls(**dataset.attrs)
 
-
-class RemoteDataset(Dataset):
-    """A dataset object that provides additional utility, given that the data comes
-    from the PennyLane remote dataset source."""
-
-    def __init__(self, dtype, folder, attr_prefix, **kwargs):
-        self._dtype = dtype
-        self._folder = folder.rstrip("/")
-        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/")) + "_{}.dat"
-        self.__doc__ = ""
-
-        self._fullfile = self._prefix.format("full")
-        if not os.path.exists(self._fullfile):
-            self._fullfile = None
-
-        for f in glob(self._folder + "/*.dat"):
-            data = self._read_file(f)
-            for attr, value in data.items():
-                setattr(self, f"{attr}", value)
-
-        super().__init__(**kwargs)
-
+    # The methods below are intended for use only by standard Dataset objects
     def __get_filename_for_attribute(self, attribute):
         return self._fullfile if self._fullfile else self._prefix.format(attribute)
 
     def __getattribute__(self, name):
         try:
             return super().__getattribute__(name)
-        except AttributeError:
-            pass
-        filepath = self.__get_filename_for_attribute(name)
-        if os.path.exists(filepath):
-            # TODO: setattr?
-            filedata = self._read_file(filepath)
-            if name in filedata:
-                return filedata[name]
-        # TODO: download the file here?
-        raise AttributeError(
-            f"'Dataset' object has no attribute {name} and no matching file was found"
-        )
+        except AttributeError as attr_error:
+            if not self._is_standard:
+                raise attr_error
+            filepath = self.__get_filename_for_attribute(name)
+            if os.path.exists(filepath):
+                # TODO: setattr?
+                filedata = self._read_file(filepath)
+                if name in filedata:
+                    return filedata[name]
+            # TODO: download the file here?
+            raise attr_error
 
     def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
         """Build the docstring for the Dataset class"""
@@ -200,4 +212,4 @@ class RemoteDataset(Dataset):
             for arg, argdoc, argtype in zip(args, argsdocs, argtypes):
                 docstring += f"\t{arg} ({argtype}): {argdoc}\n"
             docstring += f"\nReturns:\n\tDataset({self._dtype})"
-        self.__doc__ = docstring
+        self.__doc__ = docstring # pylint:disable=attribute-defined-outside-init
