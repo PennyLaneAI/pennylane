@@ -343,7 +343,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         try:
             if self.do_queue:
                 QueuingManager.append(self)
-            return super().__enter__()
+            super().__enter__()
+            return self
         except Exception as _:
             QuantumTape._lock.release()
             raise

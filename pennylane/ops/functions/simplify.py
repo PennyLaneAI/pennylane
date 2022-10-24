@@ -90,7 +90,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         return input.simplify()
 
     if isinstance(input, QuantumTape):
-        with QuantumTape() as new_tape:
+        with QuantumTape(shots=input.raw_shots) as new_tape:
             for op in list(input):
                 _ = qml.simplify(op)
 
@@ -115,6 +115,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
                 func=qfunc,
                 device=input.device,
                 interface=input.interface,
+                shots=input.raw_shots,
                 diff_method=input.diff_method,
                 expansion_strategy=input.expansion_strategy,
                 **input.execute_kwargs,

@@ -21,11 +21,14 @@ import warnings
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.circuit_graph import LayerData
+from pennylane.tape import QuantumTape
 
 from .batch_transform import batch_transform
 
 
-def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+def expand_fn(
+    tape: QuantumTape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -34,7 +37,9 @@ def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wi
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+def metric_tensor(
+    tape: QuantumTape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:
@@ -319,7 +324,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
+    _expand_fn = lambda tape: self.expand_fn(  # pylint: disable=unnecessary-lambda-assignment
+        tape, *targs, **tkwargs
+    )
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
@@ -351,7 +358,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                     "much more efficient to request the block-diagonal approximation directly!"
                 )
             tkwargs["approx"] = "block-diag"
-            return self.__call__(qnode, *targs, **tkwargs)(*args, **kwargs)
+            return self(qnode, *targs, **tkwargs)(*args, **kwargs)
 
         if not hybrid:
             return mt
@@ -364,7 +371,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return wrapper
 
 
-def _metric_tensor_cov_matrix(tape, diag_approx):
+def _metric_tensor_cov_matrix(tape: QuantumTape, diag_approx):
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
@@ -408,7 +415,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
         # to measure in the basis of the parametrized layer generators.
-        with tape.__class__() as layer_tape:
+        with QuantumTape(shots=tape.raw_shots) as layer_tape:
             for op in queue:
                 qml.apply(op)
 
@@ -480,7 +487,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
         ) from e
 
 
-def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
+def _get_first_term_tapes(tape: QuantumTape, layer_i, layer_j, allow_nonunitary, aux_wire):
     r"""Obtain the tapes for the first term of all tensor entries
     belonging to an off-diagonal block.
 
@@ -516,7 +523,7 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
         for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
             gen_op_j = _get_gen_op(diffed_op_j, allow_nonunitary, aux_wire)
 
-            with tape.__class__() as new_tape:
+            with QuantumTape(shots=tape.raw_shots) as new_tape:
                 # Initialize auxiliary wire
                 qml.Hadamard(wires=aux_wire)
                 # Apply backward cone of first layer

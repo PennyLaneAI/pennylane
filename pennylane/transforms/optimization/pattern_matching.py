@@ -14,24 +14,24 @@
 """Transform finding all maximal matches of a pattern in a quantum circuit and optimizing the circuit by
 substitution."""
 
-import itertools
 import copy
+import itertools
 from collections import OrderedDict
 
 import numpy as np
 
 import pennylane as qml
-from pennylane import apply, adjoint
+from pennylane import adjoint, apply
+from pennylane.ops.qubit.attributes import symmetric_over_all_wires
+from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
-from pennylane.ops.qubit.attributes import (
-    symmetric_over_all_wires,
-)
+
 
 # pylint: disable=too-many-statements
 @qfunc_transform
-def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None):
+def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
@@ -212,7 +212,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
             # If some substitutions are possible, we create an optimized circuit.
             if substitution.substitution_list:
                 # Create a tape that does not affect the outside context.
-                with qml.tape.QuantumTape(do_queue=False) as tape_inside:
+                with QuantumTape(shots=tape.raw_shots, do_queue=False) as tape_inside:
                     # Loop over all possible substitutions
                     for group in substitution.substitution_list:
 

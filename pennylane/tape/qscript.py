@@ -1059,7 +1059,7 @@ class QuantumScript:
     def __copy__(self):
         return self.copy(copy_operations=True)
 
-    def expand(self, depth=1, stop_at=None, expand_measurements=False):
+    def expand(self, depth=1, stop_at=None, expand_measurements=False) -> "QuantumScript":
         """Expand all operations to a specific depth.
 
         Args:
