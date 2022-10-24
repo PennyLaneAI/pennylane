@@ -189,6 +189,8 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
+* `qml.tape.QuantumTape.inv()` is now deprecated. Please use `qml.tape.QuantumTape.adjoint` instead.
+
 <h3>Documentation</h3>
 
 * The code block in the usage details of the UCCSD template is updated.
