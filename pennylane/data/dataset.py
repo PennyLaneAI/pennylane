@@ -212,7 +212,7 @@ class Dataset(ABC):
             for arg, argdoc, argtype in zip(args, argsdocs, argtypes):
                 docstring += f"\t{arg} ({argtype}): {argdoc}\n"
             docstring += f"\nReturns:\n\tDataset({self._dtype})"
-        self.__doc__ = docstring # pylint:disable=attribute-defined-outside-init
+        self.__doc__ = docstring  # pylint:disable=attribute-defined-outside-init
 
 
 def from_file(filepath):

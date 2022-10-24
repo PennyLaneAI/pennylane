@@ -104,6 +104,7 @@ def get_replacement(url, timeout=5.0):
 
 # ('qspn','Currently we have data hosted from types: {_data_struct.keys()}, but got {\'qspn\'}.'),
 
+
 @patch.object(qml.data.s3, "_foldermap", _folder_map)
 @patch.object(qml.data.s3, "_data_struct", _data_struct)
 class TestLoad:
@@ -117,7 +118,6 @@ class TestLoad:
     def test_load_error_data_type(self, data_type, molname, basis, bondlength, error_message):
         with pytest.raises(ValueError, match=error_message):
             qml.data.load(data_type, molname, basis, bondlength)
-
 
     @pytest.mark.parametrize(
         ("data_type", "molname", "basis", "bondlength", "error_message"),
@@ -145,11 +145,12 @@ class TestLoad:
             ),
         ],
     )
-    def test_load_error_data_unavailable_qchem(self, data_type, molname, basis, bondlength, error_message):
+    def test_load_error_data_unavailable_qchem(
+        self, data_type, molname, basis, bondlength, error_message
+    ):
         """Tests that the load function returns a list of available data when requesting nonexistent chemistry data"""
         with pytest.raises(ValueError, match=error_message):
             qml.data.load(data_type, molname=molname, basis=basis, bondlength=bondlength)
-
 
     @pytest.mark.parametrize(
         ("data_type", "sysname", "periodicity", "lattice", "layout", "error_message"),
