@@ -697,14 +697,14 @@ class TestProperties:
 
         true_eigvecs = qnp.tensor(
             [
+                [0.0, 0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ]
         )
 
-        true_eigvals = qnp.tensor([1.0, -1.0, -1.0, 1.0])
+        true_eigvals = qnp.tensor([-1.0, -1.0, 1.0, 1.0])
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
