@@ -162,7 +162,11 @@ def adjoint_metric_tensor(
     The drawback of the adjoint method is that it is only available on simulators and without
     shot simulations.
     """
-    if circuit.shots is None and device is not None and device.shots is not None:
+    if (
+        isinstance(device, qml.Device)
+        and getattr(circuit, "shots", False) is None
+        and device.shots is not None
+    ):
         circuit.shots = device.raw_shots
     if isinstance(circuit, qml.tape.QuantumTape):
         return _adjoint_metric_tensor_tape(circuit, device)
