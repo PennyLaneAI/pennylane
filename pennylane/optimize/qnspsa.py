@@ -13,9 +13,13 @@
 # limitations under the License.
 """Quantum natural SPSA optimizer"""
 import warnings
+
 from scipy.linalg import sqrtm
+
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.qnode import QNode
+from pennylane.tape import QuantumTape
 
 
 class QNSPSAOptimizer:
@@ -142,7 +146,7 @@ class QNSPSAOptimizer:
         self.last_n_steps = np.zeros(history_length)
         self.rng = np.random.default_rng(seed)
 
-    def step(self, cost, *args, **kwargs):
+    def step(self, cost: QNode, *args, **kwargs):
         """Update trainable arguments with one step of the optimizer.
 
         .. note::
@@ -168,7 +172,7 @@ class QNSPSAOptimizer:
 
         return self._step_core(cost, args, kwargs)
 
-    def step_and_cost(self, cost, *args, **kwargs):
+    def step_and_cost(self, cost: QNode, *args, **kwargs):
         r"""Update trainable parameters with one step of the optimizer and return
         the corresponding objective function value after the step.
 
@@ -190,7 +194,7 @@ class QNSPSAOptimizer:
         params_next, loss_curr = self._apply_blocking(cost, args, kwargs, params_next)
         return params_next, loss_curr
 
-    def _step_core(self, cost, args, kwargs):
+    def _step_core(self, cost: QNode, args, kwargs):
         """Core step function that returns the updated parameter before blocking condition
         is applied.
 
@@ -343,7 +347,7 @@ class QNSPSAOptimizer:
 
         return next_args
 
-    def _get_spsa_grad_tapes(self, cost, args, kwargs):
+    def _get_spsa_grad_tapes(self, cost: QNode, args, kwargs):
         dirs = []
         args_plus = list(args)
         args_minus = list(args)
@@ -377,7 +381,7 @@ class QNSPSAOptimizer:
         self.metric_tensor = tensor_regularized
         self.k += 1
 
-    def _get_tensor_tapes(self, cost, args, kwargs):
+    def _get_tensor_tapes(self, cost: QNode, args, kwargs):
         dir1_list = []
         dir2_list = []
         args_list = [list(args) for _ in range(4)]
@@ -401,7 +405,7 @@ class QNSPSAOptimizer:
             tapes.append(self._get_overlap_tape(cost, args, args_finite_diff, kwargs))
         return tapes, dir_vecs
 
-    def _get_overlap_tape(self, cost, args1, args2, kwargs):
+    def _get_overlap_tape(self, cost: QNode, args1, args2, kwargs):
         # the returned tape effectively measure the fidelity between the two parametrized circuits
         # with input args1 and args2. The measurement results of the tape are an array of probabilities
         # in the computational basis. The first element of the array represents the probability in
@@ -409,7 +413,7 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        with qml.tape.QuantumTape() as tape:
+        with QuantumTape(cost.raw_shots) as tape:
             for op in op_forward:
                 qml.apply(op)
             for op in reversed(op_inv):
@@ -418,11 +422,11 @@ class QNSPSAOptimizer:
         return tape
 
     @staticmethod
-    def _get_operations(cost, args, kwargs):
+    def _get_operations(cost: QNode, args, kwargs):
         cost.construct(args, kwargs)
         return cost.tape.operations
 
-    def _apply_blocking(self, cost, args, kwargs, params_next):
+    def _apply_blocking(self, cost: QNode, args, kwargs, params_next):
         cost.construct(args, kwargs)
         tape_loss_curr = cost.tape.copy(copy_operations=True)
 
