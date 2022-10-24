@@ -183,9 +183,10 @@ def test_expand(wires):
         assert actual_op.wires == qml.wires.Wires(expected_wires)
 
 
-def test_findstate():
-    """Asserts can find state marked by oracle."""
-    wires = list(range(6))
+@pytest.mark.parametrize("n_wires", [6, 13])
+def test_findstate(n_wires):
+    """Asserts can find state marked by oracle, with operation full matrix and decomposition."""
+    wires = list(range(n_wires))
 
     dev = qml.device("default.qubit", wires=wires)
 
