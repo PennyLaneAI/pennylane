@@ -551,7 +551,12 @@ class QNode:
         Returns:
             list[.ShotTuple[int, int]]: sparse representation of the shot sequence
         """
-        return self.tape._shot_vector
+        return self.tape.shot_vector
+
+    @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        return self.tape.analytic
 
     def has_partitioned_shots(self):
         """Checks if the device was instructed to perform executions with partitioned shots.

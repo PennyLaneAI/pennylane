@@ -1422,6 +1422,11 @@ class QuantumScript:
         """
         return self._shot_vector
 
+    @property
+    def analytic(self):
+        """Whether shots is None or not. Kept for backwards compatability."""
+        return self._shots is None
+
     def has_partitioned_shots(self):
         """Checks if the device was instructed to perform executions with partitioned shots.
 
