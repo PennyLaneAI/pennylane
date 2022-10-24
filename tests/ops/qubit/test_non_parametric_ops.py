@@ -447,7 +447,7 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, opr.matrix())
 
     def test_sum_decomposition(self):
-        """"Tests the decomposition of the Sum is correct"""
+        """ "Tests the decomposition of the Sum is correct"""
         op = qml.SUM(wires=[0, 1, 2])
         res = op.decomposition()
 
@@ -460,7 +460,7 @@ class TestDecompositions:
         assert res[1].wires == Wires([0, 2])
 
     def test_carry_decomposition(self):
-        """"Tests the decomposition of the Carry is correct"""
+        """ "Tests the decomposition of the Carry is correct"""
         op = qml.CARRY(wires=[0, 1, 2, 3])
         res = op.decomposition()
 
@@ -476,7 +476,7 @@ class TestDecompositions:
         assert res[2].wires == Wires([0, 2, 3])
 
     def test_carry_inv_decomposition(self):
-        """"Tests the decomposition of the Carry_inv is correct"""
+        """ "Tests the decomposition of the Carry_inv is correct"""
         op = qml.CARRY_inv(wires=[0, 1, 2, 3])
         res = op.decomposition()
 
@@ -493,7 +493,7 @@ class TestDecompositions:
 
     def test_ctrl_swap_decomposition(self):
         """Tests the decomposition of the Ctrl_swap is correct"""
-        op = qml.Ctrl_SWAP(wires=[0,1,2])
+        op = qml.Ctrl_SWAP(wires=[0, 1, 2])
         res = op.decomposition()
 
         assert len(res) == 3
@@ -511,15 +511,12 @@ class TestDecompositions:
 class TestAdder:
     def test_wrong_number_wires_list_raises_error(self):
         """Test that the ADDER operator raises an error when instantiated with wrong number of wires."""
-        with pytest.raises(
-                Exception,
-                match='Wrong number of wires:'
-        ):
-            qml.ADDER.compute_decomposition(wires=[0,1,2,3,4])
+        with pytest.raises(Exception, match="Wrong number of wires:"):
+            qml.ADDER.compute_decomposition(wires=[0, 1, 2, 3, 4])
 
     def test_adder_decomposition(self):
         """Tests the decomposition of the ADDER is correct"""
-        op = qml.ADDER(wires=[0,1,2,3])
+        op = qml.ADDER(wires=[0, 1, 2, 3])
         res = op.decomposition()
 
         assert res[0].name == "CARRY"
@@ -535,10 +532,8 @@ class TestAdder:
 class TestAdder_inv:
     def test_wrong_number_wires_list_raises_error(self):
         """Test that the ADDER_inv operator raises an error when instantiated with wrong number of wires."""
-        with pytest.raises(
-                Exception, match='Wrong number of wires:'
-        ):
-            qml.ADDER_inv(wires=[0,1,2,3,4]).compute_decomposition(wires=[0,1,2,3,4])
+        with pytest.raises(Exception, match="Wrong number of wires:"):
+            qml.ADDER_inv(wires=[0, 1, 2, 3, 4]).compute_decomposition(wires=[0, 1, 2, 3, 4])
 
     def test_adder_inv_decomposition(self):
         """Tests the decomposition of the ADDER_inv is correct"""
@@ -558,7 +553,7 @@ class TestAdder_inv:
 class TestQFT_:
     def test_qft_decomposition(self):
         """Tests the decomposition of the QFT_ is correct"""
-        op = qml.QFT_(wires=[0,1,2,3])
+        op = qml.QFT_(wires=[0, 1, 2, 3])
         res = op.decomposition()
 
         assert res[0].name == "Hadamard"
@@ -598,7 +593,7 @@ class TestQFT_:
 class TestQFT_inv:
     def test_qft_inv_decomposition(self):
         """Tests the decomposition of the QFT_inv is correct"""
-        op = qml.QFT_inv(wires=[0,1,2,3])
+        op = qml.QFT_inv(wires=[0, 1, 2, 3])
         res = op.decomposition()
 
         assert res[0].name == "Hadamard"

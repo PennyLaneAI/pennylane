@@ -1215,11 +1215,14 @@ class TestTapeExpansion:
             assert np.allclose(grad2_c, 0)
 
             grad2_w_c = jax.jacobian(jax.grad(circuit, argnum=1), argnum=2)(d, w, c)
-            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
-                0,
-                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
-                -np.sin(d[1] + w[1]),
-            ]
+            expected = (
+                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
+                [
+                    0,
+                    -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                    -np.sin(d[1] + w[1]),
+                ],
+            )
             assert np.allclose(grad2_w_c, expected)
 
     # @pytest.mark.xfail(reason="Will fail since expval(H) expands to a vector valued return for finite-shots")

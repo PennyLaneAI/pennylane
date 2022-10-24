@@ -105,7 +105,7 @@ ops = {
     "ADDER_inv",
     "Ctrl_SWAP",
     "QFT_",
-    "QFT_inv",   
+    "QFT_inv",
     "Controlled_reset_zero_register_to_N",
     "ADDER_MOD",
     "ADDER_MOD_inv",

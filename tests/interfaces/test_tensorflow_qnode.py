@@ -1170,11 +1170,14 @@ class TestTapeExpansion:
             assert grad2_c is None or np.allclose(grad2_c, 0)
 
             grad2_w_c = t2.jacobian(grad[1], c)
-            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
-                0,
-                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
-                -np.sin(d[1] + w[1]),
-            ]
+            expected = (
+                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
+                [
+                    0,
+                    -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                    -np.sin(d[1] + w[1]),
+                ],
+            )
             assert np.allclose(grad2_w_c, expected)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
@@ -1230,11 +1233,14 @@ class TestTapeExpansion:
             assert grad2_c is None
 
             grad2_w_c = t2.jacobian(grad[1], c)
-            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
-                0,
-                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
-                -np.sin(d[1] + w[1]),
-            ]
+            expected = (
+                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
+                [
+                    0,
+                    -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                    -np.sin(d[1] + w[1]),
+                ],
+            )
             assert np.allclose(grad2_w_c, expected, atol=0.1)
 
 

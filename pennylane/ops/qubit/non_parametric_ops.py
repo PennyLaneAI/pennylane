@@ -29,6 +29,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
+
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
@@ -2411,10 +2412,7 @@ class SUM(Operation):
 
         """
 
-        decomp_ops = [
-            qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.CNOT(wires=[wires[0], wires[2]])
-        ]
+        decomp_ops = [qml.CNOT(wires=[wires[1], wires[2]]), qml.CNOT(wires=[wires[0], wires[2]])]
 
         return decomp_ops
 
@@ -2465,7 +2463,7 @@ class CARRY(Operation):
         decomp_ops = [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.Toffoli(wires=[wires[0], wires[2], wires[3]])
+            qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
         ]
 
         return decomp_ops
@@ -2514,7 +2512,7 @@ class CARRY_inv(Operation):
         decomp_ops = [
             qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
             qml.CNOT(wires=[wires[1], wires[2]]),
-            qml.Toffoli(wires=wires[1:])
+            qml.Toffoli(wires=wires[1:]),
         ]
 
         return decomp_ops
@@ -2563,26 +2561,42 @@ class ADDER(Operation):
         # check inputs
         if (len(wires) - 1) % 3 != 0 or len(wires) < 4:
             raise Exception(
-                'Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b and n wires for wires_c'
+                "Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b and n wires for wires_c"
             )
-        else:
-            n = int((len(wires) - 1) / 3)
-            wires_a = wires[:n]
-            wires_b = wires[n:2 * n + 1]
-            wires_c = wires[2 * n + 1:]
+
+        n = int((len(wires) - 1) / 3)
+        wires_a = wires[:n]
+        wires_b = wires[n : 2 * n + 1]
+        wires_c = wires[2 * n + 1 :]
 
         decomp_ops = list()
 
         # block of CARRY gates
         for i in range(len(wires_a) - 1):
             decomp_ops += [CARRY(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
-        decomp_ops += [CARRY(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1],
-                                    wires_b[len(wires_a)]])]
+        decomp_ops += [
+            CARRY(
+                wires=[
+                    wires_c[len(wires_a) - 1],
+                    wires_a[len(wires_a) - 1],
+                    wires_b[len(wires_a) - 1],
+                    wires_b[len(wires_a)],
+                ]
+            )
+        ]
 
         decomp_ops += [qml.CNOT(wires=[wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
 
         # block of inverse-CARRY and SUM gates
-        decomp_ops += [SUM(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
+        decomp_ops += [
+            SUM(
+                wires=[
+                    wires_c[len(wires_a) - 1],
+                    wires_a[len(wires_a) - 1],
+                    wires_b[len(wires_a) - 1],
+                ]
+            )
+        ]
         for i in range(len(wires_a) - 2, -1, -1):
             decomp_ops += [CARRY_inv(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
             decomp_ops += [SUM(wires=[wires_c[i], wires_a[i], wires_b[i]])]
@@ -2633,12 +2647,13 @@ class ADDER_inv(Operation):
         # check inputs
         if (len(wires) - 1) % 3 != 0 or len(wires) < 4:
             raise Exception(
-                'Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b and n wires for wires_c')
-        else:
-            n = int((len(wires) - 1) / 3)
-            wires_a = wires[:n]
-            wires_b = wires[n:2 * n + 1]
-            wires_c = wires[2 * n + 1:]
+                "Wrong number of wires: should be n wires for wires_a, n+1 wires for wires_b and n wires for wires_c"
+            )
+
+        n = int((len(wires) - 1) / 3)
+        wires_a = wires[:n]
+        wires_b = wires[n : 2 * n + 1]
+        wires_c = wires[2 * n + 1 :]
 
         decomp_ops = list()
 
@@ -2646,13 +2661,29 @@ class ADDER_inv(Operation):
         for i in range(len(wires_a) - 1):
             decomp_ops += [SUM(wires=[wires_c[i], wires_a[i], wires_b[i]])]
             decomp_ops += [CARRY(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
-        decomp_ops += [SUM(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
+        decomp_ops += [
+            SUM(
+                wires=[
+                    wires_c[len(wires_a) - 1],
+                    wires_a[len(wires_a) - 1],
+                    wires_b[len(wires_a) - 1],
+                ]
+            )
+        ]
 
         decomp_ops += [qml.CNOT(wires=[wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1]])]
 
         # block of inverse-CARRY gates
-        decomp_ops += [CARRY_inv(wires=[wires_c[len(wires_a) - 1], wires_a[len(wires_a) - 1], wires_b[len(wires_a) - 1],
-                                        wires_b[len(wires_a)]])]
+        decomp_ops += [
+            CARRY_inv(
+                wires=[
+                    wires_c[len(wires_a) - 1],
+                    wires_a[len(wires_a) - 1],
+                    wires_b[len(wires_a) - 1],
+                    wires_b[len(wires_a)],
+                ]
+            )
+        ]
         for i in range(len(wires_a) - 2, -1, -1):
             decomp_ops += [CARRY_inv(wires=[wires_c[i], wires_a[i], wires_b[i], wires_c[i + 1]])]
 
@@ -2660,6 +2691,7 @@ class ADDER_inv(Operation):
 
 
 # control_wire = wire[0], swap_wires = wire[1:]
+
 
 class Ctrl_SWAP(Operation):
     r"""Ctrl_SWAP(wires)
@@ -2701,12 +2733,10 @@ class Ctrl_SWAP(Operation):
 
         """
 
-        control_wire = wires[0]
-
         decomp_ops = [
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
-            qml.CNOT(wires=[wires[1], wires[2]])
+            qml.CNOT(wires=[wires[1], wires[2]]),
         ]
 
         return decomp_ops
@@ -2762,6 +2792,7 @@ class QFT_(Operation):
         """
         # local import to avoid Circular Import
         from .parametric_ops import CR_k
+
         decomp_ops = list()
 
         # block of Hadamard and CR_k gates
@@ -2803,31 +2834,32 @@ class QFT_inv(Operation):
     def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
 
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
+         Args:
+             wires (Iterable, Wires): wires that the operator acts on
 
-        Returns:
-            list[Operator]: decomposition into lower level operations
+         Returns:
+             list[Operator]: decomposition into lower level operations
 
-        **Example:**
+         **Example:**
 
-        >>> print(qml.QFT_inv.compute_decomposition((0,1,2,3)))
-       [Hadamard(wires=[0]),
-       CR_k_inv(2, wires=[1, 0]),
-       CR_k_inv(3, wires=[2, 0]),
-       CR_k_inv(4, wires=[3, 0]),
-       Hadamard(wires=[1]),
-       CR_k_inv(2, wires=[2, 1]),
-       CR_k_inv(3, wires=[3, 1]),
-       Hadamard(wires=[2]),
-       CR_k_inv(2, wires=[3, 2]),
-       Hadamard(wires=[3]),
-       SWAP(wires=[0, 3]),
-       SWAP(wires=[1, 2])]
+         >>> print(qml.QFT_inv.compute_decomposition((0,1,2,3)))
+        [Hadamard(wires=[0]),
+        CR_k_inv(2, wires=[1, 0]),
+        CR_k_inv(3, wires=[2, 0]),
+        CR_k_inv(4, wires=[3, 0]),
+        Hadamard(wires=[1]),
+        CR_k_inv(2, wires=[2, 1]),
+        CR_k_inv(3, wires=[3, 1]),
+        Hadamard(wires=[2]),
+        CR_k_inv(2, wires=[3, 2]),
+        Hadamard(wires=[3]),
+        SWAP(wires=[0, 3]),
+        SWAP(wires=[1, 2])]
 
         """
         # local import to avoid Circular Import
         from .parametric_ops import CR_k_inv
+
         decomp_ops = list()
 
         # block of Hadamard and CR_k gates
@@ -2842,6 +2874,3 @@ class QFT_inv(Operation):
             decomp_ops += [qml.SWAP(wires=[wires[i], wires[len(wires) - (i + 1)]])]
 
         return decomp_ops
-
-
-

@@ -25,9 +25,7 @@ from pennylane import apply, adjoint
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
-from pennylane.ops.qubit.attributes import (
-    symmetric_over_all_wires,
-)
+from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 
 # pylint: disable=too-many-statements
 @qfunc_transform

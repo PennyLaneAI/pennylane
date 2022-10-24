@@ -152,9 +152,9 @@ def test_df_costs(one, two, g_cost, q_cost):
 
 @pytest.mark.parametrize(
     ("norm", "error", "cost_ref"),
-    [  # cost_ref is computed manually
+    [
         (72.49779513025341, 0.001, 113880),
-    ],
+    ],  # cost_ref is computed manually
 )
 def test_estimation_cost(norm, error, cost_ref):
     r"""Test that estimation_cost returns the correct values."""

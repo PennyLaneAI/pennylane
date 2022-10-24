@@ -122,9 +122,9 @@ class TestKwargs:
     @pytest.mark.parametrize(
         "notches, n_patches",
         [
-            (True, 8),  # 4 notches, 3 measurement, 1 box
-            (False, 4),  # 1 box, 3 measurements
-        ],
+            (True, 8),
+            (False, 4),
+        ],  # 4 notches, 3 measurement, 1 box  # 1 box, 3 measurements
     )
     def test_active_wire_notches(self, notches, n_patches):
         """Test active wire notches can be toggled by keyword."""
