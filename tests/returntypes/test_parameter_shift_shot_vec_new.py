@@ -2470,8 +2470,8 @@ class TestReturn:
     The return types have the following major cases:
 
     1. 1 trainable param, 1 measurement
-    2. >1 trainable param, 1 measurement
-    3. 1 trainable param, >1 measurement
+    2. 1 trainable param, >1 measurement
+    3. >1 trainable param, 1 measurement
     4. >1 trainable param, >1 measurement
     """
 
@@ -2501,10 +2501,44 @@ class TestReturn:
             assert isinstance(res, np.ndarray)
             assert res.shape == shape
 
+    @pytest.mark.parametrize("op_wire", [0, 1])
+    def test_1_N(self, shot_vec, op_wire):
+        """Test single param multi-measurement case"""
+        dev = qml.device("default.qubit", wires=6, shots=shot_vec)
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(
+                x, wires=[op_wire]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+
+            # 4 measurements
+            qml.expval(qml.PauliZ(wires=0))
+
+            # Note: wire 1 is skipped as a measurement to allow for zero grad case to be tested
+            qml.probs(wires=[3, 2])
+            qml.var(qml.Projector([1], wires=4))
+            qml.var(qml.Hermitian(A, wires=5))
+
+        # Multiple trainable params
+        tape.trainable_params = {0}
+
+        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == len(shot_vec)
+        assert isinstance(all_res, tuple)
+
+        expected_shapes = [(), (4,), (), ()]
+        for meas_res in all_res:
+            for res, shape in zip(meas_res, expected_shapes):
+                assert isinstance(res, np.ndarray)
+                assert res.shape == shape
+
     @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [0, 2])
-    def test_1_N(self, shot_vec, meas, shape, op_wires):
-        """Test one param multi-measurement case"""
+    def test_N_1(self, shot_vec, meas, shape, op_wires):
+        """Test multi-param single measurement case"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
         x = 0.543
         y = 0.213
