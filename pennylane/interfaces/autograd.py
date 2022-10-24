@@ -521,9 +521,9 @@ def _compute_vjps(jacs, dy, multi_measurements):
     vjps = []
     for i, multi in enumerate(multi_measurements):
         if multi:
-            vjps.append(qml.gradients.compute_vjp_multi(dy[i], jacs[i]))
+            vjps.append(qml.gradients.compute_vjp_multi_new(dy[i], jacs[i]))
         else:
-            vjps.append(qml.gradients.compute_vjp_single(dy[i], jacs[i]))
+            vjps.append(qml.gradients.compute_vjp_single_new(dy[i], jacs[i]))
     return vjps
 
 

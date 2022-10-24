@@ -161,6 +161,7 @@ class TestQNode:
             return autograd.numpy.hstack(circuit(x, y))
 
         assert circuit.qtape.trainable_params == [0, 1]
+        assert isinstance(res, tuple)
         assert len(res) == 2
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
@@ -169,7 +170,12 @@ class TestQNode:
         res = qml.jacobian(cost)(a, b)
         assert isinstance(res, tuple) and len(res) == 2
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+
+        assert isinstance(res[1], np.ndarray)
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         if diff_method in ("parameter-shift", "finite-diff"):
@@ -283,7 +289,6 @@ class TestQNode:
         assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
-        print(res, expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # The parameter-shift rule has been called only once
@@ -312,10 +317,9 @@ class TestQNode:
 
         res = qml.jacobian(circuit)(a, b, c)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-            tape_params = np.array(circuit.qtape.get_parameters())
-            assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
+        assert circuit.qtape.trainable_params == [0, 2]
+        tape_params = np.array(circuit.qtape.get_parameters())
+        assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
 
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == ()
@@ -1510,7 +1514,7 @@ class TestSample:
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
-    def test_execution_single_measurement_param(self, dev_name, diff_method, mode):
+    def test_grad_single_measurement_param(self, dev_name, diff_method, mode):
         """For one measurement and one param, the gradient is a float."""
         dev = qml.device(dev_name, wires=1)
 
@@ -1529,7 +1533,7 @@ class TestReturn:
         else:
             assert isinstance(grad, float)
 
-    def test_execution_single_measurement_multiple_param(self, dev_name, diff_method, mode):
+    def test_grad_single_measurement_multiple_param(self, dev_name, diff_method, mode):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
 
         dev = qml.device(dev_name, wires=1)
@@ -1550,7 +1554,7 @@ class TestReturn:
         assert grad[0].shape == ()
         assert grad[1].shape == ()
 
-    def test_execution_single_measurement_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_grad_single_measurement_multiple_param_array(self, dev_name, diff_method, mode):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
 
         dev = qml.device(dev_name, wires=1)
@@ -1569,7 +1573,7 @@ class TestReturn:
         assert len(grad) == 2
         assert grad.shape == (2,)
 
-    def test_execution_single_measurement_param_probs(self, dev_name, diff_method, mode):
+    def test_jacobian_single_measurement_param_probs(self, dev_name, diff_method, mode):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
         if diff_method == "adjoint":
@@ -1590,7 +1594,7 @@ class TestReturn:
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (4,)
 
-    def test_execution_single_measurement_probs_multiple_param(self, dev_name, diff_method, mode):
+    def test_jacobian_single_measurement_probs_multiple_param(self, dev_name, diff_method, mode):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
         if diff_method == "adjoint":
@@ -1617,7 +1621,7 @@ class TestReturn:
         assert isinstance(jac[1], np.ndarray)
         assert jac[1].shape == (4,)
 
-    def test_execution_single_measurement_probs_multiple_param_single_array(
+    def test_jacobian_single_measurement_probs_multiple_param_single_array(
         self, dev_name, diff_method, mode
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
@@ -1639,7 +1643,7 @@ class TestReturn:
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (4, 2)
 
-    def test_execution_multiple_measurement_single_param(self, dev_name, diff_method, mode):
+    def test_jacobian_multiple_measurement_single_param(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a single params return an array."""
         dev = qml.device(dev_name, wires=2)
 
@@ -1662,7 +1666,7 @@ class TestReturn:
         assert isinstance(jac, np.ndarray)
         assert jac.shape == (5,)
 
-    def test_execution_multiple_measurement_multiple_param(self, dev_name, diff_method, mode):
+    def test_jacobian_multiple_measurement_multiple_param(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
         if diff_method == "adjoint":
@@ -1693,7 +1697,7 @@ class TestReturn:
         assert isinstance(jac[1], np.ndarray)
         assert jac[0].shape == (5,)
 
-    def test_execution_multiple_measurement_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_jacobian_multiple_measurement_multiple_param_array(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
         if diff_method == "adjoint":
@@ -1748,7 +1752,7 @@ class TestReturn:
         assert isinstance(hess[1], np.ndarray)
         assert hess[1].shape == (2,)
 
-    def test_multiple_derivative_expval_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_hessian_expval_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
 
         if diff_method == "adjoint":
@@ -1770,7 +1774,7 @@ class TestReturn:
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (2, 2)
 
-    def test_multiple_derivative_var_multiple_params(self, dev_name, diff_method, mode):
+    def test_hessian_var_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -1801,7 +1805,7 @@ class TestReturn:
         assert isinstance(hess[1], np.ndarray)
         assert hess[1].shape == (2,)
 
-    def test_multiple_derivative_var_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -1822,7 +1826,7 @@ class TestReturn:
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (2, 2)
 
-    def test_multiple_derivative_probs_expval_multiple_params(self, dev_name, diff_method, mode):
+    def test_hessian_probs_expval_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -1856,9 +1860,7 @@ class TestReturn:
         assert isinstance(hess[1], np.ndarray)
         assert hess[1].shape == (10,)
 
-    def test_multiple_derivative_expval_probs_multiple_param_array(
-        self, dev_name, diff_method, mode
-    ):
+    def test_hessian_expval_probs_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
         if diff_method == "adjoint":
@@ -1883,7 +1885,7 @@ class TestReturn:
         assert isinstance(hess, np.ndarray)
         assert hess.shape == (5, 2, 2)
 
-    def test_multiple_derivative_probs_var_multiple_params(self, dev_name, diff_method, mode):
+    def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -1917,7 +1919,7 @@ class TestReturn:
         assert isinstance(hess[1], np.ndarray)
         assert hess[1].shape == (10,)
 
-    def test_multiple_derivative_var_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
