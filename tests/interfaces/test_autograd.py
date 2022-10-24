@@ -25,6 +25,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
 from pennylane.operation import AnyWires, Observable
+from pennylane.tape import QuantumScript
 
 pytestmark = pytest.mark.autograd
 
@@ -949,6 +950,39 @@ class TestOverridingShots:
         res = execute([tape], dev, gradient_fn=param_shift)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_not_called()
+
+    def test_overriding_shots_with_same_value(self, mocker):
+        """Overriding shots with the same value as the device will have no effect"""
+        dev = qml.device("default.qubit", wires=2, shots=123)
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        spy = mocker.Mock(wraps=QuantumScript.shots.fset)
+        mock_property = QuantumScript.shots.setter(spy)
+        mocker.patch.object(QuantumScript, "shots", mock_property)
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=123)
+        # overriden shots is the same, no change
+        spy.assert_called()
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        # overriden shots is not the same, shots were changed
+        spy.assert_called()
+
+        assert len(spy.call_args_list) == 4
+        # initial tape shots (None) are copied into new tape
+        assert spy.call_args_list[0][0][1] is None
+        # shots are overriden
+        assert spy.call_args_list[1][0][1] == 123
+        # initial tape shots (None) are copied into new tape
+        assert spy.call_args_list[2][0][1] is None
+        # shots are overriden
+        assert spy.call_args_list[3][0][1] == 100
 
     def test_overriding_device_with_shot_vector(self):
         """Overriding a device that has a batch of shots set
