@@ -17,8 +17,8 @@ import pytest
 
 pytestmark = pytest.mark.jax
 
-jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
+import jax
+import jax.numpy as jnp
 
 from jax.config import config
 
@@ -32,19 +32,17 @@ from pennylane.interfaces import execute, InterfaceUnsupportedError
 from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
+# TODO: add jax-jit when it supports new return types.
+# "jax-jit"
+@pytest.mark.parametrize("interface", ["jax-python"])
 class TestJaxExecuteUnitTests:
-    """Unit tests for autograd execution"""
+    """Unit tests for jax execution"""
 
-    def test_import_error(self, mocker):
+    def test_import_error(self, mocker, interface):
         """Test that an exception is caught on import error"""
 
-        mock = mocker.patch.object(jax.extend, "defvjp")
+        mock = mocker.patch.object(jax, "custom_jvp")
         mock.side_effect = ImportError()
-
-        try:
-            del sys.modules["pennylane.interfaces.jax"]
-        except:
-            pass
 
         dev = qml.device("default.qubit", wires=2, shots=None)
 
@@ -56,33 +54,7 @@ class TestJaxExecuteUnitTests:
             match="jax not found. Please install the latest version "
             "of jax to enable the 'jax' interface",
         ):
-            qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift, interface="autograd")
-
-    def test_unknown_interface(self):
-        """Test that an error is raised if the interface is unknown"""
-        a = np.array([0.1, 0.2], requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=1)
-
-        def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.expval(qml.PauliZ(0))
-
-            return qml.execute(
-                [tape], device, gradient_fn=qml.gradients.param_shift, interface="None"
-            )[0]
-
-        with pytest.raises(ValueError, match="Unknown interface"):
-            cost(a, device=dev)
-
-
-# TODO: add jax-jit when it supports new return types.
-# "jax-jit"
-@pytest.mark.parametrize("interface", ["jax-python"])
-class TestJaxExecuteUnitTests:
-    """Unit tests for jax execution"""
+            qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift, interface=interface)
 
     def test_jacobian_options(self, mocker, interface, tol):
         """Test setting jacobian options"""
