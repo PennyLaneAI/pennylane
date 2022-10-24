@@ -201,6 +201,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
+* Adds a "Deprecations" page to the developer documentation.
+  [(#3093)](https://github.com/PennyLaneAI/pennylane/pull/3093)
+
 <h3>Bug fixes</h3>
 
 * `ControlledQubitUnitary.pow` now copies over the `control_values`.
