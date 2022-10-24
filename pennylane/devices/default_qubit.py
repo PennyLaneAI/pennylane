@@ -194,7 +194,7 @@ class DefaultQubit(QubitDevice):
             if getattr(obj, "has_matrix", False):
                 # if the obj has_matrix, we check if it has the attribute decomposition_threshold.
                 # The decomposition_threshold defines a transition from full matrix to the decomposition method.
-                if getattr(obj, 'decomposition_threshold', None) is not None:
+                if getattr(obj, "decomposition_threshold", None) is not None:
                     return len(obj.wires) < getattr(obj, "decomposition_threshold")
                 # pow operations dont work with backprop or adjoint without decomposition
                 # use class name string so we don't need to use isinstance check
