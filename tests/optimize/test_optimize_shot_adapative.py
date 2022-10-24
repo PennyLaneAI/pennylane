@@ -13,8 +13,8 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
-from scipy.stats import multinomial
 from flaky import flaky
+from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -104,7 +104,7 @@ class TestExceptions:
             opt.step(cost, np.array(0.5, requires_grad=True))
 
         # defining the device attribute allows it to proceed
-        cost.device = circuit.device
+        cost.qnode = circuit
         new_x = opt.step(cost, np.array(0.5, requires_grad=True))
 
         assert isinstance(new_x, np.tensor)

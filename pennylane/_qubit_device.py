@@ -39,11 +39,13 @@ from pennylane.measurements import (
     Sample,
     Shadow,
     ShadowExpval,
+    ShadowMeasurementProcess,
     State,
     Variance,
     VnEntropy,
 )
 from pennylane.operation import operation_derivative
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 
@@ -236,7 +238,7 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    def _collect_shotvector_results(self, circuit, counts_exist):
+    def _collect_shotvector_results(self, circuit: QuantumTape, counts_exist):
         """Obtain and process statistics when using a shot vector.
         This routine is part of the ``execute()`` method."""
 
@@ -247,9 +249,9 @@ class QubitDevice(Device):
         results = []
         s1 = 0
 
-        for shot_tuple in self._shot_vector:
+        for shot_tuple in circuit.shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit=circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -282,7 +284,7 @@ class QubitDevice(Device):
 
         return results
 
-    def _execute_new(self, circuit, **kwargs):
+    def _execute_new(self, circuit: QuantumTape, **kwargs):
         """New execute (update of return type) function, it executes a queue of quantum operations on the device and
         then measure the given observables. More case will be added in future PRs, for the moment it only supports
         measurements without shots.
@@ -315,16 +317,16 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None:
+        if circuit.shots is not None:
             self._samples = self.generate_samples()
 
         # compute the required statistics
-        if self._shot_vector is not None:
+        if circuit.shot_vector is not None:
 
-            results = self.shot_vec_statistics(circuit)
+            results = self.shot_vec_statistics(circuit=circuit)
 
         else:
-            results = self._statistics_new(circuit.observables)
+            results = self._statistics_new(circuit=circuit)
             single_measurement = len(circuit.measurements) == 1
 
             if single_measurement:
@@ -340,7 +342,7 @@ class QubitDevice(Device):
         #     self.tracker.record()
         return results
 
-    def execute(self, circuit, **kwargs):
+    def execute(self, circuit: QuantumTape, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
@@ -375,7 +377,7 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None or circuit.is_sampled:
+        if circuit.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
         ret_types = [m.return_type for m in circuit.measurements]
@@ -384,10 +386,10 @@ class QubitDevice(Device):
         )
 
         # compute the required statistics
-        if not self.analytic and self._shot_vector is not None:
+        if not self.analytic and circuit.shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit.observables, circuit=circuit)
+            results = self.statistics(circuit=circuit)
 
         if not circuit.is_sampled:
 
@@ -430,7 +432,7 @@ class QubitDevice(Device):
 
         return results
 
-    def shot_vec_statistics(self, circuit):
+    def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
         with a shot vector and return statistics.
 
@@ -457,10 +459,10 @@ class QubitDevice(Device):
         )
         single_measurement = len(circuit.measurements) == 1
 
-        for shot_tuple in self._shot_vector:
+        for shot_tuple in circuit.shot_vector:
             s2 = s1 + np.prod(shot_tuple)
             r = self._statistics_new(
-                circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+                circuit=circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots
             )
 
             # This will likely be required:
@@ -687,7 +689,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
+    def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -734,6 +736,7 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
+        observables = circuit.observables
         results = []
 
         for obs in observables:
@@ -771,7 +774,7 @@ class QubitDevice(Device):
                         " with other return types"
                     )
 
-                if self.shots is not None:
+                if circuit.shots is not None:
                     warnings.warn(
                         "Requested state or density matrix with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -789,12 +792,12 @@ class QubitDevice(Device):
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
-                if self._shot_vector is not None:
+                if circuit.shot_vector is not None:
                     raise NotImplementedError(
                         "Returning the Von Neumann entropy is not supported with shot vectors."
                     )
 
-                if self.shots is not None:
+                if circuit.shots is not None:
                     warnings.warn(
                         "Requested Von Neumann entropy with finite shots; the returned "
                         "result is analytic and is unaffected by sampling. To silence "
@@ -810,12 +813,12 @@ class QubitDevice(Device):
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
 
-                if self._shot_vector is not None:
+                if circuit.shot_vector is not None:
                     raise NotImplementedError(
                         "Returning the mutual information is not supported with shot vectors."
                     )
 
-                if self.shots is not None:
+                if circuit.shots is not None:
                     warnings.warn(
                         "Requested mutual information with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -851,7 +854,7 @@ class QubitDevice(Device):
 
         return results
 
-    def _statistics_new(self, observables, shot_range=None, bin_size=None):
+    def _statistics_new(self, circuit, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -897,6 +900,7 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
+        observables = circuit.observables
         results = []
 
         for obs in observables:
@@ -926,7 +930,7 @@ class QubitDevice(Device):
                         " with other return types"
                     )
 
-                if self.shots is not None:
+                if circuit.shots is not None:
                     warnings.warn(
                         "Requested state or density matrix with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -951,7 +955,7 @@ class QubitDevice(Device):
                 #         "Returning the Von Neumann entropy is not supported with shot vectors."
                 #     )
 
-                if self.shots is not None:
+                if circuit.shots is not None:
                     warnings.warn(
                         "Requested Von Neumann entropy with finite shots; the returned "
                         "result is analytic and is unaffected by sampling. To silence "
@@ -972,7 +976,7 @@ class QubitDevice(Device):
                 #         "Returning the mutual information is not supported with shot vectors."
                 #     )
 
-                if self.shots is not None:
+                if circuit.shots is not None:
                     warnings.warn(
                         "Requested mutual information with finite shots; the returned "
                         "state information is analytic and is unaffected by sampling. To silence "
@@ -993,7 +997,7 @@ class QubitDevice(Device):
             if obs.return_type in float_return_types:
                 result = self._asarray(result, dtype=self.R_DTYPE)
 
-            if self._shot_vector is not None and isinstance(result, np.ndarray):
+            if circuit.shot_vector is not None and isinstance(result, np.ndarray):
                 # In the shot vector case, measurement results may be of shape (N, 1) instead of (N,)
                 # Squeeze the result to transform the results
                 #
@@ -1238,7 +1242,7 @@ class QubitDevice(Device):
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
-    def classical_shadow(self, obs, circuit):
+    def classical_shadow(self, obs: ShadowMeasurementProcess, circuit: QuantumTape):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -1275,7 +1279,7 @@ class QubitDevice(Device):
             raise ValueError("Circuit must be provided when measuring classical shadows")
 
         wires = obs.wires
-        n_snapshots = self.shots
+        n_snapshots = circuit.shots
         seed = obs.seed
 
         with set_shots(self, shots=1):
@@ -1779,7 +1783,7 @@ class QubitDevice(Device):
         )
         return res
 
-    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
+    def adjoint_jacobian(self, tape: QuantumTape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -1835,7 +1839,7 @@ class QubitDevice(Device):
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
-        if self.shots is not None:
+        if tape.shots is not None:
             warnings.warn(
                 "Requested adjoint differentiation to be computed with finite shots."
                 " The derivative is always exact when using the adjoint differentiation method.",

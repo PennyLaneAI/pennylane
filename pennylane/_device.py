@@ -35,6 +35,7 @@ from pennylane.measurements import (
     Variance,
 )
 from pennylane.operation import Observable, Operation, Tensor
+from pennylane.tape import QuantumTape
 from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -210,9 +211,7 @@ class Device(abc.ABC):
     @property
     def analytic(self):
         """Whether shots is None or not. Kept for backwards compatability."""
-        if self._shots is None:
-            return True
-        return False
+        return self._shots is None
 
     @property
     def wires(self):
@@ -681,7 +680,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumTape):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -708,7 +707,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
-        finite_shots = self.shots is not None
+        finite_shots = circuit.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
