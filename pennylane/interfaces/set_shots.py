@@ -18,9 +18,11 @@ to be temporarily modified.
 # pylint: disable=protected-access
 import contextlib
 
+from pennylane import Device
+
 
 @contextlib.contextmanager
-def set_shots(device, shots):
+def set_shots(device: Device, shots):
     """Context manager to temporarily change the shots
     of a device.
 

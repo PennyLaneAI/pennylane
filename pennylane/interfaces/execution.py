@@ -566,6 +566,16 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    tapes = list(tapes)
+    for i, tape in enumerate(tapes):
+        if override_shots is not False:
+            # Always create a new class when overriding shots
+            new_tape = tape.copy()
+            new_tape.shots = override_shots
+            tapes[i] = new_tape
+        elif tape.shots is None:
+            tape.shots = device.raw_shots
+
     if qml.active_return():
         return _execute_new(
             tapes,

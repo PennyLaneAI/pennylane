@@ -14,9 +14,13 @@
 """
 Contains the QNodeCollection class.
 """
+import warnings
+
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
-import warnings
+from typing import List
+
+from pennylane.qnode import QNode
 
 
 class QNodeCollection(Sequence):
@@ -159,7 +163,7 @@ class QNodeCollection(Sequence):
     """
 
     def __init__(self, qnodes=None):
-        self.qnodes = []
+        self.qnodes: List[QNode] = []
         self.extend(qnodes or [])
 
     @property
