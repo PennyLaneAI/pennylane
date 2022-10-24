@@ -22,26 +22,6 @@ from pennylane import qnode
 from pennylane.tape import QuantumTape
 
 
-def test_unknown_interface():
-    """Test that an error is raised if the interface is unknown"""
-    a = np.array([0.1, 0.2], requires_grad=True)
-
-    dev = qml.device("default.qubit", wires=1)
-
-    def cost(a, device):
-        with qml.tape.QuantumTape() as tape:
-            qml.RY(a[0], wires=0)
-            qml.RX(a[1], wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        return qml.execute([tape], device, gradient_fn=qml.gradients.param_shift, interface="None")[
-            0
-        ]
-
-    with pytest.raises(ValueError, match="Unknown interface"):
-        cost(a, device=dev)
-
-
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
     # Python

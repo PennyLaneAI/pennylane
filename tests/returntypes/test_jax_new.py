@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the jax interface"""
-
+import sys
 import pytest
 
 pytestmark = pytest.mark.jax
@@ -30,6 +30,53 @@ import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute, InterfaceUnsupportedError
 from pennylane.interfaces.jax_jit import _execute_with_fwd
+
+
+class TestJaxExecuteUnitTests:
+    """Unit tests for autograd execution"""
+
+    def test_import_error(self, mocker):
+        """Test that an exception is caught on import error"""
+
+        mock = mocker.patch.object(jax.extend, "defvjp")
+        mock.side_effect = ImportError()
+
+        try:
+            del sys.modules["pennylane.interfaces.jax"]
+        except:
+            pass
+
+        dev = qml.device("default.qubit", wires=2, shots=None)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliY(1))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="jax not found. Please install the latest version "
+            "of jax to enable the 'jax' interface",
+        ):
+            qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift, interface="autograd")
+
+    def test_unknown_interface(self):
+        """Test that an error is raised if the interface is unknown"""
+        a = np.array([0.1, 0.2], requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        def cost(a, device):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            return qml.execute(
+                [tape], device, gradient_fn=qml.gradients.param_shift, interface="None"
+            )[0]
+
+        with pytest.raises(ValueError, match="Unknown interface"):
+            cost(a, device=dev)
+
 
 # TODO: add jax-jit when it supports new return types.
 # "jax-jit"
