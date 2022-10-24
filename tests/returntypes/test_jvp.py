@@ -705,3 +705,32 @@ class TestBatchJVP:
         # list will correspond to a single input parameter of the combined
         # tapes.
         assert len(res) == 3
+
+    def test_reduction_callable(self):
+        """Test the callable reduction strategy"""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(0.4, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(0.4, wires=0)
+            qml.RX(0.6, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=0)
+
+        tape1.trainable_params = {0}
+        tape2.trainable_params = {0, 1}
+
+        tapes = [tape1, tape2]
+        tangents = [np.array([1.0]), np.array([1.0, 1.0])]
+
+        v_tapes, fn = qml.gradients.batch_jvp(
+            tapes, tangents, param_shift, reduction=lambda vjps, x: vjps.append(x)
+        )
+        res = fn(dev.batch_execute(v_tapes))
+        # Returned VJPs will be appended to a list, one vjp per tape
+        assert len(res) == 2
