@@ -277,7 +277,7 @@ class QubitDevice(Device):
 
             s1 = s2
 
-        multiple_sampled_jobs = circuit.is_sampled and self._has_partitioned_shots()
+        multiple_sampled_jobs = circuit.is_sampled and circuit.has_partitioned_shots()
         if not multiple_sampled_jobs and not counts_exist:
             # Can only stack single element outputs
             results = self._stack(results)
@@ -415,7 +415,7 @@ class QubitDevice(Device):
                 # all the other cases except any counts
                 results = self._asarray(results)
 
-        elif circuit.all_sampled and not self._has_partitioned_shots() and not counts_exist:
+        elif circuit.all_sampled and not circuit.has_partitioned_shots() and not counts_exist:
             results = self._asarray(results)
         else:
             results = tuple(
@@ -950,7 +950,7 @@ class QubitDevice(Device):
                     )
 
                 # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
+                # if circuit.shot_vector is not None:
                 #     raise NotImplementedError(
                 #         "Returning the Von Neumann entropy is not supported with shot vectors."
                 #     )
@@ -971,7 +971,7 @@ class QubitDevice(Device):
                     )
 
                 # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
+                # if circuit.shot_vector is not None:
                 #     raise NotImplementedError(
                 #         "Returning the mutual information is not supported with shot vectors."
                 #     )

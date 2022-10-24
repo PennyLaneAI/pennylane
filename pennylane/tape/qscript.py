@@ -749,8 +749,7 @@ class QuantumScript:
         """
         return measurement_process.shape(device)
 
-    @staticmethod
-    def _multi_homogenous_measurement_shape(mps, device):
+    def _multi_homogenous_measurement_shape(self, mps, device):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with multiple homogenous measurements.
 
@@ -781,7 +780,7 @@ class QuantumScript:
                 "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
-        shot_vector = device._shot_vector
+        shot_vector = self.shot_vector
         if shot_vector is None:
             if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
 
@@ -806,17 +805,16 @@ class QuantumScript:
 
             elif ret_type == qml.measurements.Sample:
 
-                shape = (len(mps), device.shots)
+                shape = (len(mps), self.shots)
 
             # No other measurement type to check
 
         else:
-            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device)
+            shape = self._shape_shot_vector_multi_homogenous(mps, device)
 
         return shape
 
-    @staticmethod
-    def _shape_shot_vector_multi_homogenous(mps, device):
+    def _shape_shot_vector_multi_homogenous(self, mps, device):
         """Auxiliary function for determining the output shape of the quantum script for
         multiple homogenous measurements for a device with a shot vector.
 
@@ -826,7 +824,7 @@ class QuantumScript:
         shape = tuple()
 
         ret_type = mps[0].return_type
-        shot_vector = device._shot_vector
+        shot_vector = self.shot_vector
 
         # Shot vector was defined
         if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
@@ -857,7 +855,7 @@ class QuantumScript:
 
         elif ret_type == qml.measurements.Sample:
             shape = []
-            for shot_val in device.shot_vector:
+            for shot_val in self.shot_vector:
                 shots = shot_val.shots
                 if shots != 1:
                     shape.extend((shots, len(mps)) for _ in range(shot_val.copies))
@@ -946,7 +944,7 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if device.shot_vector is not None:
+        if self.shot_vector is not None:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
@@ -1040,7 +1038,9 @@ class QuantumScript:
             _ops = self._ops.copy()
             _measurements = self._measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
+        new_qscript = self.__class__(
+            ops=_ops, measurements=_measurements, prep=_prep, shots=self.raw_shots
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)

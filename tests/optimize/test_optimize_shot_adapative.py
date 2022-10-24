@@ -14,7 +14,6 @@
 """Tests for the shot adaptive optimizer"""
 import pytest
 from flaky import flaky
-from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np

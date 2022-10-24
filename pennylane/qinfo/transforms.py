@@ -17,6 +17,7 @@ import functools
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.qnode import QNode
 from pennylane.tape import QuantumTape
 from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
@@ -434,7 +435,7 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-def quantum_fisher(qnode, *args, **kwargs):
+def quantum_fisher(qnode: QNode, *args, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -519,7 +520,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
+    if qnode.shots is not None and isinstance(qnode.device, DefaultQubit):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)

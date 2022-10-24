@@ -16,9 +16,10 @@ Contains the adjoint_metric_tensor.
 """
 import warnings
 from itertools import chain
-from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.tape import QuantumTape
 
 # pylint: disable=protected-access
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
@@ -164,10 +165,10 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
 
 
-def _adjoint_metric_tensor_tape(tape, device):
+def _adjoint_metric_tensor_tape(tape: QuantumTape, device):
     """Computes the metric tensor of a tape using the adjoint method and a given device."""
     # pylint: disable=protected-access
-    if device.shots is not None:
+    if tape.shots is not None:
         raise ValueError(
             "The adjoint method for the metric tensor is only implemented for shots=None"
         )

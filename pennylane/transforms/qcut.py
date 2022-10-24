@@ -36,6 +36,7 @@ from pennylane.grouping import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.qnode import QNode
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
@@ -1355,7 +1356,7 @@ def cut_circuit_mc(
 
 
 @cut_circuit_mc.custom_qnode_wrapper
-def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
+def qnode_execution_wrapper_mc(self, qnode: QNode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to replace execution variables"""
 
@@ -1378,7 +1379,7 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
             )
 
         shots = kwargs.pop("shots", False)
-        shots = shots or qnode.device.shots
+        shots = shots or qnode.shots
 
         if shots is None:
             raise ValueError(
