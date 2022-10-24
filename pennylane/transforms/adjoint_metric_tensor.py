@@ -16,9 +16,12 @@ Contains the adjoint_metric_tensor.
 """
 import warnings
 from itertools import chain
+from typing import Union
 
 import pennylane as qml
+from pennylane import Device
 from pennylane import numpy as np
+from pennylane.qnode import QNode
 from pennylane.tape import QuantumTape
 
 # pylint: disable=protected-access
@@ -81,7 +84,9 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
-def adjoint_metric_tensor(circuit, device=None, hybrid=True):
+def adjoint_metric_tensor(
+    circuit: Union[QNode, QuantumTape], device: Union[None, Device] = None, hybrid=True
+):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -157,6 +162,8 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     The drawback of the adjoint method is that it is only available on simulators and without
     shot simulations.
     """
+    if circuit.shots is None and device is not None and device.shots is not None:
+        circuit.shots = device.raw_shots
     if isinstance(circuit, qml.tape.QuantumTape):
         return _adjoint_metric_tensor_tape(circuit, device)
     if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
