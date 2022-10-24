@@ -267,6 +267,17 @@ class Pow(SymbolicOp):
             return base_matrix**z
         raise SparseMatrixUndefinedError
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        if isinstance(self.z, int) and self.z > 0:
+            return True
+        try:
+            self.base.pow(self.z)
+        except PowUndefinedError:
+            return False
+        return True
+
     def decomposition(self):
         try:
             return self.base.pow(self.z)
@@ -278,6 +289,10 @@ class Pow(SymbolicOp):
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
+
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -336,11 +351,7 @@ class Pow(SymbolicOp):
         try:
             ops = base.pow(z=self.z)
             if not ops:
-                return (
-                    qml.prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                return qml.Identity(self.wires)
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:

@@ -22,9 +22,12 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
+
+# pylint: disable=too-many-instance-attributes
 
 
-class CompositeOp(Operator, abc.ABC):
+class CompositeOp(Operator):
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -129,7 +132,7 @@ class CompositeOp(Operator, abc.ABC):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return all(op.has_matrix for op in self)
+        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self)
 
     @abc.abstractmethod
     def eigvals(self):
@@ -159,6 +162,13 @@ class CompositeOp(Operator, abc.ABC):
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
         return self._eigs[self.hash]
+
+    @property
+    def has_diagonalizing_gates(self):
+        if self.has_overlapping_wires:
+            return self.has_matrix
+
+        return all(op.has_diagonalizing_gates for op in self)
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -248,3 +258,17 @@ class CompositeOp(Operator, abc.ABC):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
+
+    def map_wires(self, wire_map: dict):
+        cls = self.__class__
+        new_op = cls.__new__(cls)
+        new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op.data = self.data.copy()
+        for attr, value in vars(self).items():
+            if attr not in {"data", "operands", "_wires"}:
+                setattr(new_op, attr, value)
+
+        return new_op

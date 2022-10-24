@@ -33,7 +33,7 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 
 from .composite import CompositeOp
 
-MAX_NUM_WIRES_KRON_PRODUCT = 11
+MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
 
@@ -181,6 +181,11 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return True
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -263,6 +268,11 @@ class Prod(CompositeOp):
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
+
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
@@ -292,11 +302,7 @@ class Prod(CompositeOp):
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                op = (
-                    Prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                op = qml.Identity(self.wires)
             else:
                 op = factor[0] if len(factor) == 1 else Prod(*factor)
             return op if global_phase == 1 else qml.s_prod(global_phase, op)
@@ -484,11 +490,7 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    if isinstance(op, Prod):
-                        self._factors += tuple(
-                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
-                        )
-                    elif not isinstance(op, qml.Identity):
+                    if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: List[int]):

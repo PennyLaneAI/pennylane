@@ -284,14 +284,51 @@ class TestProperties:
         base = qml.PauliX(0)
         op: Pow = power_method(base=base, z=-1.1)
 
-        assert op.has_matrix
+        assert op.has_matrix is True
 
     def test_has_matrix_false(self, power_method):
         """Test has_matrix property carries over when base op does not define a matrix."""
 
         op: Pow = power_method(base=TempOperator(wires=0), z=2.0)
 
-        assert not op.has_matrix
+        assert op.has_matrix is False
+
+    @pytest.mark.parametrize("z", [1, 3])
+    def test_has_decomposition_true_via_int(self, power_method, z):
+        """Test `has_decomposition` property is true if the power is an interger."""
+        base = qml.PauliX(0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_decomposition is True
+
+    @pytest.mark.parametrize("z", [1, 3, -0.2, 1.9])
+    def test_has_decomposition_true_via_base(self, power_method, z):
+        """Test `has_decomposition` property is true if the base operation
+        has a working `pow` method, even for non-integer powers."""
+        base = qml.RX(0.7, 0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_decomposition is True
+
+    @pytest.mark.parametrize("z", [-0.2, 1.9])
+    def test_has_decomposition_false_non_int_no_base_pow(self, power_method, z):
+        """Test `has_decomposition` property is false for non-integer powers
+        if the base operation does not have a working `pow` method."""
+        base = qml.Hadamard(0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_decomposition is False
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value, power_method):
+        """Test that Pow defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op: Pow = power_method(base=DummyOp("a"), z=2.124)
+        assert op.has_diagonalizing_gates is value
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value, power_method):
@@ -344,10 +381,10 @@ class TestSimplify:
     def test_simplify_nested_pow_ops(self):
         """Test the simplify method with nested pow operations."""
         pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.CNOT([1, 0]), z=1.2)), z=2), z=5)
-        final_op = qml.prod(qml.Identity(1), qml.Identity(0))
+        final_op = qml.Identity([1, 0])
         simplified_op = pow_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.Prod)
+        assert isinstance(simplified_op, qml.Identity)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -360,12 +397,12 @@ class TestSimplify:
         """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
         of Identity matrices."""
         pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
-        final_op = qml.prod(qml.Identity(0), qml.Identity(1))
+        final_op = qml.Identity([0, 1])
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.Prod)
+        assert isinstance(simplified_op, qml.Identity)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth

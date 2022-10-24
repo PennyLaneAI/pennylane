@@ -14,8 +14,6 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-from copy import copy
-
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -23,7 +21,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -106,6 +104,15 @@ def compare_and_expand_mat(mat1, mat2):
         return larger_mat, smaller_mat
 
     return smaller_mat, larger_mat
+
+
+class MyOp(qml.RX):
+    """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+
+    has_matrix = False
+    has_adjoint = False
+    has_decomposition = False
+    has_diagonalizing_gates = False
 
 
 class TestInitialization:
@@ -191,6 +198,110 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    def test_has_matrix_true_via_factors_have_matrix(self):
+        """Test that a product of operators that have `has_matrix=True`
+        has `has_matrix=True` as well."""
+
+        prod_op = prod(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True)
+        assert prod_op.has_matrix is True
+
+    def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
+        """Test that a product of operators of which one does not have `has_matrix=True`
+        but is a Hamiltonian has `has_matrix=True`."""
+
+        H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        prod_op = prod(H, qml.RZ(0.23, wires=5), do_queue=True)
+        assert prod_op.has_matrix is True
+
+    @pytest.mark.parametrize(
+        "first_factor", [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])]
+    )
+    def test_has_matrix_false_via_factor_has_no_matrix(self, first_factor):
+        """Test that a product of operators of which one does not have `has_matrix=True`
+        has `has_matrix=False`."""
+
+        prod_op = prod(first_factor, MyOp(0.23, wires="a"), do_queue=True)
+        assert prod_op.has_matrix is False
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
+            [
+                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
+                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
+            ],
+            [MyOp(3.1, 0), qml.CNOT([0, 2])],
+        ),
+    )
+    def test_has_adjoint_true_always(self, factors):
+        """Test that a product of operators that have `has_matrix=True`
+        has `has_matrix=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_adjoint is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
+            [
+                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
+                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
+            ],
+            [MyOp(3.1, 0), qml.CNOT([0, 2])],
+        ),
+    )
+    def test_has_decomposition_true_always(self, factors):
+        """Test that a product of operators that have `has_decomposition=True`
+        has `has_decomposition=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_decomposition is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.PauliY(wires=0)],
+            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY(0)],
+            [qml.Hamiltonian([0.523], [qml.PauliX(3)]), qml.PauliZ(3)],
+            [
+                qml.Hamiltonian([0.523], [qml.PauliX(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([-1.301], [qml.PauliY(2) @ qml.PauliZ(1)]),
+            ],
+        ),
+    )
+    def test_has_diagonalizing_gates_true_via_overlapping_factors(self, factors):
+        """Test that a product of operators that have `has_diagonalizing_gates=True`
+        has `has_diagonalizing_gates=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_diagonalizing_gates is True
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            [qml.PauliX(wires=0), qml.PauliX(wires=1)],
+            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY("s")],
+            [qml.Hermitian(np.eye(4), wires=[0, 2]), qml.PauliX(wires=1)],
+        ),
+    )
+    def test_has_diagonalizing_gates_true_via_factors(self, factors):
+        """Test that a product of operators that have `has_diagonalizing_gates=True`
+        has `has_diagonalizing_gates=True` as well."""
+
+        prod_op = prod(*factors, do_queue=True)
+        assert prod_op.has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false_via_factor(self):
+        """Test that a product of operators of which one has
+        `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
+
+        prod_op = prod(MyOp(3.1, 0), qml.PauliX(2), do_queue=True)
+        assert prod_op.has_diagonalizing_gates is False
+
 
 class TestMatrix:
     """Test matrix-related methods."""
@@ -208,7 +319,10 @@ class TestMatrix:
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
         true_mat = mat1 @ mat2
 
-        prod_op = Prod(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
+        prod_op = Prod(
+            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+        )
         prod_mat = prod_op.matrix()
 
         assert np.allclose(prod_mat, true_mat)
@@ -769,17 +883,16 @@ class TestSimplify:
             qml.PauliX(0),
             qml.PauliZ(3),
         )
-        final_op = qml.prod(*[qml.Identity(wire) for wire in range(6)])
+        final_op = qml.Identity(range(7))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        assert isinstance(simplified_op, qml.Identity)
+        assert final_op.name == simplified_op.name
+        assert final_op.wires == simplified_op.wires
+        assert final_op.data == simplified_op.data
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""

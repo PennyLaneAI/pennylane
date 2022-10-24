@@ -23,7 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
 
@@ -193,6 +193,44 @@ class TestMscMethods:
             sprod_op.base.data is not copied_op.base.data
         )  # we want different object with same content
 
+    def test_has_matrix_true_via_factor_has_matrix(self):
+        """Test that a scalar product with an operator that has `has_matrix=True`
+        has `has_matrix=True` as well."""
+
+        sprod_op = SProd(0.7, qml.RZ(0.23, wires="a"))
+        assert sprod_op.has_matrix is True
+
+    def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
+        """Test that a scalar product with an operator that has `has_matrix=False`
+        but is a Hamiltonian has `has_matrix=True`."""
+
+        H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
+        sprod_op = SProd(0.6, H)
+        assert sprod_op.has_matrix is True
+
+    def test_has_matrix_false_via_factor_has_no_matrix(self):
+        """Test that a scalar product with an operator that has `has_matrix=False`
+        has `has_matrix=True` as well."""
+
+        class MyOp(qml.RX):
+            """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
+
+            has_matrix = False
+
+        sprod_op = SProd(0.4, MyOp(0.23, wires="a"))
+        assert sprod_op.has_matrix is False
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that SProd defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = SProd(0.21319, DummyOp(1))
+        assert op.has_diagonalizing_gates is value
+
 
 class TestMatrix:
     """Tests of the matrix of a SProd class."""
@@ -203,7 +241,9 @@ class TestMatrix:
         """Test matrix method for a scalar product of parametric ops"""
         params = range(op.num_params)
 
-        sprod_op = SProd(scalar, op(*params, wires=range(op.num_wires)))
+        sprod_op = SProd(
+            scalar, op(*params, wires=0 if op.num_wires is AnyWires else range(op.num_wires))
+        )
         sprod_mat = sprod_op.matrix()
 
         true_mat = scalar * mat(*params) if op.num_params > 0 else scalar * mat

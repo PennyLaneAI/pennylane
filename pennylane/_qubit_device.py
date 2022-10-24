@@ -29,10 +29,9 @@ from pennylane import Device, DeviceError
 from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
-
 from pennylane.measurements import (
-    Counts,
     AllCounts,
+    Counts,
     Expectation,
     MeasurementProcess,
     MutualInfo,
@@ -252,7 +251,7 @@ class QubitDevice(Device):
             s2 = s1 + np.prod(shot_tuple)
             r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
-            if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+            if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
             elif not counts_exist:
                 # Measurement types except for Counts
@@ -334,7 +333,7 @@ class QubitDevice(Device):
                 results = tuple(results)
 
         # increment counter for number of executions of qubit device
-        # self._num_executions += 1
+        self._num_executions += 1
 
         # if self.tracker.active:
         #     self.tracker.update(executions=1, shots=self._shots)
@@ -465,7 +464,7 @@ class QubitDevice(Device):
             )
 
             # This will likely be required:
-            # if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+            # if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
             #     r = r[0]
 
             if single_measurement:
@@ -790,6 +789,11 @@ class QubitDevice(Device):
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the Von Neumann entropy is not supported with shot vectors."
+                    )
+
                 if self.shots is not None:
                     warnings.warn(
                         "Requested Von Neumann entropy with finite shots; the returned "
@@ -804,6 +808,11 @@ class QubitDevice(Device):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
+                    )
+
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the mutual information is not supported with shot vectors."
                     )
 
                 if self.shots is not None:
@@ -902,7 +911,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is Sample:
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                result = qml.math.squeeze(samples)
+                result = self._asarray(qml.math.squeeze(samples))
 
             elif obs.return_type in (Counts, AllCounts):
                 result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
@@ -936,6 +945,12 @@ class QubitDevice(Device):
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
+                # TODO: qml.execute shot vec support required with new return types
+                # if self._shot_vector is not None:
+                #     raise NotImplementedError(
+                #         "Returning the Von Neumann entropy is not supported with shot vectors."
+                #     )
+
                 if self.shots is not None:
                     warnings.warn(
                         "Requested Von Neumann entropy with finite shots; the returned "
@@ -950,6 +965,12 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
+
+                # TODO: qml.execute shot vec support required with new return types
+                # if self._shot_vector is not None:
+                #     raise NotImplementedError(
+                #         "Returning the mutual information is not supported with shot vectors."
+                #     )
 
                 if self.shots is not None:
                     warnings.warn(
@@ -1888,4 +1909,25 @@ class QubitDevice(Device):
             for kk in range(n_obs):
                 bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
+        if qml.active_return():
+            # postprocess the jacobian for the new return_type system
+            return self._adjoint_jacobian_processing(jac)
+
         return jac
+
+    @staticmethod
+    def _adjoint_jacobian_processing(jac):
+        """
+        Post-process the Jacobian matrix returned by ``adjoint_jacobian`` for
+        the new return type system.
+        """
+        jac = np.squeeze(jac)
+
+        if jac.ndim == 0:
+            return np.array(jac)
+
+        if jac.ndim == 1:
+            return tuple(np.array(j) for j in jac)
+
+        # must be 2-dimensional
+        return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
