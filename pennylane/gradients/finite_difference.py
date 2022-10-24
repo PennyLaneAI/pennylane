@@ -154,32 +154,50 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def _no_trainable_grad_new(tape):
+def _no_trainable_grad_new(tape, shots=None):
     warnings.warn(
         "Attempted to compute the gradient of a tape with no trainable parameters. "
         "If this is unintended, please mark trainable parameters in accordance with the "
         "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
     )
+    if isinstance(shots, Sequence):
+        len_shot_vec = len(shots)
+        if len(tape.measurements) == 1:
+            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
+        return [], lambda _: tuple(
+            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+            for _ in range(len_shot_vec)
+        )
+
     if len(tape.measurements) == 1:
         return [], lambda _: qml.math.zeros([0])
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _all_zero_grad_new(tape):
+def _all_zero_grad_new(tape, shots=None):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
     for m in tape.measurements:
         # TODO: Update shape for CV variables
         if m.return_type is qml.measurements.Probability:
-            dim = 2 ** len(m.wires)
+            shape = 2 ** len(m.wires)
         else:
-            dim = ()
+            shape = ()
 
-        sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
-        sub_list_zeros = tuple(sub_list_zeros)
+        if len(tape.trainable_params) == 1:
+            sub_list_zeros = qml.math.zeros(shape)
+        else:
+            sub_list_zeros = [qml.math.zeros(shape) for _ in range(len(tape.trainable_params))]
+            sub_list_zeros = tuple(sub_list_zeros)
 
         list_zeros.append(sub_list_zeros)
+
+    if isinstance(shots, Sequence):
+        len_shot_vec = len(shots)
+        if len(tape.measurements) == 1:
+            return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
+        return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
 
     if len(tape.measurements) == 1:
         return [], lambda _: list_zeros[0]
