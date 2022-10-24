@@ -14,8 +14,9 @@
 """
 Unit tests for the debugging module.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 
 
@@ -189,16 +190,18 @@ class TestSnapshot:
 
         assert result == expected
 
-    @pytest.mark.parametrize("shots", [None, 0, 1, 100])
+    @pytest.mark.parametrize("shots", [None, 1, 100])
     def test_different_shots(self, shots):
         """Test that snapshots are returned correctly with different QNode shot values."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev, shots=shots)
         def circuit():
             qml.Snapshot()
             qml.Hadamard(wires=0)
             qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
             qml.CNOT(wires=[0, 1])
             qml.Snapshot()
             return qml.expval(qml.PauliX(0))
@@ -208,7 +211,8 @@ class TestSnapshot:
             0: np.array([1, 0, 0, 0]),
             "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
             2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
-            "execution_results": np.array(0),
+            3: np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
+            "execution_results": np.array(1),
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
