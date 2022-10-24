@@ -15,27 +15,14 @@ r"""
 This subpackage defines functions and classes for Pauli-word partitioning
 functionality used in measurement optimization.
 """
+import warnings
+import pennylane as qml
 
-from . import graph_colouring
-from .group_observables import group_observables, PauliGroupingStrategy
-from .optimize_measurements import optimize_measurements
-from .transformations import (
-    qwc_rotation,
-    diagonalize_pauli_word,
-    diagonalize_qwc_pauli_words,
-    diagonalize_qwc_groupings,
-)
-from .utils import (
-    is_pauli_word,
-    are_identical_pauli_words,
-    pauli_to_binary,
-    binary_to_pauli,
-    pauli_word_to_string,
-    string_to_pauli_word,
-    pauli_word_to_matrix,
-    is_qwc,
-    are_pauli_words_qwc,
-    observables_to_binary_matrix,
-    qwc_complement_adj_matrix,
-)
-from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase, partition_pauli_group
+
+def __getattr__(name):
+    warnings.warn(
+        f"\nThe grouping module is deprecated!"
+        f"\nPlease use the pauli module:"
+        f"\npennylane.pauli.{name} or pennylane.pauli.grouping.{name}"
+    )
+    return getattr(qml.pauli, name)
