@@ -104,94 +104,94 @@ def get_replacement(url, timeout=5.0):
 
 # ('qspn','Currently we have data hosted from types: {_data_struct.keys()}, but got {\'qspn\'}.'),
 
+@patch.object(qml.data.s3, "_foldermap", _folder_map)
+@patch.object(qml.data.s3, "_data_struct", _data_struct)
+class TestLoad:
+    @pytest.mark.parametrize(
+        ("data_type", "molname", "basis", "bondlength", "error_message"),
+        [
+            ("qspn", "", "", "", "Currently we have data hosted from types"),
+            ("qchem", "wrong", "", "", "Supported parameter values for qchem are"),
+        ],
+    )
+    def test_load_error_data_type(self, data_type, molname, basis, bondlength, error_message):
+        with pytest.raises(ValueError, match=error_message):
+            qml.data.load(data_type, molname, basis, bondlength)
 
-@pytest.mark.parametrize(
-    ("data_type", "molname", "basis", "bondlength", "error_message"),
-    [
-        ("qspn", "", "", "", "Currently we have data hosted from types"),
-        ("qchem", "wrong", "", "", "Supported parameter values for qchem are"),
-    ],
-)
-def test_load_error_data_type(data_type, molname, basis, bondlength, error_message):
-    with pytest.raises(ValueError, match=error_message):
-        qml.data.load(data_type, molname, basis, bondlength)
 
-
-@pytest.mark.parametrize(
-    ("data_type", "molname", "basis", "bondlength", "error_message"),
-    [
-        (
-            "qchem",
-            "wrong",
-            "",
-            "",
-            "'molname' value of 'wrong' not available. Available values are H2",
-        ),
-        (
-            "qchem",
-            "H2",
-            "wrong",
-            "",
-            "'basis' value of 'wrong' not available. Available values are 6-31G",
-        ),
-        (
-            "qchem",
-            "H2",
-            "6-31G",
-            "wrong",
-            "'bondlength' value of 'wrong' not available. Available values are [\"0.46\",\"1.16\"]",
-        ),
-    ],
-)
-def test_load_error_data_unavailable_qchem(data_type, molname, basis, bondlength, error_message):
-    """Tests that the load function returns a list of available data when requesting nonexistent chemistry data"""
-    with patch("requests.get", get_replacement):
+    @pytest.mark.parametrize(
+        ("data_type", "molname", "basis", "bondlength", "error_message"),
+        [
+            (
+                "qchem",
+                "wrong",
+                "",
+                "",
+                r"molname value of 'wrong' not available. Available values are \['H2'\]",
+            ),
+            (
+                "qchem",
+                "H2",
+                "wrong",
+                "",
+                r"basis value of 'wrong' not available. Available values are \['6-31G'\]",
+            ),
+            (
+                "qchem",
+                "H2",
+                "6-31G",
+                "wrong",
+                r"bondlength value of 'wrong' not available. Available values are \['0.46', '1.16'\]",
+            ),
+        ],
+    )
+    def test_load_error_data_unavailable_qchem(self, data_type, molname, basis, bondlength, error_message):
+        """Tests that the load function returns a list of available data when requesting nonexistent chemistry data"""
         with pytest.raises(ValueError, match=error_message):
             qml.data.load(data_type, molname=molname, basis=basis, bondlength=bondlength)
 
 
-@pytest.mark.parametrize(
-    ("data_type", "sysname", "periodicity", "lattice", "layout", "error_message"),
-    [
-        (
-            "qspin",
-            "wrong",
-            "",
-            "",
-            "",
-            "'sysname' value of 'wrong' not available. Available values are Heisenberg",
-        ),
-        (
-            "qspin",
-            "Heisenberg",
-            "wrong",
-            "",
-            "",
-            "'periodicity' value of 'wrong' not available. Available values are closed",
-        ),
-        (
-            "qspin",
-            "Heisenberg",
-            "closed",
-            "wrong",
-            "",
-            "'lattice' value of 'wrong' not available. Available values are chain",
-        ),
-        (
-            "qspin",
-            "Heisenberg",
-            "closed",
-            "chain",
-            "wrong",
-            "'layout' value of 'wrong' not available. Available values are 1x4",
-        ),
-    ],
-)
-def test_load_error_data_unavailable_qpsin(
-    data_type, sysname, periodicity, lattice, layout, error_message
-):
-    """Tests that the load function returns a list of available data when requesting nonexistent spin data"""
-    with patch("requests.get", get_replacement):
+    @pytest.mark.parametrize(
+        ("data_type", "sysname", "periodicity", "lattice", "layout", "error_message"),
+        [
+            (
+                "qspin",
+                "wrong",
+                "",
+                "",
+                "",
+                r"sysname value of 'wrong' not available. Available values are \['Heisenberg'\]",
+            ),
+            (
+                "qspin",
+                "Heisenberg",
+                "wrong",
+                "",
+                "",
+                r"periodicity value of 'wrong' not available. Available values are \['closed'\]",
+            ),
+            (
+                "qspin",
+                "Heisenberg",
+                "closed",
+                "wrong",
+                "",
+                r"lattice value of 'wrong' not available. Available values are \['chain'\]",
+            ),
+            (
+                "qspin",
+                "Heisenberg",
+                "closed",
+                "chain",
+                "wrong",
+                r"layout value of 'wrong' not available. Available values are \['1x4'\]",
+            ),
+        ],
+    )
+    def test_load_error_data_unavailable_qpsin(
+        self, data_type, sysname, periodicity, lattice, layout, error_message
+    ):
+        """Tests that the load function returns a list of available data when requesting nonexistent spin data"""
         with pytest.raises(ValueError, match=error_message):
             qml.data.load(
                 data_type, sysname=sysname, periodicity=periodicity, lattice=lattice, layout=layout

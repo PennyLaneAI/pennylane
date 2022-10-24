@@ -213,3 +213,10 @@ class Dataset(ABC):
                 docstring += f"\t{arg} ({argtype}): {argdoc}\n"
             docstring += f"\nReturns:\n\tDataset({self._dtype})"
         self.__doc__ = docstring # pylint:disable=attribute-defined-outside-init
+
+
+def from_file(filepath):
+    """Create a new dataset from a file."""
+    dataset = Dataset()
+    dataset.read(filepath)
+    return dataset

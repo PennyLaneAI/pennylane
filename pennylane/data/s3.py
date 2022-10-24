@@ -34,7 +34,7 @@ def _validate_params(data_type, description, attributes):
     data = _data_struct.get(data_type)
     if not data:
         raise ValueError(
-            f"Currently we have data hosted from types: {_data_struct.keys()}, but got {data_type}."
+            f"Currently we have data hosted from types: {list(_data_struct)}, but got {data_type}."
         )
 
     params_needed = data["params"]
@@ -43,18 +43,23 @@ def _validate_params(data_type, description, attributes):
             f"Supported parameter values for {data_type} are {params_needed}, but got {list(description)}."
         )
 
-    # check that the attributes exist in the server or locally
-    # description is a dict containing attribute names and values, e.g. 'basis': 'sto-3g', 'bondlength':'0.41'
-    tempmap = _foldermap[data_type]
-    for key, val in description.items():
-        try:
-            tempmap = tempmap[val]
-            # this will fail at the end when we just want to access the bondlength, e.g tempmap['sto-3g']['0.41'] should be tempmap['sto-eg']
-        except:
-            if not val in tempmap:
-                raise ValueError(
-                    f"'{key}' value of '{val}' not available. Available values are {', '.join(tempmap.keys() if isinstance(tempmap, dict) else tempmap)}"
-                )
+    def panic_if_invalid(node, params_left):
+        param = params_left[0]
+        params_left = params_left[1:]
+        detail = description[param]
+        if detail == "full":
+            if not params_left:
+                return
+            for child in node.values():
+                panic_if_invalid(child, params_left)
+        elif detail not in node:
+            raise ValueError(
+                f"{param} value of '{detail}' not available. Available values are {list(node)}"
+            )
+        elif params_left:
+            panic_if_invalid(node[detail], params_left)
+
+    panic_if_invalid(_foldermap[data_type], params_needed)
 
     if not isinstance(attributes, list):
         raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes)}.")
@@ -208,37 +213,11 @@ def load(
     return data_files
 
 
-def read(filepath):
-    """Create a new dataset from a file."""
-    dataset = Dataset()
-    dataset.read(filepath)
-    return dataset
-
-
-def _direc_to_dict(path):
-    r"""Helper function to create dictionary structure from directory path"""
-    for root, dirs, _ in os.walk(path):
-        if dirs:
-            tree = {x: _direc_to_dict(os.path.join(root, x)) for x in dirs}
-            vals = [x is None for x in tree.values()]
-            if all(vals):
-                return list(dirs)
-            if any(vals):
-                for key, val in tree.items():
-                    if val is None:
-                        tree.update({key: []})
-            return tree
-        return None
-
-
-def list_datasets(folder_path=None):
+def list_datasets():
     r"""Returns a list of datasets and their sizes
 
-    Args:
-        folder_path (str): Optional argument for getting datasets descriptor for some local database folder.
-
     Return:
-        dict: Nested dictionary representing the directory structure of the hosted and local databases.
+        dict: Nested dictionary representing the directory structure of the hosted databases.
 
     **Example:**
 
@@ -256,102 +235,20 @@ def list_datasets(folder_path=None):
 
     if not _foldermap:
         _refresh_foldermap()
-    if folder_path is None:
-        return _foldermap
-    return _foldermap, _direc_to_dict(folder_path)
+    return _foldermap.copy()
 
 
-def _data_dfs(t, path=None):
-    r"""Perform Depth-First search on the nested directory structure"""
-    path = path or []
-    if isinstance(t, dict):
-        for key, val in t.items():
-            yield from _data_dfs(val, [*path, key])
-    else:
-        yield path, t
-
-
-def get_description(data, data_type, **kwargs):
-    r"""Help prepare list of `data_param` arguments using nested directory structure
-
-    Args:
-        data (dict): Nested dictionary representing the directory structure of the database
-        data_type (str): A string representing the type of the data required - qchem or qspin
-        **kwargs: Extra arguments used for filtering the data_param based on the required data_type
-
-    Returns:
-        list(dict): List of data_param dictionaries matching the criterians provided by the user in kwargs.
-
-    **Example:**
-
-    .. code-block :: pycon
-
-        >>> qml.qdata.get_description(qml.qdata.list_datasets(), "qchem")
-        [{'molname': ['full'], 'basis': ['full'], 'bondlength': ['full']}]
-
-    """
-
-    if not _data_struct:
-        _refresh_data_struct()
-    params = _data_struct[data_type]["params"]
-    if not set(kwargs).issubset(params):
-        raise ValueError(
-            f"Expected kwargs for the module {data_type} are {params}, but got {list(kwargs.items())}"
-        )
-
-    description = [["full"] for params in params]
-    mtch_params = []
-    for key, val in kwargs.items():
-        description[params.index(key)] = val if isinstance(val, list) else [val]
-        mtch_params.append(params.index(key))
-
-    traverse_data = list(
-        filter(
-            lambda x: all(
-                x[0][m] in description[m]
-                if m < len(params) - 1
-                else set(description[m]).issubset(x[1])
-                for m in mtch_params
-            ),
-            _data_dfs(data[data_type], []),
-        )
-    )
-
-    description = []
-    for tdata in traverse_data:
-        dparams = {param: ["full"] for param in params}
-        for idx in mtch_params:
-            dparams[params[idx]] = [tdata[0][idx]] if idx < len(params) - 1 else tdata[1]
-        if dparams not in description:
-            description.append(dparams)
-
-    return description
-
-
-def get_attributes(data_type, description):
-    r"""Help obtain the `attributes` for given `data_type` and `data_param` from the database
-
-    Args:
-        data_type (str):  A string representing the type of the data required - qchem or qspin
-        data_param (dict): A dictionary with parameters for the required type of data.
-
-    Returns:
-        list[str]: List of strings representing all the filter keys available for the requested dataset
-    """
-
-    _validate_params(data_type, description, [])
-
-    description = {
-        key: (val if isinstance(val, list) else [val]) for (key, val) in description.items()
-    }
-
-    request_data = {
-        "dparams": description,
-    }
-
-    response = requests.post(
-        f"{URL}/download/about/{data_type}/keys", json=request_data, timeout=5.0
-    )
-    if response.status_code != 200:
-        response.raise_for_status()
-    return response.json()
+def list_local_datasets(path):
+    r"""Helper function to create dictionary structure from directory path"""
+    for root, dirs, _ in os.walk(path):
+        if not dirs:
+            return None
+        tree = {x: list_local_datasets(os.path.join(root, x)) for x in dirs}
+        vals = [x is None for x in tree.values()]
+        if all(vals):
+            return list(dirs)
+        if any(vals):
+            for key, val in tree.items():
+                if val is None:
+                    tree.update({key: []})
+        return tree
