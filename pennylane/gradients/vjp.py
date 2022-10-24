@@ -123,7 +123,7 @@ def compute_vjp_single(dy, jac):
             res = math.tensordot(jac, dy_row, [[0], [0]])
         # Single measurement with dimension e.g. probs
         else:
-            jac = math.reshape(jac, (len(jac), 1))
+            jac = math.reshape(jac, (qml.math.shape(jac)[0], 1))
             res = math.tensordot(jac, dy_row, [[0], [0]])
     # Single measurement with multiple params
     else:
@@ -133,7 +133,7 @@ def compute_vjp_single(dy, jac):
             return res
         # Single measurement with no dimension e.g. expval
         if dy.shape == ():
-            jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
+            jac = qml.math.reshape(qml.math.stack(jac), (1, (qml.math.shape(qml.math.stack(jac))[0])))
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -177,6 +177,7 @@ def compute_vjp_multi(dy, jac):
     """
     if jac is None:
         return None
+
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
@@ -192,7 +193,8 @@ def compute_vjp_multi(dy, jac):
             for j in jac[i]:
                 sub_res.append(qml.math.squeeze(compute_vjp_single(elem, j)))
             res.append(sub_res)
-        res = qml.math.stack([qml.math.sum(x) for x in zip(*res)])
+        res = qml.math.stack([qml.math.stack(r) for r in res])
+        res = qml.math.sum(res, axis=0)
     return res
 
 
@@ -356,7 +358,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
                 return math.cast(res, dy.dtype)
 
             return [], func
-    except (AttributeError, TypeError):
+    except (AttributeError, TypeError, NotImplementedError):
         pass
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
