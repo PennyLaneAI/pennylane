@@ -33,6 +33,7 @@ def _convert(jac, dy_row):
             jac_new.append(j_)
         jac = tuple(jac_new)
     else:
+        print(jac, type(jac), dy_row)
         jac = math.convert_like(jac, dy_row)
         jac = math.cast(jac, dy_row.dtype)
     return jac
