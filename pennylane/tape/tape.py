@@ -55,6 +55,35 @@ def get_active_tape():
     return QueuingManager.active_context()
 
 
+def _err_msg_for_some_meas_not_qwc(measurements):
+    """Error message for the case when some operators measured on the same wire are not qubit-wise commuting."""
+    msg = (
+        "Only observables that are qubit-wise commuting "
+        "Pauli words can be returned on the same wire, "
+        f"some of the following measurements do not commute:\n{measurements}"
+    )
+    return msg
+
+
+def _validate_computational_basis_sampling(measurements):
+    """Auxiliary function for validating computational basis state sampling with other measurements considering the
+    qubit-wise commutativity relation."""
+    measured_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+    with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        if len(measured_wires) == 1:
+            all_wire_pauliz = qml.PauliZ(measured_wires)
+        else:
+            all_wire_pauliz = qml.prod(*[qml.PauliZ(w) for w in measured_wires])
+
+    all_obs_minus_comp_basis_sampling = [o for o in measurements if not o.is_comp_basis_sample]
+    should_raise = any(
+        not qml.grouping.utils.are_pauli_words_qwc([obs.obs, all_wire_pauliz])
+        for obs in all_obs_minus_comp_basis_sampling
+    )
+    if should_raise:
+        _err_msg_for_some_meas_not_qwc(measurements)
+
+
 # TODO: move this function to its own file and rename
 def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
@@ -121,6 +150,13 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original qscript in place.
+    need_to_validate_comp_basis_sampling = (
+        qscript.comp_basis_sampled and len(qscript.measurements) > 1
+    )
+    if need_to_validate_comp_basis_sampling:
+        # TODO: edge case: multiple obs=None measurement
+        _validate_computational_basis_sampling(qscript.measurements)
+
     if qscript._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
@@ -141,9 +177,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
                     ) from e
 
                 raise qml.QuantumFunctionError(
-                    "Only observables that are qubit-wise commuting "
-                    "Pauli words can be returned on the same wire, "
-                    f"some of the following measurements do not commute:\n{qscript.measurements}"
+                    _err_msg_for_some_meas_not_qwc(qscript.measurements)
                 ) from e
 
             qscript._ops.extend(rotations)
