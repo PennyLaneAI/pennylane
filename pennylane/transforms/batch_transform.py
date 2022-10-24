@@ -325,7 +325,7 @@ class batch_transform:
             # dev = some_transform(dev, *transform_args)
             return self._device_wrapper(*targs, **tkwargs)(qnode)
 
-        if isinstance(qnode, qml.tape.QuantumTape):
+        if isinstance(qnode, qml.tape.QuantumScript):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
             return self._tape_wrapper(*targs, **tkwargs)(qnode)
@@ -387,7 +387,7 @@ class batch_transform:
         """Applies the batch tape transform to an input tape.
 
         Args:
-            tape (.QuantumTape): the tape to be transformed
+            tape (.QuantumScript): the tape to be transformed
             *args: positional arguments to pass to the tape transform
             **kwargs: keyword arguments to pass to the tape transform
 
@@ -427,7 +427,7 @@ def map_batch_transform(transform, tapes):
     Args:
         transform (.batch_transform): the batch transform
             to be mapped
-        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
+        tapes (Sequence[QuantumScript]): The sequence of tapes the batch
             transform should be applied to. Each tape in the sequence
             is transformed by the batch transform.
 
