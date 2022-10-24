@@ -421,6 +421,10 @@ class QuantumScript:
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
 
+        if any((m.return_type in (qml.measurements.Sample, qml.measurements.Counts) and m.obs is None) for m in self.measurements):
+            print(obs_wires)
+            return obs_wires
+
         if len(obs_wires) != len(set(obs_wires)):
             c = Counter(obs_wires)
             repeated_wires = {w for w in obs_wires if c[w] > 1}

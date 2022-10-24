@@ -219,6 +219,11 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
+* Returning `qml.sample()` or `qml.counts()` with other measurements of non-commuting observables
+  now raises a QuantumFunctionError (e.g., `return qml.expval(PauliX(wires=0)), qml.sample()`
+  now raises an error).
+  [(#2924)](https://github.com/PennyLaneAI/pennylane/pull/2924)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

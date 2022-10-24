@@ -659,6 +659,7 @@ class Device(abc.ABC):
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
+        print(ops_not_supported, obs_on_same_wire)
         if ops_not_supported or obs_on_same_wire:
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
