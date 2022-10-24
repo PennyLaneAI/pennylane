@@ -451,6 +451,7 @@ class TestOperatorConstruction:
                 return [qml.RX(x, wires=wires)]
 
         assert MyOp1.has_decomposition_threshold is False
+        assert MyOp1.decomposition_threshold is None
 
         class MyOp2(qml.operation.Operator):
             num_wires = 1

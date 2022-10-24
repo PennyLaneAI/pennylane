@@ -973,13 +973,15 @@ class Operator(abc.ABC):
             and (cls.decomposition_threshold != Operator.decomposition_threshold)
         )
 
-    @property
-    def decomposition_threshold(self):
+    @classproperty
+    def decomposition_threshold(cls):
         """Defines the threshold for automatic transition from computing the full matrix
         and applying the operation decomposition.
 
         Returns:
             int or None: Number of wires marking the threshold, if defined, else ``None``.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
         """
         return None
 
