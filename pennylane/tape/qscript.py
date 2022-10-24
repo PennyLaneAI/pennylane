@@ -892,6 +892,9 @@ class QuantumScript:
             >>> qs.shape(dev)
             (1, 4)
         """
+        if self.shots is None and device.shots is not None:
+            self.shots = device.raw_shots
+
         if qml.active_return():
             return self._shape_new(device)
 

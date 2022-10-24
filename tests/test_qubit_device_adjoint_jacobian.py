@@ -45,7 +45,7 @@ class TestAdjointJacobian:
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
-        with qml.tape.QuantumTape(shots=1) as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
         with pytest.warns(

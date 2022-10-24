@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches,no-member,bad-option-value,arguments-renamed,too-many-statements
 import abc
 import itertools
 import warnings
@@ -368,6 +368,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if circuit.shots is None and self.shots is not None:
+            circuit.shots = self.raw_shots  # update tape shots with device.shots
+
         if qml.active_return():
             return self._execute_new(circuit, **kwargs)
 
@@ -1819,6 +1822,9 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        if tape.shots is None:
+            # Update tape shots with device.shots
+            tape.shots = self.raw_shots
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
         # pylint: disable=unnecessary-lambda-assignment)
