@@ -312,6 +312,18 @@ class TestCompositeOperations:
 
         assert np.allclose(mat_eigvals, prod_eigvals)
 
+    def test_composite_eigvals(self):
+        """Test that an arithmetic op with non-hermitian base ops produces the correct eigen-values."""
+        op = qml.prod(qml.PauliX(0), qml.adjoint(qml.PauliY(0)))
+        op_adj = qml.adjoint(op)
+        imag_op = -0.5j * (op - op_adj)
+        op_eigvals = qml.eigvals(imag_op)
+
+        mat_rep = np.array([[1.0, 0.0], [0.0, -1.0]])
+        mat_eigvals = np.linalg.eig(mat_rep)[0]
+
+        assert np.allclose(mat_eigvals, op_eigvals)
+
 
 class TestTemplates:
     """These tests are useful as they test operators that might not have
