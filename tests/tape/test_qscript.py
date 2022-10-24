@@ -56,6 +56,7 @@ class TestInitialization:
         assert qs.num_wires == 0
         assert qs.is_sampled is False
         assert qs.all_sampled is False
+        assert qs.samples_computational_basis is False
         assert qs._obs_sharing_wires == []
         assert qs._obs_sharing_wires_id == []
 
@@ -142,10 +143,12 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
         assert qs.is_sampled is True
         assert qs.all_sampled is False
+        assert qs.samples_computational_basis is True
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
         assert qs.is_sampled is True
         assert qs.all_sampled is True
+        assert qs.samples_computational_basis is True
 
     def test_update_circuit_info_no_sampling(self):
         """Test that all_sampled and is_sampled properties are set to False if no sampling
@@ -153,6 +156,7 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
         assert qs.is_sampled is False
         assert qs.all_sampled is False
+        assert qs.samples_computational_basis is False
 
     def test_update_par_info_update_trainable_params(self):
         """Tests setting the parameter info dictionary.  Makes sure to include operations with

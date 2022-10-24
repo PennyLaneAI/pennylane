@@ -177,7 +177,7 @@ class QuantumScript:
 
         self.is_sampled = False
         self.all_sampled = False
-        self.comp_basis_sampled = False
+        self.samples_computational_basis = False
 
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
@@ -346,7 +346,7 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled, comp_basis_sampled; O(ops+obs)
+        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled, samples_computational_basis; O(ops+obs)
         self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
 
         # The following line requires _par_info to be up to date
@@ -366,7 +366,7 @@ class QuantumScript:
             num_wires (int): Number of wires
             is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
             all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
-            comp_basis_sampled (bool): Whether a ``Sample`` or ``Counts`` measurement was performed in the computational
+            samples_computational_basis (bool): Whether a ``Sample`` or ``Counts`` measurement was performed in the computational
                 basis (i.e., without any observable passed, e.g., ``qml.sample()``
         """
         self.wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
@@ -378,7 +378,7 @@ class QuantumScript:
         ]
         self.is_sampled = any(is_sample_type)
         self.all_sampled = all(is_sample_type)
-        self.comp_basis_sampled = any(o.is_comp_basis_sample for o in self.measurements)
+        self.samples_computational_basis = any(o.is_comp_basis_sample for o in self.measurements)
 
     def _update_par_info(self):
         """Update the parameter information dictionary.
@@ -990,7 +990,7 @@ class QuantumScript:
         new_qscript.num_wires = self.num_wires
         new_qscript.is_sampled = self.is_sampled
         new_qscript.all_sampled = self.all_sampled
-        new_qscript.comp_basis_sampled = self.comp_basis_sampled
+        new_qscript.samples_computational_basis = self.samples_computational_basis
         new_qscript._update_par_info()
         new_qscript.trainable_params = self.trainable_params.copy()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
