@@ -156,7 +156,9 @@ class CompositeOp(Operator):
                 eigenvectors of the operator.
         """
         if self.hash not in self._eigs:
-            mat = self.matrix()  # we no longer check for hermiticity and allow "anything" on simulator
+            mat = (
+                self.matrix()
+            )  # we no longer check for hermiticity and allow "anything" on simulator
             mat = math.to_numpy(mat)
             w, U = np.linalg.eig(mat)
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
