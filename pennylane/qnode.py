@@ -675,7 +675,7 @@ class QNode:
                 gradient_fn=self.gradient_fn,
                 interface=self.interface,
                 gradient_kwargs=self.gradient_kwargs,
-                override_shots=override_shots,
+                override_shots=override_shots,  # TODO: Remove this line when using tape.shots
                 **self.execute_kwargs,
             )
 
@@ -713,7 +713,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
+            override_shots=override_shots,  # TODO: Remove this line when using tape.shots
             **self.execute_kwargs,
         )
 
