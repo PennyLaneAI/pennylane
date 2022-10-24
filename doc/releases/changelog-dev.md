@@ -219,6 +219,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+  composite operator.
+  [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
