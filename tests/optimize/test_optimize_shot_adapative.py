@@ -14,6 +14,7 @@
 """Tests for the shot adaptive optimizer"""
 import pytest
 from scipy.stats import multinomial
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -126,6 +127,7 @@ class TestSingleShotGradientIntegration:
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
+    @flaky(max_runs=3)
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
     def test_single_argument_step(self, cost_fn, mocker, monkeypatch):
         """Test that a simple QNode with a single argument correctly performs an optimization step,
@@ -537,6 +539,7 @@ class TestOptimization:
         assert np.allclose(circuit(params), -1, atol=0.1, rtol=0.2)
         assert opt.shots_used > min_shots
 
+    @flaky(max_runs=3)
     @pytest.mark.slow
     def test_vqe_optimization(self):
         """Test that a simple VQE circuit can be optimized"""
@@ -573,9 +576,12 @@ class TestOptimization:
 class TestStepAndCost:
     """Tests for the step_and_cost method"""
 
+    @flaky(max_runs=3)
     def test_qnode_cost(self, tol):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
+        np.random.seed(0)
+
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         @qml.qnode(dev, cache=False)
@@ -593,9 +599,11 @@ class TestStepAndCost:
 
         assert np.allclose(res, -1, atol=tol, rtol=0)
 
+    @flaky(max_runs=3)
     def test_expval_cost(self, tol):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
+        np.random.seed(0)
         dev = qml.device("default.qubit", wires=1, shots=10)
 
         def ansatz(x, **kwargs):

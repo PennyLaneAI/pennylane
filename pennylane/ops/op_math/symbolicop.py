@@ -17,7 +17,7 @@ This submodule defines a base class for symbolic operations representing operato
 from copy import copy
 
 from pennylane.operation import Operator
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingManager
 
 
 class SymbolicOp(Operator):
@@ -106,14 +106,6 @@ class SymbolicOp(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
@@ -127,11 +119,20 @@ class SymbolicOp(Operator):
     def _queue_category(self):
         return self.base._queue_category  # pylint: disable=protected-access
 
-    def queue(self, context=QueuingContext):
-        context.safe_update_info(self.base, owner=self)
+    def queue(self, context=QueuingManager):
+        context.update_info(self.base, owner=self)
         context.append(self, owns=self.base)
         return self
 
     @property
     def arithmetic_depth(self) -> int:
         return 1 + self.base.arithmetic_depth
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                self.base.hash,
+            )
+        )

@@ -15,8 +15,11 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
+from typing import Union
+
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
@@ -24,21 +27,20 @@ from .symbolicop import SymbolicOp
 
 def s_prod(scalar, operator, do_queue=True, id=None):
     r"""Construct an operator which is the scalar product of the
-     given scalar and operator provided.
+    given scalar and operator provided.
 
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
         operator (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
-        do_queue (bool): determines if the scalar product operator will be queued
-            (currently not supported). Default is True.
+        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
     Returns:
-        ~ops.op_math.SProd: the operator representing the scalar product.
+        ~ops.op_math.SProd: The operator representing the scalar product.
 
-    ..seealso:: :class:`~.ops.op_math.SProd`
+    .. seealso:: :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.SymbolicOp`
 
     **Example**
 
@@ -65,6 +67,11 @@ class SProd(SymbolicOp):
             (currently not supported). Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
+    .. note::
+        Currently this operator can not be queued in a circuit as an operation, only measured terminally.
+
+    .. seealso:: :func:`~.ops.op_math.s_prod`
+
     **Example**
 
     >>> sprod_op = SProd(1.23, qml.PauliX(0))
@@ -75,10 +82,30 @@ class SProd(SymbolicOp):
            [1.23, 0.  ]])
     >>> sprod_op.terms()
     ([1.23], [PauliX(wires=[0]])
+
+    .. details::
+        :title: Usage Details
+
+        The SProd operation can also be measured inside a qnode as an observable.
+        If the circuit is parameterized, then we can also differentiate through the observable.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=1)
+
+            @qml.qnode(dev, grad_method="best")
+            def circuit(scalar, theta):
+                qml.RX(theta, wires=0)
+                return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
+
+        >>> scalar, theta = (1.2, 3.4)
+        >>> qml.grad(circuit, argnum=[0,1])(scalar, theta)
+        (array(-0.68362956), array(0.21683382))
+
     """
     _name = "SProd"
 
-    def __init__(self, scalar, base, do_queue=True, id=None):
+    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
         self.scalar = scalar
         super().__init__(base=base, do_queue=do_queue, id=id)
 
@@ -132,12 +159,17 @@ class SProd(SymbolicOp):
         then the scalar product operator is hermitian."""
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -165,6 +197,10 @@ class SProd(SymbolicOp):
     def sparse_matrix(self, wire_order=None):
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
 
+    @property
+    def has_matrix(self):
+        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
+
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -186,6 +222,8 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
+        if isinstance(self.base, qml.Hamiltonian):
+            return self.scalar * qml.matrix(self.base, wire_order=wire_order)
         return self.scalar * self.base.matrix(wire_order=wire_order)
 
     @property
@@ -198,6 +236,12 @@ class SProd(SymbolicOp):
         """
         return None
 
+    def pow(self, z):
+        return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
+
+    def adjoint(self):
+        return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
+
     def simplify(self) -> Operator:
         if self.scalar == 1:
             return self.base.simplify()
@@ -206,12 +250,12 @@ class SProd(SymbolicOp):
             if scalar == 1:
                 return self.base.base.simplify()
             return SProd(scalar=scalar, base=self.base.base.simplify())
-        if isinstance(self.base, Sum):
-            simplified_sum = self.base.simplify()
+
+        new_base = self.base.simplify()
+        if isinstance(new_base, Sum):
             return Sum(
-                *(
-                    SProd(scalar=self.scalar, base=summand).simplify()
-                    for summand in simplified_sum.summands
-                )
+                *(SProd(scalar=self.scalar, base=summand).simplify() for summand in new_base)
             )
-        return SProd(scalar=self.scalar, base=self.base.simplify())
+        if isinstance(new_base, SProd):
+            return SProd(scalar=self.scalar, base=new_base).simplify()
+        return SProd(scalar=self.scalar, base=new_base)

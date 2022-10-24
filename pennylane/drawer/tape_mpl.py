@@ -70,8 +70,8 @@ def _add_barrier(drawer, layer, mapped_wires, op):
 def _add_wirecut(drawer, layer, mapped_wires, op):
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
-    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+    drawer.ax.text(layer - 0.35, y=max(mapped_wires), s="✂", fontsize=40)
+    drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle="--")
 
 
 special_cases = {
@@ -280,8 +280,9 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                 specialfunc(drawer, layer, mapped_wires, op)
 
             else:
-                control_wires = [wire_map[w] for w in op.control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
+                op_control_wires = getattr(op, "control_wires", [])
+                control_wires = [wire_map[w] for w in op_control_wires]
+                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
                 control_values = op.hyperparameters.get("control_values", None)
 
                 if control_values is None:

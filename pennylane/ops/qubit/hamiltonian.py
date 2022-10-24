@@ -20,6 +20,7 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+from typing import List
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -164,7 +165,7 @@ class Hamiltonian(Observable):
     def __init__(
         self,
         coeffs,
-        observables,
+        observables: List[Observable],
         simplify=False,
         grouping_type=None,
         method="rlf",
@@ -202,7 +203,7 @@ class Hamiltonian(Observable):
         if simplify:
             self.simplify()
         if grouping_type is not None:
-            with qml.tape.stop_recording():
+            with qml.QueuingManager.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
                     self.ops, grouping_type=grouping_type, method=method
                 )
@@ -337,7 +338,7 @@ class Hamiltonian(Observable):
                 can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First).
         """
 
-        with qml.tape.stop_recording():
+        with qml.QueuingManager.stop_recording():
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
@@ -401,7 +402,7 @@ class Hamiltonian(Observable):
 
         list_of_coeffs = self.data  # list of scalar tensors
         paired_coeff_obs = list(zip(list_of_coeffs, self.ops))
-        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), pair[0]))
+        paired_coeff_obs.sort(key=lambda pair: (len(pair[1].wires), qml.math.real(pair[0])))
 
         terms_ls = []
 
@@ -539,7 +540,6 @@ class Hamiltonian(Observable):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
@@ -643,9 +643,34 @@ class Hamiltonian(Observable):
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current hamiltonian with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Hamiltonian: new hamiltonian
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)
+        new_op.data = self.data.copy()
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op._ops = [  # pylint: disable=protected-access
+            op.map_wires(wire_map) for op in self.ops
+        ]
+        for attr, value in vars(self).items():
+            if attr not in {"data", "_wires", "_ops"}:
+                setattr(new_op, attr, value)
+        new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        return new_op

@@ -19,8 +19,9 @@ import pytest
 import numpy as np
 import pennylane as qml
 
+
 wires = [2, 3, 4]
-devices = ["default.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 class TestIntegrationSingleReturn:
@@ -36,7 +37,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == (2**wires,)
@@ -52,7 +53,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == (2**wires, 2**wires)
@@ -69,7 +70,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=range(0, d_wires))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == (2**d_wires, 2**d_wires)
@@ -85,7 +86,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
@@ -101,7 +102,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
@@ -117,11 +118,27 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=0)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
+
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    def test_vn_entropy_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with vn_entropy."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
 
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
@@ -133,11 +150,27 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
+
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    def test_mutual_info_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with mutual_info."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
 
     herm = np.diag([1, 2, 3, 4])
     probs_data = [
@@ -158,7 +191,7 @@ class TestIntegrationSingleReturn:
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         if wires is None:
@@ -213,6 +246,7 @@ class TestIntegrationSingleReturn:
 devices = ["default.qubit.tf", "default.mixed"]
 
 
+@pytest.mark.tf
 class TestIntegrationSingleReturnTensorFlow:
     """Test that single measurements return behavior does not change for Torch device."""
 
@@ -246,7 +280,7 @@ class TestIntegrationSingleReturnTensorFlow:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
 
         assert res.shape == (2**wires, 2**wires)
@@ -383,7 +417,7 @@ class TestIntegrationSingleReturnTensorFlow:
         """Test the sample measurement."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Tf.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -428,6 +462,7 @@ class TestIntegrationSingleReturnTensorFlow:
 devices = ["default.qubit.torch", "default.mixed"]
 
 
+@pytest.mark.torch
 class TestIntegrationSingleReturnTorch:
     """Test that single measurements return behavior does not change for Torch device."""
 
@@ -461,7 +496,7 @@ class TestIntegrationSingleReturnTorch:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert res.shape == (2**wires, 2**wires)
@@ -596,7 +631,7 @@ class TestIntegrationSingleReturnTorch:
         """Test the sample measurement."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Torch.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -642,6 +677,7 @@ class TestIntegrationSingleReturnTorch:
 devices = ["default.qubit.jax", "default.mixed"]
 
 
+@pytest.mark.jax
 class TestIntegrationSingleReturnJax:
     """Test that single measurements return behavior does not change for Jax device."""
 
@@ -675,7 +711,7 @@ class TestIntegrationSingleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
 
         assert res.shape == (2**wires, 2**wires)
@@ -854,7 +890,7 @@ class TestIntegrationSingleReturnJax:
 
 wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 class TestIntegrationMultipleReturns:
@@ -872,7 +908,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -894,7 +930,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -929,7 +965,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -964,7 +1000,7 @@ class TestIntegrationMultipleReturns:
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         if wires1 is None:
@@ -1045,7 +1081,7 @@ class TestIntegrationMultipleReturns:
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=0))]
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, list)
@@ -1108,6 +1144,7 @@ class TestIntegrationMultipleReturns:
 devices = ["default.qubit.tf", "default.mixed"]
 
 
+@pytest.mark.tf
 class TestIntegrationMultipleReturnsTensorflow:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
@@ -1253,7 +1290,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         """Test the expval and sample measurements together."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample must be reworked with interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1370,6 +1407,7 @@ class TestIntegrationMultipleReturnsTensorflow:
 devices = ["default.qubit.torch", "default.mixed"]
 
 
+@pytest.mark.torch
 class TestIntegrationMultipleReturnsTorch:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
@@ -1515,7 +1553,7 @@ class TestIntegrationMultipleReturnsTorch:
         """Test the expval and sample measurements together."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1629,6 +1667,7 @@ class TestIntegrationMultipleReturnsTorch:
 devices = ["default.qubit.jax", "default.mixed"]
 
 
+@pytest.mark.jax
 class TestIntegrationMultipleReturnJax:
     """Test the new return types for multiple measurements, it should always return a tuple containing the single
     measurements.
@@ -2354,7 +2393,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
@@ -2597,6 +2636,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, np.ndarray)
         assert res.shape == (2, 3)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_torch(self, device):
         """Return Jacobian of multiple expvals."""
@@ -2622,6 +2662,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, torch.Tensor)
             assert elem.shape == (3,)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_tf(self, device):
         """Return Jacobian of multiple expvals."""
@@ -2647,6 +2688,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 3)
 
+    @pytest.mark.tf
     def test_multiple_meas_tf_autograph(self):
         """Return Jacobian of multiple measurements with Tf Autograph."""
         import tensorflow as tf
@@ -2674,6 +2716,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 3)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_jax(self, device):
         """Return Jacobian of multiple expvals."""
@@ -2698,6 +2741,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (3,)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval_jax_jit(self, device):
         """Return Jacobian of multiple expvals with Jitting."""
@@ -2741,6 +2785,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, np.ndarray)
         assert res.shape == (2, 2, 3)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_torch(self, device):
         """Return Jacobian of multiple probs."""
@@ -2766,6 +2811,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, torch.Tensor)
             assert elem.shape == (2, 3)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_tf(self, device):
         """Return Jacobian of multiple probs."""
@@ -2791,6 +2837,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2, 2, 3)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_jax(self, device):
         """Return Jacobian of multiple probs."""
@@ -2816,6 +2863,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (2, 3)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     def test_multiple_probs_jax_jit(self, device):
         """Return Jacobian of multiple probs with Jax jit."""
@@ -2860,6 +2908,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, np.ndarray)
         assert res.shape == (6, 3)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_torch(self, device):
         """Return Jacobian of multiple measurements."""
@@ -2890,6 +2939,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             elif i == 2:
                 assert elem.shape == (3,)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_tf(self, device):
         """Return Jacobian of multiple measurements."""
@@ -2919,6 +2969,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert isinstance(res, tf.Tensor)
         assert res.shape == (6, 3)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_jax(self, device):
         """Return Jacobian of multiple measurements."""
@@ -2949,6 +3000,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             elif i == 2:
                 assert elem.shape == (3,)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     def test_multiple_meas_jax_jit(self, device):
         """Return Jacobian of multiple measurements with Jax jit."""

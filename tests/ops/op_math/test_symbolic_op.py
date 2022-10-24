@@ -13,11 +13,13 @@
 # limitations under the License.
 
 from copy import copy
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math import SymbolicOp
+from pennylane.wires import Wires
 
 
 class TempOperator(qml.operation.Operator):
@@ -51,6 +53,18 @@ def test_copy():
 
     copied_op.data = [6.54]
     assert op.data == [param1]
+
+
+def test_map_wires():
+    """Test the map_wires method."""
+    base = TempOperator("a")
+    op = SymbolicOp(base, id="something")
+    wire_map = {"a": 5}
+    mapped_op = op.map_wires(wire_map=wire_map)
+    assert op.wires == Wires("a")
+    assert op.base.wires == Wires("a")
+    assert mapped_op.wires == Wires(5)
+    assert mapped_op.base.wires == Wires(5)
 
 
 class TestProperties:
@@ -154,22 +168,6 @@ class TestProperties:
         t = DummyOp(wires=(0, 1, 2))
         op = SymbolicOp(t)
         assert op.num_wires == 3
-
-    def test_batching_properties(self):
-        """Test a symbolic operator inherits the batching properties of its base."""
-
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op = SymbolicOp(base)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
 
 
 class TestQueuing:

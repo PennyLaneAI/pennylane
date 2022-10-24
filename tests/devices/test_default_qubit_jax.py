@@ -15,11 +15,12 @@ import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
-from jax.config import config
 import numpy as np
+from jax.config import config
+
 import pennylane as qml
-from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane import DeviceError
+from pennylane.devices.default_qubit_jax import DefaultQubitJax
 
 
 @pytest.mark.jax
@@ -51,7 +52,6 @@ class TestQNodeIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
@@ -70,7 +70,6 @@ class TestQNodeIntegration:
 
         dev = DefaultQubitJax(wires=1)
         cap = dev.capabilities()
-        assert cap["supports_reversible_diff"] == False
         assert cap["passthru_interface"] == "jax"
 
     def test_load_device(self):
@@ -452,6 +451,21 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             return qml.sample(qml.PauliZ(wires=0))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The number of shots has to be explicitly set on the device "
+            "when using sample-based measurements.",
+        ):
+            res = circuit()
+
+    def test_sampling_analytic_mode_with_counts(self):
+        """Test that when sampling with counts and shots=None an error is raised."""
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
+
+        @qml.qnode(dev, interface="jax", diff_method=None)
+        def circuit():
+            return qml.counts(qml.PauliZ(wires=0))
 
         with pytest.raises(
             qml.QuantumFunctionError,

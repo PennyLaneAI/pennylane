@@ -86,6 +86,54 @@ QFT = math.array(
     ]
 ) / math.sqrt(8)
 
+# Qutrit gates
+OMEGA = np.exp(2 * np.pi * 1j / 3)
+
+TSHIFT = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Qutrit right-shift gate
+
+TCLOCK = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])  # Qutrit clock gate
+
+TSWAP = np.array(
+    [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1],
+    ],
+    dtype=np.complex128,
+)  # Ternary swap gate
+
+TADD = np.array(
+    [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0],
+    ],
+    dtype=np.complex128,
+)  # Ternary add gate
+
+GELL_MANN = np.zeros((8, 3, 3), dtype=np.complex128)
+GELL_MANN[0] = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+GELL_MANN[1] = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
+GELL_MANN[2] = np.diag([1, -1, 0])
+GELL_MANN[3] = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
+GELL_MANN[4] = np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]])
+GELL_MANN[5] = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+GELL_MANN[6] = np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]])
+GELL_MANN[7] = np.diag([1, 1, -2]) / np.sqrt(3)
+
+
 # ========================================================
 #  parametrized gates
 # ========================================================
@@ -589,3 +637,20 @@ def OrbitalRotation(phi):
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
+
+
+def PSWAP(phi):
+    r"""Phase SWAP gate
+    .. math:: \mathtt{PSWAP}(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 0 & e^{i \phi} & 0 \\
+            0 & e^{i \phi} & 0 & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    e = math.exp(1j * phi)
+    return math.array([[1, 0, 0, 0], [0, 0, e, 0], [0, e, 0, 0], [0, 0, 0, 1]])
