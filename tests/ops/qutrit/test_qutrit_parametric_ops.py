@@ -66,6 +66,7 @@ class TestOperations:
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
+        """Test that matrices of adjoint operations behave correctly"""
         op_d = op.adjoint()
         res1 = np.dot(op.matrix(), op_d.matrix())
         res2 = np.dot(op_d.matrix(), op.matrix())
@@ -75,6 +76,7 @@ class TestOperations:
 
     @pytest.mark.parametrize("op", BROADCASTED_OPERATIONS)
     def test_adjoint_unitaries_broadcasted(self, op, tol):
+        """Test that matrices of adjoint operations with broadcasting behave correctly"""
         op_d = op.adjoint()
         res1 = dot_broadcasted(op.matrix(), op_d.matrix())
         res2 = dot_broadcasted(op_d.matrix(), op.matrix())
@@ -87,6 +89,7 @@ class TestOperations:
 class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
+        """Check that parameter frequencies of parametrized operations are defined correctly."""
         if not qml.operation.has_gen(op):
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 

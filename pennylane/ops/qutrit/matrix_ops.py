@@ -19,7 +19,7 @@ accept a unitary matrix as a parameter.
 import warnings
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 

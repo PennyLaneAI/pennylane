@@ -85,15 +85,10 @@ class TRX(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1)]
 
-    def generator(self):
-        if self.subspace == (0, 1):
-            index = 1
-        elif self.subspace == (0, 2):
-            index = 4
-        else:
-            index = 6
+    _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
-        return -0.5 * qml.GellMannObs(index, wires=self.wires)
+    def generator(self):
+        return -0.5 * qml.GellMann(self._index_dict(self.subspace), wires=self.wires)
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
@@ -108,9 +103,8 @@ class TRX(Operation):
     def subspace(self):
         """The single-qutrit basis states the operator acts on.
 
-        This property returns the 2D subspace on which the operator acts. This subspace
-        determines which two single-qutrit basis states the operator acts on. The remaining
-        basis state is not affected by the operator.
+        The subspace defines which two basis states the opreation acts on. The basis state
+        not included in the subspace remains unaffected.
 
         Returns:
             tuple[int]: subspace on which the operator acts

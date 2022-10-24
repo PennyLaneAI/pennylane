@@ -263,9 +263,9 @@ class TestSparse:
             (
                 [0.5, 0.2, 2],
                 [
-                    qml.GellMannObs(1, wires=0) @ qml.GellMannObs(4, wires=1),
-                    qml.GellMannObs(2, wires=1),
-                    qml.GellMannObs(3, wires=0),
+                    qml.GellMann(1, wires=0) @ qml.GellMann(4, wires=1),
+                    qml.GellMann(2, wires=1),
+                    qml.GellMann(3, wires=0),
                 ],
                 None,
                 np.array(
