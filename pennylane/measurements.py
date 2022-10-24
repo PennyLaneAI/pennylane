@@ -591,7 +591,8 @@ class MeasurementProcess:
         computational basis states.
         """
         return (
-            self.return_type in (qml.measurements.Sample, qml.measurements.Counts)
+            self.return_type
+            in (qml.measurements.AllCounts, qml.measurements.Counts, qml.measurements.Sample)
             and self.obs is None
         )
 
