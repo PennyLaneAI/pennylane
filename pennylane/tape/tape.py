@@ -57,7 +57,7 @@ def get_active_tape():
 
 
 # TODO: move this function to its own file and rename
-def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
+def expand_tape(qscript: QuantumScript, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
 
     Args:
@@ -193,7 +193,9 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
 
     # preserves inheritance structure
     # if qscript is a QuantumTape, returned object will be a quantum tape
-    new_qscript = qscript.__class__(new_ops, new_measurements, new_prep, _update=False)
+    new_qscript = qscript.__class__(
+        new_ops, new_measurements, new_prep, shots=qscript.raw_shots, _update=False
+    )
 
     # Update circuit info
     new_qscript.wires = copy.copy(qscript.wires)

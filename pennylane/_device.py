@@ -657,7 +657,7 @@ class Device(abc.ABC):
 
         return circuit
 
-    def expand_fn(self, circuit, max_expansion=10):
+    def expand_fn(self, circuit: QuantumTape, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
         Can be the default or a custom expansion method, see
         :meth:`.Device.default_expand_fn` and :meth:`.Device.custom_expand` for more
