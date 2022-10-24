@@ -293,24 +293,24 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-            if len(tapes) == 1 and len(tapes[0].measurements) > 1:
-                dy = [dy]
+            # if len(tapes) == 1 and len(tapes[0].measurements) > 1:
+            #     dy = [dy]
 
-            # if not isinstance(dy, tuple):
-            #     dy = (dy,)
+            if not isinstance(dy, tuple):
+                dy = (dy,)
 
             # reconstruct the nested structure of dy
-            # start = 0
-            # dy_nested = []
-            # for i, tape in enumerate(tapes):
-            #     num_meas = len(tape.measurements)
-            #     tape_dy = dy[start:start + num_meas]
-            #     if num_meas == 1:
-            #         dy_nested.append(tape_dy[0])
-            #     else:
-            #         dy_nested.append(tape_dy)
-            #
-            # dy = dy_nested
+            start = 0
+            dy_nested = []
+            for i, tape in enumerate(tapes):
+                num_meas = len(tape.measurements)
+                tape_dy = dy[start:start + num_meas]
+                if num_meas == 1:
+                    dy_nested.append(tape_dy[0])
+                else:
+                    dy_nested.append(tape_dy)
+
+            dy = dy_nested
 
             if jacs:
                 # Jacobians were computed on the forward pass (mode="forward")
