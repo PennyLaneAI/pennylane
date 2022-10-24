@@ -63,45 +63,6 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
-def get_replacement(url, timeout=5.0):
-    response = Mock(spec=requests.Response)
-    if url == "https://xanadu-quantum-datasets-test.s3.amazonaws.com/foldermap.json":
-        response.json.return_value = {
-            "qchem": {"H2": {"6-31G": ["0.46", "1.16"]}},
-            "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
-        }
-    elif url == "https://xanadu-quantum-datasets-test.s3.amazonaws.com/data_struct.json":
-        response.json.return_value = {
-            "qchem": {
-                "docstr": "Quantum chemistry dataset.",
-                "params": ["molname", "basis", "bondlength"],
-                "docstrings": [
-                    "Molecule object describing the chemical system",
-                    "Hamiltonian of the system using Jordan-Wigner mapping",
-                    "Sparse Hamiltonian of the system",
-                    "Hartree-Fock state for the system",
-                    "Contains all the attributes related to the quantum chemistry datatset",
-                ],
-                "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"],
-            },
-            "qspin": {
-                "docstr": "Quantum many-body spin system dataset.",
-                "params": ["sysname", "periodicity", "lattice", "layout"],
-                "docstrings": [
-                    "Parameters describing the spin system",
-                    "Hamiltonians for the spin systems with different parameter values",
-                    "Ground states for the spin systems with different parameter values",
-                    "Contains all the attributes related to the quantum spin datatset",
-                ],
-                "attributes": ["parameters", "hamiltonians", "ground_states", "full"],
-            },
-        }
-
-    response.status_code = 200
-
-    return response
-
-
 # ('qspn','Currently we have data hosted from types: {_data_struct.keys()}, but got {\'qspn\'}.'),
 
 
