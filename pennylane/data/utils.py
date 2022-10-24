@@ -49,7 +49,7 @@ def _validate_params(data_type, description, attributes):
     for key, val in description.items():
         try:
             tempmap = tempmap[val]
-            #this will fail at the end when we just want to access the bondlength, e.g tempmap['sto-3g']['0.41'] should be tempmap['sto-eg']
+            # this will fail at the end when we just want to access the bondlength, e.g tempmap['sto-3g']['0.41'] should be tempmap['sto-eg']
         except:
             if not val in tempmap:
                 raise ValueError(
@@ -196,13 +196,16 @@ def load(
 
     return data_files
 
+
 def read(filepath):
     dataset = Dataset()
     dataset.read(filepath)
     return dataset
 
-def write(dataset,filepath):
+
+def write(dataset, filepath):
     dataset.write(filepath)
+
 
 def _direc_to_dict(path):
     r"""Helper function to create dictionary structure from directory path"""
