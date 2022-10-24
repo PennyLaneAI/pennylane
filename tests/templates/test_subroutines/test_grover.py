@@ -195,7 +195,7 @@ def test_findstate(n_wires):
         for wire in wires:
             qml.Hadamard(wire)
 
-        for _ in range(5):
+        for _ in range(2):
             qml.Hadamard(wires[0])
             qml.MultiControlledX(wires=wires[1:] + wires[0:1])
             qml.Hadamard(wires[0])
