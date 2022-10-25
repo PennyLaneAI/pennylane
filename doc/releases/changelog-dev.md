@@ -197,6 +197,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
+* Extended `qml.equal` function to MeasurementProcesses
+  [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
+  
 * `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
   can now be called with one or multiple tensors as arguments.
   [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
@@ -278,6 +281,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 This release contains contributions from (in alphabetical order):
 
+Kamal Ali,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
