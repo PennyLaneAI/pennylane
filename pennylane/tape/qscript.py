@@ -379,7 +379,7 @@ class QuantumScript:
         """Update the parameter information dictionary.
 
         Sets:
-            _par_info (list): Parameter information dictionary
+            _par_info (list): Parameter information
         """
         self._par_info = []
         for op in self.operations:
