@@ -136,6 +136,8 @@ package QML <<PennyLane catch all>> {
     }
     DeviceFactory .u.> Device
 
+    Result -u[hidden]- QNode
+
 }
 
 @enduml
