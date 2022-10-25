@@ -14,9 +14,12 @@
 """
 Unit tests for the qml.map_wires function
 """
+from functools import partial
+
 import pytest
 
 import pennylane as qml
+from pennylane.ops import Prod, Sum
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
@@ -170,42 +173,46 @@ class TestMapWiresCallables:
 
         def qfunc():
             build_op()
-            return qml.probs(wires=0)
+            qml.prod(qml.PauliX(0), qml.PauliY(1))
+            return qml.probs(wires=0), qml.probs(wires=1)
 
         m_qfunc = qml.map_wires(qfunc, wire_map=wire_map)
-
+        mapped_op_2 = qml.prod(qml.PauliX(4), qml.PauliY(3))
         qnode = qml.QNode(qfunc, dev)
         m_qnode = qml.QNode(m_qfunc, dev)
 
         # TODO: Use qml.equal when supported
 
         assert qml.math.allclose(m_qnode(), qnode())
-        assert len(m_qnode.tape) == 2
-        m_op = m_qnode.tape.operations[0]
-        assert isinstance(m_op, qml.ops.Prod)
-        assert m_op.data == mapped_op.data
-        assert m_op.wires == mapped_op.wires
-        assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert len(m_qnode.tape) == 4
+        m_ops = m_qnode.tape.operations
+        assert isinstance(m_ops[0], Prod)
+        assert isinstance(m_ops[1], Prod)
+        assert m_ops[0].data == mapped_op.data
+        assert m_ops[0].wires == mapped_op.wires
+        assert m_ops[0].arithmetic_depth == mapped_op.arithmetic_depth
+        assert m_ops[1].data == mapped_op_2.data
+        assert m_ops[1].wires == mapped_op_2.wires
+        assert m_ops[1].arithmetic_depth == mapped_op_2.arithmetic_depth
         assert m_qnode.tape.observables[0].wires == Wires(wire_map[0])
+        assert m_qnode.tape.observables[1].wires == Wires(wire_map[1])
 
     @pytest.mark.jax
     def test_jitting_simplified_qfunc(self):
         """Test that we can jit qnodes that have a mapped quantum function."""
-        # TODO: Support @qml.map_wires(wire_map) decorator
-
         import jax
 
+        @jax.jit
+        @partial(qml.map_wires, wire_map=wire_map)
         @qml.qnode(qml.device("default.qubit.jax", wires=5), interface="jax")
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
             qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
-        m_circuit = jax.jit(qml.map_wires(circuit, wire_map=wire_map))
-
         x = jax.numpy.array(4 * jax.numpy.pi + 0.1)
-        res = m_circuit(x)
+        res = circuit(x)
         assert qml.math.allclose(res, jax.numpy.sin(x))
 
-        grad = jax.grad(m_circuit)(x)
+        grad = jax.grad(circuit)(x)
         assert qml.math.allclose(grad, jax.numpy.cos(x))
