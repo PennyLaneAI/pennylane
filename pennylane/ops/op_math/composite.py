@@ -155,10 +155,12 @@ class CompositeOp(Operator):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
+        eigen_func = np.linalg.eigh if self.is_hermitian else np.linalg.eig
+
         if self.hash not in self._eigs:
-            Hmat = self.matrix()
-            Hmat = math.to_numpy(Hmat)
-            w, U = np.linalg.eigh(Hmat)
+            mat = self.matrix()
+            mat = math.to_numpy(mat)
+            w, U = eigen_func(mat)
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
         return self._eigs[self.hash]
