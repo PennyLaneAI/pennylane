@@ -68,21 +68,34 @@ def _err_msg_for_some_meas_not_qwc(measurements):
 def _validate_computational_basis_sampling(measurements):
     """Auxiliary function for validating computational basis state sampling with other measurements considering the
     qubit-wise commutativity relation."""
-    all_obs_minus_comp_basis_sampling = [
-        o for o in measurements if not o.samples_computational_basis
-    ]
-    if all_obs_minus_comp_basis_sampling:
-        wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
-        with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
-            all_wire_pauliz = (
-                qml.PauliZ(wires) if len(wires) == 1 else qml.prod(*[qml.PauliZ(w) for w in wires])
-            )
+    ordinary_obs = []
+    comp_basis_obs = []
+    for o in measurements:
+        if o.samples_computational_basis:
+            comp_basis_obs.append(o)
+        else:
+            ordinary_obs.append(o)
 
-        for obs in all_obs_minus_comp_basis_sampling:
-            if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
-                [obs.obs, all_wire_pauliz]
-            ):
-                raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
+    if ordinary_obs:
+        for cb_obs in comp_basis_obs:
+            wires = (
+                cb_obs.wires
+                if cb_obs.wires is not None
+                else qml.wires.Wires.all_wires([m.wires for m in measurements])
+            )
+            with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
+                pauliz_for_cb_obs = (
+                    qml.PauliZ(wires)
+                    if len(wires) == 1
+                    else qml.operation.Tensor(*[qml.PauliZ(w) for w in wires])
+                )
+
+            for obs in ordinary_obs:
+                # Cover e.g., qml.probs(wires=wires) case by checking obs attr
+                if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
+                    [obs.obs, pauliz_for_cb_obs]
+                ):
+                    raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
 # TODO: move this function to its own file and rename
