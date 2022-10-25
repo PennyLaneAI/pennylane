@@ -32,7 +32,7 @@ datasets as we show below:
      'qspin': {'Heisenberg': {...}, 'Ising': {...}, ...}}
 
 This nested-dictionary structure can also be used to generate arguments for the :func:`~.pennylane.qdata.load`
-function that allows us to downlaod the dataset to be stored and accessed locally. The main purpose of these
+function that allows us to download the dataset to be stored and accessed locally. The main purpose of these
 arguments is to proivde users with the flexibility of filtering data as per their needs and downloading what
 matches their specified criteria. For example, 
 
