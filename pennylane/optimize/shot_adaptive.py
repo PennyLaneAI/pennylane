@@ -18,7 +18,6 @@ from scipy.stats import multinomial
 import pennylane as qml
 from pennylane import numpy as np
 
-
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -271,7 +270,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         Raises:
             ValueError: if the device is analytic
         """
-        if dev.analytic:
+        if dev.shots is None:
             raise ValueError(
                 "The Rosalin optimizer can only be used with devices "
                 "that estimate expectation values with a finite number of shots."
