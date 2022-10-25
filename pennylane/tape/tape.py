@@ -77,12 +77,15 @@ def _validate_computational_basis_sampling(measurements):
     all_obs_minus_comp_basis_sampling = [
         o for o in measurements if not o.samples_computational_basis
     ]
-    should_raise = any(
-        not qml.grouping.utils.are_pauli_words_qwc([obs.obs, all_wire_pauliz])
-        for obs in all_obs_minus_comp_basis_sampling
-    )
-    if should_raise:
-        _err_msg_for_some_meas_not_qwc(measurements)
+
+    should_raise = False
+    for obs in all_obs_minus_comp_basis_sampling:
+        if obs.obs is not None:
+            should_raise = qml.grouping.utils.are_pauli_words_qwc([obs.obs, all_wire_pauliz])
+
+        if should_raise:
+            _err_msg_for_some_meas_not_qwc(measurements)
+            return
 
 
 # TODO: move this function to its own file and rename
