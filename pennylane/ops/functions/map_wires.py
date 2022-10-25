@@ -47,7 +47,7 @@ def map_wires(
 
     .. note::
 
-        `qml.map_wires` can be used as a decorator with the help of the functools module:
+        ``qml.map_wires`` can be used as a decorator with the help of the ``functools`` module:
 
         >>> @functools.partial(qml.map_wires, wire_map=wire_map)
         ... @qml.qnode(dev)
