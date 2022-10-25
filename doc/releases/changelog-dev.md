@@ -50,6 +50,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* Added the `def samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
+  if computational basis samples are being generated.
+  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
+
 * Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
   as `AnnotatedQueue`.
   This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
@@ -203,7 +207,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
-* Fixed a bug where `qml.sample()` and `qml.counts()` would input incorrect results when mixed with measurements whose
+* Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
   operators do not qubit-wise commute with computational basis projectors.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 

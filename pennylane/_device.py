@@ -653,9 +653,6 @@ class Device(abc.ABC):
         """
         # pylint: disable=protected-access
 
-        # TODO: what if both qml.sample() and qml.counts()?
-        # For multiple measurements, computational basis samples don't have an observable, but act on all wires -> may still have to expand the
-        # circuit
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
         )
