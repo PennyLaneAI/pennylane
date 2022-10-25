@@ -179,7 +179,7 @@ def compute_vjp_multi_new(dy, jac):
         res = []
         for d, j_ in zip(dy, jac):
             res.append(compute_vjp_single_new(d, j_))
-        res = qml.math.stack([qml.math.sum(res)])
+        res = qml.math.sum(qml.math.stack(res), axis=0)
     # Multiple parameters
     else:
         res = []
