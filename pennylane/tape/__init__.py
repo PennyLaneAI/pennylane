@@ -18,5 +18,6 @@ validates quantum operations and measurements.
 
 from .tape import QuantumTape, get_active_tape, TapeError
 from .operation_recorder import OperationRecorder
+from .qscript import QuantumScript
 from .stop_recording import stop_recording
 from .unwrap import Unwrap, UnwrapTape

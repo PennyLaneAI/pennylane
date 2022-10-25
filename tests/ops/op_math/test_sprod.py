@@ -23,7 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
 
@@ -241,7 +241,9 @@ class TestMatrix:
         """Test matrix method for a scalar product of parametric ops"""
         params = range(op.num_params)
 
-        sprod_op = SProd(scalar, op(*params, wires=range(op.num_wires)))
+        sprod_op = SProd(
+            scalar, op(*params, wires=0 if op.num_wires is AnyWires else range(op.num_wires))
+        )
         sprod_mat = sprod_op.matrix()
 
         true_mat = scalar * mat(*params) if op.num_params > 0 else scalar * mat

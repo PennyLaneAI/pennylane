@@ -107,12 +107,11 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-from pennylane.math import expand_matrix
 
 from .utils import pauli_eigs
-
 
 # =============================================================================
 # Errors
@@ -1132,6 +1131,20 @@ class Operator(abc.ABC):
         """Arithmetic depth of the operator."""
         return 0
 
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current operator with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator: new operator
+        """
+        new_op = copy.copy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        return new_op
+
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
         """Reduce the depth of nested operators to the minimum.
 
@@ -1145,12 +1158,7 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
-            id_op = (
-                qml.prod(*(qml.Identity(w) for w in self.wires))
-                if len(self.wires) > 1
-                else qml.Identity(self.wires[0])
-            )
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         if isinstance(other, Operator):
             return qml.op_sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
@@ -2151,6 +2159,22 @@ class Tensor(Observable):
 
         obs.return_type = self.return_type
         return obs
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current tensor with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Tensor: new tensor
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
+        new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
+        new_op._eigvals_cache = self._eigvals_cache
+        return new_op
 
 
 # =============================================================================
