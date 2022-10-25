@@ -400,10 +400,6 @@ class QuantumScript:
         Sets:
             _trainable_params (list[int]): Script parameter indices of trainable parameters
 
-        self._par_info.keys() is assumed to be sorted and up to date when calling
-        this method. This assumes that self._par_info was created in a sorted manner,
-        as in _update_par_info.
-
         Call `_update_par_info` before `_update_trainable_params`
         """
         self._trainable_params = list(range(len(self._par_info)))
