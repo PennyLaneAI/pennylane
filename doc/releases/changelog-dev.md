@@ -48,6 +48,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
   ```
 
+<h4>Pauli Module</h4>
+
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
 <h3>Improvements</h3>
 
 * Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
