@@ -18,6 +18,7 @@ Contains the Dataset utility functions.
 from concurrent.futures import ThreadPoolExecutor, wait
 import os
 import requests
+import sys
 from pennylane.data.dataset import Dataset
 
 S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
@@ -54,6 +55,7 @@ def _validate_params(data_type, description, attributes):
                 for child in node.values():
                     panic_if_invalid(child, params_left)
             elif detail not in node:
+                sys.tracebacklimit = 0  # the recursive stack is disorienting
                 raise ValueError(
                     f"{param} value of '{detail}' not available. Available values are {list(node)}"
                 )
@@ -63,7 +65,7 @@ def _validate_params(data_type, description, attributes):
     panic_if_invalid(_foldermap[data_type], params_needed)
 
     if not isinstance(attributes, list):
-        raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes)}.")
+        raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes).__name__}.")
 
     all_attributes = data["attributes"]
     if not set(attributes).issubset(set(all_attributes)):
@@ -189,6 +191,9 @@ def load(
     _validate_params(data_type, description, attributes)
     if len(attributes) > 1 and "full" in attributes:
         attributes = ["full"]
+    for key, val in description.items():
+        if len(val) > 1 and "full" in val:
+            description[key] = ["full"]
 
     data = _data_struct[data_type]
     directory_path = os.path.join(folder_path, "datasets")
