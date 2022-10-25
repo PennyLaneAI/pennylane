@@ -32,7 +32,7 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
-import pennylane.pauli
+import pennylane.pauli as pauli
 import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
@@ -103,7 +103,6 @@ from pennylane.shadows import ClassicalShadow
 
 # collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
-from pennylane.pauli import grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order

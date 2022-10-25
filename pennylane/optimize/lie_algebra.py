@@ -343,7 +343,7 @@ class LieAlgebraOptimizer:
 
         """
 
-        obs_groupings, _ = qml.pauli.grouping.group_observables(self.observables, self.coeffs)
+        obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
         # get all circuits we need to calculate the coefficients
         circuits = algebra_commutator(
             self.circuit.qtape,

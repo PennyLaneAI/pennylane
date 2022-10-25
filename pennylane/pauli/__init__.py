@@ -36,4 +36,9 @@ from .utils import (
     simplify,
 )
 
-from .grouping import *
+from .grouping import (
+    group_observables,
+    PauliGroupingStrategy,
+    optimize_measurements,
+    graph_colouring,
+)
