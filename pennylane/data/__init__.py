@@ -16,4 +16,4 @@ The data module provides functionality to load and manage datasets.
 """
 
 from .dataset import Dataset, from_file
-from .s3 import load, list_datasets, list_local_datasets
+from .data_manager import load, list_datasets, list_local_datasets

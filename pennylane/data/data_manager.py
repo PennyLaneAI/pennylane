@@ -14,7 +14,7 @@
 """
 Contains the Dataset utility functions.
 """
-# pylint:disable=too-many-arguments
+# pylint:disable=too-many-arguments,global-statement
 from concurrent.futures import ThreadPoolExecutor, wait
 import os
 import requests
@@ -29,7 +29,7 @@ _data_struct = {}
 
 
 def _validate_params(data_type, description, attributes):
-    r"""Validate parameters for loading the data"""
+    """Validate parameters for loading the data."""
 
     data = _data_struct.get(data_type)
     if not data:
@@ -46,18 +46,19 @@ def _validate_params(data_type, description, attributes):
     def panic_if_invalid(node, params_left):
         param = params_left[0]
         params_left = params_left[1:]
-        detail = description[param]
-        if detail == "full":
-            if not params_left:
-                return
-            for child in node.values():
-                panic_if_invalid(child, params_left)
-        elif detail not in node:
-            raise ValueError(
-                f"{param} value of '{detail}' not available. Available values are {list(node)}"
-            )
-        elif params_left:
-            panic_if_invalid(node[detail], params_left)
+        details = description[param]
+        for detail in details:
+            if detail == "full":
+                if not params_left:
+                    return
+                for child in node.values():
+                    panic_if_invalid(child, params_left)
+            elif detail not in node:
+                raise ValueError(
+                    f"{param} value of '{detail}' not available. Available values are {list(node)}"
+                )
+            elif params_left:
+                panic_if_invalid(node[detail], params_left)
 
     panic_if_invalid(_foldermap[data_type], params_needed)
 
@@ -74,8 +75,7 @@ def _validate_params(data_type, description, attributes):
 def _refresh_foldermap():
     """Refresh the foldermap from S3."""
     response = requests.get(FOLDERMAP_URL, timeout=5.0)
-    if not response.ok:
-        response.raise_for_status()
+    response.raise_for_status()
 
     global _foldermap
     _foldermap = response.json()
@@ -84,8 +84,7 @@ def _refresh_foldermap():
 def _refresh_data_struct():
     """Refresh the data struct from S3."""
     response = requests.get(DATA_STRUCT_URL, timeout=5.0)
-    if not response.ok:
-        response.raise_for_status()
+    response.raise_for_status()
 
     global _data_struct
     _data_struct = response.json()
@@ -94,8 +93,7 @@ def _refresh_data_struct():
 def _fetch_and_save(filename, dest_folder):
     """Download a single file from S3 and save it locally."""
     response = requests.get(os.path.join(S3_URL, filename), timeout=5.0)
-    if not response.ok:
-        response.raise_for_status()
+    response.raise_for_status()
     with open(os.path.join(dest_folder, filename), "wb") as f:
         f.write(response.content)
 
@@ -182,16 +180,16 @@ def load(
 
     if data_type not in _foldermap:
         _refresh_foldermap()
-
     if not _data_struct:
         _refresh_data_struct()
     if not attributes:
         attributes = ["full"]
-    _validate_params(data_type, params, attributes)
+
+    description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
+    _validate_params(data_type, description, attributes)
     if len(attributes) > 1 and "full" in attributes:
         attributes = ["full"]
 
-    description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
     data = _data_struct[data_type]
     directory_path = os.path.join(folder_path, "datasets")
 
