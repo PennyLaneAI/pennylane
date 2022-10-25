@@ -343,15 +343,15 @@ class TestParamShift:
         assert len(result[0]) == 3
 
         assert isinstance(result[0][0], np.ndarray)
-        assert result[0][0].shape == (1,)
+        assert result[0][0].shape == ()
         assert np.allclose(result[0][0], 0)
 
         assert isinstance(result[0][1], np.ndarray)
-        assert result[0][1].shape == (1,)
+        assert result[0][1].shape == ()
         assert np.allclose(result[0][1], 0)
 
         assert isinstance(result[0][2], np.ndarray)
-        assert result[0][2].shape == (1,)
+        assert result[0][2].shape == ()
         assert np.allclose(result[0][2], 0)
 
         # Second elem
@@ -784,7 +784,8 @@ class TestParameterShiftRule:
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
 
-        num_params = len(tape.trainable_params)
+        assert isinstance(autograd_val, np.ndarray)
+        assert autograd_val.shape == ()
 
         assert spy.call_args[1]["shifts"] == (shift,)
 
@@ -814,7 +815,6 @@ class TestParameterShiftRule:
         autograd_val = fn(dev.batch_execute(tapes))
         assert isinstance(autograd_val, tuple)
         assert len(autograd_val) == num_params
-        manualgrad_val = np.zeros((1, num_params))
 
         manualgrad_val = []
         for idx in list(np.ndindex(*params.shape)):
@@ -1501,6 +1501,8 @@ class TestParameterShiftRule:
 
         expected = [2 * np.sin(a) * np.cos(a), 0]
 
+        assert isinstance(gradA, tuple)
+        assert len(gradA) == 2
         for param_res in gradA:
             assert isinstance(param_res, np.ndarray)
             assert param_res.shape == ()
@@ -1542,6 +1544,7 @@ class TestParameterShiftRule:
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
+
         gradA = fn(dev.batch_execute(tapes))
 
         assert isinstance(gradA, tuple)

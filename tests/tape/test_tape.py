@@ -367,7 +367,9 @@ class TestConstruction:
         """Test that the batch size is correctly inferred from all operation's
         batch_size, when creating and when using `set_parameters`."""
 
-        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+        with pytest.raises(
+            ValueError, match="batch sizes of the quantum script operations do not match."
+        ):
             with qml.tape.QuantumTape() as tape:
                 qml.RX(x, wires=0)
                 qml.Rot(*rot, wires=1)
@@ -379,7 +381,9 @@ class TestConstruction:
             qml.Rot(1.0, 0.2, -0.3, wires=1)
             qml.RX(0.2, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
-        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+        with pytest.raises(
+            ValueError, match="batch sizes of the quantum script operations do not match."
+        ):
             tape.set_parameters([x] + rot + [y])
 
 
@@ -768,7 +772,7 @@ class TestParameters:
 
         tape.set_parameters(new_params)
 
-        for pinfo, pval in zip(tape._par_info.values(), new_params):
+        for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert tape.get_parameters() == new_params
@@ -776,7 +780,7 @@ class TestParameters:
         new_params = [0.1, -0.2, 1, 5, 0]
         tape.data = new_params
 
-        for pinfo, pval in zip(tape._par_info.values(), new_params):
+        for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert tape.get_parameters() == new_params
@@ -790,7 +794,7 @@ class TestParameters:
         tape.set_parameters(new_params)
 
         count = 0
-        for idx, pinfo in tape._par_info.items():
+        for idx, pinfo in enumerate(tape._par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
@@ -831,7 +835,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         tape.set_parameters(new_params, trainable_only=False)
 
-        for pinfo, pval in zip(tape._par_info.values(), new_params):
+        for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert tape.get_parameters(trainable_only=False) == new_params
@@ -1658,6 +1662,15 @@ class TestStopRecording:
         assert len(temp_tape.operations) == 1
         assert temp_tape.operations[0] == op1
 
+    def test_stop_recording_within_tape_cleans_up(self):
+        """Test if some error is raised within a stop_recording context, the previously
+        active contexts are still returned to avoid popping from an empty deque"""
+
+        with pytest.raises(ValueError):
+            with qml.queuing.AnnotatedQueue() as q:
+                with qml.QueuingManager.stop_recording():
+                    raise ValueError
+
 
 def test_get_active_tape():
     """Test that the get_active_tape() function returns the currently
@@ -2197,7 +2210,7 @@ class TestOutputShape:
             qml.probs(wires=[0])
             qml.probs(wires=[1, 2])
 
-        with pytest.raises(TapeError, match="multiple probability measurements"):
+        with pytest.raises(ValueError, match="multiple probability measurements"):
             tape.shape(dev)
 
     def test_raises_multiple_different_measurements(self):
@@ -2212,7 +2225,7 @@ class TestOutputShape:
             qml.sample(qml.PauliZ(0))
 
         with pytest.raises(
-            TapeError,
+            ValueError,
             match="contains multiple types of measurements is unsupported",
         ):
             tape.shape(dev)
@@ -2228,7 +2241,7 @@ class TestOutputShape:
             qml.state()
             qml.density_matrix(wires=0)
 
-        with pytest.raises(TapeError, match="multiple state measurements is not supported"):
+        with pytest.raises(ValueError, match="multiple state measurements is not supported"):
             tape.shape(dev)
 
     def test_raises_sample_shot_vector(self):
@@ -2242,7 +2255,7 @@ class TestOutputShape:
             qml.sample()
 
         with pytest.raises(
-            TapeError,
+            ValueError,
             match="returning samples along with a device with a shot vector",
         ):
             tape.shape(dev)
@@ -2400,8 +2413,8 @@ class TestNumericType:
             qml.probs(wires=[0])
 
         with pytest.raises(
-            TapeError,
-            match="Getting the numeric type of a tape that contains multiple types of measurements is unsupported.",
+            ValueError,
+            match="Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported.",
         ):
             tape.numeric_type
 
