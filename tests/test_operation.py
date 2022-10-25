@@ -1918,8 +1918,6 @@ class TestDefaultRepresentations:
     def test_terms_undefined(self):
         """Tests that custom error is raised in the default terms representation."""
         with pytest.raises(qml.operation.TermsUndefinedError):
-            MyOp.compute_terms(wires=[1])
-        with pytest.raises(qml.operation.TermsUndefinedError):
             op.terms()
 
     def test_sparse_matrix_undefined(self):
